@@ -55,11 +55,18 @@ async def get_similarity(file: UploadFile = File(...), api_key: str = Security(g
         )
 
     # Basic MIME type check (can be expanded, but ffprobe validation is more robust)
-    # if not file.content_type.startswith("audio/"): # This is a good first check
-    #     raise HTTPException(
-    #         status_code=HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-    #         detail="Invalid file type based on Content-Type. Only audio files are allowed."
-    #     )
+    if not file.content_type.startswith("audio/"): # This is a good first check
+        raise HTTPException(
+            status_code=HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Invalid file type based on Content-Type. Only audio files are allowed."
+        )
+
+    # Check if the file is empty
+    if file.size == 0:
+        raise HTTPException(
+            status_code=HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="File is empty. Please upload a valid audio file."
+        )
 
     temp_file_path = ""
     audio_bytes = await file.read() # Read file into memory once
@@ -71,7 +78,7 @@ async def get_similarity(file: UploadFile = File(...), api_key: str = Security(g
         if not is_valid_audio:
             raise HTTPException(
                 status_code=HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                detail="File is not a valid audio format or contains no audio streams according to FFmpeg/FFprobe."
+                detail="File is not a valid audio format or contains no audio streams according to our checks."
             )
     else:
         # Fallback behavior if FFmpeg is not available
