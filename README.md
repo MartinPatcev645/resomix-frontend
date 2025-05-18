@@ -4,13 +4,14 @@ A FastAPI server for calculating the similarity between audio tracks. The server
 
 ## Features
 
-- Audio file validation using FFmpeg/FFprobe
+- Audio file validation using FFmpeg/FFprobe for deep content analysis
 - Secure file handling with temporary storage
-- API key authentication
+- API key authentication via query parameter
 - Search functionality for tracks
 - Feedback and contact form submission
 - Configurable file size limits (currently set to 50MB)
 - Concurrent request handling
+- Frontend-compatible response format
 
 ## Requirements
 
@@ -80,6 +81,22 @@ python main.py
 ```
 
 By default, the server will run on `http://0.0.0.0:8002`. You can modify the host and port in the `main.py` file.
+
+## Frontend Integration
+
+This API is designed to work with a React frontend that uses the provided `api.js` service. The API accepts and returns data in a format that matches frontend expectations:
+
+- API key is passed as a query parameter: `?api_key=YOUR_API_KEY`
+- All responses follow a consistent format:
+  ```json
+  { "success": true, "data": {...} }
+  ```
+  or
+  ```json
+  { "success": false, "error": "Error message" }
+  ```
+- Error responses include appropriate HTTP status codes (422, 415, 500, etc.)
+- File validation is performed using FFmpeg rather than relying on MIME types
 
 ## API Documentation
 
@@ -216,7 +233,7 @@ Submit feedback or contact form data.
 
 ## Security Considerations
 
-1. **File Validation:** All uploaded files are verified using FFmpeg to ensure they contain valid audio streams, helping prevent malicious file uploads.
+1. **File Validation:** All uploaded files are verified using FFmpeg to ensure they contain valid audio streams, helping prevent malicious file uploads. The API doesn't rely on MIME type declarations, which can be spoofed.
 
 2. **Temporary Storage:** Files are only stored temporarily during processing and are automatically deleted afterward.
 
