@@ -68,7 +68,7 @@ def validate_audio_format(audio_bytes: bytes, filename: str) -> bool:
         # print(f"[FFmpeg Validation] Running FFprobe command: {' '.join(cmd)}") # Optional: verbose logging
         
         # Execute FFprobe command
-        result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode == 0 and result.stdout:
             try:
