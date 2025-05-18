@@ -7,6 +7,8 @@ A FastAPI server for calculating the similarity between audio tracks. The server
 - Audio file validation using FFmpeg/FFprobe
 - Secure file handling with temporary storage
 - API key authentication
+- Search functionality for tracks
+- Feedback and contact form submission
 - Configurable file size limits (currently set to 50MB)
 - Concurrent request handling
 
@@ -77,33 +79,140 @@ Start the server with:
 python main.py
 ```
 
-By default, the server will run on `http://0.0.0.0:8001`. You can modify the host and port in the `main.py` file.
+By default, the server will run on `http://0.0.0.0:8002`. You can modify the host and port in the `main.py` file.
 
 ## API Documentation
 
 Once the server is running, you can access the auto-generated API documentation at:
 
-- Swagger UI: `http://localhost:8001/docs`
-- ReDoc: `http://localhost:8001/redoc`
+- Swagger UI: `http://localhost:8002/docs`
+- ReDoc: `http://localhost:8002/redoc`
 
 ### Endpoints
 
-#### POST /get_similarity/
+#### 1. POST /get_similarity/
 
-Upload an audio file to calculate its similarity metrics.
+Upload an audio file to calculate its similarity metrics and receive similar tracks.
 
-**Authorization:** Requires an API key provided via the `access_token` header.
+**Authorization:** Requires an API key provided via the `api_key` query parameter.
 
 **Request:**
 - Content-Type: multipart/form-data
 - Body: audio file (max 50MB)
 
 **Responses:**
-- 200: Successful operation with similarity results
-- 403: Invalid or missing API key
-- 415: Invalid file format (not a valid audio file)
-- 422: File too large or invalid
-- 500: Server error
+- Success:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "duration": 123,
+      "similar_tracks": [
+        {
+          "id": 1,
+          "title": "Track Title",
+          "artist": "Artist Name",
+          "duration": 180,
+          "genre": "Genre Name",
+          "bpm": 120,
+          "key": "C Major",
+          "imageUrl": "https://example.com/image.jpg",
+          "previewUrl": "https://example.com/preview.mp3"
+        },
+        // More similar tracks...
+      ]
+    }
+  }
+  ```
+- Error:
+  ```json
+  {
+    "success": false,
+    "error": "Error message"
+  }
+  ```
+
+#### 2. GET /search_tracks/
+
+Search for tracks based on a query string.
+
+**Authorization:** Requires an API key provided via the `api_key` query parameter.
+
+**Request Parameters:**
+- `query`: The search term
+
+**Responses:**
+- Success:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "tracks": [
+        {
+          "id": 1,
+          "title": "Track Title",
+          "artist": "Artist Name",
+          "duration": 180,
+          "genre": "Genre Name",
+          "bpm": 120,
+          "imageUrl": "https://example.com/image.jpg"
+        },
+        // More tracks...
+      ]
+    }
+  }
+  ```
+- Error:
+  ```json
+  {
+    "success": false,
+    "error": "Error message"
+  }
+  ```
+
+#### 3. POST /feedback
+
+Submit feedback or contact form data.
+
+**Authorization:** Requires an API key provided via the `api_key` query parameter.
+
+**Request for Feedback Form:**
+```json
+{
+  "satisfaction": 8,
+  "recommendation": 9,
+  "feedback": "This is user feedback text"
+}
+```
+
+**Request for Contact Form:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "subject": "Question about Resomix",
+  "message": "I have a question about...",
+  "formType": "contact"
+}
+```
+
+**Responses:**
+- Success:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "message": "Feedback received successfully"
+    }
+  }
+  ```
+- Error:
+  ```json
+  {
+    "success": false,
+    "error": "Error message"
+  }
+  ```
 
 ## Security Considerations
 
@@ -115,17 +224,41 @@ Upload an audio file to calculate its similarity metrics.
 
 4. **CORS Configuration:** By default, all origins are allowed. For production, you should modify the CORS settings in `main.py` to only allow trusted origins.
 
+## Project Structure
+
+```
+├── main.py                  # FastAPI application and endpoint definitions
+├── requirements.txt         # Python dependencies
+├── README.md                # Project documentation
+├── temp_audio/              # Temporary storage for audio files (created at runtime)
+├── feedback_data/           # Storage for feedback submissions (created at runtime)
+└── src/
+    ├── ffmpeg.py            # FFmpeg integration for audio validation
+    ├── utils.py             # Utility functions used across the application
+    ├── similarity.py        # Audio similarity calculation logic
+    ├── search.py            # Track search functionality
+    └── feedback.py          # Feedback and contact form processing
+```
+
 ## Development
 
-### Project Structure
+### Extending the API
 
-- `main.py` - FastAPI application and endpoint definitions
-- `src/ffmpeg.py` - FFmpeg integration for audio validation
-- `src/utils.py` - Utility functions including similarity calculation
+#### Adding New Endpoints
 
-### Extending the Similarity Calculation
+To add new endpoints, you should:
 
-The current implementation has a placeholder for similarity calculation. To implement your own similarity logic, modify the `calculate_similarity` function in `src/utils.py`.
+1. Create a new module in the `src/` directory if your endpoint has distinct functionality
+2. Update `main.py` to import your module and create the endpoint
+3. Use the `format_response` utility for consistent response formatting
+
+#### Implementing Actual Audio Similarity
+
+The current implementation uses mock data for similarity calculation. To implement real audio similarity:
+
+1. Modify `src/similarity.py` with your audio analysis algorithm
+2. Consider using libraries like librosa for audio feature extraction
+3. Implement a database connection to store and query track features
 
 ## License
 
