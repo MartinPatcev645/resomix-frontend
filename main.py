@@ -122,4 +122,4 @@ async def get_similarity(file: UploadFile = File(...), api_key: str = Security(g
 if __name__ == "__main__":
     import uvicorn
     # It's good practice to make host and port configurable, e.g., via environment variables
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
