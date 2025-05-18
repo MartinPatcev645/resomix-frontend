@@ -25,7 +25,7 @@ def is_ffmpeg_installed():
     """
     try:
         # Try to run ffmpeg -version to check if it's installed
-        result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True, shell=True)
+        result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
         return result.returncode == 0
     except (FileNotFoundError, subprocess.SubprocessError):
         print("[FFmpeg Validation] ERROR: FFmpeg (ffprobe) not found on system path!")
