@@ -85,4 +85,4 @@ async def calculate_similarity(audio_file_path: str) -> Dict[str, Any]:
     return {
         "duration": mock_duration,
         "similar_tracks": similar_tracks
-    } 
+    }
