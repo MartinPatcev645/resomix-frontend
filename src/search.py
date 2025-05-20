@@ -2,17 +2,19 @@
 Search Module
 ===========
 
-This module provides functionality for searching tracks by name, artist, or other criteria.
+This module provides functionality for searching tracks by name, artist, or other criteria,
+and for fetching specific track details by ID.
 It connects to a MongoDB database to perform these searches.
 
 Functions:
 - search_tracks: Searches for tracks based on a query string.
+- get_track_path_by_id: Fetches the file path of a track by its MongoDB ID.
 - initialize_mongodb_client: Initializes the MongoDB client.
 - close_mongodb_client: Closes the MongoDB client connection.
 - get_db_collection: Returns the MongoDB collection instance.
 
 Author: AI Assistant
-Date: May 2023 (Updated for refined search fields and client lifecycle management)
+Date: May 2023 (Updated for refined search fields, client lifecycle management, and track path lookup)
 """
 
 import os
@@ -21,6 +23,7 @@ from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 import motor.motor_asyncio
 import asyncio # For lock
+from bson import ObjectId # For converting string ID to MongoDB ObjectId
 
 # Load environment variables (especially MONGODB_URI)
 # This ensures that if this module is imported before main.py loads dotenv, it still gets the URI.
@@ -90,6 +93,38 @@ async def get_db_collection() -> Optional[motor.motor_asyncio.AsyncIOMotorCollec
         print("MongoDB collection not available, attempting to re-initialize client...")
         await initialize_mongodb_client() # Attempt to re-initialize
     return _db_collection
+
+async def get_track_path_by_id(track_id: str) -> Optional[str]:
+    """
+    Fetches the 'file.path' of a track from MongoDB given its _id.
+    Args:
+        track_id: The MongoDB ObjectId of the track as a string.
+    Returns:
+        The file path (e.g., /home/usman/data/veggera/public_html/...) if found, else None.
+    """
+    collection = await get_db_collection()
+    if collection is None:
+        print(f"Get_track_path_by_id: MongoDB collection not available for ID: {track_id}")
+        return None
+    
+    try:
+        obj_id = ObjectId(track_id) # Convert string ID to ObjectId
+    except Exception as e:
+        print(f"Invalid track_id format: {track_id}. Error: {e}")
+        return None
+
+    try:
+        document = await collection.find_one({"_id": obj_id}, projection={"file.path": 1})
+        if document and "file" in document and "path" in document["file"]:
+            retrieved_path = document["file"]["path"]
+            print(f"Path found for track_id {track_id}: {retrieved_path}")
+            return retrieved_path
+        else:
+            print(f"Track with ID '{track_id}' not found or 'file.path' missing.")
+            return None
+    except Exception as e:
+        print(f"Error fetching track path for ID {track_id}: {e}")
+        return None
 
 async def search_tracks(query: str) -> Dict[str, Any]:
     collection = await get_db_collection()

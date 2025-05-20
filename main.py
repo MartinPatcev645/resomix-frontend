@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager # For lifespan manager
 from fastapi import FastAPI, File, UploadFile, HTTPException, Security, Depends, Query, Body, status
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from fastapi.responses import JSONResponse
-from starlette.status import HTTP_403_FORBIDDEN, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_415_UNSUPPORTED_MEDIA_TYPE, HTTP_503_SERVICE_UNAVAILABLE
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_404_NOT_FOUND, HTTP_415_UNSUPPORTED_MEDIA_TYPE, HTTP_503_SERVICE_UNAVAILABLE
 from starlette.middleware.cors import CORSMiddleware
 import uuid
 from typing import Dict, Any, Optional, AsyncGenerator # For lifespan type hint
@@ -17,7 +17,7 @@ load_dotenv()
 # Import modules
 from src.ffmpeg import validate_audio_format, is_ffmpeg_installed
 from src.similarity import calculate_similarity_for_upload, get_similarity_by_path
-from src.search import search_tracks, initialize_mongodb_client, close_mongodb_client
+from src.search import search_tracks, initialize_mongodb_client, close_mongodb_client, get_track_path_by_id
 from src.feedback import process_feedback, process_contact, initialize_gspread_client_on_startup
 from src.utils import format_response, sanitize_filename, log_request
 
@@ -26,6 +26,7 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 TEMP_DIR = "temp_audio"
 API_KEY_NAME = "api_key"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, this should be stored securely
+SIMILARITY_DEFAULT_TOP_K = 10 # Global default for top_k
 
 # Removed ALLOWED_AUDIO_TYPES as requested - using FFmpeg for validation instead
 
@@ -91,9 +92,8 @@ if not FFMPEG_AVAILABLE:
 #     os.makedirs(FEEDBACK_DIR)
 
 # Pydantic model for the /get_selection_similarity/ request body
-class SimilarityByPathRequest(BaseModel):
-    server_track_path: str
-    top_k: Optional[int] = 10
+class SimilarityByIdRequest(BaseModel):
+    track_id: str
 
 async def get_api_key(
     api_key_query: str = Security(api_key_query),
@@ -325,34 +325,45 @@ async def root():
 
 
 @app.post("/get_selection_similarity/")
-async def get_similarity_by_path_endpoint(
-    request_data: SimilarityByPathRequest,
+async def get_similarity_by_id_endpoint(
+    request_data: SimilarityByIdRequest,
     api_key: str = Security(get_api_key)
 ):
     """
-    Get similar tracks for a track identified by its path on the similarity server.
+    Get similar tracks for a track identified by its MongoDB ID.
+    Uses a global default for top_k.
     
-    - **server_track_path**: The file path of the track on the similarity server.
-    - **top_k** (optional): Number of similar tracks to return (default: 10).
+    - **track_id**: The MongoDB ID of the track to find similar tracks for.
     """
-    print("GOT HERE")
-    log_request("get_selection_similarity", "POST", {"server_track_path": request_data.server_track_path, "top_k": request_data.top_k})
+    log_request("get_selection_similarity (by ID)", "POST", {"track_id": request_data.track_id})
 
-    if not request_data.server_track_path or not request_data.server_track_path.strip():
+    if not request_data.track_id or not request_data.track_id.strip():
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=format_response(success=False, error="server_track_path cannot be empty.")
+            content=format_response(success=False, error="track_id cannot be empty.")
         )
 
     try:
+        # Step 1: Get the server_track_path from MongoDB using the track_id
+        server_track_path = await get_track_path_by_id(request_data.track_id)
+
+        if server_track_path is None:
+            # This means the track_id was not found, or path was missing in DB
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND, # Use 404 for resource not found
+                content=format_response(success=False, error=f"Track with ID '{request_data.track_id}' not found or path is missing.")
+            )
+
+        # Step 2: Call the similarity function with the fetched path and global top_k
         similarity_results = await get_similarity_by_path(
-            server_track_path=request_data.server_track_path,
-            top_k=request_data.top_k
+            server_track_path=server_track_path,
+            top_k=SIMILARITY_DEFAULT_TOP_K # Use the global default
         )
 
         if similarity_results.get("success") is False:
+            # Error from similarity service or internal processing in get_similarity_by_path
             return JSONResponse(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, # Or determine based on similarity_results if more specific
                 content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed for path."))
             )
 
@@ -362,10 +373,10 @@ async def get_similarity_by_path_endpoint(
         )
 
     except Exception as e:
-        print(f"An error occurred in get_selection_similarity: {e}")
+        print(f"An error occurred in get_selection_similarity (by ID): {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=format_response(success=False, error="An internal server error occurred while processing similarity by path.")
+            content=format_response(success=False, error="An internal server error occurred while processing similarity by ID.")
         )
 
 
