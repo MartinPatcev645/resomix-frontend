@@ -118,15 +118,13 @@ async def search_tracks(query: str) -> Dict[str, Any]:
                 except (ValueError, TypeError):
                     duration = 0
             
-            track_path = doc.get("file", {}).get("path") 
-            if not track_path:
-                 track_path = doc.get("file", {}).get("filename", "N/A")
+            filename = doc.get("file", {}).get("filename", "N/A")
 
             track_data = {
                 "id": str(doc.get("_id")),
                 "artist": doc.get("info", {}).get("artist", "N/A"),
                 "duration": duration,
-                "path": track_path 
+                "filename": filename 
             }
             results.append(track_data)
     except motor.motor_asyncio.core.ServerSelectionTimeoutError as e: # Specific error for connection issues
