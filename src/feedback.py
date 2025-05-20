@@ -3,35 +3,92 @@ Feedback Module
 =============
 
 This module provides functionality for handling user feedback and contact form submissions.
+It connects to Google Sheets to store this data.
 
 Functions:
-- process_feedback: Processes user feedback submissions.
-- process_contact: Processes contact form submissions.
+- process_feedback: Processes user feedback submissions and saves to Google Sheets.
+- process_contact: Processes contact form submissions and saves to Google Sheets.
 
 Author: AI Assistant
-Date: May 2023
+Date: May 2023 (Updated for Google Sheets)
 """
 
 from typing import Dict, Any
-import json
+import json # Keep for potential local logging if desired
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+import gspread_asyncio
+from google.oauth2.service_account import Credentials
 
+# Load environment variables
+load_dotenv()
+
+SERVICE_ACCOUNT_FILE = os.getenv("SERVICE_ACCOUNT_FILE")
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
+FEEDBACK_WORKSHEET_NAME = os.getenv("FEEDBACK_WORKSHEET_NAME", "Feedback") # Default to "Feedback"
+CONTACT_WORKSHEET_NAME = os.getenv("CONTACT_WORKSHEET_NAME", "ContactSubmissions") # Default to "ContactSubmissions"
+
+def get_google_creds():
+    """Load Google credentials from the service account file."""
+    if not SERVICE_ACCOUNT_FILE:
+        print("ERROR: SERVICE_ACCOUNT_FILE environment variable not set.")
+        return None
+    try:
+        creds = Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE,
+            scopes=[
+                "https://spreadsheets.google.com/feeds",
+                "https://www.googleapis.com/auth/drive.file", # Often needed for discovery/permissions
+                "https://www.googleapis.com/auth/spreadsheets"
+            ],
+        )
+        return creds
+    except FileNotFoundError:
+        print(f"ERROR: Service account file not found at {SERVICE_ACCOUNT_FILE}")
+        return None
+    except Exception as e:
+        print(f"ERROR: Could not load credentials from service account file: {e}")
+        return None
+
+async def get_gspread_client():
+    """Get an authenticated gspread_asyncio client."""
+    creds = get_google_creds()
+    if not creds:
+        return None
+    try:
+        agc = await gspread_asyncio.AsyncioGspreadClientManager(lambda: creds).authorize()
+        return agc
+    except Exception as e:
+        print(f"ERROR: Could not authorize gspread client: {e}")
+        return None
+
+async def append_to_sheet(worksheet_name: str, data_row: list):
+    """Appends a row of data to the specified worksheet in the Google Sheet."""
+    if not GOOGLE_SHEET_ID:
+        print("ERROR: GOOGLE_SHEET_ID environment variable not set.")
+        return False
+
+    agc = await get_gspread_client()
+    if not agc:
+        return False
+
+    try:
+        spreadsheet = await agc.open_by_key(GOOGLE_SHEET_ID)
+        worksheet = await spreadsheet.worksheet(worksheet_name)
+        await worksheet.append_row(data_row)
+        print(f"Successfully appended data to Google Sheet: {worksheet_name}")
+        return True
+    except gspread_asyncio.gspread.exceptions.WorksheetNotFound:
+        print(f"ERROR: Worksheet '{worksheet_name}' not found in Google Sheet ID {GOOGLE_SHEET_ID}. Please create it.")
+        return False
+    except Exception as e:
+        print(f"ERROR: Failed to append data to Google Sheet '{worksheet_name}': {e}")
+        return False
 
 async def process_feedback(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Process and store user feedback.
-    
-    In a production environment, this would:
-    1. Validate the feedback data
-    2. Store in a database
-    3. Potentially send notifications to administrators
-    
-    Args:
-        data: Dictionary containing feedback data (satisfaction, recommendation, feedback text)
-        
-    Returns:
-        Dict with success message
+    Process and store user feedback to Google Sheets.
     """
     # Validate required fields
     required_fields = ["satisfaction", "recommendation"]
@@ -39,50 +96,45 @@ async def process_feedback(data: Dict[str, Any]) -> Dict[str, Any]:
         if field not in data or not isinstance(data[field], (int, float)):
             raise ValueError(f"Missing or invalid required field: {field}")
     
-    # Ensure ratings are within expected range (1-10)
     if not (1 <= data["satisfaction"] <= 10 and 1 <= data["recommendation"] <= 10):
         raise ValueError("Ratings must be between 1 and 10")
     
-    # In a production environment, you would store this in a database
-    # For demo purposes, we'll log it to the console and store in a simple file
     print(f"Received feedback - Satisfaction: {data['satisfaction']}, Recommendation: {data['recommendation']}")
-    
-    # Optional: store feedback in a file
-    feedback_dir = "feedback_data"
-    if not os.path.exists(feedback_dir):
-        os.makedirs(feedback_dir)
-        
-    # Generate a timestamp-based filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(feedback_dir, f"feedback_{timestamp}.json")
-    
-    # Add timestamp to the data
-    data["timestamp"] = datetime.now().isoformat()
-    data["type"] = "feedback"
-    
-    # Write to file
-    with open(filename, "w") as f:
-        json.dump(data, f, indent=2)
-    
-    return {
-        "message": "Feedback received successfully"
-    }
+
+    # Prepare data for Google Sheet row
+    # Ensure headers in your sheet: Timestamp, Satisfaction, Recommendation, Feedback
+    timestamp_str = datetime.now().isoformat()
+    feedback_row = [
+        timestamp_str,
+        data["satisfaction"],
+        data["recommendation"],
+        data.get("feedback", "") # Use .get for optional feedback text
+    ]
+
+    success = await append_to_sheet(FEEDBACK_WORKSHEET_NAME, feedback_row)
+
+    # Optional: local file saving (commented out)
+    # feedback_dir = "feedback_data"
+    # if not os.path.exists(feedback_dir):
+    #     os.makedirs(feedback_dir)
+    # timestamp_file_part = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # filename = os.path.join(feedback_dir, f"feedback_{timestamp_file_part}.json")
+    # data["timestamp"] = timestamp_str
+    # data["type"] = "feedback"
+    # with open(filename, "w") as f:
+    #     json.dump(data, f, indent=2)
+
+    if success:
+        return {"message": "Feedback received successfully and saved to Google Sheet."}
+    else:
+        # If saving to sheet fails, you could optionally save locally as a fallback
+        # For now, we raise an error that will be caught by main.py
+        raise Exception("Failed to save feedback to Google Sheet.") 
 
 
 async def process_contact(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Process and store contact form submissions.
-    
-    In a production environment, this would:
-    1. Validate the contact form data
-    2. Store in a database
-    3. Potentially send email notifications
-    
-    Args:
-        data: Dictionary containing contact form data (name, email, subject, message)
-        
-    Returns:
-        Dict with success message
+    Process and store contact form submissions to Google Sheets.
     """
     # Validate required fields
     required_fields = ["name", "email", "message"]
@@ -90,31 +142,36 @@ async def process_contact(data: Dict[str, Any]) -> Dict[str, Any]:
         if field not in data or not data[field]:
             raise ValueError(f"Missing required field: {field}")
     
-    # Basic email validation
     if "@" not in data["email"] or "." not in data["email"]:
         raise ValueError("Invalid email format")
     
-    # In a production environment, you would store this in a database and/or send an email
-    # For demo purposes, we'll log it to the console and store in a simple file
     print(f"Received contact form from: {data['name']} ({data['email']})")
-    
-    # Optional: store contact form in a file
-    feedback_dir = "feedback_data"
-    if not os.path.exists(feedback_dir):
-        os.makedirs(feedback_dir)
-        
-    # Generate a timestamp-based filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(feedback_dir, f"contact_{timestamp}.json")
-    
-    # Add timestamp to the data
-    data["timestamp"] = datetime.now().isoformat()
-    data["type"] = "contact"
-    
-    # Write to file
-    with open(filename, "w") as f:
-        json.dump(data, f, indent=2)
-    
-    return {
-        "message": "Contact form submitted successfully"
-    } 
+
+    # Prepare data for Google Sheet row
+    # Ensure headers in your sheet: Timestamp, Name, Email, Subject, Message
+    timestamp_str = datetime.now().isoformat()
+    contact_row = [
+        timestamp_str,
+        data["name"],
+        data["email"],
+        data.get("subject", ""), # Use .get for optional subject
+        data["message"]
+    ]
+
+    success = await append_to_sheet(CONTACT_WORKSHEET_NAME, contact_row)
+
+    # Optional: local file saving (commented out)
+    # feedback_dir = "feedback_data"
+    # if not os.path.exists(feedback_dir):
+    #     os.makedirs(feedback_dir)
+    # timestamp_file_part = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # filename = os.path.join(feedback_dir, f"contact_{timestamp_file_part}.json")
+    # data["timestamp"] = timestamp_str
+    # data["type"] = "contact"
+    # with open(filename, "w") as f:
+    #     json.dump(data, f, indent=2)
+
+    if success:
+        return {"message": "Contact form submitted successfully and saved to Google Sheet."}
+    else:
+        raise Exception("Failed to save contact data to Google Sheet.")
