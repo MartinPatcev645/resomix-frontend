@@ -6,11 +6,11 @@ This module provides functionality for calculating audio similarity by interacti
 
 Functions:
 - calculate_similarity_for_upload: Processes an uploaded audio file (bytes) and returns similar tracks.
-- get_similarity_by_path: Gets similar tracks for a given server-side file path.
+- get_similarity_by_path: Gets similar tracks for a given server-side file path, including details of the queried track.
 - _fetch_track_details_from_db_by_path: Fetches and maps track details from MongoDB based on paths.
 
 Author: AI Assistant
-Date: May 2023 (Updated for microservice integration, path transformation, and detailed enrichment)
+Date: May 2023 (Updated for path removal in responses and queried track details)
 """
 
 import os
@@ -179,18 +179,18 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
                     "filename": details.get("filename"),
                     "album": details.get("album"),
                     "duration": details.get("duration"),
-                    "artist": details.get("artist"),
-                    "path": relative_path # Return relative path
+                    "artist": details.get("artist")
                 })
             # else: track details not found in DB for this path, so it's omitted from results
 
-        mock_duration_uploaded = similarity_response.get("processed_track_duration") 
-        if mock_duration_uploaded is None:
-             mock_duration_uploaded = int(len(audio_bytes) / 16000) # Fallback placeholder
-             if mock_duration_uploaded < 5: mock_duration_uploaded = 5
+        processed_duration = similarity_response.get("processed_track_duration") 
+        if processed_duration is None:
+             processed_duration = int(len(audio_bytes) / 16000) # Fallback placeholder
+             if processed_duration < 5: processed_duration = 5
 
         return {
-            "duration": mock_duration_uploaded, 
+            "original_filename": original_filename, # User requested filename for uploaded track
+            "duration": processed_duration, 
             "similar_tracks": enriched_similar_tracks
         }
     else:
@@ -202,38 +202,21 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
     """
     Gets similar tracks for a given server-side file path by calling the similarity server.
     """
+    queried_track_data: Optional[Dict[str, Any]] = None
+    try:
+        details_map_for_queried_track = await _fetch_track_details_from_db_by_path([server_track_path])
+        queried_relative_path = server_track_path[len(PATH_PREFIX_TO_REMOVE):] if server_track_path.startswith(PATH_PREFIX_TO_REMOVE) else server_track_path
+        queried_track_data = details_map_for_queried_track.get(queried_relative_path)
+        if not queried_track_data:
+            print(f"Warning: Details for queried path '{server_track_path}' (relative: '{queried_relative_path}') not found in local DB.")
+    except Exception as e:
+        print(f"Error fetching details for queried path '{server_track_path}' from DB: {e}")
+
     payload = {"file_path": server_track_path, "top_k": top_k}
     similarity_response = await _call_similarity_server("/query-by-path/", data=payload)
 
-    # Fetch duration of the queried track from our DB first (if possible)
-    # This is independent of similarity server success for *finding similar tracks*
-    duration_of_queried_track = 0
-    try:
-        # Note: _fetch_track_details_from_db_by_path expects absolute paths like those from similarity server
-        # server_track_path is already an absolute path passed from main.py (originating from DB lookup by ID)
-        details_map_for_queried_track = await _fetch_track_details_from_db_by_path([server_track_path])
-        
-        queried_relative_path = ""
-        if server_track_path.startswith(PATH_PREFIX_TO_REMOVE):
-            queried_relative_path = server_track_path[len(PATH_PREFIX_TO_REMOVE):]
-        else:
-            queried_relative_path = server_track_path
-
-        queried_track_details = details_map_for_queried_track.get(queried_relative_path)
-
-        if queried_track_details and queried_track_details.get("duration") is not None:
-            duration_of_queried_track = queried_track_details["duration"]
-        else:
-            # If not in DB or no duration, use a default or indicate it's unknown
-            # The similarity server itself does not return the duration of the source track for path queries.
-            duration_of_queried_track = 0 # Or a specific value like -1 to indicate unknown
-            print(f"Warning: Duration for queried path '{server_track_path}' (relative: '{queried_relative_path}') not found in local DB via map.")
-    except Exception as e:
-        print(f"Error fetching duration for queried path '{server_track_path}' from DB: {e}")
-        duration_of_queried_track = 0 # Default on error
-
     if similarity_response.get("status") == "success":
-        raw_results = similarity_response.get("results", []) # Already sorted by rank
+        raw_results = similarity_response.get("results", [])
         abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
 
         mongo_details_map = {}
@@ -243,12 +226,8 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
         enriched_similar_tracks = []
         for res_item in raw_results:
             abs_path = res_item.get("path")
-            if not abs_path: continue
+            if not abs_path or abs_path == server_track_path: continue # Exclude queried track
             
-            # Exclude the queried track itself from the similar tracks list
-            if abs_path == server_track_path: 
-                continue
-
             relative_path = ""
             if abs_path.startswith(PATH_PREFIX_TO_REMOVE):
                 relative_path = abs_path[len(PATH_PREFIX_TO_REMOVE):]
@@ -264,21 +243,19 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
                     "filename": details.get("filename"),
                     "album": details.get("album"),
                     "duration": details.get("duration"),
-                    "artist": details.get("artist"),
-                    "path": relative_path # Return relative path here
+                    "artist": details.get("artist")
                 })
             # else: track details not found in DB for this path, so it's omitted
         
-        # This structure is what main.py expects to put into format_response(success=True, data=...)
         return {
-            "duration": duration_of_queried_track, 
+            "queried_track": queried_track_data, 
             "similar_tracks": enriched_similar_tracks
         }
     elif similarity_response.get("status") == "not_found":
         # Path not found on similarity server, but we might still have its duration from our DB.
         # Return success=True because the API call to main server was fine, but data reflects the finding.
         return {
-            "duration": duration_of_queried_track, 
+            "queried_track": queried_track_data,
             "similar_tracks": [],
             "message": similarity_response.get("message", f"Track '{server_track_path}' not processed by similarity server.")
         }
