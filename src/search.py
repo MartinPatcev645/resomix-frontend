@@ -49,7 +49,7 @@ async def initialize_mongodb_client():
         return
 
     async with _mongo_lock:
-        if not _mongo_client:
+        if _mongo_client is None:
             try:
                 print(f"Initializing MongoDB client with URI: {MONGODB_URI}...")
                 _mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
