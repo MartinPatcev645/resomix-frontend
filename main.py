@@ -17,7 +17,7 @@ load_dotenv()
 # Import modules
 from src.ffmpeg import validate_audio_format, is_ffmpeg_installed
 from src.similarity import calculate_similarity_for_upload, get_similarity_by_path
-from src.search import search_tracks
+from src.search import search_tracks, initialize_mongodb_client, close_mongodb_client
 from src.feedback import process_feedback, process_contact, initialize_gspread_client_on_startup
 from src.utils import format_response, sanitize_filename, log_request
 
@@ -37,11 +37,12 @@ api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
 async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     print("Application startup: Initializing external services via lifespan...")
     await initialize_gspread_client_on_startup()
-    # You can add other startup initializations here if needed
+    await initialize_mongodb_client()
     print("Application startup: External services initialization complete (lifespan).")
     yield
-    # Shutdown logic can go here if needed, e.g., closing connections
     print("Application shutdown: Cleaning up resources (lifespan)...")
+    await close_mongodb_client()
+    print("Application shutdown: Resource cleanup complete (lifespan).")
 
 # Create FastAPI app with description and version
 app = FastAPI(
@@ -64,8 +65,8 @@ ALLOWED_ORIGIN_REGEX = r"^https://([\w\-]+\.)*resomix\.com(:[0-9]+)?$"
 DEV_ALLOWED_ORIGIN_REGEX = r"^https?://.*"
 
 # Set the desired configuration here:
-# CURRENT_ORIGIN_REGEX = ALLOWED_ORIGIN_REGEX # Default to production
-CURRENT_ORIGIN_REGEX = DEV_ALLOWED_ORIGIN_REGEX # Uncomment for development
+CURRENT_ORIGIN_REGEX = ALLOWED_ORIGIN_REGEX # Default to production
+# CURRENT_ORIGIN_REGEX = DEV_ALLOWED_ORIGIN_REGEX # Uncomment for development
 
 app.add_middleware(
     CORSMiddleware,

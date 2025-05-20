@@ -6,17 +6,21 @@ This module provides functionality for searching tracks by name, artist, or othe
 It connects to a MongoDB database to perform these searches.
 
 Functions:
-- search_tracks: Searches for tracks based on a query string (filename).
+- search_tracks: Searches for tracks based on a query string.
+- initialize_mongodb_client: Initializes the MongoDB client.
+- close_mongodb_client: Closes the MongoDB client connection.
+- get_db_collection: Returns the MongoDB collection instance.
 
 Author: AI Assistant
-Date: May 2023
+Date: May 2023 (Updated for refined search fields and client lifecycle management)
 """
 
 import os
 import re
-from typing import Dict, List, Any
+from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 import motor.motor_asyncio
+import asyncio # For lock
 
 # Load environment variables (especially MONGODB_URI)
 # This ensures that if this module is imported before main.py loads dotenv, it still gets the URI.
@@ -28,105 +32,125 @@ MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = "Data" # As per your example
 COLLECTION_NAME = "Tracks" # As per your example
 
-if not MONGODB_URI:
-    print("CRITICAL: MONGODB_URI environment variable not set. Search functionality will not work.")
-    # You might want to raise an exception here or handle it more gracefully
-    # depending on whether the app can run without DB access.
-    client = None
-    db = None
-    collection = None
-else:
-    try:
-        client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-        db = client[DB_NAME]
-        collection = db[COLLECTION_NAME]
-        print(f"Successfully connected to MongoDB: {DB_NAME}.{COLLECTION_NAME}")
-    except Exception as e:
-        print(f"CRITICAL: Failed to connect to MongoDB at {MONGODB_URI}. Error: {e}")
-        client = None
-        db = None
-        collection = None
+# Global variables for MongoDB client and collection
+_mongo_client: Optional[motor.motor_asyncio.AsyncIOMotorClient] = None
+_db_collection: Optional[motor.motor_asyncio.AsyncIOMotorCollection] = None
+_mongo_lock = asyncio.Lock() # To prevent race conditions during client initialization
+
+async def initialize_mongodb_client():
+    """Initializes the MongoDB client and database collection.
+       Should be called at application startup.
+    """
+    global _mongo_client
+    global _db_collection
+
+    if not MONGODB_URI:
+        print("CRITICAL: MONGODB_URI environment variable not set. MongoDB client cannot be initialized.")
+        return
+
+    async with _mongo_lock:
+        if not _mongo_client:
+            try:
+                print(f"Initializing MongoDB client with URI: {MONGODB_URI}...")
+                _mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
+                # You can add server selection timeout or other client options here if needed
+                # Example: _mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+                
+                # Perform a simple operation to confirm connection (optional but good for startup check)
+                await _mongo_client.admin.command('ping') 
+                print("MongoDB client ping successful.")
+                
+                db = _mongo_client[DB_NAME]
+                _db_collection = db[COLLECTION_NAME]
+                print(f"MongoDB client initialized successfully. Using DB: {DB_NAME}, Collection: {COLLECTION_NAME}")
+                await create_search_indexes() # Create indexes after successful connection
+            except Exception as e:
+                print(f"CRITICAL: Failed to connect/initialize MongoDB at {MONGODB_URI}. Error: {e}")
+                _mongo_client = None
+                _db_collection = None
+        else:
+            print("MongoDB client already initialized.")
+
+async def close_mongodb_client():
+    """Closes the MongoDB client connection. Should be called at application shutdown."""
+    global _mongo_client
+    async with _mongo_lock:
+        if _mongo_client:
+            print("Closing MongoDB client connection...")
+            _mongo_client.close()
+            _mongo_client = None
+            print("MongoDB client connection closed.")
+
+async def get_db_collection() -> Optional[motor.motor_asyncio.AsyncIOMotorCollection]:
+    """Returns the MongoDB collection, attempting to initialize if not available."""
+    global _db_collection
+    if not _db_collection:
+        print("MongoDB collection not available, attempting to re-initialize client...")
+        await initialize_mongodb_client() # Attempt to re-initialize
+    return _db_collection
 
 async def search_tracks(query: str) -> Dict[str, Any]:
-    """
-    Search for tracks in MongoDB based on the filename query string.
-    
-    Args:
-        query: The search term/query string to match against filenames.
-        
-    Returns:
-        Dict containing a list of tracks matching the search criteria.
-        Returns an empty list if the database connection failed or no tracks are found.
-    """
-    if collection is None:
-        print("Search_tracks: MongoDB collection is not available.")
-        return {"tracks": []} # Return empty if DB connection failed
+    collection = await get_db_collection()
+    if not collection:
+        print("Search_tracks: MongoDB collection is not available after attempting init.")
+        return {"tracks": []}
 
-    print(f"MongoDB: Searching for tracks with filename containing: {query}")
-    
-    # Using a case-insensitive regex search for the filename
-    # The 'i' option makes it case-insensitive
-    # We escape the query to ensure any special regex characters in the query string are treated literally
+    print(f"MongoDB: Searching for tracks with query: {query}")
     escaped_query = re.escape(query)
     mongo_query = {
-        "file.filename": {"$regex": escaped_query, "$options": "i"}
+        "$or": [
+            {"file.filename": {"$regex": escaped_query, "$options": "i"}},
+            {"info.title": {"$regex": escaped_query, "$options": "i"}},
+            {"info.artist": {"$regex": escaped_query, "$options": "i"}} # Added artist to search fields
+        ]
     }
     
     results = []
     try:
-        # Limit results to, for example, 20 tracks
         cursor = collection.find(mongo_query).limit(20)
         async for doc in cursor:
-            # Transform document to the expected frontend structure
-            # Ensure info.length is converted to an integer
             duration = 0
             if doc.get("info") and doc["info"].get("length"):
                 try:
-                    duration = int(doc["info"]["length"])
-                except ValueError:
-                    print(f"Warning: Could not convert length to int for track {doc.get('_id')}")
-                    duration = 0 # Default or skip
+                    duration = int(float(doc["info"]["length"])) 
+                except (ValueError, TypeError):
+                    duration = 0
             
-            # Fields like artist, bpm, imageUrl are missing from the provided document structure
-            # and will be omitted from the response.
-            # If you have them, you would map them here.
+            track_path = doc.get("file", {}).get("path") 
+            if not track_path:
+                 track_path = doc.get("file", {}).get("filename", "N/A")
+
             track_data = {
-                "id": str(doc.get("_id")), # Convert ObjectId to string
-                "title": doc.get("info", {}).get("title", "N/A"),
-                "artist": doc.get("info", {}).get("artist", "N/A"), # Assuming artist might be in info
+                "id": str(doc.get("_id")),
+                "artist": doc.get("info", {}).get("artist", "N/A"),
                 "duration": duration,
-                "genre": doc.get("info", {}).get("genre", "N/A"),
-                "bpm": doc.get("info", {}).get("bpm", 0), # Assuming bpm might be in info
-                "imageUrl": doc.get("info", {}).get("imageUrl", "") # Assuming imageUrl might be in info
+                "path": track_path 
             }
             results.append(track_data)
-            
-        print(f"MongoDB: Found {len(results)} tracks for query: '{query}'")
-        
+    except motor.motor_asyncio.core.ServerSelectionTimeoutError as e: # Specific error for connection issues
+        print(f"MongoDB Server Selection Timeout during search: {e}. Resetting client for next attempt.")
+        global _mongo_client
+        async with _mongo_lock:
+             _mongo_client = None # Force re-init on next get_db_collection call
+        return {"tracks": []}
     except Exception as e:
         print(f"Error during MongoDB search: {e}")
-        # Depending on the error, you might want to return a specific error message
-        # For now, returning empty list on error after initial connection check.
         return {"tracks": []}
         
     return {"tracks": results}
 
-
-# Optional: You might want to add a function to create indexes if they don't exist.
-# This is usually done once, either manually or programmatically.
 async def create_search_indexes():
-    if collection is None:
-        print("Create_search_indexes: MongoDB collection is not available.")
+    """Creates necessary text indexes on the collection."""
+    # This function now uses get_db_collection to ensure client is initialized.
+    collection_to_index = await get_db_collection()
+    if not collection_to_index:
+        print("Create_search_indexes: MongoDB collection is not available. Cannot create indexes.")
         return
     try:
-        # Index for filename searches (ascending text index recommended for regex on string fields)
-        await collection.create_index([("file.filename", "text")], name="filename_text_index")
-        print("Successfully created/ensured 'filename_text_index' on Tracks collection.")
-        
-        # Alternatively, for prefix regex searches or exact matches, a standard index can be useful:
-        # await collection.create_index([("file.filename", 1)], name="filename_ascending_index")
-        # print("Successfully created/ensured 'filename_ascending_index' on Tracks collection.")
-
+        # Updated index to include artist
+        index_model = [("file.filename", "text"), ("info.title", "text"), ("info.artist", "text")]
+        await collection_to_index.create_index(index_model, name="filename_title_artist_text_index")
+        print("Successfully created/ensured 'filename_title_artist_text_index' on Tracks collection.")
     except Exception as e:
         print(f"Error creating indexes: {e}")
 
