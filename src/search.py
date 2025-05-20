@@ -75,7 +75,7 @@ async def close_mongodb_client():
     """Closes the MongoDB client connection. Should be called at application shutdown."""
     global _mongo_client
     async with _mongo_lock:
-        if _mongo_client:
+        if _mongo_client is not None:
             print("Closing MongoDB client connection...")
             _mongo_client.close()
             _mongo_client = None
