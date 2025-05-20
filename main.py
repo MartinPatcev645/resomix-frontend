@@ -7,6 +7,10 @@ from starlette.status import HTTP_403_FORBIDDEN, HTTP_422_UNPROCESSABLE_ENTITY, 
 from starlette.middleware.cors import CORSMiddleware
 import uuid
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import modules
 from src.ffmpeg import validate_audio_format, is_ffmpeg_installed
