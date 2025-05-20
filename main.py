@@ -1,12 +1,13 @@
 import shutil
 import os
+from contextlib import asynccontextmanager # For lifespan manager
 from fastapi import FastAPI, File, UploadFile, HTTPException, Security, Depends, Query, Body, status
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_415_UNSUPPORTED_MEDIA_TYPE, HTTP_503_SERVICE_UNAVAILABLE
 from starlette.middleware.cors import CORSMiddleware
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, AsyncGenerator # For lifespan type hint
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
@@ -31,21 +32,26 @@ API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, 
 # Set up API key security - using query parameter as specified in frontend
 api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
 
+# Lifespan context manager
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
+    print("Application startup: Initializing external services via lifespan...")
+    await initialize_gspread_client_on_startup()
+    # You can add other startup initializations here if needed
+    print("Application startup: External services initialization complete (lifespan).")
+    yield
+    # Shutdown logic can go here if needed, e.g., closing connections
+    print("Application shutdown: Cleaning up resources (lifespan)...")
+
 # Create FastAPI app with description and version
 app = FastAPI(
     title="Resomix API",
     description="API for audio similarity search and track information",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan # Use the lifespan manager
 )
 
 # Startup event to initialize Google Sheets Client
-@app.on_event("startup")
-async def startup_event():
-    print("Application startup: Initializing external services...")
-    await initialize_gspread_client_on_startup()
-    # You can add other startup initializations here if needed
-    # For example, check MongoDB connection, etc.
-    print("Application startup: External services initialization complete.")
 
 # CORS (Cross-Origin Resource Sharing) Middleware
 
