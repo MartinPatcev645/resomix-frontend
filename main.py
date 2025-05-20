@@ -8,13 +8,14 @@ from starlette.middleware.cors import CORSMiddleware
 import uuid
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Import modules
 from src.ffmpeg import validate_audio_format, is_ffmpeg_installed
-from src.similarity import calculate_similarity
+from src.similarity import calculate_similarity_for_upload, get_similarity_by_path
 from src.search import search_tracks
 from src.feedback import process_feedback, process_contact
 from src.utils import format_response, sanitize_filename, log_request
@@ -73,6 +74,10 @@ FEEDBACK_DIR = "feedback_data"
 if not os.path.exists(FEEDBACK_DIR):
     os.makedirs(FEEDBACK_DIR)
 
+# Pydantic model for the /get_selection_similarity/ request body
+class SimilarityByPathRequest(BaseModel):
+    server_track_path: str
+    top_k: Optional[int] = 10
 
 async def get_api_key(
     api_key_query: str = Security(api_key_query),
@@ -87,7 +92,7 @@ async def get_api_key(
 
 
 @app.post("/get_similarity/")
-async def get_similarity_endpoint(
+async def get_similarity_upload_endpoint(
     file: UploadFile = File(...), 
     api_key: str = Security(get_api_key)
 ):
@@ -96,7 +101,7 @@ async def get_similarity_endpoint(
     
     - **file**: The audio file to analyze (max 50MB)
     """
-    log_request("get_similarity", "POST", {"filename": file.filename})
+    log_request("get_similarity (upload)", "POST", {"filename": file.filename})
     
     # File Size Check
     if file.size > MAX_FILE_SIZE:
@@ -156,8 +161,14 @@ async def get_similarity_endpoint(
             buffer.write(audio_bytes)
 
         # Process the file and get similarity results
-        similarity_results = await calculate_similarity(temp_file_path)
+        similarity_results = await calculate_similarity_for_upload(temp_file_path)
         
+        if similarity_results.get("success") is False:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+            )
+
         # Return success response with the similarity data
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -166,7 +177,7 @@ async def get_similarity_endpoint(
 
     except Exception as e:
         # Log the exception for debugging
-        print(f"An error occurred in get_similarity: {e}")
+        print(f"An error occurred in get_similarity (upload): {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=format_response(success=False, error="An internal server error occurred.")
@@ -269,6 +280,50 @@ async def root():
         "status": "running",
         "docs_url": "/docs"
     }
+
+
+@app.post("/get_selection_similarity/")
+async def get_similarity_by_path_endpoint(
+    request_data: SimilarityByPathRequest,
+    api_key: str = Security(get_api_key)
+):
+    """
+    Get similar tracks for a track identified by its path on the similarity server.
+    
+    - **server_track_path**: The file path of the track on the similarity server.
+    - **top_k** (optional): Number of similar tracks to return (default: 10).
+    """
+    log_request("get_selection_similarity", "POST", {"server_track_path": request_data.server_track_path, "top_k": request_data.top_k})
+
+    if not request_data.server_track_path or not request_data.server_track_path.strip():
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=format_response(success=False, error="server_track_path cannot be empty.")
+        )
+
+    try:
+        similarity_results = await get_similarity_by_path(
+            server_track_path=request_data.server_track_path,
+            top_k=request_data.top_k
+        )
+
+        if similarity_results.get("success") is False:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed for path."))
+            )
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=format_response(success=True, data=similarity_results)
+        )
+
+    except Exception as e:
+        print(f"An error occurred in get_selection_similarity: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=format_response(success=False, error="An internal server error occurred while processing similarity by path.")
+        )
 
 
 if __name__ == "__main__":
