@@ -5,11 +5,11 @@ Similarity Module
 This module provides functionality for calculating audio similarity by interacting with a dedicated similarity microservice.
 
 Functions:
-- calculate_similarity_for_upload: Processes an uploaded audio file and returns similar tracks.
+- calculate_similarity_for_upload: Processes an uploaded audio file (bytes) and returns similar tracks.
 - get_similarity_by_path: Gets similar tracks for a given server-side file path.
 
 Author: AI Assistant
-Date: May 2023 (Updated for microservice integration)
+Date: May 2023 (Updated for microservice integration and byte-based uploads)
 """
 
 import os
@@ -69,6 +69,7 @@ async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, fi
     async with httpx.AsyncClient(timeout=60.0) as client: # Increased timeout for potential processing
         try:
             if files:
+                # Files can contain bytes directly: (filename, file_bytes, content_type)
                 response = await client.post(target_url, files=files, data=data)
             else:
                 response = await client.post(target_url, json=data)
@@ -90,54 +91,46 @@ async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, fi
             print(f"Generic error calling similarity server {target_url}: {e}")
             return {"status": "error", "message": f"An unexpected error occurred while contacting similarity service: {e}", "results": []}
 
-async def calculate_similarity_for_upload(audio_file_path: str, top_k: int = 10) -> Dict[str, Any]:
+async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename: str, top_k: int = 10) -> Dict[str, Any]:
     """
-    Sends an uploaded audio file to the similarity server and returns enriched similar tracks.
+    Sends uploaded audio bytes to the similarity server and returns enriched similar tracks.
+    Args:
+        audio_bytes: The raw bytes of the audio file.
+        original_filename: The original filename, used for context/logging and passed to server.
+        top_k: Number of similar tracks to return.
     """
-    if not os.path.exists(audio_file_path):
-        return {"success": False, "error": "Temporary audio file not found for similarity processing."}
+    if not audio_bytes:
+        return {"success": False, "error": "Audio data is empty for similarity processing."}
 
-    # Prepare file for upload
-    with open(audio_file_path, "rb") as f:
-        files = {"file": (os.path.basename(audio_file_path), f, "application/octet-stream")}
-        data = {"top_k": top_k}
-        
-        similarity_response = await _call_similarity_server("/query-by-upload/", data=data, files=files)
+    # Prepare file data for upload directly from bytes
+    # The tuple format for files is (filename, file_object_or_bytes, content_type)
+    # Using a generic content type, as the similarity server should ideally determine type from content
+    # or rely on its own processing. If it strictly needs a specific one, adjust here.
+    files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
+    request_data = {"top_k": top_k}
+    
+    similarity_response = await _call_similarity_server("/query-by-upload/", data=request_data, files=files_data)
 
     if not similarity_response or similarity_response.get("status") == "error":
         error_message = similarity_response.get("message", "Failed to get response from similarity server or an error occurred.") if similarity_response else "No response from similarity server."
         return {"success": False, "error": error_message}
 
-    # Assuming similarity_response["results"] is a list of items, potentially just paths or simple dicts
-    # Example: results = [{"path": "path1", "score": 0.9}, {"path": "path2", "score": 0.8}]
-    # We need to extract the identifiers (e.g., paths) to fetch full details.
     raw_results = similarity_response.get("results", [])
-    
-    # Extract paths (or other identifiers) from raw_results
-    # This depends on the exact structure of `raw_results` from your similarity server.
-    # Assuming each item in raw_results is a dict with a 'path' key for this example:
     track_identifiers = [res.get("path") for res in raw_results if res.get("path")]
-    # Or if it's just a list of paths: track_identifiers = raw_results
 
-    if not track_identifiers:
-        enriched_similar_tracks = []
-    else:
+    enriched_similar_tracks = []
+    if track_identifiers:
         enriched_similar_tracks = await _fetch_track_details_from_db_by_path(track_identifiers)
     
-    # Mock duration of the uploaded track for now. 
-    # In a real scenario, extract from file metadata (e.g., using ffprobe again or a library like mutagen)
-    # For example, you could call ffprobe on audio_file_path here if needed.
-    mock_duration_uploaded = 180 
-    if os.path.exists(audio_file_path):
-        try:
-            # This is a very rough estimation, replace with actual duration extraction
-            mock_duration_uploaded = int(os.path.getsize(audio_file_path) / (160 * 1024)) # Assuming roughly 160kbps stereo
-            if mock_duration_uploaded < 10: mock_duration_uploaded = 10 # min duration
-        except:
-            pass # ignore if fails
+    # Duration estimation from bytes is harder without saving and using ffprobe again.
+    # The similarity server should ideally return the duration of the processed uploaded track.
+    # For now, a very rough estimate based on byte length (highly inaccurate).
+    # Consider removing this or making it clear it's a placeholder if server doesn't provide duration.
+    mock_duration_uploaded = int(len(audio_bytes) / (16000)) # Extremely rough, e.g. ~16KBps for 128kbps MP3
+    if mock_duration_uploaded < 5: mock_duration_uploaded = 5 # Min duration
 
     return {
-        "duration": mock_duration_uploaded, # Duration of the uploaded track
+        "duration": mock_duration_uploaded, # Duration of the uploaded track (IDEALLY FROM SIMILARITY SERVER)
         "similar_tracks": enriched_similar_tracks
     }
 
@@ -155,9 +148,8 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
     raw_results = similarity_response.get("results", [])
     track_identifiers = [res.get("path") for res in raw_results if res.get("path")]
 
-    if not track_identifiers:
-        enriched_similar_tracks = []
-    else:
+    enriched_similar_tracks = []
+    if track_identifiers:
         enriched_similar_tracks = await _fetch_track_details_from_db_by_path(track_identifiers)
 
     # Duration for the *queried* path (server_track_path)

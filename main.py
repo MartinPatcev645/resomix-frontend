@@ -17,7 +17,7 @@ load_dotenv()
 from src.ffmpeg import validate_audio_format, is_ffmpeg_installed
 from src.similarity import calculate_similarity_for_upload, get_similarity_by_path
 from src.search import search_tracks
-from src.feedback import process_feedback, process_contact
+from src.feedback import process_feedback, process_contact, initialize_gspread_client_on_startup
 from src.utils import format_response, sanitize_filename, log_request
 
 # Configuration
@@ -37,6 +37,15 @@ app = FastAPI(
     description="API for audio similarity search and track information",
     version="1.0.0"
 )
+
+# Startup event to initialize Google Sheets Client
+@app.on_event("startup")
+async def startup_event():
+    print("Application startup: Initializing external services...")
+    await initialize_gspread_client_on_startup()
+    # You can add other startup initializations here if needed
+    # For example, check MongoDB connection, etc.
+    print("Application startup: External services initialization complete.")
 
 # CORS (Cross-Origin Resource Sharing) Middleware
 
@@ -123,13 +132,14 @@ async def get_similarity_upload_endpoint(
             )
         )
 
-    temp_file_path = ""
-    audio_bytes = await file.read()  # Read file into memory once
-    await file.seek(0)  # Reset file pointer
+    audio_bytes = await file.read()
+    # No need to seek(0) on UploadFile if only reading once.
+    # If you were to read it again for some other purpose, then seek(0) would be needed.
 
-    # Primary validation using FFmpeg
+    original_filename = sanitize_filename(file.filename) # Sanitize once
+
     if FFMPEG_AVAILABLE:
-        is_valid_audio = validate_audio_format(audio_bytes, file.filename)
+        is_valid_audio = validate_audio_format(audio_bytes, original_filename) # Pass sanitized name
         if not is_valid_audio:
             return JSONResponse(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -138,10 +148,29 @@ async def get_similarity_upload_endpoint(
                     error="The uploaded file does not contain valid audio streams according to our analysis."
                 )
             )
-    else:
-        # Fallback if FFmpeg is not available - do a basic content type check
-        print(f"WARNING: FFmpeg not available. Performing basic content type check for: {file.filename}")
-        if not file.content_type.startswith("audio/"):
+        
+        # FFmpeg validation passed, directly use audio_bytes
+        try:
+            similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename)
+            if similarity_results.get("success") is False:
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data=similarity_results)
+            )
+        except Exception as e:
+            print(f"An error occurred in get_similarity (upload with bytes): {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred.")
+            )
+
+    else: # FFmpeg not available, fall back to saving file and basic content type check
+        print(f"WARNING: FFmpeg not available. Performing basic content type check for: {original_filename} and saving to temp file.")
+        if not file.content_type or not file.content_type.startswith("audio/"):
             return JSONResponse(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 content=format_response(
@@ -149,44 +178,50 @@ async def get_similarity_upload_endpoint(
                     error="Content-Type doesn't appear to be audio. FFmpeg validation is not available for deep analysis."
                 )
             )
-
-    try:
-        # Sanitize filename and create unique name
-        safe_filename = sanitize_filename(file.filename)
-        unique_filename = f"{str(uuid.uuid4())}_{safe_filename}"
-        temp_file_path = os.path.join(TEMP_DIR, unique_filename)
-
-        # Save the uploaded file to the temporary directory
-        with open(temp_file_path, "wb") as buffer:
-            buffer.write(audio_bytes)
-
-        # Process the file and get similarity results
-        similarity_results = await calculate_similarity_for_upload(temp_file_path)
         
-        if similarity_results.get("success") is False:
+        temp_file_path = ""
+        try:
+            # Need to re-read or use the stored audio_bytes if UploadFile stream was consumed.
+            # Since we read audio_bytes above, we can use that directly for writing.
+            unique_filename = f"{str(uuid.uuid4())}_{original_filename}"
+            temp_file_path = os.path.join(TEMP_DIR, unique_filename)
+            with open(temp_file_path, "wb") as buffer:
+                buffer.write(audio_bytes) # Write the already read bytes
+
+            # Pass the file path to the similarity function
+            # This will require calculate_similarity_for_upload to handle both bytes and path, 
+            # OR a different function. For now, let's assume we need a path if FFmpeg is not used.
+            # This part becomes tricky. The original calculate_similarity_for_upload now expects bytes.
+            # To keep it simple, if FFmpeg is not available, we might have to stick to the old way for this else block
+            # OR, ensure the similarity server can always take bytes.
+            # For now, this else block implies we'd need a function that takes path, which means we might need two versions
+            # or a more complex calculate_similarity_for_upload.
+            # Let's stick to the idea: if FFmpeg is available, we use bytes. If not, we indicate this limitation.
+            # MODIFYING: The prompt was to pass bytes if FFMPEG is green. So this else block means FFMPEG is NOT green/available.
+            # Thus, we cannot proceed with byte-based upload reliably for the *similarity server*.
+            # The similarity server itself might do its own checks. 
+            # The goal was to avoid local I/O *before* calling similarity server if FFmpeg validated.
+            print("FFmpeg not available. Cannot guarantee audio validity before sending to similarity server. Proceeding with byte upload with caution.")
+            similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename)
+            if similarity_results.get("success") is False:
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                )
             return JSONResponse(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data=similarity_results)
             )
 
-        # Return success response with the similarity data
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content=format_response(success=True, data=similarity_results)
-        )
-
-    except Exception as e:
-        # Log the exception for debugging
-        print(f"An error occurred in get_similarity (upload): {e}")
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=format_response(success=False, error="An internal server error occurred.")
-        )
-    
-    finally:
-        # Ensure the temporary file is deleted after the request
-        if temp_file_path and os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
+        except Exception as e:
+            print(f"An error occurred in get_similarity (upload, no FFmpeg, fallback with bytes): {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred.")
+            )
+        finally:
+            if temp_file_path and os.path.exists(temp_file_path):
+                os.remove(temp_file_path) # Clean up temp file if it was created
 
 
 @app.get("/search_tracks/")
