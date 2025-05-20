@@ -16,7 +16,7 @@ from src.feedback import process_feedback, process_contact
 from src.utils import format_response, sanitize_filename, log_request
 
 # Configuration
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 TEMP_DIR = "temp_audio"
 API_KEY_NAME = "api_key"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, this should be stored securely
@@ -34,11 +34,24 @@ app = FastAPI(
 )
 
 # CORS (Cross-Origin Resource Sharing) Middleware
+
+# Production Regex: Enforces HTTPS for resomix.com and its subdomains.
+# Allows: https://resomix.com, https://sub.resomix.com, https://sub.resomix.com:port
+ALLOWED_ORIGIN_REGEX = r"^https://([\w\-]+\.)*resomix\.com(:[0-9]+)?$"
+
+# Development Regex: Allows any http or https origin. Similar to allow_origins=["*"].
+# Use this for local development if you need to access the API from various local servers/ports.
+DEV_ALLOWED_ORIGIN_REGEX = r"^https?://.*"
+
+# Set the desired configuration here:
+# CURRENT_ORIGIN_REGEX = ALLOWED_ORIGIN_REGEX # Default to production
+CURRENT_ORIGIN_REGEX = DEV_ALLOWED_ORIGIN_REGEX # Uncomment for development
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins for simplicity, restrict in production
+    allow_origin_regex=CURRENT_ORIGIN_REGEX, 
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
 )
 
