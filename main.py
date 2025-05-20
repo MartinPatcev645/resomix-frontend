@@ -66,8 +66,8 @@ ALLOWED_ORIGIN_REGEX = r"^https://([\w\-]+\.)*resomix\.com(:[0-9]+)?$"
 DEV_ALLOWED_ORIGIN_REGEX = r"^https?://.*"
 
 # Set the desired configuration here:
-# CURRENT_ORIGIN_REGEX = ALLOWED_ORIGIN_REGEX # Default to production
-CURRENT_ORIGIN_REGEX = DEV_ALLOWED_ORIGIN_REGEX # Uncomment for development
+CURRENT_ORIGIN_REGEX = ALLOWED_ORIGIN_REGEX # Default to production
+# CURRENT_ORIGIN_REGEX = DEV_ALLOWED_ORIGIN_REGEX # Uncomment for development
 
 app.add_middleware(
     CORSMiddleware,
