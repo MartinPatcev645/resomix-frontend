@@ -9,87 +9,139 @@ Functions:
 - get_similarity_by_path: Gets similar tracks for a given server-side file path.
 
 Author: AI Assistant
-Date: May 2023 (Updated for microservice integration and byte-based uploads)
+Date: May 2023 (Updated for microservice integration, byte-based uploads, and improved response handling)
 """
 
 import os
 import httpx
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
+import re # For path prefix removal
 
-# It's good practice to manage MongoDB client in one place, e.g., search.py or a dedicated db module.
-# For now, we might need a way to fetch track details based on paths returned by similarity server.
-# This is a placeholder for where you might import such a function.
-# from .search import fetch_track_details_by_paths # Example import
+# Import the MongoDB collection getter from the search module
+# This assumes src/search.py and src/similarity.py are in the same directory (src)
+from .search import get_db_collection 
 
 load_dotenv()
 
 SIMILARITY_SERVER_URL = os.getenv("SIMILARITY_SERVER_URL")
+# Define the prefix to remove from similarity server paths
+PATH_PREFIX_TO_REMOVE = "/home/usman/data/"
 
-async def _fetch_track_details_from_db_by_path(track_paths: List[str]) -> List[Dict[str, Any]]:
+async def _fetch_track_details_from_db_by_path(track_paths_from_similarity_server: List[str]) -> List[Dict[str, Any]]:
     """
-    Placeholder: Fetches full track details from MongoDB based on a list of file paths.
-    You need to implement this, possibly reusing or extending logic from src/search.py
-    or creating a new database interaction function.
+    Fetches full track details from MongoDB based on a list of file paths 
+    returned by the similarity server, after transforming the paths.
+
+    Required fields in MongoDB: id, file.filename, file.size, info.album, info.length, info.title, file.path
+    (assuming file.path stores the queryable path like 'veggera/public_html/...')
     
     Args:
-        track_paths: A list of file paths returned by the similarity server.
+        track_paths_from_similarity_server: A list of absolute file paths 
+                                            (e.g., /home/usman/data/veggera/public_html/audio.mp3)
+                                            returned by the similarity server.
         
     Returns:
-        A list of dictionaries, where each dictionary contains the full track details
-        matching the frontend's expected format.
+        A list of dictionaries, where each dictionary contains the track details
+        for the requested fields.
     """
-    print(f"[Placeholder] Need to fetch details for {len(track_paths)} tracks from MongoDB.")
-    # Example structure - replace with actual DB query and data mapping
+    if not track_paths_from_similarity_server:
+        return []
+
+    # Transform paths by removing the defined prefix
+    transformed_paths = []
+    for p in track_paths_from_similarity_server:
+        if p.startswith(PATH_PREFIX_TO_REMOVE):
+            transformed_paths.append(p[len(PATH_PREFIX_TO_REMOVE):])
+        else:
+            # If path doesn't have the prefix, maybe log a warning or use as is?
+            # For now, we'll assume paths from similarity server *should* have this prefix.
+            # If not, they likely won't match anything in DB if DB paths don't have it.
+            print(f"Warning: Path '{p}' from similarity server does not start with expected prefix '{PATH_PREFIX_TO_REMOVE}'. It might not match in DB.")
+            transformed_paths.append(p) # Add it anyway, or choose to skip
+    
+    if not transformed_paths:
+        return []
+
+    print(f"Transformed paths for DB query: {transformed_paths}")
+
+    collection = await get_db_collection()
+    if collection is None:
+        print("Fetch_track_details: MongoDB collection is not available.")
+        return []
+
+    # Query MongoDB for documents where 'file.path' is in the list of transformed_paths
+    # Please confirm 'file.path' is the correct field in your MongoDB containing 'veggera/public_html/...'
+    mongo_query = {"file.path": {"$in": transformed_paths}}
+    
     detailed_tracks = []
-    for i, path in enumerate(track_paths):
-        # This is mock data. You would query MongoDB using the path.
-        detailed_tracks.append({
-            "id": str(i + 100), # Replace with actual ID from DB
-            "title": f"Title for {os.path.basename(path)}",
-            "artist": "Artist from DB",
-            "duration": 200 + i,
-            "genre": "Genre from DB",
-            "bpm": 120 + i,
-            "key": "C Major",
-            "imageUrl": f"https://example.com/image_{i}.jpg",
-            "previewUrl": f"https://example.com/preview_{i}.mp3"
-        })
+    try:
+        cursor = collection.find(mongo_query)
+        async for doc in cursor:
+            duration = 0
+            if doc.get("info") and doc["info"].get("length"):
+                try:
+                    duration = int(float(doc["info"]["length"])) 
+                except (ValueError, TypeError):
+                    duration = 0 # Default to 0 if conversion fails
+            
+            track_data = {
+                "id": str(doc.get("_id")),
+                "filename": doc.get("file", {}).get("filename", "N/A"),
+                "size": doc.get("file", {}).get("size", 0),
+                "album": doc.get("info", {}).get("album", "N/A"),
+                "duration": duration, # Using consistent field name "duration"
+                "title": doc.get("info", {}).get("title", "N/A")
+                # Removed original fields like genre, bpm, key, imageUrl, previewUrl as per new requirement
+            }
+            detailed_tracks.append(track_data)
+        
+        print(f"MongoDB: Fetched details for {len(detailed_tracks)} out of {len(transformed_paths)} requested transformed paths.")
+        
+    except Exception as e:
+        print(f"Error during MongoDB fetch for track details: {e}")
+        # Optionally, re-raise or handle more gracefully depending on desired behavior
+        return [] # Return empty list on error
+        
     return detailed_tracks
 
-async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
-    """Helper function to call the similarity server."""
+async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Dict[str, Any]:
+    """Helper function to call the similarity server. Returns the JSON response directly or a structured error."""
     if not SIMILARITY_SERVER_URL:
         print("ERROR: SIMILARITY_SERVER_URL is not set in environment variables.")
-        return None
+        return {"status": "error", "message": "Similarity server URL not configured on main server.", "results": []}
 
     target_url = f"{SIMILARITY_SERVER_URL.rstrip('/')}{endpoint}"
-    print(f"Calling similarity server: {target_url}")
+    print(f"Calling similarity server: {target_url} with data: {data}")
 
-    async with httpx.AsyncClient(timeout=60.0) as client: # Increased timeout for potential processing
+    async with httpx.AsyncClient(timeout=60.0) as client:
         try:
             if files:
-                # Files can contain bytes directly: (filename, file_bytes, content_type)
                 response = await client.post(target_url, files=files, data=data)
             else:
                 response = await client.post(target_url, json=data)
             
-            response.raise_for_status() # Raises an exception for 4XX/5XX responses
+            response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
             print(f"HTTP error calling similarity server {target_url}: {e.response.status_code} - {e.response.text}")
-            # Try to parse error from similarity server's known format
             try:
                 error_data = e.response.json()
-                return {"status": "error", "message": error_data.get("message", "Unknown error from similarity service"), "results": []}
-            except:
-                return {"status": "error", "message": f"Similarity service HTTP error: {e.response.status_code}", "results": []}
+                if "detail" in error_data:
+                    return {"status": "error", "message": str(error_data["detail"]), "results": []}
+                return {
+                    "status": error_data.get("status", "error"), 
+                    "message": error_data.get("message", f"Similarity service HTTP error: {e.response.status_code}"), 
+                    "results": error_data.get("results", [])
+                }
+            except ValueError:
+                return {"status": "error", "message": f"Similarity service HTTP error: {e.response.status_code}. Non-JSON response: {e.response.text[:200]}", "results": []}
         except httpx.RequestError as e:
             print(f"Request error calling similarity server {target_url}: {e}")
             return {"status": "error", "message": f"Could not connect to similarity service: {e}", "results": []}
         except Exception as e:
             print(f"Generic error calling similarity server {target_url}: {e}")
-            return {"status": "error", "message": f"An unexpected error occurred while contacting similarity service: {e}", "results": []}
+            return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []}
 
 async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename: str, top_k: int = 10) -> Dict[str, Any]:
     """
@@ -100,39 +152,41 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
         top_k: Number of similar tracks to return.
     """
     if not audio_bytes:
+        # This is a validation on the main server side, return our standard format
         return {"success": False, "error": "Audio data is empty for similarity processing."}
 
-    # Prepare file data for upload directly from bytes
-    # The tuple format for files is (filename, file_object_or_bytes, content_type)
-    # Using a generic content type, as the similarity server should ideally determine type from content
-    # or rely on its own processing. If it strictly needs a specific one, adjust here.
     files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
-    request_data = {"top_k": top_k}
-    
+    request_data = {"top_k": top_k}    
     similarity_response = await _call_similarity_server("/query-by-upload/", data=request_data, files=files_data)
 
-    if not similarity_response or similarity_response.get("status") == "error":
-        error_message = similarity_response.get("message", "Failed to get response from similarity server or an error occurred.") if similarity_response else "No response from similarity server."
+    # Check the status from the similarity server's response
+    if similarity_response.get("status") == "success":
+        raw_results = similarity_response.get("results", [])
+        track_identifiers = [res.get("path") for res in raw_results if res.get("path")]
+        
+        enriched_similar_tracks = []
+        if track_identifiers:
+            enriched_similar_tracks = await _fetch_track_details_from_db_by_path(track_identifiers)
+        
+        # TODO: Get actual duration of uploaded track, ideally from similarity_response if provided by that server
+        # For now, using a placeholder. If similarity_response includes it, use that.
+        mock_duration_uploaded = similarity_response.get("processed_track_duration") 
+        if mock_duration_uploaded is None:
+             mock_duration_uploaded = int(len(audio_bytes) / 16000) # Fallback placeholder
+             if mock_duration_uploaded < 5: mock_duration_uploaded = 5
+
+        return {
+            "success": True, # Main server operation success
+            # "original_message": similarity_response.get("message"), # Optionally pass server message
+            "data": { # This matches the expected format for the frontend via format_response
+                 "duration": mock_duration_uploaded, 
+                 "similar_tracks": enriched_similar_tracks
+            }
+        }
+    else:
+        # Error reported by the similarity server or connection issue handled by _call_similarity_server
+        error_message = similarity_response.get("message", "Unknown error during similarity processing.")
         return {"success": False, "error": error_message}
-
-    raw_results = similarity_response.get("results", [])
-    track_identifiers = [res.get("path") for res in raw_results if res.get("path")]
-
-    enriched_similar_tracks = []
-    if track_identifiers:
-        enriched_similar_tracks = await _fetch_track_details_from_db_by_path(track_identifiers)
-    
-    # Duration estimation from bytes is harder without saving and using ffprobe again.
-    # The similarity server should ideally return the duration of the processed uploaded track.
-    # For now, a very rough estimate based on byte length (highly inaccurate).
-    # Consider removing this or making it clear it's a placeholder if server doesn't provide duration.
-    mock_duration_uploaded = int(len(audio_bytes) / (16000)) # Extremely rough, e.g. ~16KBps for 128kbps MP3
-    if mock_duration_uploaded < 5: mock_duration_uploaded = 5 # Min duration
-
-    return {
-        "duration": mock_duration_uploaded, # Duration of the uploaded track (IDEALLY FROM SIMILARITY SERVER)
-        "similar_tracks": enriched_similar_tracks
-    }
 
 async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dict[str, Any]:
     """
@@ -141,30 +195,53 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
     payload = {"file_path": server_track_path, "top_k": top_k}
     similarity_response = await _call_similarity_server("/query-by-path/", data=payload)
 
-    if not similarity_response or similarity_response.get("status") == "error":
-        error_message = similarity_response.get("message", "Failed to get response from similarity server or an error occurred.") if similarity_response else "No response from similarity server."
+    # Fetch duration of the queried track from our DB first (if possible)
+    # This is independent of similarity server success for *finding similar tracks*
+    duration_of_queried_track = 0
+    try:
+        queried_track_details_list = await _fetch_track_details_from_db_by_path([server_track_path])
+        if queried_track_details_list and queried_track_details_list[0].get("duration") is not None:
+            duration_of_queried_track = queried_track_details_list[0]["duration"]
+        else:
+            # If not in DB or no duration, use a default or indicate it's unknown
+            # The similarity server itself does not return the duration of the source track for path queries.
+            duration_of_queried_track = 0 # Or a specific value like -1 to indicate unknown
+            print(f"Warning: Duration for queried path '{server_track_path}' not found in local DB.")
+    except Exception as e:
+        print(f"Error fetching duration for queried path '{server_track_path}' from DB: {e}")
+        duration_of_queried_track = 0 # Default on error
+
+    if similarity_response.get("status") == "success":
+        raw_results = similarity_response.get("results", [])
+        track_identifiers = [res.get("path") for res in raw_results if res.get("path")]
+        
+        enriched_similar_tracks = []
+        if track_identifiers:
+            # Exclude the queried track itself from the similar tracks list if it appears
+            # This assumes track_identifiers contains paths that are comparable to server_track_path
+            filtered_identifiers = [tid for tid in track_identifiers if tid != server_track_path]
+            if filtered_identifiers:
+                 enriched_similar_tracks = await _fetch_track_details_from_db_by_path(filtered_identifiers)
+
+        return {
+            "success": True,
+            "data": {
+                "duration": duration_of_queried_track, 
+                "similar_tracks": enriched_similar_tracks
+            }
+        }
+    elif similarity_response.get("status") == "not_found":
+        # Path not found on similarity server, but we might still have its duration from our DB.
+        # Return success=True because the API call to main server was fine, but data reflects the finding.
+        return {
+            "success": True, 
+            "data": {
+                "duration": duration_of_queried_track, 
+                "similar_tracks": [],
+                "message": similarity_response.get("message", f"Track '{server_track_path}' not processed by similarity server.")
+            }
+        }
+    else:
+        # Error from similarity server
+        error_message = similarity_response.get("message", "Unknown error from similarity server.")
         return {"success": False, "error": error_message}
-
-    raw_results = similarity_response.get("results", [])
-    track_identifiers = [res.get("path") for res in raw_results if res.get("path")]
-
-    enriched_similar_tracks = []
-    if track_identifiers:
-        enriched_similar_tracks = await _fetch_track_details_from_db_by_path(track_identifiers)
-
-    # Duration for the *queried* path (server_track_path)
-    # This would also ideally come from fetching its details from DB
-    # For now, if we have its details in enriched_similar_tracks (if it's among them) or query separately
-    duration_of_queried_track = 0 # Placeholder
-    queried_track_details = await _fetch_track_details_from_db_by_path([server_track_path])
-    if queried_track_details and queried_track_details[0].get("duration"):
-        duration_of_queried_track = queried_track_details[0]["duration"]
-    else: # Fallback rough estimate if not found or no duration
-        if os.path.exists(server_track_path): # This path is on the *similarity server*, not main server
-            # We can't directly get its size here. The similarity server or DB should provide duration.            
-            duration_of_queried_track = 200 # Default placeholder for path based query
-
-    return {
-        "duration": duration_of_queried_track, # Duration of the track specified by server_track_path
-        "similar_tracks": enriched_similar_tracks
-    }
