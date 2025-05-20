@@ -74,24 +74,26 @@ async def initialize_mongodb_client():
 async def close_mongodb_client():
     """Closes the MongoDB client connection. Should be called at application shutdown."""
     global _mongo_client
+    global _db_collection
     async with _mongo_lock:
         if _mongo_client is not None:
             print("Closing MongoDB client connection...")
             _mongo_client.close()
             _mongo_client = None
+            _db_collection = None
             print("MongoDB client connection closed.")
 
 async def get_db_collection() -> Optional[motor.motor_asyncio.AsyncIOMotorCollection]:
     """Returns the MongoDB collection, attempting to initialize if not available."""
     global _db_collection
-    if not _db_collection:
+    if _db_collection is None:
         print("MongoDB collection not available, attempting to re-initialize client...")
         await initialize_mongodb_client() # Attempt to re-initialize
     return _db_collection
 
 async def search_tracks(query: str) -> Dict[str, Any]:
     collection = await get_db_collection()
-    if not collection:
+    if collection is None:
         print("Search_tracks: MongoDB collection is not available after attempting init.")
         return {"tracks": []}
 
@@ -131,7 +133,10 @@ async def search_tracks(query: str) -> Dict[str, Any]:
         print(f"MongoDB Server Selection Timeout during search: {e}. Resetting client for next attempt.")
         global _mongo_client
         async with _mongo_lock:
-             _mongo_client = None # Force re-init on next get_db_collection call
+             if _mongo_client is not None: # Check before closing if it was reset by another coroutine
+                 _mongo_client.close() # Explicitly close before resetting
+             _mongo_client = None
+             _db_collection = None # Also reset collection
         return {"tracks": []}
     except Exception as e:
         print(f"Error during MongoDB search: {e}")
@@ -143,7 +148,7 @@ async def create_search_indexes():
     """Creates necessary text indexes on the collection."""
     # This function now uses get_db_collection to ensure client is initialized.
     collection_to_index = await get_db_collection()
-    if not collection_to_index:
+    if collection_to_index is None:
         print("Create_search_indexes: MongoDB collection is not available. Cannot create indexes.")
         return
     try:
