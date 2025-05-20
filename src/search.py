@@ -153,9 +153,9 @@ async def create_search_indexes():
         return
     try:
         # Updated index to include artist
-        index_model = [("file.filename", "text"), ("info.title", "text"), ("info.artist", "text")]
-        await collection_to_index.create_index(index_model, name="filename_title_artist_text_index")
-        print("Successfully created/ensured 'filename_title_artist_text_index' on Tracks collection.")
+        index_model = [("file.filename", "text"), ("info.artist", "text")]
+        await collection_to_index.create_index(index_model, name="filename_artist_text_index")
+        print("Successfully created/ensured 'filename_artist_text_index' on Tracks collection.")
     except Exception as e:
         print(f"Error creating indexes: {e}")
 
