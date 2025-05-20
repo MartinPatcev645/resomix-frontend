@@ -55,8 +55,6 @@ async def _fetch_track_details_from_db_by_path(track_paths_from_similarity_serve
     if not relative_paths_to_query:
         return {}
 
-    print(f"Transformed relative paths for DB query: {list(relative_paths_to_query)}")
-
     collection = await get_db_collection()
     if collection is None:
         print("Fetch_track_details: MongoDB collection is not available.")
