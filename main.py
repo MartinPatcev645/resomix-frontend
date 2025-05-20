@@ -86,9 +86,9 @@ if not FFMPEG_AVAILABLE:
     print("WARNING: FFmpeg is not installed or not found in PATH. Audio file validation will be skipped.")
 
 # Create feedback data directory if it doesn't exist
-FEEDBACK_DIR = "feedback_data"
-if not os.path.exists(FEEDBACK_DIR):
-    os.makedirs(FEEDBACK_DIR)
+# FEEDBACK_DIR = "feedback_data"
+# if not os.path.exists(FEEDBACK_DIR):
+#     os.makedirs(FEEDBACK_DIR)
 
 # Pydantic model for the /get_selection_similarity/ request body
 class SimilarityByPathRequest(BaseModel):
@@ -335,6 +335,7 @@ async def get_similarity_by_path_endpoint(
     - **server_track_path**: The file path of the track on the similarity server.
     - **top_k** (optional): Number of similar tracks to return (default: 10).
     """
+    print("GOT HERE")
     log_request("get_selection_similarity", "POST", {"server_track_path": request_data.server_track_path, "top_k": request_data.top_k})
 
     if not request_data.server_track_path or not request_data.server_track_path.strip():
