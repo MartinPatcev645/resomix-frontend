@@ -64,7 +64,8 @@ async def get_gspread_client():
         return None
 
 async def append_to_sheet(worksheet_name: str, data_row: list):
-    """Appends a row of data to the specified worksheet in the Google Sheet."""
+    """Appends a row of data to the specified worksheet in the Google Sheet,
+    inserting it into the next available row based on the first column."""
     if not GOOGLE_SHEET_ID:
         print("ERROR: GOOGLE_SHEET_ID environment variable not set.")
         return False
@@ -76,8 +77,17 @@ async def append_to_sheet(worksheet_name: str, data_row: list):
     try:
         spreadsheet = await agc.open_by_key(GOOGLE_SHEET_ID)
         worksheet = await spreadsheet.worksheet(worksheet_name)
-        await worksheet.append_row(data_row)
-        print(f"Successfully appended data to Google Sheet: {worksheet_name}")
+        
+        # Get all values from the first column to determine the next empty row
+        # This assumes your first column (e.g., Timestamp) is always filled for every data row.
+        first_column_values = await worksheet.col_values(1) # col_values is 1-indexed
+        next_row_index = len(first_column_values) + 1
+        
+        # Insert the new row at the calculated index.
+        # Using value_input_option='USER_ENTERED' can help with formatting and type interpretation.
+        await worksheet.insert_row(data_row, index=next_row_index, value_input_option='USER_ENTERED')
+        
+        print(f"Successfully inserted data into Google Sheet: '{worksheet_name}' at row {next_row_index}")
         return True
     except gspread_asyncio.gspread.exceptions.WorksheetNotFound:
         print(f"ERROR: Worksheet '{worksheet_name}' not found in Google Sheet ID {GOOGLE_SHEET_ID}. Please create it.")
