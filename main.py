@@ -1,5 +1,6 @@
 import shutil
 import os
+import asyncio # Added for asyncio.to_thread
 from contextlib import asynccontextmanager # For lifespan manager
 from fastapi import FastAPI, File, UploadFile, HTTPException, Security, Depends, Query, Body, status
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
@@ -20,6 +21,7 @@ from src.similarity import calculate_similarity_for_upload, get_similarity_by_pa
 from src.search import search_tracks, initialize_mongodb_client, close_mongodb_client, get_track_path_by_id
 from src.feedback import process_feedback, process_contact, initialize_gspread_client_on_startup
 from src.utils import format_response, sanitize_filename, log_request
+from src.metadata_extraction import extract_metadata_from_file_object # New import
 
 # Configuration
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
@@ -43,13 +45,16 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     yield
     print("Application shutdown: Cleaning up resources (lifespan)...")
     await close_mongodb_client()
+    if os.path.exists(TEMP_DIR):
+        shutil.rmtree(TEMP_DIR) # Clean up temp directory on shutdown
+        print(f"Cleaned up temporary directory: {TEMP_DIR}")
     print("Application shutdown: Resource cleanup complete (lifespan).")
 
 # Create FastAPI app with description and version
 app = FastAPI(
     title="Resomix API",
-    description="API for audio similarity search and track information",
-    version="1.0.0",
+    description="API for audio similarity search, track information, and metadata extraction",
+    version="1.0.1", # Incremented version
     lifespan=lifespan # Use the lifespan manager
 )
 
@@ -106,6 +111,58 @@ async def get_api_key(
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
         )
 
+@app.post("/metadata/")
+async def get_metadata_endpoint(
+    file: UploadFile = File(...),
+    api_key: str = Security(get_api_key)
+):
+    """
+    Extracts and returns metadata from an uploaded audio file using Mutagen.
+    """
+    log_request("metadata", "POST", {"filename": file.filename, "content_type": file.content_type})
+
+    if file.size == 0:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=format_response(success=False, error="File is empty. Please upload a valid audio file.")
+        )
+    
+    if file.size > MAX_FILE_SIZE: # Apply general max file size
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=format_response(success=False, error=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)}MB.")
+        )
+
+    try:
+        # Read file content into a temporary in-memory BytesIO object or save to temp file if too large
+        # For Mutagen, passing file.file (SpooledTemporaryFile) directly is often fine.
+        # asyncio.to_thread is crucial here as Mutagen's operations can be blocking.
+        extracted_meta = await asyncio.to_thread(extract_metadata_from_file_object, file.file)
+        
+        if "error" in extracted_meta: # If Mutagen reported an error (e.g., unsupported format)
+            return JSONResponse(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, # Or 422 if it's more a processing error
+                content=format_response(success=False, error=extracted_meta["error"])
+            )
+        
+        response_data = {
+            "filename": sanitize_filename(file.filename),
+            "metadata": extracted_meta
+        }
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=format_response(success=True, data=response_data)
+        )
+
+    except Exception as e:
+        print(f"An unexpected error occurred in /metadata endpoint: {e}")
+        # Ensure to close the file if it was opened, though UploadFile handles this.
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=format_response(success=False, error=f"An internal server error occurred while extracting metadata: {e}")
+        )
+    finally:
+        await file.close() # Ensure the uploaded file is closed
 
 @app.post("/get_similarity/")
 async def get_similarity_upload_endpoint(
@@ -318,7 +375,7 @@ async def root():
     """Root endpoint that returns API information"""
     return {
         "name": "Resomix API",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "status": "running",
         "docs_url": "/docs"
     }
