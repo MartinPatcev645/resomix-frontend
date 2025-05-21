@@ -13,7 +13,7 @@ Date: May 2023
 """
 
 from mutagen import File as MutagenFile, MutagenError
-from mutagen.id3 import ID3, Frames, PictureType, ID3TimeStamp
+from mutagen.id3 import ID3,Frames, PictureType
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.flac import FLAC, Picture
@@ -28,23 +28,22 @@ import base64
 def _to_serializable(value):
     """Converts Mutagen values to JSON serializable types."""
     if isinstance(value, list):
+        # If it's a list of Mutagen-specific objects, try to get text or just convert to string
         return [_to_serializable(item) for item in value]
     if hasattr(value, 'text'):
         return value.text
-    if isinstance(value, ID3TimeStamp):
-        return str(value)
     if isinstance(value, bytes):
+        # For binary data like embedded images, we might want to represent it differently
+        # For now, let's return a placeholder or base64 encode if it's small
+        # Or simply indicate its presence and type.
+        # For simplicity here, just a string representation of bytes if not directly text.
         try:
             return value.decode('utf-8', errors='replace')
         except UnicodeDecodeError:
             return f"<binary data: {len(value)} bytes>"
     if isinstance(value, (int, float, str, bool)) or value is None:
         return value
-    
-    if hasattr(value, '__module__') and 'mutagen' in value.__module__:
-        return str(value)
-        
-    return str(value)
+    return str(value) # Fallback for other types
 
 def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
     """
@@ -145,10 +144,8 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
                         })
                     # Fallback for other frame types
                     elif not tags_dict.get(frame_key):
-                         try: tags_dict[frame_key] = _to_serializable(frame) # Pass the whole frame to _to_serializable
-                         except Exception as e_frame: 
-                             print(f"Could not serialize frame {frame_key} directly: {e_frame}")
-                             tags_dict[frame_key] = "<complex frame data>"
+                         try: tags_dict[frame_key] = str(frame) # Generic representation
+                         except: tags_dict[frame_key] = "<complex frame data>"
             except TypeError as te:
                 if "missing 1 required positional argument: 'self'" in str(te):
                     # This should ideally not be hit now with the isinstance check, but kept for safety
@@ -198,7 +195,7 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
             for key, value_list in audio.tags.items(): # Vorbis comments are key-value lists
                 key = key.lower().replace(" ", "_")
                 # value_list is always a list of strings for Vorbis comments
-                tags_dict[key] = [_to_serializable(v) for v in value_list] if isinstance(value_list, list) else _to_serializable(value_list)
+                tags_dict[key] = value_list if len(value_list) > 1 else value_list[0] if value_list else None
             if isinstance(audio, FLAC) and hasattr(audio, 'pictures') and audio.pictures:
                 if not tags_dict.get("embedded_pictures"): tags_dict["embedded_pictures"] = []
                 for pic in audio.pictures:
@@ -240,14 +237,10 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
         if not any(k.startswith("error_processing") for k in tags_dict):
              metadata["tags"] = tags_dict
         else: # Transfer error messages to the main metadata dict if they occurred
-            for key, value in list(tags_dict.items()): # Use list(items()) for safe iteration if modifying dict
+            for key, value in tags_dict.items():
                 if key.startswith("error_processing"):
                     metadata[key] = value # Promote error to main metadata
-                    del tags_dict[key] # Remove error from tags_dict after promoting it
-            if tags_dict: # If anything remains in tags_dict after removing errors
-                 metadata["tags"] = tags_dict
-            elif "tags" in metadata: # If tags was previously added but now empty after error promotion
-                 del metadata["tags"]
+            if "tags" in metadata: del metadata["tags"] # Clean up if it was partially made
 
     # Attempt to get streaminfo for better format identification if not already clear
     if not metadata.get("codec") and hasattr(audio, 'mime') and audio.mime:
