@@ -26,7 +26,7 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 TEMP_DIR = "temp_audio"
 API_KEY_NAME = "api_key"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, this should be stored securely
-SIMILARITY_DEFAULT_TOP_K = 10 # Global default for top_k
+SIMILARITY_DEFAULT_TOP_K = 20 # Global default for top_k
 
 # Removed ALLOWED_AUDIO_TYPES as requested - using FFmpeg for validation instead
 
