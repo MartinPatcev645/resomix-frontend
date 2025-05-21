@@ -22,40 +22,46 @@ from mutagen.oggopus import OggOpus
 from mutagen.wave import WAVE
 from mutagen.aiff import AIFF
 
+try:                                  # Mutagen ≥ 1.46 (current)
+    from mutagen.id3._util import ID3TimeStamp  # type: ignore
+except ImportError:                   # Older Mutagen – create a stub
+    class ID3TimeStamp(str):          # fallback placeholder; behaves like str
+        pass
+
 from typing import Dict, Any, IO, List, Union
 import base64
 
-def _to_serializable(value):
+def _to_serializable(value: Any) -> Any:
     """
-    Converts any Mutagen value to something the JSON encoder can cope with.
-    Only the interior logic is tweaked – the function signature is unchanged.
+    Convert any Mutagen value into something JSON-serialisable.
+    Now bullet-proof: even if ID3TimeStamp didn’t import, it’s always defined.
     """
-    # 1. -- Explicit fast-path for ID3TimeStamp objects
+    # 1) Explicit fast path for ID3TimeStamp objects
     if isinstance(value, ID3TimeStamp):
-        return str(value)                    # e.g. '2023', '2024-05-21T14:17:03'
+        return str(value)                         # '2025', '2024-11-08T12:00:03'
 
-    # 2. -- Lists / tuples first, recurse element-wise
-    if isinstance(value, (list, tuple)):
+    # 2) Lists / tuples → recurse element-wise
+    if isinstance(value, (list, tuple, set)):
         return [_to_serializable(v) for v in value]
 
-    # 3. -- Objects that *wrap* data behind .text or .url – recurse!
+    # 3) Objects exposing .text / .url properties → recurse on that payload
     if hasattr(value, "text"):
-        return _to_serializable(value.text)  # .text is usually list-like
+        return _to_serializable(value.text)
     if hasattr(value, "url"):
         return _to_serializable(value.url)
 
-    # 4. -- Raw bytes – keep your original logic
+    # 4) Raw bytes / bytearray
     if isinstance(value, (bytes, bytearray)):
         try:
             return value.decode("utf-8", errors="replace")
         except UnicodeDecodeError:
             return f"<binary data: {len(value)} bytes>"
 
-    # 5. -- Anything that JSON can already handle
+    # 5) Primitives already JSON-safe
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
 
-    # 6. -- Fallback – last resort stringification
+    # 6) Final fallback – string-ify anything unknown
     return str(value)
 
 def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
