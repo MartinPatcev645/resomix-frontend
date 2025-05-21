@@ -114,7 +114,7 @@ async def get_api_key(
 @app.post("/metadata/")
 async def get_metadata_endpoint(
     file: UploadFile = File(...),
-    api_key: str = Security(get_api_key)
+    # api_key: str = Security(get_api_key) # Removed API key security
 ):
     """
     Extracts and returns metadata from an uploaded audio file using Mutagen.
