@@ -94,7 +94,7 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
     tags_dict: Dict[str, Any] = {}
     print(f"DEBUG: audio object type: {type(audio)}")
 
-    if audio.tags is not None: # Explicitly check for None
+    if audio.tags is not None and not isinstance(audio.tags, type):
         print(f"DEBUG: audio.tags type: {type(audio.tags)}")
         try:
             for key, value in audio.tags.items():
@@ -111,51 +111,56 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
 
     # For some formats, audio.tags might not be populated, or specific tags are elsewhere
     # Example: MP3 (ID3)
-    if isinstance(audio, MP3) and hasattr(audio, "ID3") and audio.ID3 is not None:
-        print(f"DEBUG: audio.ID3 type: {type(audio.ID3)}")
-        try:
-            for key, frame in audio.ID3.items():
-                # key is usually like 'TPE1', 'TALB', etc.
-                # We want a more human-readable key if possible, and handle complex frames
-                frame_key = frame.__class__.__name__.lower() # e.g., 'tpe1'
-                if hasattr(frame, 'text'):
-                    tags_dict[frame_key] = _to_serializable(frame.text)
-                elif hasattr(frame, 'url'): # For URL frames like WXXX
-                    tags_dict[frame_key] = _to_serializable(frame.url)
-                elif isinstance(frame, list) and frame: # Some frames are lists of values
-                     tags_dict[frame_key] = [_to_serializable(f) for f in frame]
-                # Add more specific frame handling if needed (e.g., APIC for images)
-                elif key.startswith("APIC:"): # Embedded Picture
-                    if not tags_dict.get("embedded_pictures"): tags_dict["embedded_pictures"] = []
-                    tags_dict["embedded_pictures"].append({
-                        "description": frame.desc,
-                        "mime_type": frame.mime,
-                        "type": PictureType(frame.type).name if hasattr(PictureType, "name") else frame.type,
-                        "data_length": len(frame.data)
-                    })
-                elif key.startswith("COMM") or key.startswith("USLT"): # Comments or unsynced lyrics
-                    if not tags_dict.get(frame_key): tags_dict[frame_key] = []
-                    tags_dict[frame_key].append({
-                        "language": getattr(frame, 'lang', 'XXX'),
-                        "description": getattr(frame, 'desc', ''),
-                        "text": _to_serializable(getattr(frame, 'text', ''))
-                    })
-                # Fallback for other frame types
-                elif not tags_dict.get(frame_key):
-                     try: tags_dict[frame_key] = str(frame) # Generic representation
-                     except: tags_dict[frame_key] = "<complex frame data>"
-        except TypeError as te:
-            if "missing 1 required positional argument: 'self'" in str(te):
-                print(f"Caught TypeError calling audio.ID3.items(): {te}. audio.ID3 object: {audio.ID3}")
-                tags_dict["error_processing_id3_tags"] = f"Could not iterate audio.ID3 tags: {te}"
-            else:
-                raise
-        except Exception as e:
-            print(f"Generic error iterating audio.ID3.items(): {e}")
-            tags_dict["error_processing_id3_tags"] = f"Generic error iterating ID3 tags: {e}"
+    if isinstance(audio, MP3):
+        print(f"DEBUG: File is MP3 instance.")
+        if hasattr(audio, 'ID3') and isinstance(audio.ID3, ID3):
+            print(f"DEBUG: audio.ID3 is an instance of ID3, type: {type(audio.ID3)}")
+            try:
+                for key, frame in audio.ID3.items():
+                    # key is usually like 'TPE1', 'TALB', etc.
+                    # We want a more human-readable key if possible, and handle complex frames
+                    frame_key = frame.__class__.__name__.lower() # e.g., 'tpe1'
+                    if hasattr(frame, 'text'):
+                        tags_dict[frame_key] = _to_serializable(frame.text)
+                    elif hasattr(frame, 'url'): # For URL frames like WXXX
+                        tags_dict[frame_key] = _to_serializable(frame.url)
+                    elif isinstance(frame, list) and frame: # Some frames are lists of values
+                         tags_dict[frame_key] = [_to_serializable(f) for f in frame]
+                    # Add more specific frame handling if needed (e.g., APIC for images)
+                    elif key.startswith("APIC:"): # Embedded Picture
+                        if not tags_dict.get("embedded_pictures"): tags_dict["embedded_pictures"] = []
+                        tags_dict["embedded_pictures"].append({
+                            "description": frame.desc,
+                            "mime_type": frame.mime,
+                            "type": PictureType(frame.type).name if hasattr(PictureType, "name") else frame.type,
+                            "data_length": len(frame.data)
+                        })
+                    elif key.startswith("COMM") or key.startswith("USLT"): # Comments or unsynced lyrics
+                        if not tags_dict.get(frame_key): tags_dict[frame_key] = []
+                        tags_dict[frame_key].append({
+                            "language": getattr(frame, 'lang', 'XXX'),
+                            "description": getattr(frame, 'desc', ''),
+                            "text": _to_serializable(getattr(frame, 'text', ''))
+                        })
+                    # Fallback for other frame types
+                    elif not tags_dict.get(frame_key):
+                         try: tags_dict[frame_key] = str(frame) # Generic representation
+                         except: tags_dict[frame_key] = "<complex frame data>"
+            except TypeError as te:
+                if "missing 1 required positional argument: 'self'" in str(te):
+                    # This should ideally not be hit now with the isinstance check, but kept for safety
+                    print(f"Caught TypeError calling audio.ID3.items() DESPITE isinstance check: {te}. audio.ID3 object: {audio.ID3}")
+                    tags_dict["error_processing_id3_tags"] = f"Could not iterate audio.ID3 tags (unexpected TypeError): {te}"
+                else:
+                    raise
+            except Exception as e:
+                print(f"Generic error iterating audio.ID3.items(): {e}")
+                tags_dict["error_processing_id3_tags"] = f"Generic error iterating ID3 tags: {e}"
+        else:
+            print("DEBUG: MP3 file: audio.ID3 is not an instance of mutagen.id3.ID3 or does not exist.")
 
     # Example: MP4 (iTunes-style tags)
-    elif isinstance(audio, MP4) and audio.tags is not None:
+    elif isinstance(audio, MP4) and audio.tags is not None and not isinstance(audio.tags, type):
         print(f"DEBUG: MP4 audio.tags type: {type(audio.tags)}")
         try:
             for key, value in audio.tags.items():
@@ -184,7 +189,7 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
             tags_dict["error_processing_mp4_tags"] = f"Generic error iterating MP4 tags: {e}"
 
     # Example: FLAC / Ogg (Vorbis Comments)
-    elif isinstance(audio, (FLAC, OggVorbis, OggOpus)) and audio.tags is not None:
+    elif isinstance(audio, (FLAC, OggVorbis, OggOpus)) and audio.tags is not None and not isinstance(audio.tags, type):
         print(f"DEBUG: FLAC/Ogg audio.tags type: {type(audio.tags)}")
         try:
             for key, value_list in audio.tags.items(): # Vorbis comments are key-value lists
