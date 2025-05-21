@@ -26,24 +26,37 @@ from typing import Dict, Any, IO, List, Union
 import base64
 
 def _to_serializable(value):
-    """Converts Mutagen values to JSON serializable types."""
-    if isinstance(value, list):
-        # If it's a list of Mutagen-specific objects, try to get text or just convert to string
-        return [_to_serializable(item) for item in value]
-    if hasattr(value, 'text'):
-        return value.text
-    if isinstance(value, bytes):
-        # For binary data like embedded images, we might want to represent it differently
-        # For now, let's return a placeholder or base64 encode if it's small
-        # Or simply indicate its presence and type.
-        # For simplicity here, just a string representation of bytes if not directly text.
+    """
+    Converts any Mutagen value to something the JSON encoder can cope with.
+    Only the interior logic is tweaked – the function signature is unchanged.
+    """
+    # 1. -- Explicit fast-path for ID3TimeStamp objects
+    if isinstance(value, ID3TimeStamp):
+        return str(value)                    # e.g. '2023', '2024-05-21T14:17:03'
+
+    # 2. -- Lists / tuples first, recurse element-wise
+    if isinstance(value, (list, tuple)):
+        return [_to_serializable(v) for v in value]
+
+    # 3. -- Objects that *wrap* data behind .text or .url – recurse!
+    if hasattr(value, "text"):
+        return _to_serializable(value.text)  # .text is usually list-like
+    if hasattr(value, "url"):
+        return _to_serializable(value.url)
+
+    # 4. -- Raw bytes – keep your original logic
+    if isinstance(value, (bytes, bytearray)):
         try:
-            return value.decode('utf-8', errors='replace')
+            return value.decode("utf-8", errors="replace")
         except UnicodeDecodeError:
             return f"<binary data: {len(value)} bytes>"
-    if isinstance(value, (int, float, str, bool)) or value is None:
+
+    # 5. -- Anything that JSON can already handle
+    if isinstance(value, (str, int, float, bool)) or value is None:
         return value
-    return str(value) # Fallback for other types
+
+    # 6. -- Fallback – last resort stringification
+    return str(value)
 
 def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
     """
