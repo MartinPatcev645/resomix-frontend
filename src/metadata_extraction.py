@@ -34,7 +34,7 @@ import base64
 def _to_serializable(value: Any) -> Any:
     """
     Convert any Mutagen value into something JSON-serialisable.
-    Now bullet-proof: even if ID3TimeStamp didn’t import, it’s always defined.
+    Now bullet-proof: even if ID3TimeStamp didn't import, it's always defined.
     """
     # 1) Explicit fast path for ID3TimeStamp objects
     if isinstance(value, ID3TimeStamp):
@@ -146,14 +146,6 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
                     elif isinstance(frame, list) and frame: # Some frames are lists of values
                          tags_dict[frame_key] = [_to_serializable(f) for f in frame]
                     # Add more specific frame handling if needed (e.g., APIC for images)
-                    elif key.startswith("APIC:"): # Embedded Picture
-                        if not tags_dict.get("embedded_pictures"): tags_dict["embedded_pictures"] = []
-                        tags_dict["embedded_pictures"].append({
-                            "description": frame.desc,
-                            "mime_type": frame.mime,
-                            "type": PictureType(frame.type).name if hasattr(PictureType, "name") else frame.type,
-                            "data_length": len(frame.data)
-                        })
                     elif key.startswith("COMM") or key.startswith("USLT"): # Comments or unsynced lyrics
                         if not tags_dict.get(frame_key): tags_dict[frame_key] = []
                         tags_dict[frame_key].append({
@@ -187,16 +179,6 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
                 clean_key = key.lstrip('©').lstrip('-').lstrip('gnre') if isinstance(key, str) else str(key)
                 clean_key = clean_key.lower().replace(" ", "_")
                 tags_dict[clean_key] = _to_serializable(value)
-                if key == "covr" and isinstance(value, list):
-                    if not tags_dict.get("embedded_pictures"): tags_dict["embedded_pictures"] = []
-                    for i, cover_data in enumerate(value):
-                        if isinstance(cover_data, MP4Cover):
-                            tags_dict["embedded_pictures"].append({
-                                "description": f"cover_{i}",
-                                "mime_type": "image/jpeg" if cover_data.imageformat == MP4Cover.FORMAT_JPEG else "image/png",
-                                "type": "COVER_FRONT", # MP4 doesn't have types like ID3 pictures
-                                "data_length": len(cover_data)
-                            })
         except TypeError as te:
             if "missing 1 required positional argument: 'self'" in str(te):
                 print(f"Caught TypeError calling MP4 audio.tags.items(): {te}. audio.tags object: {audio.tags}")
@@ -215,18 +197,6 @@ def extract_metadata_from_file_object(file_obj: IO[bytes]) -> Dict[str, Any]:
                 key = key.lower().replace(" ", "_")
                 # value_list is always a list of strings for Vorbis comments
                 tags_dict[key] = value_list if len(value_list) > 1 else value_list[0] if value_list else None
-            if isinstance(audio, FLAC) and hasattr(audio, 'pictures') and audio.pictures:
-                if not tags_dict.get("embedded_pictures"): tags_dict["embedded_pictures"] = []
-                for pic in audio.pictures:
-                    tags_dict["embedded_pictures"].append({
-                        "description": pic.desc,
-                        "mime_type": pic.mime,
-                        "type": PictureType(pic.type).name if hasattr(PictureType, "name") else pic.type,
-                        "width": pic.width,
-                        "height": pic.height,
-                        "depth": pic.depth,
-                        "data_length": len(pic.data)
-                    })
         except TypeError as te:
             if "missing 1 required positional argument: 'self'" in str(te):
                 print(f"Caught TypeError calling FLAC/Ogg audio.tags.items(): {te}. audio.tags object: {audio.tags}")
