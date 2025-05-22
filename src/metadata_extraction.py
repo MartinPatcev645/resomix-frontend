@@ -2,11 +2,11 @@
 """
 Utility module: audio metadata extraction using Mutagen
 ------------------------------------------------------
-• Pure-Python (no FastAPI dependency)
-• Exposes a single public function `extract_metadata(file_obj, filename="")` that
-  takes a **file-like object positioned at start** (e.g. `UploadFile.file`) and
-  returns a dictionary of clean, human-friendly metadata fields.
-• Skips embedded images / binary blocks and keeps every textual tag.
+• Exposes `extract_metadata(file_obj, filename="")` that returns a dict of
+  *readable* audio metadata.
+• Supports ID3 (MP3/WAV/AIFF) and Vorbis‑style tags (FLAC/Ogg/Opus).
+• Skips embedded images / binary blocks.
+• Robust against non‑string tag objects (e.g. `ID3TimeStamp`).
 """
 
 from __future__ import annotations
@@ -17,9 +17,9 @@ from typing import Any, Dict, List, BinaryIO, Union
 from mutagen import File as MutagenFile, MutagenError
 from mutagen.id3 import ID3
 
-# ---------------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────
 # Friendly name maps
-# ---------------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────
 ID3_FRIENDLY: Dict[str, str] = {
     "TIT2": "Title",
     "TPE1": "Artist",
@@ -66,9 +66,21 @@ IMAGE_VORBIS_KEYS = {"METADATA_BLOCK_PICTURE", "COVERART", "COVERARTMIME"}
 COMMENT_KEYS = {"COMM"}
 TRACK_SPLIT = re.compile(r"^(?P<num>\d+)(?:/?(?P<tot>\d+))?$")
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────
+# Small helpers
+# ──────────────────────────────────────────────────────────────
+
+def _to_text(value: Any) -> str:
+    """Convert *value* (may be ID3TimeStamp, bytes, etc.) to stripped str."""
+    if value is None:
+        return ""
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            return value.decode("utf‑8", errors="replace").strip()
+        except Exception:
+            return ""
+    return str(value).strip()
+
 
 def _clean_numeric(s: str) -> Union[int, str]:
     return int(s) if s.isdigit() else s
@@ -82,16 +94,16 @@ def _handle_track_disc(text: str) -> str:
     m = TRACK_SPLIT.match(text.strip())
     if not m:
         return text.strip()
-    n, t = m.group("num"), m.group("tot")
-    return f"{n}/{t}" if t else n
+    num, tot = m.group("num"), m.group("tot")
+    return f"{num}/{tot}" if tot else num
 
-# ---------------------------------------------------------------------------
-# Main public function
-# ---------------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────
+# Public API
+# ──────────────────────────────────────────────────────────────
 
 def extract_metadata(file_obj: BinaryIO, filename: str = "") -> Dict[str, Any]:
     """Return cleaned metadata for *file_obj* (opened in binary mode)."""
-    print(f"[extract_metadata] ▶ processing '{filename or '<in-memory>'}'")
+    print(f"[extract_metadata] ▶ processing '{filename or '<in‑memory>'}'")
     meta: Dict[str, Any] = {}
 
     file_obj.seek(0)
@@ -114,39 +126,42 @@ def extract_metadata(file_obj: BinaryIO, filename: str = "") -> Dict[str, Any]:
             "Channels": getattr(info, "channels", None),
         })
 
-    # Route by tag type
+    # Dispatch by tag container type
     if isinstance(audio.tags, ID3):
         _parse_id3(audio.tags, meta)
     else:
-        _parse_vorbis(audio.tags, meta)
+        # FLAC / OGG / OPUS => Vorbis comments dict‑like
+        _parse_vorbis(dict(audio.tags), meta)
 
     print(f"[extract_metadata] ✔ collected {len(meta)} fields from '{filename}'")
     return meta
 
-# ---------------------------------------------------------------------------
-# Parsing helpers
-# ---------------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────
+# ID3 parsing
+# ──────────────────────────────────────────────────────────────
 
 def _parse_id3(tags: ID3, meta: Dict[str, Any]):
     for frame in tags.values():
         fid = frame.FrameID
         if fid in IMAGE_FRAME_IDS:
-            continue  # skip artwork
+            continue  # skip artwork frames
         if fid in COMMENT_KEYS:
-            txt = (frame.text or [""])[0].strip()
-            desc = (frame.desc or "Comment").strip()
+            txt_raw = (frame.text or [""])[0]
+            txt = _to_text(txt_raw)
+            if not txt:
+                continue
+            desc = _to_text(frame.desc or "Comment")
             key = "Comment" if desc.lower() == "comment" else f"Comment ({desc})"
-            if txt:
-                meta[key] = txt
+            meta[key] = txt
             continue
         if hasattr(frame, "text"):
-            vals = [v.strip() for v in (frame.text or []) if v and str(v).strip()]
+            raw_vals = frame.text or []
+            vals = [_to_text(v) for v in raw_vals if _to_text(v)]
             if not vals:
                 continue
             key = ID3_FRIENDLY.get(fid, fid)
             if fid == "TXXX":
                 key = VORBIS_FRIENDLY.get(frame.desc.upper(), frame.desc)
-            value: Any
             if fid in ("TRCK", "TPOS"):
                 value = _handle_track_disc(vals[0])
             elif fid == "TBPM":
@@ -155,20 +170,23 @@ def _parse_id3(tags: ID3, meta: Dict[str, Any]):
                 value = _flatten(vals)
             meta[key] = value
         else:
-            try:
-                meta[fid] = str(frame)
-            except Exception:
-                pass
+            # fallback — store string repr
+            s = _to_text(frame)
+            if s:
+                meta[fid] = s
 
+# ──────────────────────────────────────────────────────────────
+# Vorbis / FLAC parsing
+# ──────────────────────────────────────────────────────────────
 
-def _parse_vorbis(tags: Dict[str, List[str]], meta: Dict[str, Any]):
-    tn = tt = dn = dt = None  # track/disc counters
-    for k, raw in tags.items():
+def _parse_vorbis(vc: Dict[str, List[str]], meta: Dict[str, Any]):
+    tn = tt = dn = dt = None  # track/disc helpers
+    for k, raw in vc.items():
         up = k.upper()
         if up in IMAGE_VORBIS_KEYS:
             continue
         vals = raw if isinstance(raw, list) else [raw]
-        vals = [v.strip() for v in vals if str(v).strip()]
+        vals = [_to_text(v) for v in vals if _to_text(v)]
         if not vals:
             continue
         if up in ("TRACKNUMBER", "TRACKTOTAL", "TOTALTRACKS"):
@@ -192,4 +210,3 @@ def _parse_vorbis(tags: Dict[str, List[str]], meta: Dict[str, Any]):
         meta["Track Number"] = f"{tn}/{tt}" if tt else tn
     if dn:
         meta["Disc Number"] = f"{dn}/{dt}" if dt else dn
-
