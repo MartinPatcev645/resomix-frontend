@@ -102,9 +102,11 @@ def _deduplicate_tracks(tracks: List[Dict[str, Any]], target_count: int) -> List
     seen_tracks = set()
     deduplicated_list = []
     for track in tracks:
-        filename = track.get("filename", "")
+        filename_full = track.get("filename", "")
+        # Remove extension from filename for the key
+        filename_base, file_extension = os.path.splitext(filename_full)
         duration = track.get("duration", -1)
-        track_key = (filename, duration)
+        track_key = (filename_base.lower().strip(), duration) # Use lowercased base filename
         
         if track_key not in seen_tracks:
             deduplicated_list.append(track)
