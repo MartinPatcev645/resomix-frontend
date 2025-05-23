@@ -94,22 +94,34 @@ async def _fetch_track_details_from_db_by_path(track_paths_from_similarity_serve
         
     return details_map
 
-def _deduplicate_tracks(tracks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Removes duplicate tracks based on filename and duration."""
+def _deduplicate_tracks(tracks: List[Dict[str, Any]], target_count: int) -> List[Dict[str, Any]]:
+    """
+    Removes duplicate tracks based on filename and duration, sorts by score,
+    re-ranks, and then returns up to target_count tracks.
+    """
     seen_tracks = set()
     deduplicated_list = []
     for track in tracks:
-        # Ensure filename and duration exist, use placeholders if not to avoid errors
         filename = track.get("filename", "")
-        duration = track.get("duration", -1) # Use -1 or another unlikely duration as placeholder
-        
-        # Create a unique key for this track based on filename and duration
+        duration = track.get("duration", -1)
         track_key = (filename, duration)
         
         if track_key not in seen_tracks:
             deduplicated_list.append(track)
             seen_tracks.add(track_key)
-    return deduplicated_list
+    
+    # Sort by score in descending order (higher score is better)
+    # Ensure score exists and is a number, default to 0 or a very low number if missing/invalid
+    deduplicated_list.sort(key=lambda x: float(x.get("score", 0)) if isinstance(x.get("score"), (int, float, str)) and str(x.get("score")).replace('.', '', 1).isdigit() else 0, reverse=True)
+    
+    # Re-rank the sorted list
+    reranked_list = []
+    for i, track_item in enumerate(deduplicated_list):
+        track_item["rank"] = i + 1
+        reranked_list.append(track_item)
+        
+    # Return up to target_count tracks
+    return reranked_list[:target_count]
 
 async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Dict[str, Any]:
     """Helper function to call the similarity server. Returns the JSON response directly or a structured error."""
@@ -149,13 +161,14 @@ async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, fi
             print(f"Generic error calling similarity server {target_url}: {e}")
             return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []}
 
-async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename: str, top_k: int = 10) -> Dict[str, Any]:
+async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename: str, top_k: int = 10, similarity_duplication_threshold: int = 0) -> Dict[str, Any]:
     """
     Sends uploaded audio bytes to the similarity server and returns enriched similar tracks.
     Args:
         audio_bytes: The raw bytes of the audio file.
         original_filename: The original filename, used for context/logging and passed to server.
         top_k: Number of similar tracks to return.
+        similarity_duplication_threshold: The threshold for removing duplicates before returning.
     """
     if not audio_bytes:
         # This is a validation on the main server side, return our standard format
@@ -199,7 +212,9 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
             # else: track details not found in DB for this path, so it's omitted from results
 
         # Deduplicate tracks before returning
-        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks)
+        target_count_after_threshold = top_k - similarity_duplication_threshold
+        if target_count_after_threshold < 0: target_count_after_threshold = 0 # Ensure not negative
+        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_threshold)
 
         processed_duration = similarity_response.get("processed_track_duration") 
         if processed_duration is None:
@@ -216,7 +231,7 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
         error_message = similarity_response.get("message", "Unknown error during similarity processing.")
         return {"success": False, "error": error_message}
 
-async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dict[str, Any]:
+async def get_similarity_by_path(server_track_path: str, top_k: int = 10, similarity_duplication_threshold: int = 0) -> Dict[str, Any]:
     """
     Gets similar tracks for a given server-side file path by calling the similarity server.
     """
@@ -266,7 +281,9 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
             # else: track details not found in DB for this path, so it's omitted
         
         # Deduplicate tracks before returning
-        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks)
+        target_count_after_threshold = top_k - similarity_duplication_threshold
+        if target_count_after_threshold < 0: target_count_after_threshold = 0 # Ensure not negative
+        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_threshold)
 
         return {
             "queried_track": queried_track_data, 

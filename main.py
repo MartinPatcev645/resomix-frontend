@@ -30,7 +30,8 @@ API_KEY_NAME = "api_key"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, this should be stored securely
 
 # Always set top_k with +1 additional, so we have an additional track in case of duplicates
-SIMILARITY_DEFAULT_TOP_K = 21 # Global default for top_k
+SIMILARITY_DEFAULT_TOP_K = 22 # Global default for top_k
+SIMILARITY_DUPLICATION_THRESHOLD = 2 # Threshold for duplicate tracks
 
 # Removed ALLOWED_AUDIO_TYPES as requested - using FFmpeg for validation instead
 
@@ -205,7 +206,12 @@ async def get_similarity_upload_endpoint(
         
         # FFmpeg validation passed, directly use audio_bytes
         try:
-            similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename, top_k=SIMILARITY_DEFAULT_TOP_K)
+            similarity_results = await calculate_similarity_for_upload(
+                audio_bytes=audio_bytes, 
+                original_filename=original_filename, 
+                top_k=SIMILARITY_DEFAULT_TOP_K,
+                similarity_duplication_threshold=SIMILARITY_DUPLICATION_THRESHOLD
+            )
             if similarity_results.get("success") is False:
                 return JSONResponse(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -243,7 +249,12 @@ async def get_similarity_upload_endpoint(
                 buffer.write(audio_bytes) # Write the already read bytes
 
             print("FFmpeg not available. Cannot guarantee audio validity before sending to similarity server. Proceeding with byte upload with caution.")
-            similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename)
+            similarity_results = await calculate_similarity_for_upload(
+                audio_bytes=audio_bytes, 
+                original_filename=original_filename,
+                top_k=SIMILARITY_DEFAULT_TOP_K, # Still use top_k here as it's passed to similarity server
+                similarity_duplication_threshold=SIMILARITY_DUPLICATION_THRESHOLD
+            )
             if similarity_results.get("success") is False:
                 return JSONResponse(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -391,7 +402,8 @@ async def get_similarity_by_id_endpoint(
         # Step 2: Call the similarity function with the fetched path and global top_k
         similarity_results = await get_similarity_by_path(
             server_track_path=server_track_path,
-            top_k=SIMILARITY_DEFAULT_TOP_K # Use the global default
+            top_k=SIMILARITY_DEFAULT_TOP_K, # Use the global default for top_k
+            similarity_duplication_threshold=SIMILARITY_DUPLICATION_THRESHOLD # Pass the threshold
         )
 
         if similarity_results.get("success") is False:
