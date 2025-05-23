@@ -94,6 +94,23 @@ async def _fetch_track_details_from_db_by_path(track_paths_from_similarity_serve
         
     return details_map
 
+def _deduplicate_tracks(tracks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Removes duplicate tracks based on filename and duration."""
+    seen_tracks = set()
+    deduplicated_list = []
+    for track in tracks:
+        # Ensure filename and duration exist, use placeholders if not to avoid errors
+        filename = track.get("filename", "")
+        duration = track.get("duration", -1) # Use -1 or another unlikely duration as placeholder
+        
+        # Create a unique key for this track based on filename and duration
+        track_key = (filename, duration)
+        
+        if track_key not in seen_tracks:
+            deduplicated_list.append(track)
+            seen_tracks.add(track_key)
+    return deduplicated_list
+
 async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Dict[str, Any]:
     """Helper function to call the similarity server. Returns the JSON response directly or a structured error."""
     if not SIMILARITY_SERVER_URL:
@@ -181,6 +198,9 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
                 })
             # else: track details not found in DB for this path, so it's omitted from results
 
+        # Deduplicate tracks before returning
+        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks)
+
         processed_duration = similarity_response.get("processed_track_duration") 
         if processed_duration is None:
              processed_duration = int(len(audio_bytes) / 16000) # Fallback placeholder
@@ -189,7 +209,7 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
         return {
             "original_filename": original_filename, # User requested filename for uploaded track
             "duration": processed_duration, 
-            "similar_tracks": enriched_similar_tracks
+            "similar_tracks": deduplicated_enriched_tracks
         }
     else:
         # Error reported by the similarity server or connection issue handled by _call_similarity_server
@@ -245,9 +265,12 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10) -> Dic
                 })
             # else: track details not found in DB for this path, so it's omitted
         
+        # Deduplicate tracks before returning
+        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks)
+
         return {
             "queried_track": queried_track_data, 
-            "similar_tracks": enriched_similar_tracks
+            "similar_tracks": deduplicated_enriched_tracks
         }
     elif similarity_response.get("status") == "not_found":
         # Path not found on similarity server, but we might still have its duration from our DB.

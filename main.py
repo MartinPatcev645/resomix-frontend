@@ -28,7 +28,9 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 TEMP_DIR = "temp_audio"
 API_KEY_NAME = "api_key"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, this should be stored securely
-SIMILARITY_DEFAULT_TOP_K = 20 # Global default for top_k
+
+# Always set top_k with +1 additional, so we have an additional track in case of duplicates
+SIMILARITY_DEFAULT_TOP_K = 21 # Global default for top_k
 
 # Removed ALLOWED_AUDIO_TYPES as requested - using FFmpeg for validation instead
 
@@ -203,7 +205,7 @@ async def get_similarity_upload_endpoint(
         
         # FFmpeg validation passed, directly use audio_bytes
         try:
-            similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename)
+            similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename, top_k=SIMILARITY_DEFAULT_TOP_K)
             if similarity_results.get("success") is False:
                 return JSONResponse(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -240,19 +242,6 @@ async def get_similarity_upload_endpoint(
             with open(temp_file_path, "wb") as buffer:
                 buffer.write(audio_bytes) # Write the already read bytes
 
-            # Pass the file path to the similarity function
-            # This will require calculate_similarity_for_upload to handle both bytes and path, 
-            # OR a different function. For now, let's assume we need a path if FFmpeg is not used.
-            # This part becomes tricky. The original calculate_similarity_for_upload now expects bytes.
-            # To keep it simple, if FFmpeg is not available, we might have to stick to the old way for this else block
-            # OR, ensure the similarity server can always take bytes.
-            # For now, this else block implies we'd need a function that takes path, which means we might need two versions
-            # or a more complex calculate_similarity_for_upload.
-            # Let's stick to the idea: if FFmpeg is available, we use bytes. If not, we indicate this limitation.
-            # MODIFYING: The prompt was to pass bytes if FFMPEG is green. So this else block means FFMPEG is NOT green/available.
-            # Thus, we cannot proceed with byte-based upload reliably for the *similarity server*.
-            # The similarity server itself might do its own checks. 
-            # The goal was to avoid local I/O *before* calling similarity server if FFmpeg validated.
             print("FFmpeg not available. Cannot guarantee audio validity before sending to similarity server. Proceeding with byte upload with caution.")
             similarity_results = await calculate_similarity_for_upload(audio_bytes=audio_bytes, original_filename=original_filename)
             if similarity_results.get("success") is False:
