@@ -18,6 +18,9 @@ import httpx
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 import re # For path prefix removal
+import asyncio # For to_thread
+import io # For BytesIO
+from mutagen import File as MutagenFile, MutagenError # For duration calculation
 
 # Import the MongoDB collection getter from the search module
 # This assumes src/search.py and src/similarity.py are in the same directory (src)
@@ -93,6 +96,19 @@ async def _fetch_track_details_from_db_by_path(track_paths_from_similarity_serve
         return {} 
         
     return details_map
+
+def _get_duration_from_bytes_sync(audio_bytes: bytes) -> Optional[int]:
+    """Calculates the duration of audio from bytes using mutagen."""
+    try:
+        file_like_object = io.BytesIO(audio_bytes)
+        audio = MutagenFile(file_like_object)
+        if audio and audio.info and hasattr(audio.info, 'length') and audio.info.length is not None:
+            return int(round(audio.info.length))
+    except MutagenError:
+        print("MutagenError: Could not load audio from bytes to get duration.")
+    except Exception as e:
+        print(f"Error getting duration from bytes: {e}")
+    return None # Return None if duration can't be determined
 
 def _deduplicate_tracks(tracks: List[Dict[str, Any]], target_count: int) -> List[Dict[str, Any]]:
     """
@@ -173,12 +189,20 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
         similarity_duplication_threshold: The threshold for removing duplicates before returning.
     """
     if not audio_bytes:
-        # This is a validation on the main server side, return our standard format
         return {"success": False, "error": "Audio data is empty for similarity processing."}
 
+    # Concurrently get duration and call similarity server
+    duration_task = asyncio.to_thread(_get_duration_from_bytes_sync, audio_bytes)
+
     files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
-    request_data = {"top_k": top_k}    
-    similarity_response = await _call_similarity_server("/query-by-upload/", data=request_data, files=files_data)
+    request_data = {"top_k": top_k}
+    similarity_response_task = _call_similarity_server("/query-by-upload/", data=request_data, files=files_data)
+
+    # Await both tasks
+    calculated_duration, similarity_response = await asyncio.gather(
+        duration_task,
+        similarity_response_task
+    )
 
     # Check the status from the similarity server's response
     if similarity_response.get("status") == "success":
@@ -218,14 +242,12 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
         if target_count_after_threshold < 0: target_count_after_threshold = 0 # Ensure not negative
         deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_threshold)
 
-        processed_duration = similarity_response.get("processed_track_duration") 
-        if processed_duration is None:
-             processed_duration = int(len(audio_bytes) / 16000) # Fallback placeholder
-             if processed_duration < 5: processed_duration = 5
+        # Use the locally calculated duration
+        final_duration = calculated_duration if calculated_duration is not None else 0 # Default to 0 if None
 
         return {
-            "original_filename": original_filename, # User requested filename for uploaded track
-            "duration": processed_duration, 
+            "original_filename": original_filename,
+            "duration": final_duration, 
             "similar_tracks": deduplicated_enriched_tracks
         }
     else:
