@@ -185,7 +185,7 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
     Args:
         audio_bytes: The raw bytes of the audio file.
         original_filename: The original filename, used for context/logging and passed to server.
-        top_k: Number of similar tracks to return.
+        top_k: Number of similar tracks to request from similarity server (already includes duplication threshold).
         similarity_duplication_threshold: The threshold for removing duplicates before returning.
     """
     if not audio_bytes:
@@ -238,9 +238,11 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
             # else: track details not found in DB for this path, so it's omitted from results
 
         # Deduplicate tracks before returning
-        target_count_after_threshold = top_k - similarity_duplication_threshold
-        if target_count_after_threshold < 0: target_count_after_threshold = 0 # Ensure not negative
-        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_threshold)
+        # The target count should be the original requested amount (top_k - threshold)
+        target_count_after_deduplication = top_k - similarity_duplication_threshold
+        if target_count_after_deduplication < 0: 
+            target_count_after_deduplication = 0 # Ensure not negative
+        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_deduplication)
 
         # Use the locally calculated duration
         final_duration = calculated_duration if calculated_duration is not None else 0 # Default to 0 if None
@@ -258,6 +260,10 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
 async def get_similarity_by_path(server_track_path: str, top_k: int = 10, similarity_duplication_threshold: int = 0) -> Dict[str, Any]:
     """
     Gets similar tracks for a given server-side file path by calling the similarity server.
+    Args:
+        server_track_path: The absolute path to the track file on the server.
+        top_k: Number of similar tracks to request from similarity server (already includes duplication threshold).
+        similarity_duplication_threshold: The threshold for removing duplicates before returning.
     """
     queried_track_data: Optional[Dict[str, Any]] = None
     try:
@@ -305,9 +311,11 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10, simila
             # else: track details not found in DB for this path, so it's omitted
         
         # Deduplicate tracks before returning
-        target_count_after_threshold = top_k - similarity_duplication_threshold
-        if target_count_after_threshold < 0: target_count_after_threshold = 0 # Ensure not negative
-        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_threshold)
+        # The target count should be the original requested amount (top_k - threshold)
+        target_count_after_deduplication = top_k - similarity_duplication_threshold
+        if target_count_after_deduplication < 0: 
+            target_count_after_deduplication = 0 # Ensure not negative
+        deduplicated_enriched_tracks = _deduplicate_tracks(enriched_similar_tracks, target_count_after_deduplication)
 
         return {
             "queried_track": queried_track_data, 

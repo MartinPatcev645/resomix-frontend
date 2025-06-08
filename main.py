@@ -29,11 +29,40 @@ TEMP_DIR = "temp_audio"
 API_KEY_NAME = "api_key"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # In production, this should be stored securely
 
-# Always set top_k with +1 additional, so we have an additional track in case of duplicates
-SIMILARITY_DEFAULT_TOP_K = 22 # Global default for top_k
-SIMILARITY_DUPLICATION_THRESHOLD = 2 # Threshold for duplicate tracks
+# Dynamic TOP_SK configuration
+ALLOWED_TOP_SK_VALUES = [10, 20, 50, 100]
+ALLOWED_DUPLICATION_THRESHOLDS = [2, 2, 4, 5]  # Corresponding to the TOP_SK values above
+DEFAULT_TOP_SK = 20
 
-# Removed ALLOWED_AUDIO_TYPES as requested - using FFmpeg for validation instead
+# Helper functions for TOP_SK validation and threshold mapping
+def validate_and_get_top_sk(top_sk_value: Optional[int]) -> int:
+    """
+    Validates the TOP_SK value and returns a valid value.
+    If invalid or None, returns DEFAULT_TOP_SK.
+    """
+    if top_sk_value is None or top_sk_value not in ALLOWED_TOP_SK_VALUES:
+        return DEFAULT_TOP_SK
+    return top_sk_value
+
+def get_duplication_threshold_for_top_sk(top_sk: int) -> int:
+    """
+    Returns the appropriate duplication threshold for a given TOP_SK value.
+    """
+    try:
+        index = ALLOWED_TOP_SK_VALUES.index(top_sk)
+        return ALLOWED_DUPLICATION_THRESHOLDS[index]
+    except ValueError:
+        # If top_sk is not in allowed values, return threshold for default
+        default_index = ALLOWED_TOP_SK_VALUES.index(DEFAULT_TOP_SK)
+        return ALLOWED_DUPLICATION_THRESHOLDS[default_index]
+
+def calculate_actual_top_k(top_sk: int) -> int:
+    """
+    Calculates the actual top_k to send to similarity server.
+    This adds the duplication threshold to the requested TOP_SK.
+    """
+    threshold = get_duplication_threshold_for_top_sk(top_sk)
+    return top_sk + threshold
 
 # Set up API key security - using query parameter as specified in frontend
 api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
@@ -102,6 +131,7 @@ if not FFMPEG_AVAILABLE:
 # Pydantic model for the /get_selection_similarity/ request body
 class SimilarityByIdRequest(BaseModel):
     track_id: str
+    top_sk: Optional[int] = None  # Optional field for TOP_SK
 
 async def get_api_key(
     api_key_query: str = Security(api_key_query),
@@ -158,14 +188,25 @@ async def get_metadata_endpoint(
 @app.post("/get_similarity/")
 async def get_similarity_upload_endpoint(
     file: UploadFile = File(...), 
+    top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
     api_key: str = Security(get_api_key)
 ):
     """
     Process an audio file and return similar tracks.
     
-    - **file**: The audio file to analyze (max 50MB)
+    - **file**: The audio file to analyze (max 100MB)
+    - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
-    log_request("get_similarity (upload)", "POST", {"filename": file.filename})
+    # Validate and get the TOP_SK value
+    validated_top_sk = validate_and_get_top_sk(top_sk)
+    actual_top_k = calculate_actual_top_k(validated_top_sk)
+    duplication_threshold = get_duplication_threshold_for_top_sk(validated_top_sk)
+    
+    log_request("get_similarity (upload)", "POST", {
+        "filename": file.filename, 
+        "requested_top_sk": top_sk, 
+        "validated_top_sk": validated_top_sk
+    })
     
     # File Size Check
     if file.size > MAX_FILE_SIZE:
@@ -209,8 +250,8 @@ async def get_similarity_upload_endpoint(
             similarity_results = await calculate_similarity_for_upload(
                 audio_bytes=audio_bytes, 
                 original_filename=original_filename, 
-                top_k=SIMILARITY_DEFAULT_TOP_K,
-                similarity_duplication_threshold=SIMILARITY_DUPLICATION_THRESHOLD
+                top_k=actual_top_k,
+                similarity_duplication_threshold=duplication_threshold
             )
             if similarity_results.get("success") is False:
                 return JSONResponse(
@@ -252,8 +293,8 @@ async def get_similarity_upload_endpoint(
             similarity_results = await calculate_similarity_for_upload(
                 audio_bytes=audio_bytes, 
                 original_filename=original_filename,
-                top_k=SIMILARITY_DEFAULT_TOP_K, # Still use top_k here as it's passed to similarity server
-                similarity_duplication_threshold=SIMILARITY_DUPLICATION_THRESHOLD
+                top_k=actual_top_k,
+                similarity_duplication_threshold=duplication_threshold
             )
             if similarity_results.get("success") is False:
                 return JSONResponse(
@@ -376,11 +417,20 @@ async def get_similarity_by_id_endpoint(
 ):
     """
     Get similar tracks for a track identified by its MongoDB ID.
-    Uses a global default for top_k.
     
     - **track_id**: The MongoDB ID of the track to find similar tracks for.
+    - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
-    log_request("get_selection_similarity (by ID)", "POST", {"track_id": request_data.track_id})
+    # Validate and get the TOP_SK value
+    validated_top_sk = validate_and_get_top_sk(request_data.top_sk)
+    actual_top_k = calculate_actual_top_k(validated_top_sk)
+    duplication_threshold = get_duplication_threshold_for_top_sk(validated_top_sk)
+    
+    log_request("get_selection_similarity (by ID)", "POST", {
+        "track_id": request_data.track_id,
+        "requested_top_sk": request_data.top_sk,
+        "validated_top_sk": validated_top_sk
+    })
 
     if not request_data.track_id or not request_data.track_id.strip():
         return JSONResponse(
@@ -399,11 +449,11 @@ async def get_similarity_by_id_endpoint(
                 content=format_response(success=False, error=f"Track with ID '{request_data.track_id}' not found or path is missing.")
             )
 
-        # Step 2: Call the similarity function with the fetched path and global top_k
+        # Step 2: Call the similarity function with the fetched path and dynamic values
         similarity_results = await get_similarity_by_path(
             server_track_path=server_track_path,
-            top_k=SIMILARITY_DEFAULT_TOP_K, # Use the global default for top_k
-            similarity_duplication_threshold=SIMILARITY_DUPLICATION_THRESHOLD # Pass the threshold
+            top_k=actual_top_k,
+            similarity_duplication_threshold=duplication_threshold
         )
 
         if similarity_results.get("success") is False:
