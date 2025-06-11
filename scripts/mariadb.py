@@ -1,24 +1,29 @@
-import mariadb
-import sys
+import os
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-# Instantiate Connection
-try:
-   conn = mariadb.connect(
-      host="127.0.0.1",
-      port=3306,
-      user="resomixAdmin",
-      password="G351vVD-usman2212!")
-except mariadb.Error as e:
-   print(f"Error connecting to the database: {e}")
-   sys.exit(1)
+DATABASE_URL = (
+    "mysql+aiomysql://{user}:{pwd}@{host}:{port}/{db}?charset=utf8mb4"
+).format(
+    user=os.getenv("DB_USER", "resomixAdmin"),
+    pwd=os.getenv("DB_PASS", "G351vVD-usman2212!"),
+    host=os.getenv("DB_HOST", "127.0.0.1"),
+    port=os.getenv("DB_PORT", "3306"),
+    db=os.getenv("DB_NAME", "resomix_db"),
+)
 
-# Use Connection
-# display all tables
-cursor = conn.cursor()
-cursor.execute("SHOW TABLES")
+engine = create_async_engine(DATABASE_URL, pool_recycle=1800)
+SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
-for table in cursor:
-    print(table)
+# Display all tables
+async def display_tables():
+    async with SessionLocal() as db:
+        result = await db.execute(text("SHOW TABLES"))
+        tables = result.fetchall()
+        for table in tables:
+            print(table[0])
 
-# Close Connection
-conn.close()
+# Display all tables
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(display_tables())
+
