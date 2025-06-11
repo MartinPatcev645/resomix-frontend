@@ -177,15 +177,18 @@ def migrate(batch_size: int):
 
         # fetch ids for the newly inserted / existing tracks
         uuids = [t["uuid"] for t in batch_tracks]
-        id_map = {
-            uuid: id_
-            for uuid, id_ in conn.execute(
-                text(
-                    "SELECT uuid, id FROM tracks WHERE uuid IN :uuids"
-                ),
-                {"uuids": tuple(uuids)},
-            )
-        }
+        
+        # Fix: Create placeholder string for IN clause
+        placeholders = ','.join([':uuid' + str(i) for i in range(len(uuids))])
+        uuid_params = {f'uuid{i}': uuid for i, uuid in enumerate(uuids)}
+        
+        id_map = {}
+        result = conn.execute(
+            text(f"SELECT uuid, id FROM tracks WHERE uuid IN ({placeholders})"),
+            uuid_params
+        )
+        for uuid, id_ in result:
+            id_map[uuid] = id_
 
         for rec in batch_track_artists:
             rec["track_id"] = id_map[rec["uuid"]]
