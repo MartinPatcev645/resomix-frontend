@@ -70,19 +70,22 @@ CREATE TABLE IF NOT EXISTS tracks (
     uuid          VARCHAR(36) NOT NULL UNIQUE,
     album_id      INT UNSIGNED,                -- NULL for singles
     label_id      INT UNSIGNED,
+    genre_id      INT UNSIGNED,                -- Single genre per track
     title         VARCHAR(255) NOT NULL,
     year          YEAR,
     duration_sec  INT UNSIGNED,
     bpm           SMALLINT UNSIGNED,
-    musical_key   VARCHAR(5),                  -- e.g. “C#m”
+    musical_key   VARCHAR(5),                  -- e.g. "C#m"
     file_path     VARCHAR(255) NOT NULL,       -- original / full file
     preview_path  VARCHAR(255),                -- 30-sec MP3 etc.
     file_size     BIGINT UNSIGNED,             -- bytes
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
     FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
+    FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
     KEY idx_track_album  (album_id),
     KEY idx_track_label  (label_id),
+    KEY idx_track_genre  (genre_id),
     KEY idx_track_title  (title),
     KEY idx_track_bpm    (bpm),
     KEY idx_track_key    (musical_key)
@@ -95,15 +98,6 @@ CREATE TABLE IF NOT EXISTS track_artists (
     PRIMARY KEY (track_id, artist_id),
     FOREIGN KEY (track_id)  REFERENCES tracks(id)  ON DELETE CASCADE,
     FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-/* Optional multi-genre support */
-CREATE TABLE IF NOT EXISTS track_genres (
-    track_id BIGINT UNSIGNED NOT NULL,
-    genre_id INT UNSIGNED    NOT NULL,
-    PRIMARY KEY (track_id, genre_id),
-    FOREIGN KEY (track_id) REFERENCES tracks(id)  ON DELETE CASCADE,
-    FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /* ---------- 4. Playlists & list contents ------------------ */
@@ -166,7 +160,7 @@ CREATE TABLE IF NOT EXISTS track_ratings (
     id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id   CHAR(36),
     track_id  BIGINT UNSIGNED NOT NULL,
-    rating    TINYINT UNSIGNED,      -- 0/1 “dislike/like”
+    rating    TINYINT UNSIGNED,      -- 0/1 "dislike/like"
     rated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
     KEY idx_tr_user (user_id, track_id)

@@ -6,11 +6,11 @@ import os
 DB_URL = (
     "mariadb+mariadbconnector://{user}:{password}@{host}:{port}/{db}"
     .format(
-        user=os.getenv("DB_USER", "resomixAdmin"),
-        password=os.getenv("DB_PASS", "G351vVD-usman2212!"),
-        host=os.getenv("DB_HOST", "127.0.0.1"),
-        port=os.getenv("DB_PORT", "3306"),
-        db=os.getenv("DB_NAME", "resomix_db"),
+        user=os.getenv("MARIA_DB_USER", "resomixAdmin"),
+        password=os.getenv("MARIA_DB_PASS", "G351vVD-usman2212!"),
+        host=os.getenv("MARIA_DB_HOST", "127.0.0.1"),
+        port=os.getenv("MARIA_DB_PORT", "3306"),
+        db=os.getenv("MARIA_DB_NAME", "resomix_db"),
     )
 )
 
