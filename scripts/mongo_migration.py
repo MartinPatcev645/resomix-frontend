@@ -24,6 +24,10 @@ from mariadb_ import engine  # reuse the SQLAlchemy engine you already configure
 # Load environment variables from .env file
 load_dotenv()
 
+# --- Global Testing Configuration ---
+TESTING = True  # Set to False for full migration
+TESTING_LIMIT = 5  # Number of tracks to process in testing mode
+
 # --- Settings ----------------------------------------------------------------
 
 BATCH_SIZE_DEFAULT = 1000
@@ -135,6 +139,9 @@ def migrate(batch_size: int):
     db_name = os.getenv("MONGO_DB_NAME", "Data")
     collection_name = os.getenv("MONGO_COLLECTION_NAME", "Tracks")
 
+    if TESTING:
+        logging.info(f"🧪 TESTING MODE: Will process only {TESTING_LIMIT} tracks")
+    
     logging.info(f"Connecting to MongoDB: {mongo_uri}")
     logging.info(f"Using database: {db_name}, collection: {collection_name}")
     
@@ -193,9 +200,18 @@ def migrate(batch_size: int):
 
     with engine.begin() as conn:
         for doc in cursor:
+            # Check testing limit
+            if TESTING and processed >= TESTING_LIMIT:
+                logging.info(f"🧪 TESTING MODE: Reached limit of {TESTING_LIMIT} tracks. Stopping migration.")
+                break
+                
             uuid = str(doc["_id"])
             info = doc.get("info", {})
             file = doc.get("file", {})
+
+            # Log the document structure for debugging
+            if processed < 3:  # Log first 3 documents for inspection
+                logging.info(f"Processing document {processed + 1}: {doc}")
 
             title = info.get("Title") or file.get("filename") or ""
             year = info.get("Year")
@@ -244,20 +260,24 @@ def migrate(batch_size: int):
 
             preview_path = f"/mnt/data/PREVIEWS/{uuid}.mp3"
 
-            batch_tracks.append(
-                {
-                    "uuid": uuid,
-                    "album_id": album_id,
-                    "label_id": label_id,
-                    "genre_id": genre_id,
-                    "title": title[:255],
-                    "year": year,
-                    "duration_sec": duration,
-                    "file_path": file_path[:255],
-                    "preview_path": preview_path,
-                    "file_size": size,
-                }
-            )
+            # Log what will be inserted for debugging
+            track_data = {
+                "uuid": uuid,
+                "album_id": album_id,
+                "label_id": label_id,
+                "genre_id": genre_id,
+                "title": title[:255],
+                "year": year,
+                "duration_sec": duration,
+                "file_path": file_path[:255],
+                "preview_path": preview_path,
+                "file_size": size,
+            }
+            
+            if processed < 3:  # Log first 3 track insertions
+                logging.info(f"Track data to insert: {track_data}")
+
+            batch_tracks.append(track_data)
 
             for aid in artist_ids:
                 batch_track_artists.append({"uuid": uuid, "artist_id": aid})
