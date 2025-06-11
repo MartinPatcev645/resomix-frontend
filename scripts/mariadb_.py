@@ -2,15 +2,19 @@
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 DB_URL = (
     "mariadb+mariadbconnector://{user}:{password}@{host}:{port}/{db}"
     .format(
-        user=os.getenv("MARIA_DB_USER", "resomixAdmin"),
-        password=os.getenv("MARIA_DB_PASS", "G351vVD-usman2212!"),
-        host=os.getenv("MARIA_DB_HOST", "127.0.0.1"),
-        port=os.getenv("MARIA_DB_PORT", "3306"),
-        db=os.getenv("MARIA_DB_NAME", "resomix_db"),
+        user=os.getenv("MARIA_DB_USER"),
+        password=os.getenv("MARIA_DB_PASS"),
+        host=os.getenv("MARIA_DB_HOST"),
+        port=os.getenv("MARIA_DB_PORT"),
+        db=os.getenv("MARIA_DB_NAME"),
     )
 )
 

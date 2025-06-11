@@ -3,9 +3,6 @@
 
 Usage
 -----
-$ export MONGO_URI="mongodb://localhost:27017"
-$ export MONGO_DB="resomix"
-$ export MONGO_COLLECTION="tracks"
 $ python migrate_mongo_to_mariadb.py --batch-size 1000
 
 The script is idempotent thanks to unique constraints +
@@ -18,10 +15,14 @@ import html
 import logging
 import argparse
 from typing import Dict, Tuple, List
+from dotenv import load_dotenv
 
 from pymongo import MongoClient
 from sqlalchemy import text
 from mariadb_ import engine  # reuse the SQLAlchemy engine you already configured
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --- Settings ----------------------------------------------------------------
 
@@ -124,12 +125,21 @@ class Cache:
 
 
 def migrate(batch_size: int):
-    mongo_uri = os.environ.get("MONGO_URI")
-    mongo_db = os.environ.get("MONGO_DB")
-    mongo_col = os.environ.get("MONGO_COLLECTION", "Tracks")
+    # Get MongoDB connection details from environment variables
+    mongo_uri = os.getenv("MONGODB_URI")
+    if not mongo_uri:
+        logging.error("MONGODB_URI environment variable is not set")
+        return
+    
+    # Extract database and collection from environment or use defaults
+    db_name = os.getenv("MONGO_DB_NAME", "Data")
+    collection_name = os.getenv("MONGO_COLLECTION_NAME", "Tracks")
 
+    logging.info(f"Connecting to MongoDB: {mongo_uri}")
+    logging.info(f"Using database: {db_name}, collection: {collection_name}")
+    
     client = MongoClient(mongo_uri)
-    mcol = client[mongo_db][mongo_col]
+    mcol = client[db_name][collection_name]
 
     cache = Cache()
 
