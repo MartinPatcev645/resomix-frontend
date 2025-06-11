@@ -4,12 +4,15 @@
 Usage
 -----
 $ python migrate_mongo_to_mariadb.py --batch-size 1000
+$ python migrate_mongo_to_mariadb.py --batch-size 1000 --retry-errors
 
 The script is idempotent thanks to unique constraints +
 `INSERT IGNORE` / `ON DUPLICATE KEY UPDATE` strategies.
 
 Resume functionality: The script automatically skips already processed tracks
 by checking existing UUIDs in MariaDB.
+
+Error handling: Errors are logged to errors.log and can be retried with --retry-errors flag.
 """
 
 import os
@@ -35,6 +38,8 @@ TESTING_LIMIT = 2000  # Number of tracks to process in testing mode
 # --- Settings ----------------------------------------------------------------
 
 BATCH_SIZE_DEFAULT = 1000
+ERROR_LOG_FILE = "errors.log"
+MAX_ERRORS = 1000  # Increased from 100
 DELIM_PATTERN = re.compile(
     r"""\s*(?:,|;|\s+&\s+|\s+&amp;\s+)\s*""", re.IGNORECASE
 )
@@ -46,6 +51,60 @@ logging.basicConfig(
 
 # --- Helper functions --------------------------------------------------------
 
+def setup_error_logging():
+    """Setup error logging to file."""
+    error_logger = logging.getLogger('error_logger')
+    error_logger.setLevel(logging.ERROR)
+    
+    # Remove existing handlers to avoid duplicates
+    for handler in error_logger.handlers[:]:
+        error_logger.removeHandler(handler)
+    
+    error_handler = logging.FileHandler(ERROR_LOG_FILE, mode='a', encoding='utf-8')
+    error_formatter = logging.Formatter('[%(asctime)s] ERROR: %(message)s')
+    error_handler.setFormatter(error_formatter)
+    error_logger.addHandler(error_handler)
+    error_logger.propagate = False  # Don't propagate to root logger
+    
+    return error_logger
+
+def log_error_to_file(error_logger, uuid: str, error_msg: str, document: Dict):
+    """Log error details to file."""
+    error_logger.error(f"Error processing document {uuid}: {error_msg}")
+    error_logger.error(f"Document: {document}")
+
+def load_error_uuids() -> Set[str]:
+    """Load UUIDs of previously failed documents from error log."""
+    error_uuids = set()
+    if os.path.exists(ERROR_LOG_FILE):
+        try:
+            with open(ERROR_LOG_FILE, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if "Error processing document" in line:
+                        # Extract UUID from log line
+                        match = re.search(r'document ([a-f0-9]{24}):', line)
+                        if match:
+                            error_uuids.add(match.group(1))
+        except Exception as e:
+            logging.warning(f"Could not load error UUIDs: {e}")
+    
+    logging.info(f"Loaded {len(error_uuids)} error UUIDs from previous runs")
+    return error_uuids
+
+def extract_first_genre(genre_string: str) -> str:
+    """Extract the first genre from a comma-separated genre string and ensure it fits in DB."""
+    if not genre_string or not genre_string.strip():
+        return "Unknown"
+    
+    # Split by common delimiters and take the first one
+    genres = re.split(r'[,;]', genre_string.strip())
+    first_genre = genres[0].strip()
+    
+    # Ensure it fits in the database column (VARCHAR(80))
+    if len(first_genre) > 80:
+        first_genre = first_genre[:77] + "..."
+    
+    return first_genre if first_genre else "Unknown"
 
 def parse_artist_names(raw: str) -> List[str]:
     """Split the artist field into individual names."""
@@ -188,7 +247,10 @@ def log_progress(processed: int, total: int, start_time: float, batch_time: floa
                     f"Rate: {rate:.1f} tracks/sec - "
                     f"Batch time: {batch_time:.2f}s{eta_str}")
 
-def migrate(batch_size: int):
+def migrate(batch_size: int, retry_errors: bool = False):
+    # Setup error logging
+    error_logger = setup_error_logging()
+    
     # Get MongoDB connection details from environment variables
     mongo_uri = os.getenv("MONGODB_URI")
     if not mongo_uri:
@@ -202,9 +264,13 @@ def migrate(batch_size: int):
     if TESTING:
         logging.info(f"🧪 TESTING MODE: Will process only {TESTING_LIMIT} tracks")
     
+    if retry_errors:
+        logging.info("🔄 RETRY MODE: Will only process previously failed documents")
+    
     logging.info(f"Connecting to MongoDB: {mongo_uri}")
     logging.info(f"Using database: {db_name}, collection: {collection_name}")
     logging.info(f"Batch size: {batch_size}")
+    logging.info(f"Max errors before stopping: {MAX_ERRORS}")
     
     client = MongoClient(mongo_uri)
     mcol = client[db_name][collection_name]
@@ -217,6 +283,14 @@ def migrate(batch_size: int):
     processed = 0
     skipped = 0
     errors = 0
+
+    # Load error UUIDs if in retry mode
+    error_uuids_to_retry = set()
+    if retry_errors:
+        error_uuids_to_retry = load_error_uuids()
+        if not error_uuids_to_retry:
+            logging.info("No error UUIDs found to retry. Exiting.")
+            return
 
     # MariaDB connection and setup
     with engine.begin() as conn:
@@ -319,8 +393,13 @@ def migrate(batch_size: int):
                 
                 uuid = str(doc["_id"])
                 
-                # Resume functionality: Skip if already exists
-                if uuid in existing_uuids:
+                # Retry mode: only process documents that previously failed
+                if retry_errors:
+                    if uuid not in error_uuids_to_retry:
+                        continue
+                
+                # Resume functionality: Skip if already exists (and not in retry mode)
+                if not retry_errors and uuid in existing_uuids:
                     skipped += 1
                     if skipped % 10000 == 0:  # Log every 10k skipped
                         logging.info(f"Skipped {skipped} existing tracks so far...")
@@ -358,11 +437,9 @@ def migrate(batch_size: int):
                         cache.label(conn, label_name) if label_name else None
                     )
 
-                    # genre
-                    genre_name = info.get("Genre", "").strip()
-                    genre_id = (
-                        cache.genre(conn, genre_name) if genre_name else None
-                    )
+                    # genre - FIX: Handle long genre strings
+                    genre_name = extract_first_genre(info.get("Genre", ""))
+                    genre_id = cache.genre(conn, genre_name)
 
                     # album
                     album_title = info.get("Album", "").strip()
@@ -414,11 +491,14 @@ def migrate(batch_size: int):
 
                 except Exception as e:
                     errors += 1
-                    logging.error(f"Error processing document {uuid}: {e}")
-                    logging.error(f"Document: {doc}")
+                    error_msg = str(e)
+                    logging.error(f"Error processing document {uuid}: {error_msg}")
+                    
+                    # Log to error file
+                    log_error_to_file(error_logger, uuid, error_msg, doc)
                     
                     # Don't stop on individual errors, just log and continue
-                    if errors > 100:  # Stop if too many errors
+                    if errors >= MAX_ERRORS:  # Increased threshold
                         logging.error(f"Too many errors ({errors}), stopping migration")
                         break
 
@@ -444,6 +524,11 @@ def migrate(batch_size: int):
     logging.info(f"Total time: {elapsed_hours:.2f} hours")
     if processed > 0:
         logging.info(f"Average rate: {processed / (elapsed_hours * 3600):.1f} tracks/second")
+    
+    if errors > 0:
+        logging.info(f"Error details logged to: {ERROR_LOG_FILE}")
+        logging.info(f"To retry failed documents, run with --retry-errors flag")
+    
     logging.info("="*60)
 
 
@@ -452,5 +537,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--batch-size", type=int, default=BATCH_SIZE_DEFAULT, help="Bulk insert size"
     )
+    parser.add_argument(
+        "--retry-errors", action="store_true", help="Only retry previously failed documents"
+    )
     args = parser.parse_args()
-    migrate(args.batch_size)
+    migrate(args.batch_size, args.retry_errors)
