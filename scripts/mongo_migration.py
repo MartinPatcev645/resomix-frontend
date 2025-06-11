@@ -29,8 +29,8 @@ from mariadb_ import engine  # reuse the SQLAlchemy engine you already configure
 load_dotenv()
 
 # --- Global Testing Configuration ---
-TESTING = False  # Set to False for full migration
-TESTING_LIMIT = 5  # Number of tracks to process in testing mode
+TESTING = True  # Set to False for full migration
+TESTING_LIMIT = 2000  # Number of tracks to process in testing mode
 
 # --- Settings ----------------------------------------------------------------
 
@@ -92,10 +92,17 @@ class Cache:
         if key in cache:
             return cache[key]
         insert_sql = text(f"INSERT IGNORE INTO {table} (name) VALUES (:name)")
-        conn.execute(insert_sql, {"name": name})
-        id_ = conn.execute(
+        result = conn.execute(insert_sql, {"name": name})
+        
+        # Get the ID - handle potential duplicates
+        select_result = conn.execute(
             text(f"SELECT id FROM {table} WHERE name = :name"), {"name": name}
-        ).scalar_one()
+        )
+        row = select_result.first()
+        if row is None:
+            raise Exception(f"Failed to insert or find {table} record for name: {name}")
+        
+        id_ = row[0]
         cache[key] = id_
         return id_
 
@@ -116,15 +123,22 @@ class Cache:
             """INSERT IGNORE INTO albums (artist_id, title) 
                    VALUES (:artist_id, :title) """
         )
-        conn.execute(
+        result = conn.execute(
             insert_sql, {"artist_id": primary_artist_id, "title": title}
         )
-        id_ = conn.execute(
+        
+        # Get the ID - handle potential duplicates
+        select_result = conn.execute(
             text(
                 "SELECT id FROM albums WHERE artist_id = :artist_id AND title = :title"
             ),
             {"artist_id": primary_artist_id, "title": title},
-        ).scalar_one()
+        )
+        row = select_result.first()
+        if row is None:
+            raise Exception(f"Failed to insert or find album record for: {title} by artist_id {primary_artist_id}")
+        
+        id_ = row[0]
         self.albums[key] = id_
         return id_
 
@@ -234,7 +248,19 @@ def migrate(batch_size: int):
                            :duration_sec, :file_path, :preview_path, :file_size)
                 """
             )
-            conn.execute(track_sql, batch_tracks)
+            result = conn.execute(track_sql, batch_tracks)
+            
+            # Check how many rows were actually inserted
+            if hasattr(result, 'rowcount'):
+                logging.info(f"INSERT result: {result.rowcount} rows affected")
+            
+            # Verify the insertion by counting tracks in a sample batch
+            if len(batch_tracks) <= 10:  # Only for small batches to avoid performance impact
+                sample_uuids = [t["uuid"] for t in batch_tracks[:5]]
+                placeholders = ','.join([f"'{uuid}'" for uuid in sample_uuids])
+                count_result = conn.execute(text(f"SELECT COUNT(*) FROM tracks WHERE uuid IN ({placeholders})"))
+                actual_count = count_result.scalar()
+                logging.info(f"Verification: Found {actual_count} out of {len(sample_uuids)} sample tracks in DB")
 
             # fetch ids for the newly inserted / existing tracks
             uuids = [t["uuid"] for t in batch_tracks]
@@ -250,14 +276,23 @@ def migrate(batch_size: int):
             )
             for uuid, id_ in result:
                 id_map[uuid] = id_
-
+            
+            logging.info(f"Found {len(id_map)} track IDs out of {len(uuids)} UUIDs")
+            
+            # Only process track_artists for tracks that were actually inserted
+            valid_track_artists = []
             for rec in batch_track_artists:
-                rec["track_id"] = id_map[rec["uuid"]]
-
-            ta_sql = text(
-                "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
-            )
-            conn.execute(ta_sql, batch_track_artists)
+                if rec["uuid"] in id_map:
+                    rec["track_id"] = id_map[rec["uuid"]]
+                    valid_track_artists.append(rec)
+            
+            if valid_track_artists:
+                ta_sql = text(
+                    "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
+                )
+                ta_result = conn.execute(ta_sql, valid_track_artists)
+                if hasattr(ta_result, 'rowcount'):
+                    logging.info(f"Track-artists INSERT result: {ta_result.rowcount} rows affected")
 
             batch_flush_time = time.time() - batch_start
             logging.info(f"Batch insert completed in {batch_flush_time:.2f}s")
@@ -266,6 +301,9 @@ def migrate(batch_size: int):
             logging.error(f"Error during batch insert: {e}")
             # Log the problematic batch for debugging
             logging.error(f"Problematic UUIDs: {[t['uuid'] for t in batch_tracks]}")
+            # Log a sample track for debugging
+            if batch_tracks:
+                logging.error(f"Sample track data: {batch_tracks[0]}")
             raise
 
         batch_tracks = []
