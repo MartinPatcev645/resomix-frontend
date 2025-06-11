@@ -7,6 +7,9 @@ $ python migrate_mongo_to_mariadb.py --batch-size 1000
 
 The script is idempotent thanks to unique constraints +
 `INSERT IGNORE` / `ON DUPLICATE KEY UPDATE` strategies.
+
+Resume functionality: The script automatically skips already processed tracks
+by checking existing UUIDs in MariaDB.
 """
 
 import os
@@ -14,7 +17,8 @@ import re
 import html
 import logging
 import argparse
-from typing import Dict, Tuple, List
+import time
+from typing import Dict, Tuple, List, Set
 from dotenv import load_dotenv
 
 from pymongo import MongoClient
@@ -25,7 +29,7 @@ from mariadb_ import engine  # reuse the SQLAlchemy engine you already configure
 load_dotenv()
 
 # --- Global Testing Configuration ---
-TESTING = True  # Set to False for full migration
+TESTING = False  # Set to False for full migration
 TESTING_LIMIT = 5  # Number of tracks to process in testing mode
 
 # --- Settings ----------------------------------------------------------------
@@ -127,6 +131,48 @@ class Cache:
 
 # --- Main migration logic ----------------------------------------------------
 
+def get_existing_uuids(conn) -> Set[str]:
+    """Fetch all existing UUIDs from MariaDB tracks table for resume functionality."""
+    logging.info("Fetching existing UUIDs from MariaDB for resume functionality...")
+    start_time = time.time()
+    
+    try:
+        result = conn.execute(text("SELECT uuid FROM tracks"))
+        existing_uuids = {row[0] for row in result}
+        elapsed = time.time() - start_time
+        logging.info(f"Found {len(existing_uuids)} existing tracks in MariaDB (took {elapsed:.2f}s)")
+        return existing_uuids
+    except Exception as e:
+        logging.error(f"Error fetching existing UUIDs: {e}")
+        return set()
+
+def get_total_mongo_count(mcol) -> int:
+    """Get total count of documents in MongoDB collection."""
+    try:
+        total = mcol.count_documents({})
+        logging.info(f"Total documents in MongoDB: {total:,}")
+        return total
+    except Exception as e:
+        logging.error(f"Error getting MongoDB count: {e}")
+        return 0
+
+def log_progress(processed: int, total: int, start_time: float, batch_time: float):
+    """Log detailed progress information."""
+    if total > 0:
+        percent = (processed / total) * 100
+        elapsed = time.time() - start_time
+        rate = processed / elapsed if elapsed > 0 else 0
+        
+        if rate > 0:
+            eta_seconds = (total - processed) / rate
+            eta_hours = eta_seconds / 3600
+            eta_str = f", ETA: {eta_hours:.1f}h" if eta_hours > 1 else f", ETA: {eta_seconds/60:.1f}m"
+        else:
+            eta_str = ""
+        
+        logging.info(f"Progress: {processed:,}/{total:,} ({percent:.2f}%) - "
+                    f"Rate: {rate:.1f} tracks/sec - "
+                    f"Batch time: {batch_time:.2f}s{eta_str}")
 
 def migrate(batch_size: int):
     # Get MongoDB connection details from environment variables
@@ -144,154 +190,223 @@ def migrate(batch_size: int):
     
     logging.info(f"Connecting to MongoDB: {mongo_uri}")
     logging.info(f"Using database: {db_name}, collection: {collection_name}")
+    logging.info(f"Batch size: {batch_size}")
     
     client = MongoClient(mongo_uri)
     mcol = client[db_name][collection_name]
 
+    # Get total count for progress tracking
+    total_mongo_docs = get_total_mongo_count(mcol)
+    
     cache = Cache()
-
+    start_time = time.time()
     processed = 0
-    # MariaDB connection
+    skipped = 0
+    errors = 0
+
+    # MariaDB connection and setup
     with engine.begin() as conn:
         cache.preload(conn)
+        
+        # Get existing UUIDs for resume functionality
+        existing_uuids = get_existing_uuids(conn)
 
+    # Use find with no_cursor_timeout but add session handling for large datasets
     cursor = mcol.find({}, no_cursor_timeout=True).batch_size(batch_size)
     batch_tracks = []
     batch_track_artists = []
+    last_batch_time = time.time()
 
     def flush(conn):
         nonlocal batch_tracks, batch_track_artists
         if not batch_tracks:
             return
+        
+        batch_start = time.time()
         logging.info("Inserting %d tracks", len(batch_tracks))
 
-        track_sql = text(
-            """INSERT IGNORE INTO tracks
-               (uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                file_path, preview_path, file_size)
-               VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
-                       :duration_sec, :file_path, :preview_path, :file_size)
-            """
-        )
-        conn.execute(track_sql, batch_tracks)
+        try:
+            track_sql = text(
+                """INSERT IGNORE INTO tracks
+                   (uuid, album_id, label_id, genre_id, title, year, duration_sec,
+                    file_path, preview_path, file_size)
+                   VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
+                           :duration_sec, :file_path, :preview_path, :file_size)
+                """
+            )
+            conn.execute(track_sql, batch_tracks)
 
-        # fetch ids for the newly inserted / existing tracks
-        uuids = [t["uuid"] for t in batch_tracks]
-        
-        # Fix: Create placeholder string for IN clause
-        placeholders = ','.join([':uuid' + str(i) for i in range(len(uuids))])
-        uuid_params = {f'uuid{i}': uuid for i, uuid in enumerate(uuids)}
-        
-        id_map = {}
-        result = conn.execute(
-            text(f"SELECT uuid, id FROM tracks WHERE uuid IN ({placeholders})"),
-            uuid_params
-        )
-        for uuid, id_ in result:
-            id_map[uuid] = id_
+            # fetch ids for the newly inserted / existing tracks
+            uuids = [t["uuid"] for t in batch_tracks]
+            
+            # Fix: Create placeholder string for IN clause
+            placeholders = ','.join([':uuid' + str(i) for i in range(len(uuids))])
+            uuid_params = {f'uuid{i}': uuid for i, uuid in enumerate(uuids)}
+            
+            id_map = {}
+            result = conn.execute(
+                text(f"SELECT uuid, id FROM tracks WHERE uuid IN ({placeholders})"),
+                uuid_params
+            )
+            for uuid, id_ in result:
+                id_map[uuid] = id_
 
-        for rec in batch_track_artists:
-            rec["track_id"] = id_map[rec["uuid"]]
+            for rec in batch_track_artists:
+                rec["track_id"] = id_map[rec["uuid"]]
 
-        ta_sql = text(
-            "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
-        )
-        conn.execute(ta_sql, batch_track_artists)
+            ta_sql = text(
+                "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
+            )
+            conn.execute(ta_sql, batch_track_artists)
+
+            batch_flush_time = time.time() - batch_start
+            logging.info(f"Batch insert completed in {batch_flush_time:.2f}s")
+
+        except Exception as e:
+            logging.error(f"Error during batch insert: {e}")
+            # Log the problematic batch for debugging
+            logging.error(f"Problematic UUIDs: {[t['uuid'] for t in batch_tracks]}")
+            raise
 
         batch_tracks = []
         batch_track_artists = []
 
-    with engine.begin() as conn:
-        for doc in cursor:
-            # Check testing limit
-            if TESTING and processed >= TESTING_LIMIT:
-                logging.info(f"🧪 TESTING MODE: Reached limit of {TESTING_LIMIT} tracks. Stopping migration.")
-                break
+    try:
+        with engine.begin() as conn:
+            for doc in cursor:
+                # Check testing limit
+                if TESTING and processed >= TESTING_LIMIT:
+                    logging.info(f"🧪 TESTING MODE: Reached limit of {TESTING_LIMIT} tracks. Stopping migration.")
+                    break
                 
-            uuid = str(doc["_id"])
-            info = doc.get("info", {})
-            file = doc.get("file", {})
+                uuid = str(doc["_id"])
+                
+                # Resume functionality: Skip if already exists
+                if uuid in existing_uuids:
+                    skipped += 1
+                    if skipped % 10000 == 0:  # Log every 10k skipped
+                        logging.info(f"Skipped {skipped} existing tracks so far...")
+                    continue
+                
+                try:
+                    info = doc.get("info", {})
+                    file = doc.get("file", {})
 
-            # Log the document structure for debugging
-            if processed < 3:  # Log first 3 documents for inspection
-                logging.info(f"Processing document {processed + 1}: {doc}")
+                    # Log the document structure for debugging (first few only)
+                    if processed < 3:
+                        logging.info(f"Processing document {processed + 1}: {doc}")
 
-            title = info.get("Title") or file.get("filename") or ""
-            year = info.get("Year")
-            try:
-                year = int(year) if year else None
-            except ValueError:
-                year = None
-            duration = info.get("length")
-            try:
-                duration = int(duration) if duration else None
-            except ValueError:
-                duration = None
+                    title = info.get("Title") or file.get("filename") or ""
+                    year = info.get("Year")
+                    try:
+                        year = int(year) if year else None
+                    except ValueError:
+                        year = None
+                    duration = info.get("length")
+                    try:
+                        duration = int(duration) if duration else None
+                    except ValueError:
+                        duration = None
 
-            # artists
-            artist_field = info.get("Artist", "")
-            artist_names = parse_artist_names(artist_field) or ["Unknown"]
-            artist_ids = [cache.artist(conn, n) for n in artist_names]
-            primary_artist_id = artist_ids[0]
+                    # artists
+                    artist_field = info.get("Artist", "")
+                    artist_names = parse_artist_names(artist_field) or ["Unknown"]
+                    artist_ids = [cache.artist(conn, n) for n in artist_names]
+                    primary_artist_id = artist_ids[0]
 
-            # label
-            label_name = info.get("Label", "").strip()
-            label_id = (
-                cache.label(conn, label_name) if label_name else None
-            )
+                    # label
+                    label_name = info.get("Label", "").strip()
+                    label_id = (
+                        cache.label(conn, label_name) if label_name else None
+                    )
 
-            # genre
-            genre_name = info.get("Genre", "").strip()
-            genre_id = (
-                cache.genre(conn, genre_name) if genre_name else None
-            )
+                    # genre
+                    genre_name = info.get("Genre", "").strip()
+                    genre_id = (
+                        cache.genre(conn, genre_name) if genre_name else None
+                    )
 
-            # album
-            album_title = info.get("Album", "").strip()
-            album_id = (
-                cache.album(conn, album_title, primary_artist_id)
-                if album_title
-                else None
-            )
+                    # album
+                    album_title = info.get("Album", "").strip()
+                    album_id = (
+                        cache.album(conn, album_title, primary_artist_id)
+                        if album_title
+                        else None
+                    )
 
-            file_path = file.get("path", "")
-            size = file.get("size")
-            try:
-                size = int(size) if size else None
-            except ValueError:
-                size = None
+                    file_path = file.get("path", "")
+                    size = file.get("size")
+                    try:
+                        size = int(size) if size else None
+                    except ValueError:
+                        size = None
 
-            preview_path = f"/mnt/data/PREVIEWS/{uuid}.mp3"
+                    preview_path = f"/mnt/data/PREVIEWS/{uuid}.mp3"
 
-            # Log what will be inserted for debugging
-            track_data = {
-                "uuid": uuid,
-                "album_id": album_id,
-                "label_id": label_id,
-                "genre_id": genre_id,
-                "title": title[:255],
-                "year": year,
-                "duration_sec": duration,
-                "file_path": file_path[:255],
-                "preview_path": preview_path,
-                "file_size": size,
-            }
+                    # Log what will be inserted for debugging (first few only)
+                    track_data = {
+                        "uuid": uuid,
+                        "album_id": album_id,
+                        "label_id": label_id,
+                        "genre_id": genre_id,
+                        "title": title[:255],
+                        "year": year,
+                        "duration_sec": duration,
+                        "file_path": file_path[:500],  # Updated to match new column size
+                        "preview_path": preview_path,
+                        "file_size": size,
+                    }
+                    
+                    if processed < 3:
+                        logging.info(f"Track data to insert: {track_data}")
+
+                    batch_tracks.append(track_data)
+
+                    for aid in artist_ids:
+                        batch_track_artists.append({"uuid": uuid, "artist_id": aid})
+
+                    processed += 1
+                    
+                    # Flush batch and log progress
+                    if processed % batch_size == 0:
+                        flush(conn)
+                        batch_time = time.time() - last_batch_time
+                        log_progress(processed, total_mongo_docs, start_time, batch_time)
+                        last_batch_time = time.time()
+
+                except Exception as e:
+                    errors += 1
+                    logging.error(f"Error processing document {uuid}: {e}")
+                    logging.error(f"Document: {doc}")
+                    
+                    # Don't stop on individual errors, just log and continue
+                    if errors > 100:  # Stop if too many errors
+                        logging.error(f"Too many errors ({errors}), stopping migration")
+                        break
+
+            # Final flush
+            flush(conn)
             
-            if processed < 3:  # Log first 3 track insertions
-                logging.info(f"Track data to insert: {track_data}")
+    except KeyboardInterrupt:
+        logging.info("Migration interrupted by user. Progress saved.")
+    except Exception as e:
+        logging.error(f"Fatal error during migration: {e}")
+        raise
+    finally:
+        cursor.close()
+        client.close()
 
-            batch_tracks.append(track_data)
-
-            for aid in artist_ids:
-                batch_track_artists.append({"uuid": uuid, "artist_id": aid})
-
-            processed += 1
-            if processed % batch_size == 0:
-                flush(conn)
-                logging.info("Processed %d documents", processed)
-
-        flush(conn)
-        logging.info("Migration complete. Total documents: %d", processed)
+    # Final statistics
+    elapsed_hours = (time.time() - start_time) / 3600
+    logging.info("="*60)
+    logging.info("MIGRATION COMPLETE")
+    logging.info(f"Total processed: {processed:,} tracks")
+    logging.info(f"Total skipped: {skipped:,} tracks (already existed)")
+    logging.info(f"Total errors: {errors}")
+    logging.info(f"Total time: {elapsed_hours:.2f} hours")
+    if processed > 0:
+        logging.info(f"Average rate: {processed / (elapsed_hours * 3600):.1f} tracks/second")
+    logging.info("="*60)
 
 
 if __name__ == "__main__":
