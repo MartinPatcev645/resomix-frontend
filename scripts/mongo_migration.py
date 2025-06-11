@@ -29,7 +29,7 @@ from mariadb_ import engine  # reuse the SQLAlchemy engine you already configure
 load_dotenv()
 
 # --- Global Testing Configuration ---
-TESTING = True  # Set to False for full migration
+TESTING = False  # Set to False for full migration
 TESTING_LIMIT = 2000  # Number of tracks to process in testing mode
 
 # --- Settings ----------------------------------------------------------------
