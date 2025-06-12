@@ -62,7 +62,7 @@ def log_test_result(test_name: str, passed: bool, duration: float, details: str 
         if details:
             print(f"     {details}")
         if response_data:
-            print(f"     Response: {json.dumps(response_data, indent=2)[:200]}...")
+            print(f"     Response: {json.dumps(response_data, indent=2)}")
     else:
         print(f"{status} {test_name}")
         if details:
