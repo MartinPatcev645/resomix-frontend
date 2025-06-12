@@ -18,9 +18,8 @@ from datetime import datetime
 
 # Configuration
 BASE_URL = "http://localhost:8005"
-API_KEY = "sk-proj-test-key-12345"  # Update with your actual API key
+API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # Use the actual API key from auth.py
 HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
     "Accept": "application/json"
 }
 
@@ -75,7 +74,8 @@ def test_search_tracks_valid():
     
     try:
         params = {
-            "query": "test track"
+            "query": "test track",
+            "api_key": API_KEY
         }
         
         response = requests.get(
@@ -120,7 +120,8 @@ def test_search_tracks_empty_query():
     
     try:
         params = {
-            "query": ""
+            "query": "",
+            "api_key": API_KEY
         }
         
         response = requests.get(
@@ -163,9 +164,14 @@ def test_search_tracks_missing_query():
     start_time = time.time()
     
     try:
+        params = {
+            "api_key": API_KEY
+        }
+        
         response = requests.get(
             f"{BASE_URL}/search_tracks/",
             headers=HEADERS,
+            params=params,
             timeout=30
         )
         
@@ -206,7 +212,8 @@ def test_search_tracks_with_pagination():
         params = {
             "query": "music",
             "page": 1,
-            "limit": 10
+            "limit": 10,
+            "api_key": API_KEY
         }
         
         response = requests.get(
@@ -253,7 +260,8 @@ def test_search_tracks_invalid_pagination():
         params = {
             "query": "music",
             "page": -1,
-            "limit": 0
+            "limit": 0,
+            "api_key": API_KEY
         }
         
         response = requests.get(
@@ -297,7 +305,8 @@ def test_search_tracks_special_characters():
     
     try:
         params = {
-            "query": "test & special @#$%^&*() characters"
+            "query": "test & special @#$%^&*() characters",
+            "api_key": API_KEY
         }
         
         response = requests.get(
@@ -344,9 +353,10 @@ def test_search_tracks_unauthorized():
     try:
         params = {
             "query": "test"
+            # No API key provided to test unauthorized access
         }
         
-        # Request without authorization header
+        # Request without API key
         response = requests.get(
             f"{BASE_URL}/search_tracks/",
             params=params,
@@ -355,8 +365,8 @@ def test_search_tracks_unauthorized():
         
         duration = time.time() - start_time
         
-        # Should return 401 for unauthorized access
-        if response.status_code == 401:
+        # Should return 403 for unauthorized access (as per auth dependency)
+        if response.status_code == 403:
             data = response.json() if response.headers.get('content-type', '').startswith('application/json') else None
             log_test_result(
                 "Search Unauthorized",
@@ -371,7 +381,7 @@ def test_search_tracks_unauthorized():
             "Search Unauthorized",
             False,
             duration,
-            f"Expected 401, got {response.status_code}: {response.text}",
+            f"Expected 403, got {response.status_code}: {response.text}",
             response.json() if response.headers.get('content-type', '').startswith('application/json') else None
         )
         return False
