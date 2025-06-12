@@ -1,1 +1,15 @@
 # Routers package 
+from .similarity import router as similarity_router
+from .metadata import router as metadata_router
+from .search import router as search_router
+from .feedback import router as feedback_router
+from .health import router as health_router
+
+# List of all routers for easy inclusion
+all_routers = [
+    similarity_router,
+    metadata_router,
+    search_router,
+    feedback_router,
+    health_router,
+] 

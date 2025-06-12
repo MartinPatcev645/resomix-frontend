@@ -1,1 +1,202 @@
 # Similarity controller 
+import os
+import uuid
+from typing import Optional
+from fastapi import UploadFile, HTTPException, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
+from app.services.similarity_service import SimilarityService
+from app.services.search_service import SearchService
+from app.services.audio_service import AudioService
+from app.utils.response_utils import format_response
+from app.utils.file_utils import sanitize_filename
+from app.utils.logging_utils import log_request
+
+
+class SimilarityController:
+    def __init__(self):
+        self.similarity_service = SimilarityService()
+        self.search_service = SearchService()
+        self.audio_service = AudioService()
+
+    async def get_similarity_upload(self, db: AsyncSession, file: UploadFile, top_sk: Optional[int] = None) -> JSONResponse:
+        """
+        Process an audio file and return similar tracks.
+        """
+        # Validate and get the TOP_SK value using global settings
+        validated_top_sk = settings.validate_and_get_top_sk(top_sk)
+        actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
+        duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
+        
+        log_request("get_similarity (upload)", "POST", {
+            "filename": file.filename, 
+            "requested_top_sk": top_sk, 
+            "validated_top_sk": validated_top_sk
+        })
+        
+        # File Size Check using settings
+        if file.size > settings.max_file_size:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, 
+                content=format_response(
+                    success=False,
+                    error=f"File too large. Maximum size is {settings.max_file_size // (1024 * 1024)}MB."
+                )
+            )
+
+        # Check if the file is empty
+        if file.size == 0:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(
+                    success=False,
+                    error="File is empty. Please upload a valid audio file."
+                )
+            )
+
+        audio_bytes = await file.read()
+        original_filename = sanitize_filename(file.filename)
+
+        # Use audio service to validate file
+        is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
+        
+        if is_ffmpeg_available:
+            is_valid_audio = self.audio_service.validate_audio_format(audio_bytes, original_filename)
+            if not is_valid_audio:
+                return JSONResponse(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    content=format_response(
+                        success=False,
+                        error="The uploaded file does not contain valid audio streams according to our analysis."
+                    )
+                )
+            
+            # FFmpeg validation passed, directly use audio_bytes
+            try:
+                similarity_results = await self.similarity_service.calculate_similarity_for_upload(
+                    db=db,
+                    audio_bytes=audio_bytes, 
+                    original_filename=original_filename, 
+                    top_k=actual_top_k,
+                    similarity_duplication_threshold=duplication_threshold
+                )
+                if similarity_results.get("success") is False:
+                    return JSONResponse(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                    )
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(success=True, data=similarity_results)
+                )
+            except Exception as e:
+                print(f"An error occurred in get_similarity (upload with bytes): {e}")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(success=False, error="An internal server error occurred.")
+                )
+
+        else:  # FFmpeg not available, fall back to saving file and basic content type check
+            print(f"WARNING: FFmpeg not available. Performing basic content type check for: {original_filename} and saving to temp file.")
+            if not file.content_type or not file.content_type.startswith("audio/"):
+                return JSONResponse(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    content=format_response(
+                        success=False,
+                        error="Content-Type doesn't appear to be audio. FFmpeg validation is not available for deep analysis."
+                    )
+                )
+            
+            temp_file_path = ""
+            try:
+                unique_filename = f"{str(uuid.uuid4())}_{original_filename}"
+                temp_file_path = os.path.join(settings.temp_dir, unique_filename)
+                with open(temp_file_path, "wb") as buffer:
+                    buffer.write(audio_bytes)
+
+                print("FFmpeg not available. Cannot guarantee audio validity before sending to similarity server. Proceeding with byte upload with caution.")
+                similarity_results = await self.similarity_service.calculate_similarity_for_upload(
+                    db=db,
+                    audio_bytes=audio_bytes, 
+                    original_filename=original_filename,
+                    top_k=actual_top_k,
+                    similarity_duplication_threshold=duplication_threshold
+                )
+                if similarity_results.get("success") is False:
+                    return JSONResponse(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                    )
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(success=True, data=similarity_results)
+                )
+
+            except Exception as e:
+                print(f"An error occurred in get_similarity (upload, no FFmpeg, fallback with bytes): {e}")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(success=False, error="An internal server error occurred.")
+                )
+            finally:
+                if temp_file_path and os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
+
+    async def get_similarity_by_id(self, db: AsyncSession, track_id: str, top_sk: Optional[int] = None) -> JSONResponse:
+        """
+        Get similar tracks for a track identified by its MongoDB ID.
+        """
+        # Validate and get the TOP_SK value using global settings
+        validated_top_sk = settings.validate_and_get_top_sk(top_sk)
+        actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
+        duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
+        
+        log_request("get_selection_similarity (by ID)", "POST", {
+            "track_id": track_id,
+            "requested_top_sk": top_sk,
+            "validated_top_sk": validated_top_sk
+        })
+
+        if not track_id or not track_id.strip():
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(success=False, error="track_id cannot be empty.")
+            )
+
+        try:
+            # Step 1: Get the server_track_path from database using the track_id
+            server_track_path = await self.search_service.get_track_path_by_id(db, track_id)
+
+            if server_track_path is None:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error=f"Track with ID '{track_id}' not found or path is missing.")
+                )
+
+            # Step 2: Call the similarity function with the fetched path and dynamic values
+            similarity_results = await self.similarity_service.get_similarity_by_path(
+                db=db,
+                server_track_path=server_track_path,
+                top_k=actual_top_k,
+                similarity_duplication_threshold=duplication_threshold
+            )
+
+            if similarity_results.get("success") is False:
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed for path."))
+                )
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data=similarity_results)
+            )
+
+        except Exception as e:
+            print(f"An error occurred in get_selection_similarity (by ID): {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred while processing similarity by ID.")
+            ) 

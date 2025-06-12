@@ -1,1 +1,43 @@
 # Database session management dependencies 
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+from database.connection import AsyncSessionLocal, get_async_db, get_db
+
+# Async database session dependency for FastAPI endpoints
+async def get_database_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Database session dependency for FastAPI endpoints.
+    Provides an async MariaDB session that automatically handles cleanup.
+    
+    Usage:
+        @app.get("/endpoint")
+        async def my_endpoint(db: AsyncSession = Depends(get_database_session)):
+            # Use db session here
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+# Re-export the connection functions for compatibility
+get_async_database_session = get_async_db
+get_sync_database_session = get_db
+
+async def init_database():
+    """
+    Initialize database connection.
+    This is called during application startup.
+    """
+    # Database initialization is handled by the engine creation in connection.py
+    # No additional initialization needed for MariaDB
+    pass
+
+async def close_database():
+    """
+    Close database connection.
+    This is called during application shutdown.
+    """
+    # Database cleanup is handled automatically by SQLAlchemy
+    # Connection pooling manages the lifecycle
+    pass
