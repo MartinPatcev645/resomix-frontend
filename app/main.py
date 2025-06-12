@@ -35,7 +35,7 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     try:
         async with async_engine.begin() as conn:
             result = await conn.execute(text("SELECT 1"))
-            await result.fetchone()
+            result.fetchone()
         print("MariaDB database connection established successfully.")
     except Exception as e:
         print(f"WARNING: Failed to connect to MariaDB database: {e}")
