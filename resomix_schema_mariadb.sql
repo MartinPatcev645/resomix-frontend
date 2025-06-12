@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS tracks (
     duration_sec  INT UNSIGNED,
     bpm           SMALLINT UNSIGNED,
     musical_key   VARCHAR(5),                  -- e.g. "C#m"
-    file_path     VARCHAR(255) NOT NULL,       -- original / full file
-    preview_path  VARCHAR(255),                -- 30-sec MP3 etc.
+    file_path     VARCHAR(500) NOT NULL,       -- original / full file
+    preview_path  VARCHAR(500),                -- 30-sec MP3 etc.
     file_size     BIGINT UNSIGNED,             -- bytes
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
