@@ -1,0 +1,1 @@
+# Purchase repository - purchases, user_subscriptions tables 

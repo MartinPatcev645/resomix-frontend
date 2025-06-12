@@ -1,0 +1,2 @@
+-- MariaDB schema definitions for Resomix
+-- This file will contain the database schema 

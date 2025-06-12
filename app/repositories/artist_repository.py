@@ -1,0 +1,1 @@
+# Artist repository - artists table 

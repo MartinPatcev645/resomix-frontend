@@ -1,0 +1,1 @@
+# Base repository with common methods 
