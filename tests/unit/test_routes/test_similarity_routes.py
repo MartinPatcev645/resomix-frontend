@@ -16,7 +16,7 @@ import os
 from typing import Dict, Any, Optional
 
 # Configuration
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8005"
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
 TIMEOUT = 30
 

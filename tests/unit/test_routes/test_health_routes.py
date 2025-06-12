@@ -14,7 +14,7 @@ import time
 from typing import Dict, Any
 
 # Configuration
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8005"
 TIMEOUT = 30
 
 def print_test_result(test_name: str, success: bool, message: str = "", response_time: float = 0):
