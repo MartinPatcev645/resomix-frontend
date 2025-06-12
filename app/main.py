@@ -14,9 +14,10 @@ from app.api.middlewares.cors import setup_cors
 # Import all routers
 from app.api.routers import all_routers
 
-# Import services for lifespan management
-from src.search import initialize_mongodb_client, close_mongodb_client
-from src.feedback import initialize_gspread_client_on_startup
+# Import actual database engine for lifecycle management
+from database.connection import async_engine
+
+# Import FFmpeg check utility
 from src.ffmpeg import is_ffmpeg_installed
 
 
@@ -29,9 +30,13 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     """
     print("Application startup: Initializing external services via lifespan...")
     
-    # Initialize external services
-    await initialize_gspread_client_on_startup()
-    await initialize_mongodb_client()
+    # Test MariaDB database connection
+    try:
+        async with async_engine.begin() as conn:
+            await conn.execute("SELECT 1")
+        print("MariaDB database connection established successfully.")
+    except Exception as e:
+        print(f"WARNING: Failed to connect to MariaDB database: {e}")
     
     # Create temporary directory for uploads if it doesn't exist
     if not os.path.exists(settings.temp_dir):
@@ -48,8 +53,9 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     
     print("Application shutdown: Cleaning up resources (lifespan)...")
     
-    # Close external connections
-    await close_mongodb_client()
+    # Close database engine and all connections
+    await async_engine.dispose()
+    print("MariaDB database connections closed.")
     
     # Clean up temp directory on shutdown
     if os.path.exists(settings.temp_dir):
@@ -90,4 +96,4 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     # It's good practice to make host and port configurable
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    uvicorn.run(app, host="0.0.0.0", port=8005)
