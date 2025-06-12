@@ -4,6 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
+from sqlalchemy import text
 
 # Import configuration and core components
 from app.core.config import settings
@@ -33,7 +34,8 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     # Test MariaDB database connection
     try:
         async with async_engine.begin() as conn:
-            await conn.execute("SELECT 1")
+            result = await conn.execute(text("SELECT 1"))
+            await result.fetchone()
         print("MariaDB database connection established successfully.")
     except Exception as e:
         print(f"WARNING: Failed to connect to MariaDB database: {e}")
