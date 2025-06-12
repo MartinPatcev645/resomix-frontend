@@ -20,9 +20,8 @@ from datetime import datetime
 
 # Configuration
 BASE_URL = "http://localhost:8005"
-API_KEY = "sk-proj-test-key-12345"  # Update with your actual API key
+API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # Use the actual API key from auth.py
 HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
     "Accept": "application/json"
 }
 
@@ -82,7 +81,7 @@ def get_audio_file():
 
 
 def test_similarity_valid_files():
-    """Test similarity calculation with valid audio files."""
+    """Test similarity calculation with a valid audio file."""
     start_time = time.time()
     
     try:
@@ -90,14 +89,18 @@ def test_similarity_valid_files():
         audio_data = get_audio_file()
         
         files = {
-            'file1': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg'),
-            'file2': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg')
+            'file': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg')
+        }
+        
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_similarity/",
             headers=HEADERS,
             files=files,
+            params=params,
             timeout=60  # Similarity calculation might take longer
         )
         
@@ -110,7 +113,7 @@ def test_similarity_valid_files():
                     "Similarity Valid Files",
                     True,
                     duration,
-                    "Successfully calculated similarity",
+                    "Successfully calculated similarity for audio file",
                     data
                 )
                 return True
@@ -135,16 +138,15 @@ def test_similarity_missing_file():
     start_time = time.time()
     
     try:
-        # Only provide one file
-        audio_data = get_audio_file()
-        files = {
-            'file1': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg')
+        # Send request without any file
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_similarity/",
             headers=HEADERS,
-            files=files,
+            params=params,
             timeout=30
         )
         
@@ -178,23 +180,26 @@ def test_similarity_missing_file():
 
 
 def test_similarity_invalid_files():
-    """Test similarity calculation with invalid files."""
+    """Test similarity calculation with an invalid file."""
     start_time = time.time()
     
     try:
-        # Create text files instead of audio
-        text1 = b"This is not an audio file"
-        text2 = b"This is also not an audio file"
+        # Create text file instead of audio
+        text_data = b"This is not an audio file"
         
         files = {
-            'file1': ('text1.txt', BytesIO(text1), 'text/plain'),
-            'file2': ('text2.txt', BytesIO(text2), 'text/plain')
+            'file': ('text1.txt', BytesIO(text_data), 'text/plain')
+        }
+        
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_similarity/",
             headers=HEADERS,
             files=files,
+            params=params,
             timeout=30
         )
         
@@ -207,7 +212,7 @@ def test_similarity_invalid_files():
                 "Similarity Invalid Files",
                 True,
                 duration,
-                f"Correctly rejected invalid files ({response.status_code})",
+                f"Correctly rejected invalid file ({response.status_code})",
                 data
             )
             return True
@@ -228,19 +233,23 @@ def test_similarity_invalid_files():
 
 
 def test_similarity_empty_files():
-    """Test similarity calculation with empty files."""
+    """Test similarity calculation with an empty file."""
     start_time = time.time()
     
     try:
         files = {
-            'file1': ('empty1.mp3', BytesIO(b''), 'audio/mpeg'),
-            'file2': ('empty2.mp3', BytesIO(b''), 'audio/mpeg')
+            'file': ('empty.mp3', BytesIO(b''), 'audio/mpeg')
+        }
+        
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_similarity/",
             headers=HEADERS,
             files=files,
+            params=params,
             timeout=30
         )
         
@@ -253,7 +262,7 @@ def test_similarity_empty_files():
                 "Similarity Empty Files",
                 True,
                 duration,
-                "Correctly rejected empty files",
+                "Correctly rejected empty file",
                 data
             )
             return True
@@ -280,18 +289,19 @@ def test_selection_similarity_valid():
     try:
         # Valid selection similarity data
         selection_data = {
-            "track_ids": ["track1", "track2", "track3"],
-            "user_preferences": {
-                "genre": "electronic",
-                "energy": 0.8,
-                "valence": 0.6
-            }
+            "track_id": "507f1f77bcf86cd799439011",  # Valid MongoDB ObjectId format
+            "top_sk": 10
+        }
+        
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_selection_similarity/",
             headers=HEADERS,
             json=selection_data,
+            params=params,
             timeout=30
         )
         
@@ -329,17 +339,21 @@ def test_selection_similarity_missing_data():
     start_time = time.time()
     
     try:
-        # Missing track_ids
+        # Missing track_id
         selection_data = {
-            "user_preferences": {
-                "genre": "electronic"
-            }
+            "top_sk": 10
+            # Missing required track_id
+        }
+        
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_selection_similarity/",
             headers=HEADERS,
             json=selection_data,
+            params=params,
             timeout=30
         )
         
@@ -377,16 +391,21 @@ def test_selection_similarity_invalid_data():
     start_time = time.time()
     
     try:
-        # Invalid data types
+        # Invalid track_id format
         selection_data = {
-            "track_ids": "not_a_list",
-            "user_preferences": "not_an_object"
+            "track_id": "invalid-track-id-format",
+            "top_sk": 999  # Also invalid value
+        }
+        
+        params = {
+            'api_key': API_KEY
         }
         
         response = requests.post(
             f"{BASE_URL}/get_selection_similarity/",
             headers=HEADERS,
             json=selection_data,
+            params=params,
             timeout=30
         )
         
@@ -427,11 +446,10 @@ def test_similarity_unauthorized():
         audio_data = get_audio_file()
         
         files = {
-            'file1': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg'),
-            'file2': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg')
+            'file': ('audio1.mp3', BytesIO(audio_data), 'audio/mpeg')
         }
         
-        # Request without authorization header
+        # Request without API key
         response = requests.post(
             f"{BASE_URL}/get_similarity/",
             files=files,
@@ -440,8 +458,8 @@ def test_similarity_unauthorized():
         
         duration = time.time() - start_time
         
-        # Should return 401 for unauthorized access
-        if response.status_code == 401:
+        # Should return 403 for unauthorized access (as per auth dependency)
+        if response.status_code == 403:
             data = response.json() if response.headers.get('content-type', '').startswith('application/json') else None
             log_test_result(
                 "Similarity Unauthorized",
@@ -456,7 +474,7 @@ def test_similarity_unauthorized():
             "Similarity Unauthorized",
             False,
             duration,
-            f"Expected 401, got {response.status_code}: {response.text}",
+            f"Expected 403, got {response.status_code}: {response.text}",
             response.json() if response.headers.get('content-type', '').startswith('application/json') else None
         )
         return False
