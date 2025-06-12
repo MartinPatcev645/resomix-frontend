@@ -20,15 +20,43 @@ class MetadataController:
         log_request("metadata", "POST", {"filename": file.filename, "content_type": file.content_type})
 
         try:
-            # Read file content into a temporary in-memory BytesIO object or save to temp file if too large
-            # For Mutagen, passing file.file (SpooledTemporaryFile) directly is often fine.
-            # asyncio.to_thread is crucial here as Mutagen's operations can be blocking.
+            # Basic validation - check if file is empty
+            content = await file.read()
+            if len(content) == 0:
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(success=False, error="Empty file provided")
+                )
+            
+            # Reset file pointer for metadata extraction
+            await file.seek(0)
+            
+            # Check if file has a reasonable audio extension
+            if file.filename:
+                valid_extensions = {'.mp3', '.flac', '.ogg', '.m4a', '.wav', '.wma', '.aac', '.opus'}
+                file_ext = file.filename.lower().split('.')[-1] if '.' in file.filename else ''
+                if file_ext and f'.{file_ext}' not in valid_extensions:
+                    return JSONResponse(
+                        status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                        content=format_response(success=False, error=f"Unsupported file format: .{file_ext}")
+                    )
+            
+            # Use asyncio.to_thread for the blocking Mutagen operation
             extracted_meta = await asyncio.to_thread(self.metadata_service.extract_metadata, file.file)
             
-            if "error" in extracted_meta:  # If Mutagen reported an error (e.g., unsupported format)
+            # Check if metadata extraction failed or found no valid audio
+            if "error" in extracted_meta:
                 return JSONResponse(
-                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,  # Or 422 if it's more a processing error
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                     content=format_response(success=False, error=extracted_meta["error"])
+                )
+            
+            # Check if the file was processed but no valid audio metadata was found
+            if "info" in extracted_meta and extracted_meta.get("info") == "No tags found or unsupported format.":
+                # This usually means the file is not a valid audio file
+                return JSONResponse(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    content=format_response(success=False, error="File does not appear to be a valid audio file")
                 )
             
             response_data = {
@@ -42,7 +70,6 @@ class MetadataController:
 
         except Exception as e:
             print(f"An unexpected error occurred in metadata extraction: {e}")
-            # Ensure to close the file if it was opened, though UploadFile handles this.
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error=f"An internal server error occurred while extracting metadata: {e}")

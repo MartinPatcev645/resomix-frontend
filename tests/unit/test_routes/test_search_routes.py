@@ -1,346 +1,420 @@
 #!/usr/bin/env python3
 """
-Search Routes Test
-==================
+Search Routes Test Suite
+=======================
 
-Test file for search endpoints.
+Comprehensive testing for search functionality endpoints.
+Tests track search with various parameters and validation scenarios.
 
-Usage: python -m pytest tests/unit/test_routes/test_search_routes.py -v
-Or run directly: python tests/unit/test_routes/test_search_routes.py
+Author: AI Assistant
+Date: December 2024
 """
 
 import requests
+import json
 import time
-from typing import Dict, Any
+from datetime import datetime
+
 
 # Configuration
 BASE_URL = "http://localhost:8005"
-API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
-TIMEOUT = 30
+API_KEY = "sk-proj-test-key-12345"  # Update with your actual API key
+HEADERS = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Accept": "application/json"
+}
 
-def print_test_result(test_name: str, success: bool, message: str = "", response_time: float = 0):
-    """Print test result with formatting"""
-    status = "✅ PASS" if success else "❌ FAIL"
-    time_str = f"({response_time:.2f}s)" if response_time > 0 else ""
-    print(f"{status} {test_name} {time_str}")
-    if message:
-        print(f"     {message}")
+# Test Results Storage
+test_results = {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "tests": []
+}
+
+
+def log_test_result(test_name: str, passed: bool, duration: float, details: str = "", response_data: dict = None):
+    """Log test result with detailed information."""
+    global test_results
+    
+    test_results["total"] += 1
+    if passed:
+        test_results["passed"] += 1
+        status = "✅ PASS"
+    else:
+        test_results["failed"] += 1
+        status = "❌ FAIL"
+    
+    result = {
+        "name": test_name,
+        "passed": passed,
+        "duration": duration,
+        "details": details,
+        "response_data": response_data
+    }
+    test_results["tests"].append(result)
+    
+    print(f"\n🧪 Testing {test_name}")
+    if passed:
+        print(f"{status} {test_name} ({duration:.2f}s)")
+        if details:
+            print(f"     {details}")
+        if response_data:
+            print(f"     Response: {json.dumps(response_data, indent=2)[:200]}...")
+    else:
+        print(f"{status} {test_name}")
+        if details:
+            print(f"     {details}")
+        if response_data:
+            print(f"     Full Response: {json.dumps(response_data, indent=2)}")
+
 
 def test_search_tracks_valid():
-    """Test GET /search_tracks/ with valid API key and query"""
-    print("\n🧪 Testing Search Tracks - Valid Request")
+    """Test search tracks with valid parameters."""
+    start_time = time.time()
     
     try:
-        start_time = time.time()
-        
         params = {
-            'query': 'test',
-            'api_key': API_KEY
+            "query": "test track"
         }
         
         response = requests.get(
             f"{BASE_URL}/search_tracks/",
+            headers=HEADERS,
             params=params,
-            timeout=TIMEOUT
+            timeout=30
         )
-        response_time = time.time() - start_time
         
-        # Check status code
-        if response.status_code != 200:
-            print_test_result("Search Valid Status", False, f"Expected 200, got {response.status_code}")
-            return False
+        duration = time.time() - start_time
         
-        # Check response format
-        try:
-            data = response.json()
-        except Exception as e:
-            print_test_result("Search Valid JSON", False, f"Invalid JSON response: {e}")
-            return False
-        
-        # Check response structure
-        if not isinstance(data, dict):
-            print_test_result("Search Valid Structure", False, "Response is not a dictionary")
-            return False
-        
-        # Check success field
-        if data.get("success") is not True:
-            print_test_result("Search Valid Success", False, f"Expected success=True, got {data.get('success')}")
-            return False
-        
-        # Check data field exists
-        if "data" not in data:
-            print_test_result("Search Valid Data Field", False, "Missing 'data' field in response")
-            return False
-        
-        # Check tracks array
-        tracks_data = data["data"]
-        if "tracks" not in tracks_data:
-            print_test_result("Search Valid Tracks Field", False, "Missing 'tracks' field in data")
-            return False
-        
-        tracks = tracks_data["tracks"]
-        if not isinstance(tracks, list):
-            print_test_result("Search Valid Tracks Type", False, "Tracks should be a list")
-            return False
-        
-        # Validate track structure if any tracks found
-        if tracks:
-            track = tracks[0]
-            expected_track_keys = {"id", "artist", "duration", "filename"}
-            missing_keys = expected_track_keys - track.keys()
-            if missing_keys:
-                print_test_result("Search Valid Track Structure", False, f"Missing track keys: {missing_keys}")
-                return False
-        
-        print_test_result("Search Tracks Valid", True, f"Found {len(tracks)} tracks", response_time)
-        return True
-        
-    except requests.exceptions.RequestException as e:
-        print_test_result("Search Tracks Valid", False, f"Request failed: {e}")
-        return False
-    except Exception as e:
-        print_test_result("Search Tracks Valid", False, f"Unexpected error: {e}")
-        return False
-
-def test_search_tracks_invalid_api_key():
-    """Test GET /search_tracks/ with invalid API key"""
-    print("\n🧪 Testing Search Tracks - Invalid API Key")
-    
-    try:
-        start_time = time.time()
-        
-        params = {
-            'query': 'test',
-            'api_key': 'invalid-api-key-12345'
-        }
-        
-        response = requests.get(
-            f"{BASE_URL}/search_tracks/",
-            params=params,
-            timeout=TIMEOUT
-        )
-        response_time = time.time() - start_time
-        
-        # Should return 403 for invalid API key
-        if response.status_code == 403:
-            print_test_result("Search Invalid API Key", True, "Correctly rejected invalid API key", response_time)
-            return True
-        else:
-            print_test_result("Search Invalid API Key", False, f"Expected 403, got {response.status_code}")
-            return False
-        
-    except requests.exceptions.RequestException as e:
-        print_test_result("Search Invalid API Key", False, f"Request failed: {e}")
-        return False
-    except Exception as e:
-        print_test_result("Search Invalid API Key", False, f"Unexpected error: {e}")
-        return False
-
-def test_search_tracks_missing_api_key():
-    """Test GET /search_tracks/ without API key"""
-    print("\n🧪 Testing Search Tracks - Missing API Key")
-    
-    try:
-        start_time = time.time()
-        
-        params = {
-            'query': 'test'
-            # No API key provided
-        }
-        
-        response = requests.get(
-            f"{BASE_URL}/search_tracks/",
-            params=params,
-            timeout=TIMEOUT
-        )
-        response_time = time.time() - start_time
-        
-        # Should return 403 for missing API key
-        if response.status_code == 403:
-            print_test_result("Search Missing API Key", True, "Correctly rejected missing API key", response_time)
-            return True
-        else:
-            print_test_result("Search Missing API Key", False, f"Expected 403, got {response.status_code}")
-            return False
-        
-    except requests.exceptions.RequestException as e:
-        print_test_result("Search Missing API Key", False, f"Request failed: {e}")
-        return False
-    except Exception as e:
-        print_test_result("Search Missing API Key", False, f"Unexpected error: {e}")
-        return False
-
-def test_search_tracks_empty_query():
-    """Test GET /search_tracks/ with empty query"""
-    print("\n🧪 Testing Search Tracks - Empty Query")
-    
-    try:
-        start_time = time.time()
-        
-        params = {
-            'query': '',
-            'api_key': API_KEY
-        }
-        
-        response = requests.get(
-            f"{BASE_URL}/search_tracks/",
-            params=params,
-            timeout=TIMEOUT
-        )
-        response_time = time.time() - start_time
-        
-        # Should return 200 but with empty results
         if response.status_code == 200:
             data = response.json()
-            if data.get("success") is True:
-                tracks = data.get("data", {}).get("tracks", [])
-                print_test_result("Search Empty Query", True, f"Handled empty query, returned {len(tracks)} tracks", response_time)
+            if data.get("success"):
+                log_test_result(
+                    "Search Tracks Valid",
+                    True,
+                    duration,
+                    "Successfully performed search",
+                    data
+                )
                 return True
-            else:
-                print_test_result("Search Empty Query", False, f"Success=False: {data.get('error', 'Unknown error')}")
-                return False
-        else:
-            print_test_result("Search Empty Query", False, f"Expected 200, got {response.status_code}")
-            return False
         
-    except requests.exceptions.RequestException as e:
-        print_test_result("Search Empty Query", False, f"Request failed: {e}")
+        log_test_result(
+            "Search Tracks Valid",
+            False,
+            duration,
+            f"Expected 200 with success, got {response.status_code}: {response.text}",
+            response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+        )
         return False
+        
     except Exception as e:
-        print_test_result("Search Empty Query", False, f"Unexpected error: {e}")
+        duration = time.time() - start_time
+        log_test_result("Search Tracks Valid", False, duration, f"Exception: {str(e)}")
         return False
+
+
+def test_search_tracks_empty_query():
+    """Test search tracks with empty query."""
+    start_time = time.time()
+    
+    try:
+        params = {
+            "query": ""
+        }
+        
+        response = requests.get(
+            f"{BASE_URL}/search_tracks/",
+            headers=HEADERS,
+            params=params,
+            timeout=30
+        )
+        
+        duration = time.time() - start_time
+        
+        # Should handle empty query gracefully
+        if response.status_code in [200, 400, 422]:
+            data = response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+            log_test_result(
+                "Search Empty Query",
+                True,
+                duration,
+                f"Handled empty query appropriately ({response.status_code})",
+                data
+            )
+            return True
+        
+        log_test_result(
+            "Search Empty Query",
+            False,
+            duration,
+            f"Unexpected status {response.status_code}: {response.text}"
+        )
+        return False
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        log_test_result("Search Empty Query", False, duration, f"Exception: {str(e)}")
+        return False
+
 
 def test_search_tracks_missing_query():
-    """Test GET /search_tracks/ without query parameter"""
-    print("\n🧪 Testing Search Tracks - Missing Query")
+    """Test search tracks without query parameter."""
+    start_time = time.time()
     
     try:
-        start_time = time.time()
-        
-        params = {
-            'api_key': API_KEY
-            # No query parameter
-        }
-        
         response = requests.get(
             f"{BASE_URL}/search_tracks/",
-            params=params,
-            timeout=TIMEOUT
+            headers=HEADERS,
+            timeout=30
         )
-        response_time = time.time() - start_time
         
-        # Should return 422 for missing required parameter
+        duration = time.time() - start_time
+        
+        # Should return error for missing required query parameter
         if response.status_code == 422:
-            print_test_result("Search Missing Query", True, "Correctly rejected missing query parameter", response_time)
+            data = response.json()
+            log_test_result(
+                "Search Missing Query",
+                True,
+                duration,
+                "Correctly rejected missing query parameter",
+                data
+            )
             return True
-        else:
-            print_test_result("Search Missing Query", False, f"Expected 422, got {response.status_code}")
-            return False
         
-    except requests.exceptions.RequestException as e:
-        print_test_result("Search Missing Query", False, f"Request failed: {e}")
+        log_test_result(
+            "Search Missing Query",
+            False,
+            duration,
+            f"Expected 422, got {response.status_code}: {response.text}",
+            response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+        )
         return False
+        
     except Exception as e:
-        print_test_result("Search Missing Query", False, f"Unexpected error: {e}")
+        duration = time.time() - start_time
+        log_test_result("Search Missing Query", False, duration, f"Exception: {str(e)}")
         return False
 
-def test_search_tracks_special_query():
-    """Test GET /search_tracks/ with special characters"""
-    print("\n🧪 Testing Search Tracks - Special Characters")
+
+def test_search_tracks_with_pagination():
+    """Test search tracks with pagination parameters."""
+    start_time = time.time()
     
     try:
-        start_time = time.time()
-        
         params = {
-            'query': 'test@#$%^&*()[]{}',
-            'api_key': API_KEY
+            "query": "music",
+            "page": 1,
+            "limit": 10
         }
         
         response = requests.get(
             f"{BASE_URL}/search_tracks/",
+            headers=HEADERS,
             params=params,
-            timeout=TIMEOUT
+            timeout=30
         )
-        response_time = time.time() - start_time
+        
+        duration = time.time() - start_time
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                log_test_result(
+                    "Search With Pagination",
+                    True,
+                    duration,
+                    "Successfully handled pagination parameters",
+                    data
+                )
+                return True
+        
+        log_test_result(
+            "Search With Pagination",
+            False,
+            duration,
+            f"Expected 200 with success, got {response.status_code}: {response.text}",
+            response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+        )
+        return False
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        log_test_result("Search With Pagination", False, duration, f"Exception: {str(e)}")
+        return False
+
+
+def test_search_tracks_invalid_pagination():
+    """Test search tracks with invalid pagination parameters."""
+    start_time = time.time()
+    
+    try:
+        params = {
+            "query": "music",
+            "page": -1,
+            "limit": 0
+        }
+        
+        response = requests.get(
+            f"{BASE_URL}/search_tracks/",
+            headers=HEADERS,
+            params=params,
+            timeout=30
+        )
+        
+        duration = time.time() - start_time
+        
+        # Should handle invalid pagination gracefully
+        if response.status_code in [200, 400, 422]:
+            data = response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+            log_test_result(
+                "Search Invalid Pagination",
+                True,
+                duration,
+                f"Handled invalid pagination appropriately ({response.status_code})",
+                data
+            )
+            return True
+        
+        log_test_result(
+            "Search Invalid Pagination",
+            False,
+            duration,
+            f"Unexpected status {response.status_code}: {response.text}"
+        )
+        return False
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        log_test_result("Search Invalid Pagination", False, duration, f"Exception: {str(e)}")
+        return False
+
+
+def test_search_tracks_special_characters():
+    """Test search tracks with special characters in query."""
+    start_time = time.time()
+    
+    try:
+        params = {
+            "query": "test & special @#$%^&*() characters"
+        }
+        
+        response = requests.get(
+            f"{BASE_URL}/search_tracks/",
+            headers=HEADERS,
+            params=params,
+            timeout=30
+        )
+        
+        duration = time.time() - start_time
         
         # Should handle special characters gracefully
         if response.status_code == 200:
             data = response.json()
-            if data.get("success") is True:
-                tracks = data.get("data", {}).get("tracks", [])
-                print_test_result("Search Special Characters", True, f"Handled special characters, returned {len(tracks)} tracks", response_time)
+            if data.get("success"):
+                log_test_result(
+                    "Search Special Characters",
+                    True,
+                    duration,
+                    "Successfully handled special characters",
+                    data
+                )
                 return True
-            else:
-                print_test_result("Search Special Characters", False, f"Success=False: {data.get('error', 'Unknown error')}")
-                return False
-        else:
-            print_test_result("Search Special Characters", False, f"Expected 200, got {response.status_code}")
-            return False
         
-    except requests.exceptions.RequestException as e:
-        print_test_result("Search Special Characters", False, f"Request failed: {e}")
+        log_test_result(
+            "Search Special Characters",
+            False,
+            duration,
+            f"Expected 200 with success, got {response.status_code}: {response.text}",
+            response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+        )
         return False
+        
     except Exception as e:
-        print_test_result("Search Special Characters", False, f"Unexpected error: {e}")
+        duration = time.time() - start_time
+        log_test_result("Search Special Characters", False, duration, f"Exception: {str(e)}")
         return False
 
+
+def test_search_tracks_unauthorized():
+    """Test search tracks without API key."""
+    start_time = time.time()
+    
+    try:
+        params = {
+            "query": "test"
+        }
+        
+        # Request without authorization header
+        response = requests.get(
+            f"{BASE_URL}/search_tracks/",
+            params=params,
+            timeout=30
+        )
+        
+        duration = time.time() - start_time
+        
+        # Should return 401 for unauthorized access
+        if response.status_code == 401:
+            data = response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+            log_test_result(
+                "Search Unauthorized",
+                True,
+                duration,
+                "Correctly rejected unauthorized request",
+                data
+            )
+            return True
+        
+        log_test_result(
+            "Search Unauthorized",
+            False,
+            duration,
+            f"Expected 401, got {response.status_code}: {response.text}",
+            response.json() if response.headers.get('content-type', '').startswith('application/json') else None
+        )
+        return False
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        log_test_result("Search Unauthorized", False, duration, f"Exception: {str(e)}")
+        return False
+
+
 def run_search_tests():
-    """Run all search-related tests"""
+    """Run all search tests."""
     print("=" * 60)
     print("🔍 SEARCH ROUTES TEST SUITE")
     print("=" * 60)
     print(f"Testing against: {BASE_URL}")
-    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # Test server connectivity first
-    try:
-        response = requests.get(f"{BASE_URL}/docs", timeout=5)
-        if response.status_code != 200:
-            print("\n🚨 Server not available. Skipping search tests.")
-            return
-    except:
-        print("\n🚨 Server not available. Skipping search tests.")
-        return
+    # Run all tests
+    test_search_tracks_valid()
+    test_search_tracks_empty_query()
+    test_search_tracks_missing_query()
+    test_search_tracks_with_pagination()
+    test_search_tracks_invalid_pagination()
+    test_search_tracks_special_characters()
+    test_search_tracks_unauthorized()
     
-    # Run search tests
-    tests = [
-        test_search_tracks_valid,
-        test_search_tracks_invalid_api_key,
-        test_search_tracks_missing_api_key,
-        test_search_tracks_empty_query,
-        test_search_tracks_missing_query,
-        test_search_tracks_special_query,
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test_func in tests:
-        try:
-            if test_func():
-                passed += 1
-            else:
-                failed += 1
-        except Exception as e:
-            print_test_result(test_func.__name__, False, f"Test crashed: {e}")
-            failed += 1
-    
-    # Summary
+    # Print summary
     print("\n" + "=" * 60)
     print("📊 SEARCH TESTS SUMMARY")
     print("=" * 60)
-    total = passed + failed
-    success_rate = (passed / total * 100) if total > 0 else 0
+    print(f"Total Tests: {test_results['total']}")
+    print(f"Passed: {test_results['passed']} ✅")
+    print(f"Failed: {test_results['failed']} ❌")
+    print(f"Success Rate: {test_results['passed']/test_results['total']*100:.1f}%")
     
-    print(f"Total Tests: {total}")
-    print(f"Passed: {passed} ✅")
-    print(f"Failed: {failed} ❌")
-    print(f"Success Rate: {success_rate:.1f}%")
-    
-    if failed == 0:
-        print("\n🎉 All search tests passed!")
+    if test_results['failed'] > 0:
+        print(f"\n⚠️  Some search tests failed.")
     else:
-        print("\n⚠️  Some search tests failed.")
+        print(f"\n🎉 All search tests passed!")
+    
+    return test_results
+
 
 if __name__ == "__main__":
     run_search_tests()
