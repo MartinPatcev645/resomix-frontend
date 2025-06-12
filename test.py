@@ -18,7 +18,7 @@ from pathlib import Path
 import time
 
 # Configuration
-BASE_URL = "http://localhost:8001"  # Adjust if your server runs on different port
+BASE_URL = "http://localhost:8005"  # Adjust if your server runs on different port
 API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
 TIMEOUT = 30
 
