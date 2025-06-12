@@ -46,8 +46,8 @@ class ContactRequest(BaseModel):
     @validator('phone')
     def validate_phone(cls, v):
         if v is not None:
-            # Basic phone validation - remove spaces and check for reasonable length
-            cleaned = v.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            # Basic phone validation - remove spaces, dashes, parentheses, and plus signs
+            cleaned = v.replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('+', '')
             if not cleaned.isdigit() or len(cleaned) < 7 or len(cleaned) > 15:
                 raise ValueError('Invalid phone number format')
         return v
