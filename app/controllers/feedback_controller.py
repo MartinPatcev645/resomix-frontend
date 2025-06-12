@@ -22,21 +22,12 @@ class FeedbackController:
         - **recommendation**: Rating from 1-10
         - **feedback**: Feedback text
         
-        For contact form, include:
-        - **name**: User's name
-        - **email**: User's email
-        - **subject**: Subject of the message
-        - **message**: Message text
-        - **formType**: Set to "contact"
         """
         log_request("feedback", "POST", {"formType": data.get("formType", "feedback")})
         
         try:
             # Determine if this is a contact form or feedback form
-            if data.get("formType") == "contact":
-                result = await self.feedback_service.process_contact(data, db)
-            else:
-                result = await self.feedback_service.process_feedback(data, db)
+            result = await self.feedback_service.process_feedback(data, db)
                 
             # Return success response
             return JSONResponse(
@@ -54,6 +45,50 @@ class FeedbackController:
         except Exception as e:
             # Log the exception for debugging
             print(f"An error occurred in feedback: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred.")
+            )
+
+    async def submit_contact(self, db: AsyncSession, data: Dict[str, Any]) -> JSONResponse:
+        """
+        Submit contact form data.
+        
+        Args:
+            db: Database session
+            data: Contact form data dictionary
+            
+        For contact form, include:
+        - **name**: User's name
+        - **email**: User's email
+        - **subject**: Subject of the message
+        - **message**: Message text
+        - **formType**: Set to "contact"
+            
+        Returns:
+            JSONResponse with success/error result
+        """
+        log_request("contact", "POST", {"name": data.get("name"), "email": data.get("email")})
+        
+        try:
+            result = await self.feedback_service.process_contact(data, db)
+                
+            # Return success response
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data=result)
+            )
+            
+        except ValueError as ve:
+            # Validation errors
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(success=False, error=str(ve))
+            )
+            
+        except Exception as e:
+            # Log the exception for debugging
+            print(f"An error occurred in contact submission: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred.")

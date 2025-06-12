@@ -1,10 +1,14 @@
 from typing import List, Optional
-from pydantic import BaseSettings, Field
+from pydantic import BaseModel, Field
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
-class Settings(BaseSettings):
-    """Application configuration settings using Pydantic BaseSettings"""
+class Settings(BaseModel):
+    """Application configuration settings"""
     
     # API Configuration
     api_key_name: str = Field(default="api_key", description="API key parameter name")
@@ -53,11 +57,34 @@ class Settings(BaseSettings):
     # Environment-specific settings
     environment: str = Field(default="development", description="Current environment (development/production)")
     debug: bool = Field(default=True, description="Enable debug mode")
-    
-    class Config:
-        env_file = ".env"
-        env_prefix = "RESOMIX_"
-        case_sensitive = False
+
+    def __init__(self, **data):
+        # Override with environment variables if they exist
+        env_overrides = {}
+        
+        # Check for environment variables with RESOMIX_ prefix
+        for key in [
+            "api_key", "temp_dir", "default_top_sk", "use_development_cors",
+            "app_title", "app_description", "app_version", "environment", "debug"
+        ]:
+            env_key = f"RESOMIX_{key.upper()}"
+            env_value = os.getenv(env_key)
+            if env_value is not None:
+                # Handle boolean conversion
+                if key in ["use_development_cors", "debug"]:
+                    env_overrides[key] = env_value.lower() in ("true", "1", "yes", "on")
+                # Handle int conversion
+                elif key in ["default_top_sk"]:
+                    try:
+                        env_overrides[key] = int(env_value)
+                    except ValueError:
+                        pass
+                else:
+                    env_overrides[key] = env_value
+        
+        # Merge environment overrides with provided data
+        data.update(env_overrides)
+        super().__init__(**data)
 
     @property
     def current_origin_regex(self) -> str:
