@@ -84,11 +84,22 @@ class SimilarityService:
         # Check the status from the similarity server's response
         if similarity_response.get("status") == "success":
             raw_results = similarity_response.get("results", [])
+            # Get paths from similarity server response (these may have /home/usman/data/ prefix)
             abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
             
+            # Convert similarity server paths to clean paths for database lookup
+            clean_paths_for_db = []
+            for abs_path in abs_paths_from_server:
+                if abs_path.startswith(self.path_prefix_to_remove):
+                    clean_path = abs_path[len(self.path_prefix_to_remove):]
+                    clean_paths_for_db.append(clean_path)
+                else:
+                    # Path already clean
+                    clean_paths_for_db.append(abs_path)
+            
             db_details_map = {}
-            if abs_paths_from_server:
-                db_details_map = await self._fetch_track_details_from_db_by_path(db, abs_paths_from_server)
+            if clean_paths_for_db:
+                db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths_for_db)
 
             enriched_similar_tracks = []
             for res_item in raw_results:
@@ -96,13 +107,10 @@ class SimilarityService:
                 if not abs_path: 
                     continue
 
-                relative_path = ""
-                if abs_path.startswith(self.path_prefix_to_remove):
-                    relative_path = abs_path[len(self.path_prefix_to_remove):]
-                else:
-                    relative_path = abs_path  # Should have prefix
+                # Convert to clean path for database lookup
+                clean_path = abs_path[len(self.path_prefix_to_remove):] if abs_path.startswith(self.path_prefix_to_remove) else abs_path
                 
-                details = db_details_map.get(relative_path)
+                details = db_details_map.get(clean_path)
                 if details:
                     enriched_similar_tracks.append({
                         "rank": res_item.get("rank"),
@@ -147,7 +155,7 @@ class SimilarityService:
         
         Args:
             db: Database session
-            server_track_path: The absolute path to the track file on the server
+            server_track_path: The file path to the track file (without /home/usman/data/ prefix)
             top_k: Number of similar tracks to request from similarity server
             similarity_duplication_threshold: The threshold for removing duplicates before returning
             
@@ -168,20 +176,37 @@ class SimilarityService:
 
         if similarity_response.get("status") == "success":
             raw_results = similarity_response.get("results", [])
+            # Get paths from similarity server response (these may have /home/usman/data/ prefix)
             abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
 
+            # Convert similarity server paths to clean paths for database lookup
+            clean_paths_for_db = []
+            for abs_path in abs_paths_from_server:
+                if abs_path.startswith(self.path_prefix_to_remove):
+                    clean_path = abs_path[len(self.path_prefix_to_remove):]
+                    clean_paths_for_db.append(clean_path)
+                else:
+                    # Path already clean
+                    clean_paths_for_db.append(abs_path)
+
             db_details_map = {}
-            if abs_paths_from_server:
-                db_details_map = await self._fetch_track_details_from_db_by_path(db, abs_paths_from_server)
+            if clean_paths_for_db:
+                db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths_for_db)
 
             enriched_similar_tracks = []
             for res_item in raw_results:
                 abs_path = res_item.get("path")
-                if not abs_path or abs_path == server_track_path: 
-                    continue  # Exclude queried track
+                if not abs_path: 
+                    continue
                 
-                # Use path as-is since it's already in correct format
-                details = db_details_map.get(abs_path)
+                # Convert to clean path for database lookup
+                clean_path = abs_path[len(self.path_prefix_to_remove):] if abs_path.startswith(self.path_prefix_to_remove) else abs_path
+                
+                # Skip if this is the same as the queried track
+                if clean_path == server_track_path:
+                    continue
+                
+                details = db_details_map.get(clean_path)
                 if details:
                     enriched_similar_tracks.append({
                         "rank": res_item.get("rank"),
