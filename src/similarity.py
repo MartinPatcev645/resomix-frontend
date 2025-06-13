@@ -276,6 +276,7 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10, simila
         print(f"Error fetching details for queried path '{server_track_path}' from DB: {e}")
 
     payload = {"file_path": server_track_path, "top_k": top_k}
+    print(f"Payload: {payload}")
     similarity_response = await _call_similarity_server("/query-by-path/", data=payload)
 
     if similarity_response.get("status") == "success":
