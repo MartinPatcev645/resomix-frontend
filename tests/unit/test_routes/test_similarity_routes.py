@@ -291,7 +291,7 @@ def test_selection_similarity_valid():
     try:
         # Valid selection similarity data
         selection_data = {
-            "track_id": "507f1f77bcf86cd799439011",  # Valid MongoDB ObjectId format
+            "track_id": "67ad9cec799206f8d64acdf1",  # Valid MongoDB ObjectId format
             "top_sk": 10
         }
         
