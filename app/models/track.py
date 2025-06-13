@@ -1,3 +1,20 @@
+"""
+Track Models
+============
+
+This module defines the Track and TrackArtist SQLAlchemy models for the ResomiX application.
+It handles track metadata storage including title, duration, BPM, musical key, and file paths,
+with support for many-to-many relationships between tracks and artists.
+
+Provides comprehensive track data modeling with proper foreign key relationships
+to albums, labels, genres, and artists for the audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Track, TrackArtist models 
 from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship

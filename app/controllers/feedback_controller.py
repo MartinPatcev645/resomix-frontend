@@ -2,10 +2,17 @@
 Feedback Controller
 ===================
 
-Controller for handling feedback form requests and responses.
+This controller handles HTTP requests for user feedback functionality.
+It processes feedback submissions, retrieval requests, and status updates,
+coordinating with feedback service to manage user feedback operations.
 
-Author: AI Assistant
-Date: December 2024
+Manages request validation, response formatting, and error handling
+for all feedback-related API endpoints.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Dict, Any

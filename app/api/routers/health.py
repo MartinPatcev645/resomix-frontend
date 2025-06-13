@@ -1,3 +1,20 @@
+"""
+Health API Router
+=================
+
+This module defines the FastAPI router for health check and status endpoints.
+It provides system health monitoring and basic API information endpoints
+for service monitoring and uptime verification.
+
+Provides essential health check endpoints for monitoring the ResomiX
+application status and availability.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Health and status endpoints 
 from fastapi import APIRouter
 

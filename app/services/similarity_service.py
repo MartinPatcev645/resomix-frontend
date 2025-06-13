@@ -4,12 +4,12 @@ Similarity Service
 
 This service provides functionality for calculating audio similarity by interacting with a dedicated similarity microservice.
 It handles similarity calculations for uploaded audio files and server-side file paths,
-with database integration using MariaDB repositories instead of MongoDB.
+with database integration using MariaDB repositories.
 
-Moved from: src/similarity.py
-Updated: Database calls to use MariaDB repositories instead of MongoDB
-Version: 1.0.0
-Date: May 6, 2025
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 import os

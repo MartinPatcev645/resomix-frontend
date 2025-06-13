@@ -1,14 +1,18 @@
 """
 Validation Utilities
-==================
+====================
 
-This module provides utilities for validation, logging, and monitoring.
+This module provides utilities for data validation and input sanitization
+throughout the ResomiX application. It handles request validation, parameter checking,
+and data integrity verification for API endpoints.
 
-Functions:
-- log_request: Logs request details for debugging and monitoring.
+Centralizes validation logic to ensure consistent data validation and security
+across all application components and user inputs.
 
-Author: AI Assistant
-Date: May 2023
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Dict, Any

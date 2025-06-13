@@ -2,11 +2,17 @@
 Similarity Schemas
 ==================
 
-This module contains Pydantic schemas for similarity calculation endpoints,
-including request and response models for audio similarity operations.
+This module contains Pydantic schemas for audio similarity calculation endpoints.
+It defines request and response models for similarity operations including upload-based
+and ID-based similarity queries with comprehensive validation and error handling.
 
-Author: AI Assistant
-Date: December 2024
+Provides schemas for similarity server communication, track result formatting,
+and configuration management for the similarity microservice integration.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional, List, Dict, Any

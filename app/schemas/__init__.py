@@ -2,11 +2,17 @@
 Schemas Package
 ===============
 
-This package contains all Pydantic schemas for the Resomix API,
-organized by domain for clear separation of concerns.
+This package contains all Pydantic schemas for the ResomiX Audio Similarity API,
+organized by domain for clear separation of concerns. Provides request/response models,
+validation schemas, and data transfer objects for all API endpoints.
 
-Author: AI Assistant
-Date: December 2024
+Includes schemas for similarity calculations, metadata extraction, search operations,
+feedback management, and contact form handling with comprehensive validation.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 # Common schemas used across domains

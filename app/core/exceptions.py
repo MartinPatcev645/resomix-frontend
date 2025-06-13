@@ -1,20 +1,18 @@
 """
 Custom Exceptions
-================
+=================
 
-This module provides custom exception classes for different error types
-that replace standard HTTPException usage throughout the application.
+This module defines custom exception classes for the ResomiX application.
+It provides specialized exceptions for different error scenarios including
+authentication, validation, file handling, and external service failures.
 
-Exception Classes:
-- AuthenticationError: For API key and credential validation errors (403)
-- ValidationError: For input validation and processing errors (422)
-- NotFoundError: For resource not found errors (404)
-- UnsupportedMediaTypeError: For invalid file types and formats (415)
-- ServiceUnavailableError: For external service failures (503)
-- InternalServerError: For unexpected server errors (500)
+Centralizes error handling with consistent status codes and error messages
+across all application components and API endpoints.
 
-Author: AI Assistant
-Date: May 2023
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional, Any

@@ -1,11 +1,18 @@
 """
-Contact Router
-==============
+Contact API Router
+==================
 
-This module defines contact form API endpoints for handling contact submissions.
+This module defines the FastAPI router for user contact form endpoints.
+It handles HTTP requests for contact form submissions, retrieval, and status updates
+with authentication and validation for customer support management.
 
-Author: AI Assistant
-Date: December 2024
+Provides RESTful API endpoints for managing user inquiries and contact
+requests in the ResomiX application.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from fastapi import APIRouter, Depends, Path, Security

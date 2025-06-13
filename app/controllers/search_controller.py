@@ -1,3 +1,20 @@
+"""
+Search Controller
+=================
+
+This controller handles HTTP requests for track search functionality.
+It processes search queries and coordinates with search service to perform
+text-based searches across tracks, artists, and other metadata fields.
+
+Manages query validation, search parameter processing, and response formatting
+for search-related API endpoints.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Search controller 
 from fastapi import status
 from fastapi.responses import JSONResponse

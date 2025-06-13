@@ -1,3 +1,20 @@
+"""
+FastAPI Application Entry Point
+===============================
+
+This is the main FastAPI application entry point for the ResomiX Audio Similarity API.
+It configures the FastAPI app, sets up global exception handlers for standardized responses,
+includes all API routers, and handles CORS middleware for cross-origin requests.
+
+The application provides audio similarity matching, track search, metadata retrieval,
+and user feedback/contact functionality with MariaDB database integration.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # FastAPI app creation and configuration 
 import shutil
 import os

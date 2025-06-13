@@ -1,3 +1,20 @@
+"""
+Artist Model
+============
+
+This module defines the Artist SQLAlchemy model for the ResomiX application.
+It handles artist information storage with support for relationships to albums
+and tracks through many-to-many associations.
+
+Provides artist data modeling with proper foreign key relationships
+for the audio similarity and metadata system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Artist model 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship

@@ -2,11 +2,17 @@
 Contact Schemas
 ===============
 
-This module contains Pydantic schemas for contact form endpoints,
-including request and response models for contact operations.
+This module contains Pydantic schemas for contact form functionality.
+It defines request and response models for contact submissions, inquiry management,
+and status updates with comprehensive validation and error handling.
 
-Author: AI Assistant
-Date: December 2024
+Provides schemas for contact forms, field validation, status management,
+and administrative operations for user inquiry tracking.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional

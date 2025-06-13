@@ -1,14 +1,18 @@
 """
 Logging Utilities
-================
+=================
 
-This module provides utilities for logging and monitoring.
+This module provides utilities for request logging and system monitoring
+throughout the ResomiX application. It handles request tracking, parameter logging,
+and debugging information for API endpoints.
 
-Functions:
-- log_request: Logs request details for debugging and monitoring.
+Centralizes logging functionality to provide consistent monitoring capabilities
+and debugging support across all application components.
 
-Author: AI Assistant
-Date: May 2023
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Dict, Any

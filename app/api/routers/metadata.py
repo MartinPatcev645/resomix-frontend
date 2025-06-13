@@ -1,3 +1,20 @@
+"""
+Metadata API Router
+===================
+
+This module defines the FastAPI router for audio metadata extraction endpoints.
+It handles HTTP requests for extracting metadata from uploaded audio files
+including artist, album, genre, and technical information.
+
+Provides RESTful API endpoints for metadata extraction functionality
+in the ResomiX audio analysis system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Metadata endpoints 
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse

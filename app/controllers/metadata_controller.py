@@ -1,3 +1,20 @@
+"""
+Metadata Controller
+===================
+
+This controller handles HTTP requests for track metadata retrieval functionality.
+It processes requests for detailed track information including artist, album, label,
+genre, and technical details, coordinating with metadata service for data enrichment.
+
+Manages track ID validation, metadata formatting, and error handling
+for metadata-related API endpoints.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Metadata controller 
 import asyncio
 from fastapi import UploadFile, status

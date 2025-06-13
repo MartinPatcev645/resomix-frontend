@@ -1,3 +1,20 @@
+"""
+Album Model
+===========
+
+This module defines the Album SQLAlchemy model for the ResomiX application.
+It handles album information storage including title, release date, and cover image,
+with relationships to artists and tracks.
+
+Provides album data modeling with proper foreign key relationships
+for organizing tracks and artist associations in the audio system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Album model 
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship

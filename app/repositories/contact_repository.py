@@ -2,10 +2,17 @@
 Contact Repository
 ==================
 
-Repository for contact-related database operations.
+This repository handles CRUD operations for the Contact model using MariaDB.
+It provides contact creation, retrieval, status updates, and filtering capabilities
+with proper error handling and data validation.
 
-Author: AI Assistant
-Date: December 2024
+Implements contact management operations including user-based filtering,
+inquiry tracking, and administrative status management.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import List, Optional

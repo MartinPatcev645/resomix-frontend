@@ -1,3 +1,20 @@
+"""
+Database Connection
+===================
+
+This module provides MariaDB database connection setup and session management
+for the ResomiX Audio Similarity API. It configures both synchronous and asynchronous
+database engines using SQLAlchemy with proper connection pooling and session handling.
+
+Manages database connections, session factories, and dependency injection
+for FastAPI endpoints with environment-based configuration.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # MariaDB connection setup
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker

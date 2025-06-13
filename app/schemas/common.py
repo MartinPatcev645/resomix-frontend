@@ -2,11 +2,17 @@
 Common Schemas
 ==============
 
-This module contains common Pydantic schemas used across the application,
-including API response structures, error handling, and shared data types.
+This module contains shared Pydantic schemas used across multiple API endpoints.
+It defines common request/response models, validation schemas, error handling,
+and utility schemas for consistent API behavior and data formatting.
 
-Author: AI Assistant
-Date: December 2024
+Provides base schemas for pagination, error responses, file handling,
+configuration constants, and standardized response formatting.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Any, Optional, Dict, List, Union

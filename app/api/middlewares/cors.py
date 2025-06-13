@@ -1,3 +1,20 @@
+"""
+CORS Middleware
+===============
+
+This module provides CORS (Cross-Origin Resource Sharing) middleware configuration
+for the ResomiX FastAPI application. It handles cross-origin request policies
+and security settings for web browser access.
+
+Configures CORS policies based on environment settings to allow secure
+cross-origin access while maintaining appropriate security restrictions.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # CORS configuration middleware 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware

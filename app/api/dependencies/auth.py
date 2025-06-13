@@ -1,3 +1,20 @@
+"""
+Authentication Dependencies
+===========================
+
+This module provides FastAPI dependency functions for API key authentication.
+It handles API key validation from query parameters and ensures secure access
+to protected endpoints throughout the ResomiX application.
+
+Centralizes authentication logic to provide consistent security validation
+across all API endpoints requiring authentication.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # API key authentication dependencies 
 from fastapi import HTTPException, Security
 from fastapi.security.api_key import APIKeyQuery

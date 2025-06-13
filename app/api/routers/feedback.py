@@ -1,11 +1,18 @@
 """
-Feedback Router
-===============
+Feedback API Router
+===================
 
-This module defines feedback API endpoints for handling feedback submissions only.
+This module defines the FastAPI router for user feedback endpoints.
+It handles HTTP requests for feedback submissions, retrieval, and status updates
+with authentication and validation for customer satisfaction tracking.
 
-Author: AI Assistant
-Date: December 2024
+Provides RESTful API endpoints for managing user feedback and support
+requests in the ResomiX application.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from fastapi import APIRouter, Security, Depends, Path

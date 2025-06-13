@@ -1,3 +1,20 @@
+"""
+Search API Router
+=================
+
+This module defines the FastAPI router for track search endpoints.
+It handles HTTP requests for text-based track searches with authentication
+and query parameter validation.
+
+Provides RESTful API endpoints for searching tracks by title, artist,
+and other metadata fields in the ResomiX system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Search endpoints 
 from fastapi import APIRouter, Query, Security, Depends
 from fastapi.responses import JSONResponse

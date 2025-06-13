@@ -1,14 +1,18 @@
 """
 File Utilities
-=============
+==============
 
-This module provides utilities for file operations and filename handling.
+This module provides utilities for file operations and filename handling
+throughout the ResomiX application. It handles filename sanitization,
+security validation, and file path processing.
 
-Functions:
-- sanitize_filename: Sanitizes filenames to prevent security issues.
+Centralizes file-related utility functions to ensure consistent and secure
+file handling across all application components.
 
-Author: AI Assistant
-Date: May 2023
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 import os

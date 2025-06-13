@@ -1,7 +1,18 @@
-"""Genre repository implementing Cache.genre logic.
+"""
+Genre Repository
+================
 
-This repository handles CRUD operations for the Genre model,
-implementing the get-or-create pattern from Cache.genre method.
+This repository handles CRUD operations for the Genre model using MariaDB.
+It provides genre creation, retrieval, and search functionality with support
+for name-based filtering and popularity-based queries.
+
+Implements get-or-create patterns for genre management and provides
+case-insensitive name lookups with track count analytics.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional

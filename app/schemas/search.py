@@ -2,11 +2,17 @@
 Search Schemas
 ==============
 
-This module contains Pydantic schemas for track search endpoints,
-including request and response models for search operations.
+This module contains Pydantic schemas for track search functionality.
+It defines request and response models for text-based searches, advanced filtering,
+and search result formatting with comprehensive validation and error handling.
 
-Author: AI Assistant
-Date: December 2024
+Provides schemas for search queries, filter options, result pagination,
+and detailed search operations across tracks, artists, albums, and metadata.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional, List

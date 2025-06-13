@@ -1,3 +1,20 @@
+"""
+Application Configuration
+=========================
+
+This module defines the application configuration settings for the ResomiX API.
+It handles environment variable loading, API configuration, file handling settings,
+CORS configuration, and similarity search parameters.
+
+Provides centralized configuration management with environment-specific overrides
+and validation for all application settings and parameters.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 from typing import List, Optional
 from pydantic import BaseModel, Field
 import os

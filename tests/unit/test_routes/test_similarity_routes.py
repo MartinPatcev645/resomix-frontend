@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
 Similarity Routes Test Suite
-===========================
+============================
 
-Comprehensive testing for similarity calculation endpoints.
-Tests audio file similarity analysis and selection similarity functionality.
+This module contains comprehensive unit tests for similarity calculation endpoints
+in the ResomiX Audio Similarity API. It tests audio file similarity analysis,
+selection similarity functionality, and error handling scenarios.
 
-Direct Command to run: python tests/unit/test_routes/test_similarity_routes.py
+Provides testing for upload-based similarity, ID-based similarity, validation,
+authentication, and edge cases with comprehensive result verification.
 
-Author: AI Assistant
-Date: December 2024
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 import requests

@@ -1,14 +1,17 @@
 """
-Audio Processing Service
-========================
+Audio Service
+=============
 
-This service provides functionality for audio file validation and processing using FFmpeg.
-It handles audio stream validation and will include methods for future audio processing needs.
+This service provides audio file validation and processing functionality.
+It handles audio format validation using FFmpeg, file type checking,
+and audio stream analysis to ensure uploaded files are valid audio content.
 
-Moved from: src/ffmpeg.py
-Version: 0.2.0
-Date: May 6, 2025
-Author: Muhammad Usman Naeem (updated by AI Assistant)
+Manages FFmpeg availability detection and provides fallback validation methods
+when FFmpeg is not available in the system environment.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 

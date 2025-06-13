@@ -1,3 +1,20 @@
+"""
+Database Dependencies
+=====================
+
+This module provides FastAPI dependency functions for database session management.
+It handles async MariaDB session creation, cleanup, and connection lifecycle
+for all API endpoints requiring database access.
+
+Centralizes database session management to ensure proper connection handling
+and resource cleanup across the ResomiX application.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Database session management dependencies 
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -2,11 +2,17 @@
 Metadata Schemas
 ================
 
-This module contains Pydantic schemas for audio metadata extraction endpoints,
-including request and response models for metadata operations.
+This module contains Pydantic schemas for audio metadata extraction functionality.
+It defines request and response models for metadata retrieval, file validation,
+and audio information processing with comprehensive validation and error handling.
 
-Author: AI Assistant
-Date: December 2024
+Provides schemas for metadata extraction requests, audio file information,
+format validation, and detailed metadata field mapping and enrichment.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional, Dict, Any

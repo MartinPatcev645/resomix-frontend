@@ -1,13 +1,18 @@
 """
-Metadata Extraction Service
-===========================
+Metadata Service
+================
 
-This service provides unified functionality for audio metadata extraction using Mutagen.
-It combines both limited and comprehensive metadata extraction approaches.
+This service provides track metadata retrieval and enrichment functionality.
+It handles fetching comprehensive track information including artist, album, label,
+genre, and technical details from MariaDB using repository patterns.
 
-Combined from: src/metadata_extraction.py + src/complete_meta_backup.py
-Version: 1.0.0
-Date: May 6, 2025
+Manages metadata formatting, relationship loading, and provides detailed track
+information for API responses with proper error handling and data validation.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from __future__ import annotations

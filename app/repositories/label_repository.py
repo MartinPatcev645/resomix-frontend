@@ -1,7 +1,18 @@
-"""Label repository implementing Cache.label logic.
+"""
+Label Repository
+================
 
-This repository handles CRUD operations for the Label model,
-implementing the get-or-create pattern from Cache.label method.
+This repository handles CRUD operations for the Label model using MariaDB.
+It provides label creation, retrieval, and search functionality with support
+for name-based filtering and website-based lookups.
+
+Implements get-or-create patterns for label management and provides
+case-insensitive name lookups for efficient label operations.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional

@@ -1,7 +1,18 @@
-"""Track repository combining MongoDB search logic with MariaDB track operations.
+"""
+Track Repository
+================
 
-This repository handles CRUD operations for the Track and TrackArtist models,
-implementing search functionality from src/search.py and migration logic patterns.
+This repository handles CRUD operations and complex queries for Track and TrackArtist models.
+It provides comprehensive track search functionality, relationship management,
+and bulk operations using MariaDB with SQLAlchemy ORM.
+
+Implements advanced search capabilities including text search, artist/album/genre filtering,
+BPM range queries, and musical key searches with proper relationship loading.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional, List, Dict, Any, Tuple

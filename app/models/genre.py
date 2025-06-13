@@ -1,3 +1,20 @@
+"""
+Genre Model
+===========
+
+This module defines the Genre SQLAlchemy model for the ResomiX application.
+It handles music genre classification with relationships to tracks
+for categorization and filtering purposes.
+
+Provides genre data modeling for track classification and search
+functionality in the audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from . import Base

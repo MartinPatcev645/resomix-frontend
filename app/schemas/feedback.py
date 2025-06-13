@@ -2,11 +2,17 @@
 Feedback Schemas
 ================
 
-This module contains Pydantic schemas for feedback endpoints,
-including request and response models for feedback operations.
+This module contains Pydantic schemas for user feedback functionality.
+It defines request and response models for feedback submission, retrieval,
+and status management with comprehensive validation and error handling.
 
-Author: AI Assistant
-Date: December 2024
+Provides schemas for feedback forms, rating validation, category management,
+and administrative operations for user satisfaction tracking.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional

@@ -1,14 +1,18 @@
 """
 Response Utilities
-================
+==================
 
-This module provides utilities for formatting API responses consistently.
+This module provides utilities for formatting API responses consistently across
+the ResomiX application. It ensures standardized response structures for both
+successful and error responses throughout all API endpoints.
 
-Functions:
-- format_response: Formats API responses in a consistent structure.
+Centralizes response formatting logic to maintain consistency and enable
+easy modifications to response structure across the entire application.
 
-Author: AI Assistant
-Date: May 2023
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Dict, Any, Optional

@@ -2,10 +2,17 @@
 Feedback Model
 ==============
 
-SQLAlchemy model for the feedback table, representing user feedback submissions.
+This module defines the Feedback SQLAlchemy model for the ResomiX application.
+It handles user feedback storage including satisfaction ratings, recommendations,
+categories, and messages for application improvement and user support.
 
-Author: AI Assistant
-Date: December 2024
+Provides feedback data modeling for collecting user opinions and managing
+customer satisfaction tracking in the audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from sqlalchemy import Column, Integer, BigInteger, String, Text, Enum, DateTime

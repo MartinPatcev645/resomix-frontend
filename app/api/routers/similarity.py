@@ -1,3 +1,20 @@
+"""
+Similarity API Router
+=====================
+
+This module defines the FastAPI router for audio similarity endpoints.
+It handles HTTP requests for similarity calculations including file uploads
+and track ID-based similarity queries with authentication and validation.
+
+Provides RESTful API endpoints for the core similarity functionality
+of the ResomiX audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Similarity endpoints 
 from typing import Optional
 from fastapi import APIRouter, File, UploadFile, Query, Body, Security, Depends

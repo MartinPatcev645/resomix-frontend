@@ -2,10 +2,17 @@
 Contact Service
 ===============
 
-Service for contact form processing and business logic.
+This service manages user contact/inquiry operations including creation, retrieval, and status updates.
+It handles contact form submissions, user-based filtering, and administrative status management
+using MariaDB repositories for data persistence.
 
-Author: AI Assistant
-Date: December 2024
+Provides comprehensive contact management with validation, error handling,
+and support for different inquiry types and statuses.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Dict, Any, List, Optional

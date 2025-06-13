@@ -1,3 +1,20 @@
+"""
+Label Model
+===========
+
+This module defines the Label SQLAlchemy model for the ResomiX application.
+It handles record label information storage including name, website, and contact details,
+with relationships to tracks for label-based organization and filtering.
+
+Provides label data modeling for track categorization and music industry
+metadata in the audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Label model 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship

@@ -2,14 +2,17 @@
 Search Service
 ==============
 
-This service provides functionality for searching tracks by name, artist, or other criteria,
-and for fetching specific track details by ID. Converted from MongoDB to MariaDB implementation
-while maintaining the same search algorithm logic and API interface.
+This service provides comprehensive track search functionality across multiple criteria.
+It handles text-based searches, artist/album/genre filtering, BPM range queries,
+and musical key searches using MariaDB repositories.
 
-Moved from: src/search.py
-Updated: MongoDB search converted to MariaDB using TrackRepository
-Version: 1.0.0
-Date: May 6, 2025
+Coordinates with track repository to perform complex queries and format results
+for API consumption with proper error handling and data validation.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 import re

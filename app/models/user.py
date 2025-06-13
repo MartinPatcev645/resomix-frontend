@@ -1,3 +1,20 @@
+"""
+User Role Models
+================
+
+This module defines the Role, Permission, RolePermission, and UserRole SQLAlchemy models
+for the ResomiX application. It handles user authorization and access control through
+role-based permissions and user role assignments.
+
+Provides comprehensive user access control modeling with many-to-many relationships
+between users, roles, and permissions for the audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # UserRole, Role, Permission models 
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship

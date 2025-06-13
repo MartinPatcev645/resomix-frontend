@@ -1,3 +1,20 @@
+"""
+Similarity Controller
+====================
+
+This controller handles HTTP requests for audio similarity functionality.
+It processes uploaded audio files and track ID requests, validates inputs,
+and coordinates with similarity and audio services to return similar tracks.
+
+Manages file upload validation, audio format checking, and response formatting
+for both upload-based and ID-based similarity queries.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Similarity controller 
 import os
 import uuid

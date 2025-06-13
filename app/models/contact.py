@@ -2,10 +2,17 @@
 Contact Model
 =============
 
-SQLAlchemy model for the contact table, representing contact form submissions.
+This module defines the Contact SQLAlchemy model for the ResomiX application.
+It handles user contact form submissions including name, email, subject, phone,
+and message for customer support and communication management.
 
-Author: AI Assistant
-Date: December 2024
+Provides contact data modeling for managing user inquiries and support
+requests in the audio similarity system.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from sqlalchemy import Column, BigInteger, String, Text, Enum, DateTime

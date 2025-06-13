@@ -1,3 +1,20 @@
+"""
+Log Model
+=========
+
+This module defines the Log SQLAlchemy model for the ResomiX application.
+It handles system logging and audit trail storage with support for user actions,
+API requests, and system events tracking.
+
+Provides comprehensive logging data modeling for monitoring and debugging
+the audio similarity system operations.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 # Log model 
 from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship

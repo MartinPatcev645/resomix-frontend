@@ -1,7 +1,18 @@
-"""Artist repository implementing Cache.artist logic.
+"""
+Artist Repository
+=================
 
-This repository handles CRUD operations for the Artist model,
-implementing the get-or-create pattern from Cache.artist method.
+This repository handles CRUD operations for the Artist model using MariaDB.
+It provides artist creation, retrieval, and search functionality with support
+for name-based filtering and pattern matching.
+
+Implements get-or-create patterns for artist management and provides
+case-insensitive name lookups for efficient artist operations.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional

@@ -1,3 +1,20 @@
+"""
+Purchase Models
+===============
+
+This module defines the Purchase and UserSubscription SQLAlchemy models for the ResomiX application.
+It handles purchase transactions and subscription management with support for payment tracking
+and user subscription status monitoring.
+
+Provides purchase and subscription data modeling for monetization features
+in the audio similarity platform.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
 from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

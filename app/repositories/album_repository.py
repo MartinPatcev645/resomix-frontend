@@ -1,7 +1,18 @@
-"""Album repository implementing Cache.album logic.
+"""
+Album Repository
+================
 
-This repository handles CRUD operations for the Album model,
-implementing the get-or-create pattern from Cache.album method.
+This repository handles CRUD operations for the Album model using MariaDB.
+It provides album creation, retrieval, and search functionality with support
+for artist-based filtering and title-based searches.
+
+Implements get-or-create patterns for album management and provides
+comprehensive album operations with proper relationship handling.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional, Tuple

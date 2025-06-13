@@ -1,8 +1,18 @@
-"""Base repository with common CRUD operations.
+"""
+Base Repository
+===============
 
-This module provides an abstract base repository class that implements
-common database operations including get, create, update, delete, and 
-get_or_create patterns inspired by the Cache class from mongo_migration.py.
+This is the base repository class providing common CRUD operations for all model repositories.
+It implements generic database operations including create, read, update, delete,
+and get-or-create patterns using SQLAlchemy ORM with both sync and async support.
+
+Serves as the foundation for all specific model repositories, ensuring consistent
+database interaction patterns and error handling across the application.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from abc import ABC, abstractmethod
