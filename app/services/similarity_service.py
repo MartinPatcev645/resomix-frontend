@@ -265,7 +265,8 @@ class SimilarityService:
                 .where(Track.file_path.in_(list(relative_paths_to_query)))
             )
             result = await db.execute(stmt)
-            tracks = result.scalars().all()
+            # Use unique() to deduplicate rows when using joinedload with collections
+            tracks = result.scalars().unique().all()
             
             for track in tracks:
                 # Get primary artist (first artist in track_artists)
