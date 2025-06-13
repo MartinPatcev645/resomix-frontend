@@ -157,10 +157,9 @@ class SimilarityService:
         queried_track_data: Optional[Dict[str, Any]] = None
         try:
             details_map_for_queried_track = await self._fetch_track_details_from_db_by_path(db, [server_track_path])
-            queried_relative_path = server_track_path[len(self.path_prefix_to_remove):] if server_track_path.startswith(self.path_prefix_to_remove) else server_track_path
-            queried_track_data = details_map_for_queried_track.get(queried_relative_path)
+            queried_track_data = details_map_for_queried_track.get(server_track_path)
             if not queried_track_data:
-                print(f"Warning: Details for queried path '{server_track_path}' (relative: '{queried_relative_path}') not found in local DB.")
+                print(f"Warning: Details for queried path '{server_track_path}' not found in local DB.")
         except Exception as e:
             print(f"Error fetching details for queried path '{server_track_path}' from DB: {e}")
 
@@ -181,13 +180,8 @@ class SimilarityService:
                 if not abs_path or abs_path == server_track_path: 
                     continue  # Exclude queried track
                 
-                relative_path = ""
-                if abs_path.startswith(self.path_prefix_to_remove):
-                    relative_path = abs_path[len(self.path_prefix_to_remove):]
-                else:
-                    relative_path = abs_path  # Should have prefix based on user info
-                
-                details = db_details_map.get(relative_path)
+                # Use path as-is since it's already in correct format
+                details = db_details_map.get(abs_path)
                 if details:
                     enriched_similar_tracks.append({
                         "rank": res_item.get("rank"),
@@ -226,30 +220,25 @@ class SimilarityService:
 
     async def _fetch_track_details_from_db_by_path(self, db: AsyncSession, track_paths_from_similarity_server: List[str]) -> Dict[str, Dict[str, Any]]:
         """
-        Fetches full track details from MariaDB based on a list of absolute file paths 
-        returned by the similarity server. Transforms paths and maps results by relative path.
+        Fetches full track details from MariaDB based on a list of file paths 
+        returned by the similarity server.
 
         Args:
             db: Database session
-            track_paths_from_similarity_server: A list of absolute file paths 
-                                                (e.g., /home/usman/data/veggera/public_html/audio.mp3).
+            track_paths_from_similarity_server: A list of file paths 
+                                                (e.g., veggera/public_html/audio.mp3).
             
         Returns:
-            A dictionary mapping relative_path to track_details_dict.
+            A dictionary mapping file_path to track_details_dict.
             Track_details_dict contains: id, filename, album, duration, artist.
         """
         if not track_paths_from_similarity_server:
             return {}
 
-        relative_paths_to_query = set()  # Use a set to automatically handle duplicate inputs mapping to same relative path
-        for p in track_paths_from_similarity_server:
-            if p and p.startswith(self.path_prefix_to_remove):
-                relative_paths_to_query.add(p[len(self.path_prefix_to_remove):])
-            elif p:  # Path does not have the prefix, add as is or log warning
-                print(f"Warning: Path '{p}' from similarity server does not start with expected prefix '{self.path_prefix_to_remove}'. Will be queried as is.")
-                relative_paths_to_query.add(p)
+        # Use paths as-is since they're already in the correct format
+        paths_to_query = set(track_paths_from_similarity_server)
         
-        if not relative_paths_to_query:
+        if not paths_to_query:
             return {}
 
         details_map: Dict[str, Dict[str, Any]] = {}
@@ -262,7 +251,7 @@ class SimilarityService:
                     joinedload(Track.album),
                     joinedload(Track.track_artists).joinedload(TrackArtist.artist)
                 )
-                .where(Track.file_path.in_(list(relative_paths_to_query)))
+                .where(Track.file_path.in_(list(paths_to_query)))
             )
             result = await db.execute(stmt)
             # Use unique() to deduplicate rows when using joinedload with collections
@@ -289,7 +278,7 @@ class SimilarityService:
                 }
                 details_map[track.file_path] = track_data
             
-            print(f"MariaDB: Fetched details for {len(details_map)} out of {len(relative_paths_to_query)} unique relative paths.")
+            print(f"MariaDB: Fetched details for {len(details_map)} out of {len(paths_to_query)} unique paths.")
             
         except Exception as e:
             print(f"Error during MariaDB fetch for track details: {e}")
