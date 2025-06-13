@@ -24,17 +24,54 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.controllers.similarity_controller import SimilarityController
 from app.api.dependencies.auth import get_api_key
 from app.api.dependencies.database import get_database_session
-from app.schemas.similarity import SimilarityByIdRequest
+from app.schemas.similarity import (
+    SimilarityByIdRequest,
+    SimilarityUploadSuccessResponse,
+    SimilarityByIdSuccessResponse,
+    SimilarityErrorResponse
+)
 
-router = APIRouter(tags=["similarity"])
+router = APIRouter(
+    tags=["similarity"],
+    responses={
+        403: {"model": SimilarityErrorResponse},
+        415: {"model": SimilarityErrorResponse},
+        422: {"model": SimilarityErrorResponse},
+        500: {"model": SimilarityErrorResponse},
+        503: {"model": SimilarityErrorResponse}
+    }
+)
 
 # Initialize controller
 similarity_controller = SimilarityController()
 
 
-@router.post("/get_similarity/")
+@router.post(
+    "/get_similarity/",
+    response_model=SimilarityUploadSuccessResponse,
+    summary="Calculate Similarity by Upload",
+    description="Upload an audio file and get similar tracks from the database.",
+    responses={
+        200: {
+            "model": SimilarityUploadSuccessResponse,
+            "description": "Similarity calculation completed successfully"
+        },
+        415: {
+            "model": SimilarityErrorResponse,
+            "description": "Unsupported media type or invalid audio file"
+        },
+        422: {
+            "model": SimilarityErrorResponse,
+            "description": "File too large, empty, or validation error"
+        },
+        503: {
+            "model": SimilarityErrorResponse,
+            "description": "Similarity service unavailable"
+        }
+    }
+)
 async def get_similarity_upload_endpoint(
-    file: UploadFile = File(...), 
+    file: UploadFile = File(..., description="Audio file to analyze for similarity (max 100MB)"), 
     top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -48,16 +85,39 @@ async def get_similarity_upload_endpoint(
     return await similarity_controller.get_similarity_upload(db, file, top_sk)
 
 
-@router.post("/get_selection_similarity/")
+@router.post(
+    "/get_selection_similarity/",
+    response_model=SimilarityByIdSuccessResponse,
+    summary="Calculate Similarity by Track ID",
+    description="Get similar tracks for a track identified by its database ID.",
+    responses={
+        200: {
+            "model": SimilarityByIdSuccessResponse,
+            "description": "Similarity calculation completed successfully"
+        },
+        404: {
+            "model": SimilarityErrorResponse,
+            "description": "Track not found or path missing"
+        },
+        422: {
+            "model": SimilarityErrorResponse,
+            "description": "Invalid track ID or validation error"
+        },
+        503: {
+            "model": SimilarityErrorResponse,
+            "description": "Similarity service unavailable"
+        }
+    }
+)
 async def get_similarity_by_id_endpoint(
     request_data: SimilarityByIdRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Get similar tracks for a track identified by its MongoDB ID.
+    Get similar tracks for a track identified by its database ID.
     
-    - **track_id**: The MongoDB ID of the track to find similar tracks for.
+    - **track_id**: The database ID of the track to find similar tracks for.
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
     return await similarity_controller.get_similarity_by_id(db, request_data.track_id, request_data.top_sk) 

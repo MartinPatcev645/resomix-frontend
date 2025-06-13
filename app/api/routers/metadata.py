@@ -16,22 +16,60 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Metadata endpoints 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, UploadFile, Security
 from fastapi.responses import JSONResponse
 
 from app.controllers.metadata_controller import MetadataController
+from app.api.dependencies.auth import get_api_key
+from app.schemas.metadata import (
+    MetadataSuccessResponse,
+    MetadataErrorResponse
+)
 
-router = APIRouter(tags=["metadata"])
+router = APIRouter(
+    tags=["metadata"],
+    responses={
+        415: {"model": MetadataErrorResponse},
+        422: {"model": MetadataErrorResponse},
+        500: {"model": MetadataErrorResponse}
+    }
+)
 
 # Initialize controller
 metadata_controller = MetadataController()
 
 
-@router.post("/metadata/")
+@router.post(
+    "/metadata/",
+    response_model=MetadataSuccessResponse,
+    summary="Extract Audio Metadata",
+    description="Extract metadata from uploaded audio files including artist, album, genre, and technical information.",
+    responses={
+        200: {
+            "model": MetadataSuccessResponse,
+            "description": "Metadata extracted successfully"
+        },
+        415: {
+            "model": MetadataErrorResponse,
+            "description": "Unsupported media type or invalid audio file"
+        },
+        422: {
+            "model": MetadataErrorResponse,
+            "description": "Empty file or validation error"
+        },
+        500: {
+            "model": MetadataErrorResponse,
+            "description": "Internal server error during metadata extraction"
+        }
+    }
+)
 async def get_metadata_endpoint(
-    file: UploadFile = File(...)
+    file: UploadFile = File(..., description="Audio file to extract metadata from"),
+    _: str = Security(get_api_key)  # Authentication required but not used in controller
 ) -> JSONResponse:
     """
     Extracts and returns metadata from an uploaded audio file using Mutagen.
+    
+    - **file**: Audio file to analyze (supports MP3, FLAC, OGG, M4A, WAV, WMA, AAC, OPUS)
     """
     return await metadata_controller.get_metadata(file) 
