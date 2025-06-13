@@ -110,9 +110,23 @@ class DatabaseConfig:
         return url
     
     def get_engine_kwargs(self) -> Dict[str, Any]:
-        """Get SQLAlchemy engine configuration."""
+        """Get SQLAlchemy engine configuration for synchronous engines."""
         return {
             'poolclass': QueuePool,
+            'pool_size': self.pool_size,
+            'max_overflow': self.max_overflow,
+            'pool_timeout': self.pool_timeout,
+            'pool_recycle': self.pool_recycle,
+            'pool_pre_ping': True,  # Validate connections before use (matches existing config)
+            'future': True,  # SQLAlchemy 2.x style (matches existing config)
+            'echo': os.getenv("DB_ECHO", "false").lower() == "true",
+            'echo_pool': os.getenv("DB_ECHO_POOL", "false").lower() == "true",
+        }
+    
+    def get_async_engine_kwargs(self) -> Dict[str, Any]:
+        """Get SQLAlchemy engine configuration for asynchronous engines."""
+        # For async engines, we don't specify poolclass - it will use AsyncAdaptedQueuePool by default
+        return {
             'pool_size': self.pool_size,
             'max_overflow': self.max_overflow,
             'pool_timeout': self.pool_timeout,
@@ -133,7 +147,7 @@ ASYNC_DB_URL = config.get_async_url()
 
 # Create engines
 engine = create_engine(DB_URL, **config.get_engine_kwargs())
-async_engine = create_async_engine(ASYNC_DB_URL, **config.get_engine_kwargs())
+async_engine = create_async_engine(ASYNC_DB_URL, **config.get_async_engine_kwargs())
 
 # Session factories (match existing configuration)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
