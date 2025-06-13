@@ -151,11 +151,11 @@ class SimilarityController:
         top_sk: Optional[int] = None
     ) -> JSONResponse:
         """
-        Get similar tracks for a track identified by its ID.
+        Get similar tracks for a track identified by its UUID.
         
         Args:
             db: Database session
-            track_id: The track ID to find similar tracks for
+            track_id: The track UUID to find similar tracks for
             top_sk: Number of similar tracks to return
             
         Returns:
@@ -172,9 +172,9 @@ class SimilarityController:
                     )
                 )
             
-            # Get file path from MongoDB using track_id
-            from src.search import get_track_path_by_id
-            server_track_path = await get_track_path_by_id(track_id)
+            # Get file path from MariaDB using track UUID
+            track_repository = self.similarity_service.track_repository
+            server_track_path = await track_repository.async_get_track_path_by_uuid(db, track_id)
             
             if server_track_path is None:
                 return JSONResponse(
@@ -185,14 +185,14 @@ class SimilarityController:
                     )
                 )
             
-            # Validate and get the TOP_SK value
-            validated_top_sk = self.similarity_service.validate_and_get_top_sk(top_sk)
-            actual_top_k = self.similarity_service.calculate_actual_top_k(validated_top_sk)
-            duplication_threshold = self.similarity_service.get_duplication_threshold_for_top_sk(validated_top_sk)
+            # Validate and get the TOP_SK value using settings
+            validated_top_sk = settings.validate_and_get_top_sk(top_sk)
+            actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
+            duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
             
-            # Call similarity server with the file path
-            from src.similarity import get_similarity_by_path
-            similarity_results = await get_similarity_by_path(
+            # Call similarity service with the file path
+            similarity_results = await self.similarity_service.get_similarity_by_path(
+                db=db,
                 server_track_path=server_track_path,
                 top_k=actual_top_k,
                 similarity_duplication_threshold=duplication_threshold
