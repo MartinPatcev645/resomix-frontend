@@ -20,15 +20,9 @@ import re
 import asyncio
 import io
 from mutagen import File as MutagenFile, MutagenError
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 from app.repositories.track_repository import TrackRepository
-from app.models.track import Track, TrackArtist
-from app.models.artist import Artist
-from app.models.album import Album
 
 load_dotenv()
 
@@ -278,21 +272,8 @@ class SimilarityService:
 
         details_map: Dict[str, Dict[str, Any]] = {}
         try:
-            # Query tracks by file paths using MariaDB
-            stmt = (
-                select(Track)
-                .options(
-                    # Load relationships for complete track data
-                    joinedload(Track.album),
-                    joinedload(Track.label),
-                    joinedload(Track.genre),
-                    joinedload(Track.track_artists).joinedload(TrackArtist.artist)
-                )
-                .where(Track.file_path.in_(list(paths_to_query)))
-            )
-            result = await db.execute(stmt)
-            # Use unique() to deduplicate rows when using joinedload with collections
-            tracks = result.scalars().unique().all()
+            # Query tracks by file paths using MariaDB repository
+            tracks = await self.track_repository.async_get_tracks_by_file_paths(db, list(paths_to_query))
             
             for track in tracks:
                 # Get primary artist (first artist in track_artists)
@@ -507,4 +488,17 @@ class SimilarityService:
             
         except Exception as e:
             print(f"Error getting similarity for track UUID {track_uuid}: {e}")
-            return {"success": False, "error": f"Error processing similarity request: {e}"} 
+            return {"success": False, "error": f"Error processing similarity request: {e}"}
+
+    async def get_track_path_by_uuid(self, db: AsyncSession, track_uuid: str) -> Optional[str]:
+        """
+        Get track file path by UUID.
+        
+        Args:
+            db: Database session
+            track_uuid: Track UUID
+            
+        Returns:
+            File path string or None if not found
+        """
+        return await self.track_repository.async_get_track_path_by_uuid(db, track_uuid)

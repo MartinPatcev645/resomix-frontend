@@ -495,3 +495,30 @@ class TrackRepository(BaseRepository[Track]):
             .limit(limit)
             .all()
         )
+
+    async def async_get_tracks_by_file_paths(self, db: AsyncSession, file_paths: List[str]) -> List[Track]:
+        """Get tracks with full relationships by file paths.
+        
+        Args:
+            db: Database session
+            file_paths: List of file paths to search for
+            
+        Returns:
+            List of Track instances with relationships loaded
+        """
+        if not file_paths:
+            return []
+            
+        stmt = (
+            select(self.model)
+            .options(
+                joinedload(self.model.album),
+                joinedload(self.model.label),
+                joinedload(self.model.genre),
+                joinedload(self.model.track_artists).joinedload(TrackArtist.artist)
+            )
+            .where(self.model.file_path.in_(file_paths))
+        )
+        result = await db.execute(stmt)
+        # Use unique() to deduplicate rows when using joinedload with collections
+        return result.scalars().unique().all()

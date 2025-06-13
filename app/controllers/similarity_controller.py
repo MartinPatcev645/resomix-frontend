@@ -173,8 +173,7 @@ class SimilarityController:
                 )
             
             # Get file path from MariaDB using track UUID
-            track_repository = self.similarity_service.track_repository
-            server_track_path = await track_repository.async_get_track_path_by_uuid(db, track_id)
+            server_track_path = await self.similarity_service.get_track_path_by_uuid(db, track_id)
             
             if server_track_path is None:
                 return JSONResponse(
