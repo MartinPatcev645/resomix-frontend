@@ -1,7 +1,16 @@
-# Feedback controller 
+"""
+Feedback Controller
+===================
+
+Controller for handling feedback form requests and responses.
+
+Author: AI Assistant
+Date: December 2024
+"""
+
 from typing import Dict, Any
-from fastapi import status
 from fastapi.responses import JSONResponse
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.feedback_service import FeedbackService
@@ -10,86 +19,156 @@ from app.utils.logging_utils import log_request
 
 
 class FeedbackController:
+    """Controller for feedback operations."""
+    
     def __init__(self):
         self.feedback_service = FeedbackService()
-
-    async def submit_feedback(self, db: AsyncSession, data: Dict[str, Any]) -> JSONResponse:
+    
+    async def submit_feedback(self, db: AsyncSession, feedback_data: Dict[str, Any]) -> JSONResponse:
         """
-        Submit feedback or contact form data.
-        
-        For feedback form, include:
-        - **satisfaction**: Rating from 1-10
-        - **recommendation**: Rating from 1-10
-        - **feedback**: Feedback text
-        
-        """
-        log_request("feedback", "POST", {"formType": data.get("formType", "feedback")})
-        
-        try:
-            # Determine if this is a contact form or feedback form
-            result = await self.feedback_service.process_feedback(data, db)
-                
-            # Return success response
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=format_response(success=True, data=result)
-            )
-            
-        except ValueError as ve:
-            # Validation errors
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(success=False, error=str(ve))
-            )
-            
-        except Exception as e:
-            # Log the exception for debugging
-            print(f"An error occurred in feedback: {e}")
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(success=False, error="An internal server error occurred.")
-            )
-
-    async def submit_contact(self, db: AsyncSession, data: Dict[str, Any]) -> JSONResponse:
-        """
-        Submit contact form data.
+        Submit feedback.
         
         Args:
             db: Database session
-            data: Contact form data dictionary
-            
-        For contact form, include:
-        - **name**: User's name
-        - **email**: User's email
-        - **subject**: Subject of the message
-        - **message**: Message text
-        - **formType**: Set to "contact"
+            feedback_data: Feedback form data
             
         Returns:
-            JSONResponse with success/error result
+            JSON response with submission result
         """
-        log_request("contact", "POST", {"name": data.get("name"), "email": data.get("email")})
+        log_request("feedback submission", "POST", {
+            "satisfaction": feedback_data.get('satisfaction'),
+            "recommendation": feedback_data.get('recommendation'),
+            "category": feedback_data.get('category', 'N/A')
+        })
         
         try:
-            result = await self.feedback_service.process_contact(data, db)
+            # Process feedback submission
+            result = await self.feedback_service.process_feedback_submission(db, feedback_data)
+            
+            if result.get("success"):
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(
+                        success=True,
+                        data={"message": result.get("message")}
+                    )
+                )
+            else:
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(
+                        success=False,
+                        error=result.get("error")
+                    )
+                )
                 
-            # Return success response
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=format_response(success=True, data=result)
-            )
-            
-        except ValueError as ve:
-            # Validation errors
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(success=False, error=str(ve))
-            )
-            
         except Exception as e:
-            # Log the exception for debugging
-            print(f"An error occurred in contact submission: {e}")
+            print(f"Error in feedback controller: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(success=False, error="An internal server error occurred.")
+                content=format_response(
+                    success=False,
+                    error="An internal server error occurred while processing your feedback"
+                )
+            )
+    
+    async def get_feedback_by_id(self, db: AsyncSession, feedback_id: int) -> JSONResponse:
+        """
+        Get a feedback by ID.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID
+            
+        Returns:
+            JSON response with feedback data
+        """
+        try:
+            feedback = await self.feedback_service.get_feedback_by_id(db, feedback_id)
+            
+            if feedback:
+                feedback_data = {
+                    "id": feedback.id,
+                    "user_id": feedback.user_id,
+                    "category": feedback.category,
+                    "message": feedback.message,
+                    "satisfaction": feedback.satisfaction,
+                    "recommendation": feedback.recommendation,
+                    "status": feedback.status,
+                    "submitted_at": feedback.submitted_at.isoformat() if feedback.submitted_at else None
+                }
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(success=True, data=feedback_data)
+                )
+            else:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(
+                        success=False,
+                        error=f"Feedback with ID {feedback_id} not found"
+                    )
+                )
+                
+        except Exception as e:
+            print(f"Error getting feedback by ID: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error="An internal server error occurred while retrieving feedback"
+                )
+            )
+    
+    async def update_feedback_status(self, db: AsyncSession, feedback_id: int, status_data: Dict[str, Any]) -> JSONResponse:
+        """
+        Update feedback status.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID
+            status_data: Status update data
+            
+        Returns:
+            JSON response with update result
+        """
+        try:
+            new_status = status_data.get("status")
+            if not new_status:
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(
+                        success=False,
+                        error="Status is required"
+                    )
+                )
+            
+            result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status)
+            
+            if result.get("success"):
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(
+                        success=True,
+                        data={"message": result.get("message")}
+                    )
+                )
+            else:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(
+                        success=False,
+                        error=result.get("error")
+                    )
+                )
+                
+        except Exception as e:
+            print(f"Error updating feedback status: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error="An internal server error occurred while updating feedback status"
+                )
             ) 

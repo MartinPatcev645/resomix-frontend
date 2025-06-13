@@ -12,7 +12,8 @@ from .track import Track, TrackArtist
 from .playlist import Playlist, PlaylistTrack
 from .rating import TrackRating, PlaylistRating
 from .purchase import Purchase, UserSubscription
-from .feedback import Feedback, Contact
+from .feedback import Feedback
+from .contact import Contact
 from .user import Role, Permission, RolePermission, UserRole
 from .log import Log
 

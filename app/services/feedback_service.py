@@ -2,272 +2,219 @@
 Feedback Service
 ===============
 
-This service provides functionality for handling user feedback and contact form submissions.
-It uses the database to store feedback and contact data instead of Google Sheets.
-
-Functions:
-- process_feedback: Processes user feedback submissions and saves to database.
-- process_contact: Processes contact form submissions and saves to database.
+Service for feedback processing and business logic.
 
 Author: AI Assistant
-Date: December 2024 (Database-based implementation)
+Date: December 2024
 """
 
-from typing import Dict, Any, Optional
-from datetime import datetime
+from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import SQLAlchemyError
-
-from app.models.feedback import Feedback, Contact
-from database.connection import get_async_db
+from app.repositories.feedback_repository import FeedbackRepository
+from app.models.feedback import Feedback
 
 
 class FeedbackService:
-    """Service for handling feedback and contact form operations."""
-
-    @staticmethod
-    async def process_feedback(data: Dict[str, Any], db: AsyncSession) -> Dict[str, Any]:
+    """Service for feedback operations."""
+    
+    def __init__(self):
+        self.feedback_repository = FeedbackRepository()
+    
+    async def process_feedback_submission(
+        self,
+        db: AsyncSession,
+        feedback_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
-        Process and store user feedback to database.
+        Process a feedback submission.
         
         Args:
-            data: Dictionary containing feedback data
-            db: Async database session
+            db: Database session
+            feedback_data: Feedback form data
             
         Returns:
-            Success message dictionary
-            
-        Raises:
-            ValueError: If validation fails
-            Exception: If database operation fails
+            Processing result
         """
-        # Validate required fields
-        required_fields = ["satisfaction", "recommendation"]
-        for field in required_fields:
-            if field not in data or not isinstance(data[field], (int, float)):
-                raise ValueError(f"Missing or invalid required field: {field}")
-        
-        if not (1 <= data["satisfaction"] <= 10 and 1 <= data["recommendation"] <= 10):
-            raise ValueError("Ratings must be between 1 and 10")
-        
-        print(f"Received feedback - Satisfaction: {data['satisfaction']}, Recommendation: {data['recommendation']}")
-
         try:
+            # Validate required fields
+            satisfaction = feedback_data.get('satisfaction')
+            recommendation = feedback_data.get('recommendation')
+            
+            if not satisfaction or not recommendation:
+                return {
+                    "success": False,
+                    "error": "Satisfaction and recommendation ratings are required"
+                }
+            
+            # Validate rating ranges
+            if not (1 <= satisfaction <= 10) or not (1 <= recommendation <= 10):
+                return {
+                    "success": False,
+                    "error": "Ratings must be between 1 and 10"
+                }
+            
+            # Extract optional fields
+            category = feedback_data.get('category')
+            message = feedback_data.get('feedback')  # Note: 'feedback' in request becomes 'message' in DB
+            user_id = feedback_data.get('user_id')
+            
             # Create feedback record
-            feedback_record = Feedback(
-                user_id=data.get("user_id"),  # Optional, can be None for anonymous
-                category=data.get("category"),  # Optional category
-                message=data.get("feedback", ""),  # Optional feedback text
-                satisfaction=int(data["satisfaction"]),
-                recommendation=int(data["recommendation"]),
-                status="open"  # Default status
-                # submitted_at is automatically set by the database
+            feedback = await self.feedback_repository.create_feedback(
+                db=db,
+                user_id=user_id,
+                category=category,
+                message=message,
+                satisfaction=satisfaction,
+                recommendation=recommendation
             )
             
-            db.add(feedback_record)
-            await db.commit()
-            await db.refresh(feedback_record)
+            return {
+                "success": True,
+                "message": "Feedback received successfully and saved to database.",
+                "feedback_id": feedback.id
+            }
             
-            print(f"Successfully saved feedback with ID: {feedback_record.id}")
-            
-            return {"message": "Feedback received successfully and saved to database."}
-            
-        except SQLAlchemyError as e:
-            await db.rollback()
-            print(f"Database error while saving feedback: {e}")
-            raise Exception("Failed to save feedback to database.")
         except Exception as e:
-            await db.rollback()
-            print(f"Unexpected error while saving feedback: {e}")
-            raise Exception("An unexpected error occurred while processing feedback.")
-
-    @staticmethod
-    async def process_contact(data: Dict[str, Any], db: AsyncSession) -> Dict[str, Any]:
+            print(f"Error processing feedback submission: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while processing your feedback"
+            }
+    
+    async def get_user_feedback(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        limit: int = 10,
+        offset: int = 0
+    ) -> List[Feedback]:
         """
-        Process and store contact form submissions to database.
+        Get feedback for a specific user.
         
         Args:
-            data: Dictionary containing contact form data
-            db: Async database session
+            db: Database session
+            user_id: User ID
+            limit: Maximum number of records
+            offset: Number of records to skip
             
         Returns:
-            Success message dictionary
-            
-        Raises:
-            ValueError: If validation fails
-            Exception: If database operation fails
+            List of feedback records
         """
-        # Validate required fields
-        required_fields = ["name", "email", "message"]
-        for field in required_fields:
-            if field not in data or not data[field]:
-                raise ValueError(f"Missing required field: {field}")
-        
-        # Basic email validation
-        if "@" not in data["email"] or "." not in data["email"]:
-            raise ValueError("Invalid email format")
-        
-        print(f"Received contact form from: {data['name']} ({data['email']})")
-
-        try:
-            # Create contact record
-            contact_record = Contact(
-                user_id=data.get("user_id"),  # Optional, can be None for anonymous
-                name=data["name"],
-                email=data["email"],
-                subject=data.get("subject", ""),  # Optional subject
-                phone=data.get("phone"),  # Optional phone
-                message=data["message"],
-                status="open"  # Default status
-                # submitted_at is automatically set by the database
-            )
-            
-            db.add(contact_record)
-            await db.commit()
-            await db.refresh(contact_record)
-            
-            print(f"Successfully saved contact form with ID: {contact_record.id}")
-            
-            return {"message": "Contact form submitted successfully and saved to database."}
-            
-        except SQLAlchemyError as e:
-            await db.rollback()
-            print(f"Database error while saving contact form: {e}")
-            raise Exception("Failed to save contact form to database.")
-        except Exception as e:
-            await db.rollback()
-            print(f"Unexpected error while saving contact form: {e}")
-            raise Exception("An unexpected error occurred while processing contact form.")
-
-    @staticmethod
-    async def get_feedback_by_id(feedback_id: int, db: AsyncSession) -> Optional[Feedback]:
+        return await self.feedback_repository.get_feedback_by_user(
+            db=db,
+            user_id=user_id,
+            limit=limit,
+            offset=offset
+        )
+    
+    async def get_feedback_by_category(
+        self,
+        db: AsyncSession,
+        category: str,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Feedback]:
         """
-        Retrieve feedback by ID.
+        Get feedback by category.
         
         Args:
-            feedback_id: ID of the feedback record
-            db: Async database session
+            db: Database session
+            category: Feedback category
+            limit: Maximum number of records
+            offset: Number of records to skip
             
         Returns:
-            Feedback record or None if not found
+            List of feedback records
         """
-        try:
-            return await db.get(Feedback, feedback_id)
-        except SQLAlchemyError as e:
-            print(f"Database error while retrieving feedback: {e}")
-            return None
-
-    @staticmethod
-    async def get_contact_by_id(contact_id: int, db: AsyncSession) -> Optional[Contact]:
+        return await self.feedback_repository.get_feedback_by_category(
+            db=db,
+            category=category,
+            limit=limit,
+            offset=offset
+        )
+    
+    async def get_feedback_by_status(
+        self,
+        db: AsyncSession,
+        status: str,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Feedback]:
         """
-        Retrieve contact by ID.
+        Get feedback by status.
         
         Args:
-            contact_id: ID of the contact record
-            db: Async database session
+            db: Database session
+            status: Feedback status ('open' or 'resolved')
+            limit: Maximum number of records
+            offset: Number of records to skip
             
         Returns:
-            Contact record or None if not found
+            List of feedback records
         """
-        try:
-            return await db.get(Contact, contact_id)
-        except SQLAlchemyError as e:
-            print(f"Database error while retrieving contact: {e}")
-            return None
-
-    @staticmethod
-    async def update_feedback_status(feedback_id: int, status: str, db: AsyncSession) -> bool:
+        return await self.feedback_repository.get_feedback_by_status(
+            db=db,
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+    
+    async def update_feedback_status(
+        self,
+        db: AsyncSession,
+        feedback_id: int,
+        status: str
+    ) -> Dict[str, Any]:
         """
         Update feedback status.
         
         Args:
-            feedback_id: ID of the feedback record
-            status: New status ('open' or 'resolved')
-            db: Async database session
+            db: Database session
+            feedback_id: Feedback ID
+            status: New status
             
         Returns:
-            True if successful, False otherwise
+            Update result
         """
-        if status not in ['open', 'resolved']:
-            raise ValueError("Status must be 'open' or 'resolved'")
-            
         try:
-            feedback = await db.get(Feedback, feedback_id)
+            feedback = await self.feedback_repository.update_feedback_status(
+                db=db,
+                feedback_id=feedback_id,
+                status=status
+            )
+            
             if feedback:
-                feedback.status = status
-                await db.commit()
-                print(f"Updated feedback {feedback_id} status to {status}")
-                return True
+                return {
+                    "success": True,
+                    "message": f"Feedback status updated to {status}",
+                    "feedback_id": feedback.id
+                }
             else:
-                print(f"Feedback {feedback_id} not found")
-                return False
-        except SQLAlchemyError as e:
-            await db.rollback()
-            print(f"Database error while updating feedback status: {e}")
-            return False
-
-    @staticmethod
-    async def update_contact_status(contact_id: int, status: str, db: AsyncSession) -> bool:
+                return {
+                    "success": False,
+                    "error": f"Feedback with ID {feedback_id} not found"
+                }
+                
+        except Exception as e:
+            print(f"Error updating feedback status: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while updating feedback status"
+            }
+    
+    async def get_feedback_by_id(
+        self,
+        db: AsyncSession,
+        feedback_id: int
+    ) -> Optional[Feedback]:
         """
-        Update contact status.
+        Get feedback by ID.
         
         Args:
-            contact_id: ID of the contact record
-            status: New status ('open' or 'resolved')
-            db: Async database session
+            db: Database session
+            feedback_id: Feedback ID
             
         Returns:
-            True if successful, False otherwise
+            Feedback record or None if not found
         """
-        if status not in ['open', 'resolved']:
-            raise ValueError("Status must be 'open' or 'resolved'")
-            
-        try:
-            contact = await db.get(Contact, contact_id)
-            if contact:
-                contact.status = status
-                await db.commit()
-                print(f"Updated contact {contact_id} status to {status}")
-                return True
-            else:
-                print(f"Contact {contact_id} not found")
-                return False
-        except SQLAlchemyError as e:
-            await db.rollback()
-            print(f"Database error while updating contact status: {e}")
-            return False
-
-
-# Factory functions for backward compatibility
-async def process_feedback(data: Dict[str, Any], db: AsyncSession = None) -> Dict[str, Any]:
-    """
-    Factory function for backward compatibility with existing code.
-    
-    Args:
-        data: Feedback data dictionary
-        db: Optional database session (if not provided, will need to be injected)
-        
-    Returns:
-        Success message dictionary
-    """
-    if db is None:
-        raise ValueError("Database session is required")
-    
-    return await FeedbackService.process_feedback(data, db)
-
-
-async def process_contact(data: Dict[str, Any], db: AsyncSession = None) -> Dict[str, Any]:
-    """
-    Factory function for backward compatibility with existing code.
-    
-    Args:
-        data: Contact form data dictionary
-        db: Optional database session (if not provided, will need to be injected)
-        
-    Returns:
-        Success message dictionary
-    """
-    if db is None:
-        raise ValueError("Database session is required")
-    
-    return await FeedbackService.process_contact(data, db) 
+        return await self.feedback_repository.get_by_id(db, feedback_id) 
