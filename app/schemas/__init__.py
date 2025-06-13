@@ -61,16 +61,20 @@ from .metadata import (
 # Feedback schemas
 from .feedback import (
     FeedbackRequest,
-    ContactRequest,
-    CombinedFeedbackRequest,
     FeedbackResponse,
-    ContactResponse,
     FeedbackSuccessResponse,
-    ContactSuccessResponse,
     FeedbackErrorResponse,
     FeedbackEntity,
-    ContactEntity,
     FeedbackUpdateRequest,
+)
+
+# Contact schemas
+from .contact import (
+    ContactRequest,
+    ContactResponse,
+    ContactSuccessResponse,
+    ContactErrorResponse,
+    ContactEntity,
     ContactUpdateRequest,
 )
 
@@ -138,16 +142,18 @@ __all__ = [
     
     # Feedback
     "FeedbackRequest",
-    "ContactRequest",
-    "CombinedFeedbackRequest",
     "FeedbackResponse",
-    "ContactResponse",
     "FeedbackSuccessResponse",
-    "ContactSuccessResponse",
     "FeedbackErrorResponse",
     "FeedbackEntity",
-    "ContactEntity",
     "FeedbackUpdateRequest",
+    
+    # Contact
+    "ContactRequest",
+    "ContactResponse",
+    "ContactSuccessResponse",
+    "ContactErrorResponse",
+    "ContactEntity",
     "ContactUpdateRequest",
     
     # Search

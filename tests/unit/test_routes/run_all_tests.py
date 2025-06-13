@@ -34,8 +34,14 @@ TEST_SUITES = {
     "feedback": {
         "module": "test_feedback_routes",
         "function": "run_feedback_tests", 
-        "description": "Feedback and contact forms",
+        "description": "Feedback submission system",
         "emoji": "💬"
+    },
+    "contact": {
+        "module": "test_contact_routes",
+        "function": "run_contact_tests",
+        "description": "Contact form system",
+        "emoji": "📞"
     },
     "metadata": {
         "module": "test_metadata_routes",
@@ -200,72 +206,51 @@ def run_single_test(suite_name: str):
     print(f"Duration: {end_time - start_time:.1f}s")
     
     if not success and output:
-        print(f"Error: {output}")
+        print(f"Error Details: {output}")
     
     return success
 
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description="Resomix API Route Tests Master Runner",
+        description="Run Resomix API route tests",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"""
-Available test suites:
-{chr(10).join(f"  {name:<12} - {config['description']}" for name, config in TEST_SUITES.items())}
-
+        epilog="""
 Examples:
-  python {__file__}                    # Run all tests
-  python {__file__} health            # Run health tests only
-  python {__file__} search feedback   # Run search and feedback tests
+  python run_all_tests.py                    # Run all test suites
+  python run_all_tests.py health             # Run only health tests
+  python run_all_tests.py feedback           # Run only feedback tests
+  python run_all_tests.py contact            # Run only contact tests
+  python run_all_tests.py similarity         # Run only similarity tests
         """
     )
     
     parser.add_argument(
-        'suites',
-        nargs='*',
-        help='Specific test suites to run (default: all)'
+        'suite',
+        nargs='?',
+        choices=list(TEST_SUITES.keys()) + ['all'],
+        default='all',
+        help='Test suite to run (default: all)'
     )
     
     parser.add_argument(
-        '--list', '-l',
+        '--list',
         action='store_true',
-        help='List available test suites and exit'
+        help='List available test suites'
     )
     
     args = parser.parse_args()
     
     if args.list:
+        print_header()
         print_suite_list()
-        return
+        return True
     
-    if not args.suites:
-        # Run all tests
-        success = run_all_tests()
-        sys.exit(0 if success else 1)
+    if args.suite == 'all':
+        return run_all_tests()
     else:
-        # Run specific test suites
-        all_passed = True
-        
-        for suite_name in args.suites:
-            if len(args.suites) > 1:
-                print()  # Spacing between multiple tests
-            
-            success = run_single_test(suite_name)
-            if not success:
-                all_passed = False
-        
-        if len(args.suites) > 1:
-            # Summary for multiple tests
-            passed = sum(1 for suite in args.suites if run_single_test(suite))
-            failed = len(args.suites) - passed
-            
-            print(f"\n{'='*60}")
-            print("📊 MULTIPLE SUITES SUMMARY")
-            print(f"{'='*60}")
-            print(f"Passed: {passed}/{len(args.suites)} ✅")
-            print(f"Failed: {failed}/{len(args.suites)} ❌")
-        
-        sys.exit(0 if all_passed else 1)
+        return run_single_test(args.suite)
 
 if __name__ == "__main__":
-    main() 
+    success = main()
+    sys.exit(0 if success else 1) 

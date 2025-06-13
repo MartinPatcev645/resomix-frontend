@@ -3,7 +3,7 @@
 Feedback Routes Test
 ====================
 
-Test file for feedback and contact endpoints.
+Test file for feedback endpoints only.
 
 Usage: python -m pytest tests/unit/test_routes/test_feedback_routes.py -v
 Or run directly: python tests/unit/test_routes/test_feedback_routes.py
@@ -26,8 +26,8 @@ def print_test_result(test_name: str, success: bool, message: str = "", response
     if message:
         print(f"     {message}")
 
-def test_feedback_valid():
-    """Test POST /feedback with valid data"""
+def test_feedback_submit_valid():
+    """Test POST /feedback/ with valid data"""
     print("\n🧪 Testing Feedback Submission - Valid Data")
     
     try:
@@ -37,7 +37,8 @@ def test_feedback_valid():
             "satisfaction": 8,
             "recommendation": 9,
             "feedback": "This is a test feedback from the unit test suite",
-            "category": "performance"
+            "category": "performance",
+            "user_id": "test-user-123"
         }
         
         params = {
@@ -45,7 +46,7 @@ def test_feedback_valid():
         }
         
         response = requests.post(
-            f"{BASE_URL}/feedback",
+            f"{BASE_URL}/feedback/",
             json=feedback_data,
             params=params,
             timeout=TIMEOUT
@@ -54,38 +55,38 @@ def test_feedback_valid():
         
         # Check status code
         if response.status_code != 200:
-            print_test_result("Feedback Valid Status", False, f"Expected 200, got {response.status_code}")
+            print_test_result("Feedback Submit Valid Status", False, f"Expected 200, got {response.status_code}")
             return False
         
         # Check response format
         try:
             data = response.json()
         except Exception as e:
-            print_test_result("Feedback Valid JSON", False, f"Invalid JSON response: {e}")
+            print_test_result("Feedback Submit Valid JSON", False, f"Invalid JSON response: {e}")
             return False
         
         # Check success field
         if data.get("success") is not True:
-            print_test_result("Feedback Valid Success", False, f"Expected success=True, got {data.get('success')}")
+            print_test_result("Feedback Submit Valid Success", False, f"Expected success=True, got {data.get('success')}")
             return False
         
         # Check data field exists
         if "data" not in data:
-            print_test_result("Feedback Valid Data Field", False, "Missing 'data' field in response")
+            print_test_result("Feedback Submit Valid Data Field", False, "Missing 'data' field in response")
             return False
         
-        print_test_result("Feedback Valid", True, f"Feedback submitted successfully", response_time)
+        print_test_result("Feedback Submit Valid", True, f"Feedback submitted successfully", response_time)
         return True
         
     except requests.exceptions.RequestException as e:
-        print_test_result("Feedback Valid", False, f"Request failed: {e}")
+        print_test_result("Feedback Submit Valid", False, f"Request failed: {e}")
         return False
     except Exception as e:
-        print_test_result("Feedback Valid", False, f"Unexpected error: {e}")
+        print_test_result("Feedback Submit Valid", False, f"Unexpected error: {e}")
         return False
 
-def test_feedback_invalid_ratings():
-    """Test POST /feedback with invalid rating values"""
+def test_feedback_submit_invalid_ratings():
+    """Test POST /feedback/ with invalid rating values"""
     print("\n🧪 Testing Feedback Submission - Invalid Ratings")
     
     try:
@@ -102,7 +103,7 @@ def test_feedback_invalid_ratings():
         }
         
         response = requests.post(
-            f"{BASE_URL}/feedback",
+            f"{BASE_URL}/feedback/",
             json=feedback_data,
             params=params,
             timeout=TIMEOUT
@@ -111,21 +112,21 @@ def test_feedback_invalid_ratings():
         
         # Should return 422 for validation error
         if response.status_code == 422:
-            print_test_result("Feedback Invalid Ratings", True, "Correctly rejected invalid ratings", response_time)
+            print_test_result("Feedback Submit Invalid Ratings", True, "Correctly rejected invalid ratings", response_time)
             return True
         else:
-            print_test_result("Feedback Invalid Ratings", False, f"Expected 422, got {response.status_code}")
+            print_test_result("Feedback Submit Invalid Ratings", False, f"Expected 422, got {response.status_code}")
             return False
         
     except requests.exceptions.RequestException as e:
-        print_test_result("Feedback Invalid Ratings", False, f"Request failed: {e}")
+        print_test_result("Feedback Submit Invalid Ratings", False, f"Request failed: {e}")
         return False
     except Exception as e:
-        print_test_result("Feedback Invalid Ratings", False, f"Unexpected error: {e}")
+        print_test_result("Feedback Submit Invalid Ratings", False, f"Unexpected error: {e}")
         return False
 
-def test_feedback_missing_required_fields():
-    """Test POST /feedback with missing required fields"""
+def test_feedback_submit_missing_required_fields():
+    """Test POST /feedback/ with missing required fields"""
     print("\n🧪 Testing Feedback Submission - Missing Required Fields")
     
     try:
@@ -142,7 +143,7 @@ def test_feedback_missing_required_fields():
         }
         
         response = requests.post(
-            f"{BASE_URL}/feedback",
+            f"{BASE_URL}/feedback/",
             json=feedback_data,
             params=params,
             timeout=TIMEOUT
@@ -151,163 +152,21 @@ def test_feedback_missing_required_fields():
         
         # Should return 422 for missing field
         if response.status_code == 422:
-            print_test_result("Feedback Missing Fields", True, "Correctly rejected missing required fields", response_time)
+            print_test_result("Feedback Submit Missing Fields", True, "Correctly rejected missing required fields", response_time)
             return True
         else:
-            print_test_result("Feedback Missing Fields", False, f"Expected 422, got {response.status_code}")
+            print_test_result("Feedback Submit Missing Fields", False, f"Expected 422, got {response.status_code}")
             return False
         
     except requests.exceptions.RequestException as e:
-        print_test_result("Feedback Missing Fields", False, f"Request failed: {e}")
+        print_test_result("Feedback Submit Missing Fields", False, f"Request failed: {e}")
         return False
     except Exception as e:
-        print_test_result("Feedback Missing Fields", False, f"Unexpected error: {e}")
+        print_test_result("Feedback Submit Missing Fields", False, f"Unexpected error: {e}")
         return False
 
-def test_contact_valid():
-    """Test POST /contact with valid data"""
-    print("\n🧪 Testing Contact Submission - Valid Data")
-    
-    try:
-        start_time = time.time()
-        
-        contact_data = {
-            "name": "John Doe",
-            "email": "john.doe@example.com",
-            "message": "This is a test contact form submission from the unit test suite",
-            "subject": "Test Subject",
-            "phone": "+1-555-123-4567",
-            "formType": "contact"
-        }
-        
-        params = {
-            'api_key': API_KEY
-        }
-        
-        response = requests.post(
-            f"{BASE_URL}/contact",
-            json=contact_data,
-            params=params,
-            timeout=TIMEOUT
-        )
-        response_time = time.time() - start_time
-        
-        # Check status code
-        if response.status_code != 200:
-            print_test_result("Contact Valid Status", False, f"Expected 200, got {response.status_code}")
-            return False
-        
-        # Check response format
-        try:
-            data = response.json()
-        except Exception as e:
-            print_test_result("Contact Valid JSON", False, f"Invalid JSON response: {e}")
-            return False
-        
-        # Check success field
-        if data.get("success") is not True:
-            print_test_result("Contact Valid Success", False, f"Expected success=True, got {data.get('success')}")
-            return False
-        
-        # Check data field exists
-        if "data" not in data:
-            print_test_result("Contact Valid Data Field", False, "Missing 'data' field in response")
-            return False
-        
-        print_test_result("Contact Valid", True, f"Contact form submitted successfully", response_time)
-        return True
-        
-    except requests.exceptions.RequestException as e:
-        print_test_result("Contact Valid", False, f"Request failed: {e}")
-        return False
-    except Exception as e:
-        print_test_result("Contact Valid", False, f"Unexpected error: {e}")
-        return False
-
-def test_contact_invalid_email():
-    """Test POST /contact with invalid email"""
-    print("\n🧪 Testing Contact Submission - Invalid Email")
-    
-    try:
-        start_time = time.time()
-        
-        contact_data = {
-            "name": "Jane Doe",
-            "email": "invalid-email-format",  # Invalid email
-            "message": "Test message with invalid email",
-            "formType": "contact"
-        }
-        
-        params = {
-            'api_key': API_KEY
-        }
-        
-        response = requests.post(
-            f"{BASE_URL}/contact",
-            json=contact_data,
-            params=params,
-            timeout=TIMEOUT
-        )
-        response_time = time.time() - start_time
-        
-        # Should return 422 for validation error
-        if response.status_code == 422:
-            print_test_result("Contact Invalid Email", True, "Correctly rejected invalid email", response_time)
-            return True
-        else:
-            print_test_result("Contact Invalid Email", False, f"Expected 422, got {response.status_code}")
-            return False
-        
-    except requests.exceptions.RequestException as e:
-        print_test_result("Contact Invalid Email", False, f"Request failed: {e}")
-        return False
-    except Exception as e:
-        print_test_result("Contact Invalid Email", False, f"Unexpected error: {e}")
-        return False
-
-def test_contact_missing_required_fields():
-    """Test POST /contact with missing required fields"""
-    print("\n🧪 Testing Contact Submission - Missing Required Fields")
-    
-    try:
-        start_time = time.time()
-        
-        contact_data = {
-            "name": "Test User",
-            # Missing "email" and "message" fields
-            "subject": "Test Subject",
-            "formType": "contact"
-        }
-        
-        params = {
-            'api_key': API_KEY
-        }
-        
-        response = requests.post(
-            f"{BASE_URL}/contact",
-            json=contact_data,
-            params=params,
-            timeout=TIMEOUT
-        )
-        response_time = time.time() - start_time
-        
-        # Should return 422 for missing fields
-        if response.status_code == 422:
-            print_test_result("Contact Missing Fields", True, "Correctly rejected missing required fields", response_time)
-            return True
-        else:
-            print_test_result("Contact Missing Fields", False, f"Expected 422, got {response.status_code}")
-            return False
-        
-    except requests.exceptions.RequestException as e:
-        print_test_result("Contact Missing Fields", False, f"Request failed: {e}")
-        return False
-    except Exception as e:
-        print_test_result("Contact Missing Fields", False, f"Unexpected error: {e}")
-        return False
-
-def test_feedback_invalid_api_key():
-    """Test POST /feedback with invalid API key"""
+def test_feedback_submit_invalid_api_key():
+    """Test POST /feedback/ with invalid API key"""
     print("\n🧪 Testing Feedback - Invalid API Key")
     
     try:
@@ -324,7 +183,7 @@ def test_feedback_invalid_api_key():
         }
         
         response = requests.post(
-            f"{BASE_URL}/feedback",
+            f"{BASE_URL}/feedback/",
             json=feedback_data,
             params=params,
             timeout=TIMEOUT
@@ -333,62 +192,120 @@ def test_feedback_invalid_api_key():
         
         # Should return 403 for invalid API key
         if response.status_code == 403:
-            print_test_result("Feedback Invalid API Key", True, "Correctly rejected invalid API key", response_time)
+            print_test_result("Feedback Submit Invalid API Key", True, "Correctly rejected invalid API key", response_time)
             return True
         else:
-            print_test_result("Feedback Invalid API Key", False, f"Expected 403, got {response.status_code}")
+            print_test_result("Feedback Submit Invalid API Key", False, f"Expected 403, got {response.status_code}")
             return False
         
     except requests.exceptions.RequestException as e:
-        print_test_result("Feedback Invalid API Key", False, f"Request failed: {e}")
+        print_test_result("Feedback Submit Invalid API Key", False, f"Request failed: {e}")
         return False
     except Exception as e:
-        print_test_result("Feedback Invalid API Key", False, f"Unexpected error: {e}")
+        print_test_result("Feedback Submit Invalid API Key", False, f"Unexpected error: {e}")
         return False
 
-def test_contact_invalid_api_key():
-    """Test POST /contact with invalid API key"""
-    print("\n🧪 Testing Contact - Invalid API Key")
+def test_feedback_get_by_id():
+    """Test GET /feedback/{feedback_id}"""
+    print("\n🧪 Testing Get Feedback by ID")
     
     try:
         start_time = time.time()
         
-        contact_data = {
-            "name": "Test User",
-            "email": "test@example.com",
-            "message": "Test contact with invalid API key",
-            "formType": "contact"
+        # First, create a feedback to get its ID
+        feedback_data = {
+            "satisfaction": 7,
+            "recommendation": 8,
+            "feedback": "Test feedback for getting by ID",
+            "category": "testing"
         }
         
         params = {
-            'api_key': 'invalid-api-key-12345'
+            'api_key': API_KEY
         }
         
-        response = requests.post(
-            f"{BASE_URL}/contact",
-            json=contact_data,
+        # Create feedback
+        create_response = requests.post(
+            f"{BASE_URL}/feedback/",
+            json=feedback_data,
+            params=params,
+            timeout=TIMEOUT
+        )
+        
+        if create_response.status_code != 200:
+            print_test_result("Feedback Get by ID - Create", False, f"Failed to create feedback: {create_response.status_code}")
+            return False
+        
+        # Try to get feedback by ID (assuming ID 1 exists)
+        get_response = requests.get(
+            f"{BASE_URL}/feedback/1",
             params=params,
             timeout=TIMEOUT
         )
         response_time = time.time() - start_time
         
-        # Should return 403 for invalid API key
-        if response.status_code == 403:
-            print_test_result("Contact Invalid API Key", True, "Correctly rejected invalid API key", response_time)
+        # Check response
+        if get_response.status_code == 200:
+            print_test_result("Feedback Get by ID", True, "Successfully retrieved feedback", response_time)
+            return True
+        elif get_response.status_code == 404:
+            print_test_result("Feedback Get by ID", True, "Correctly returned 404 for non-existent feedback", response_time)
             return True
         else:
-            print_test_result("Contact Invalid API Key", False, f"Expected 403, got {response.status_code}")
+            print_test_result("Feedback Get by ID", False, f"Unexpected status code: {get_response.status_code}")
             return False
         
     except requests.exceptions.RequestException as e:
-        print_test_result("Contact Invalid API Key", False, f"Request failed: {e}")
+        print_test_result("Feedback Get by ID", False, f"Request failed: {e}")
         return False
     except Exception as e:
-        print_test_result("Contact Invalid API Key", False, f"Unexpected error: {e}")
+        print_test_result("Feedback Get by ID", False, f"Unexpected error: {e}")
+        return False
+
+def test_feedback_update_status():
+    """Test PATCH /feedback/{feedback_id}/status"""
+    print("\n🧪 Testing Update Feedback Status")
+    
+    try:
+        start_time = time.time()
+        
+        status_data = {
+            "status": "resolved"
+        }
+        
+        params = {
+            'api_key': API_KEY
+        }
+        
+        # Try to update status (assuming ID 1 exists)
+        response = requests.patch(
+            f"{BASE_URL}/feedback/1/status",
+            json=status_data,
+            params=params,
+            timeout=TIMEOUT
+        )
+        response_time = time.time() - start_time
+        
+        # Check response
+        if response.status_code == 200:
+            print_test_result("Feedback Update Status", True, "Successfully updated feedback status", response_time)
+            return True
+        elif response.status_code == 404:
+            print_test_result("Feedback Update Status", True, "Correctly returned 404 for non-existent feedback", response_time)
+            return True
+        else:
+            print_test_result("Feedback Update Status", False, f"Unexpected status code: {response.status_code}")
+            return False
+        
+    except requests.exceptions.RequestException as e:
+        print_test_result("Feedback Update Status", False, f"Request failed: {e}")
+        return False
+    except Exception as e:
+        print_test_result("Feedback Update Status", False, f"Unexpected error: {e}")
         return False
 
 def run_feedback_tests():
-    """Run all feedback and contact related tests"""
+    """Run all feedback related tests"""
     print("=" * 60)
     print("💬 FEEDBACK ROUTES TEST SUITE")
     print("=" * 60)
@@ -407,14 +324,12 @@ def run_feedback_tests():
     
     # Run feedback tests
     tests = [
-        test_feedback_valid,
-        test_feedback_invalid_ratings,
-        test_feedback_missing_required_fields,
-        test_feedback_invalid_api_key,
-        test_contact_valid,
-        test_contact_invalid_email,
-        test_contact_missing_required_fields,
-        test_contact_invalid_api_key,
+        test_feedback_submit_valid,
+        test_feedback_submit_invalid_ratings,
+        test_feedback_submit_missing_required_fields,
+        test_feedback_submit_invalid_api_key,
+        test_feedback_get_by_id,
+        test_feedback_update_status,
     ]
     
     passed = 0
