@@ -10,6 +10,7 @@ Date: December 2024
 
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.models.feedback import Feedback
 from app.repositories.base_repository import BaseRepository
@@ -20,6 +21,24 @@ class FeedbackRepository(BaseRepository[Feedback]):
     
     def __init__(self):
         super().__init__(Feedback)
+    
+    def _find_existing(self, db: Session, **kwargs) -> Optional[Feedback]:
+        """Find existing feedback record by user_id and submitted_at."""
+        # For feedback, we'll look up by user_id and submitted_at (if provided)
+        # This is a simple implementation - adjust based on business logic
+        user_id = kwargs.get('user_id')
+        if user_id:
+            return db.query(Feedback).filter(Feedback.user_id == user_id).first()
+        return None
+    
+    async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Feedback]:
+        """Async version of find existing feedback record."""
+        user_id = kwargs.get('user_id')
+        if user_id:
+            stmt = select(Feedback).where(Feedback.user_id == user_id)
+            result = await db.execute(stmt)
+            return result.scalar_one_or_none()
+        return None
     
     async def create_feedback(
         self,
@@ -201,7 +220,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         Returns:
             Updated feedback record or None if not found
         """
-        feedback = await self.get_by_id(db, feedback_id)
+        feedback = await self.async_get_by_id(db, feedback_id)
         if feedback:
             feedback.status = status
             await db.commit()

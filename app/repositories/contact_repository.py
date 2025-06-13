@@ -10,6 +10,7 @@ Date: December 2024
 
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.models.contact import Contact
 from app.repositories.base_repository import BaseRepository
@@ -20,6 +21,24 @@ class ContactRepository(BaseRepository[Contact]):
     
     def __init__(self):
         super().__init__(Contact)
+    
+    def _find_existing(self, db: Session, **kwargs) -> Optional[Contact]:
+        """Find existing contact record by email."""
+        # For contact, we'll look up by email (if provided)
+        # This is a simple implementation - adjust based on business logic
+        email = kwargs.get('email')
+        if email:
+            return db.query(Contact).filter(Contact.email == email).first()
+        return None
+    
+    async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Contact]:
+        """Async version of find existing contact record."""
+        email = kwargs.get('email')
+        if email:
+            stmt = select(Contact).where(Contact.email == email)
+            result = await db.execute(stmt)
+            return result.scalar_one_or_none()
+        return None
     
     async def create_contact(
         self,
@@ -139,7 +158,7 @@ class ContactRepository(BaseRepository[Contact]):
         Returns:
             Updated contact record or None if not found
         """
-        contact = await self.get_by_id(db, contact_id)
+        contact = await self.async_get_by_id(db, contact_id)
         if contact:
             contact.status = status
             await db.commit()
