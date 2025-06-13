@@ -217,4 +217,4 @@ class FeedbackService:
         Returns:
             Feedback record or None if not found
         """
-        return await self.feedback_repository.get_by_id(db, feedback_id) 
+        return await self.feedback_repository.async_get_by_id(db, feedback_id)
