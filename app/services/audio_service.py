@@ -41,6 +41,16 @@ class AudioService:
             return False
 
     @staticmethod
+    def is_ffmpeg_available() -> bool:
+        """
+        Check if FFmpeg is available (alias for is_ffmpeg_installed for compatibility).
+        
+        Returns:
+            bool: True if FFmpeg is available, False otherwise
+        """
+        return AudioService.is_ffmpeg_installed()
+
+    @staticmethod
     def validate_audio_format(audio_bytes: bytes, filename: str) -> bool:
         """
         Validate if the provided bytes represent a valid audio file by checking for an audio stream using ffprobe.

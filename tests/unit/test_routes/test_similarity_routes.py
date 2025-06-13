@@ -6,6 +6,8 @@ Similarity Routes Test Suite
 Comprehensive testing for similarity calculation endpoints.
 Tests audio file similarity analysis and selection similarity functionality.
 
+Direct Command to run: python tests/unit/test_routes/test_similarity_routes.py
+
 Author: AI Assistant
 Date: December 2024
 """

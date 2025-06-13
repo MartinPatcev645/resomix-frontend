@@ -1,59 +1,86 @@
-# Audio Similarity API
+# ResomiX Audio Similarity API
 
-A FastAPI server for calculating the similarity between audio tracks. The server accepts audio file uploads, validates them for security, and processes them to return similarity metrics.
+A comprehensive FastAPI-based application for audio similarity analysis, track management, and music discovery. This API provides advanced audio processing capabilities, metadata extraction, search functionality, and a complete music management system with user authentication and content management.
+
+## Architecture Overview
+
+This application follows a **layered architecture** pattern with clean separation of concerns:
+
+- **API Layer**: FastAPI routers, middleware, and dependencies
+- **Controller Layer**: HTTP request/response handling and validation
+- **Service Layer**: Business logic and external service integration
+- **Repository Layer**: Data access abstraction and database operations
+- **Model Layer**: SQLAlchemy ORM models and database schema
+- **Schema Layer**: Pydantic models for API validation and serialization
 
 ## Features
 
-- Audio file validation using FFmpeg/FFprobe for deep content analysis
-- Secure file handling with temporary storage
-- API key authentication via query parameter
-- Search functionality for tracks
-- Feedback and contact form submission
-- Configurable file size limits (currently set to 50MB)
-- Concurrent request handling
-- Frontend-compatible response format
+### Core Audio Features
+- **Audio Similarity Analysis**: Upload audio files and receive similarity metrics with existing tracks
+- **Metadata Extraction**: Comprehensive metadata extraction using multiple methods (FFmpeg, Mutagen)
+- **Audio Validation**: Deep content analysis using FFmpeg for security and format validation
+- **Search Engine**: Advanced track search with multiple criteria and algorithms
+
+### Management Features
+- **Track Management**: Complete CRUD operations for tracks, artists, albums, and labels
+- **Playlist Management**: Create and manage playlists with track relationships
+- **User Management**: Full RBAC system with users, roles, and permissions
+- **Rating System**: Track and playlist rating capabilities
+- **Purchase/Subscription System**: Complete billing and subscription management
+- **Feedback System**: Integrated feedback collection and contact management
+
+### Technical Features
+- **MariaDB Integration**: Robust relational database with optimized schemas
+- **Async Support**: Full async/await support for high-performance operations
+- **API Key Authentication**: Secure API access with key-based authentication
+- **CORS Support**: Frontend-compatible with configurable CORS policies
+- **Error Handling**: Comprehensive error handling with custom exceptions
+- **Logging**: Structured logging for monitoring and debugging
 
 ## Requirements
 
-### FFmpeg
+### System Dependencies
 
-This application requires FFmpeg to be installed on the system for audio file validation. FFmpeg is used to verify that uploaded files are genuine audio files with valid audio streams.
-
-#### Installing FFmpeg
+#### FFmpeg (Required)
+This application requires FFmpeg for audio file validation and processing:
 
 - **Windows:** Download from [FFmpeg.org](https://ffmpeg.org/download.html) or install via Chocolatey:
-  ```
+  ```bash
   choco install ffmpeg
   ```
 
 - **macOS:** Install using Homebrew:
-  ```
+  ```bash
   brew install ffmpeg
   ```
 
 - **Linux (Debian/Ubuntu):**
-  ```
+  ```bash
   sudo apt update
   sudo apt install ffmpeg
   ```
 
-### Python Dependencies
+#### MariaDB (Required)
+The application uses MariaDB as its primary database:
 
+- **Installation**: Follow the [MariaDB installation guide](https://mariadb.org/download/)
+- **Configuration**: Update database connection settings in `.env` file
+
+### Python Dependencies
 - Python 3.8 or higher
-- FastAPI
-- Uvicorn
-- Other dependencies listed in `requirements.txt`
+- FastAPI, Uvicorn, SQLAlchemy, MariaDB drivers
+- See `requirements.txt` for complete list
 
 ## Installation
 
-1. Clone the repository:
-   ```
+1. **Clone the repository:**
+   ```bash
    git clone <repository-url>
-   cd <repository-directory>
+   cd resomix-api
    ```
 
-2. Create and activate a virtual environment (optional but recommended):
-   ```
+2. **Create and activate virtual environment:**
+   ```bash
    python -m venv venv
    # Windows
    venv\Scripts\activate
@@ -61,222 +88,330 @@ This application requires FFmpeg to be installed on the system for audio file va
    source venv/bin/activate
    ```
 
-3. Install the required Python packages:
-   ```
+3. **Install dependencies:**
+   ```bash
    pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+5. **Initialize database:**
+   ```bash
+   # Run database migrations
+   python -m scripts.migrate_data
    ```
 
 ## Configuration
 
-- **API Key:** Change the default API key in `main.py` before deploying to production. Ideally, set it via environment variables.
-- **Maximum File Size:** You can adjust the `MAX_FILE_SIZE` constant in `main.py` (default: 50MB).
-- **Temporary Directory:** Audio files are temporarily stored in the `temp_audio` directory. This can be configured via the `TEMP_DIR` constant.
+### Environment Variables
+Key configuration options in `.env`:
 
-## Running the Server
-
-Start the server with:
-
-```
-python main.py
+```env
+# API Configuration
+API_KEY=your_secure_api_key_here
+MAX_FILE_SIZE=52428800  # 50MB in bytes
+TEMP_DIR=temp_audio
 ```
 
-By default, the server will run on `http://0.0.0.0:8002`. You can modify the host and port in the `main.py` file.
+### Security Settings
+- **API Key**: Set a strong API key for production deployment
+- **CORS Origins**: Configure allowed origins in `app/api/middlewares/cors.py`
+- **Database Security**: Use strong database credentials and proper network configuration
 
-## Frontend Integration
+## Running the Application
 
-This API is designed to work with a React frontend that uses the provided `api.js` service. The API accepts and returns data in a format that matches frontend expectations:
+### Development
+```bash
+python run.py
+```
 
-- API key is passed as a query parameter: `?api_key=YOUR_API_KEY`
-- All responses follow a consistent format:
-  ```json
-  { "success": true, "data": {...} }
-  ```
-  or
-  ```json
-  { "success": false, "error": "Error message" }
-  ```
-- Error responses include appropriate HTTP status codes (422, 415, 500, etc.)
-- File validation is performed using FFmpeg rather than relying on MIME types
+### Production
+```bash
+# Using Uvicorn directly
+uvicorn app.main:app --host 0.0.0.0 --port 8005
+
+# Using Gunicorn (recommended for production)
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8005
+```
+
+The server will be available at `http://localhost:8005`
 
 ## API Documentation
 
-Once the server is running, you can access the auto-generated API documentation at:
+### Interactive Documentation
+- **Swagger UI**: `http://localhost:8005/docs`
+- **ReDoc**: `http://localhost:8005/redoc`
 
-- Swagger UI: `http://localhost:8002/docs`
-- ReDoc: `http://localhost:8002/redoc`
+### Core Endpoints
 
-### Endpoints
+#### Audio Similarity
+- `POST /api/similarity/get_similarity/` - Upload audio file for similarity analysis
+- `POST /api/similarity/get_selection_similarity/` - Get similarity for selected tracks
 
-#### 1. POST /get_similarity/
+#### Search & Discovery
+- `GET /api/search/tracks/` - Search tracks with various criteria
+- `GET /api/tracks/` - List and filter tracks
+- `GET /api/artists/` - Browse artists
+- `GET /api/albums/` - Browse albums
 
-Upload an audio file to calculate its similarity metrics and receive similar tracks.
+#### Metadata & Processing
+- `POST /api/metadata/extract/` - Extract metadata from audio files
+- `POST /api/audio/validate/` - Validate audio file formats
 
-**Authorization:** Requires an API key provided via the `api_key` query parameter.
+#### User Management
+- `POST /api/users/` - Create user accounts
+- `GET /api/users/profile/` - Get user profile
+- `PUT /api/users/profile/` - Update user profile
 
-**Request:**
-- Content-Type: multipart/form-data
-- Body: audio file (max 50MB)
+#### Content Management
+- `POST /api/playlists/` - Create playlists
+- `POST /api/ratings/` - Rate tracks and playlists
+- `GET /api/purchases/` - View purchase history
 
-**Responses:**
-- Success:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "duration": 123,
-      "similar_tracks": [
-        {
-          "id": 1,
-          "title": "Track Title",
-          "artist": "Artist Name",
-          "duration": 180,
-          "genre": "Genre Name",
-          "bpm": 120,
-          "key": "C Major",
-          "imageUrl": "https://example.com/image.jpg",
-          "previewUrl": "https://example.com/preview.mp3"
-        },
-        // More similar tracks...
-      ]
-    }
-  }
-  ```
-- Error:
-  ```json
-  {
-    "success": false,
-    "error": "Error message"
-  }
-  ```
+#### Feedback & Support
+- `POST /api/feedback/` - Submit feedback
+- `POST /api/feedback/contact/` - Contact form submission
 
-#### 2. GET /search_tracks/
+### Authentication
+All endpoints require API key authentication via query parameter:
+```
+?api_key=YOUR_API_KEY
+```
 
-Search for tracks based on a query string.
+### Response Format
+All API responses follow a consistent format:
 
-**Authorization:** Requires an API key provided via the `api_key` query parameter.
-
-**Request Parameters:**
-- `query`: The search term
-
-**Responses:**
-- Success:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "tracks": [
-        {
-          "id": 1,
-          "title": "Track Title",
-          "artist": "Artist Name",
-          "duration": 180,
-          "genre": "Genre Name",
-          "bpm": 120,
-          "imageUrl": "https://example.com/image.jpg"
-        },
-        // More tracks...
-      ]
-    }
-  }
-  ```
-- Error:
-  ```json
-  {
-    "success": false,
-    "error": "Error message"
-  }
-  ```
-
-#### 3. POST /feedback
-
-Submit feedback or contact form data.
-
-**Authorization:** Requires an API key provided via the `api_key` query parameter.
-
-**Request for Feedback Form:**
+**Success Response:**
 ```json
 {
-  "satisfaction": 8,
-  "recommendation": 9,
-  "feedback": "This is user feedback text"
+  "success": true,
+  "data": {
+    // Response data here
+  }
 }
 ```
 
-**Request for Contact Form:**
+**Error Response:**
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "subject": "Question about Resomix",
-  "message": "I have a question about...",
-  "formType": "contact"
+  "success": false,
+  "error": "Error message description",
+  "details": {
+    // Additional error details if available
+  }
 }
 ```
-
-**Responses:**
-- Success:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "message": "Feedback received successfully"
-    }
-  }
-  ```
-- Error:
-  ```json
-  {
-    "success": false,
-    "error": "Error message"
-  }
-  ```
-
-## Security Considerations
-
-1. **File Validation:** All uploaded files are verified using FFmpeg to ensure they contain valid audio streams, helping prevent malicious file uploads. The API doesn't rely on MIME type declarations, which can be spoofed.
-
-2. **Temporary Storage:** Files are only stored temporarily during processing and are automatically deleted afterward.
-
-3. **API Key Authentication:** All requests require a valid API key.
-
-4. **CORS Configuration:** By default, all origins are allowed. For production, you should modify the CORS settings in `main.py` to only allow trusted origins.
 
 ## Project Structure
 
 ```
-├── main.py                  # FastAPI application and endpoint definitions
-├── requirements.txt         # Python dependencies
-├── README.md                # Project documentation
-├── temp_audio/              # Temporary storage for audio files (created at runtime)
-├── feedback_data/           # Storage for feedback submissions (created at runtime)
-└── src/
-    ├── ffmpeg.py            # FFmpeg integration for audio validation
-    ├── utils.py             # Utility functions used across the application
-    ├── similarity.py        # Audio similarity calculation logic
-    ├── search.py            # Track search functionality
-    └── feedback.py          # Feedback and contact form processing
+├── 📁app/                                    # Main application directory
+│   ├── 📁api/                                # API layer
+│   │   ├── 📁dependencies/                   # Dependency injection
+│   │   │   ├── auth.py                      # API key validation and security
+│   │   │   └── database.py                  # Database session management
+│   │   ├── 📁middlewares/                   # Custom middlewares
+│   │   │   └── cors.py                      # CORS configuration
+│   │   └── 📁routers/                       # API route definitions
+│   │       ├── similarity.py                # Audio similarity endpoints
+│   │       ├── tracks.py                    # Track management endpoints
+│   │       ├── artists.py                   # Artist management endpoints
+│   │       ├── albums.py                    # Album management endpoints
+│   │       ├── playlists.py                 # Playlist management endpoints
+│   │       ├── search.py                    # Search functionality endpoints
+│   │       ├── ratings.py                   # Rating system endpoints
+│   │       ├── purchases.py                 # Purchase/billing endpoints
+│   │       ├── metadata.py                  # Metadata extraction endpoints
+│   │       ├── feedback.py                  # Feedback system endpoints
+│   │       ├── users.py                     # User management endpoints
+│   │       └── health.py                    # Health check endpoints
+│   ├── 📁controllers/                        # Request/response handling
+│   │   ├── similarity_controller.py         # Similarity business logic
+│   │   ├── track_controller.py              # Track operations logic
+│   │   ├── search_controller.py             # Search algorithm logic
+│   │   ├── metadata_controller.py           # Metadata processing logic
+│   │   ├── feedback_controller.py           # Feedback processing logic
+│   │   └── [other controllers...]           # Additional controllers
+│   ├── 📁services/                          # Business logic layer
+│   │   ├── similarity_service.py            # Audio similarity algorithms
+│   │   ├── metadata_service.py              # Metadata extraction service
+│   │   ├── search_service.py                # Search engine implementation
+│   │   ├── audio_service.py                 # Audio processing with FFmpeg
+│   │   ├── feedback_service.py              # Feedback processing service
+│   │   └── [other services...]              # Additional business services
+│   ├── 📁repositories/                      # Data access layer
+│   │   ├── base_repository.py               # Base repository with common operations
+│   │   ├── track_repository.py              # Track data access
+│   │   ├── artist_repository.py             # Artist data access
+│   │   ├── user_repository.py               # User data access
+│   │   └── [other repositories...]          # Additional data repositories
+│   ├── 📁schemas/                           # Pydantic validation models
+│   │   ├── similarity.py                    # Similarity request/response schemas
+│   │   ├── track.py                         # Track schemas
+│   │   ├── user.py                          # User schemas
+│   │   ├── common.py                        # Common response schemas
+│   │   └── [other schemas...]               # Additional validation schemas
+│   ├── 📁models/                            # SQLAlchemy ORM models
+│   │   ├── track.py                         # Track and TrackArtist models
+│   │   ├── artist.py                        # Artist model
+│   │   ├── album.py                         # Album model
+│   │   ├── user.py                          # User, Role, Permission models
+│   │   ├── playlist.py                      # Playlist models
+│   │   └── [other models...]                # Additional database models
+│   ├── 📁core/                              # Core application configuration
+│   │   ├── config.py                        # Application settings and environment variables
+│   │   ├── security.py                      # Security utilities and RBAC
+│   │   └── exceptions.py                    # Custom exception classes
+│   ├── 📁utils/                             # Utility functions
+│   │   ├── file_utils.py                    # File handling utilities
+│   │   ├── validation.py                    # Validation helpers
+│   │   ├── response.py                      # Response formatting utilities
+│   │   └── stripe_utils.py                  # Payment processing utilities
+│   └── main.py                              # FastAPI application factory
+├── 📁database/                              # Database related files
+│   ├── connection.py                        # Database connection setup
+│   ├── 📁migrations/                        # Database migration scripts
+│   └── schema.sql                          # Database schema definition
+├── 📁scripts/                              # Utility and migration scripts
+│   ├── migrate_data.py                     # Data migration utilities
+│   └── seed_data.py                        # Database seeding scripts
+├── 📁tests/                                # Test suites
+│   ├── 📁unit/                             # Unit tests
+│   ├── 📁integration/                      # Integration tests
+│   └── conftest.py                         # Test configuration
+├── 📁temp_audio/                           # Temporary audio file storage
+├── 📁logs/                                 # Application logs
+├── .env                                    # Environment variables
+├── requirements.txt                        # Python dependencies
+├── run.py                                  # Application entry point
+└── README.md                               # This file
 ```
 
 ## Development
 
-### Extending the API
+### Adding New Features
 
-#### Adding New Endpoints
+#### 1. Adding New Endpoints
+1. Create schemas in `app/schemas/`
+2. Create/update models in `app/models/`
+3. Create repository methods in `app/repositories/`
+4. Implement business logic in `app/services/`
+5. Create controller methods in `app/controllers/`
+6. Add router endpoints in `app/api/routers/`
 
-To add new endpoints, you should:
+#### 2. Database Changes
+1. Update models in `app/models/`
+2. Create migration scripts in `database/migrations/`
+3. Update repository methods as needed
+4. Test with `python -m scripts.migrate_data`
 
-1. Create a new module in the `src/` directory if your endpoint has distinct functionality
-2. Update `main.py` to import your module and create the endpoint
-3. Use the `format_response` utility for consistent response formatting
+#### 3. Testing
+```bash
+# Run all tests
+pytest
 
-#### Implementing Actual Audio Similarity
+# Run specific test types
+pytest tests/unit/
+pytest tests/integration/
 
-The current implementation uses mock data for similarity calculation. To implement real audio similarity:
+# Run with coverage
+pytest --cov=app tests/
+```
 
-1. Modify `src/similarity.py` with your audio analysis algorithm
-2. Consider using libraries like librosa for audio feature extraction
-3. Implement a database connection to store and query track features
+### Code Quality
+- **Linting**: Use `flake8` and `black` for code formatting
+- **Type Hints**: Use type hints throughout the codebase
+- **Documentation**: Document all public methods and classes
+- **Error Handling**: Use custom exceptions from `app/core/exceptions.py`
+
+## Deployment
+
+### Docker (Recommended)
+```dockerfile
+# Example Dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+EXPOSE 8005
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8005"]
+```
+
+### Environment-Specific Configuration
+- **Development**: Use `.env` file with debug settings
+- **Staging**: Use environment variables with staging database
+- **Production**: Use secure environment variables and production database
+
+### Monitoring and Logging
+- **Logs**: Stored in `logs/` directory with rotation
+- **Health Checks**: Available at `/health` endpoint
+- **Metrics**: Database connection status, request metrics
+- **Error Tracking**: Comprehensive error logging with stack traces
+
+## Security Considerations
+
+1. **API Security**:
+   - Strong API key authentication
+   - Rate limiting (implement as needed)
+   - Input validation via Pydantic schemas
+
+2. **File Security**:
+   - FFmpeg validation for uploaded audio files
+   - Temporary file cleanup
+   - File size restrictions
+
+3. **Database Security**:
+   - Parameterized queries via SQLAlchemy
+   - Connection pooling and timeout settings
+   - Regular database backups
+
+4. **Production Setup**:
+   - HTTPS/TLS encryption
+   - Secure environment variable management
+   - Regular security updates
+
+## Performance Optimization
+
+- **Database**: Connection pooling, query optimization, indexing
+- **Async Operations**: Full async/await support for I/O operations
+- **Caching**: Implement Redis caching for frequently accessed data
+- **File Processing**: Efficient temporary file handling and cleanup
+- **API Response**: Optimized JSON serialization with Pydantic
+
+## Migration from Legacy System
+
+This application has been migrated from a MongoDB-based monolithic structure to a MariaDB-based layered architecture. Key improvements include:
+
+- **Better Data Consistency**: Relational database with foreign key constraints
+- **Improved Performance**: Optimized queries and proper indexing
+- **Enhanced Security**: Better authentication and authorization
+- **Scalability**: Modular architecture supporting horizontal scaling
+- **Maintainability**: Clear separation of concerns and testable components
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes following the established patterns
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
 
 ## License
 
 [Specify your license here]
+
+## Support
+
+For support and questions:
+- Use the feedback endpoint: `POST /api/feedback/contact/`
+- Check the API documentation at `/docs`
+- Review logs in the `logs/` directory for troubleshooting
