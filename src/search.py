@@ -159,7 +159,7 @@ async def search_tracks(query: str) -> Dict[str, Any]:
                 "id": str(doc.get("_id")),
                 "artist": doc.get("info", {}).get("artist", "N/A"),
                 "duration": duration,
-                "filename": filename 
+                "title": doc.get("info", {}).get("title", "N/A")
             }
             results.append(track_data)
     except motor.motor_asyncio.core.ServerSelectionTimeoutError as e: # Specific error for connection issues

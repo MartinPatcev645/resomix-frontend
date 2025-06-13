@@ -36,7 +36,7 @@ class SearchTrackResult(BaseModel):
     id: str = Field(..., description="Track database ID (MongoDB ObjectId)")
     artist: str = Field(..., description="Artist name")
     duration: int = Field(..., description="Track duration in seconds")
-    filename: str = Field(..., description="Track filename")
+    title: str = Field(..., description="Track title")
 
     class Config:
         json_schema_extra = {
@@ -44,7 +44,7 @@ class SearchTrackResult(BaseModel):
                 "id": "507f1f77bcf86cd799439011",
                 "artist": "Electronic Artist",
                 "duration": 245,
-                "filename": "electronic_track.mp3"
+                "title": "Electronic Track"
             }
         }
 
@@ -61,13 +61,13 @@ class SearchResponse(BaseModel):
                         "id": "507f1f77bcf86cd799439011",
                         "artist": "Electronic Artist",
                         "duration": 245,
-                        "filename": "electronic_track.mp3"
+                        "title": "Electronic Track"
                     },
                     {
                         "id": "507f1f77bcf86cd799439012",
                         "artist": "Techno Producer",
                         "duration": 180,
-                        "filename": "techno_beat.mp3"
+                        "title": "Techno Beat"
                     }
                 ]
             }
@@ -89,7 +89,7 @@ class SearchSuccessResponse(BaseModel):
                             "id": "507f1f77bcf86cd799439011",
                             "artist": "Electronic Artist",
                             "duration": 245,
-                            "filename": "electronic_track.mp3"
+                            "title": "Electronic Track"
                         }
                     ]
                 }
@@ -195,7 +195,7 @@ class DetailedSearchResponse(BaseModel):
                         "id": "507f1f77bcf86cd799439011",
                         "artist": "Electronic Artist", 
                         "duration": 245,
-                        "filename": "electronic_track.mp3"
+                        "title": "Electronic Track"
                     }
                 ],
                 "metadata": {

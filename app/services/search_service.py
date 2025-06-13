@@ -65,7 +65,7 @@ class SearchService:
                     "id": track_data.get("id"),  # UUID from track
                     "artist": track_data.get("artist", "N/A"),
                     "duration": track_data.get("duration", 0),
-                    "filename": track_data.get("filename", "N/A")
+                    "title": track_data.get("title", "N/A")
                 }
                 formatted_results.append(formatted_track)
             
@@ -104,7 +104,7 @@ class SearchService:
                     "id": track_data.get("id"),
                     "artist": track_data.get("artist", "N/A"),
                     "duration": track_data.get("duration", 0),
-                    "filename": track_data.get("filename", "N/A")
+                    "title": track_data.get("title", "N/A")
                 }
                 formatted_results.append(formatted_track)
             
