@@ -19,7 +19,7 @@ import re
 from datetime import datetime
 
 
-def format_response(success: bool, data: Optional[Any] = None, error: Optional[str] = None) -> Dict[str, Any]:
+def format_response(success: bool, data: Optional[Any] = None, error: Optional[str] = None, details: Optional[Any] = None) -> Dict[str, Any]:
     """
     Format API responses in a consistent structure.
     
@@ -27,6 +27,7 @@ def format_response(success: bool, data: Optional[Any] = None, error: Optional[s
         success: Whether the operation was successful
         data: The data to include in the response (for successful operations)
         error: Error message (for failed operations)
+        details: Additional error details (for validation errors)
         
     Returns:
         Formatted response dictionary
@@ -35,8 +36,11 @@ def format_response(success: bool, data: Optional[Any] = None, error: Optional[s
     
     if success and data is not None:
         response["data"] = data
-    elif not success and error is not None:
-        response["error"] = error
+    elif not success:
+        if error is not None:
+            response["error"] = error
+        if details is not None:
+            response["details"] = details
     
     return response
 

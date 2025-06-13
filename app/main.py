@@ -3,8 +3,11 @@ import shutil
 import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from starlette.exceptions import HTTPException
 
 # Import configuration and core components
 from app.core.config import settings
@@ -20,6 +23,61 @@ from database.connection import async_engine
 
 # Import FFmpeg check utility
 from src.ffmpeg import is_ffmpeg_installed
+
+# Import response formatting utility
+from src.utils import format_response
+
+
+# Global exception handlers
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Handle Pydantic validation errors and return standardized format.
+    """
+    # Extract validation error details
+    details = []
+    for error in exc.errors():
+        field_path = " -> ".join(str(loc) for loc in error["loc"][1:])  # Skip 'body' prefix
+        details.append({
+            "field": field_path,
+            "message": error["msg"],
+            "value": error.get("input")
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content=format_response(
+            success=False,
+            error="Validation failed",
+            details=details
+        )
+    )
+
+
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Handle HTTP exceptions and return standardized format.
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=format_response(
+            success=False,
+            error=exc.detail
+        )
+    )
+
+
+async def general_exception_handler(request: Request, exc: Exception):
+    """
+    Handle unexpected exceptions and return standardized format.
+    """
+    print(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content=format_response(
+            success=False,
+            error="An internal server error occurred"
+        )
+    )
 
 
 # Lifespan context manager
@@ -74,6 +132,11 @@ app = FastAPI(
     version=settings.app_version,
     lifespan=lifespan
 )
+
+# Add global exception handlers
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 # Setup CORS middleware
 setup_cors(app)
