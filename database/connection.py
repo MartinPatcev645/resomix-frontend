@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 import os
 import logging
 from typing import Optional, Dict, Any
-from sqlalchemy import create_engine, event, pool
+from sqlalchemy import create_engine, event, pool, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
@@ -34,11 +34,12 @@ class DatabaseConfig:
     """Database configuration management."""
     
     def __init__(self):
-        self.host = os.getenv("DB_HOST", "localhost")
-        self.port = int(os.getenv("DB_PORT", "3306"))
-        self.username = os.getenv("DB_USERNAME", "root")
-        self.password = os.getenv("DB_PASSWORD", "")
-        self.database = os.getenv("DB_NAME", "resomix")
+        # Use the existing environment variable names from the user's .env file
+        self.host = os.getenv("MARIA_DB_HOST", "127.0.0.1")
+        self.port = int(os.getenv("MARIA_DB_PORT", "3306"))
+        self.username = os.getenv("MARIA_DB_USER", "root")
+        self.password = os.getenv("MARIA_DB_PASS", "")
+        self.database = os.getenv("MARIA_DB_NAME", "resomix_db")
         self.charset = os.getenv("DB_CHARSET", "utf8mb4")
         
         # Connection pool settings
@@ -61,10 +62,10 @@ class DatabaseConfig:
     def _validate_config(self):
         """Validate database configuration."""
         if not self.username:
-            raise ValueError("Database username is required")
+            raise ValueError("Database username is required (MARIA_DB_USER)")
         
         if not self.database:
-            raise ValueError("Database name is required")
+            raise ValueError("Database name is required (MARIA_DB_NAME)")
         
         if self.pool_size <= 0:
             raise ValueError("Pool size must be positive")
@@ -73,29 +74,15 @@ class DatabaseConfig:
             raise ValueError("Max overflow cannot be negative")
     
     def get_sync_url(self) -> str:
-        """Get synchronous database URL."""
+        """Get synchronous database URL using mariadb+mariadbconnector (matching existing config)."""
         # URL encode password to handle special characters
         encoded_password = urllib.parse.quote_plus(self.password) if self.password else ""
         
-        url = f"mysql+pymysql://{self.username}"
+        # Use the same format as the existing working configuration
+        url = f"mariadb+mariadbconnector://{self.username}"
         if encoded_password:
             url += f":{encoded_password}"
         url += f"@{self.host}:{self.port}/{self.database}"
-        
-        # Add connection parameters
-        params = {
-            'charset': self.charset,
-            'connect_timeout': self.connect_timeout,
-            'read_timeout': self.read_timeout,
-            'write_timeout': self.write_timeout,
-        }
-        
-        if self.ssl_disabled:
-            params['ssl_disabled'] = 'true'
-        
-        # Build query string
-        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-        url += f"?{query_string}"
         
         return url
     
@@ -104,6 +91,7 @@ class DatabaseConfig:
         # URL encode password to handle special characters
         encoded_password = urllib.parse.quote_plus(self.password) if self.password else ""
         
+        # For async, we'll use aiomysql since mariadb doesn't have async connector
         url = f"mysql+aiomysql://{self.username}"
         if encoded_password:
             url += f":{encoded_password}"
@@ -129,7 +117,8 @@ class DatabaseConfig:
             'max_overflow': self.max_overflow,
             'pool_timeout': self.pool_timeout,
             'pool_recycle': self.pool_recycle,
-            'pool_pre_ping': True,  # Validate connections before use
+            'pool_pre_ping': True,  # Validate connections before use (matches existing config)
+            'future': True,  # SQLAlchemy 2.x style (matches existing config)
             'echo': os.getenv("DB_ECHO", "false").lower() == "true",
             'echo_pool': os.getenv("DB_ECHO_POOL", "false").lower() == "true",
         }
@@ -146,8 +135,8 @@ ASYNC_DB_URL = config.get_async_url()
 engine = create_engine(DB_URL, **config.get_engine_kwargs())
 async_engine = create_async_engine(ASYNC_DB_URL, **config.get_engine_kwargs())
 
-# Session factories
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+# Session factories (match existing configuration)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 AsyncSessionLocal = async_sessionmaker(bind=async_engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -204,6 +193,29 @@ async def get_async_database_session() -> AsyncSession:
     return AsyncSessionLocal()
 
 
+# Compatibility functions for existing code
+def get_db() -> Session:
+    """
+    Get a synchronous database session.
+    Alias for get_database_session() for compatibility.
+    
+    Returns:
+        SQLAlchemy Session instance
+    """
+    return get_database_session()
+
+
+async def get_async_db() -> AsyncSession:
+    """
+    Get an asynchronous database session.
+    Alias for get_async_database_session() for compatibility.
+    
+    Returns:
+        SQLAlchemy AsyncSession instance
+    """
+    return await get_async_database_session()
+
+
 def test_connection() -> bool:
     """
     Test database connectivity.
@@ -213,7 +225,7 @@ def test_connection() -> bool:
     """
     try:
         with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             assert result.scalar() == 1
             logger.info("Database connection test successful")
             return True
@@ -234,7 +246,7 @@ async def test_async_connection() -> bool:
     """
     try:
         async with async_engine.connect() as conn:
-            result = await conn.execute("SELECT 1")
+            result = await conn.execute(text("SELECT 1"))
             assert result.scalar() == 1
             logger.info("Async database connection test successful")
             return True
@@ -330,6 +342,8 @@ __all__ = [
     'AsyncSessionLocal',
     'get_database_session',
     'get_async_database_session',
+    'get_db',
+    'get_async_db',
     'test_connection',
     'test_async_connection',
     'get_connection_info',
