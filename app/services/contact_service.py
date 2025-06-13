@@ -186,4 +186,4 @@ class ContactService:
         Returns:
             Contact record or None if not found
         """
-        return await self.contact_repository.get_by_id(db, contact_id) 
+        return await self.contact_repository.async_get_by_id(db, contact_id)
