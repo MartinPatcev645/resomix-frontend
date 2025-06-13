@@ -144,59 +144,82 @@ class SimilarityController:
                 if temp_file_path and os.path.exists(temp_file_path):
                     os.remove(temp_file_path)
 
-    async def get_similarity_by_id(self, db: AsyncSession, track_id: str, top_sk: Optional[int] = None) -> JSONResponse:
+    async def get_similarity_by_id(
+        self,
+        db: AsyncSession,
+        track_id: str,
+        top_sk: Optional[int] = None
+    ) -> JSONResponse:
         """
-        Get similar tracks for a track identified by its MongoDB ID.
-        """
-        # Validate and get the TOP_SK value using global settings
-        validated_top_sk = settings.validate_and_get_top_sk(top_sk)
-        actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
-        duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
+        Get similar tracks for a track identified by its ID.
         
-        log_request("get_selection_similarity (by ID)", "POST", {
-            "track_id": track_id,
-            "requested_top_sk": top_sk,
-            "validated_top_sk": validated_top_sk
-        })
-
-        if not track_id or not track_id.strip():
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(success=False, error="track_id cannot be empty.")
-            )
-
+        Args:
+            db: Database session
+            track_id: The track ID to find similar tracks for
+            top_sk: Number of similar tracks to return
+            
+        Returns:
+            JSON response with similar tracks
+        """
         try:
-            # Step 1: Get the server_track_path from database using the track_id
-            server_track_path = await self.search_service.get_track_path_by_id(db, track_id)
-
+            # Validate track_id
+            if not track_id or not track_id.strip():
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(
+                        success=False,
+                        error="track_id cannot be empty"
+                    )
+                )
+            
+            # Get file path from MongoDB using track_id
+            from src.search import get_track_path_by_id
+            server_track_path = await get_track_path_by_id(track_id)
+            
             if server_track_path is None:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    content=format_response(success=False, error=f"Track with ID '{track_id}' not found or path is missing.")
+                    content=format_response(
+                        success=False,
+                        error=f"Track with ID '{track_id}' not found or path is missing"
+                    )
                 )
-
-            # Step 2: Call the similarity function with the fetched path and dynamic values
-            similarity_results = await self.similarity_service.get_similarity_by_path(
-                db=db,
+            
+            # Validate and get the TOP_SK value
+            validated_top_sk = self.similarity_service.validate_and_get_top_sk(top_sk)
+            actual_top_k = self.similarity_service.calculate_actual_top_k(validated_top_sk)
+            duplication_threshold = self.similarity_service.get_duplication_threshold_for_top_sk(validated_top_sk)
+            
+            # Call similarity server with the file path
+            from src.similarity import get_similarity_by_path
+            similarity_results = await get_similarity_by_path(
                 server_track_path=server_track_path,
                 top_k=actual_top_k,
                 similarity_duplication_threshold=duplication_threshold
             )
-
+            
+            # Check if similarity processing failed
             if similarity_results.get("success") is False:
                 return JSONResponse(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed for path."))
+                    content=format_response(
+                        success=False,
+                        error=similarity_results.get("error", "Similarity processing failed")
+                    )
                 )
-
+            
+            # Return successful response
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(success=True, data=similarity_results)
             )
-
+            
         except Exception as e:
-            print(f"An error occurred in get_selection_similarity (by ID): {e}")
+            print(f"Error in get_similarity_by_id: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(success=False, error="An internal server error occurred while processing similarity by ID.")
-            ) 
+                content=format_response(
+                    success=False,
+                    error="An internal server error occurred while processing similarity by ID"
+                )
+            )
