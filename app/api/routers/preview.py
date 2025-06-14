@@ -69,4 +69,4 @@ async def get_preview_endpoint(
     
     - **track_id**: The database ID of the track to generate preview URL for
     """
-    return await preview_controller.get_preview_download_url(db, request_data.track_id) 
+    return await preview_controller.get_preview_download_url(db, request_data.track_id)

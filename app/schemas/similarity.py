@@ -76,6 +76,8 @@ class QueriedTrackInfo(BaseModel):
     id: str = Field(..., description="Track database ID")
     filename: str = Field(..., description="Track filename")
     album: Optional[str] = Field(None, description="Album name")
+    label: Optional[str] = Field(None, description="Label name")
+    genre: Optional[str] = Field(None, description="Genre name")
     duration: Optional[int] = Field(None, description="Track duration in seconds")
     artist: Optional[str] = Field(None, description="Artist name")
 
@@ -85,6 +87,8 @@ class QueriedTrackInfo(BaseModel):
                 "id": "507f1f77bcf86cd799439011",
                 "filename": "query_track.mp3",
                 "album": "Original Album",
+                "label": "Global Underground",
+                "genre": "Electronic",
                 "duration": 210,
                 "artist": "Original Artist"
             }
@@ -131,6 +135,8 @@ class SimilarityByIdResponse(BaseModel):
                     "id": "507f1f77bcf86cd799439011",
                     "filename": "query_track.mp3",
                     "album": "Original Album",
+                    "label": "Global Underground",
+                    "genre": "Electronic",
                     "duration": 210,
                     "artist": "Original Artist"
                 },
@@ -207,6 +213,8 @@ class SimilarityByIdSuccessResponse(BaseModel):
                         "id": "507f1f77bcf86cd799439011",
                         "filename": "query_track.mp3",
                         "album": "Original Album",
+                        "label": "Global Underground",
+                        "genre": "Electronic",
                         "duration": 210,
                         "artist": "Original Artist"
                     },

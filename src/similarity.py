@@ -8,6 +8,7 @@ Functions:
 - calculate_similarity_for_upload: Processes an uploaded audio file (bytes) and returns similar tracks.
 - get_similarity_by_path: Gets similar tracks for a given server-side file path, including details of the queried track.
 - _fetch_track_details_from_db_by_path: Fetches and maps track details from MongoDB based on paths.
+- _fetch_reference_track_details_from_db_by_path: Fetches full track details including album, genre, and filename from MongoDB for a reference track.
 
 Author: AI Assistant
 Date: May 2023 (Updated for path removal in responses and queried track details)
@@ -269,11 +270,9 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10, simila
     """
     queried_track_data: Optional[Dict[str, Any]] = None
     try:
-        details_map_for_queried_track = await _fetch_track_details_from_db_by_path([server_track_path])
-        queried_relative_path = server_track_path[len(PATH_PREFIX_TO_REMOVE):] if server_track_path.startswith(PATH_PREFIX_TO_REMOVE) else server_track_path
-        queried_track_data = details_map_for_queried_track.get(queried_relative_path)
+        queried_track_data = await _fetch_reference_track_details_from_db_by_path(server_track_path)
         if not queried_track_data:
-            print(f"Warning: Details for queried path '{server_track_path}' (relative: '{queried_relative_path}') not found in local DB.")
+            print(f"Warning: Details for queried path '{server_track_path}' not found in local DB.")
     except Exception as e:
         print(f"Error fetching details for queried path '{server_track_path}' from DB: {e}")
 
@@ -337,3 +336,55 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10, simila
         # Error from similarity server
         error_message = similarity_response.get("message", "Unknown error from similarity server.")
         return {"success": False, "error": error_message}
+
+async def _fetch_reference_track_details_from_db_by_path(track_path: str) -> Optional[Dict[str, Any]]:
+    """
+    Fetches full track details including album, genre, and filename from MongoDB for a reference track.
+
+    Args:
+        track_path: Absolute file path of the track
+        
+    Returns:
+        Dictionary containing reference track details with all fields, or None if not found
+    """
+    if not track_path:
+        return None
+
+    # Convert absolute path to relative path for MongoDB query
+    relative_path = track_path[len(PATH_PREFIX_TO_REMOVE):] if track_path.startswith(PATH_PREFIX_TO_REMOVE) else track_path
+
+    collection = await get_db_collection()
+    if collection is None:
+        print("Fetch_reference_track_details: MongoDB collection is not available.")
+        return None
+
+    try:
+        doc = await collection.find_one({"file.path": relative_path})
+        if not doc:
+            return None
+
+        duration = 0
+        if doc.get("info") and doc["info"].get("length"):
+            try:
+                duration = int(float(doc["info"]["length"])) 
+            except (ValueError, TypeError):
+                duration = 0
+        
+        # Extract filename from file path
+        filename = doc.get("file", {}).get("filename", "N/A")
+        
+        reference_track_data = {
+            "id": str(doc.get("_id")),
+            "filename": filename,
+            "album": doc.get("info", {}).get("album", "N/A"),
+            "label": doc.get("info", {}).get("label", "N/A"),
+            "genre": doc.get("info", {}).get("genre", "N/A"),
+            "duration": duration,
+            "artist": doc.get("info", {}).get("artist", "N/A")
+        }
+        
+        return reference_track_data
+        
+    except Exception as e:
+        print(f"Error during MongoDB fetch for reference track details: {e}")
+        return None

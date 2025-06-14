@@ -159,8 +159,7 @@ class SimilarityService:
         """
         queried_track_data: Optional[Dict[str, Any]] = None
         try:
-            details_map_for_queried_track = await self._fetch_track_details_from_db_by_path(db, [server_track_path])
-            queried_track_data = details_map_for_queried_track.get(server_track_path)
+            queried_track_data = await self._fetch_reference_track_details_from_db_by_path(db, server_track_path)
             if not queried_track_data:
                 print(f"Warning: Details for queried path '{server_track_path}' not found in local DB.")
         except Exception as e:
@@ -238,6 +237,62 @@ class SimilarityService:
             # Error from similarity server
             error_message = similarity_response.get("message", "Unknown error from similarity server.")
             return {"success": False, "error": error_message}
+
+    async def _fetch_reference_track_details_from_db_by_path(self, db: AsyncSession, track_path: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetches full track details including album, label, and genre from MariaDB for a reference track.
+
+        Args:
+            db: Database session
+            track_path: File path of the track
+            
+        Returns:
+            Dictionary containing reference track details with all fields, or None if not found
+        """
+        if not track_path:
+            return None
+
+        try:
+            # Query track by file path using MariaDB repository
+            tracks = await self.track_repository.async_get_tracks_by_file_paths(db, [track_path])
+            
+            if not tracks:
+                return None
+                
+            track = tracks[0]  # Get the first (and should be only) track
+            
+            # Get primary artist (first artist in track_artists)
+            artist_name = "N/A"
+            if track.track_artists:
+                artist_name = track.track_artists[0].artist.name
+            
+            # Extract filename from file_path
+            filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
+            
+            # Get album name
+            album_name = track.album.title if track.album else "N/A"
+            
+            # Get label name
+            label_name = track.label.name if track.label else "N/A"
+            
+            # Get genre name
+            genre_name = track.genre.name if track.genre else "N/A"
+            
+            reference_track_data = {
+                "id": track.uuid,  # Use UUID for compatibility with existing API
+                "filename": filename,
+                "album": album_name,
+                "label": label_name,
+                "genre": genre_name,
+                "duration": track.duration_sec or 0,
+                "artist": artist_name
+            }
+            
+            return reference_track_data
+            
+        except Exception as e:
+            print(f"Error during MariaDB fetch for reference track details: {e}")
+            return None
 
     async def _fetch_track_details_from_db_by_path(self, db: AsyncSession, track_paths_from_similarity_server: List[str]) -> Dict[str, Dict[str, Any]]:
         """
