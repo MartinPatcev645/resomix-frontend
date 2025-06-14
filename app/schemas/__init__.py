@@ -101,6 +101,17 @@ from .search import (
     SearchServiceConfig,
 )
 
+# Preview schemas
+from .preview import (
+    PreviewDownloadRequest,
+    PreviewDownloadResponse,
+    PreviewDownloadSuccessResponse,
+    PreviewErrorResponse,
+    ResomixServerRequest,
+    ResomixServerResponse,
+    PreviewConfiguration,
+)
+
 # Make all schemas available at package level
 __all__ = [
     # Common
@@ -176,4 +187,13 @@ __all__ = [
     "DetailedSearchResponse",
     "MongoSearchQuery",
     "SearchServiceConfig",
-] 
+
+    # Preview
+    "PreviewDownloadRequest",
+    "PreviewDownloadResponse",
+    "PreviewDownloadSuccessResponse",
+    "PreviewErrorResponse",
+    "ResomixServerRequest",
+    "ResomixServerResponse",
+    "PreviewConfiguration",
+]
