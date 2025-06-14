@@ -280,7 +280,6 @@ class SimilarityService:
             
             reference_track_data = {
                 "id": track.uuid,  # Use UUID for compatibility with existing API
-                "filename": filename,
                 "album": album_name,
                 "label": label_name,
                 "genre": genre_name,

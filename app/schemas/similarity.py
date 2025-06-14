@@ -74,7 +74,6 @@ class SimilarTrackResult(BaseModel):
 class QueriedTrackInfo(BaseModel):
     """Schema for the track that was queried for similarity."""
     id: str = Field(..., description="Track database ID")
-    filename: str = Field(..., description="Track filename")
     album: Optional[str] = Field(None, description="Album name")
     label: Optional[str] = Field(None, description="Label name")
     genre: Optional[str] = Field(None, description="Genre name")
@@ -85,7 +84,6 @@ class QueriedTrackInfo(BaseModel):
         json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
-                "filename": "query_track.mp3",
                 "album": "Original Album",
                 "label": "Global Underground",
                 "genre": "Electronic",
@@ -133,7 +131,6 @@ class SimilarityByIdResponse(BaseModel):
             "example": {
                 "queried_track": {
                     "id": "507f1f77bcf86cd799439011",
-                    "filename": "query_track.mp3",
                     "album": "Original Album",
                     "label": "Global Underground",
                     "genre": "Electronic",
@@ -211,7 +208,6 @@ class SimilarityByIdSuccessResponse(BaseModel):
                 "data": {
                     "queried_track": {
                         "id": "507f1f77bcf86cd799439011",
-                        "filename": "query_track.mp3",
                         "album": "Original Album",
                         "label": "Global Underground",
                         "genre": "Electronic",

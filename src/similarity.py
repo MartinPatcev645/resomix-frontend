@@ -375,7 +375,6 @@ async def _fetch_reference_track_details_from_db_by_path(track_path: str) -> Opt
         
         reference_track_data = {
             "id": str(doc.get("_id")),
-            "filename": filename,
             "album": doc.get("info", {}).get("album", "N/A"),
             "label": doc.get("info", {}).get("label", "N/A"),
             "genre": doc.get("info", {}).get("genre", "N/A"),
