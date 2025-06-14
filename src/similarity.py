@@ -82,10 +82,11 @@ async def _fetch_track_details_from_db_by_path(track_paths_from_similarity_serve
             
             track_data = {
                 "id": str(doc.get("_id")),
-                "filename": doc.get("file", {}).get("filename", "N/A"),
-                "album": doc.get("info", {}).get("album", "N/A"),
+                "label": doc.get("info", {}).get("label", "N/A"),
                 "duration": duration,
-                "artist": doc.get("info", {}).get("artist", "N/A") # Added artist
+                "artist": doc.get("info", {}).get("artist", "N/A"),
+                "title": doc.get("info", {}).get("title", "N/A"),
+                "year": doc.get("info", {}).get("year")
             }
             details_map[mongo_relative_path] = track_data
         
@@ -230,10 +231,11 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
                     "rank": res_item.get("rank"),
                     "score": res_item.get("score"),
                     "id": details.get("id"),
-                    "filename": details.get("filename"),
-                    "album": details.get("album"),
+                    "label": details.get("label"),
                     "duration": details.get("duration"),
-                    "artist": details.get("artist")
+                    "artist": details.get("artist"),
+                    "title": details.get("title"),
+                    "year": details.get("year")
                 })
             # else: track details not found in DB for this path, so it's omitted from results
 
@@ -304,10 +306,11 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10, simila
                     "rank": res_item.get("rank"),
                     "score": res_item.get("score"),
                     "id": details.get("id"),
-                    "filename": details.get("filename"),
-                    "album": details.get("album"),
+                    "label": details.get("label"),
                     "duration": details.get("duration"),
-                    "artist": details.get("artist")
+                    "artist": details.get("artist"),
+                    "title": details.get("title"),
+                    "year": details.get("year")
                 })
             # else: track details not found in DB for this path, so it's omitted
         

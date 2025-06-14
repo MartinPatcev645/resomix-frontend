@@ -110,15 +110,11 @@ class SimilarityService:
                         "rank": res_item.get("rank"),
                         "score": res_item.get("score"),
                         "id": details.get("id"),
-                        "album": details.get("album"),
                         "label": details.get("label"),
-                        "genre": details.get("genre"),
                         "duration": details.get("duration"),
                         "artist": details.get("artist"),
                         "title": details.get("title"),
-                        "year": details.get("year"),
-                        "bpm": details.get("bpm"),
-                        "musical_key": details.get("musical_key")
+                        "year": details.get("year")
                     })
                 # else: track details not found in DB for this path, so it's omitted from results
 
@@ -211,15 +207,11 @@ class SimilarityService:
                         "rank": res_item.get("rank"),
                         "score": res_item.get("score"),
                         "id": details.get("id"),
-                        "album": details.get("album"),
                         "label": details.get("label"),
-                        "genre": details.get("genre"),
                         "duration": details.get("duration"),
                         "artist": details.get("artist"),
                         "title": details.get("title"),
-                        "year": details.get("year"),
-                        "bpm": details.get("bpm"),
-                        "musical_key": details.get("musical_key")
+                        "year": details.get("year")
                     })
                 # else: track details not found in DB for this path, so it's omitted
             
@@ -295,16 +287,11 @@ class SimilarityService:
                 
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API
-                    "filename": filename,
-                    "album": album_name,
                     "label": label_name,
-                    "genre": genre_name,
                     "duration": track.duration_sec or 0,
                     "artist": artist_name,
                     "title": track.title or "N/A",
-                    "year": track.year,
-                    "bpm": track.bpm,
-                    "musical_key": track.musical_key
+                    "year": track.year
                 }
                 details_map[track.file_path] = track_data
             

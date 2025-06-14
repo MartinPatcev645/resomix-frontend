@@ -50,21 +50,23 @@ class SimilarTrackResult(BaseModel):
     rank: int = Field(..., description="Rank of similarity (1 is most similar)")
     score: float = Field(..., description="Similarity score (higher means more similar)")
     id: str = Field(..., description="Track database ID")
-    filename: str = Field(..., description="Track filename")
-    album: Optional[str] = Field(None, description="Album name")
+    label: Optional[str] = Field(None, description="Label name")
     duration: Optional[int] = Field(None, description="Track duration in seconds")
     artist: Optional[str] = Field(None, description="Artist name")
+    title: Optional[str] = Field(None, description="Track title")
+    year: Optional[int] = Field(None, description="Release year")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "rank": 1,
-                "score": 0.95,
-                "id": "507f1f77bcf86cd799439012",
-                "filename": "similar_track.mp3",
-                "album": "Great Album",
-                "duration": 180,
-                "artist": "Amazing Artist"
+                "score": 0.9899008274078369,
+                "id": "67addcb39387d00fbdc3acdf",
+                "label": "Global Underground",
+                "duration": 491,
+                "artist": "Oxia",
+                "title": "Whole Life (Original Mix)",
+                "year": 2010
             }
         }
 
@@ -103,12 +105,13 @@ class SimilarityUploadResponse(BaseModel):
                 "similar_tracks": [
                     {
                         "rank": 1,
-                        "score": 0.95,
-                        "id": "507f1f77bcf86cd799439012",
-                        "filename": "similar_track.mp3",
-                        "album": "Great Album",
-                        "duration": 180,
-                        "artist": "Amazing Artist"
+                        "score": 0.9899008274078369,
+                        "id": "67addcb39387d00fbdc3acdf",
+                        "label": "Global Underground",
+                        "duration": 491,
+                        "artist": "Oxia",
+                        "title": "Whole Life (Original Mix)",
+                        "year": 2010
                     }
                 ]
             }
@@ -134,12 +137,13 @@ class SimilarityByIdResponse(BaseModel):
                 "similar_tracks": [
                     {
                         "rank": 1,
-                        "score": 0.95,
-                        "id": "507f1f77bcf86cd799439012",
-                        "filename": "similar_track.mp3",
-                        "album": "Great Album",
-                        "duration": 180,
-                        "artist": "Amazing Artist"
+                        "score": 0.9899008274078369,
+                        "id": "67addcb39387d00fbdc3acdf",
+                        "label": "Global Underground",
+                        "duration": 491,
+                        "artist": "Oxia",
+                        "title": "Whole Life (Original Mix)",
+                        "year": 2010
                     }
                 ]
             }
@@ -175,12 +179,13 @@ class SimilarityUploadSuccessResponse(BaseModel):
                     "similar_tracks": [
                         {
                             "rank": 1,
-                            "score": 0.95,
-                            "id": "507f1f77bcf86cd799439012",
-                            "filename": "similar_track.mp3",
-                            "album": "Great Album",
-                            "duration": 180,
-                            "artist": "Amazing Artist"
+                            "score": 0.9899008274078369,
+                            "id": "67addcb39387d00fbdc3acdf",
+                            "label": "Global Underground",
+                            "duration": 491,
+                            "artist": "Oxia",
+                            "title": "Whole Life (Original Mix)",
+                            "year": 2010
                         }
                     ]
                 }
@@ -208,12 +213,13 @@ class SimilarityByIdSuccessResponse(BaseModel):
                     "similar_tracks": [
                         {
                             "rank": 1,
-                            "score": 0.95,
-                            "id": "507f1f77bcf86cd799439012",
-                            "filename": "similar_track.mp3",
-                            "album": "Great Album",
-                            "duration": 180,
-                            "artist": "Amazing Artist"
+                            "score": 0.9899008274078369,
+                            "id": "67addcb39387d00fbdc3acdf",
+                            "label": "Global Underground",
+                            "duration": 491,
+                            "artist": "Oxia",
+                            "title": "Whole Life (Original Mix)",
+                            "year": 2010
                         }
                     ]
                 }
