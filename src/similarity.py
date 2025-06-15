@@ -198,7 +198,7 @@ async def calculate_similarity_for_upload(audio_bytes: bytes, original_filename:
 
     files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
     request_data = {"top_k": top_k}
-    similarity_response_task = _call_similarity_server("/query-by-upload/", data=request_data, files=files_data)
+    similarity_response_task = _call_similarity_server("/similarity/query-by-upload/", data=request_data, files=files_data)
 
     # Await both tasks
     calculated_duration, similarity_response = await asyncio.gather(
@@ -278,7 +278,7 @@ async def get_similarity_by_path(server_track_path: str, top_k: int = 10, simila
 
     payload = {"file_path": server_track_path, "top_k": top_k}
     print(f"Payload: {payload}")
-    similarity_response = await _call_similarity_server("/query-by-path/", data=payload)
+    similarity_response = await _call_similarity_server("/similarity/query-by-path/", data=payload)
 
     if similarity_response.get("status") == "success":
         raw_results = similarity_response.get("results", [])
