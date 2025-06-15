@@ -109,7 +109,6 @@ from .preview import (
     PreviewErrorResponse,
     ResomixServerRequest,
     ResomixServerResponse,
-    PreviewConfiguration,
 )
 
 # Make all schemas available at package level
@@ -195,5 +194,4 @@ __all__ = [
     "PreviewErrorResponse",
     "ResomixServerRequest",
     "ResomixServerResponse",
-    "PreviewConfiguration",
 ]
