@@ -34,22 +34,58 @@ class Settings(BaseModel):
         description="API key for authentication (should be set via environment variable in production)"
     )
     
-    # Security Configuration
+    # Security Configuration (URL Signing)
     preview_audio_secret: str = Field(
-        default="default-preview-secret-key",
-        description="Secret key for preview audio URL signing"
-    )
-    hmac_secret: str = Field(
-        default="default-hmac-secret",
-        description="HMAC secret for URL signing"
-    )
-    fernet_secret: str = Field(
-        default="supersecurekey!!1234567890abcd",
-        description="Fernet encryption secret (must be 32 bytes)"
+        default="default-preview-secret-key-32bytes",
+        description="Secret key for preview audio URL signing (used for both HMAC and Fernet encryption)"
     )
     preview_audio_url_expires_seconds: int = Field(
         default=3600,
-        description="Preview URL expiration time in seconds (default: 1 hour)"
+        description="Preview URL expiration time in seconds (default: 5 minutes)"
+    )
+    
+    # Database Configuration
+    mongodb_uri: Optional[str] = Field(
+        default=None,
+        description="MongoDB connection URI"
+    )
+    
+    # External Services
+    similarity_server_url: Optional[str] = Field(
+        default=None,
+        description="URL of the similarity microservice"
+    )
+    resomix_server_url: str = Field(
+        default="http://localhost:8000",
+        description="URL of the ResomiX server"
+    )
+    
+    # Google Sheets Configuration
+    service_account_file: Optional[str] = Field(
+        default=None,
+        description="Path to Google service account JSON file"
+    )
+    google_sheet_id: Optional[str] = Field(
+        default=None,
+        description="Google Sheet ID for feedback/contact forms"
+    )
+    feedback_worksheet_name: str = Field(
+        default="Feedback",
+        description="Name of the feedback worksheet"
+    )
+    contact_worksheet_name: str = Field(
+        default="ContactSubmissions",
+        description="Name of the contact submissions worksheet"
+    )
+    
+    # Preview Service Configuration
+    preview_download_timeout: int = Field(
+        default=30,
+        description="Preview download timeout in seconds"
+    )
+    preview_max_retries: int = Field(
+        default=3,
+        description="Maximum number of preview download retries"
     )
     
     # File handling configuration
@@ -97,7 +133,35 @@ class Settings(BaseModel):
         # Override with environment variables if they exist
         env_overrides = {}
         
-        # Check for environment variables with RESOMIX_ prefix
+        # Direct environment variable mappings (no prefix)
+        direct_env_vars = {
+            "MONGODB_URI": "mongodb_uri",
+            "SIMILARITY_SERVER_URL": "similarity_server_url",
+            "RESOMIX_SERVER_URL": "resomix_server_url",
+            "SERVICE_ACCOUNT_FILE": "service_account_file",
+            "GOOGLE_SHEET_ID": "google_sheet_id",
+            "FEEDBACK_WORKSHEET_NAME": "feedback_worksheet_name",
+            "CONTACT_WORKSHEET_NAME": "contact_worksheet_name",
+            "PREVIEW_AUDIO_SECRET": "preview_audio_secret",
+            "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
+            "PREVIEW_DOWNLOAD_TIMEOUT": "preview_download_timeout",
+            "PREVIEW_MAX_RETRIES": "preview_max_retries",
+            "FERNET_SECRET": "fernet_secret",
+        }
+        
+        for env_key, config_key in direct_env_vars.items():
+            env_value = os.getenv(env_key)
+            if env_value is not None:
+                # Handle integer conversion
+                if config_key in ["preview_audio_url_expires_seconds", "preview_download_timeout", "preview_max_retries"]:
+                    try:
+                        env_overrides[config_key] = int(env_value)
+                    except ValueError:
+                        pass
+                else:
+                    env_overrides[config_key] = env_value
+        
+        # Check for environment variables with RESOMIX_ prefix (legacy support)
         for key in [
             "api_key", "temp_dir", "default_top_sk", "use_development_cors",
             "app_title", "app_description", "app_version", "environment", "debug"
@@ -117,25 +181,6 @@ class Settings(BaseModel):
                 else:
                     env_overrides[key] = env_value
         
-        # Check for security-related environment variables
-        security_env_vars = {
-            "PREVIEW_AUDIO_SECRET": "preview_audio_secret",
-            "HMAC_SECRET": "hmac_secret", 
-            "FERNET_SECRET": "fernet_secret",
-            "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds"
-        }
-        
-        for env_key, config_key in security_env_vars.items():
-            env_value = os.getenv(env_key)
-            if env_value is not None:
-                if config_key == "preview_audio_url_expires_seconds":
-                    try:
-                        env_overrides[config_key] = int(env_value)
-                    except ValueError:
-                        pass
-                else:
-                    env_overrides[config_key] = env_value
-        
         # Merge environment overrides with provided data
         data.update(env_overrides)
         super().__init__(**data)
@@ -148,6 +193,16 @@ class Settings(BaseModel):
             if self.use_development_cors 
             else self.allowed_origin_regex_production
         )
+    
+    @property
+    def hmac_secret(self) -> str:
+        """Get HMAC secret (uses preview_audio_secret)"""
+        return self.preview_audio_secret
+    
+    @property
+    def fernet_secret(self) -> str:
+        """Get Fernet secret (uses preview_audio_secret)"""
+        return self.preview_audio_secret
 
     def validate_and_get_top_sk(self, top_sk_value: Optional[int]) -> int:
         """

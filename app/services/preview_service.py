@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.track_repository import TrackRepository
 from app.utils.security_utils import sign_secure_url
+from app.core.config import settings
 
 
 class PreviewService:
@@ -34,9 +35,9 @@ class PreviewService:
     
     def __init__(self):
         self.track_repository = TrackRepository()
-        self.resomix_server_url = os.getenv("RESOMIX_SERVER_URL", "http://localhost:8000")
-        self.download_timeout = int(os.getenv("PREVIEW_DOWNLOAD_TIMEOUT", "30"))
-        self.max_retries = int(os.getenv("PREVIEW_MAX_RETRIES", "3"))
+        self.resomix_server_url = settings.resomix_server_url
+        self.download_timeout = settings.preview_download_timeout
+        self.max_retries = settings.preview_max_retries
     
     @staticmethod
     def is_ffmpeg_installed() -> bool:
