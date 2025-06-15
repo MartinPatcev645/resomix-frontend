@@ -36,8 +36,6 @@ class PreviewService:
     def __init__(self):
         self.track_repository = TrackRepository()
         self.resomix_server_url = settings.resomix_server_url
-        self.download_timeout = settings.preview_download_timeout
-        self.max_retries = settings.preview_max_retries
     
     @staticmethod
     def is_ffmpeg_installed() -> bool:

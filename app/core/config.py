@@ -82,14 +82,7 @@ class Settings(BaseModel):
     )
     
     # Preview Service Configuration
-    preview_download_timeout: int = Field(
-        default=30,
-        description="Preview download timeout in seconds"
-    )
-    preview_max_retries: int = Field(
-        default=3,
-        description="Maximum number of preview download retries"
-    )
+    # Note: Only URL generation is handled, no actual downloading
     
     # File handling configuration
     max_file_size: int = Field(default=100 * 1024 * 1024, description="Maximum file size in bytes (100MB)")
@@ -144,15 +137,13 @@ class Settings(BaseModel):
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
-            "PREVIEW_DOWNLOAD_TIMEOUT": "preview_download_timeout",
-            "PREVIEW_MAX_RETRIES": "preview_max_retries",
         }
         
         for env_key, config_key in direct_env_vars.items():
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle integer conversion
-                if config_key in ["preview_audio_url_expires_seconds", "preview_download_timeout", "preview_max_retries"]:
+                if config_key in ["preview_audio_url_expires_seconds"]:
                     try:
                         env_overrides[config_key] = int(env_value)
                     except ValueError:

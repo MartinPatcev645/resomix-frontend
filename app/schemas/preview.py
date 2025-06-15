@@ -34,7 +34,10 @@ class PreviewDownloadRequest(BaseModel):
 
 class PreviewDownloadResponse(BaseModel):
     """Response schema for preview download URL generation."""
-    download_url: str = Field(..., description="Generated signed preview URL for the audio file")
+    download_url: str = Field(
+        description="Signed URL for preview download",
+        example="https://media.resomix.com/signed-audio/?uuid=abc123&xpi=encrypted_expiry&token=hmac_signature"
+    )
 
     class Config:
         json_schema_extra = {
@@ -85,10 +88,3 @@ class ResomixServerResponse(BaseModel):
     status: str = Field(..., description="Response status from ResomiX server")
     message: Optional[str] = Field(None, description="Response message")
     download_url: Optional[str] = Field(None, description="Generated download URL")
-
-
-class PreviewConfiguration(BaseModel):
-    """Configuration schema for preview operations."""
-    resomix_server_url: Optional[str] = Field(None, description="URL of the ResomiX server")
-    download_timeout: int = Field(default=30, description="Download request timeout in seconds")
-    max_retries: int = Field(default=3, description="Maximum number of retry attempts") 

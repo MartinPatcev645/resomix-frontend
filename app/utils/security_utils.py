@@ -34,12 +34,11 @@ class URLSigner:
     def __init__(self):
         """Initialize URL signer with centralized configuration."""
         # Get secrets from centralized settings
-        self.preview_secret = settings.preview_audio_secret
-        self.hmac_secret = settings.hmac_secret
+        self.hmac_secret = settings.preview_hmac_secret
         self.expires_seconds = settings.preview_audio_url_expires_seconds
         
         # Initialize Fernet encryption
-        fernet_secret = settings.fernet_secret
+        fernet_secret = settings.preview_fernet_secret
         # Ensure key is 32 bytes for Fernet
         if len(fernet_secret.encode()) < 32:
             fernet_secret = fernet_secret.ljust(32, '0')
