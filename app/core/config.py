@@ -28,7 +28,6 @@ class Settings(BaseModel):
     """Application configuration settings"""
     
     # API Configuration
-    api_key: str = Field(default="api_key", description="API key parameter")
     api_key: str = Field(
         default="bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ",
         description="API key for authentication (should be set via environment variable in production)"

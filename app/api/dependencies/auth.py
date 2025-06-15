@@ -22,7 +22,7 @@ from starlette.status import HTTP_403_FORBIDDEN
 from app.core.config import settings
 
 # Set up API key security - using query parameter as specified in frontend
-api_key_query = APIKeyQuery(name=settings.api_key, auto_error=False)
+api_key_query = APIKeyQuery(name="api_key", auto_error=False)
 
 async def get_api_key(
     api_key_query: str = Security(api_key_query),
