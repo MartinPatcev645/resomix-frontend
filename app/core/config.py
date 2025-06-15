@@ -28,19 +28,23 @@ class Settings(BaseModel):
     """Application configuration settings"""
     
     # API Configuration
-    api_key_name: str = Field(default="api_key", description="API key parameter name")
+    api_key: str = Field(default="api_key", description="API key parameter")
     api_key: str = Field(
         default="bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ",
         description="API key for authentication (should be set via environment variable in production)"
     )
     
     # Security Configuration (URL Signing)
-    preview_audio_secret: str = Field(
-        default="default-preview-secret-key-32bytes",
-        description="Secret key for preview audio URL signing (used for both HMAC and Fernet encryption)"
+    preview_fernet_secret: str = Field(
+        default="default-fernet-secret-32bytes-long",
+        description="Fernet encryption secret for preview URL signing (must be 32 bytes)"
+    )
+    preview_hmac_secret: str = Field(
+        default="default-hmac-secret-for-preview-urls",
+        description="HMAC secret for preview URL signing"
     )
     preview_audio_url_expires_seconds: int = Field(
-        default=3600,
+        default=300,
         description="Preview URL expiration time in seconds (default: 5 minutes)"
     )
     
@@ -124,10 +128,6 @@ class Settings(BaseModel):
         description="FastAPI application description"
     )
     app_version: str = Field(default="1.0.1", description="FastAPI application version")
-    
-    # Environment-specific settings
-    environment: str = Field(default="development", description="Current environment (development/production)")
-    debug: bool = Field(default=True, description="Enable debug mode")
 
     def __init__(self, **data):
         # Override with environment variables if they exist
@@ -142,11 +142,11 @@ class Settings(BaseModel):
             "GOOGLE_SHEET_ID": "google_sheet_id",
             "FEEDBACK_WORKSHEET_NAME": "feedback_worksheet_name",
             "CONTACT_WORKSHEET_NAME": "contact_worksheet_name",
-            "PREVIEW_AUDIO_SECRET": "preview_audio_secret",
+            "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
+            "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
             "PREVIEW_DOWNLOAD_TIMEOUT": "preview_download_timeout",
             "PREVIEW_MAX_RETRIES": "preview_max_retries",
-            "FERNET_SECRET": "fernet_secret",
         }
         
         for env_key, config_key in direct_env_vars.items():
@@ -164,13 +164,13 @@ class Settings(BaseModel):
         # Check for environment variables with RESOMIX_ prefix (legacy support)
         for key in [
             "api_key", "temp_dir", "default_top_sk", "use_development_cors",
-            "app_title", "app_description", "app_version", "environment", "debug"
+            "app_title", "app_description", "app_version"
         ]:
             env_key = f"RESOMIX_{key.upper()}"
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if key in ["use_development_cors", "debug"]:
+                if key in ["use_development_cors"]:
                     env_overrides[key] = env_value.lower() in ("true", "1", "yes", "on")
                 # Handle int conversion
                 elif key in ["default_top_sk"]:
@@ -196,13 +196,13 @@ class Settings(BaseModel):
     
     @property
     def hmac_secret(self) -> str:
-        """Get HMAC secret (uses preview_audio_secret)"""
-        return self.preview_audio_secret
+        """Get HMAC secret for URL signing"""
+        return self.preview_hmac_secret
     
     @property
     def fernet_secret(self) -> str:
-        """Get Fernet secret (uses preview_audio_secret)"""
-        return self.preview_audio_secret
+        """Get Fernet secret for URL encryption"""
+        return self.preview_fernet_secret
 
     def validate_and_get_top_sk(self, top_sk_value: Optional[int]) -> int:
         """
