@@ -34,6 +34,24 @@ class Settings(BaseModel):
         description="API key for authentication (should be set via environment variable in production)"
     )
     
+    # Security Configuration
+    preview_audio_secret: str = Field(
+        default="default-preview-secret-key",
+        description="Secret key for preview audio URL signing"
+    )
+    hmac_secret: str = Field(
+        default="default-hmac-secret",
+        description="HMAC secret for URL signing"
+    )
+    fernet_secret: str = Field(
+        default="supersecurekey!!1234567890abcd",
+        description="Fernet encryption secret (must be 32 bytes)"
+    )
+    preview_audio_url_expires_seconds: int = Field(
+        default=3600,
+        description="Preview URL expiration time in seconds (default: 1 hour)"
+    )
+    
     # File handling configuration
     max_file_size: int = Field(default=100 * 1024 * 1024, description="Maximum file size in bytes (100MB)")
     temp_dir: str = Field(default="temp_audio", description="Temporary directory for uploaded files")
@@ -98,6 +116,25 @@ class Settings(BaseModel):
                         pass
                 else:
                     env_overrides[key] = env_value
+        
+        # Check for security-related environment variables
+        security_env_vars = {
+            "PREVIEW_AUDIO_SECRET": "preview_audio_secret",
+            "HMAC_SECRET": "hmac_secret", 
+            "FERNET_SECRET": "fernet_secret",
+            "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds"
+        }
+        
+        for env_key, config_key in security_env_vars.items():
+            env_value = os.getenv(env_key)
+            if env_value is not None:
+                if config_key == "preview_audio_url_expires_seconds":
+                    try:
+                        env_overrides[config_key] = int(env_value)
+                    except ValueError:
+                        pass
+                else:
+                    env_overrides[config_key] = env_value
         
         # Merge environment overrides with provided data
         data.update(env_overrides)

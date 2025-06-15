@@ -15,12 +15,11 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.preview import (
-    PreviewDownloadRequest,
     PreviewDownloadSuccessResponse,
     PreviewErrorResponse
 )
@@ -35,7 +34,7 @@ router = APIRouter(prefix="/preview", tags=["Preview"])
 preview_controller = PreviewController()
 
 
-@router.post(
+@router.get(
     "/get_preview/",
     response_model=PreviewDownloadSuccessResponse,
     summary="Generate Preview Download URL",
@@ -60,7 +59,7 @@ preview_controller = PreviewController()
     }
 )
 async def get_preview_endpoint(
-    request_data: PreviewDownloadRequest,
+    track_id: str = Query(..., description="The database ID of the track to generate preview URL for", min_length=1),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -69,4 +68,4 @@ async def get_preview_endpoint(
     
     - **track_id**: The database ID of the track to generate preview URL for
     """
-    return await preview_controller.get_preview_download_url(db, request_data.track_id)
+    return await preview_controller.get_preview_download_url(db, track_id)

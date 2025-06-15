@@ -21,12 +21,10 @@ import tempfile
 import json
 import httpx
 from typing import Optional, Dict, Any
-from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.track_repository import TrackRepository
-
-load_dotenv()
+from app.utils.security_utils import sign_secure_url
 
 
 class PreviewService:
@@ -157,15 +155,14 @@ class PreviewService:
         track_id: str
     ) -> Dict[str, Any]:
         """
-        Generate download URL for a track by communicating with ResomiX server.
-        Currently returns empty list as requested.
+        Generate signed download URL for a track by its UUID.
         
         Args:
             db: Database session
             track_id: Track UUID to generate download URL for
             
         Returns:
-            Dictionary containing download URL or error information
+            Dictionary containing signed download URL or error information
         """
         if not track_id or not track_id.strip():
             return {"success": False, "error": "Track ID cannot be empty"}
@@ -177,10 +174,11 @@ class PreviewService:
             if not track_exists:
                 return {"success": False, "error": "Track not found"}
             
-            # For now, return empty list as requested
+            # Generate signed URL using the track UUID
+            signed_url = sign_secure_url(track_id.strip())
+            
             return {
-                "success": True,
-                "download_url": []
+                "download_url": signed_url
             }
             
         except Exception as e:

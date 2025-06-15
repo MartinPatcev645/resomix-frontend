@@ -34,12 +34,12 @@ class PreviewDownloadRequest(BaseModel):
 
 class PreviewDownloadResponse(BaseModel):
     """Response schema for preview download URL generation."""
-    download_url: list = Field(..., description="Generated preview URL for the audio file (currently empty list)")
+    download_url: str = Field(..., description="Generated signed preview URL for the audio file")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "download_url": []
+                "download_url": "https://media.resomix.com/signed-audio/?uuid=67addcb39387d00fbdc3acdf&xpi=gAAAAABh...&token=abc123..."
             }
         }
 
@@ -54,7 +54,7 @@ class PreviewDownloadSuccessResponse(BaseModel):
             "example": {
                 "success": True,
                 "data": {
-                    "download_url": []
+                    "download_url": "https://media.resomix.com/signed-audio/?uuid=67addcb39387d00fbdc3acdf&xpi=gAAAAABh...&token=abc123..."
                 }
             }
         }

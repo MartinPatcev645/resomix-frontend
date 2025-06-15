@@ -43,7 +43,7 @@ class PreviewController:
         Returns:
             JSON response with preview URL or error
         """
-        log_request("get_preview", "POST", {"track_id": track_id})
+        log_request("get_preview", "GET", {"track_id": track_id})
         
         try:
             # Validate track_id
@@ -76,7 +76,7 @@ class PreviewController:
                     content=format_response(success=False, error=error_message)
                 )
             
-            # Success response
+            # Success response - preview_result should contain download_url directly
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(success=True, data=preview_result)
