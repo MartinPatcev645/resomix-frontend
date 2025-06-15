@@ -40,10 +40,6 @@ class URLSigner:
         # Initialize Fernet encryption
         fernet_secret = settings.preview_fernet_secret
 
-        print("hmac_secret: ", self.hmac_secret)
-        print("fernet_secret: ", fernet_secret)
-        print("expires_seconds: ", self.expires_seconds)
-
         # Ensure key is 32 bytes for Fernet
         if len(fernet_secret.encode()) < 32:
             fernet_secret = fernet_secret.ljust(32, '0')
