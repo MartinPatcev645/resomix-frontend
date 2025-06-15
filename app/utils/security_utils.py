@@ -36,13 +36,14 @@ class URLSigner:
         # Get secrets from centralized settings
         self.hmac_secret = settings.preview_hmac_secret
         self.expires_seconds = settings.preview_audio_url_expires_seconds
-
-        print("hmac_secret: ", self.hmac_secret)
-        print("fernet_secret: ", self.fernet_secret)
-        print("expires_seconds: ", self.expires_seconds)
         
         # Initialize Fernet encryption
         fernet_secret = settings.preview_fernet_secret
+
+        print("hmac_secret: ", self.hmac_secret)
+        print("fernet_secret: ", fernet_secret)
+        print("expires_seconds: ", self.expires_seconds)
+
         # Ensure key is 32 bytes for Fernet
         if len(fernet_secret.encode()) < 32:
             fernet_secret = fernet_secret.ljust(32, '0')
