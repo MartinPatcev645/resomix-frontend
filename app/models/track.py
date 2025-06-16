@@ -41,6 +41,7 @@ class Track(Base):
         file_path     VARCHAR(500) NOT NULL,       -- original / full file
         preview_path  VARCHAR(500),                -- 128kbps MP3 etc.
         file_size     BIGINT UNSIGNED,             -- bytes
+        type          VARCHAR(50) NOT NULL DEFAULT 'electrobuzz', -- Track source type
         created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
         FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
@@ -50,7 +51,8 @@ class Track(Base):
         KEY idx_track_genre  (genre_id),
         KEY idx_track_title  (title),
         KEY idx_track_bpm    (bpm),
-        KEY idx_track_key    (musical_key)
+        KEY idx_track_key    (musical_key),
+        KEY idx_track_type   (type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "tracks"
@@ -75,6 +77,7 @@ class Track(Base):
     file_path = Column(String(500), nullable=False)
     preview_path = Column(String(500), nullable=True)
     file_size = Column(BigInteger, nullable=True)
+    type = Column(String(50), nullable=False, default='electrobuzz', index=True)  # Track source type
     created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
     
     # Relationships
@@ -87,7 +90,7 @@ class Track(Base):
     artists = relationship("Artist", secondary="track_artists", viewonly=True)
     
     def __repr__(self):
-        return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}')>"
+        return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}', type='{self.type}')>"
 
 
 class TrackArtist(Base):
