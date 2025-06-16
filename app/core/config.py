@@ -94,7 +94,7 @@ class Settings(BaseModel):
         description="Allowed values for top_sk parameter"
     )
     allowed_duplication_thresholds: List[int] = Field(
-        default=[2, 2, 4, 5], 
+        default=[25, 50, 105, 220], 
         description="Duplication thresholds corresponding to top_sk values"
     )
     default_top_sk: int = Field(default=20, description="Default top_sk value")

@@ -14,9 +14,9 @@ Email: usman.naeem2212@gmail.com
 
 import os
 import httpx
+import re
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
-import re
 import asyncio
 import io
 from mutagen import File as MutagenFile, MutagenError
@@ -123,7 +123,11 @@ class SimilarityService:
             target_count_after_deduplication = top_k - similarity_duplication_threshold
             if target_count_after_deduplication < 0: 
                 target_count_after_deduplication = 0  # Ensure not negative
-            deduplicated_enriched_tracks = self._deduplicate_tracks(enriched_similar_tracks, target_count_after_deduplication)
+            deduplicated_enriched_tracks = self._deduplicate_tracks(
+                enriched_similar_tracks, 
+                target_count_after_deduplication,
+                reference_track=None  # No reference track for upload similarity
+            )
 
             # Use the locally calculated duration
             final_duration = calculated_duration if calculated_duration is not None else 0  # Default to 0 if None
@@ -219,7 +223,11 @@ class SimilarityService:
             target_count_after_deduplication = top_k - similarity_duplication_threshold
             if target_count_after_deduplication < 0: 
                 target_count_after_deduplication = 0  # Ensure not negative
-            deduplicated_enriched_tracks = self._deduplicate_tracks(enriched_similar_tracks, target_count_after_deduplication)
+            deduplicated_enriched_tracks = self._deduplicate_tracks(
+                enriched_similar_tracks, 
+                target_count_after_deduplication,
+                reference_track=queried_track_data  # Pass reference track to exclude it from results
+            )
 
             return {
                 "queried_track": queried_track_data, 
@@ -247,7 +255,7 @@ class SimilarityService:
             track_path: File path of the track
             
         Returns:
-            Dictionary containing reference track details with all fields, or None if not found
+            Dictionary containing reference track details with all fields including all_artists, or None if not found
         """
         if not track_path:
             return None
@@ -261,10 +269,14 @@ class SimilarityService:
                 
             track = tracks[0]  # Get the first (and should be only) track
             
-            # Get primary artist (first artist in track_artists)
+            # Get primary artist (first artist in track_artists) for backward compatibility
             artist_name = "N/A"
+            all_artists = []
+            
             if track.track_artists:
                 artist_name = track.track_artists[0].artist.name
+                # Collect all artists for deduplication purposes
+                all_artists = [ta.artist.name for ta in track.track_artists]
             
             # Extract filename from file_path
             filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
@@ -284,7 +296,8 @@ class SimilarityService:
                 "label": label_name,
                 "genre": genre_name,
                 "duration": track.duration_sec or 0,
-                "artist": artist_name
+                "artist": artist_name,  # Primary artist for display
+                "all_artists": all_artists  # All artists for deduplication
             }
             
             return reference_track_data
@@ -305,7 +318,7 @@ class SimilarityService:
             
         Returns:
             A dictionary mapping file_path to track_details_dict.
-            Track_details_dict contains: id, filename, album, duration, artist.
+            Track_details_dict contains: id, filename, album, duration, artist, all_artists.
         """
         if not track_paths_from_similarity_server:
             return {}
@@ -322,10 +335,14 @@ class SimilarityService:
             tracks = await self.track_repository.async_get_tracks_by_file_paths(db, list(paths_to_query))
             
             for track in tracks:
-                # Get primary artist (first artist in track_artists)
+                # Get primary artist (first artist in track_artists) for backward compatibility
                 artist_name = "N/A"
+                all_artists = []
+                
                 if track.track_artists:
                     artist_name = track.track_artists[0].artist.name
+                    # Collect all artists for deduplication purposes
+                    all_artists = [ta.artist.name for ta in track.track_artists]
                 
                 # Extract filename from file_path
                 filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
@@ -343,7 +360,8 @@ class SimilarityService:
                     "id": track.uuid,  # Use UUID for compatibility with existing API
                     "label": label_name,
                     "duration": track.duration_sec or 0,
-                    "artist": artist_name,
+                    "artist": artist_name,  # Primary artist for display
+                    "all_artists": all_artists,  # All artists for deduplication
                     "title": track.title or "N/A",
                     "year": track.year
                 }
@@ -370,13 +388,63 @@ class SimilarityService:
             print(f"Error getting duration from bytes: {e}")
         return None  # Return None if duration can't be determined
 
-    def _deduplicate_tracks(self, tracks: List[Dict[str, Any]], target_count: int) -> List[Dict[str, Any]]:
+    def _normalize_artist_name(self, artist_name: str) -> str:
         """
-        Removes duplicate tracks based on filename and duration, sorts by score,
-        re-ranks, and then returns up to target_count tracks.
+        Normalize artist name to handle variations in formatting.
+        
+        Examples:
+        - "Jacob Stone" -> "jacob stone"
+        - "jacob-stone" -> "jacob stone"  
+        - "JACOB    STONE" -> "jacob stone"
+        - "Artist A & Artist B" -> "artist a artist b"
+        
+        Args:
+            artist_name: Raw artist name
+            
+        Returns:
+            Normalized artist name
         """
-        seen_tracks = set()
-        deduplicated_list = []
+        if not artist_name:
+            return ""
+        
+        # Convert to lowercase
+        normalized = artist_name.lower()
+        
+        # Replace common separators with spaces
+        # Handle: hyphens, underscores, various types of dashes
+        separators = ['-', '_', '–', '—', '•']
+        for sep in separators:
+            normalized = normalized.replace(sep, ' ')
+        
+        # Replace common connecting words/symbols with spaces for more aggressive matching
+        # Handle: &, feat, ft, featuring, vs, x, +
+        connectors = [' & ', ' feat ', ' feat. ', ' ft ', ' ft. ', ' featuring ', ' vs ', ' vs. ', ' x ', ' + ']
+        for connector in connectors:
+            normalized = normalized.replace(connector, ' ')
+        
+        # Normalize whitespace: multiple spaces to single space, strip ends
+        normalized = re.sub(r'\s+', ' ', normalized).strip()
+        
+        return normalized
+
+    def _deduplicate_tracks(self, tracks: List[Dict[str, Any]], target_count: int, reference_track: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """
+        Removes duplicate tracks based on:
+        1. Filename (without extension) and duration (existing logic)
+        2. Artist set and title combination (enhanced for multiple artists per track with robust normalization)
+        3. Reference track exclusion (for track selection similarity)
+        
+        Then sorts by score, re-ranks, and returns up to target_count tracks.
+        
+        Args:
+            tracks: List of track dictionaries to deduplicate
+            target_count: Maximum number of tracks to return
+            reference_track: Optional reference track to exclude from results
+        """
+        # First layer: Filename-based deduplication (existing logic)
+        seen_filename_tracks = set()
+        filename_deduplicated_list = []
+        
         for track in tracks:
             filename_full = track.get("filename", "")
             # Remove extension from filename for the key
@@ -384,17 +452,82 @@ class SimilarityService:
             duration = track.get("duration", -1)
             track_key = (filename_base.lower().strip(), duration)  # Use lowercased base filename
             
-            if track_key not in seen_tracks:
-                deduplicated_list.append(track)
-                seen_tracks.add(track_key)
+            if track_key not in seen_filename_tracks:
+                filename_deduplicated_list.append(track)
+                seen_filename_tracks.add(track_key)
+        
+        # Second layer: Artist set and title-based deduplication (enhanced for multiple artists)
+        seen_artist_title_tracks = set()
+        final_deduplicated_list = []
+        
+        # Prepare reference track normalization if provided
+        reference_normalized_key = None
+        if reference_track:
+            ref_title = reference_track.get("title", "").strip().lower()
+            ref_all_artists = reference_track.get("all_artists", [])
+            
+            # If no all_artists field, fall back to primary artist field
+            if not ref_all_artists:
+                ref_primary_artist = reference_track.get("artist", "").strip()
+                ref_all_artists = [ref_primary_artist] if ref_primary_artist else []
+            
+            # Create normalized reference key if we have title and artists
+            if ref_title and ref_all_artists:
+                ref_normalized_artists = []
+                for artist in ref_all_artists:
+                    normalized_artist = self._normalize_artist_name(artist)
+                    if normalized_artist:
+                        ref_normalized_artists.append(normalized_artist)
+                
+                if ref_normalized_artists:
+                    ref_normalized_artists_tuple = tuple(sorted(ref_normalized_artists))
+                    reference_normalized_key = (ref_normalized_artists_tuple, ref_title)
+        
+        for track in filename_deduplicated_list:
+            title = track.get("title", "").strip().lower()
+            
+            # Get all artists for this track
+            all_artists = track.get("all_artists", [])
+            
+            # If no all_artists field, fall back to primary artist field
+            if not all_artists:
+                primary_artist = track.get("artist", "").strip()
+                all_artists = [primary_artist] if primary_artist else []
+            
+            # Skip tracks with empty title or no artists to avoid false positives
+            if not title or not all_artists:
+                final_deduplicated_list.append(track)
+                continue
+            
+            # Create a normalized, sorted set of artists with robust normalization
+            normalized_artists = []
+            for artist in all_artists:
+                normalized_artist = self._normalize_artist_name(artist)
+                if normalized_artist:  # Only add non-empty normalized names
+                    normalized_artists.append(normalized_artist)
+            
+            # Sort the normalized artists and convert to tuple for hashing
+            normalized_artists_tuple = tuple(sorted(normalized_artists))
+            
+            # Create a key from normalized artist set and title
+            artist_title_key = (normalized_artists_tuple, title)
+            
+            # Skip if this matches the reference track
+            if reference_normalized_key and artist_title_key == reference_normalized_key:
+                continue  # Skip the reference track itself
+            
+            if artist_title_key not in seen_artist_title_tracks:
+                final_deduplicated_list.append(track)
+                seen_artist_title_tracks.add(artist_title_key)
+            # else: this track has the same artist set and title as a previous track, so skip it
         
         # Sort by score in descending order (higher score is better)
         # Ensure score exists and is a number, default to 0 or a very low number if missing/invalid
-        deduplicated_list.sort(key=lambda x: float(x.get("score", 0)) if isinstance(x.get("score"), (int, float, str)) and str(x.get("score")).replace('.', '', 1).isdigit() else 0, reverse=True)
+        final_deduplicated_list.sort(key=lambda x: float(x.get("score", 0)) if isinstance(x.get("score"), (int, float, str)) and str(x.get("score")).replace('.', '', 1).isdigit() else 0, reverse=True)
         
         # Re-rank the sorted list
         reranked_list = []
-        for i, track_item in enumerate(deduplicated_list):
+        for i, track_item in enumerate(final_deduplicated_list):
             track_item["rank"] = i + 1
             reranked_list.append(track_item)
             
