@@ -567,11 +567,24 @@ class SimilarityService:
             target_count: Maximum number of tracks to return
             reference_track: Optional reference track to exclude from results
         """
+        # STEP 0: Apply title filtering BEFORE deduplication to normalize titles
+        # This ensures tracks like "Junior Gee" and "Junior Gee (Original Mix)" are seen as duplicates
+        preprocessed_tracks = []
+        for track in tracks:
+            # Create a copy to avoid modifying the original
+            processed_track = track.copy()
+            
+            # Apply title filtering if title exists
+            if "title" in processed_track and processed_track["title"]:
+                processed_track["title"] = self._filter_track_title(processed_track["title"]).strip()
+            
+            preprocessed_tracks.append(processed_track)
+        
         # First layer: Filename-based deduplication (existing logic)
         seen_filename_tracks = set()
         filename_deduplicated_list = []
         
-        for track in tracks:
+        for track in preprocessed_tracks:
             filename_full = track.get("filename", "")
             # Remove extension from filename for the key
             filename_base, file_extension = os.path.splitext(filename_full)
@@ -589,7 +602,11 @@ class SimilarityService:
         # Prepare reference track normalization if provided
         reference_normalized_key = None
         if reference_track:
-            ref_title = reference_track.get("title", "").strip().lower()
+            # Apply title filtering to reference track as well for consistent comparison
+            ref_title = reference_track.get("title", "").strip()
+            if ref_title:
+                ref_title = self._filter_track_title(ref_title).strip().lower()
+            
             ref_all_artists = reference_track.get("all_artists", [])
             
             # If no all_artists field, fall back to primary artist field
@@ -610,6 +627,7 @@ class SimilarityService:
                     reference_normalized_key = (ref_normalized_artists_tuple, ref_title)
         
         for track in filename_deduplicated_list:
+            # Title is already filtered, just need to normalize case and trim
             title = track.get("title", "").strip().lower()
             
             # Get all artists for this track
@@ -657,11 +675,9 @@ class SimilarityService:
             track_item["rank"] = i + 1
             reranked_list.append(track_item)
         
-        # Apply title filtering after deduplication and ranking
-        filtered_tracks = self._apply_title_filtering_to_tracks(reranked_list[:target_count])
-            
-        # Return filtered tracks
-        return filtered_tracks
+        # Title filtering is now done BEFORE deduplication, so just return the tracks
+        # Limited to target_count
+        return reranked_list[:target_count]
 
     async def _call_similarity_server(self, endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Dict[str, Any]:
         """Helper function to call the similarity server. Returns the JSON response directly or a structured error."""
