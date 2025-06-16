@@ -242,6 +242,14 @@ def create_dummy_audio_file():
     return dummy_content
 
 
+def get_test_audio_file():
+    """Get the real audio test file."""
+    test_audio_path = Path("tests/unit/test_routes/audio1.mp3")
+    if not test_audio_path.exists():
+        raise FileNotFoundError(f"Test audio file not found: {test_audio_path}")
+    return test_audio_path
+
+
 def main():
     """Run all tests."""
     print("Starting track upload functionality tests (NO DATABASE INSERTION)...\n")
@@ -262,29 +270,25 @@ def main():
     db_available = test_database_connection()
     print()
     
-    # Test with dummy file (logic test only)
-    print("Testing track upload logic with dummy file...")
+    # Test with real audio file (logic test only)
+    print("Testing track upload logic with real audio file...")
     print("=" * 60)
     try:
         service = MockTrackUploadService()
         
-        # Create dummy audio content
-        dummy_content = create_dummy_audio_file()
+        # Use real audio file
+        test_audio_path = get_test_audio_file()
+        print(f"Using test audio file: {test_audio_path}")
         
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-            temp_file.write(dummy_content)
-            temp_file.flush()
+        # Read the real audio file
+        with open(test_audio_path, 'rb') as file_obj:
+            audio_content = file_obj.read()
+            file_obj.seek(0)  # Reset file pointer
             
-            # Reopen for reading
-            with open(temp_file.name, 'rb') as file_obj:
-                mock_file = MockUploadFile(file_obj, "test_track.mp3")
-                
-                # Test the logic (NO DATABASE INSERTION)
-                result = service.test_upload_logic(mock_file, dummy_content)
-        
-        # Clean up
-        os.unlink(temp_file.name)
+            mock_file = MockUploadFile(file_obj, test_audio_path.name)
+            
+            # Test the logic (NO DATABASE INSERTION)
+            result = service.test_upload_logic(mock_file, audio_content)
         
         print("=" * 60)
         if result.get("success"):
@@ -303,6 +307,9 @@ def main():
         else:
             print(f"❌ Track upload logic test FAILED: {result.get('error')}")
             
+    except FileNotFoundError as e:
+        print(f"❌ Test audio file not found: {e}")
+        print("   Please ensure tests/unit/test_routes/audio1.mp3 exists")
     except Exception as e:
         print(f"❌ Track upload logic test failed with exception: {e}")
         import traceback

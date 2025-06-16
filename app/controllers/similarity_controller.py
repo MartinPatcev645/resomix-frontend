@@ -120,6 +120,7 @@ class SimilarityController:
                     db=db,
                     audio_bytes=audio_bytes, 
                     original_filename=original_filename, 
+                    track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold
                 )
@@ -133,33 +134,10 @@ class SimilarityController:
                         )
                     )
                 
-                # STEP 3: Combine results - include both upload info and similarity results
-                combined_results = {
-                    # Original similarity results
-                    "original_filename": similarity_results.get("original_filename"),
-                    "duration": similarity_results.get("duration"),
-                    "similar_tracks": similarity_results.get("similar_tracks", []),
-                    
-                    # NEW: Track upload information
-                    "uploaded_track": {
-                        "uuid": upload_result["uuid"],
-                        "track_id": upload_result["track_id"],
-                        "file_size": upload_result["file_size"],
-                        "metadata": {
-                            "title": upload_result["metadata"].get("Title", ""),
-                            "artist": ", ".join(upload_result["artist_names"]),
-                            "album": upload_result["album_title"] or "",
-                            "genre": upload_result["genre_name"],
-                            "label": upload_result["label_name"] or "",
-                            "year": upload_result["metadata"].get("Year", "")
-                        },
-                        "preview_path": f"/mnt/data/UPLOADS/{upload_result['uuid']}.mp3"
-                    }
-                }
-                
+                # STEP 3: Return response in same format as similarity by ID
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(success=True, data=combined_results)
+                    content=format_response(success=True, data=similarity_results)
                 )
                 
             except Exception as e:
@@ -212,6 +190,7 @@ class SimilarityController:
                     db=db,
                     audio_bytes=audio_bytes, 
                     original_filename=original_filename,
+                    track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold
                 )
@@ -225,33 +204,10 @@ class SimilarityController:
                         )
                     )
                 
-                # STEP 3: Combine results
-                combined_results = {
-                    # Original similarity results
-                    "original_filename": similarity_results.get("original_filename"),
-                    "duration": similarity_results.get("duration"),
-                    "similar_tracks": similarity_results.get("similar_tracks", []),
-                    
-                    # NEW: Track upload information
-                    "uploaded_track": {
-                        "uuid": upload_result["uuid"],
-                        "track_id": upload_result["track_id"],
-                        "file_size": upload_result["file_size"],
-                        "metadata": {
-                            "title": upload_result["metadata"].get("Title", ""),
-                            "artist": ", ".join(upload_result["artist_names"]),
-                            "album": upload_result["album_title"] or "",
-                            "genre": upload_result["genre_name"],
-                            "label": upload_result["label_name"] or "",
-                            "year": upload_result["metadata"].get("Year", "")
-                        },
-                        "preview_path": f"/mnt/data/UPLOADS/{upload_result['uuid']}.mp3"
-                    }
-                }
-                
+                # STEP 3: Return response in same format as similarity by ID
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(success=True, data=combined_results)
+                    content=format_response(success=True, data=similarity_results)
                 )
 
             except Exception as e:

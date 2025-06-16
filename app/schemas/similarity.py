@@ -122,16 +122,22 @@ class UploadedTrackInfo(BaseModel):
 
 class SimilarityUploadResponse(BaseModel):
     """Response schema for similarity calculation by upload."""
-    original_filename: str = Field(..., description="Original filename of uploaded file")
-    duration: int = Field(..., description="Duration of uploaded audio in seconds")
+    queried_track: SimilarTrackResult = Field(..., description="Information about the uploaded (queried) track")
     similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
-    uploaded_track: UploadedTrackInfo = Field(..., description="Information about the uploaded track")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "original_filename": "uploaded_track.mp3",
-                "duration": 195,
+                "queried_track": {
+                    "rank": 0,
+                    "score": 1.0,
+                    "id": "67ad9cec799206f8d64acd08",
+                    "label": "User Upload",
+                    "duration": 195,
+                    "artist": "Amazing Artist",
+                    "title": "Uploaded Track",
+                    "year": 2023
+                },
                 "similar_tracks": [
                     {
                         "rank": 1,
@@ -143,21 +149,7 @@ class SimilarityUploadResponse(BaseModel):
                         "title": "Whole Life (Original Mix)",
                         "year": 2010
                     }
-                ],
-                "uploaded_track": {
-                    "uuid": "67ad9cec799206f8d64acd08",
-                    "track_id": 12345,
-                    "file_size": 5242880,
-                    "metadata": {
-                        "title": "Amazing Song",
-                        "artist": "Fantastic Artist",
-                        "album": "Great Album",
-                        "genre": "Electronic",
-                        "label": "Cool Records",
-                        "year": "2023"
-                    },
-                    "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
-                }
+                ]
             }
         }
 
@@ -220,8 +212,16 @@ class SimilarityUploadSuccessResponse(BaseModel):
             "example": {
                 "success": True,
                 "data": {
-                    "original_filename": "uploaded_track.mp3",
-                    "duration": 195,
+                    "queried_track": {
+                        "rank": 0,
+                        "score": 1.0,
+                        "id": "67ad9cec799206f8d64acd08",
+                        "label": "User Upload",
+                        "duration": 195,
+                        "artist": "Amazing Artist",
+                        "title": "Uploaded Track",
+                        "year": 2023
+                    },
                     "similar_tracks": [
                         {
                             "rank": 1,
@@ -233,21 +233,7 @@ class SimilarityUploadSuccessResponse(BaseModel):
                             "title": "Whole Life (Original Mix)",
                             "year": 2010
                         }
-                    ],
-                    "uploaded_track": {
-                        "uuid": "67ad9cec799206f8d64acd08",
-                        "track_id": 12345,
-                        "file_size": 5242880,
-                        "metadata": {
-                            "title": "Amazing Song",
-                            "artist": "Fantastic Artist",
-                            "album": "Great Album",
-                            "genre": "Electronic",
-                            "label": "Cool Records",
-                            "year": "2023"
-                        },
-                        "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
-                    }
+                    ]
                 }
             }
         }

@@ -21,6 +21,7 @@ import asyncio
 import io
 from mutagen import File as MutagenFile, MutagenError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from app.repositories.track_repository import TrackRepository
 from app.core.config import settings
@@ -44,6 +45,7 @@ class SimilarityService:
         db: AsyncSession,
         audio_bytes: bytes, 
         original_filename: str, 
+        track_uuid: str,
         top_k: int = 10, 
         similarity_duplication_threshold: int = 0
     ) -> Dict[str, Any]:
@@ -54,6 +56,7 @@ class SimilarityService:
             db: Database session
             audio_bytes: The raw bytes of the audio file
             original_filename: The original filename, used for context/logging and passed to server
+            track_uuid: The UUID of the uploaded track to send to similarity server
             top_k: Number of similar tracks to request from similarity server
             similarity_duplication_threshold: The threshold for removing duplicates before returning
             
@@ -67,7 +70,7 @@ class SimilarityService:
         duration_task = asyncio.to_thread(self._get_duration_from_bytes_sync, audio_bytes)
 
         files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
-        request_data = {"top_k": top_k}
+        request_data = {"top_k": top_k, "track_uuid": track_uuid}
         similarity_response_task = self._call_similarity_server("/similarity/query-by-upload/", data=request_data, files=files_data)
 
         # Await both tasks
@@ -78,6 +81,20 @@ class SimilarityService:
 
         # Check the status from the similarity server's response
         if similarity_response.get("status") == "success":
+            # NEW: Get duration from similarity server response and update database
+            server_duration = similarity_response.get("duration")
+            if server_duration is not None:
+                try:
+                    # Update duration in database
+                    from database.connection import engine
+                    from sqlalchemy import text
+                    with engine.begin() as conn:
+                        update_sql = text("UPDATE tracks SET duration_sec = :duration WHERE uuid = :uuid")
+                        conn.execute(update_sql, {"duration": server_duration, "uuid": track_uuid})
+                        print(f"Updated track {track_uuid} with duration: {server_duration}")
+                except Exception as e:
+                    print(f"Warning: Failed to update duration for track {track_uuid}: {e}")
+
             raw_results = similarity_response.get("results", [])
             # Get paths from similarity server response (these may have /home/usman/data/ prefix)
             abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
@@ -130,14 +147,25 @@ class SimilarityService:
                 reference_track=None  # No reference track for upload similarity
             )
 
-            # Use the locally calculated duration
-            final_duration = calculated_duration if calculated_duration is not None else 0  # Default to 0 if None
-
-            return {
-                "original_filename": original_filename,
-                "duration": final_duration, 
-                "similar_tracks": deduplicated_enriched_tracks
-            }
+            # NEW: Get uploaded track details to construct response similar to similarity by ID
+            try:
+                uploaded_track_details = await self._fetch_reference_track_details_from_db_by_uuid(db, track_uuid)
+                if uploaded_track_details:
+                    # Use server duration if available, otherwise fall back to calculated duration
+                    final_duration = server_duration if server_duration is not None else (calculated_duration if calculated_duration is not None else 0)
+                    uploaded_track_details["duration"] = final_duration
+                    
+                    # Format response like similarity by ID
+                    return {
+                        "queried_track": uploaded_track_details,
+                        "similar_tracks": deduplicated_enriched_tracks
+                    }
+                else:
+                    print(f"Warning: Could not fetch details for uploaded track {track_uuid}")
+                    return {"success": False, "error": "Could not retrieve uploaded track details"}
+            except Exception as e:
+                print(f"Error fetching uploaded track details: {e}")
+                return {"success": False, "error": "Failed to retrieve uploaded track details"}
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
             error_message = similarity_response.get("message", "Unknown error during similarity processing.")
@@ -249,63 +277,93 @@ class SimilarityService:
 
     async def _fetch_reference_track_details_from_db_by_path(self, db: AsyncSession, track_path: str) -> Optional[Dict[str, Any]]:
         """
-        Fetches full track details including album, label, and genre from MariaDB for a reference track.
-
+        Fetch complete track details from the database by path for reference track formatting.
+        
         Args:
             db: Database session
-            track_path: File path of the track
+            track_path: The file path to lookup in the database
             
         Returns:
-            Dictionary containing reference track details with all fields including all_artists, or None if not found
+            Dictionary with track details or None if not found
         """
-        if not track_path:
-            return None
-
-        try:
-            # Query track by file path using MariaDB repository
-            tracks = await self.track_repository.async_get_tracks_by_file_paths(db, [track_path])
-            
-            if not tracks:
-                return None
-                
-            track = tracks[0]  # Get the first (and should be only) track
-            
-            # Get primary artist (first artist in track_artists) for backward compatibility
-            artist_name = "N/A"
-            all_artists = []
-            
-            if track.track_artists:
-                artist_name = track.track_artists[0].artist.name
-                # Collect all artists for deduplication purposes
-                all_artists = [ta.artist.name for ta in track.track_artists]
-            
-            # Extract filename from file_path
-            filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
-            
-            # Get album name
-            album_name = track.album.title if track.album else "N/A"
-            
-            # Get label name
-            label_name = track.label.name if track.label else "N/A"
-            
-            # Get genre name
-            genre_name = track.genre.name if track.genre else "N/A"
-            
-            reference_track_data = {
-                "id": track.uuid,  # Use UUID for compatibility with existing API
-                "album": album_name,
-                "label": label_name,
-                "genre": genre_name,
-                "duration": track.duration_sec or 0,
-                "artist": artist_name,  # Primary artist for display
-                "all_artists": all_artists  # All artists for deduplication
+        query = text("""
+            SELECT 
+                t.uuid as id,
+                t.title,
+                t.year,
+                t.duration_sec as duration,
+                COALESCE(l.name, '') as label,
+                COALESCE(
+                    GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                    ''
+                ) as artist
+            FROM tracks t
+            LEFT JOIN labels l ON t.label_id = l.id
+            LEFT JOIN track_artists ta ON t.id = ta.track_id
+            LEFT JOIN artists a ON ta.artist_id = a.id
+            WHERE t.file_path = :track_path OR t.preview_path = :track_path
+            GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+            LIMIT 1
+        """)
+        
+        result = await db.execute(query, {"track_path": track_path})
+        row = result.first()
+        
+        if row:
+            return {
+                "id": row.id,
+                "title": row.title or "Unknown",
+                "year": row.year,
+                "duration": row.duration,
+                "label": row.label,
+                "artist": row.artist or "Unknown"
             }
+        return None
+
+    async def _fetch_reference_track_details_from_db_by_uuid(self, db: AsyncSession, track_uuid: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch complete track details from the database by UUID for reference track formatting.
+        
+        Args:
+            db: Database session
+            track_uuid: The UUID to lookup in the database
             
-            return reference_track_data
-            
-        except Exception as e:
-            print(f"Error during MariaDB fetch for reference track details: {e}")
-            return None
+        Returns:
+            Dictionary with track details or None if not found
+        """
+        query = text("""
+            SELECT 
+                t.uuid as id,
+                t.title,
+                t.year,
+                t.duration_sec as duration,
+                COALESCE(l.name, '') as label,
+                COALESCE(
+                    GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                    ''
+                ) as artist
+            FROM tracks t
+            LEFT JOIN labels l ON t.label_id = l.id
+            LEFT JOIN track_artists ta ON t.id = ta.track_id
+            LEFT JOIN artists a ON ta.artist_id = a.id
+            WHERE t.uuid = :track_uuid
+            GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+            LIMIT 1
+        """)
+        
+        result = await db.execute(query, {"track_uuid": track_uuid})
+        row = result.first()
+        
+        if row:
+            return {
+                "id": row.id,
+                "title": row.title or "Unknown",
+                "year": row.year,
+                "duration": row.duration,
+                "label": row.label,
+                "artist": row.artist or "Unknown"
+            }
+        return None
 
     async def _fetch_track_details_from_db_by_path(self, db: AsyncSession, track_paths_from_similarity_server: List[str]) -> Dict[str, Dict[str, Any]]:
         """
@@ -663,10 +721,16 @@ class SimilarityService:
         Returns:
             Similarity results
         """
+        # This is a convenience method for backward compatibility
+        # Use a placeholder UUID since this method doesn't store in database
+        import secrets
+        placeholder_uuid = secrets.token_hex(12)
+        
         return await self.calculate_similarity_for_upload(
             db=db,
             audio_bytes=audio_bytes,
             original_filename=filename,
+            track_uuid=placeholder_uuid,
             top_k=max_results,
             similarity_duplication_threshold=0
         )

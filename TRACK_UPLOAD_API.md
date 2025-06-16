@@ -2,23 +2,19 @@
 
 ## Overview
 
-The ResomiX API provides two ways to upload tracks for similarity analysis:
-
-1. **Integrated Similarity Endpoint** (`/get_similarity/`) - **RECOMMENDED**: Upload track, store in database, and get similarity results in one call
-2. **Standalone Upload Endpoint** (`/upload-track/`) - Upload track to database only (for cases where you just want to store the track)
-
-## Recommended Flow: Integrated Upload + Similarity
+The ResomiX API provides an integrated approach to upload tracks and get similarity results in a single call.
 
 ### POST `/get_similarity/`
 
-**🚀 This is the main endpoint you should use for similarity analysis.**
+**🚀 Upload Track + Similarity Analysis**
 
 Upload an audio track, store it in the database, and get similar tracks in one request.
 
 **Process Flow:**
 1. **Upload & Store**: Extracts metadata and stores track with `type="upload"`
-2. **Similarity Analysis**: Finds similar tracks from the database
-3. **Combined Response**: Returns both uploaded track info and similarity results
+2. **Send to Similarity Server**: Sends audio file and track UUID to similarity server
+3. **Update Duration**: Gets duration from similarity server and updates database
+4. **Return Results**: Returns uploaded track info and similarity results in the same format as similarity by ID
 
 **Authentication**: API key required
 **Content-Type**: `multipart/form-data`
@@ -38,8 +34,16 @@ Upload an audio track, store it in the database, and get similar tracks in one r
 {
   "success": true,
   "data": {
-    "original_filename": "my_track.mp3",
-    "duration": 195,
+    "queried_track": {
+      "rank": 0,
+      "score": 1.0,
+      "id": "67ad9cec799206f8d64acd08",
+      "label": "User Upload",
+      "duration": 195,
+      "artist": "Amazing Artist",
+      "title": "Uploaded Track",
+      "year": 2023
+    },
     "similar_tracks": [
       {
         "rank": 1,
@@ -51,24 +55,14 @@ Upload an audio track, store it in the database, and get similar tracks in one r
         "title": "Whole Life (Original Mix)",
         "year": 2010
       }
-    ],
-    "uploaded_track": {
-      "uuid": "67ad9cec799206f8d64acd08",
-      "track_id": 12345,
-      "file_size": 5242880,
-      "metadata": {
-        "title": "My Amazing Track",
-        "artist": "My Artist Name",
-        "album": "My Album",
-        "genre": "Electronic",
-        "label": "My Label",
-        "year": "2023"
-      },
-      "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
-    }
+    ]
   }
 }
 ```
+
+**Note**: The response format is identical to the similarity by ID endpoint, with:
+- `queried_track`: Information about the uploaded track
+- `similar_tracks`: Array of similar tracks found
 
 #### Usage Example
 
@@ -82,46 +76,7 @@ curl -X POST \
 
 ---
 
-## Alternative: Standalone Upload
-
-### POST `/upload-track/`
-
-Upload a track to the database without similarity analysis.
-
-**Use this when:**
-- You only want to store the track in the database
-- You'll run similarity analysis later using the track UUID
-
-**Response includes only upload information (no similarity results)**
-
-#### Success Response (201 Created)
-
-```json
-{
-  "success": true,
-  "message": "Track uploaded successfully and added to database",
-  "data": {
-    "filename": "amazing_song.mp3",
-    "track_uuid": "67ad9cec799206f8d64acd08",
-    "track_id": 12345,
-    "file_size": 5242880,
-    "metadata": {
-      "title": "Amazing Song",
-      "artist": "Fantastic Artist",
-      "album": "Great Album",
-      "genre": "Electronic",
-      "label": "Cool Records",
-      "year": "2023"
-    },
-    "file_path": "67ad9cec799206f8d64acd08",
-    "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
-  }
-}
-```
-
----
-
-## Error Responses (Both Endpoints)
+## Error Responses
 
 ### 413 Request Entity Too Large
 ```json
@@ -155,7 +110,7 @@ Upload a track to the database without similarity analysis.
 }
 ```
 
-### 503 Service Unavailable (Similarity Only)
+### 503 Service Unavailable
 ```json
 {
   "success": false,
@@ -166,6 +121,15 @@ Upload a track to the database without similarity analysis.
 ---
 
 ## Implementation Details
+
+### Track Upload Process
+1. **File Validation**: Checks file size, format, and audio validity
+2. **Metadata Extraction**: Uses Mutagen library to extract track information
+3. **UUID Generation**: Creates 24-character hexadecimal UUID
+4. **Database Storage**: Stores track with `type="upload"` and creates relationships
+5. **Similarity Analysis**: Sends audio file + UUID to similarity server
+6. **Duration Update**: Updates database with duration from similarity server
+7. **Response Formatting**: Returns results in same format as similarity by ID
 
 ### Metadata Extraction
 - Uses Mutagen library for audio metadata extraction
@@ -184,6 +148,12 @@ Upload a track to the database without similarity analysis.
 - Maintains referential integrity with proper foreign key relationships
 - Uses transaction-based operations for data consistency
 
+### Similarity Server Integration
+- Sends both audio file and track UUID to similarity server
+- Receives duration from similarity server and updates database
+- Processes similarity results and enriches with database metadata
+- Returns results in consistent format with similarity by ID endpoint
+
 ### File Path Handling
 - `file_path`: Original filename with extension
 - `preview_path`: `/mnt/data/UPLOADS/{uuid}.mp3`
@@ -198,6 +168,7 @@ Upload a track to the database without similarity analysis.
 - **UUID**: 24-character hex string
 - **File Path**: Original filename
 - **Preview Path**: `/mnt/data/UPLOADS/{uuid}.mp3`
+- **Duration**: Updated from similarity server response
 - **Metadata**: Title, year, file size
 - **Relationships**: Links to artists, albums, labels, genres
 
@@ -212,7 +183,7 @@ Upload a track to the database without similarity analysis.
 
 ## Complete Workflow Examples
 
-### Python Example (Recommended Flow)
+### Python Example
 
 ```python
 import requests
@@ -228,10 +199,11 @@ with open("my_track.mp3", "rb") as f:
     
 if response.status_code == 200:
     result = response.json()
-    uploaded_track = result['data']['uploaded_track']
+    query_track = result['data']['queried_track']
     similar_tracks = result['data']['similar_tracks']
     
-    print(f"Track uploaded: {uploaded_track['uuid']}")
+    print(f"Uploaded track: {query_track['title']} by {query_track['artist']}")
+    print(f"Duration: {query_track['duration']} seconds")
     print(f"Found {len(similar_tracks)} similar tracks")
     for track in similar_tracks[:3]:  # Show top 3
         print(f"  {track['rank']}. {track['artist']} - {track['title']} ({track['score']:.3f})")
@@ -256,9 +228,13 @@ fetch('/get_similarity/', {
 .then(response => response.json())
 .then(data => {
   if (data.success) {
-    console.log('Track uploaded:', data.data.uploaded_track.uuid);
-    console.log('Similar tracks found:', data.data.similar_tracks.length);
-    data.data.similar_tracks.forEach(track => {
+    const queryTrack = data.data.queried_track;
+    const similarTracks = data.data.similar_tracks;
+    
+    console.log(`Uploaded: ${queryTrack.title} by ${queryTrack.artist}`);
+    console.log(`Duration: ${queryTrack.duration} seconds`);
+    console.log(`Similar tracks found: ${similarTracks.length}`);
+    similarTracks.forEach(track => {
       console.log(`${track.rank}. ${track.artist} - ${track.title}`);
     });
   } else {
@@ -266,6 +242,44 @@ fetch('/get_similarity/', {
   }
 });
 ```
+
+---
+
+## Consistent API Response Format
+
+Both `/get_similarity/` (upload) and `/get_selection_similarity/` (by ID) endpoints now return the same response format:
+
+```json
+{
+  "success": true,
+  "data": {
+    "queried_track": {
+      "rank": 0,
+      "score": 1.0,
+      "id": "track-uuid-or-id",
+      "label": "Label Name",
+      "duration": 195,
+      "artist": "Artist Name",
+      "title": "Track Title",
+      "year": 2023
+    },
+    "similar_tracks": [
+      {
+        "rank": 1,
+        "score": 0.95,
+        "id": "similar-track-id",
+        "label": "Label Name",
+        "duration": 210,
+        "artist": "Similar Artist",
+        "title": "Similar Track",
+        "year": 2022
+      }
+    ]
+  }
+}
+```
+
+This consistency makes it easier to handle responses from both endpoints in your application code.
 
 ---
 
@@ -277,6 +291,7 @@ fetch('/get_similarity/', {
 - **Connection Pooling**: Reuses database connections
 - **Async Processing**: Non-blocking metadata extraction and similarity analysis
 - **Memory Management**: Handles large files efficiently
+- **Duration Updates**: Efficient database updates from similarity server
 
 ### Security Features
 - **API Key Authentication**: Required for all requests
@@ -284,19 +299,4 @@ fetch('/get_similarity/', {
 - **Size Limits**: Prevents oversized uploads
 - **Input Sanitization**: Cleans metadata fields
 - **SQL Injection Prevention**: Uses parameterized queries
-
----
-
-## Migration Notes
-
-If you're currently using a separate upload process, you can migrate to the integrated flow:
-
-**Before:**
-1. Upload track separately
-2. Call similarity endpoint with track ID
-
-**After (Recommended):**
-1. Use `/get_similarity/` endpoint directly
-2. Get both upload confirmation and similarity results in one call
-
-This reduces API calls and ensures your uploaded tracks are immediately available for similarity analysis. 
+- **UUID Transmission**: Secure UUID sent to similarity server 
