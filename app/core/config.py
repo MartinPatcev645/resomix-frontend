@@ -99,6 +99,16 @@ class Settings(BaseModel):
     )
     default_top_sk: int = Field(default=20, description="Default top_sk value")
     
+    # Title filtering configuration
+    title_removal_strings: List[str] = Field(
+        default=["(Original Mix)"],
+        description="Strings to remove from track titles (case-insensitive)"
+    )
+    title_stopper_strings: List[str] = Field(
+        default=["https:", "www.", "_www.", "VINYL ONLY"],
+        description="Strings that stop title processing - keep only the part before these"
+    )
+    
     # CORS Configuration
     allowed_origin_regex_production: str = Field(
         default=r"^https://([\w\-]+\.)*resomix\.com(:[0-9]+)?$",
