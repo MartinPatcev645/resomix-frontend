@@ -39,10 +39,10 @@ from app.api.routers import all_routers
 from database.connection import async_engine
 
 # Import FFmpeg check utility
-from src.ffmpeg import is_ffmpeg_installed
+from app.services.audio_service import AudioService
 
 # Import response formatting utility
-from src.utils import format_response
+from app.utils.response_utils import format_response
 
 
 # Global exception handlers
@@ -120,7 +120,7 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
         os.makedirs(settings.temp_dir)
     
     # Check if FFmpeg is installed at startup
-    ffmpeg_available = is_ffmpeg_installed()
+    ffmpeg_available = AudioService.is_ffmpeg_installed()
     if not ffmpeg_available:
         print("WARNING: FFmpeg is not installed or not found in PATH. Audio file validation will be skipped.")
     

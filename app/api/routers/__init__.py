@@ -14,7 +14,6 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter
 from .similarity import router as similarity_router
 from .metadata import router as metadata_router
 from .search import router as search_router
@@ -33,15 +32,3 @@ all_routers = [
     health_router,
     preview_router,
 ]
-
-# Create the main router
-api_router = APIRouter()
-
-# Include all sub-routers
-routers = [
-    search_router,
-    similarity_router,
-]
-
-for router in routers:
-    api_router.include_router(router)
