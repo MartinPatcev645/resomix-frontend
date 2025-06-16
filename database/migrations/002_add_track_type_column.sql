@@ -16,9 +16,10 @@ Email: usman.naeem2212@gmail.com
 INSERT IGNORE INTO schema_migrations (version, description, checksum) 
 VALUES ('002_add_track_type_column', 'Add track type column to distinguish between different track sources', 'b2c3d4e5f6g7');
 
--- Add the type column to tracks table
+-- Add the type column to tracks table with comment
 ALTER TABLE tracks 
 ADD COLUMN type VARCHAR(50) NOT NULL DEFAULT 'electrobuzz' 
+COMMENT 'Track source type: electrobuzz, upload, etc.'
 AFTER file_size;
 
 -- Add index for efficient filtering by type
@@ -27,7 +28,3 @@ ADD INDEX idx_track_type (type);
 
 -- Update existing tracks to have 'electrobuzz' type (redundant but explicit)
 UPDATE tracks SET type = 'electrobuzz' WHERE type = 'electrobuzz';
-
--- Add comments for documentation
-ALTER TABLE tracks MODIFY COLUMN type VARCHAR(50) NOT NULL DEFAULT 'electrobuzz' 
-COMMENT 'Track source type: electrobuzz, upload, etc.';
