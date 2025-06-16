@@ -49,12 +49,12 @@ similarity_controller = SimilarityController()
 @router.post(
     "/get_similarity/",
     response_model=SimilarityUploadSuccessResponse,
-    summary="Calculate Similarity by Upload",
-    description="Upload an audio file and get similar tracks from the database.",
+    summary="Upload Track and Calculate Similarity",
+    description="Upload an audio file, store it in the database, and get similar tracks.",
     responses={
         200: {
             "model": SimilarityUploadSuccessResponse,
-            "description": "Similarity calculation completed successfully"
+            "description": "Track uploaded and similarity calculation completed successfully"
         },
         415: {
             "model": SimilarityErrorResponse,
@@ -63,6 +63,10 @@ similarity_controller = SimilarityController()
         422: {
             "model": SimilarityErrorResponse,
             "description": "File too large, empty, or validation error"
+        },
+        500: {
+            "model": SimilarityErrorResponse,
+            "description": "Database upload or internal server error"
         },
         503: {
             "model": SimilarityErrorResponse,
@@ -77,9 +81,15 @@ async def get_similarity_upload_endpoint(
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Process an audio file and return similar tracks.
+    Upload an audio track and find similar tracks.
     
-    - **file**: The audio file to analyze (max 100MB)
+    This endpoint performs a two-step process:
+    1. **Upload to Database**: Extracts metadata and stores the track with type="upload"
+    2. **Similarity Analysis**: Finds similar tracks and returns results
+    
+    The response includes both the uploaded track information and similarity results.
+    
+    - **file**: The audio file to upload and analyze (max 100MB)
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
     return await similarity_controller.get_similarity_upload(db, file, top_sk)

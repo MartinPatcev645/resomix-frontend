@@ -27,6 +27,7 @@ from app.core.config import settings
 from app.services.similarity_service import SimilarityService
 from app.services.search_service import SearchService
 from app.services.audio_service import AudioService
+from app.services.track_upload_service import TrackUploadService
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
 from app.utils.logging_utils import log_request
@@ -37,10 +38,11 @@ class SimilarityController:
         self.similarity_service = SimilarityService()
         self.search_service = SearchService()
         self.audio_service = AudioService()
+        self.track_upload_service = TrackUploadService()
 
     async def get_similarity_upload(self, db: AsyncSession, file: UploadFile, top_sk: Optional[int] = None) -> JSONResponse:
         """
-        Process an audio file and return similar tracks.
+        Process an audio file: first upload to database, then return similar tracks.
         """
         # Validate and get the TOP_SK value using global settings
         validated_top_sk = settings.validate_and_get_top_sk(top_sk)
@@ -73,6 +75,7 @@ class SimilarityController:
                 )
             )
 
+        # Read audio bytes for processing
         audio_bytes = await file.read()
         original_filename = sanitize_filename(file.filename)
 
@@ -90,8 +93,29 @@ class SimilarityController:
                     )
                 )
             
-            # FFmpeg validation passed, directly use audio_bytes
+            # Audio validation passed, now upload to database first
             try:
+                # Reset file pointer for track upload service
+                await file.seek(0)
+                
+                # STEP 1: Upload track to database with metadata extraction
+                import asyncio
+                upload_result = await asyncio.to_thread(
+                    self.track_upload_service.upload_track_to_database, 
+                    file, 
+                    audio_bytes
+                )
+                
+                if not upload_result.get("success", False):
+                    return JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content=format_response(
+                            success=False, 
+                            error=f"Failed to upload track to database: {upload_result.get('error', 'Unknown error')}"
+                        )
+                    )
+                
+                # STEP 2: Now perform similarity analysis
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
@@ -99,17 +123,47 @@ class SimilarityController:
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold
                 )
+                
                 if similarity_results.get("success") is False:
                     return JSONResponse(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                        content=format_response(
+                            success=False, 
+                            error=similarity_results.get("error", "Similarity processing failed.")
+                        )
                     )
+                
+                # STEP 3: Combine results - include both upload info and similarity results
+                combined_results = {
+                    # Original similarity results
+                    "original_filename": similarity_results.get("original_filename"),
+                    "duration": similarity_results.get("duration"),
+                    "similar_tracks": similarity_results.get("similar_tracks", []),
+                    
+                    # NEW: Track upload information
+                    "uploaded_track": {
+                        "uuid": upload_result["uuid"],
+                        "track_id": upload_result["track_id"],
+                        "file_size": upload_result["file_size"],
+                        "metadata": {
+                            "title": upload_result["metadata"].get("Title", ""),
+                            "artist": ", ".join(upload_result["artist_names"]),
+                            "album": upload_result["album_title"] or "",
+                            "genre": upload_result["genre_name"],
+                            "label": upload_result["label_name"] or "",
+                            "year": upload_result["metadata"].get("Year", "")
+                        },
+                        "preview_path": f"/mnt/data/UPLOADS/{upload_result['uuid']}.mp3"
+                    }
+                }
+                
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(success=True, data=similarity_results)
+                    content=format_response(success=True, data=combined_results)
                 )
+                
             except Exception as e:
-                print(f"An error occurred in get_similarity (upload with bytes): {e}")
+                print(f"An error occurred in get_similarity (upload with database): {e}")
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error="An internal server error occurred.")
@@ -133,6 +187,26 @@ class SimilarityController:
                 with open(temp_file_path, "wb") as buffer:
                     buffer.write(audio_bytes)
 
+                # STEP 1: Upload track to database first (even without FFmpeg)
+                await file.seek(0)
+                
+                import asyncio
+                upload_result = await asyncio.to_thread(
+                    self.track_upload_service.upload_track_to_database, 
+                    file, 
+                    audio_bytes
+                )
+                
+                if not upload_result.get("success", False):
+                    return JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content=format_response(
+                            success=False, 
+                            error=f"Failed to upload track to database: {upload_result.get('error', 'Unknown error')}"
+                        )
+                    )
+
+                # STEP 2: Perform similarity analysis
                 print("FFmpeg not available. Cannot guarantee audio validity before sending to similarity server. Proceeding with byte upload with caution.")
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
@@ -141,14 +215,43 @@ class SimilarityController:
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold
                 )
+                
                 if similarity_results.get("success") is False:
                     return JSONResponse(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        content=format_response(success=False, error=similarity_results.get("error", "Similarity processing failed."))
+                        content=format_response(
+                            success=False, 
+                            error=similarity_results.get("error", "Similarity processing failed.")
+                        )
                     )
+                
+                # STEP 3: Combine results
+                combined_results = {
+                    # Original similarity results
+                    "original_filename": similarity_results.get("original_filename"),
+                    "duration": similarity_results.get("duration"),
+                    "similar_tracks": similarity_results.get("similar_tracks", []),
+                    
+                    # NEW: Track upload information
+                    "uploaded_track": {
+                        "uuid": upload_result["uuid"],
+                        "track_id": upload_result["track_id"],
+                        "file_size": upload_result["file_size"],
+                        "metadata": {
+                            "title": upload_result["metadata"].get("Title", ""),
+                            "artist": ", ".join(upload_result["artist_names"]),
+                            "album": upload_result["album_title"] or "",
+                            "genre": upload_result["genre_name"],
+                            "label": upload_result["label_name"] or "",
+                            "year": upload_result["metadata"].get("Year", "")
+                        },
+                        "preview_path": f"/mnt/data/UPLOADS/{upload_result['uuid']}.mp3"
+                    }
+                }
+                
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(success=True, data=similarity_results)
+                    content=format_response(success=True, data=combined_results)
                 )
 
             except Exception as e:

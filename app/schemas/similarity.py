@@ -1,13 +1,13 @@
 """
-Similarity Schemas
-==================
+Similarity API Schemas
+======================
 
-This module contains Pydantic schemas for audio similarity calculation endpoints.
-It defines request and response models for similarity operations including upload-based
-and ID-based similarity queries with comprehensive validation and error handling.
+This module contains Pydantic schemas for audio similarity functionality.
+It defines request and response models for similarity calculations,
+track information, and result formatting with comprehensive validation.
 
-Provides schemas for similarity server communication, track result formatting,
-and configuration management for the similarity microservice integration.
+Provides schemas for similarity by upload, similarity by ID,
+track results, error handling, and response standardization.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -22,7 +22,7 @@ from app.schemas.common import TopSkRequest, ALLOWED_TOP_SK_VALUES
 
 class SimilarityByIdRequest(BaseModel):
     """Request schema for similarity calculation by track ID."""
-    track_id: str = Field(..., description="The MongoDB ID of the track to find similar tracks for", min_length=1)
+    track_id: str = Field(..., description="UUID of the track to find similar tracks for")
     top_sk: Optional[int] = Field(
         None, 
         description="Number of similar tracks to return (10, 20, 50, or 100)",
@@ -47,13 +47,13 @@ class SimilarityByIdRequest(BaseModel):
 
 class SimilarTrackResult(BaseModel):
     """Schema for individual similar track result."""
-    rank: int = Field(..., description="Rank of similarity (1 is most similar)")
-    score: float = Field(..., description="Similarity score (higher means more similar)")
-    id: str = Field(..., description="Track database ID")
-    label: Optional[str] = Field(None, description="Label name")
+    rank: int = Field(..., description="Similarity rank (1 = most similar)")
+    score: float = Field(..., description="Similarity score (0.0 to 1.0)")
+    id: str = Field(..., description="Track UUID")
+    label: Optional[str] = Field(None, description="Record label")
     duration: Optional[int] = Field(None, description="Track duration in seconds")
-    artist: Optional[str] = Field(None, description="Artist name")
-    title: Optional[str] = Field(None, description="Track title")
+    artist: str = Field(..., description="Artist name")
+    title: str = Field(..., description="Track title")
     year: Optional[int] = Field(None, description="Release year")
 
     class Config:
@@ -93,11 +93,39 @@ class QueriedTrackInfo(BaseModel):
         }
 
 
+class UploadedTrackInfo(BaseModel):
+    """Schema for uploaded track information."""
+    uuid: str = Field(..., description="Generated UUID for the uploaded track")
+    track_id: int = Field(..., description="Database ID of the uploaded track")
+    file_size: int = Field(..., description="File size in bytes")
+    metadata: dict = Field(..., description="Extracted metadata")
+    preview_path: str = Field(..., description="Preview file path")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "uuid": "67ad9cec799206f8d64acd08",
+                "track_id": 12345,
+                "file_size": 5242880,
+                "metadata": {
+                    "title": "Amazing Song",
+                    "artist": "Fantastic Artist",
+                    "album": "Great Album",
+                    "genre": "Electronic",
+                    "label": "Cool Records",
+                    "year": "2023"
+                },
+                "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
+            }
+        }
+
+
 class SimilarityUploadResponse(BaseModel):
     """Response schema for similarity calculation by upload."""
     original_filename: str = Field(..., description="Original filename of uploaded file")
     duration: int = Field(..., description="Duration of uploaded audio in seconds")
     similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
+    uploaded_track: UploadedTrackInfo = Field(..., description="Information about the uploaded track")
 
     class Config:
         json_schema_extra = {
@@ -115,38 +143,53 @@ class SimilarityUploadResponse(BaseModel):
                         "title": "Whole Life (Original Mix)",
                         "year": 2010
                     }
-                ]
+                ],
+                "uploaded_track": {
+                    "uuid": "67ad9cec799206f8d64acd08",
+                    "track_id": 12345,
+                    "file_size": 5242880,
+                    "metadata": {
+                        "title": "Amazing Song",
+                        "artist": "Fantastic Artist",
+                        "album": "Great Album",
+                        "genre": "Electronic",
+                        "label": "Cool Records",
+                        "year": "2023"
+                    },
+                    "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
+                }
             }
         }
 
 
 class SimilarityByIdResponse(BaseModel):
     """Response schema for similarity calculation by track ID."""
-    queried_track: Optional[QueriedTrackInfo] = Field(None, description="Information about the queried track")
+    query_track: SimilarTrackResult = Field(..., description="Information about the queried track")
     similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
-    message: Optional[str] = Field(None, description="Additional message (e.g., when track not found in similarity server)")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "queried_track": {
-                    "id": "507f1f77bcf86cd799439011",
-                    "album": "Original Album",
+                "query_track": {
+                    "rank": 0,
+                    "score": 1.0,
+                    "id": "67addcb39387d00fbdc3acdf",
                     "label": "Global Underground",
-                    "genre": "Electronic",
-                    "duration": 210,
-                    "artist": "Original Artist"
+                    "duration": 491,
+                    "artist": "Oxia",
+                    "title": "Whole Life (Original Mix)",
+                    "year": 2010
                 },
                 "similar_tracks": [
                     {
                         "rank": 1,
-                        "score": 0.9899008274078369,
-                        "id": "67addcb39387d00fbdc3acdf",
-                        "label": "Global Underground",
-                        "duration": 491,
-                        "artist": "Oxia",
-                        "title": "Whole Life (Original Mix)",
-                        "year": 2010
+                        "score": 0.8956789,
+                        "id": "67addcb39387d00fbdc3ace0",
+                        "label": "Anjunabeats",
+                        "duration": 456,
+                        "artist": "Above & Beyond",
+                        "title": "Sun & Moon",
+                        "year": 2011
                     }
                 ]
             }
@@ -156,13 +199,13 @@ class SimilarityByIdResponse(BaseModel):
 class SimilarityErrorResponse(BaseModel):
     """Error response schema for similarity operations."""
     success: bool = Field(False, description="Always false for error responses")
-    error: str = Field(..., description="Error message describing what went wrong")
+    error: str = Field(..., description="Error message")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "success": False,
-                "error": "Similarity processing failed"
+                "error": "File too large. Maximum size is 100MB."
             }
         }
 
@@ -190,7 +233,21 @@ class SimilarityUploadSuccessResponse(BaseModel):
                             "title": "Whole Life (Original Mix)",
                             "year": 2010
                         }
-                    ]
+                    ],
+                    "uploaded_track": {
+                        "uuid": "67ad9cec799206f8d64acd08",
+                        "track_id": 12345,
+                        "file_size": 5242880,
+                        "metadata": {
+                            "title": "Amazing Song",
+                            "artist": "Fantastic Artist",
+                            "album": "Great Album",
+                            "genre": "Electronic",
+                            "label": "Cool Records",
+                            "year": "2023"
+                        },
+                        "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
+                    }
                 }
             }
         }
@@ -206,24 +263,26 @@ class SimilarityByIdSuccessResponse(BaseModel):
             "example": {
                 "success": True,
                 "data": {
-                    "queried_track": {
-                        "id": "507f1f77bcf86cd799439011",
-                        "album": "Original Album",
+                    "query_track": {
+                        "rank": 0,
+                        "score": 1.0,
+                        "id": "67addcb39387d00fbdc3acdf",
                         "label": "Global Underground",
-                        "genre": "Electronic",
-                        "duration": 210,
-                        "artist": "Original Artist"
+                        "duration": 491,
+                        "artist": "Oxia",
+                        "title": "Whole Life (Original Mix)",
+                        "year": 2010
                     },
                     "similar_tracks": [
                         {
                             "rank": 1,
-                            "score": 0.9899008274078369,
-                            "id": "67addcb39387d00fbdc3acdf",
-                            "label": "Global Underground",
-                            "duration": 491,
-                            "artist": "Oxia",
-                            "title": "Whole Life (Original Mix)",
-                            "year": 2010
+                            "score": 0.8956789,
+                            "id": "67addcb39387d00fbdc3ace0",
+                            "label": "Anjunabeats",
+                            "duration": 456,
+                            "artist": "Above & Beyond",
+                            "title": "Sun & Moon",
+                            "year": 2011
                         }
                     ]
                 }
