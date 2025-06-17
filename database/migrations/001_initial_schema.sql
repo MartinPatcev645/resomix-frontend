@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     playlist_id BIGINT UNSIGNED NOT NULL,
     track_id    BIGINT UNSIGNED NOT NULL,
     position    INT UNSIGNED NOT NULL,
-    score       VARCHAR(20) NULL,
+    score       DECIMAL(10, 8) NULL,
     PRIMARY KEY (playlist_id, track_id),
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     FOREIGN KEY (track_id)    REFERENCES tracks(id)    ON DELETE CASCADE,

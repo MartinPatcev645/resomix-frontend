@@ -25,7 +25,6 @@ from app.api.dependencies.database import get_database_session
 from app.schemas.playlist import (
     PlaylistRenameRequest,
     PlaylistVisibilityRequest,
-    PlaylistByIdRequest,
     PlaylistOperationResponse,
     PlaylistErrorResponse,
     PlaylistSimilarityResponse
@@ -121,8 +120,8 @@ async def change_playlist_visibility_endpoint(
     return await playlist_controller.change_playlist_visibility(db, request_data.playlist_id, request_data.is_public)
 
 
-@router.post(
-    "/similarity/",
+@router.get(
+    "/similarity/{playlist_id}",
     response_model=PlaylistSimilarityResponse,
     summary="Get Playlist Similarity Data",
     description="Get playlist with similarity data formatted like similarity endpoints.",
@@ -146,7 +145,7 @@ async def change_playlist_visibility_endpoint(
     }
 )
 async def get_playlist_similarity_endpoint(
-    request_data: PlaylistByIdRequest,
+    playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -158,4 +157,4 @@ async def get_playlist_similarity_endpoint(
     
     - **playlist_id**: The UUID of the playlist to retrieve
     """
-    return await playlist_controller.get_playlist_similarity_data(db, request_data.playlist_id)
+    return await playlist_controller.get_playlist_similarity_data(db, playlist_id)

@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 
 # Playlist, PlaylistTrack models 
 import uuid
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Enum, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Enum, ForeignKey, DateTime, DECIMAL
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base
@@ -100,7 +100,7 @@ class PlaylistTrack(Base):
     
     # Fields
     position = Column(Integer, nullable=False)
-    score = Column(String(20), nullable=True)  # Store as string to match similarity service format
+    score = Column(DECIMAL(10, 8), nullable=True)  # Store similarity scores as decimal values
     
     # Relationships
     playlist = relationship("Playlist", back_populates="playlist_tracks")
