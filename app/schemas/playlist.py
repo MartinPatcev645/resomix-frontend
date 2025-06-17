@@ -18,13 +18,29 @@ Email: usman.naeem2212@gmail.com
 from typing import Optional, List
 from pydantic import BaseModel, Field, validator
 from app.schemas.similarity import SimilarityByIdResponse
+import re
 
 
 # Request Schemas
 class PlaylistRenameRequest(BaseModel):
     """Request schema for renaming a playlist."""
     playlist_id: str = Field(..., description="Playlist UUID")
-    new_name: str = Field(..., description="New playlist name", min_length=1, max_length=150)
+    new_name: str = Field(..., description="New playlist name", min_length=1, max_length=100)
+
+    @validator('new_name')
+    def validate_new_name(cls, v):
+        """Validate playlist name to allow only alphanumeric characters and basic special characters."""
+        if not v or not v.strip():
+            raise ValueError('Playlist name cannot be empty or whitespace only')
+        
+        # Allow alphanumeric characters, spaces, hyphens, underscores, and basic punctuation
+        # Pattern: letters, numbers, spaces, hyphens, underscores, periods, apostrophes, parentheses
+        allowed_pattern = r"^[a-zA-Z0-9\s\-_.'()]+$"
+        
+        if not re.match(allowed_pattern, v.strip()):
+            raise ValueError('Playlist name can only contain letters, numbers, spaces, hyphens, underscores, periods, apostrophes, and parentheses')
+        
+        return v.strip()
 
     class Config:
         json_schema_extra = {

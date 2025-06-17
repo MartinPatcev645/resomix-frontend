@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS track_artists (
 
 CREATE TABLE IF NOT EXISTS playlists (
     id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid        VARCHAR(36) NOT NULL UNIQUE,
     user_id     CHAR(36),                         -- nullable (anon)
     name        VARCHAR(150) NOT NULL,
     is_public   TINYINT(1) DEFAULT 0,
@@ -119,6 +120,7 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     playlist_id BIGINT UNSIGNED NOT NULL,
     track_id    BIGINT UNSIGNED NOT NULL,
     position    INT UNSIGNED NOT NULL,
+    score       DECIMAL(10, 8) NULL,
     PRIMARY KEY (playlist_id, track_id),
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     FOREIGN KEY (track_id)    REFERENCES tracks(id)    ON DELETE CASCADE,

@@ -31,7 +31,7 @@ class Playlist(Base):
         id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         uuid        VARCHAR(36) NOT NULL UNIQUE,
         user_id     CHAR(36),                         -- nullable (anon)
-        name        VARCHAR(150) NOT NULL,
+        name        VARCHAR(100) NOT NULL,
         is_public   TINYINT(1) DEFAULT 0,
         type        ENUM('custom','similarity') DEFAULT 'custom',
         seed_track_id BIGINT UNSIGNED,
@@ -51,7 +51,7 @@ class Playlist(Base):
     
     # Fields
     user_id = Column(String(36), nullable=True, index=True)  # Supabase UUID, nullable for anonymous
-    name = Column(String(150), nullable=False)
+    name = Column(String(100), nullable=False)
     is_public = Column(Boolean, nullable=False, default=False)
     type = Column(Enum('custom', 'similarity', name='playlist_type'), nullable=False, default='custom')
     
