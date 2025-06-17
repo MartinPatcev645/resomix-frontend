@@ -95,13 +95,13 @@ class QueriedTrackInfo(BaseModel):
 
 class PlaylistInfo(BaseModel):
     """Schema for playlist information returned with similarity results."""
-    id: int = Field(..., description="Playlist database ID")
+    id: str = Field(..., description="Playlist UUID (for external use)")
     name: str = Field(..., description="Playlist name")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "id": 123,
+                "id": "550e8400-e29b-41d4-a716-446655440000",
                 "name": "Playlist"
             }
         }
@@ -139,7 +139,7 @@ class SimilarityUploadResponse(BaseModel):
                     }
                 ],
                 "playlist": {
-                    "id": 123,
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
                     "name": "Playlist"
                 }
             }
@@ -178,7 +178,7 @@ class SimilarityByIdResponse(BaseModel):
                     }
                 ],
                 "playlist": {
-                    "id": 456,
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
                     "name": "Playlist"
                 }
             }
@@ -232,7 +232,7 @@ class SimilarityUploadSuccessResponse(BaseModel):
                         }
                     ],
                     "playlist": {
-                        "id": 123,
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Playlist"
                     }
                 }
@@ -273,7 +273,7 @@ class SimilarityByIdSuccessResponse(BaseModel):
                         }
                     ],
                     "playlist": {
-                        "id": 456,
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Playlist"
                     }
                 }

@@ -50,10 +50,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             name: Playlist name (defaults to "Playlist")
             
         Returns:
-            Dictionary with playlist info including id and name
+            Dictionary with playlist info including uuid (as id) and name
         """
         try:
-            # Create the playlist record
+            # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
                 user_id=None,  # Anonymous playlist
                 name=name,
@@ -79,7 +79,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             await db.commit()
             
             return {
-                "id": playlist.id,
+                "id": playlist.uuid,  # Return UUID as 'id' field
                 "name": playlist.name
             }
             
@@ -142,10 +142,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             name: Playlist name (defaults to "Playlist")
             
         Returns:
-            Dictionary with playlist info including id and name
+            Dictionary with playlist info including uuid (as id) and name
         """
         try:
-            # Create the playlist record
+            # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
                 user_id=None,  # Anonymous playlist
                 name=name,
@@ -171,7 +171,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db.commit()
             
             return {
-                "id": playlist.id,
+                "id": playlist.uuid,  # Return UUID as 'id' field
                 "name": playlist.name
             }
             

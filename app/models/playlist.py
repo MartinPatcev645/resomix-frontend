@@ -15,6 +15,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Playlist, PlaylistTrack models 
+import uuid
 from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Enum, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -28,6 +29,7 @@ class Playlist(Base):
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS playlists (
         id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        uuid        VARCHAR(36) NOT NULL UNIQUE,
         user_id     CHAR(36),                         -- nullable (anon)
         name        VARCHAR(150) NOT NULL,
         is_public   TINYINT(1) DEFAULT 0,
@@ -35,13 +37,17 @@ class Playlist(Base):
         seed_track_id BIGINT UNSIGNED,
         created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
-        KEY idx_playlist_user (user_id)
+        KEY idx_playlist_user (user_id),
+        KEY idx_playlist_uuid (uuid)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "playlists"
     
     # Primary key
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    
+    # Unique identifier
+    uuid = Column(String(36), nullable=False, unique=True, index=True)
     
     # Fields
     user_id = Column(String(36), nullable=True, index=True)  # Supabase UUID, nullable for anonymous
@@ -60,8 +66,14 @@ class Playlist(Base):
     playlist_tracks = relationship("PlaylistTrack", back_populates="playlist", cascade="all, delete-orphan")
     tracks = relationship("Track", secondary="playlist_tracks", viewonly=True)
     
+    def __init__(self, **kwargs):
+        """Initialize playlist with auto-generated UUID if not provided."""
+        if 'uuid' not in kwargs:
+            kwargs['uuid'] = str(uuid.uuid4())
+        super().__init__(**kwargs)
+    
     def __repr__(self):
-        return f"<Playlist(id={self.id}, name='{self.name}', type='{self.type}', user_id='{self.user_id}')>"
+        return f"<Playlist(id={self.id}, uuid='{self.uuid}', name='{self.name}', type='{self.type}', user_id='{self.user_id}')>"
 
 
 class PlaylistTrack(Base):

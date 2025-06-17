@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     file_path     VARCHAR(500) NOT NULL,       -- original / full file
     preview_path  VARCHAR(500),                -- 30-sec MP3 etc.
     file_size     BIGINT UNSIGNED,             -- bytes
+    type          VARCHAR(50) DEFAULT 'electrobuzz',
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
     FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
