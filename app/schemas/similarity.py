@@ -93,29 +93,16 @@ class QueriedTrackInfo(BaseModel):
         }
 
 
-class UploadedTrackInfo(BaseModel):
-    """Schema for uploaded track information."""
-    uuid: str = Field(..., description="Generated UUID for the uploaded track")
-    track_id: int = Field(..., description="Database ID of the uploaded track")
-    file_size: int = Field(..., description="File size in bytes")
-    metadata: dict = Field(..., description="Extracted metadata")
-    preview_path: str = Field(..., description="Preview file path")
+class PlaylistInfo(BaseModel):
+    """Schema for playlist information returned with similarity results."""
+    id: int = Field(..., description="Playlist database ID")
+    name: str = Field(..., description="Playlist name")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "uuid": "67ad9cec799206f8d64acd08",
-                "track_id": 12345,
-                "file_size": 5242880,
-                "metadata": {
-                    "title": "Amazing Song",
-                    "artist": "Fantastic Artist",
-                    "album": "Great Album",
-                    "genre": "Electronic",
-                    "label": "Cool Records",
-                    "year": "2023"
-                },
-                "preview_path": "/mnt/data/UPLOADS/67ad9cec799206f8d64acd08.mp3"
+                "id": 123,
+                "name": "Playlist"
             }
         }
 
@@ -124,6 +111,7 @@ class SimilarityUploadResponse(BaseModel):
     """Response schema for similarity calculation by upload."""
     queried_track: SimilarTrackResult = Field(..., description="Information about the uploaded (queried) track")
     similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
+    playlist: Optional[PlaylistInfo] = Field(None, description="Created playlist information")
 
     class Config:
         json_schema_extra = {
@@ -149,20 +137,25 @@ class SimilarityUploadResponse(BaseModel):
                         "title": "Whole Life (Original Mix)",
                         "year": 2010
                     }
-                ]
+                ],
+                "playlist": {
+                    "id": 123,
+                    "name": "Playlist"
+                }
             }
         }
 
 
 class SimilarityByIdResponse(BaseModel):
     """Response schema for similarity calculation by track ID."""
-    query_track: SimilarTrackResult = Field(..., description="Information about the queried track")
+    queried_track: SimilarTrackResult = Field(..., description="Information about the queried track")
     similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
+    playlist: Optional[PlaylistInfo] = Field(None, description="Created playlist information")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "query_track": {
+                "queried_track": {
                     "rank": 0,
                     "score": 1.0,
                     "id": "67addcb39387d00fbdc3acdf",
@@ -183,7 +176,11 @@ class SimilarityByIdResponse(BaseModel):
                         "title": "Sun & Moon",
                         "year": 2011
                     }
-                ]
+                ],
+                "playlist": {
+                    "id": 456,
+                    "name": "Playlist"
+                }
             }
         }
 
@@ -233,7 +230,11 @@ class SimilarityUploadSuccessResponse(BaseModel):
                             "title": "Whole Life (Original Mix)",
                             "year": 2010
                         }
-                    ]
+                    ],
+                    "playlist": {
+                        "id": 123,
+                        "name": "Playlist"
+                    }
                 }
             }
         }
@@ -249,7 +250,7 @@ class SimilarityByIdSuccessResponse(BaseModel):
             "example": {
                 "success": True,
                 "data": {
-                    "query_track": {
+                    "queried_track": {
                         "rank": 0,
                         "score": 1.0,
                         "id": "67addcb39387d00fbdc3acdf",
@@ -270,7 +271,11 @@ class SimilarityByIdSuccessResponse(BaseModel):
                             "title": "Sun & Moon",
                             "year": 2011
                         }
-                    ]
+                    ],
+                    "playlist": {
+                        "id": 456,
+                        "name": "Playlist"
+                    }
                 }
             }
         }

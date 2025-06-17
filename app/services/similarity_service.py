@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.repositories.track_repository import TrackRepository
+from app.repositories.playlist_repository import PlaylistRepository
 from app.core.config import settings
 
 load_dotenv()
@@ -37,6 +38,7 @@ class SimilarityService:
     def __init__(self):
         """Initialize similarity service."""
         self.track_repository = TrackRepository()
+        self.playlist_repository = PlaylistRepository()
         self.similarity_server_url = os.getenv("SIMILARITY_SERVER_URL")
         self.path_prefix_to_remove = "/home/usman/data/"  # Ensured this is the exact prefix.
 
@@ -81,39 +83,26 @@ class SimilarityService:
 
         # Check the status from the similarity server's response
         if similarity_response.get("status") == "success":
-            # NEW: Get duration from similarity server response and update database
-            server_duration = similarity_response.get("duration")
-            if server_duration is not None:
-                try:
-                    # Update duration in database
-                    from database.connection import engine
-                    from sqlalchemy import text
-                    with engine.begin() as conn:
-                        update_sql = text("UPDATE tracks SET duration_sec = :duration WHERE uuid = :uuid")
-                        conn.execute(update_sql, {"duration": server_duration, "uuid": track_uuid})
-                        print(f"Updated track {track_uuid} with duration: {server_duration}")
-                except Exception as e:
-                    print(f"Warning: Failed to update duration for track {track_uuid}: {e}")
-
             raw_results = similarity_response.get("results", [])
-            # Get paths from similarity server response (these may have /home/usman/data/ prefix)
-            abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
+            server_duration = similarity_response.get("duration")
             
-            # Convert similarity server paths to clean paths for database lookup
-            clean_paths_for_db = []
+            # Convert server paths to clean paths for database lookup
+            abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
+            clean_paths = []
             for abs_path in abs_paths_from_server:
                 if abs_path.startswith(self.path_prefix_to_remove):
                     clean_path = abs_path[len(self.path_prefix_to_remove):]
-                    clean_paths_for_db.append(clean_path)
+                    clean_paths.append(clean_path)
                 else:
-                    # Path already clean
-                    clean_paths_for_db.append(abs_path)
+                    clean_paths.append(abs_path)
             
-            db_details_map = {}
-            if clean_paths_for_db:
-                db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths_for_db)
-
+            # Get track details from database
+            db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths)
+            
+            # Enrich similarity results with database details
             enriched_similar_tracks = []
+            track_ids = []  # For playlist creation
+            
             for res_item in raw_results:
                 abs_path = res_item.get("path")
                 if not abs_path: 
@@ -134,6 +123,8 @@ class SimilarityService:
                         "title": details.get("title"),
                         "year": details.get("year")
                     })
+                    # Collect track ID for playlist creation
+                    track_ids.append(details.get("track_id"))
                 # else: track details not found in DB for this path, so it's omitted from results
 
             # Deduplicate tracks before returning
@@ -147,6 +138,16 @@ class SimilarityService:
                 reference_track=None  # No reference track for upload similarity
             )
 
+            # Get corresponding track IDs for deduplicated tracks
+            deduplicated_track_ids = []
+            for track in deduplicated_enriched_tracks:
+                # Find the track_id for this track
+                for i, enriched_track in enumerate(enriched_similar_tracks):
+                    if enriched_track.get("id") == track.get("id"):
+                        if i < len(track_ids):
+                            deduplicated_track_ids.append(track_ids[i])
+                        break
+
             # NEW: Get uploaded track details to construct response similar to similarity by ID
             try:
                 uploaded_track_details = await self._fetch_reference_track_details_from_db_by_uuid(db, track_uuid)
@@ -155,11 +156,34 @@ class SimilarityService:
                     final_duration = server_duration if server_duration is not None else (calculated_duration if calculated_duration is not None else 0)
                     uploaded_track_details["duration"] = final_duration
                     
+                    # Create similarity playlist if we have tracks
+                    playlist_info = None
+                    if deduplicated_track_ids:
+                        try:
+                            # Get the uploaded track's database ID
+                            uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
+                            if uploaded_track:
+                                playlist_info = await self.playlist_repository.async_create_similarity_playlist(
+                                    db=db,
+                                    seed_track_id=uploaded_track.id,
+                                    track_ids=deduplicated_track_ids,
+                                    name="Playlist"
+                                )
+                        except Exception as e:
+                            print(f"Error creating playlist for upload similarity: {e}")
+                            # Don't fail the whole request if playlist creation fails
+                    
                     # Format response like similarity by ID
-                    return {
+                    response_data = {
                         "queried_track": uploaded_track_details,
                         "similar_tracks": deduplicated_enriched_tracks
                     }
+                    
+                    # Add playlist info if created
+                    if playlist_info:
+                        response_data["playlist"] = playlist_info
+                    
+                    return response_data
                 else:
                     print(f"Warning: Could not fetch details for uploaded track {track_uuid}")
                     return {"success": False, "error": "Could not retrieve uploaded track details"}
@@ -203,35 +227,31 @@ class SimilarityService:
 
         if similarity_response.get("status") == "success":
             raw_results = similarity_response.get("results", [])
-            # Get paths from similarity server response (these may have /home/usman/data/ prefix)
+            
+            # Convert server paths to clean paths for database lookup
             abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
-
-            # Convert similarity server paths to clean paths for database lookup
-            clean_paths_for_db = []
+            clean_paths = []
             for abs_path in abs_paths_from_server:
                 if abs_path.startswith(self.path_prefix_to_remove):
                     clean_path = abs_path[len(self.path_prefix_to_remove):]
-                    clean_paths_for_db.append(clean_path)
+                    clean_paths.append(clean_path)
                 else:
-                    # Path already clean
-                    clean_paths_for_db.append(abs_path)
-
-            db_details_map = {}
-            if clean_paths_for_db:
-                db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths_for_db)
-
+                    clean_paths.append(abs_path)
+            
+            # Get track details from database
+            db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths)
+            
+            # Enrich similarity results with database details
             enriched_similar_tracks = []
+            track_ids = []  # For playlist creation
+            
             for res_item in raw_results:
                 abs_path = res_item.get("path")
                 if not abs_path: 
                     continue
-                
+
                 # Convert to clean path for database lookup
                 clean_path = abs_path[len(self.path_prefix_to_remove):] if abs_path.startswith(self.path_prefix_to_remove) else abs_path
-                
-                # Skip if this is the same as the queried track
-                if clean_path == server_track_path:
-                    continue
                 
                 details = db_details_map.get(clean_path)
                 if details:
@@ -245,8 +265,10 @@ class SimilarityService:
                         "title": details.get("title"),
                         "year": details.get("year")
                     })
-                # else: track details not found in DB for this path, so it's omitted
-            
+                    # Collect track ID for playlist creation
+                    track_ids.append(details.get("track_id"))
+                # else: track details not found in DB for this path, so it's omitted from results
+
             # Deduplicate tracks before returning
             # The target count should be the original requested amount (top_k - threshold)
             target_count_after_deduplication = top_k - similarity_duplication_threshold
@@ -255,13 +277,48 @@ class SimilarityService:
             deduplicated_enriched_tracks = self._deduplicate_tracks(
                 enriched_similar_tracks, 
                 target_count_after_deduplication,
-                reference_track=queried_track_data  # Pass reference track to exclude it from results
+                reference_track=queried_track_data  # Use queried track for reference in deduplication
             )
 
-            return {
+            # Get corresponding track IDs for deduplicated tracks
+            deduplicated_track_ids = []
+            for track in deduplicated_enriched_tracks:
+                # Find the track_id for this track
+                for i, enriched_track in enumerate(enriched_similar_tracks):
+                    if enriched_track.get("id") == track.get("id"):
+                        if i < len(track_ids):
+                            deduplicated_track_ids.append(track_ids[i])
+                        break
+
+            # Create similarity playlist if we have tracks
+            playlist_info = None
+            if deduplicated_track_ids and queried_track_data:
+                try:
+                    # Get the queried track's database ID from its UUID
+                    queried_track_uuid = queried_track_data.get("id")
+                    if queried_track_uuid:
+                        queried_track = await self.track_repository.async_get_by_uuid(db, queried_track_uuid)
+                        if queried_track:
+                            playlist_info = await self.playlist_repository.async_create_similarity_playlist(
+                                db=db,
+                                seed_track_id=queried_track.id,
+                                track_ids=deduplicated_track_ids,
+                                name="Playlist"
+                            )
+                except Exception as e:
+                    print(f"Error creating playlist for path similarity: {e}")
+                    # Don't fail the whole request if playlist creation fails
+
+            response_data = {
                 "queried_track": queried_track_data, 
                 "similar_tracks": deduplicated_enriched_tracks
             }
+            
+            # Add playlist info if created
+            if playlist_info:
+                response_data["playlist"] = playlist_info
+            
+            return response_data
         elif similarity_response.get("status") == "not_found":
             # Path not found on similarity server, but we might still have its duration from our DB.
             # Return success=True because the API call to main server was fine, but data reflects the finding.
@@ -377,7 +434,7 @@ class SimilarityService:
             
         Returns:
             A dictionary mapping file_path to track_details_dict.
-            Track_details_dict contains: id, filename, album, duration, artist, all_artists.
+            Track_details_dict contains: id, track_id, filename, album, duration, artist, all_artists.
         """
         if not track_paths_from_similarity_server:
             return {}
@@ -417,6 +474,7 @@ class SimilarityService:
                 
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API
+                    "track_id": track.id,  # Add database ID for playlist creation
                     "label": label_name,
                     "duration": track.duration_sec or 0,
                     "artist": artist_name,  # Primary artist for display
