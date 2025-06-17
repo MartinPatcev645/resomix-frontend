@@ -98,6 +98,7 @@ class PlaylistService:
     async def get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
         """
         Get playlist with similarity data formatted like similarity endpoints.
+        Only returns data for public playlists.
         
         Args:
             db: Database session
@@ -109,15 +110,20 @@ class PlaylistService:
         try:
             similarity_data = await self.playlist_repository.async_get_playlist_similarity_data(db, playlist_uuid)
             
-            if similarity_data:
-                return {
-                    "success": True,
-                    "data": similarity_data
-                }
-            else:
+            if similarity_data is None:
                 return {
                     "success": False,
                     "error": "Playlist not found"
+                }
+            elif isinstance(similarity_data, dict) and similarity_data.get("error") == "playlist_not_public":
+                return {
+                    "success": False,
+                    "error": "Playlist is not public. Only public playlists can be accessed."
+                }
+            else:
+                return {
+                    "success": True,
+                    "data": similarity_data
                 }
                 
         except Exception as e:

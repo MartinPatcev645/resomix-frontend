@@ -139,6 +139,7 @@ class PlaylistController:
     async def get_playlist_similarity_data(self, db: AsyncSession, playlist_id: str) -> JSONResponse:
         """
         Get playlist with similarity data.
+        Only returns data for public playlists.
         
         Args:
             db: Database session
@@ -165,6 +166,11 @@ class PlaylistController:
             if result.get("success"):
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
+                    content=result
+                )
+            elif "not public" in result.get("error", "").lower():
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
                     content=result
                 )
             else:

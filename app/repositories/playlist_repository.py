@@ -337,13 +337,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
     async def async_get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str) -> Optional[Dict[str, Any]]:
         """
         Get playlist with all tracks and similarity data formatted like similarity response.
+        Only returns data for public playlists (is_public = 1).
         
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
             
         Returns:
-            Dictionary with similarity-formatted data or None if not found
+            Dictionary with similarity-formatted data or None if not found or not public
         """
         try:
             from sqlalchemy.orm import selectinload
@@ -360,6 +361,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             
             if not playlist:
                 return None
+            
+            # Check if playlist is public
+            if not playlist.is_public:
+                return {"error": "playlist_not_public"}
             
             # Get seed track details if it exists
             queried_track = None

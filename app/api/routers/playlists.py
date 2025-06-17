@@ -124,11 +124,15 @@ async def change_playlist_visibility_endpoint(
     "/similarity/{playlist_id}",
     response_model=PlaylistSimilarityResponse,
     summary="Get Playlist Similarity Data",
-    description="Get playlist with similarity data formatted like similarity endpoints.",
+    description="Get playlist with similarity data formatted like similarity endpoints. Only public playlists can be accessed.",
     responses={
         200: {
             "model": PlaylistSimilarityResponse,
             "description": "Playlist similarity data retrieved successfully"
+        },
+        403: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist is not public"
         },
         404: {
             "model": PlaylistErrorResponse,
