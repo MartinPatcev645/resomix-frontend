@@ -32,6 +32,7 @@ from app.schemas.playlist import (
 )
 
 router = APIRouter(
+    prefix="/playlists",
     tags=["playlists"],
     responses={
         404: {"model": PlaylistErrorResponse},
