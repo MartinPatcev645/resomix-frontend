@@ -102,6 +102,7 @@ class SimilarityService:
             # Enrich similarity results with database details
             enriched_similar_tracks = []
             track_ids = []  # For playlist creation
+            track_scores = []  # For playlist scores
             
             for res_item in raw_results:
                 abs_path = res_item.get("path")
@@ -123,8 +124,9 @@ class SimilarityService:
                         "title": details.get("title"),
                         "year": details.get("year")
                     })
-                    # Collect track ID for playlist creation
+                    # Collect track ID and score for playlist creation
                     track_ids.append(details.get("track_id"))
+                    track_scores.append(res_item.get("score", 0.0))
                 # else: track details not found in DB for this path, so it's omitted from results
 
             # Deduplicate tracks before returning
@@ -138,14 +140,16 @@ class SimilarityService:
                 reference_track=None  # No reference track for upload similarity
             )
 
-            # Get corresponding track IDs for deduplicated tracks
+            # Get corresponding track IDs and scores for deduplicated tracks
             deduplicated_track_ids = []
+            deduplicated_track_scores = []
             for track in deduplicated_enriched_tracks:
-                # Find the track_id for this track
+                # Find the track_id and score for this track
                 for i, enriched_track in enumerate(enriched_similar_tracks):
                     if enriched_track.get("id") == track.get("id"):
                         if i < len(track_ids):
                             deduplicated_track_ids.append(track_ids[i])
+                            deduplicated_track_scores.append(track_scores[i] if i < len(track_scores) else 0.0)
                         break
 
             # NEW: Get uploaded track details to construct response similar to similarity by ID
@@ -167,6 +171,7 @@ class SimilarityService:
                                     db=db,
                                     seed_track_id=uploaded_track.id,
                                     track_ids=deduplicated_track_ids,
+                                    track_scores=deduplicated_track_scores,
                                     name="Playlist"
                                 )
                         except Exception as e:
@@ -244,6 +249,7 @@ class SimilarityService:
             # Enrich similarity results with database details
             enriched_similar_tracks = []
             track_ids = []  # For playlist creation
+            track_scores = []  # For playlist scores
             
             for res_item in raw_results:
                 abs_path = res_item.get("path")
@@ -265,8 +271,9 @@ class SimilarityService:
                         "title": details.get("title"),
                         "year": details.get("year")
                     })
-                    # Collect track ID for playlist creation
+                    # Collect track ID and score for playlist creation
                     track_ids.append(details.get("track_id"))
+                    track_scores.append(res_item.get("score", 0.0))
                 # else: track details not found in DB for this path, so it's omitted from results
 
             # Deduplicate tracks before returning
@@ -280,14 +287,16 @@ class SimilarityService:
                 reference_track=queried_track_data  # Use queried track for reference in deduplication
             )
 
-            # Get corresponding track IDs for deduplicated tracks
+            # Get corresponding track IDs and scores for deduplicated tracks
             deduplicated_track_ids = []
+            deduplicated_track_scores = []
             for track in deduplicated_enriched_tracks:
-                # Find the track_id for this track
+                # Find the track_id and score for this track
                 for i, enriched_track in enumerate(enriched_similar_tracks):
                     if enriched_track.get("id") == track.get("id"):
                         if i < len(track_ids):
                             deduplicated_track_ids.append(track_ids[i])
+                            deduplicated_track_scores.append(track_scores[i] if i < len(track_scores) else 0.0)
                         break
 
             # Create similarity playlist if we have tracks
@@ -303,6 +312,7 @@ class SimilarityService:
                                 db=db,
                                 seed_track_id=queried_track.id,
                                 track_ids=deduplicated_track_ids,
+                                track_scores=deduplicated_track_scores,
                                 name="Playlist"
                             )
                 except Exception as e:

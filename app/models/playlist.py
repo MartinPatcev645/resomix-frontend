@@ -85,6 +85,7 @@ class PlaylistTrack(Base):
         playlist_id BIGINT UNSIGNED NOT NULL,
         track_id    BIGINT UNSIGNED NOT NULL,
         position    INT UNSIGNED NOT NULL,
+        score       DECIMAL(10, 8) NULL,
         PRIMARY KEY (playlist_id, track_id),
         FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
         FOREIGN KEY (track_id)    REFERENCES tracks(id)    ON DELETE CASCADE,
@@ -99,10 +100,11 @@ class PlaylistTrack(Base):
     
     # Fields
     position = Column(Integer, nullable=False)
+    score = Column(String(20), nullable=True)  # Store as string to match similarity service format
     
     # Relationships
     playlist = relationship("Playlist", back_populates="playlist_tracks")
     track = relationship("Track")
     
     def __repr__(self):
-        return f"<PlaylistTrack(playlist_id={self.playlist_id}, track_id={self.track_id}, position={self.position})>" 
+        return f"<PlaylistTrack(playlist_id={self.playlist_id}, track_id={self.track_id}, position={self.position}, score={self.score})>"

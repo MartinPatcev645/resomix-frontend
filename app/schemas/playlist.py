@@ -15,4 +15,117 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-# Playlist schemas - to be implemented as needed 
+from typing import Optional, List
+from pydantic import BaseModel, Field, validator
+from app.schemas.similarity import SimilarityByIdResponse
+
+
+# Request Schemas
+class PlaylistRenameRequest(BaseModel):
+    """Request schema for renaming a playlist."""
+    playlist_id: str = Field(..., description="Playlist UUID")
+    new_name: str = Field(..., description="New playlist name", min_length=1, max_length=150)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
+                "new_name": "My Awesome Playlist"
+            }
+        }
+
+
+class PlaylistVisibilityRequest(BaseModel):
+    """Request schema for changing playlist visibility."""
+    playlist_id: str = Field(..., description="Playlist UUID")
+    is_public: bool = Field(..., description="Whether the playlist should be public")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
+                "is_public": True
+            }
+        }
+
+
+class PlaylistByIdRequest(BaseModel):
+    """Request schema for getting playlist by ID."""
+    playlist_id: str = Field(..., description="Playlist UUID")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "playlist_id": "550e8400-e29b-41d4-a716-446655440000"
+            }
+        }
+
+
+# Response Schemas
+class PlaylistOperationResponse(BaseModel):
+    """Response schema for playlist operations (rename, visibility change)."""
+    success: bool = Field(..., description="Operation success status")
+    message: str = Field(..., description="Operation result message")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "message": "Playlist renamed successfully"
+            }
+        }
+
+
+class PlaylistErrorResponse(BaseModel):
+    """Error response schema for playlist operations."""
+    success: bool = Field(False, description="Always false for error responses")
+    error: str = Field(..., description="Error message")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": False,
+                "error": "Playlist not found"
+            }
+        }
+
+
+class PlaylistSimilarityResponse(BaseModel):
+    """Response schema for playlist similarity data."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: SimilarityByIdResponse = Field(..., description="Playlist similarity data")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "queried_track": {
+                        "rank": 0,
+                        "score": 1.0,
+                        "id": "67addcb39387d00fbdc3acdf",
+                        "label": "Global Underground",
+                        "duration": 491,
+                        "artist": "Oxia",
+                        "title": "Whole Life (Original Mix)",
+                        "year": 2010
+                    },
+                    "similar_tracks": [
+                        {
+                            "rank": 1,
+                            "score": 0.8956789,
+                            "id": "67addcb39387d00fbdc3ace0",
+                            "label": "Anjunabeats",
+                            "duration": 456,
+                            "artist": "Above & Beyond",
+                            "title": "Sun & Moon",
+                            "year": 2011
+                        }
+                    ],
+                    "playlist": {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "name": "Playlist"
+                    }
+                }
+            }
+        }

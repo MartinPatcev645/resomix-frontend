@@ -112,6 +112,16 @@ from .preview import (
     ResomixServerResponse,
 )
 
+# Playlist schemas
+from .playlist import (
+    PlaylistRenameRequest,
+    PlaylistVisibilityRequest,
+    PlaylistByIdRequest,
+    PlaylistOperationResponse,
+    PlaylistErrorResponse,
+    PlaylistSimilarityResponse,
+)
+
 # Make all schemas available at package level
 __all__ = [
     # Common
@@ -196,4 +206,12 @@ __all__ = [
     "PreviewErrorResponse",
     "ResomixServerRequest",
     "ResomixServerResponse",
+
+    # Playlist
+    "PlaylistRenameRequest",
+    "PlaylistVisibilityRequest",
+    "PlaylistByIdRequest",
+    "PlaylistOperationResponse",
+    "PlaylistErrorResponse",
+    "PlaylistSimilarityResponse",
 ]

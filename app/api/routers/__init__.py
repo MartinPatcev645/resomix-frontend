@@ -21,6 +21,7 @@ from .feedback import router as feedback_router
 from .contact import router as contact_router
 from .health import router as health_router
 from .preview import router as preview_router
+from .playlists import router as playlists_router
 
 # List of all routers for easy inclusion
 all_routers = [
@@ -31,4 +32,5 @@ all_routers = [
     contact_router,
     health_router,
     preview_router,
+    playlists_router,
 ]

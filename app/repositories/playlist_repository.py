@@ -38,6 +38,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         db: AsyncSession, 
         seed_track_id: int, 
         track_ids: List[int],
+        track_scores: List[float] = None,
         name: str = "Playlist"
     ) -> Dict[str, Any]:
         """
@@ -47,6 +48,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db: Database session
             seed_track_id: The ID of the seed track for similarity
             track_ids: List of track IDs to include in playlist (similar tracks)
+            track_scores: List of similarity scores for each track (optional)
             name: Playlist name (defaults to "Playlist")
             
         Returns:
@@ -65,13 +67,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db.add(playlist)
             await db.flush()  # Flush to get the playlist ID
             
-            # Add tracks to playlist with positions
+            # Add tracks to playlist with positions and scores
             playlist_tracks = []
             for position, track_id in enumerate(track_ids, start=1):
+                score = None
+                if track_scores and position <= len(track_scores):
+                    score = str(track_scores[position - 1])  # Convert to string
+                
                 playlist_track = PlaylistTrack(
                     playlist_id=playlist.id,
                     track_id=track_id,
-                    position=position
+                    position=position,
+                    score=score
                 )
                 playlist_tracks.append(playlist_track)
             
@@ -259,3 +266,196 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return result.scalar_one_or_none()
         
         return None
+
+    async def async_get_playlist_by_uuid(self, db: AsyncSession, playlist_uuid: str) -> Optional[Playlist]:
+        """
+        Get playlist by UUID.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            Playlist instance or None if not found
+        """
+        stmt = select(self.model).where(self.model.uuid == playlist_uuid)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def async_rename_playlist(self, db: AsyncSession, playlist_uuid: str, new_name: str) -> bool:
+        """
+        Rename a playlist by UUID.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            new_name: New playlist name
+            
+        Returns:
+            True if successful, False if playlist not found
+        """
+        try:
+            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
+            if not playlist:
+                return False
+            
+            playlist.name = new_name
+            await db.commit()
+            return True
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error renaming playlist: {e}")
+            raise e
+
+    async def async_make_playlist_public(self, db: AsyncSession, playlist_uuid: str, is_public: bool = True) -> bool:
+        """
+        Make a playlist public or private by UUID.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            is_public: Whether to make the playlist public
+            
+        Returns:
+            True if successful, False if playlist not found
+        """
+        try:
+            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
+            if not playlist:
+                return False
+            
+            playlist.is_public = is_public
+            await db.commit()
+            return True
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error updating playlist visibility: {e}")
+            raise e
+
+    async def async_get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str) -> Optional[Dict[str, Any]]:
+        """
+        Get playlist with all tracks and similarity data formatted like similarity response.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            Dictionary with similarity-formatted data or None if not found
+        """
+        try:
+            from sqlalchemy.orm import selectinload
+            from sqlalchemy import text
+            
+            # Get playlist with tracks
+            stmt = (
+                select(self.model)
+                .options(selectinload(self.model.playlist_tracks))
+                .where(self.model.uuid == playlist_uuid)
+            )
+            result = await db.execute(stmt)
+            playlist = result.scalar_one_or_none()
+            
+            if not playlist:
+                return None
+            
+            # Get seed track details if it exists
+            queried_track = None
+            if playlist.seed_track_id:
+                seed_query = text("""
+                    SELECT 
+                        t.uuid as id,
+                        t.title,
+                        t.year,
+                        t.duration_sec as duration,
+                        COALESCE(l.name, '') as label,
+                        COALESCE(
+                            GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                            ''
+                        ) as artist
+                    FROM tracks t
+                    LEFT JOIN labels l ON t.label_id = l.id
+                    LEFT JOIN track_artists ta ON t.id = ta.track_id
+                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    WHERE t.id = :track_id
+                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+                    LIMIT 1
+                """)
+                
+                seed_result = await db.execute(seed_query, {"track_id": playlist.seed_track_id})
+                seed_row = seed_result.first()
+                
+                if seed_row:
+                    queried_track = {
+                        "rank": 0,
+                        "score": 1.0,
+                        "id": seed_row.id,
+                        "title": seed_row.title or "Unknown",
+                        "year": seed_row.year,
+                        "duration": seed_row.duration,
+                        "label": seed_row.label,
+                        "artist": seed_row.artist or "Unknown"
+                    }
+            
+            # Get all tracks in playlist with details
+            if playlist.playlist_tracks:
+                track_ids = [pt.track_id for pt in playlist.playlist_tracks]
+                tracks_query = text("""
+                    SELECT 
+                        t.id as track_id,
+                        t.uuid as id,
+                        t.title,
+                        t.year,
+                        t.duration_sec as duration,
+                        COALESCE(l.name, '') as label,
+                        COALESCE(
+                            GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                            ''
+                        ) as artist
+                    FROM tracks t
+                    LEFT JOIN labels l ON t.label_id = l.id
+                    LEFT JOIN track_artists ta ON t.id = ta.track_id
+                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    WHERE t.id IN :track_ids
+                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+                """)
+                
+                tracks_result = await db.execute(tracks_query, {"track_ids": tuple(track_ids)})
+                tracks_data = {row.track_id: row for row in tracks_result.fetchall()}
+                
+                # Build similar tracks list with proper ordering and scores
+                similar_tracks = []
+                for pt in sorted(playlist.playlist_tracks, key=lambda x: x.position):
+                    track_data = tracks_data.get(pt.track_id)
+                    if track_data:
+                        track_info = {
+                            "rank": pt.position,
+                            "score": float(pt.score) if pt.score else 0.0,
+                            "id": track_data.id,
+                            "title": track_data.title or "Unknown",
+                            "year": track_data.year,
+                            "duration": track_data.duration,
+                            "label": track_data.label,
+                            "artist": track_data.artist or "Unknown"
+                        }
+                        similar_tracks.append(track_info)
+            else:
+                similar_tracks = []
+            
+            # Format response like similarity endpoints
+            response_data = {
+                "queried_track": queried_track,
+                "similar_tracks": similar_tracks,
+                "playlist": {
+                    "id": playlist.uuid,
+                    "name": playlist.name
+                }
+            }
+            
+            return response_data
+            
+        except Exception as e:
+            print(f"Error getting playlist similarity data: {e}")
+            raise e
