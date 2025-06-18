@@ -331,7 +331,7 @@ class TrackUploadService:
             file: The uploaded file object
             file_content: The file content as bytes
             track_uuid: Pre-generated UUID for the track
-            track_type: The type of track (e.g., "upload", "monthly_pipeline")
+            track_type: The type of track (e.g., "upload", "electrobuzz")
             duration_sec: Track duration in seconds (optional)
             
         Returns:

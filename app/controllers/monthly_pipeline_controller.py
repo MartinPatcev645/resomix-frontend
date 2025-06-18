@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.constants import TrackType
 from app.services.monthly_pipeline_service import MonthlyPipelineService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
@@ -206,7 +207,7 @@ class MonthlyPipelineController:
                 file, 
                 audio_bytes,
                 track_uuid,  # Use the same UUID we sent to similarity server
-                track_type="electrobuzz",  # Mark as electrobuzz track
+                track_type=TrackType.ELECTROBUZZ,  # Mark as electrobuzz track
                 duration_sec=duration_sec  # Pass the probed duration
             )
             

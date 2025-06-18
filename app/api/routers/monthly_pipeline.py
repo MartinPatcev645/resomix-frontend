@@ -82,7 +82,7 @@ async def monthly_pipeline_track_endpoint(
     This endpoint performs a three-step process:
     1. **Extract Metadata**: Extracts metadata and generates UUID
     2. **Generate Embedding Preview**: Sends to similarity server's /generate_embedding_preview endpoint
-    3. **Store in Database**: If similarity server succeeds, stores track in database with type="monthly_pipeline"
+    3. **Store in Database**: If similarity server succeeds, stores track in database with type="electrobuzz"
     
     - **file**: The audio file to process
     - **path**: The file path for the track
