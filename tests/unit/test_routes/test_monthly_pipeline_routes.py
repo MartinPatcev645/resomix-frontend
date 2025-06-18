@@ -490,8 +490,8 @@ def test_monthly_pipeline_large_mp3_mix_filter():
     start_time = time.time()
     
     try:
-        # Create a 60MB MP3 file (exceeds 50MB limit for MP3s)
-        large_mp3_data = b"ID3" + b"X" * (60 * 1024 * 1024 - 3)  # 60MB with ID3 header
+        # Create a 55MB MP3 file (exceeds 50MB limit for MP3s)
+        large_mp3_data = b"ID3" + b"X" * (55 * 1024 * 1024 - 3)  # 55MB with ID3 header
         
         files = {
             'file': ('large_mix.mp3', BytesIO(large_mp3_data), 'audio/mpeg')
