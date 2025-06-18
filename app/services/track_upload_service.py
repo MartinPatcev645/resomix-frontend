@@ -315,3 +315,144 @@ class TrackUploadService:
             return None
         except (ValueError, AttributeError):
             return None
+    
+    def upload_track_to_database_with_uuid(
+        self, 
+        file: UploadFile, 
+        file_content: bytes,
+        track_uuid: str,
+        track_type: str = "upload"
+    ) -> Dict[str, any]:
+        """
+        Upload a track to the database with a pre-generated UUID and specific track type.
+        
+        Args:
+            file: The uploaded file object
+            file_content: The file content as bytes
+            track_uuid: Pre-generated UUID for the track
+            track_type: The type of track (e.g., "upload", "monthly_pipeline")
+            
+        Returns:
+            Dict containing the track UUID and insertion status
+        """
+        try:
+            logger.info(f"Using provided UUID for track: {track_uuid}")
+            
+            # Extract metadata using the existing service
+            file.file.seek(0)  # Reset file pointer
+            metadata = self.metadata_service.extract_metadata(file.file, file.filename, mode="limited")
+            
+            if "error" in metadata:
+                raise Exception(f"Metadata extraction failed: {metadata['error']}")
+            
+            # Calculate file size
+            file_size = len(file_content)
+            
+            # Extract basic info with defaults
+            title = metadata.get("Title", "") or file.filename or "Unknown"
+            year = self._parse_year(metadata.get("Year"))
+            
+            # Parse artist names
+            artist_field = metadata.get("Artist", "")
+            artist_names = parse_artist_names(artist_field) or ["Unknown"]
+            
+            # Extract label and genre
+            label_name = metadata.get("Label", "").strip()
+            genre_name = extract_first_genre(metadata.get("Genre", ""))
+            
+            # Extract album
+            album_title = metadata.get("Album", "").strip()
+            
+            # Set file paths
+            file_path = file.filename or "unknown_file"
+            preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
+            
+            # Insert into database
+            with engine.begin() as conn:
+                # Preload cache
+                logger.info("Preloading database cache...")
+                self.cache.preload(conn)
+                
+                # Get or create artists
+                artist_ids = [self.cache.artist(conn, name) for name in artist_names]
+                primary_artist_id = artist_ids[0]
+                
+                # Get or create label (optional)
+                label_id = None
+                if label_name:
+                    label_id = self.cache.label(conn, label_name)
+                
+                # Get or create genre
+                genre_id = self.cache.genre(conn, genre_name)
+                
+                # Get or create album (optional)
+                album_id = None
+                if album_title:
+                    album_id = self.cache.album(conn, album_title, primary_artist_id)
+                
+                # Insert track
+                track_data = {
+                    "uuid": track_uuid,
+                    "album_id": album_id,
+                    "label_id": label_id,
+                    "genre_id": genre_id,
+                    "title": title[:255],  # Ensure it fits in the column
+                    "year": year,
+                    "duration_sec": None,  # User said to ignore duration for now
+                    "file_path": file_path[:500],  # Ensure it fits in the column
+                    "preview_path": preview_path,
+                    "file_size": file_size,
+                    "type": track_type  # Use the provided track type
+                }
+                
+                logger.info(f"Inserting track with type '{track_type}': {track_data}")
+                
+                track_sql = text(
+                    """INSERT INTO tracks
+                       (uuid, album_id, label_id, genre_id, title, year, duration_sec,
+                        file_path, preview_path, file_size, type)
+                       VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
+                               :duration_sec, :file_path, :preview_path, :file_size, :type)
+                    """
+                )
+                result = conn.execute(track_sql, track_data)
+                
+                # Get the track ID
+                track_id_result = conn.execute(
+                    text("SELECT id FROM tracks WHERE uuid = :uuid"),
+                    {"uuid": track_uuid}
+                )
+                track_row = track_id_result.first()
+                if track_row is None:
+                    raise Exception("Failed to insert track or retrieve track ID")
+                
+                track_id = track_row[0]
+                
+                # Insert track-artist relationships
+                for artist_id in artist_ids:
+                    ta_sql = text(
+                        "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
+                    )
+                    conn.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
+                
+                logger.info(f"Successfully inserted track {track_uuid} with ID {track_id} and type '{track_type}'")
+                
+                return {
+                    "success": True,
+                    "uuid": track_uuid,
+                    "track_id": track_id,
+                    "track_type": track_type,
+                    "metadata": metadata,
+                    "file_size": file_size,
+                    "artist_names": artist_names,
+                    "album_title": album_title,
+                    "label_name": label_name,
+                    "genre_name": genre_name
+                }
+                
+        except Exception as e:
+            logger.error(f"Error uploading track to database with UUID {track_uuid}: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }

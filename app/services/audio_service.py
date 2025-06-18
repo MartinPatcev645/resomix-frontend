@@ -156,6 +156,81 @@ class AudioService:
         pass
     
     @staticmethod
+    def get_audio_duration(audio_bytes: bytes, filename: str) -> Optional[float]:
+        """
+        Extract audio duration in seconds using FFprobe.
+        
+        Args:
+            audio_bytes: The raw bytes of the audio file.
+            filename: Original filename (used for logging and temp file extension).
+            
+        Returns:
+            float: Duration in seconds if successful, None otherwise.
+        """
+        temp_path = None
+        
+        try:
+            # Create a temporary file to pass to ffprobe
+            file_suffix = os.path.splitext(filename)[1] if filename else ".tmp"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_suffix) as temp_file:
+                temp_path = temp_file.name
+                temp_file.write(audio_bytes)
+
+            # Use FFprobe to get duration
+            cmd = [
+                'ffprobe',
+                '-v', 'error',             # Suppress verbose output, only errors
+                '-show_entries', 'format=duration',  # Only get duration from format
+                '-print_format', 'json',   # Output as JSON
+                temp_path
+            ]
+            
+            # Execute FFprobe command
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0 and result.stdout:
+                try:
+                    ffprobe_output = json.loads(result.stdout)
+                    if "format" in ffprobe_output and isinstance(ffprobe_output["format"], dict):
+                        duration_str = ffprobe_output["format"].get("duration")
+                        if duration_str:
+                            duration = float(duration_str)
+                            print(f"[FFmpeg Duration] Extracted duration: {duration:.2f}s for {filename}")
+                            return duration
+                        else:
+                            print(f"[FFmpeg Duration] Duration field not found in format for {filename}")
+                            return None
+                    else:
+                        print(f"[FFmpeg Duration] Format information not found in ffprobe output for {filename}")
+                        return None
+                except (json.JSONDecodeError, ValueError) as e:
+                    print(f"[FFmpeg Duration] Failed to parse ffprobe output for {filename}: {e}")
+                    return None
+            else:
+                print(f"[FFmpeg Duration] FFprobe command failed for {filename}. Return code: {result.returncode}")
+                if result.stderr:
+                    print(f"[FFmpeg Duration] FFprobe stderr: {result.stderr.strip()}")
+                return None
+        
+        except FileNotFoundError:
+            print("[FFmpeg Duration] ERROR: ffprobe command not found. Please ensure FFmpeg is installed.")
+            return None
+        except subprocess.SubprocessError as e:
+            print(f"[FFmpeg Duration] Subprocess error during ffprobe execution for {filename}: {e}")
+            return None
+        except Exception as e:
+            print(f"[FFmpeg Duration] Exception during duration extraction for {filename}: {str(e)}")
+            return None
+        
+        finally:
+            # Clean up temporary file
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.unlink(temp_path)
+                except Exception as e:
+                    print(f"[FFmpeg Duration] Error cleaning up temp file {temp_path}: {str(e)}")
+    
+    @staticmethod
     def convert_audio_format(audio_bytes: bytes, source_format: str, target_format: str) -> Optional[bytes]:
         """
         Convert audio from one format to another using FFmpeg.
