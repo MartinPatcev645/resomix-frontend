@@ -89,6 +89,7 @@ class MonthlyPipelineController:
 
             # Use audio service to validate file
             is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
+            duration = None  # Initialize duration variable
             
             if is_ffmpeg_available:
                 # STEP 1: Validate audio format using FFmpeg
@@ -197,12 +198,16 @@ class MonthlyPipelineController:
             # STEP 6: If similarity server was successful, now store in database
             await file.seek(0)  # Reset file pointer for database upload
             
+            # Convert duration to integer seconds for database (if available)
+            duration_sec = int(round(duration)) if duration is not None else None
+            
             upload_result = await asyncio.to_thread(
                 self.track_upload_service.upload_track_to_database_with_uuid,
                 file, 
                 audio_bytes,
                 track_uuid,  # Use the same UUID we sent to similarity server
-                track_type="monthly_pipeline"  # Mark as monthly pipeline track
+                track_type="electrobuzz",  # Mark as electrobuzz track
+                duration_sec=duration_sec  # Pass the probed duration
             )
             
             if not upload_result.get("success", False):

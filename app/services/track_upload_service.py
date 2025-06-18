@@ -321,7 +321,8 @@ class TrackUploadService:
         file: UploadFile, 
         file_content: bytes,
         track_uuid: str,
-        track_type: str = "upload"
+        track_type: str = "upload",
+        duration_sec: Optional[int] = None
     ) -> Dict[str, any]:
         """
         Upload a track to the database with a pre-generated UUID and specific track type.
@@ -331,6 +332,7 @@ class TrackUploadService:
             file_content: The file content as bytes
             track_uuid: Pre-generated UUID for the track
             track_type: The type of track (e.g., "upload", "monthly_pipeline")
+            duration_sec: Track duration in seconds (optional)
             
         Returns:
             Dict containing the track UUID and insertion status
@@ -398,7 +400,7 @@ class TrackUploadService:
                     "genre_id": genre_id,
                     "title": title[:255],  # Ensure it fits in the column
                     "year": year,
-                    "duration_sec": None,  # User said to ignore duration for now
+                    "duration_sec": duration_sec,
                     "file_path": file_path[:500],  # Ensure it fits in the column
                     "preview_path": preview_path,
                     "file_size": file_size,
