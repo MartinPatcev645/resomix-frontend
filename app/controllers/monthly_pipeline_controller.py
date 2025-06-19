@@ -202,14 +202,37 @@ class MonthlyPipelineController:
             # Convert duration to integer seconds for database (if available)
             duration_sec = int(round(duration)) if duration is not None else None
             
-            upload_result = await asyncio.to_thread(
-                self.track_upload_service.upload_track_to_database_with_uuid,
-                file, 
-                audio_bytes,
-                track_uuid,  # Use the same UUID we sent to similarity server
-                track_type=TrackType.ELECTROBUZZ,  # Mark as electrobuzz track
-                duration_sec=duration_sec  # Pass the probed duration
-            )
+            # COMMENTED OUT FOR TESTING: Don't actually save to database during tests
+            # Just print what would be saved instead
+            print(f"[TESTING MODE] Would save to database:")
+            print(f"  - Track UUID: {track_uuid}")
+            print(f"  - Track Type: {TrackType.ELECTROBUZZ}")
+            print(f"  - Filename: {file.filename}")
+            print(f"  - File Size: {len(audio_bytes)} bytes")
+            print(f"  - Duration: {duration_sec} seconds")
+            print(f"  - Path: {path}")
+            print(f"  - Metadata: {metadata}")
+            
+            # Simulate successful upload result for testing
+            upload_result = {
+                "success": True,
+                "uuid": track_uuid,
+                "track_id": "test_id_123",
+                "track_type": TrackType.ELECTROBUZZ,
+                "metadata": metadata,
+                "file_size": len(audio_bytes),
+                "message": "Database save skipped during testing"
+            }
+            
+            # ORIGINAL DATABASE UPLOAD CODE (COMMENTED OUT):
+            # upload_result = await asyncio.to_thread(
+            #     self.track_upload_service.upload_track_to_database_with_uuid,
+            #     file, 
+            #     audio_bytes,
+            #     track_uuid,  # Use the same UUID we sent to similarity server
+            #     track_type=TrackType.ELECTROBUZZ,  # Mark as electrobuzz track
+            #     duration_sec=duration_sec  # Pass the probed duration
+            # )
             
             if not upload_result.get("success", False):
                 return JSONResponse(
