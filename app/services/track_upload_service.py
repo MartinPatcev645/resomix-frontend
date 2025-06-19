@@ -322,7 +322,8 @@ class TrackUploadService:
         file_content: bytes,
         track_uuid: str,
         track_type: str = "upload",
-        duration_sec: Optional[int] = None
+        duration_sec: Optional[int] = None,
+        full_path: Optional[str] = None
     ) -> Dict[str, any]:
         """
         Upload a track to the database with a pre-generated UUID and specific track type.
@@ -333,6 +334,7 @@ class TrackUploadService:
             track_uuid: Pre-generated UUID for the track
             track_type: The type of track (e.g., "upload", "electrobuzz")
             duration_sec: Track duration in seconds (optional)
+            full_path: Full file path for monthly pipeline (optional, defaults to filename)
             
         Returns:
             Dict containing the track UUID and insertion status
@@ -365,8 +367,8 @@ class TrackUploadService:
             # Extract album
             album_title = metadata.get("Album", "").strip()
             
-            # Set file paths
-            file_path = file.filename or "unknown_file"
+            # Set file paths - use full_path if provided (for monthly pipeline), otherwise use filename
+            file_path = full_path if full_path else (file.filename or "unknown_file")
             preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
             # Insert into database

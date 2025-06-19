@@ -243,7 +243,8 @@ class MonthlyPipelineController:
                 audio_bytes,
                 track_uuid,  # Use the same UUID we sent to similarity server
                 track_type=TrackType.ELECTROBUZZ,  # Mark as electrobuzz track
-                duration_sec=duration_sec  # Pass the probed duration
+                duration_sec=duration_sec,  # Pass the probed duration
+                full_path=path  # Pass the full path for proper duplicate detection
             )
             
             if not upload_result.get("success", False):
