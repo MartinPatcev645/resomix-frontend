@@ -71,16 +71,14 @@ class MonthlyPipelineController:
             with engine.begin() as conn:
                 # Check if a track with this path already exists
                 check_result = conn.execute(
-                    text("SELECT uuid FROM tracks WHERE file_path = :path LIMIT 1"),
+                    text("SELECT COUNT(*) FROM tracks WHERE file_path = :path"),
                     {"path": path}
                 )
-                existing_track = check_result.first()
+                count = check_result.scalar()
                 
-                if existing_track:
-                    print(existing_track)
-                    existing_uuid = existing_track
+                if count > 0:
                     print(f"[DUPLICATE CHECK] Track already exists with path: {path}")
-                    print(f"  - Existing UUID: {existing_uuid}")
+                    print(f"  - Found {count} existing track(s) with this path")
                     
                     return JSONResponse(
                         status_code=status.HTTP_200_OK,
@@ -88,7 +86,6 @@ class MonthlyPipelineController:
                             success=True,
                             data={
                                 "message": "Track already exists in database with this path",
-                                "existing_track_uuid": existing_uuid,
                                 "path": path,
                                 "skipped_processing": True
                             }
