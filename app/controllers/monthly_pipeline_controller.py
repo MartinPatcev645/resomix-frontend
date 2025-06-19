@@ -63,6 +63,43 @@ class MonthlyPipelineController:
             "path": path
         })
         
+        # STEP 0: Check if this path already exists in database (duplicate check)
+        try:
+            from database.connection import engine
+            from sqlalchemy import text
+            
+            with engine.begin() as conn:
+                # Check if a track with this path already exists
+                check_result = conn.execute(
+                    text("SELECT uuid FROM tracks WHERE file_path = :path LIMIT 1"),
+                    {"path": path}
+                )
+                existing_track = check_result.first()
+                
+                if existing_track:
+                    print(existing_track)
+                    existing_uuid = existing_track
+                    print(f"[DUPLICATE CHECK] Track already exists with path: {path}")
+                    print(f"  - Existing UUID: {existing_uuid}")
+                    
+                    return JSONResponse(
+                        status_code=status.HTTP_200_OK,
+                        content=format_response(
+                            success=True,
+                            data={
+                                "message": "Track already exists in database with this path",
+                                "existing_track_uuid": existing_uuid,
+                                "path": path,
+                                "skipped_processing": True
+                            }
+                        )
+                    )
+                    
+        except Exception as e:
+            print(f"Error during duplicate check: {e}")
+            # Continue with processing if duplicate check fails
+            pass
+        
         # File Size Check using settings
         if file.size > settings.max_file_size:
             return JSONResponse(
