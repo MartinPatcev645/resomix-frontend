@@ -25,6 +25,7 @@ from fastapi import UploadFile
 
 from sqlalchemy import text
 from database.connection import engine
+from app.models.constants import TrackType
 from app.services.metadata_service import MetadataService
 
 # Configure logging
@@ -208,6 +209,8 @@ class TrackUploadService:
             
             # Set file paths
             file_path = file.filename or "unknown_file"
+            
+            # Set preview path based on track type (default is "upload")
             preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
             # Insert into database
@@ -321,7 +324,7 @@ class TrackUploadService:
         file: UploadFile, 
         file_content: bytes,
         track_uuid: str,
-        track_type: str = "upload",
+        track_type: str = TrackType.UPLOAD,
         duration_sec: Optional[int] = None,
         full_path: Optional[str] = None
     ) -> Dict[str, any]:
@@ -369,7 +372,12 @@ class TrackUploadService:
             
             # Set file paths - use full_path if provided (for monthly pipeline), otherwise use filename
             file_path = full_path if full_path else (file.filename or "unknown_file")
-            preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
+            
+            # Set preview path based on track type
+            if track_type == TrackType.ELECTROBUZZ:
+                preview_path = f"/mnt/data/PREVIEWS/{track_uuid}.mp3"
+            else:
+                preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
             # Insert into database
             with engine.begin() as conn:
