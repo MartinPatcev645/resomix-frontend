@@ -1,6 +1,5 @@
-Below is a **concise set of logic flows** (in Markdown) that begin **only** from the two origins you named—**the Resomix web frontend** and **the Electrobuzz monthly-pipeline server**.
-Each flow lists, in order, every server the request touches and the main result it achieves.
-(JavaScript-style Mermaid sequence diagrams are included so you can paste them straight into any Markdown viewer that understands Mermaid.)
+Below is a **concise set of logic flows** (in Markdown) that begin **only** from the two origins—**the Resomix web frontend** and **the Electrobuzz monthly-pipeline server**.
+Each flow lists, in order, every server the request touches and the main result it achieves. JavaScript-style Mermaid sequence diagrams are included.
 
 ---
 
