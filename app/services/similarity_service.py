@@ -135,8 +135,12 @@ class SimilarityService:
             target_count_after_deduplication = top_k - similarity_duplication_threshold
             if target_count_after_deduplication < 0: 
                 target_count_after_deduplication = 0  # Ensure not negative
+            
+            # Apply response-level filtering to existing tracks before deduplication
+            filtered_enriched_tracks = self._apply_response_filtering(enriched_similar_tracks)
+            
             deduplicated_enriched_tracks = self._deduplicate_tracks(
-                enriched_similar_tracks, 
+                filtered_enriched_tracks, 
                 target_count_after_deduplication,
                 reference_track=None  # No reference track for upload similarity
             )
@@ -146,7 +150,7 @@ class SimilarityService:
             deduplicated_track_scores = []
             for track in deduplicated_enriched_tracks:
                 # Find the track_id and score for this track
-                for i, enriched_track in enumerate(enriched_similar_tracks):
+                for i, enriched_track in enumerate(filtered_enriched_tracks):
                     if enriched_track.get("id") == track.get("id"):
                         if i < len(track_ids):
                             deduplicated_track_ids.append(track_ids[i])
@@ -188,6 +192,12 @@ class SimilarityService:
                     # Add playlist info if created
                     if playlist_info:
                         response_data["playlist"] = playlist_info
+                    
+                    # Apply filtering to queried track as well
+                    if response_data.get("queried_track"):
+                        filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
+                        if filtered_queried_tracks:
+                            response_data["queried_track"] = filtered_queried_tracks[0]
                     
                     return response_data
                 else:
@@ -282,8 +292,12 @@ class SimilarityService:
             target_count_after_deduplication = top_k - similarity_duplication_threshold
             if target_count_after_deduplication < 0: 
                 target_count_after_deduplication = 0  # Ensure not negative
+            
+            # Apply response-level filtering to existing tracks before deduplication
+            filtered_enriched_tracks = self._apply_response_filtering(enriched_similar_tracks)
+            
             deduplicated_enriched_tracks = self._deduplicate_tracks(
-                enriched_similar_tracks, 
+                filtered_enriched_tracks, 
                 target_count_after_deduplication,
                 reference_track=queried_track_data  # Use queried track for reference in deduplication
             )
@@ -293,7 +307,7 @@ class SimilarityService:
             deduplicated_track_scores = []
             for track in deduplicated_enriched_tracks:
                 # Find the track_id and score for this track
-                for i, enriched_track in enumerate(enriched_similar_tracks):
+                for i, enriched_track in enumerate(filtered_enriched_tracks):
                     if enriched_track.get("id") == track.get("id"):
                         if i < len(track_ids):
                             deduplicated_track_ids.append(track_ids[i])
@@ -328,6 +342,12 @@ class SimilarityService:
             # Add playlist info if created
             if playlist_info:
                 response_data["playlist"] = playlist_info
+            
+            # Apply filtering to queried track as well
+            if response_data.get("queried_track"):
+                filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
+                if filtered_queried_tracks:
+                    response_data["queried_track"] = filtered_queried_tracks[0]
             
             return response_data
         elif similarity_response.get("status") == "not_found":
@@ -870,3 +890,36 @@ class SimilarityService:
             File path string or None if not found
         """
         return await self.track_repository.async_get_track_path_by_uuid(db, track_uuid)
+
+    def _apply_response_filtering(self, tracks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Apply metadata filtering to track data returned from database.
+        This ensures existing tracks get filtered even if they weren't filtered during upload.
+        
+        Args:
+            tracks: List of track dictionaries from database
+            
+        Returns:
+            List of tracks with filtered metadata
+        """
+        filtered_tracks = []
+        
+        for track in tracks:
+            filtered_track = track.copy()
+            
+            # Apply filtering to relevant fields
+            if "title" in filtered_track and filtered_track["title"]:
+                filtered_track["title"] = MetadataService._filter_title_field(filtered_track["title"])
+            
+            if "artist" in filtered_track and filtered_track["artist"]:
+                filtered_track["artist"] = MetadataService._filter_metadata_field(filtered_track["artist"], "Artist")
+            
+            if "label" in filtered_track and filtered_track["label"]:
+                filtered_track["label"] = MetadataService._filter_metadata_field(filtered_track["label"], "Label")
+            
+            # Note: Album and Genre are not typically returned in similarity responses,
+            # but we can add them if needed in the future
+            
+            filtered_tracks.append(filtered_track)
+        
+        return filtered_tracks

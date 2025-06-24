@@ -19,6 +19,7 @@ from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.playlist_repository import PlaylistRepository
+from app.services.metadata_service import MetadataService
 
 
 class PlaylistService:
@@ -95,6 +96,41 @@ class PlaylistService:
                 "error": "An error occurred while changing playlist visibility"
             }
     
+    def _apply_playlist_response_filtering(self, similarity_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Apply metadata filtering to playlist similarity data.
+        This ensures existing tracks in playlists get filtered even if they weren't filtered during upload.
+        
+        Args:
+            similarity_data: Playlist similarity data dictionary
+            
+        Returns:
+            Filtered similarity data
+        """
+        filtered_data = similarity_data.copy()
+        
+        # Filter queried_track if it exists
+        if filtered_data.get("queried_track"):
+            track = filtered_data["queried_track"]
+            if track.get("title"):
+                track["title"] = MetadataService._filter_title_field(track["title"])
+            if track.get("artist"):
+                track["artist"] = MetadataService._filter_metadata_field(track["artist"], "Artist")
+            if track.get("label"):
+                track["label"] = MetadataService._filter_metadata_field(track["label"], "Label")
+        
+        # Filter similar_tracks
+        if filtered_data.get("similar_tracks"):
+            for track in filtered_data["similar_tracks"]:
+                if track.get("title"):
+                    track["title"] = MetadataService._filter_title_field(track["title"])
+                if track.get("artist"):
+                    track["artist"] = MetadataService._filter_metadata_field(track["artist"], "Artist")
+                if track.get("label"):
+                    track["label"] = MetadataService._filter_metadata_field(track["label"], "Label")
+        
+        return filtered_data
+
     async def get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
         """
         Get playlist with similarity data formatted like similarity endpoints.
@@ -121,9 +157,10 @@ class PlaylistService:
                     "error": "Playlist is not public. Only public playlists can be accessed."
                 }
             else:
+                filtered_data = self._apply_playlist_response_filtering(similarity_data)
                 return {
                     "success": True,
-                    "data": similarity_data
+                    "data": filtered_data
                 }
                 
         except Exception as e:
