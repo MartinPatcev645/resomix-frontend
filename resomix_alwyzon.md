@@ -10,12 +10,12 @@
 
 ### POST `/get_similarity/`
 - **Input**: Audio file upload (max 100MB) + optional top_sk parameter (10/20/50/100)
-- **Processing**: Extracts metadata → stores track in database → calls similarity microservice → deduplicates results → creates playlist
+- **Processing**: Extracts metadata → stores track in database → **calls similarity microservice `/similarity/query-by-upload/` endpoint** → deduplicates results → creates playlist
 - **Output**: Uploaded track details + array of similar tracks with scores and metadata + optional playlist info
 
 ### POST `/get_selection_similarity/`
 - **Input**: Track database ID + optional top_sk parameter (10/20/50/100)
-- **Processing**: Retrieves track file path → calls similarity microservice → enriches results with database metadata → deduplicates → creates playlist
+- **Processing**: Retrieves track file path → **calls similarity microservice `/similarity/query-by-path/` endpoint** → enriches results with database metadata → deduplicates → creates playlist
 - **Output**: Queried track details + array of similar tracks with scores and metadata + optional playlist info
 
 ---
@@ -66,7 +66,7 @@
 
 ### POST `/monthly_pipeline/track/`
 - **Input**: Audio file upload + file path string
-- **Processing**: Extracts metadata → generates UUID → calls similarity server's embedding preview → stores in database if successful
+- **Processing**: Extracts metadata → generates UUID → **calls similarity server `/generate_embedding_preview` endpoint** → stores in database if successful
 - **Output**: Success confirmation with track UUID, path, and processing status message
 
 ---
@@ -75,7 +75,7 @@
 
 ### POST `/feedback/`
 - **Input**: Satisfaction rating (1-10) + recommendation rating (1-10) + optional feedback text + category + user_id
-- **Processing**: Validates ratings → stores in database → optionally sends to Google Sheets → generates confirmation
+- **Processing**: Validates ratings → stores in database → **optionally sends to Google Sheets API** → generates confirmation
 - **Output**: Success confirmation with feedback submission ID and timestamp
 
 ### GET `/feedback/{feedback_id}`
@@ -90,7 +90,7 @@
 
 ### POST `/feedback/contact/`
 - **Input**: Name + email + message + optional subject + phone + user_id
-- **Processing**: Validates email format → stores in database → optionally sends to Google Sheets → generates confirmation
+- **Processing**: Validates email format → stores in database → **optionally sends to Google Sheets API** → generates confirmation
 - **Output**: Success confirmation with contact submission ID and timestamp
 
 ### GET `/contact/{contact_id}`
@@ -162,6 +162,29 @@ curl -X GET "https://bserver.resomix.com/api/health/?api_key=YOUR_API_KEY"
   }
 }
 ```
+
+---
+
+## 🔗 External Service Integration
+
+### Similarity Microservice
+The ResomiX API integrates with an external similarity microservice for audio similarity calculations:
+
+- **Service URL**: Configurable via `SIMILARITY_SERVER_URL` environment variable
+- **Endpoints Used**:
+  - `/similarity/query-by-upload/` - For similarity calculation of uploaded files
+  - `/similarity/query-by-path/` - For similarity calculation by file path
+  - `/generate_embedding_preview` - For monthly pipeline embedding generation
+- **Communication**: HTTP POST requests with 60-second timeout using httpx client
+- **Response Handling**: Automatic retry and error management with structured error responses
+
+### Google Sheets Integration
+Feedback and contact endpoints can optionally integrate with Google Sheets for data storage:
+
+- **Authentication**: Service account authentication using Google OAuth2
+- **Worksheets**: Separate sheets for feedback and contact submissions
+- **Data Flow**: Parallel storage in database and Google Sheets with fallback handling
+- **Configuration**: Optional integration controlled by environment variables
 
 ---
 
