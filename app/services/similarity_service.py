@@ -26,7 +26,6 @@ from sqlalchemy import text
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_repository import PlaylistRepository
 from app.core.config import settings
-from app.services.track_repository_service import TrackRepositoryService
 from app.services.metadata_service import MetadataService
 
 load_dotenv()
