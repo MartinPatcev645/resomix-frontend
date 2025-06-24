@@ -26,6 +26,8 @@ from sqlalchemy import text
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_repository import PlaylistRepository
 from app.core.config import settings
+from app.services.track_repository_service import TrackRepositoryService
+from app.services.metadata_service import MetadataService
 
 load_dotenv()
 
@@ -559,8 +561,9 @@ class SimilarityService:
         Filter track title by removing specified strings and stopping at certain markers.
         
         Processing order:
-        1. Apply stopper strings (truncate at first occurrence)
-        2. Apply removal strings (remove completely)
+        1. Apply meta regex check (if entire title matches domain/URL pattern, return empty string)
+        2. Apply title stopper strings (truncate at first occurrence)
+        3. Apply title removal strings (remove completely)
         
         Args:
             title: Original track title
@@ -568,34 +571,7 @@ class SimilarityService:
         Returns:
             Filtered track title
         """
-        if not title:
-            return title
-        
-        filtered_title = title
-        
-        # Step 1: Apply stopper strings (case-insensitive)
-        # Find the earliest occurrence of any stopper string
-        earliest_stop_position = len(filtered_title)
-        
-        for stopper in settings.title_stopper_strings:
-            # Case-insensitive search
-            stop_position = filtered_title.lower().find(stopper.lower())
-            if stop_position != -1 and stop_position < earliest_stop_position:
-                earliest_stop_position = stop_position
-        
-        # Truncate at the earliest stopper position if found
-        if earliest_stop_position < len(filtered_title):
-            filtered_title = filtered_title[:earliest_stop_position]
-        
-        # Step 2: Apply removal strings (case-insensitive)
-        for removal_string in settings.title_removal_strings:
-            # Case-insensitive replacement
-            filtered_title = re.sub(re.escape(removal_string), '', filtered_title, flags=re.IGNORECASE)
-        
-        # Clean up extra whitespace
-        filtered_title = re.sub(r'\s+', ' ', filtered_title).strip()
-        
-        return filtered_title
+        return MetadataService._filter_title_field(title)
 
     def _apply_title_filtering_to_tracks(self, tracks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """

@@ -23,6 +23,8 @@ from typing import Any, Dict, List, BinaryIO, Union, Optional
 from mutagen import File as MutagenFile, MutagenError
 from mutagen.id3 import ID3
 
+from app.core.config import settings
+
 
 class MetadataService:
     """
@@ -210,7 +212,16 @@ class MetadataService:
                 if key == "Year":
                     m = MetadataService._YEAR_FROM_DATE.match(txt)
                     txt = m.group(1) if m else txt
-                out.setdefault(key, txt)
+                
+                # Apply filtering to the extracted value
+                if key == "Title":
+                    txt = MetadataService._filter_title_field(txt)
+                elif key in ["Artist", "Album", "Genre", "Label"]:
+                    txt = MetadataService._filter_metadata_field(txt, key)
+                
+                # Only add non-empty filtered values
+                if txt:
+                    out.setdefault(key, txt)
 
     @staticmethod
     def _gather_limited_vorbis(vc: Dict[str, List[str]], out: Dict[str, str]):
@@ -228,7 +239,158 @@ class MetadataService:
             if key == "Year":
                 m = MetadataService._YEAR_FROM_DATE.match(value_str)
                 value_str = m.group(1) if m else value_str
-            out.setdefault(key, value_str)
+            
+            # Apply filtering to the extracted value
+            if key == "Title":
+                value_str = MetadataService._filter_title_field(value_str)
+            elif key in ["Artist", "Album", "Genre", "Label"]:
+                value_str = MetadataService._filter_metadata_field(value_str, key)
+            
+            # Only add non-empty filtered values
+            if value_str:
+                out.setdefault(key, value_str)
+
+    # Metadata filtering methods
+    @staticmethod
+    def _filter_metadata_field(field_value: str, field_name: str = "") -> str:
+        """
+        Filter metadata field by removing URLs/domains and applying stopper strings.
+        
+        Processing order:
+        1. Apply regex check (if entire field matches domain/URL pattern, return empty string)
+        2. Apply stopper strings (truncate at first occurrence)
+        
+        Args:
+            field_value: Original field value
+            field_name: Field name for logging (optional)
+            
+        Returns:
+            Filtered field value
+        """
+        if not field_value:
+            return field_value
+        
+        # Trim whitespace first
+        filtered_value = field_value.strip()
+        if not filtered_value:
+            return ""
+        
+        # Step 1: Apply regex check - if entire field matches domain/URL pattern, remove it
+        try:
+            if re.match(settings.meta_stopper_regex, filtered_value, re.IGNORECASE):
+                return ""  # Return empty string if entire field is a URL/domain
+        except re.error:
+            # If regex is invalid, skip regex filtering but continue with stopper strings
+            pass
+        
+        # Step 2: Apply stopper strings (case-insensitive)
+        # Find the earliest occurrence of any stopper string
+        earliest_stop_position = len(filtered_value)
+        
+        for stopper in settings.meta_stopper_strings:
+            # Case-insensitive search
+            stop_position = filtered_value.lower().find(stopper.lower())
+            if stop_position != -1 and stop_position < earliest_stop_position:
+                earliest_stop_position = stop_position
+        
+        # Truncate at the earliest stopper position if found
+        if earliest_stop_position < len(filtered_value):
+            filtered_value = filtered_value[:earliest_stop_position]
+        
+        # Clean up extra whitespace
+        filtered_value = re.sub(r'\s+', ' ', filtered_value).strip()
+        
+        return filtered_value
+
+    @staticmethod
+    def _filter_title_field(title: str) -> str:
+        """
+        Filter title field with both title-specific and meta filtering.
+        
+        Processing order:
+        1. Apply meta regex check (if entire title matches domain/URL pattern, return empty string)
+        2. Apply title stopper strings (truncate at first occurrence)
+        3. Apply title removal strings (remove completely)
+        
+        Args:
+            title: Original title
+            
+        Returns:
+            Filtered title
+        """
+        if not title:
+            return title
+        
+        # Trim whitespace first
+        filtered_title = title.strip()
+        if not filtered_title:
+            return ""
+        
+        # Step 1: Apply meta regex check - if entire title matches domain/URL pattern, remove it
+        try:
+            if re.match(settings.meta_stopper_regex, filtered_title, re.IGNORECASE):
+                return ""  # Return empty string if entire title is a URL/domain
+        except re.error:
+            # If regex is invalid, skip regex filtering but continue with other filters
+            pass
+        
+        # Step 2: Apply title stopper strings (case-insensitive)
+        # Find the earliest occurrence of any stopper string
+        earliest_stop_position = len(filtered_title)
+        
+        for stopper in settings.title_stopper_strings:
+            # Case-insensitive search
+            stop_position = filtered_title.lower().find(stopper.lower())
+            if stop_position != -1 and stop_position < earliest_stop_position:
+                earliest_stop_position = stop_position
+        
+        # Truncate at the earliest stopper position if found
+        if earliest_stop_position < len(filtered_title):
+            filtered_title = filtered_title[:earliest_stop_position]
+        
+        # Step 3: Apply title removal strings (case-insensitive)
+        for removal_string in settings.title_removal_strings:
+            # Case-insensitive replacement
+            filtered_title = re.sub(re.escape(removal_string), '', filtered_title, flags=re.IGNORECASE)
+        
+        # Clean up extra whitespace
+        filtered_title = re.sub(r'\s+', ' ', filtered_title).strip()
+        
+        return filtered_title
+
+    @staticmethod
+    def _apply_metadata_filtering(metadata: Dict[str, str]) -> Dict[str, str]:
+        """
+        Apply filtering to all metadata fields.
+        
+        Args:
+            metadata: Dictionary of metadata fields
+            
+        Returns:
+            Dictionary with filtered metadata fields
+        """
+        filtered_metadata = {}
+        
+        # Fields that need filtering
+        filterable_fields = ["Title", "Artist", "Album", "Genre", "Label"]
+        
+        for key, value in metadata.items():
+            if key in filterable_fields and value:
+                if key == "Title":
+                    # Title gets special treatment with both title and meta filtering
+                    filtered_value = MetadataService._filter_title_field(value)
+                else:
+                    # Other fields get meta filtering
+                    filtered_value = MetadataService._filter_metadata_field(value, key)
+                
+                # Only keep non-empty filtered values
+                if filtered_value:
+                    filtered_metadata[key] = filtered_value
+            else:
+                # Keep non-filterable fields as-is (like Year)
+                filtered_metadata[key] = value
+        
+        return filtered_metadata
 
     # Comprehensive extraction helpers
     @staticmethod

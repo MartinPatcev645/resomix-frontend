@@ -109,6 +109,16 @@ class Settings(BaseModel):
         description="Strings that stop title processing - keep only the part before these"
     )
     
+    # Meta filtering configuration
+    meta_stopper_strings: List[str] = Field(
+        default=["https:", "www.", "_www."],
+        description="Strings that stop meta field processing - keep only the part before these (case-insensitive)"
+    )
+    meta_stopper_regex: str = Field(
+        default=r"^(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:/[^\s]*)?)$",
+        description="Regex pattern to match URLs and domains in meta fields - if matched, the entire meta field is removed"
+    )
+    
     # CORS Configuration
     allowed_origin_regex_production: str = Field(
         default=r"^https://([\w\-]+\.)*resomix\.com(:[0-9]+)?$",
