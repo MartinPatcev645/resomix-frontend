@@ -188,6 +188,11 @@ class SimilarityService:
                                     track_scores=deduplicated_track_scores,
                                     name="Playlist"
                                 )
+                                
+                                # Send playlist peaks request (fire and forget)
+                                if playlist_info:
+                                    await self._send_playlist_peaks_request(track_uuid, deduplicated_enriched_tracks)
+                                    
                         except Exception as e:
                             print(f"Error creating playlist for upload similarity: {e}")
                             # Don't fail the whole request if playlist creation fails
@@ -339,6 +344,11 @@ class SimilarityService:
                                 track_scores=deduplicated_track_scores,
                                 name="Playlist"
                             )
+                            
+                            # Send playlist peaks request (fire and forget)
+                            if playlist_info:
+                                await self._send_playlist_peaks_request(queried_track_uuid, deduplicated_enriched_tracks)
+                                
                 except Exception as e:
                     print(f"Error creating playlist for path similarity: {e}")
                     # Don't fail the whole request if playlist creation fails
@@ -953,3 +963,62 @@ class SimilarityService:
         
         await db.execute(query, {"duration": duration_int, "track_uuid": track_uuid})
         await db.commit()
+
+    async def _send_playlist_peaks_request(self, reference_track_uuid: str, similar_tracks: List[Dict[str, Any]]) -> None:
+        """
+        Sends a playlist peaks request to the similarity server (fire and forget).
+        This is a background request that triggers processing on the similarity server.
+        
+        Args:
+            reference_track_uuid: UUID of the reference/queried track
+            similar_tracks: List of similar track dictionaries
+        """
+        if not self.similarity_server_url:
+            print("Warning: SIMILARITY_SERVER_URL is not set, skipping playlist peaks request")
+            return
+
+        try:
+            # Collect all track UUIDs including the reference track
+            track_uuids = [reference_track_uuid]  # Start with reference track
+            
+            # Add similar track UUIDs
+            for track in similar_tracks:
+                track_uuid = track.get("id")
+                if track_uuid:
+                    track_uuids.append(track_uuid)
+            
+            if len(track_uuids) <= 1:  # Only reference track, no similar tracks
+                print("No similar tracks found, skipping playlist peaks request")
+                return
+            
+            # Prepare the request
+            target_url = f"{self.similarity_server_url.rstrip('/')}/playlist_peaks"
+            payload = {"track_uuids": track_uuids}
+            
+            print(f"Sending playlist peaks request to {target_url} with {len(track_uuids)} tracks")
+            
+            # Fire and forget request - don't await the response
+            asyncio.create_task(self._execute_playlist_peaks_request(target_url, payload))
+            
+        except Exception as e:
+            print(f"Error preparing playlist peaks request: {e}")
+            # Don't fail the main request if this background task fails
+
+    async def _execute_playlist_peaks_request(self, target_url: str, payload: Dict[str, Any]) -> None:
+        """
+        Execute the playlist peaks request in the background.
+        
+        Args:
+            target_url: The full URL to send the request to
+            payload: The request payload
+        """
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            try:
+                response = await client.post(target_url, json=payload)
+                print(f"Playlist peaks request completed with status: {response.status_code}")
+            except httpx.HTTPStatusError as e:
+                print(f"HTTP error in playlist peaks request: {e.response.status_code} - {e.response.text}")
+            except httpx.RequestError as e:
+                print(f"Request error in playlist peaks request: {e}")
+            except Exception as e:
+                print(f"Unexpected error in playlist peaks request: {e}")
