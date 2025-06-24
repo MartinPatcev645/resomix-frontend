@@ -127,13 +127,13 @@ python run.py
 uvicorn app.main:app --host 0.0.0.0 --port 8005
 ```
 
-Server runs at: `http://localhost:8005`
+Server runs at: `http://localhost:8005` (development) or `https://bserver.resomix.com` (production)
 
 ## 📖 API Documentation
 
 ### Interactive Docs
-- **Swagger UI**: `http://localhost:8005/docs`
-- **ReDoc**: `http://localhost:8005/redoc`
+- **Swagger UI**: `http://localhost:8005/docs` (development) or `https://bserver.resomix.com/docs` (production)
+- **ReDoc**: `http://localhost:8005/redoc` (development) or `https://bserver.resomix.com/redoc` (production)
 
 ### Key Endpoints
 
@@ -173,7 +173,11 @@ POST /api/feedback/contact/           # Contact form submission
 All endpoints require API key authentication:
 
 ```bash
+# Development
 curl -X GET "http://localhost:8005/api/health/?api_key=YOUR_API_KEY"
+
+# Production
+curl -X GET "https://bserver.resomix.com/api/health/?api_key=YOUR_API_KEY"
 ```
 
 ### Response Format

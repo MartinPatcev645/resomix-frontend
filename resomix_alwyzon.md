@@ -2,6 +2,8 @@
 
 **Comprehensive API endpoint documentation with input, processing, and output summaries**
 
+**Production Server**: `https://bserver.resomix.com` | **Documentation**: `https://bserver.resomix.com/docs`
+
 ---
 
 ## 🎧 Audio Similarity Endpoints
@@ -122,6 +124,15 @@
 **All endpoints require API key authentication via query parameter:**
 ```
 ?api_key=YOUR_API_KEY
+```
+
+**Example requests:**
+```bash
+# Development
+curl -X GET "http://localhost:8005/api/health/?api_key=YOUR_API_KEY"
+
+# Production
+curl -X GET "https://bserver.resomix.com/api/health/?api_key=YOUR_API_KEY"
 ```
 
 **Exception**: Health endpoints (`/` and `/health`) are public and don't require authentication.
