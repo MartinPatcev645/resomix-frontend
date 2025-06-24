@@ -1,417 +1,279 @@
 # ResomiX Audio Similarity API
 
-A comprehensive FastAPI-based application for audio similarity analysis, track management, and music discovery. This API provides advanced audio processing capabilities, metadata extraction, search functionality, and a complete music management system with user authentication and content management.
+A comprehensive FastAPI-based application for audio similarity analysis, track management, and music discovery. This API provides advanced audio processing capabilities, metadata extraction, similarity matching, and playlist management with MariaDB database integration.
 
-## Architecture Overview
+## 🎵 Overview
 
-This application follows a **layered architecture** pattern with clean separation of concerns:
+ResomiX is a production-ready audio similarity API that enables:
+- **Audio Similarity Matching**: Upload audio files or query by path to find similar tracks
+- **Metadata Processing**: Extract and filter audio metadata with advanced cleaning algorithms  
+- **Track Management**: Complete track database with artists, albums, labels, and genres
+- **Playlist System**: Create and manage playlists with similarity-based track suggestions
+- **Search & Discovery**: Advanced search capabilities across the music catalog
+- **Contact & Feedback**: User engagement system with Google Sheets integration
 
-- **API Layer**: FastAPI routers, middleware, and dependencies
-- **Controller Layer**: HTTP request/response handling and validation
-- **Service Layer**: Business logic and external service integration
-- **Repository Layer**: Data access abstraction and database operations
-- **Model Layer**: SQLAlchemy ORM models and database schema
-- **Schema Layer**: Pydantic models for API validation and serialization
+## 🏗️ Architecture
 
-## Features
+The application follows a **clean layered architecture** with clear separation of concerns:
 
-### Core Audio Features
-- **Audio Similarity Analysis**: Upload audio files and receive similarity metrics with existing tracks
-- **Metadata Extraction**: Comprehensive metadata extraction using multiple methods (FFmpeg, Mutagen)
-- **Audio Validation**: Deep content analysis using FFmpeg for security and format validation
-- **Search Engine**: Advanced track search with multiple criteria and algorithms
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   API Layer    │ ←→ │ Controller Layer │ ←→ │ Service Layer   │
+│   (FastAPI)    │    │ (HTTP Handlers)  │    │ (Business Logic)│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                        ↕
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Schema Layer    │    │ Repository Layer │    │  Model Layer    │
+│ (Pydantic)     │    │ (Data Access)    │    │ (SQLAlchemy)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
 
-### Management Features
-- **Track Management**: Complete CRUD operations for tracks, artists, albums, and labels
-- **Playlist Management**: Create and manage playlists with track relationships
-- **User Management**: Full RBAC system with users, roles, and permissions
-- **Rating System**: Track and playlist rating capabilities
-- **Purchase/Subscription System**: Complete billing and subscription management
-- **Feedback System**: Integrated feedback collection and contact management
+## ✨ Core Features
 
-### Technical Features
-- **MariaDB Integration**: Robust relational database with optimized schemas
-- **Async Support**: Full async/await support for high-performance operations
-- **API Key Authentication**: Secure API access with key-based authentication
-- **CORS Support**: Frontend-compatible with configurable CORS policies
-- **Error Handling**: Comprehensive error handling with custom exceptions
-- **Logging**: Structured logging for monitoring and debugging
+### 🎧 Audio Similarity
+- **Upload Similarity**: Analyze uploaded audio files against 2.2M+ track database
+- **Path-based Similarity**: Query similarity for existing server-side tracks
+- **Deduplication**: Advanced algorithms to remove duplicate results
+- **Playlist Generation**: Automatic playlist creation from similarity results
 
-## Requirements
+### 🔍 Metadata & Search
+- **Metadata Extraction**: Multi-format support using FFmpeg and Mutagen
+- **Smart Filtering**: Remove URLs, domains, and unwanted strings from metadata
+- **Advanced Search**: Search by title, artist, album, label, genre, BPM, key
+- **Audio Validation**: Deep content analysis for security and format verification
 
-### System Dependencies
+### 📊 Data Management
+- **Track Database**: 2.2M+ tracks with comprehensive metadata
+- **Artist Management**: Artist catalog with collaboration support
+- **Label & Genre**: Organized label and genre taxonomies
+- **Preview System**: Secure preview URL generation with expiration
 
-#### FFmpeg (Required)
-This application requires FFmpeg for audio file validation and processing:
+### 🎼 Playlist System
+- **Custom Playlists**: User-created playlists with track management
+- **Similarity Playlists**: Auto-generated playlists from similarity results
+- **Public/Private**: Visibility control for playlist sharing
+- **Track Scoring**: Similarity scores for playlist track ordering
 
-- **Windows:** Download from [FFmpeg.org](https://ffmpeg.org/download.html) or install via Chocolatey:
-  ```bash
-  choco install ffmpeg
-  ```
+## 🛠️ Technology Stack
 
-- **macOS:** Install using Homebrew:
-  ```bash
-  brew install ffmpeg
-  ```
+- **Framework**: FastAPI 0.109.0 with async/await support
+- **Database**: MariaDB with SQLAlchemy ORM and connection pooling
+- **Audio Processing**: FFmpeg + Mutagen for metadata extraction and validation
+- **External Services**: Similarity microservice integration via HTTP
+- **Security**: API key authentication, URL signing, input validation
+- **Integration**: Google Sheets API for feedback/contact management
 
-- **Linux (Debian/Ubuntu):**
-  ```bash
-  sudo apt update
-  sudo apt install ffmpeg
-  ```
+## 🚀 Quick Start
 
-#### MariaDB (Required)
-The application uses MariaDB as its primary database:
+### Prerequisites
 
-- **Installation**: Follow the [MariaDB installation guide](https://mariadb.org/download/)
-- **Configuration**: Update database connection settings in `.env` file
+1. **Python 3.8+** installed
+2. **MariaDB** server running
+3. **FFmpeg** installed and in PATH
+4. **Similarity Server** (optional, for similarity features)
 
-### Python Dependencies
-- Python 3.8 or higher
-- FastAPI, Uvicorn, SQLAlchemy, MariaDB drivers
-- See `requirements.txt` for complete list
+### Installation
 
-## Installation
+```bash
+# Clone repository
+git clone <repository-url>
+cd basic_fastapi_server_resomix
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd resomix-api
-   ```
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# or
+.venv\Scripts\activate     # Windows
 
-2. **Create and activate virtual environment:**
-   ```bash
-   python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # macOS/Linux
-   source venv/bin/activate
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
+```
 
-4. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+### Configuration
 
-5. **Initialize database:**
-   ```bash
-   # Run database migrations
-   python -m scripts.migrate_data
-   ```
-
-## Configuration
-
-### Environment Variables
-Key configuration options in `.env`:
+Key environment variables in `.env`:
 
 ```env
-# API Configuration
-API_KEY=your_secure_api_key_here
-MAX_FILE_SIZE=52428800  # 50MB in bytes
-TEMP_DIR=temp_audio
+# API Security
+RESOMIX_API_KEY=your_secure_api_key_here
+
+# Database
+MONGODB_URI=mysql+aiomysql://user:password@localhost/resomix
+
+# External Services  
+SIMILARITY_SERVER_URL=http://localhost:8001
+RESOMIX_SERVER_URL=http://localhost:8000
+
+# Google Sheets (optional)
+SERVICE_ACCOUNT_FILE=path/to/service-account.json
+GOOGLE_SHEET_ID=your_sheet_id
+
+# Security
+PREVIEW_FERNET_SECRET=32-byte-secret-key
+PREVIEW_HMAC_SECRET=hmac-secret-key
 ```
 
-### Security Settings
-- **API Key**: Set a strong API key for production deployment
-- **CORS Origins**: Configure allowed origins in `app/api/middlewares/cors.py`
-- **Database Security**: Use strong database credentials and proper network configuration
+### Running
 
-## Running the Application
-
-### Development
 ```bash
+# Development
 python run.py
-```
 
-### Production
-```bash
-# Using Uvicorn directly
+# Production
 uvicorn app.main:app --host 0.0.0.0 --port 8005
-
-# Using Gunicorn (recommended for production)
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8005
 ```
 
-The server will be available at `http://localhost:8005`
+Server runs at: `http://localhost:8005`
 
-## API Documentation
+## 📖 API Documentation
 
-### Interactive Documentation
+### Interactive Docs
 - **Swagger UI**: `http://localhost:8005/docs`
 - **ReDoc**: `http://localhost:8005/redoc`
 
-### Core Endpoints
+### Key Endpoints
 
 #### Audio Similarity
-- `POST /api/similarity/get_similarity/` - Upload audio file for similarity analysis
-- `POST /api/similarity/get_selection_similarity/` - Get similarity for selected tracks
+```http
+POST /api/similarity/upload/          # Upload audio for similarity
+POST /api/similarity/path/{path}      # Get similarity by file path
+```
 
-#### Search & Discovery
-- `GET /api/search/tracks/` - Search tracks with various criteria
-- `GET /api/tracks/` - List and filter tracks
-- `GET /api/artists/` - Browse artists
-- `GET /api/albums/` - Browse albums
+#### Search & Browse
+```http
+GET  /api/search/                     # Advanced track search
+GET  /api/metadata/extract/           # Extract audio metadata
+```
 
-#### Metadata & Processing
-- `POST /api/metadata/extract/` - Extract metadata from audio files
-- `POST /api/audio/validate/` - Validate audio file formats
+#### Playlists
+```http
+GET  /api/playlists/similarity/{id}   # Get playlist with similarity data
+POST /api/playlists/rename/           # Rename playlist
+POST /api/playlists/visibility/       # Change playlist visibility
+```
 
-#### User Management
-- `POST /api/users/` - Create user accounts
-- `GET /api/users/profile/` - Get user profile
-- `PUT /api/users/profile/` - Update user profile
+#### Preview & Content
+```http
+GET  /api/preview/audio/{uuid}        # Get secure preview URL
+GET  /api/health/                     # Health check
+```
 
-#### Content Management
-- `POST /api/playlists/` - Create playlists
-- `POST /api/ratings/` - Rate tracks and playlists
-- `GET /api/purchases/` - View purchase history
-
-#### Feedback & Support
-- `POST /api/feedback/` - Submit feedback
-- `POST /api/feedback/contact/` - Contact form submission
+#### Feedback & Contact
+```http
+POST /api/feedback/                   # Submit feedback
+POST /api/feedback/contact/           # Contact form submission
+```
 
 ### Authentication
-All endpoints require API key authentication via query parameter:
-```
-?api_key=YOUR_API_KEY
+
+All endpoints require API key authentication:
+
+```bash
+curl -X GET "http://localhost:8005/api/health/?api_key=YOUR_API_KEY"
 ```
 
 ### Response Format
-All API responses follow a consistent format:
 
-**Success Response:**
 ```json
 {
   "success": true,
   "data": {
-    // Response data here
+    // Response data
   }
 }
 ```
 
-**Error Response:**
-```json
-{
-  "success": false,
-  "error": "Error message description",
-  "details": {
-    // Additional error details if available
-  }
-}
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-├── 📁app/                                    # Main application directory
-│   ├── 📁api/                                # API layer
-│   │   ├── 📁dependencies/                   # Dependency injection
-│   │   │   ├── auth.py                      # API key validation and security
-│   │   │   └── database.py                  # Database session management
-│   │   ├── 📁middlewares/                   # Custom middlewares
-│   │   │   └── cors.py                      # CORS configuration
-│   │   └── 📁routers/                       # API route definitions
-│   │       ├── similarity.py                # Audio similarity endpoints
-│   │       ├── tracks.py                    # Track management endpoints
-│   │       ├── artists.py                   # Artist management endpoints
-│   │       ├── albums.py                    # Album management endpoints
-│   │       ├── playlists.py                 # Playlist management endpoints
-│   │       ├── search.py                    # Search functionality endpoints
-│   │       ├── ratings.py                   # Rating system endpoints
-│   │       ├── purchases.py                 # Purchase/billing endpoints
-│   │       ├── metadata.py                  # Metadata extraction endpoints
-│   │       ├── feedback.py                  # Feedback system endpoints
-│   │       ├── users.py                     # User management endpoints
-│   │       └── health.py                    # Health check endpoints
-│   ├── 📁controllers/                        # Request/response handling
-│   │   ├── similarity_controller.py         # Similarity business logic
-│   │   ├── track_controller.py              # Track operations logic
-│   │   ├── search_controller.py             # Search algorithm logic
-│   │   ├── metadata_controller.py           # Metadata processing logic
-│   │   ├── feedback_controller.py           # Feedback processing logic
-│   │   └── [other controllers...]           # Additional controllers
-│   ├── 📁services/                          # Business logic layer
-│   │   ├── similarity_service.py            # Audio similarity algorithms
-│   │   ├── metadata_service.py              # Metadata extraction service
-│   │   ├── search_service.py                # Search engine implementation
-│   │   ├── audio_service.py                 # Audio processing with FFmpeg
-│   │   ├── feedback_service.py              # Feedback processing service
-│   │   └── [other services...]              # Additional business services
-│   ├── 📁repositories/                      # Data access layer
-│   │   ├── base_repository.py               # Base repository with common operations
-│   │   ├── track_repository.py              # Track data access
-│   │   ├── artist_repository.py             # Artist data access
-│   │   ├── user_repository.py               # User data access
-│   │   └── [other repositories...]          # Additional data repositories
-│   ├── 📁schemas/                           # Pydantic validation models
-│   │   ├── similarity.py                    # Similarity request/response schemas
-│   │   ├── track.py                         # Track schemas
-│   │   ├── user.py                          # User schemas
-│   │   ├── common.py                        # Common response schemas
-│   │   └── [other schemas...]               # Additional validation schemas
-│   ├── 📁models/                            # SQLAlchemy ORM models
-│   │   ├── track.py                         # Track and TrackArtist models
-│   │   ├── artist.py                        # Artist model
-│   │   ├── album.py                         # Album model
-│   │   ├── user.py                          # User, Role, Permission models
-│   │   ├── playlist.py                      # Playlist models
-│   │   └── [other models...]                # Additional database models
-│   ├── 📁core/                              # Core application configuration
-│   │   ├── config.py                        # Application settings and environment variables
-│   │   ├── security.py                      # Security utilities and RBAC
-│   │   └── exceptions.py                    # Custom exception classes
-│   ├── 📁utils/                             # Utility functions
-│   │   ├── file_utils.py                    # File handling utilities
-│   │   ├── validation.py                    # Validation helpers
-│   │   ├── response.py                      # Response formatting utilities
-│   │   └── stripe_utils.py                  # Payment processing utilities
-│   └── main.py                              # FastAPI application factory
-├── 📁database/                              # Database related files
-│   ├── connection.py                        # Database connection setup
-│   ├── 📁migrations/                        # Database migration scripts
-│   └── schema.sql                          # Database schema definition
-├── 📁scripts/                              # Utility and migration scripts
-│   ├── migrate_data.py                     # Data migration utilities
-│   └── seed_data.py                        # Database seeding scripts
-├── 📁tests/                                # Test suites
-│   ├── 📁unit/                             # Unit tests
-│   ├── 📁integration/                      # Integration tests
-│   └── conftest.py                         # Test configuration
-├── 📁temp_audio/                           # Temporary audio file storage
-├── 📁logs/                                 # Application logs
-├── .env                                    # Environment variables
-├── requirements.txt                        # Python dependencies
-├── run.py                                  # Application entry point
-└── README.md                               # This file
+app/
+├── api/
+│   ├── routers/           # API endpoints
+│   │   ├── similarity.py  # Audio similarity endpoints
+│   │   ├── playlists.py   # Playlist management
+│   │   ├── search.py      # Search functionality
+│   │   ├── metadata.py    # Metadata extraction
+│   │   ├── preview.py     # Preview URL generation
+│   │   ├── feedback.py    # Feedback system
+│   │   ├── contact.py     # Contact form
+│   │   └── health.py      # Health checks
+│   └── middlewares/       # CORS and other middleware
+├── controllers/           # HTTP request handlers
+├── services/              # Business logic
+│   ├── similarity_service.py      # Audio similarity algorithms
+│   ├── metadata_service.py        # Metadata extraction & filtering
+│   ├── search_service.py          # Search implementation
+│   ├── audio_service.py           # FFmpeg integration
+│   ├── playlist_service.py        # Playlist management
+│   ├── track_upload_service.py    # Track upload processing
+│   └── monthly_pipeline_service.py # Monthly pipeline processing
+├── repositories/          # Data access layer
+├── models/               # SQLAlchemy ORM models
+├── schemas/              # Pydantic validation models
+├── core/                 # Configuration and utilities
+└── utils/                # Helper functions
 ```
 
-## Development
+## 🔧 Advanced Features
 
-### Adding New Features
+### Metadata Filtering
+Automatic cleaning of metadata fields:
+- **URL/Domain Detection**: Removes URLs and domain names from metadata
+- **Title Filtering**: Removes common unwanted strings like "(Original Mix)"
+- **Stopper Strings**: Truncates metadata at specified markers
 
-#### 1. Adding New Endpoints
-1. Create schemas in `app/schemas/`
-2. Create/update models in `app/models/`
-3. Create repository methods in `app/repositories/`
-4. Implement business logic in `app/services/`
-5. Create controller methods in `app/controllers/`
-6. Add router endpoints in `app/api/routers/`
+### Similarity Pipeline
+- **Multi-format Support**: Handles various audio formats via FFmpeg
+- **Deduplication**: Advanced algorithms prevent duplicate results
+- **Scoring System**: Similarity scores for result ranking
+- **Playlist Integration**: Automatic playlist generation from results
 
-#### 2. Database Changes
-1. Update models in `app/models/`
-2. Create migration scripts in `database/migrations/`
-3. Update repository methods as needed
-4. Test with `python -m scripts.migrate_data`
+### Security & Performance
+- **API Key Authentication**: Secure access control
+- **Preview URL Signing**: Time-limited, signed preview URLs
+- **Async Processing**: Full async/await for high performance
+- **Connection Pooling**: Optimized database connections
+- **Input Validation**: Comprehensive request validation
 
-#### 3. Testing
-```bash
-# Run all tests
-pytest
+## 🚀 Deployment
 
-# Run specific test types
-pytest tests/unit/
-pytest tests/integration/
-
-# Run with coverage
-pytest --cov=app tests/
-```
-
-### Code Quality
-- **Linting**: Use `flake8` and `black` for code formatting
-- **Type Hints**: Use type hints throughout the codebase
-- **Documentation**: Document all public methods and classes
-- **Error Handling**: Use custom exceptions from `app/core/exceptions.py`
-
-## Deployment
-
-### Docker (Recommended)
+### Docker
 ```dockerfile
-# Example Dockerfile
 FROM python:3.9-slim
-
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-
 COPY . .
 EXPOSE 8005
-
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8005"]
 ```
 
-### Environment-Specific Configuration
-- **Development**: Use `.env` file with debug settings
-- **Staging**: Use environment variables with staging database
-- **Production**: Use secure environment variables and production database
+### Production Considerations
+- Use strong API keys and secrets
+- Configure CORS for your domain
+- Set up database backups
+- Monitor logs and health endpoints
+- Use HTTPS/TLS in production
 
-### Monitoring and Logging
-- **Logs**: Stored in `logs/` directory with rotation
-- **Health Checks**: Available at `/health` endpoint
-- **Metrics**: Database connection status, request metrics
-- **Error Tracking**: Comprehensive error logging with stack traces
-
-## Security Considerations
-
-1. **API Security**:
-   - Strong API key authentication
-   - Rate limiting (implement as needed)
-   - Input validation via Pydantic schemas
-
-2. **File Security**:
-   - FFmpeg validation for uploaded audio files
-   - Temporary file cleanup
-   - File size restrictions
-
-3. **Database Security**:
-   - Parameterized queries via SQLAlchemy
-   - Connection pooling and timeout settings
-   - Regular database backups
-
-4. **Production Setup**:
-   - HTTPS/TLS encryption
-   - Secure environment variable management
-   - Regular security updates
-
-## Performance Optimization
-
-- **Database**: Connection pooling, query optimization, indexing
-- **Async Operations**: Full async/await support for I/O operations
-- **Caching**: Implement Redis caching for frequently accessed data
-- **File Processing**: Efficient temporary file handling and cleanup
-- **API Response**: Optimized JSON serialization with Pydantic
-
-## Migration from Legacy System
-
-This application has been migrated from a MongoDB-based monolithic structure to a MariaDB-based layered architecture. Key improvements include:
-
-- **Better Data Consistency**: Relational database with foreign key constraints
-- **Improved Performance**: Optimized queries and proper indexing
-- **Enhanced Security**: Better authentication and authorization
-- **Scalability**: Modular architecture supporting horizontal scaling
-- **Maintainability**: Clear separation of concerns and testable components
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes following the established patterns
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+3. Follow the existing code patterns and architecture
+4. Add appropriate tests
+5. Submit a pull request
 
-## License
+## 📞 Support
 
-[Specify your license here]
+- **Health Check**: `GET /api/health/`
+- **Feedback API**: `POST /api/feedback/`
+- **Contact Form**: `POST /api/feedback/contact/`
+- **Documentation**: Available at `/docs` endpoint
 
-## Support
+---
 
-For support and questions:
-- Use the feedback endpoint: `POST /api/feedback/contact/`
-- Check the API documentation at `/docs`
-- Review logs in the `logs/` directory for troubleshooting
+**ResomiX Audio Similarity API** - Powering music discovery through advanced audio analysis.
