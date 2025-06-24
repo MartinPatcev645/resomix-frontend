@@ -162,8 +162,17 @@ class SimilarityService:
                 uploaded_track_details = await self._fetch_reference_track_details_from_db_by_uuid(db, track_uuid)
                 if uploaded_track_details:
                     # Use server duration if available, otherwise fall back to calculated duration
-                    final_duration = server_duration if server_duration is not None else (calculated_duration if calculated_duration is not None else 0)
+                    final_duration = server_duration if server_duration is not None and server_duration > 0 else (calculated_duration if calculated_duration is not None and calculated_duration > 0 else None)
                     uploaded_track_details["duration"] = final_duration
+                    
+                    # Update the track's duration in the database if we have a valid duration
+                    if final_duration is not None and final_duration > 0:
+                        try:
+                            await self._update_track_duration_in_db(db, track_uuid, final_duration)
+                            print(f"Updated track {track_uuid} duration to {final_duration} seconds")
+                        except Exception as e:
+                            print(f"Warning: Could not update track duration in database: {e}")
+                            # Don't fail the request if duration update fails
                     
                     # Create similarity playlist if we have tracks
                     playlist_info = None
@@ -923,3 +932,24 @@ class SimilarityService:
             filtered_tracks.append(filtered_track)
         
         return filtered_tracks
+
+    async def _update_track_duration_in_db(self, db: AsyncSession, track_uuid: str, duration: float) -> None:
+        """
+        Updates the duration of a track in the database.
+        
+        Args:
+            db: Database session
+            track_uuid: Track UUID
+            duration: New duration in seconds
+        """
+        # Convert to integer since database field is INT UNSIGNED
+        duration_int = int(round(duration)) if duration is not None else None
+        
+        query = text("""
+            UPDATE tracks
+            SET duration_sec = :duration
+            WHERE uuid = :track_uuid
+        """)
+        
+        await db.execute(query, {"duration": duration_int, "track_uuid": track_uuid})
+        await db.commit()

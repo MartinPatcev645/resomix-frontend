@@ -168,7 +168,7 @@ class TrackUploadService:
         file_content: bytes
     ) -> Dict[str, any]:
         """
-        Upload a track to the database with extracted metadata.
+        Upload a track to the database and store its metadata.
         
         Args:
             file: The uploaded file object
@@ -178,7 +178,7 @@ class TrackUploadService:
             Dict containing the track UUID and insertion status
         """
         try:
-            # Generate UUID for the track
+            # Generate new UUID for the track
             track_uuid = generate_track_uuid()
             logger.info(f"Generated UUID for track: {track_uuid}")
             
@@ -209,8 +209,6 @@ class TrackUploadService:
             
             # Set file paths
             file_path = file.filename or "unknown_file"
-            
-            # Set preview path based on track type (default is "upload")
             preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
             # Insert into database
@@ -244,7 +242,7 @@ class TrackUploadService:
                     "genre_id": genre_id,
                     "title": title[:255],  # Ensure it fits in the column
                     "year": year,
-                    "duration_sec": None,  # User said to ignore duration for now
+                    "duration_sec": None,  # Will be updated from similarity server response
                     "file_path": file_path[:500],  # Ensure it fits in the column
                     "preview_path": preview_path,
                     "file_size": file_size,
