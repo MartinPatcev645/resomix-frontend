@@ -945,7 +945,7 @@ class SimilarityService:
             # Note: Album and Genre are not typically returned in similarity responses,
             # but we can add them if needed in the future
             
-            filtered_tracks.apend(filtered_track)
+            filtered_tracks.append(filtered_track)
         
         return filtered_tracks
 
