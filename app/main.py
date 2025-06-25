@@ -65,7 +65,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content=format_response(
             success=False,
             error="Validation failed",
-            details=details
+            data={"details": details}
         )
     )
 

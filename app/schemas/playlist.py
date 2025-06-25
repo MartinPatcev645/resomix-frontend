@@ -34,11 +34,11 @@ class PlaylistRenameRequest(BaseModel):
             raise ValueError('Playlist name cannot be empty or whitespace only')
         
         # Allow alphanumeric characters, spaces, hyphens, underscores, and basic punctuation
-        # Pattern: letters, numbers, spaces, hyphens, underscores, periods, apostrophes, parentheses
-        allowed_pattern = r"^[a-zA-Z0-9\s\-_.'()]+$"
+        # Pattern: letters, numbers, spaces, hyphens, underscores, periods, apostrophes, parentheses, commas
+        allowed_pattern = r"^[a-zA-Z0-9\s\-_.'(),]+$"
         
         if not re.match(allowed_pattern, v.strip()):
-            raise ValueError('Playlist name can only contain letters, numbers, spaces, hyphens, underscores, periods, apostrophes, and parentheses')
+            raise ValueError('Playlist name can only contain letters, numbers, spaces, hyphens, underscores, periods, apostrophes, parentheses, and commas')
         
         return v.strip()
 
