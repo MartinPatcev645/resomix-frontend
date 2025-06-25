@@ -203,7 +203,7 @@ async def get_track_rating_stats_endpoint(
     "/playlists/",
     response_model=RatingOperationResponse,
     summary="Rate Playlist",
-    description="Rate a playlist with 0-3 stars. Creates new rating or updates existing one.",
+    description="Rate a playlist with 0-3 stars and optional message. Creates new rating or updates existing one.",
     responses={
         200: {
             "model": RatingOperationResponse,
@@ -229,10 +229,11 @@ async def rate_playlist_endpoint(
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Rate a playlist with star rating.
+    Rate a playlist with star rating and optional message.
     
     - **playlist_id**: The ID of the playlist to rate (positive integer)
     - **rating**: Rating value from 0 to 3 stars
+    - **message**: Optional message/feedback about the playlist (max 1000 characters)
     - **user_id**: Optional user ID for the rating (UUID format)
     """
     return await rating_controller.rate_playlist(db, request_data)

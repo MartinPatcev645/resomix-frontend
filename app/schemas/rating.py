@@ -48,6 +48,7 @@ class PlaylistRatingRequest(BaseModel):
     """Request schema for rating a playlist."""
     playlist_id: int = Field(..., description="Playlist ID to rate", gt=0)
     rating: int = Field(..., description="Rating value: 0-3 stars")
+    message: Optional[str] = Field(None, description="Optional message/feedback about the playlist", max_length=1000)
     user_id: Optional[str] = Field(None, description="User ID (optional for anonymous ratings)", max_length=36)
 
     @validator('rating')
@@ -57,11 +58,23 @@ class PlaylistRatingRequest(BaseModel):
             raise ValueError('Playlist rating must be between 0 and 3 stars')
         return v
 
+    @validator('message')
+    def validate_message(cls, v):
+        """Validate message length and content."""
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None  # Convert empty string to None
+            if len(v) > 1000:
+                raise ValueError('Message must not exceed 1000 characters')
+        return v
+
     class Config:
         json_schema_extra = {
             "example": {
                 "playlist_id": 456,
                 "rating": 3,
+                "message": "Great playlist! Love the track selection and flow.",
                 "user_id": "550e8400-e29b-41d4-a716-446655440000"
             }
         }
@@ -87,16 +100,18 @@ class RatingResponse(BaseModel):
     playlist_id: Optional[int] = Field(None, description="Playlist ID (for playlist ratings)")
     user_id: Optional[str] = Field(None, description="User ID")
     rating: int = Field(..., description="Rating value")
+    message: Optional[str] = Field(None, description="User message/feedback (for playlist ratings)")
     rated_at: datetime = Field(..., description="Rating timestamp")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "id": 1,
-                "track_id": 123,
-                "playlist_id": None,
+                "track_id": None,
+                "playlist_id": 456,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
-                "rating": 1,
+                "rating": 3,
+                "message": "Great playlist! Love the track selection and flow.",
                 "rated_at": "2025-01-13T10:30:00Z"
             }
         }
@@ -112,13 +127,14 @@ class RatingOperationResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "success": True,
-                "message": "Track rated successfully",
+                "message": "Playlist rated successfully",
                 "data": {
                     "id": 1,
-                    "track_id": 123,
-                    "playlist_id": None,
+                    "track_id": None,
+                    "playlist_id": 456,
                     "user_id": "550e8400-e29b-41d4-a716-446655440000",
-                    "rating": 1,
+                    "rating": 3,
+                    "message": "Great playlist! Love the track selection and flow.",
                     "rated_at": "2025-01-13T10:30:00Z"
                 }
             }

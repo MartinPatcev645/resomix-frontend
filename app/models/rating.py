@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # TrackRating, PlaylistRating models 
-from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Index
+from sqlalchemy import Column, Integer, BigInteger, String, Text, SmallInteger, ForeignKey, DateTime, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base
@@ -75,6 +75,7 @@ class PlaylistRating(Base):
         user_id    CHAR(36),
         playlist_id BIGINT UNSIGNED NOT NULL,
         rating     TINYINT UNSIGNED,     -- 0-3 stars
+        message    TEXT NULL,            -- Optional user message/feedback
         rated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
         KEY idx_pr_user (user_id, playlist_id)
@@ -88,6 +89,7 @@ class PlaylistRating(Base):
     # Fields
     user_id = Column(String(36), nullable=True)  # Supabase UUID, nullable for anonymous
     rating = Column(SmallInteger, nullable=True)  # 0-3 stars
+    message = Column(Text, nullable=True)  # Optional user message/feedback
     
     # Foreign keys
     playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="CASCADE"), nullable=False)
@@ -105,4 +107,4 @@ class PlaylistRating(Base):
     )
     
     def __repr__(self):
-        return f"<PlaylistRating(id={self.id}, user_id='{self.user_id}', playlist_id={self.playlist_id}, rating={self.rating})>"
+        return f"<PlaylistRating(id={self.id}, user_id='{self.user_id}', playlist_id={self.playlist_id}, rating={self.rating}, message='{self.message[:50] if self.message else None}')>"

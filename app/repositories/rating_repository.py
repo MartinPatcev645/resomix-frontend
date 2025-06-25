@@ -241,7 +241,8 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
         db: AsyncSession, 
         playlist_id: int, 
         rating: int, 
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        message: Optional[str] = None
     ) -> Optional[PlaylistRating]:
         """
         Rate a playlist or update existing rating.
@@ -251,6 +252,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             playlist_id: Playlist ID to rate
             rating: Rating value (0-3)
             user_id: User ID (optional for anonymous ratings)
+            message: Optional user message/feedback
             
         Returns:
             PlaylistRating instance or None if playlist doesn't exist
@@ -272,6 +274,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             if existing_rating:
                 # Update existing rating
                 existing_rating.rating = rating
+                existing_rating.message = message
                 existing_rating.rated_at = func.current_timestamp()
                 await db.commit()
                 await db.refresh(existing_rating)
@@ -281,7 +284,8 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
                 new_rating = PlaylistRating(
                     user_id=user_id,
                     playlist_id=playlist_id,
-                    rating=rating
+                    rating=rating,
+                    message=message
                 )
                 db.add(new_rating)
                 await db.commit()

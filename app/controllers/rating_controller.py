@@ -229,12 +229,13 @@ class RatingController:
         log_request("rate_playlist", "POST", {
             "playlist_id": request_data.playlist_id, 
             "rating": request_data.rating,
+            "message": request_data.message,
             "user_id": request_data.user_id
         })
         
         try:
             result = await self.rating_service.rate_playlist(
-                db, request_data.playlist_id, request_data.rating, request_data.user_id
+                db, request_data.playlist_id, request_data.rating, request_data.user_id, request_data.message
             )
             
             if result.get("success"):

@@ -38,6 +38,7 @@ class RatingService:
             playlist_id=getattr(rating_obj, 'playlist_id', None),
             user_id=rating_obj.user_id,
             rating=rating_obj.rating,
+            message=getattr(rating_obj, 'message', None),
             rated_at=rating_obj.rated_at
         )
     
@@ -198,7 +199,8 @@ class RatingService:
         db: AsyncSession, 
         playlist_id: int, 
         rating: int, 
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        message: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Rate a playlist or update existing rating.
@@ -208,13 +210,14 @@ class RatingService:
             playlist_id: Playlist ID to rate
             rating: Rating value (0-3)
             user_id: User ID (optional for anonymous ratings)
+            message: Optional user message/feedback
             
         Returns:
             Dictionary with success status, message, and rating data
         """
         try:
             rating_obj = await self.playlist_rating_repository.async_rate_playlist(
-                db, playlist_id, rating, user_id
+                db, playlist_id, rating, user_id, message
             )
             
             if rating_obj:
