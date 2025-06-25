@@ -181,12 +181,15 @@ class SimilarityService:
                             # Get the uploaded track's database ID
                             uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
                             if uploaded_track:
+                                # Generate playlist name based on uploaded track details
+                                playlist_name = self._generate_playlist_name_from_seed_track(uploaded_track_details)
+                                
                                 playlist_info = await self.playlist_repository.async_create_similarity_playlist(
                                     db=db,
                                     seed_track_id=uploaded_track.id,
                                     track_ids=deduplicated_track_ids,
                                     track_scores=deduplicated_track_scores,
-                                    name="Playlist"
+                                    name=playlist_name
                                 )
                                 
                                 # Send playlist peaks request (fire and forget)
@@ -337,12 +340,15 @@ class SimilarityService:
                     if queried_track_uuid:
                         queried_track = await self.track_repository.async_get_by_uuid(db, queried_track_uuid)
                         if queried_track:
+                            # Generate playlist name based on queried track details
+                            playlist_name = self._generate_playlist_name_from_seed_track(queried_track_data)
+                            
                             playlist_info = await self.playlist_repository.async_create_similarity_playlist(
                                 db=db,
                                 seed_track_id=queried_track.id,
                                 track_ids=deduplicated_track_ids,
                                 track_scores=deduplicated_track_scores,
-                                name="Playlist"
+                                name=playlist_name
                             )
                             
                             # Send playlist peaks request (fire and forget)
@@ -939,9 +945,78 @@ class SimilarityService:
             # Note: Album and Genre are not typically returned in similarity responses,
             # but we can add them if needed in the future
             
-            filtered_tracks.append(filtered_track)
+            filtered_tracks.apend(filtered_track)
         
         return filtered_tracks
+
+    def _generate_playlist_name_from_seed_track(self, seed_track_data: Dict[str, Any]) -> str:
+        """
+        Generate a playlist name based on the seed track's artist and title information.
+        
+        Format:
+        - Single artist: "Artist - Title"
+        - Multiple artists (up to max_artists): "Artist1, Artist2, Artist3 - Title"
+        - More than max_artists: "VA - Title"
+        
+        Args:
+            seed_track_data: Dictionary containing seed track information with 'artist' and 'title' keys
+            
+        Returns:
+            Generated playlist name string
+        """
+        from app.core.config import settings
+        
+        if not seed_track_data:
+            return "Playlist"
+        
+        title = seed_track_data.get("title", "Unknown")
+        artist_string = seed_track_data.get("artist", "Unknown")
+        
+        # Handle empty or unknown values
+        if not title or title.lower() in ["unknown", "n/a", ""]:
+            title = "Unknown"
+        if not artist_string or artist_string.lower() in ["unknown", "n/a", ""]:
+            return "Playlist"
+        
+        # Split artists by comma and clean them up
+        artists = [artist.strip() for artist in artist_string.split(",") if artist.strip()]
+        
+        # Remove duplicates while preserving order
+        unique_artists = []
+        seen = set()
+        for artist in artists:
+            if artist.lower() not in seen:
+                unique_artists.append(artist)
+                seen.add(artist.lower())
+        
+        if not unique_artists:
+            return "Playlist"
+        
+        # Determine artist part of the name
+        max_artists = settings.default_similarity_playlist_max_artists
+        
+        if len(unique_artists) == 1:
+            artist_part = unique_artists[0]
+        elif len(unique_artists) <= max_artists:
+            artist_part = ", ".join(unique_artists)
+        else:
+            artist_part = "VA"  # Various Artists
+        
+        # Generate the final playlist name
+        playlist_name = f"{artist_part} - {title}"
+        
+        # Ensure the name doesn't exceed the database limit (100 characters for playlist names)
+        if len(playlist_name) > 100:
+            # Truncate the title part if needed, keeping the artist part intact
+            max_title_length = 100 - len(artist_part) - 3  # 3 for " - "
+            if max_title_length > 10:  # Ensure we have at least some title
+                truncated_title = title[:max_title_length-3] + "..."
+                playlist_name = f"{artist_part} - {truncated_title}"
+            else:
+                # If artist part is too long, just use a simple format
+                playlist_name = f"{artist_part[:90]}... - {title[:5]}..."
+        
+        return playlist_name
 
     async def _update_track_duration_in_db(self, db: AsyncSession, track_uuid: str, duration: float) -> None:
         """

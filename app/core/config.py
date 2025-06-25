@@ -98,6 +98,7 @@ class Settings(BaseModel):
         description="Duplication thresholds corresponding to top_sk values"
     )
     default_top_sk: int = Field(default=20, description="Default top_sk value")
+    default_similarity_playlist_max_artists: int = Field(default=3, description="Default maximum number of artists to consider for playlist names")
     
     # Title filtering configuration
     title_removal_strings: List[str] = Field(
