@@ -23,6 +23,7 @@ from .health import router as health_router
 from .preview import router as preview_router
 from .playlists import router as playlists_router
 from .monthly_pipeline import router as monthly_pipeline_router
+from .ratings import router as ratings_router
 
 # List of all routers for easy inclusion
 all_routers = [
@@ -35,4 +36,5 @@ all_routers = [
     preview_router,
     playlists_router,
     monthly_pipeline_router,
+    ratings_router,
 ]
