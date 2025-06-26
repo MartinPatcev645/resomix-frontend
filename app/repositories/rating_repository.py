@@ -239,7 +239,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
     async def async_rate_playlist(
         self, 
         db: AsyncSession, 
-        playlist_id: int, 
+        playlist_id: str,  # Changed from int to str (UUID)
         rating: int, 
         user_id: Optional[str] = None,
         message: Optional[str] = None
@@ -249,7 +249,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
         
         Args:
             db: Database session
-            playlist_id: Playlist ID to rate
+            playlist_id: Playlist UUID to rate
             rating: Rating value (0-3)
             user_id: User ID (optional for anonymous ratings)
             message: Optional user message/feedback
@@ -258,17 +258,19 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             PlaylistRating instance or None if playlist doesn't exist
         """
         try:
-            # Check if playlist exists
-            playlist_stmt = select(Playlist).where(Playlist.id == playlist_id)
-            playlist_result = await db.execute(playlist_stmt)
-            playlist = playlist_result.scalar_one_or_none()
+            # First, get the numeric playlist ID from UUID
+            from app.models.playlist import Playlist
+            playlist_query = await db.execute(
+                select(Playlist.id).where(Playlist.uuid == playlist_id)
+            )
+            playlist_numeric_id = playlist_query.scalar_one_or_none()
             
-            if not playlist:
-                return None
+            if not playlist_numeric_id:
+                return None  # Playlist not found
             
             # Check for existing rating
             existing_rating = await self._async_find_existing(
-                db, user_id=user_id, playlist_id=playlist_id
+                db, user_id=user_id, playlist_id=playlist_numeric_id
             )
             
             if existing_rating:
@@ -283,7 +285,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
                 # Create new rating
                 new_rating = PlaylistRating(
                     user_id=user_id,
-                    playlist_id=playlist_id,
+                    playlist_id=playlist_numeric_id,
                     rating=rating,
                     message=message
                 )

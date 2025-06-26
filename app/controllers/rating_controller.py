@@ -23,6 +23,7 @@ from app.services.rating_service import RatingService
 from app.utils.response_utils import format_response
 from app.utils.logging_utils import log_request
 from app.schemas.rating import TrackRatingRequest, PlaylistRatingRequest
+from app.core.exceptions import ValidationError
 
 
 class RatingController:
@@ -216,49 +217,42 @@ class RatingController:
     
     # Playlist Rating Endpoints
     async def rate_playlist(self, db: AsyncSession, request_data: PlaylistRatingRequest) -> JSONResponse:
-        """
-        Rate a playlist or update existing rating.
-        
-        Args:
-            db: Database session
-            request_data: Playlist rating request data
-            
-        Returns:
-            JSON response with operation result
-        """
-        log_request("rate_playlist", "POST", {
-            "playlist_id": request_data.playlist_id, 
-            "rating": request_data.rating,
-            "message": request_data.message,
-            "user_id": request_data.user_id
-        })
-        
+        """Rate a playlist endpoint handler."""
         try:
+            log_request("rate_playlist", {
+                "playlist_id": request_data.playlist_id,
+                "rating": request_data.rating,
+                "has_message": bool(request_data.message),
+                "has_user_id": bool(request_data.user_id)
+            })
+            
             result = await self.rating_service.rate_playlist(
-                db, request_data.playlist_id, request_data.rating, request_data.user_id, request_data.message
+                db, 
+                request_data.playlist_id,  # Now a string UUID
+                request_data.rating,
+                request_data.user_id,
+                request_data.message
             )
             
-            if result.get("success"):
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+            if result["success"]:
+                return format_response(result, 200)
             else:
-                status_code = status.HTTP_404_NOT_FOUND if "not found" in result.get("error", "").lower() else status.HTTP_400_BAD_REQUEST
-                return JSONResponse(
-                    status_code=status_code,
-                    content=result
-                )
+                error_code = 404 if "not found" in result["error"].lower() else 422
+                return format_response(result, error_code)
                 
+        except ValidationError as e:
+            error_response = {
+                "success": False,
+                "error": f"Validation error: {str(e)}"
+            }
+            return format_response(error_response, 422)
         except Exception as e:
-            print(f"Error in rating controller rate_playlist: {e}")
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="An internal server error occurred while rating the playlist"
-                )
-            )
+            print(f"Error in rate_playlist controller: {e}")
+            error_response = {
+                "success": False,
+                "error": "Internal server error occurred while processing the rating"
+            }
+            return format_response(error_response, 500)
     
     async def get_playlist_rating(self, db: AsyncSession, playlist_id: int, user_id: str = None) -> JSONResponse:
         """

@@ -46,10 +46,21 @@ class TrackRatingRequest(BaseModel):
 
 class PlaylistRatingRequest(BaseModel):
     """Request schema for rating a playlist."""
-    playlist_id: int = Field(..., description="Playlist ID to rate", gt=0)
+    playlist_id: str = Field(..., description="Playlist UUID to rate", min_length=36, max_length=36)
     rating: int = Field(..., description="Rating value: 0-3 stars")
     message: Optional[str] = Field(None, description="Optional message/feedback about the playlist", max_length=1000)
     user_id: Optional[str] = Field(None, description="User ID (optional for anonymous ratings)", max_length=36)
+
+    @validator('playlist_id')
+    def validate_playlist_id(cls, v):
+        """Validate playlist_id is a valid UUID format."""
+        try:
+            # Try to parse as UUID to validate format
+            import uuid
+            uuid.UUID(v)
+            return v
+        except ValueError:
+            raise ValueError('Playlist ID must be a valid UUID')
 
     @validator('rating')
     def validate_playlist_rating(cls, v):
@@ -72,7 +83,7 @@ class PlaylistRatingRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "playlist_id": 456,
+                "playlist_id": "d8aa3a8d-1423-4ec1-8af9-e0477c801879",
                 "rating": 3,
                 "message": "Great playlist! Love the track selection and flow.",
                 "user_id": "550e8400-e29b-41d4-a716-446655440000"
@@ -97,7 +108,7 @@ class RatingResponse(BaseModel):
     """Response schema for rating operations."""
     id: int = Field(..., description="Rating ID")
     track_id: Optional[int] = Field(None, description="Track ID (for track ratings)")
-    playlist_id: Optional[int] = Field(None, description="Playlist ID (for playlist ratings)")
+    playlist_id: Optional[str] = Field(None, description="Playlist UUID (for playlist ratings)")
     user_id: Optional[str] = Field(None, description="User ID")
     rating: int = Field(..., description="Rating value")
     message: Optional[str] = Field(None, description="User message/feedback (for playlist ratings)")
@@ -108,7 +119,7 @@ class RatingResponse(BaseModel):
             "example": {
                 "id": 1,
                 "track_id": None,
-                "playlist_id": 456,
+                "playlist_id": "d8aa3a8d-1423-4ec1-8af9-e0477c801879",
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
                 "rating": 3,
                 "message": "Great playlist! Love the track selection and flow.",
@@ -131,7 +142,7 @@ class RatingOperationResponse(BaseModel):
                 "data": {
                     "id": 1,
                     "track_id": None,
-                    "playlist_id": 456,
+                    "playlist_id": "d8aa3a8d-1423-4ec1-8af9-e0477c801879",
                     "user_id": "550e8400-e29b-41d4-a716-446655440000",
                     "rating": 3,
                     "message": "Great playlist! Love the track selection and flow.",

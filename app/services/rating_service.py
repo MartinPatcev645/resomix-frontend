@@ -42,6 +42,18 @@ class RatingService:
             rated_at=rating_obj.rated_at
         )
     
+    def _format_playlist_rating_response(self, rating_obj, playlist_uuid: str) -> RatingResponse:
+        """Format playlist rating object to response schema with UUID."""
+        return RatingResponse(
+            id=rating_obj.id,
+            track_id=None,
+            playlist_id=playlist_uuid,  # Use the UUID instead of numeric ID
+            user_id=rating_obj.user_id,
+            rating=rating_obj.rating,
+            message=getattr(rating_obj, 'message', None),
+            rated_at=rating_obj.rated_at
+        )
+    
     # Track Rating Operations
     async def rate_track(
         self, 
@@ -197,10 +209,10 @@ class RatingService:
     async def rate_playlist(
         self, 
         db: AsyncSession, 
-        playlist_id: int, 
+        playlist_id: str,
         rating: int, 
-        user_id: Optional[str] = None,
-        message: Optional[str] = None
+        user_id: str = None,
+        message: str = None
     ) -> Dict[str, Any]:
         """
         Rate a playlist or update existing rating.
@@ -216,6 +228,13 @@ class RatingService:
             Dictionary with success status, message, and rating data
         """
         try:
+            # Validate inputs
+            if rating not in [0, 1, 2, 3]:
+                return {
+                    "success": False,
+                    "error": "Playlist rating must be between 0 and 3 stars"
+                }
+            
             rating_obj = await self.playlist_rating_repository.async_rate_playlist(
                 db, playlist_id, rating, user_id, message
             )
@@ -225,7 +244,7 @@ class RatingService:
                 return {
                     "success": True,
                     "message": f"Playlist rating {action} successfully",
-                    "data": self._format_rating_response(rating_obj)
+                    "data": self._format_playlist_rating_response(rating_obj, playlist_id)
                 }
             else:
                 return {
@@ -265,7 +284,7 @@ class RatingService:
             if rating_obj:
                 return {
                     "success": True,
-                    "data": self._format_rating_response(rating_obj)
+                    "data": self._format_playlist_rating_response(rating_obj, playlist_id)
                 }
             else:
                 return {
