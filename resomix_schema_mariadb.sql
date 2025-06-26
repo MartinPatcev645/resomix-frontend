@@ -163,10 +163,14 @@ CREATE TABLE IF NOT EXISTS track_ratings (
     id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id   CHAR(36),
     track_id  BIGINT UNSIGNED NOT NULL,
+    playlist_id BIGINT UNSIGNED NULL,
     rating    TINYINT UNSIGNED,      -- 0/1 "dislike/like"
     rated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
-    KEY idx_tr_user (user_id, track_id)
+    FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+    KEY idx_tr_user (user_id, track_id),
+    KEY idx_tr_playlist (playlist_id),
+    KEY idx_tr_user_track_playlist (user_id, track_id, playlist_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS playlist_ratings (

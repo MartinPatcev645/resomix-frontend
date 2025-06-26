@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Query
+from fastapi import APIRouter, Security, Depends, Query, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -50,7 +50,7 @@ rating_controller = RatingController()
     "/tracks/",
     response_model=RatingOperationResponse,
     summary="Rate Track",
-    description="Rate a track with 0 (not similar) or 1 (similar). Always creates a new rating entry.",
+    description="Rate a track with 0 (not similar) or 1 (similar) within a specific playlist context. Always creates a new rating entry.",
     responses={
         200: {
             "model": RatingOperationResponse,
@@ -58,7 +58,7 @@ rating_controller = RatingController()
         },
         404: {
             "model": RatingErrorResponse,
-            "description": "Track not found"
+            "description": "Track or playlist not found"
         },
         422: {
             "model": RatingErrorResponse,
@@ -76,9 +76,10 @@ async def rate_track_endpoint(
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Rate a track with similarity feedback.
+    Rate a track with similarity feedback within a playlist context.
     
     - **track_id**: The UUID of the track to rate
+    - **playlist_id**: The UUID of the playlist from which the rating is being submitted
     - **rating**: Rating value - 0 (not similar) or 1 (similar)
     - **user_id**: Optional user ID for the rating (UUID format)
     """
@@ -86,10 +87,10 @@ async def rate_track_endpoint(
 
 
 @router.get(
-    "/tracks/{track_id}",
+    "/tracks/{track_id}/playlist/{playlist_id}",
     response_model=RatingOperationResponse,
     summary="Get Track Rating",
-    description="Get user's rating for a specific track.",
+    description="Get user's rating for a specific track within a specific playlist context.",
     responses={
         200: {
             "model": RatingOperationResponse,
@@ -97,11 +98,7 @@ async def rate_track_endpoint(
         },
         404: {
             "model": RatingErrorResponse,
-            "description": "Rating not found"
-        },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid track ID"
+            "description": "Track rating not found"
         },
         500: {
             "model": RatingErrorResponse,
@@ -110,25 +107,27 @@ async def rate_track_endpoint(
     }
 )
 async def get_track_rating_endpoint(
-    track_id: str,
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
+    track_id: str = Path(..., description="Track UUID", min_length=24),
+    playlist_id: str = Path(..., description="Playlist UUID", min_length=36, max_length=36),
+    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)", max_length=36),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Get user's rating for a specific track.
+    Get user's rating for a specific track within a playlist context.
     
     - **track_id**: The UUID of the track
-    - **user_id**: Optional user ID (query parameter)
+    - **playlist_id**: The UUID of the playlist
+    - **user_id**: Optional user ID for the rating (UUID format)
     """
-    return await rating_controller.get_track_rating(db, track_id, user_id)
+    return await rating_controller.get_track_rating(db, track_id, playlist_id, user_id)
 
 
 @router.delete(
-    "/tracks/{track_id}",
+    "/tracks/{track_id}/playlist/{playlist_id}",
     response_model=RatingOperationResponse,
     summary="Delete Track Rating",
-    description="Delete user's rating for a specific track.",
+    description="Delete user's rating for a specific track within a specific playlist context.",
     responses={
         200: {
             "model": RatingOperationResponse,
@@ -136,11 +135,7 @@ async def get_track_rating_endpoint(
         },
         404: {
             "model": RatingErrorResponse,
-            "description": "Rating not found"
-        },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid track ID"
+            "description": "Track rating not found"
         },
         500: {
             "model": RatingErrorResponse,
@@ -149,18 +144,20 @@ async def get_track_rating_endpoint(
     }
 )
 async def delete_track_rating_endpoint(
-    track_id: str,
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
+    track_id: str = Path(..., description="Track UUID", min_length=24),
+    playlist_id: str = Path(..., description="Playlist UUID", min_length=36, max_length=36),
+    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)", max_length=36),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Delete user's rating for a specific track.
+    Delete user's rating for a specific track within a playlist context.
     
     - **track_id**: The UUID of the track
-    - **user_id**: Optional user ID (query parameter)
+    - **playlist_id**: The UUID of the playlist
+    - **user_id**: Optional user ID for the rating (UUID format)
     """
-    return await rating_controller.delete_track_rating(db, track_id, user_id)
+    return await rating_controller.delete_track_rating(db, track_id, playlist_id, user_id)
 
 
 @router.get(

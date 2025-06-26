@@ -24,6 +24,7 @@ from datetime import datetime
 class TrackRatingRequest(BaseModel):
     """Request schema for rating a track."""
     track_id: str = Field(..., description="Track ID to rate (UUID or ObjectId format)", min_length=24)
+    playlist_id: str = Field(..., description="Playlist ID (UUID) from which the rating is being submitted", min_length=36, max_length=36)
     rating: int = Field(..., description="Rating value: 0 (not similar) or 1 (similar)")
     user_id: Optional[str] = Field(None, description="User ID (optional for anonymous ratings)", max_length=36)
 
@@ -53,6 +54,18 @@ class TrackRatingRequest(BaseModel):
             
         raise ValueError('Track ID must be a valid UUID, ObjectId, or alphanumeric identifier')
 
+    @validator('playlist_id')
+    def validate_playlist_id(cls, v):
+        """Validate playlist_id is a valid UUID format."""
+        if len(v) == 36 and v.count('-') == 4:
+            try:
+                import uuid
+                uuid.UUID(v)
+                return v
+            except ValueError:
+                pass
+        raise ValueError('Playlist ID must be a valid UUID format')
+
     @validator('rating')
     def validate_track_rating(cls, v):
         """Validate track rating is 0 or 1."""
@@ -64,6 +77,7 @@ class TrackRatingRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "track_id": "67b003e3c0f27a0796ede831",
+                "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
                 "rating": 1,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000"
             }

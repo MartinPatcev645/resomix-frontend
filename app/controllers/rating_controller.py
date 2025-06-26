@@ -18,6 +18,7 @@ Email: usman.naeem2212@gmail.com
 from fastapi import status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.services.rating_service import RatingService
 from app.utils.response_utils import format_response
@@ -39,6 +40,7 @@ class RatingController:
         try:
             log_request("rate_track", {
                 "track_id": request_data.track_id,
+                "playlist_id": request_data.playlist_id,
                 "rating": request_data.rating,
                 "has_user_id": bool(request_data.user_id)
             })
@@ -46,6 +48,7 @@ class RatingController:
             result = await self.rating_service.rate_track(
                 db, 
                 request_data.track_id,  # Now a string UUID
+                request_data.playlist_id,  # Playlist UUID
                 request_data.rating, 
                 request_data.user_id
             )
@@ -82,24 +85,18 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_track_rating(self, db: AsyncSession, track_id: str, user_id: str = None) -> JSONResponse:
-        """
-        Get user's rating for a specific track.
-        
-        Args:
-            db: Database session
-            track_id: Track UUID
-            user_id: User ID (optional)
-            
-        Returns:
-            JSON response with rating data
-        """
-        log_request("get_track_rating", "GET", {"track_id": track_id, "user_id": user_id})
-        
+    async def get_track_rating(self, db: AsyncSession, track_id: str, playlist_id: str, user_id: Optional[str] = None) -> JSONResponse:
+        """Get track rating endpoint handler."""
         try:
-            result = await self.rating_service.get_track_rating(db, track_id, user_id)
+            log_request("get_track_rating", {
+                "track_id": track_id,
+                "playlist_id": playlist_id,
+                "has_user_id": bool(user_id)
+            })
             
-            if result.get("success"):
+            result = await self.rating_service.get_track_rating(db, track_id, playlist_id, user_id)
+            
+            if result["success"]:
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
@@ -111,33 +108,28 @@ class RatingController:
                 )
                 
         except Exception as e:
-            print(f"Error in rating controller get_track_rating: {e}")
+            print(f"Error in get_track_rating controller: {e}")
+            error_response = {
+                "success": False,
+                "error": "Internal server error occurred while retrieving the rating"
+            }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="An internal server error occurred while retrieving the rating"
-                )
+                content=error_response
             )
     
-    async def delete_track_rating(self, db: AsyncSession, track_id: str, user_id: str = None) -> JSONResponse:
-        """
-        Delete user's rating for a specific track.
-        
-        Args:
-            db: Database session
-            track_id: Track UUID
-            user_id: User ID (optional)
-            
-        Returns:
-            JSON response with operation result
-        """
-        log_request("delete_track_rating", "DELETE", {"track_id": track_id, "user_id": user_id})
-        
+    async def delete_track_rating(self, db: AsyncSession, track_id: str, playlist_id: str, user_id: Optional[str] = None) -> JSONResponse:
+        """Delete track rating endpoint handler."""
         try:
-            result = await self.rating_service.delete_track_rating(db, track_id, user_id)
+            log_request("delete_track_rating", {
+                "track_id": track_id,
+                "playlist_id": playlist_id,
+                "has_user_id": bool(user_id)
+            })
             
-            if result.get("success"):
+            result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, user_id)
+            
+            if result["success"]:
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
@@ -149,13 +141,14 @@ class RatingController:
                 )
                 
         except Exception as e:
-            print(f"Error in rating controller delete_track_rating: {e}")
+            print(f"Error in delete_track_rating controller: {e}")
+            error_response = {
+                "success": False,
+                "error": "Internal server error occurred while deleting the rating"
+            }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="An internal server error occurred while deleting the rating"
-                )
+                content=error_response
             )
     
     async def get_track_rating_stats(self, db: AsyncSession, track_id: str) -> JSONResponse:

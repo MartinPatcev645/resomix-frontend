@@ -31,9 +31,11 @@ class TrackRating(Base):
         id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         user_id   CHAR(36),
         track_id  BIGINT UNSIGNED NOT NULL,
+        playlist_id BIGINT UNSIGNED NULL,
         rating    TINYINT UNSIGNED,      -- 0/1 "dislike/like"
         rated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+        FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
         KEY idx_tr_user (user_id, track_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
@@ -48,12 +50,14 @@ class TrackRating(Base):
     
     # Foreign keys
     track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="CASCADE"), nullable=False)
+    playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="CASCADE"), nullable=True)
     
     # Timestamps
     rated_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
     
     # Relationships
     track = relationship("Track")
+    playlist = relationship("Playlist")
     
     # Composite index for user_id and track_id (idx_tr_user)
     __table_args__ = (
@@ -62,7 +66,7 @@ class TrackRating(Base):
     )
     
     def __repr__(self):
-        return f"<TrackRating(id={self.id}, user_id='{self.user_id}', track_id={self.track_id}, rating={self.rating})>"
+        return f"<TrackRating(id={self.id}, user_id='{self.user_id}', track_id={self.track_id}, playlist_id={self.playlist_id}, rating={self.rating})>"
 
 
 class PlaylistRating(Base):

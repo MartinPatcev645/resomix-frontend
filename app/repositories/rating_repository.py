@@ -21,10 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, delete
 from sqlalchemy.exc import IntegrityError
 
-from app.models.rating import TrackRating, PlaylistRating
-from app.models.track import Track
-from app.models.playlist import Playlist
-from app.repositories.base_repository import BaseRepository
+from ..models.rating import TrackRating, PlaylistRating
+from ..models.track import Track
+from ..models.playlist import Playlist
+from ..repositories.base_repository import BaseRepository
 
 
 class TrackRatingRepository(BaseRepository[TrackRating]):
@@ -35,23 +35,25 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         super().__init__(TrackRating)
     
     def _find_existing(self, db: Session, **kwargs) -> Optional[TrackRating]:
-        """Find existing track rating by user_id and track_id."""
-        if 'user_id' in kwargs and 'track_id' in kwargs:
+        """Find existing track rating by user_id, track_id, and playlist_id."""
+        if 'user_id' in kwargs and 'track_id' in kwargs and 'playlist_id' in kwargs:
             return db.query(self.model).filter(
                 and_(
                     self.model.user_id == kwargs['user_id'],
-                    self.model.track_id == kwargs['track_id']
+                    self.model.track_id == kwargs['track_id'],
+                    self.model.playlist_id == kwargs['playlist_id']
                 )
             ).first()
         return None
     
     async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[TrackRating]:
-        """Find existing track rating by user_id and track_id (async)."""
-        if 'user_id' in kwargs and 'track_id' in kwargs:
+        """Find existing track rating by user_id, track_id, and playlist_id (async)."""
+        if 'user_id' in kwargs and 'track_id' in kwargs and 'playlist_id' in kwargs:
             stmt = select(self.model).where(
                 and_(
                     self.model.user_id == kwargs['user_id'],
-                    self.model.track_id == kwargs['track_id']
+                    self.model.track_id == kwargs['track_id'],
+                    self.model.playlist_id == kwargs['playlist_id']
                 )
             )
             result = await db.execute(stmt)
@@ -62,6 +64,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         self, 
         db: AsyncSession, 
         track_id: str,  # Changed from int to str (UUID)
+        playlist_id: str,  # Added playlist UUID
         rating: int, 
         user_id: Optional[str] = None
     ) -> Optional[TrackRating]:
@@ -71,11 +74,12 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         Args:
             db: Database session
             track_id: Track ID (UUID, ObjectId, or other format)
+            playlist_id: Playlist UUID
             rating: Rating value (0 or 1)
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
-            TrackRating instance or None if track doesn't exist
+            TrackRating instance or None if track or playlist doesn't exist
         """
         try:
             # First, try to get the numeric track ID from the identifier
@@ -101,10 +105,21 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             if not track_numeric_id:
                 return None  # Track not found
             
+            # Get the numeric playlist ID from UUID
+            from ..models.playlist import Playlist
+            playlist_query = await db.execute(
+                select(Playlist.id).where(Playlist.uuid == playlist_id)
+            )
+            playlist_numeric_id = playlist_query.scalar_one_or_none()
+            
+            if not playlist_numeric_id:
+                return None  # Playlist not found
+            
             # Always create new rating (no duplicate checking)
             new_rating = TrackRating(
                 user_id=user_id,
                 track_id=track_numeric_id,
+                playlist_id=playlist_numeric_id,
                 rating=rating
             )
             db.add(new_rating)
@@ -121,14 +136,16 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         self, 
         db: AsyncSession, 
         track_id: str,  # Changed from int to str (UUID)
+        playlist_id: str,  # Added playlist UUID
         user_id: Optional[str] = None
     ) -> Optional[TrackRating]:
         """
-        Get user's rating for a specific track.
+        Get user's rating for a specific track in a specific playlist.
         
         Args:
             db: Database session
             track_id: Track ID (UUID, ObjectId, or other format)
+            playlist_id: Playlist UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -158,7 +175,17 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             if not track_numeric_id:
                 return None  # Track not found
             
-            return await self._async_find_existing(db, user_id=user_id, track_id=track_numeric_id)
+            # Get the numeric playlist ID from UUID
+            from ..models.playlist import Playlist
+            playlist_query = await db.execute(
+                select(Playlist.id).where(Playlist.uuid == playlist_id)
+            )
+            playlist_numeric_id = playlist_query.scalar_one_or_none()
+            
+            if not playlist_numeric_id:
+                return None  # Playlist not found
+            
+            return await self._async_find_existing(db, user_id=user_id, track_id=track_numeric_id, playlist_id=playlist_numeric_id)
         except Exception as e:
             print(f"Error getting track rating: {e}")
             raise e
@@ -167,14 +194,16 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         self, 
         db: AsyncSession, 
         track_id: str,  # Changed from int to str (UUID)
+        playlist_id: str,  # Added playlist UUID
         user_id: Optional[str] = None
     ) -> bool:
         """
-        Delete user's rating for a specific track.
+        Delete user's rating for a specific track in a specific playlist.
         
         Args:
             db: Database session
             track_id: Track ID (UUID, ObjectId, or other format)
+            playlist_id: Playlist UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -204,9 +233,20 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             if not track_numeric_id:
                 return False  # Track not found
             
+            # Get the numeric playlist ID from UUID
+            from ..models.playlist import Playlist
+            playlist_query = await db.execute(
+                select(Playlist.id).where(Playlist.uuid == playlist_id)
+            )
+            playlist_numeric_id = playlist_query.scalar_one_or_none()
+            
+            if not playlist_numeric_id:
+                return False  # Playlist not found
+            
             stmt = delete(self.model).where(
                 and_(
                     self.model.track_id == track_numeric_id,
+                    self.model.playlist_id == playlist_numeric_id,
                     self.model.user_id == user_id
                 )
             )
@@ -334,7 +374,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
         """
         try:
             # First, get the numeric playlist ID from UUID
-            from app.models.playlist import Playlist
+            from ..models.playlist import Playlist
             playlist_query = await db.execute(
                 select(Playlist.id).where(Playlist.uuid == playlist_id)
             )

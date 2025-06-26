@@ -42,12 +42,12 @@ class RatingService:
             rated_at=rating_obj.rated_at
         )
     
-    def _format_track_rating_response(self, rating_obj, track_uuid: str) -> dict:
-        """Format track rating object to response dictionary with UUID."""
+    def _format_track_rating_response(self, rating_obj, track_uuid: str, playlist_uuid: str) -> dict:
+        """Format track rating object to response dictionary with UUIDs."""
         return {
             "id": rating_obj.id,
             "track_id": track_uuid,  # Use the UUID instead of numeric ID
-            "playlist_id": None,
+            "playlist_id": playlist_uuid,  # Use the playlist UUID
             "user_id": rating_obj.user_id,
             "rating": rating_obj.rating,
             "message": None,  # Track ratings don't have messages
@@ -71,6 +71,7 @@ class RatingService:
         self, 
         db: AsyncSession, 
         track_id: str,  # Changed from int to str (UUID)
+        playlist_id: str,  # Added playlist UUID
         rating: int, 
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -80,6 +81,7 @@ class RatingService:
         Args:
             db: Database session
             track_id: Track UUID to rate
+            playlist_id: Playlist UUID from which the rating is being submitted
             rating: Rating value (0 or 1)
             user_id: User ID (optional for anonymous ratings)
             
@@ -88,19 +90,19 @@ class RatingService:
         """
         try:
             rating_obj = await self.track_rating_repository.async_rate_track(
-                db, track_id, rating, user_id
+                db, track_id, playlist_id, rating, user_id
             )
             
             if rating_obj:
                 return {
                     "success": True,
                     "message": "Track rated successfully",
-                    "data": self._format_track_rating_response(rating_obj, track_id)
+                    "data": self._format_track_rating_response(rating_obj, track_id, playlist_id)
                 }
             else:
                 return {
                     "success": False,
-                    "error": "Track not found"
+                    "error": "Track or playlist not found"
                 }
                 
         except Exception as e:
@@ -114,14 +116,16 @@ class RatingService:
         self, 
         db: AsyncSession, 
         track_id: str,  # Changed from int to str (UUID)
+        playlist_id: str,  # Added playlist UUID
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Get user's rating for a specific track.
+        Get user's rating for a specific track in a specific playlist.
         
         Args:
             db: Database session
             track_id: Track UUID
+            playlist_id: Playlist UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -129,13 +133,13 @@ class RatingService:
         """
         try:
             rating_obj = await self.track_rating_repository.async_get_track_rating(
-                db, track_id, user_id
+                db, track_id, playlist_id, user_id
             )
             
             if rating_obj:
                 return {
                     "success": True,
-                    "data": self._format_track_rating_response(rating_obj, track_id)
+                    "data": self._format_track_rating_response(rating_obj, track_id, playlist_id)
                 }
             else:
                 return {
@@ -154,25 +158,27 @@ class RatingService:
         self, 
         db: AsyncSession, 
         track_id: str,  # Changed from int to str (UUID)
+        playlist_id: str,  # Added playlist UUID
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Delete user's rating for a specific track.
+        Delete user's rating for a specific track in a specific playlist.
         
         Args:
             db: Database session
             track_id: Track UUID
+            playlist_id: Playlist UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
             Dictionary with success status and message
         """
         try:
-            success = await self.track_rating_repository.async_delete_track_rating(
-                db, track_id, user_id
+            deleted = await self.track_rating_repository.async_delete_track_rating(
+                db, track_id, playlist_id, user_id
             )
             
-            if success:
+            if deleted:
                 return {
                     "success": True,
                     "message": "Track rating deleted successfully"
