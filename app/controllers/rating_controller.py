@@ -65,6 +65,16 @@ class RatingController:
                     content=result
                 )
                 
+        except ValueError as e:
+            # Handle Pydantic validation errors
+            error_response = {
+                "success": False,
+                "error": f"Validation failed: {str(e)}"
+            }
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=error_response
+            )
         except ValidationError as e:
             error_response = {
                 "success": False,

@@ -107,9 +107,9 @@ async def rate_track_endpoint(
     }
 )
 async def get_track_rating_endpoint(
-    track_id: str = Path(..., description="Track UUID", min_length=24),
-    playlist_id: str = Path(..., description="Playlist UUID", min_length=36, max_length=36),
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)", max_length=36),
+    track_id: str = Path(..., description="Track UUID"),
+    playlist_id: str = Path(..., description="Playlist UUID"),
+    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -144,9 +144,9 @@ async def get_track_rating_endpoint(
     }
 )
 async def delete_track_rating_endpoint(
-    track_id: str = Path(..., description="Track UUID", min_length=24),
-    playlist_id: str = Path(..., description="Playlist UUID", min_length=36, max_length=36),
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)", max_length=36),
+    track_id: str = Path(..., description="Track UUID"),
+    playlist_id: str = Path(..., description="Playlist UUID"),
+    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
