@@ -42,29 +42,29 @@ class RatingService:
             rated_at=rating_obj.rated_at
         )
     
-    def _format_track_rating_response(self, rating_obj, track_uuid: str) -> RatingResponse:
-        """Format track rating object to response schema with UUID."""
-        return RatingResponse(
-            id=rating_obj.id,
-            track_id=track_uuid,  # Use the UUID instead of numeric ID
-            playlist_id=None,
-            user_id=rating_obj.user_id,
-            rating=rating_obj.rating,
-            message=None,  # Track ratings don't have messages
-            rated_at=rating_obj.rated_at
-        )
+    def _format_track_rating_response(self, rating_obj, track_uuid: str) -> dict:
+        """Format track rating object to response dictionary with UUID."""
+        return {
+            "id": rating_obj.id,
+            "track_id": track_uuid,  # Use the UUID instead of numeric ID
+            "playlist_id": None,
+            "user_id": rating_obj.user_id,
+            "rating": rating_obj.rating,
+            "message": None,  # Track ratings don't have messages
+            "rated_at": rating_obj.rated_at.isoformat() if rating_obj.rated_at else None
+        }
     
-    def _format_playlist_rating_response(self, rating_obj, playlist_uuid: str) -> RatingResponse:
-        """Format playlist rating object to response schema with UUID."""
-        return RatingResponse(
-            id=rating_obj.id,
-            track_id=None,
-            playlist_id=playlist_uuid,  # Use the UUID instead of numeric ID
-            user_id=rating_obj.user_id,
-            rating=rating_obj.rating,
-            message=getattr(rating_obj, 'message', None),
-            rated_at=rating_obj.rated_at
-        )
+    def _format_playlist_rating_response(self, rating_obj, playlist_uuid: str) -> dict:
+        """Format playlist rating object to response dictionary with UUID."""
+        return {
+            "id": rating_obj.id,
+            "track_id": None,
+            "playlist_id": playlist_uuid,  # Use the UUID instead of numeric ID
+            "user_id": rating_obj.user_id,
+            "rating": rating_obj.rating,
+            "message": getattr(rating_obj, 'message', None),
+            "rated_at": rating_obj.rated_at.isoformat() if rating_obj.rated_at else None
+        }
     
     # Track Rating Operations
     async def rate_track(

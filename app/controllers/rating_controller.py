@@ -51,24 +51,36 @@ class RatingController:
             )
             
             if result["success"]:
-                return format_response(result, 200)
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=result
+                )
             else:
-                error_code = 404 if "not found" in result["error"].lower() else 422
-                return format_response(result, error_code)
+                error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
+                return JSONResponse(
+                    status_code=error_code,
+                    content=result
+                )
                 
         except ValidationError as e:
             error_response = {
                 "success": False,
                 "error": f"Validation error: {str(e)}"
             }
-            return format_response(error_response, 422)
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=error_response
+            )
         except Exception as e:
             print(f"Error in rate_track controller: {e}")
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while processing the rating"
             }
-            return format_response(error_response, 500)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=error_response
+            )
     
     async def get_track_rating(self, db: AsyncSession, track_id: int, user_id: str = None) -> JSONResponse:
         """
@@ -227,24 +239,36 @@ class RatingController:
             )
             
             if result["success"]:
-                return format_response(result, 200)
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=result
+                )
             else:
-                error_code = 404 if "not found" in result["error"].lower() else 422
-                return format_response(result, error_code)
+                error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
+                return JSONResponse(
+                    status_code=error_code,
+                    content=result
+                )
                 
         except ValidationError as e:
             error_response = {
                 "success": False,
                 "error": f"Validation error: {str(e)}"
             }
-            return format_response(error_response, 422)
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=error_response
+            )
         except Exception as e:
             print(f"Error in rate_playlist controller: {e}")
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while processing the rating"
             }
-            return format_response(error_response, 500)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=error_response
+            )
     
     async def get_playlist_rating(self, db: AsyncSession, playlist_id: int, user_id: str = None) -> JSONResponse:
         """
