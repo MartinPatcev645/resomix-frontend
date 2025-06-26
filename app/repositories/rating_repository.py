@@ -70,7 +70,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track UUID to rate
+            track_id: Track ID (UUID, ObjectId, or other format)
             rating: Rating value (0 or 1)
             user_id: User ID (optional for anonymous ratings)
             
@@ -78,11 +78,25 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             TrackRating instance or None if track doesn't exist
         """
         try:
-            # First, get the numeric track ID from UUID
+            # First, try to get the numeric track ID from the identifier
+            track_numeric_id = None
+            
+            # Try looking up by uuid field first
             track_query = await db.execute(
                 select(Track.id).where(Track.uuid == track_id)
             )
             track_numeric_id = track_query.scalar_one_or_none()
+            
+            # If not found and the track_id looks numeric, try direct ID lookup
+            if not track_numeric_id and track_id.isdigit():
+                try:
+                    numeric_id = int(track_id)
+                    track_query = await db.execute(
+                        select(Track.id).where(Track.id == numeric_id)
+                    )
+                    track_numeric_id = track_query.scalar_one_or_none()
+                except ValueError:
+                    pass
             
             if not track_numeric_id:
                 return None  # Track not found
@@ -114,18 +128,32 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track UUID
+            track_id: Track ID (UUID, ObjectId, or other format)
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
             TrackRating instance or None if not found
         """
         try:
-            # First, get the numeric track ID from UUID
+            # First, try to get the numeric track ID from the identifier
+            track_numeric_id = None
+            
+            # Try looking up by uuid field first
             track_query = await db.execute(
                 select(Track.id).where(Track.uuid == track_id)
             )
             track_numeric_id = track_query.scalar_one_or_none()
+            
+            # If not found and the track_id looks numeric, try direct ID lookup
+            if not track_numeric_id and track_id.isdigit():
+                try:
+                    numeric_id = int(track_id)
+                    track_query = await db.execute(
+                        select(Track.id).where(Track.id == numeric_id)
+                    )
+                    track_numeric_id = track_query.scalar_one_or_none()
+                except ValueError:
+                    pass
             
             if not track_numeric_id:
                 return None  # Track not found
@@ -146,18 +174,32 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track UUID
+            track_id: Track ID (UUID, ObjectId, or other format)
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
             True if deleted, False if not found
         """
         try:
-            # First, get the numeric track ID from UUID
+            # First, try to get the numeric track ID from the identifier
+            track_numeric_id = None
+            
+            # Try looking up by uuid field first
             track_query = await db.execute(
                 select(Track.id).where(Track.uuid == track_id)
             )
             track_numeric_id = track_query.scalar_one_or_none()
+            
+            # If not found and the track_id looks numeric, try direct ID lookup
+            if not track_numeric_id and track_id.isdigit():
+                try:
+                    numeric_id = int(track_id)
+                    track_query = await db.execute(
+                        select(Track.id).where(Track.id == numeric_id)
+                    )
+                    track_numeric_id = track_query.scalar_one_or_none()
+                except ValueError:
+                    pass
             
             if not track_numeric_id:
                 return False  # Track not found
@@ -182,17 +224,31 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track UUID
+            track_id: Track ID (UUID, ObjectId, or other format)
             
         Returns:
             Dictionary with rating statistics
         """
         try:
-            # First, get the numeric track ID from UUID
+            # First, try to get the numeric track ID from the identifier
+            track_numeric_id = None
+            
+            # Try looking up by uuid field first
             track_query = await db.execute(
                 select(Track.id).where(Track.uuid == track_id)
             )
             track_numeric_id = track_query.scalar_one_or_none()
+            
+            # If not found and the track_id looks numeric, try direct ID lookup
+            if not track_numeric_id and track_id.isdigit():
+                try:
+                    numeric_id = int(track_id)
+                    track_query = await db.execute(
+                        select(Track.id).where(Track.id == numeric_id)
+                    )
+                    track_numeric_id = track_query.scalar_one_or_none()
+                except ValueError:
+                    pass
             
             if not track_numeric_id:
                 return {

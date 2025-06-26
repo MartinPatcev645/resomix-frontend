@@ -23,20 +23,35 @@ from datetime import datetime
 # Request Schemas
 class TrackRatingRequest(BaseModel):
     """Request schema for rating a track."""
-    track_id: str = Field(..., description="Track UUID to rate", min_length=36, max_length=36)
+    track_id: str = Field(..., description="Track ID to rate (UUID or ObjectId format)", min_length=24)
     rating: int = Field(..., description="Rating value: 0 (not similar) or 1 (similar)")
     user_id: Optional[str] = Field(None, description="User ID (optional for anonymous ratings)", max_length=36)
 
     @validator('track_id')
     def validate_track_id(cls, v):
-        """Validate track_id is a valid UUID format."""
-        try:
-            # Try to parse as UUID to validate format
-            import uuid
-            uuid.UUID(v)
+        """Validate track_id is a valid UUID or ObjectId format."""
+        # Check if it's a valid UUID format (36 chars with hyphens)
+        if len(v) == 36 and v.count('-') == 4:
+            try:
+                import uuid
+                uuid.UUID(v)
+                return v
+            except ValueError:
+                pass
+        
+        # Check if it's a valid ObjectId format (24 hex characters)
+        if len(v) == 24:
+            try:
+                int(v, 16)  # Check if it's valid hexadecimal
+                return v
+            except ValueError:
+                pass
+        
+        # Check for other common ID formats (allow alphanumeric strings 12-50 chars)
+        if 12 <= len(v) <= 50 and v.replace('-', '').replace('_', '').isalnum():
             return v
-        except ValueError:
-            raise ValueError('Track ID must be a valid UUID')
+            
+        raise ValueError('Track ID must be a valid UUID, ObjectId, or alphanumeric identifier')
 
     @validator('rating')
     def validate_track_rating(cls, v):
@@ -48,7 +63,7 @@ class TrackRatingRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "track_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "track_id": "67b003e3c0f27a0796ede831",
                 "rating": 1,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000"
             }
@@ -57,21 +72,36 @@ class TrackRatingRequest(BaseModel):
 
 class PlaylistRatingRequest(BaseModel):
     """Request schema for rating a playlist."""
-    playlist_id: str = Field(..., description="Playlist UUID to rate", min_length=36, max_length=36)
+    playlist_id: str = Field(..., description="Playlist ID to rate (UUID or ObjectId format)", min_length=24)
     rating: int = Field(..., description="Rating value: 0-3 stars")
     message: Optional[str] = Field(None, description="Optional message/feedback about the playlist", max_length=1000)
     user_id: Optional[str] = Field(None, description="User ID (optional for anonymous ratings)", max_length=36)
 
     @validator('playlist_id')
     def validate_playlist_id(cls, v):
-        """Validate playlist_id is a valid UUID format."""
-        try:
-            # Try to parse as UUID to validate format
-            import uuid
-            uuid.UUID(v)
+        """Validate playlist_id is a valid UUID or ObjectId format."""
+        # Check if it's a valid UUID format (36 chars with hyphens)
+        if len(v) == 36 and v.count('-') == 4:
+            try:
+                import uuid
+                uuid.UUID(v)
+                return v
+            except ValueError:
+                pass
+        
+        # Check if it's a valid ObjectId format (24 hex characters)
+        if len(v) == 24:
+            try:
+                int(v, 16)  # Check if it's valid hexadecimal
+                return v
+            except ValueError:
+                pass
+        
+        # Check for other common ID formats (allow alphanumeric strings 12-50 chars)
+        if 12 <= len(v) <= 50 and v.replace('-', '').replace('_', '').isalnum():
             return v
-        except ValueError:
-            raise ValueError('Playlist ID must be a valid UUID')
+            
+        raise ValueError('Playlist ID must be a valid UUID, ObjectId, or alphanumeric identifier')
 
     @validator('rating')
     def validate_playlist_rating(cls, v):
@@ -94,7 +124,7 @@ class PlaylistRatingRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "playlist_id": "d8aa3a8d-1423-4ec1-8af9-e0477c801879",
+                "playlist_id": "67b003e3c0f27a0796ede831",
                 "rating": 3,
                 "message": "Great playlist! Love the track selection and flow.",
                 "user_id": "550e8400-e29b-41d4-a716-446655440000"
