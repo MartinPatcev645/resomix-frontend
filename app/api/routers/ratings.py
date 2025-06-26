@@ -50,7 +50,7 @@ rating_controller = RatingController()
     "/tracks/",
     response_model=RatingOperationResponse,
     summary="Rate Track",
-    description="Rate a track with 0 (not similar) or 1 (similar). Creates new rating or updates existing one.",
+    description="Rate a track with 0 (not similar) or 1 (similar). Always creates a new rating entry.",
     responses={
         200: {
             "model": RatingOperationResponse,
@@ -203,7 +203,7 @@ async def get_track_rating_stats_endpoint(
     "/playlists/",
     response_model=RatingOperationResponse,
     summary="Rate Playlist",
-    description="Rate a playlist with 0-3 stars and optional message. Creates new rating or updates existing one.",
+    description="Rate a playlist with 0-3 stars and optional message. Always creates a new rating entry.",
     responses={
         200: {
             "model": RatingOperationResponse,

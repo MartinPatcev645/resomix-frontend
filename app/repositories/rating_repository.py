@@ -66,7 +66,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         user_id: Optional[str] = None
     ) -> Optional[TrackRating]:
         """
-        Rate a track or update existing rating.
+        Rate a track by creating a new rating entry.
         
         Args:
             db: Database session
@@ -87,29 +87,16 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             if not track_numeric_id:
                 return None  # Track not found
             
-            # Check for existing rating
-            existing_rating = await self._async_find_existing(
-                db, user_id=user_id, track_id=track_numeric_id
+            # Always create new rating (no duplicate checking)
+            new_rating = TrackRating(
+                user_id=user_id,
+                track_id=track_numeric_id,
+                rating=rating
             )
-            
-            if existing_rating:
-                # Update existing rating
-                existing_rating.rating = rating
-                existing_rating.rated_at = func.current_timestamp()
-                await db.commit()
-                await db.refresh(existing_rating)
-                return existing_rating
-            else:
-                # Create new rating
-                new_rating = TrackRating(
-                    user_id=user_id,
-                    track_id=track_numeric_id,
-                    rating=rating
-                )
-                db.add(new_rating)
-                await db.commit()
-                await db.refresh(new_rating)
-                return new_rating
+            db.add(new_rating)
+            await db.commit()
+            await db.refresh(new_rating)
+            return new_rating
                 
         except Exception as e:
             await db.rollback()
@@ -246,7 +233,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
         message: Optional[str] = None
     ) -> Optional[PlaylistRating]:
         """
-        Rate a playlist or update existing rating.
+        Rate a playlist by creating a new rating entry.
         
         Args:
             db: Database session
@@ -269,31 +256,17 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             if not playlist_numeric_id:
                 return None  # Playlist not found
             
-            # Check for existing rating
-            existing_rating = await self._async_find_existing(
-                db, user_id=user_id, playlist_id=playlist_numeric_id
+            # Always create new rating (no duplicate checking)
+            new_rating = PlaylistRating(
+                user_id=user_id,
+                playlist_id=playlist_numeric_id,
+                rating=rating,
+                message=message
             )
-            
-            if existing_rating:
-                # Update existing rating
-                existing_rating.rating = rating
-                existing_rating.message = message
-                existing_rating.rated_at = func.current_timestamp()
-                await db.commit()
-                await db.refresh(existing_rating)
-                return existing_rating
-            else:
-                # Create new rating
-                new_rating = PlaylistRating(
-                    user_id=user_id,
-                    playlist_id=playlist_numeric_id,
-                    rating=rating,
-                    message=message
-                )
-                db.add(new_rating)
-                await db.commit()
-                await db.refresh(new_rating)
-                return new_rating
+            db.add(new_rating)
+            await db.commit()
+            await db.refresh(new_rating)
+            return new_rating
                 
         except Exception as e:
             await db.rollback()

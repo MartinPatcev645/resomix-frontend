@@ -75,7 +75,7 @@ class RatingService:
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Rate a track or update existing rating.
+        Rate a track by creating a new rating entry.
         
         Args:
             db: Database session
@@ -92,10 +92,9 @@ class RatingService:
             )
             
             if rating_obj:
-                action = "updated" if rating_obj.rated_at != rating_obj.rated_at else "created"
                 return {
                     "success": True,
-                    "message": f"Track rating {action} successfully",
+                    "message": "Track rated successfully",
                     "data": self._format_track_rating_response(rating_obj, track_id)
                 }
             else:
@@ -227,11 +226,11 @@ class RatingService:
         message: str = None
     ) -> Dict[str, Any]:
         """
-        Rate a playlist or update existing rating.
+        Rate a playlist by creating a new rating entry.
         
         Args:
             db: Database session
-            playlist_id: Playlist ID to rate
+            playlist_id: Playlist UUID to rate
             rating: Rating value (0-3)
             user_id: User ID (optional for anonymous ratings)
             message: Optional user message/feedback
@@ -252,10 +251,9 @@ class RatingService:
             )
             
             if rating_obj:
-                action = "updated" if rating_obj.rated_at != rating_obj.rated_at else "created"
                 return {
                     "success": True,
-                    "message": f"Playlist rating {action} successfully",
+                    "message": "Playlist rated successfully",
                     "data": self._format_playlist_rating_response(rating_obj, playlist_id)
                 }
             else:
