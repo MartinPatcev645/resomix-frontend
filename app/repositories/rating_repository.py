@@ -61,7 +61,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
     async def async_rate_track(
         self, 
         db: AsyncSession, 
-        track_id: int, 
+        track_id: str,  # Changed from int to str (UUID)
         rating: int, 
         user_id: Optional[str] = None
     ) -> Optional[TrackRating]:
@@ -70,7 +70,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track ID to rate
+            track_id: Track UUID to rate
             rating: Rating value (0 or 1)
             user_id: User ID (optional for anonymous ratings)
             
@@ -78,17 +78,18 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             TrackRating instance or None if track doesn't exist
         """
         try:
-            # Check if track exists
-            track_stmt = select(Track).where(Track.id == track_id)
-            track_result = await db.execute(track_stmt)
-            track = track_result.scalar_one_or_none()
+            # First, get the numeric track ID from UUID
+            track_query = await db.execute(
+                select(Track.id).where(Track.uuid == track_id)
+            )
+            track_numeric_id = track_query.scalar_one_or_none()
             
-            if not track:
-                return None
+            if not track_numeric_id:
+                return None  # Track not found
             
             # Check for existing rating
             existing_rating = await self._async_find_existing(
-                db, user_id=user_id, track_id=track_id
+                db, user_id=user_id, track_id=track_numeric_id
             )
             
             if existing_rating:
@@ -102,7 +103,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
                 # Create new rating
                 new_rating = TrackRating(
                     user_id=user_id,
-                    track_id=track_id,
+                    track_id=track_numeric_id,
                     rating=rating
                 )
                 db.add(new_rating)

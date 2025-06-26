@@ -42,6 +42,18 @@ class RatingService:
             rated_at=rating_obj.rated_at
         )
     
+    def _format_track_rating_response(self, rating_obj, track_uuid: str) -> RatingResponse:
+        """Format track rating object to response schema with UUID."""
+        return RatingResponse(
+            id=rating_obj.id,
+            track_id=track_uuid,  # Use the UUID instead of numeric ID
+            playlist_id=None,
+            user_id=rating_obj.user_id,
+            rating=rating_obj.rating,
+            message=None,  # Track ratings don't have messages
+            rated_at=rating_obj.rated_at
+        )
+    
     def _format_playlist_rating_response(self, rating_obj, playlist_uuid: str) -> RatingResponse:
         """Format playlist rating object to response schema with UUID."""
         return RatingResponse(
@@ -58,7 +70,7 @@ class RatingService:
     async def rate_track(
         self, 
         db: AsyncSession, 
-        track_id: int, 
+        track_id: str,  # Changed from int to str (UUID)
         rating: int, 
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -67,7 +79,7 @@ class RatingService:
         
         Args:
             db: Database session
-            track_id: Track ID to rate
+            track_id: Track UUID to rate
             rating: Rating value (0 or 1)
             user_id: User ID (optional for anonymous ratings)
             
@@ -84,7 +96,7 @@ class RatingService:
                 return {
                     "success": True,
                     "message": f"Track rating {action} successfully",
-                    "data": self._format_rating_response(rating_obj)
+                    "data": self._format_track_rating_response(rating_obj, track_id)
                 }
             else:
                 return {

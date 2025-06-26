@@ -23,9 +23,20 @@ from datetime import datetime
 # Request Schemas
 class TrackRatingRequest(BaseModel):
     """Request schema for rating a track."""
-    track_id: int = Field(..., description="Track ID to rate", gt=0)
+    track_id: str = Field(..., description="Track UUID to rate", min_length=36, max_length=36)
     rating: int = Field(..., description="Rating value: 0 (not similar) or 1 (similar)")
     user_id: Optional[str] = Field(None, description="User ID (optional for anonymous ratings)", max_length=36)
+
+    @validator('track_id')
+    def validate_track_id(cls, v):
+        """Validate track_id is a valid UUID format."""
+        try:
+            # Try to parse as UUID to validate format
+            import uuid
+            uuid.UUID(v)
+            return v
+        except ValueError:
+            raise ValueError('Track ID must be a valid UUID')
 
     @validator('rating')
     def validate_track_rating(cls, v):
@@ -37,7 +48,7 @@ class TrackRatingRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "track_id": 123,
+                "track_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "rating": 1,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000"
             }
@@ -107,7 +118,7 @@ class GetRatingRequest(BaseModel):
 class RatingResponse(BaseModel):
     """Response schema for rating operations."""
     id: int = Field(..., description="Rating ID")
-    track_id: Optional[int] = Field(None, description="Track ID (for track ratings)")
+    track_id: Optional[str] = Field(None, description="Track UUID (for track ratings)")
     playlist_id: Optional[str] = Field(None, description="Playlist UUID (for playlist ratings)")
     user_id: Optional[str] = Field(None, description="User ID")
     rating: int = Field(..., description="Rating value")
@@ -118,11 +129,11 @@ class RatingResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "id": 1,
-                "track_id": None,
-                "playlist_id": "d8aa3a8d-1423-4ec1-8af9-e0477c801879",
+                "track_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "playlist_id": None,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
-                "rating": 3,
-                "message": "Great playlist! Love the track selection and flow.",
+                "rating": 1,
+                "message": None,
                 "rated_at": "2025-01-13T10:30:00Z"
             }
         }
@@ -141,11 +152,11 @@ class RatingOperationResponse(BaseModel):
                 "message": "Playlist rated successfully",
                 "data": {
                     "id": 1,
-                    "track_id": None,
-                    "playlist_id": "d8aa3a8d-1423-4ec1-8af9-e0477c801879",
+                    "track_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "playlist_id": None,
                     "user_id": "550e8400-e29b-41d4-a716-446655440000",
-                    "rating": 3,
-                    "message": "Great playlist! Love the track selection and flow.",
+                    "rating": 1,
+                    "message": None,
                     "rated_at": "2025-01-13T10:30:00Z"
                 }
             }
