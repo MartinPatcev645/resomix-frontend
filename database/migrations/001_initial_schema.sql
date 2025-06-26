@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS playlist_ratings (
     user_id    CHAR(36),
     playlist_id BIGINT UNSIGNED NOT NULL,
     rating     TINYINT UNSIGNED,     -- 0-3 stars
+    message    TEXT NULL,            -- Optional user message/feedback
     rated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     KEY idx_pr_user (user_id, playlist_id)

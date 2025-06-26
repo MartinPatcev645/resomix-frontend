@@ -173,6 +173,7 @@ CREATE TABLE IF NOT EXISTS playlist_ratings (
     id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id    CHAR(36),
     playlist_id BIGINT UNSIGNED NOT NULL,
+    message    TEXT NULL,            -- Optional user message/feedback
     rating     TINYINT UNSIGNED,     -- 0-3 stars
     rated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
