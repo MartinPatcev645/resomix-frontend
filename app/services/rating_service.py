@@ -113,7 +113,7 @@ class RatingService:
     async def get_track_rating(
         self, 
         db: AsyncSession, 
-        track_id: int, 
+        track_id: str,  # Changed from int to str (UUID)
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -121,7 +121,7 @@ class RatingService:
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -135,7 +135,7 @@ class RatingService:
             if rating_obj:
                 return {
                     "success": True,
-                    "data": self._format_rating_response(rating_obj)
+                    "data": self._format_track_rating_response(rating_obj, track_id)
                 }
             else:
                 return {
@@ -153,7 +153,7 @@ class RatingService:
     async def delete_track_rating(
         self, 
         db: AsyncSession, 
-        track_id: int, 
+        track_id: str,  # Changed from int to str (UUID)
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -161,7 +161,7 @@ class RatingService:
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -190,13 +190,13 @@ class RatingService:
                 "error": "An error occurred while deleting the rating"
             }
     
-    async def get_track_rating_stats(self, db: AsyncSession, track_id: int) -> Dict[str, Any]:
+    async def get_track_rating_stats(self, db: AsyncSession, track_id: str) -> Dict[str, Any]:
         """
         Get rating statistics for a specific track.
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             
         Returns:
             Dictionary with success status and rating statistics

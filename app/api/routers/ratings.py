@@ -78,7 +78,7 @@ async def rate_track_endpoint(
     """
     Rate a track with similarity feedback.
     
-    - **track_id**: The ID of the track to rate (positive integer)
+    - **track_id**: The UUID of the track to rate
     - **rating**: Rating value - 0 (not similar) or 1 (similar)
     - **user_id**: Optional user ID for the rating (UUID format)
     """
@@ -110,7 +110,7 @@ async def rate_track_endpoint(
     }
 )
 async def get_track_rating_endpoint(
-    track_id: int,
+    track_id: str,
     user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -118,7 +118,7 @@ async def get_track_rating_endpoint(
     """
     Get user's rating for a specific track.
     
-    - **track_id**: The ID of the track
+    - **track_id**: The UUID of the track
     - **user_id**: Optional user ID (query parameter)
     """
     return await rating_controller.get_track_rating(db, track_id, user_id)
@@ -149,7 +149,7 @@ async def get_track_rating_endpoint(
     }
 )
 async def delete_track_rating_endpoint(
-    track_id: int,
+    track_id: str,
     user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -157,7 +157,7 @@ async def delete_track_rating_endpoint(
     """
     Delete user's rating for a specific track.
     
-    - **track_id**: The ID of the track
+    - **track_id**: The UUID of the track
     - **user_id**: Optional user ID (query parameter)
     """
     return await rating_controller.delete_track_rating(db, track_id, user_id)
@@ -184,7 +184,7 @@ async def delete_track_rating_endpoint(
     }
 )
 async def get_track_rating_stats_endpoint(
-    track_id: int,
+    track_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -193,7 +193,7 @@ async def get_track_rating_stats_endpoint(
     
     Returns the total count and distribution of ratings (similar/not similar).
     
-    - **track_id**: The ID of the track
+    - **track_id**: The UUID of the track
     """
     return await rating_controller.get_track_rating_stats(db, track_id)
 

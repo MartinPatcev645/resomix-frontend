@@ -82,29 +82,19 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_track_rating(self, db: AsyncSession, track_id: int, user_id: str = None) -> JSONResponse:
+    async def get_track_rating(self, db: AsyncSession, track_id: str, user_id: str = None) -> JSONResponse:
         """
         Get user's rating for a specific track.
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             user_id: User ID (optional)
             
         Returns:
             JSON response with rating data
         """
         log_request("get_track_rating", "GET", {"track_id": track_id, "user_id": user_id})
-        
-        # Validate track_id
-        if track_id <= 0:
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(
-                    success=False,
-                    error="track_id must be a positive integer"
-                )
-            )
         
         try:
             result = await self.rating_service.get_track_rating(db, track_id, user_id)
@@ -130,29 +120,19 @@ class RatingController:
                 )
             )
     
-    async def delete_track_rating(self, db: AsyncSession, track_id: int, user_id: str = None) -> JSONResponse:
+    async def delete_track_rating(self, db: AsyncSession, track_id: str, user_id: str = None) -> JSONResponse:
         """
         Delete user's rating for a specific track.
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             user_id: User ID (optional)
             
         Returns:
             JSON response with operation result
         """
         log_request("delete_track_rating", "DELETE", {"track_id": track_id, "user_id": user_id})
-        
-        # Validate track_id
-        if track_id <= 0:
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(
-                    success=False,
-                    error="track_id must be a positive integer"
-                )
-            )
         
         try:
             result = await self.rating_service.delete_track_rating(db, track_id, user_id)
@@ -178,28 +158,18 @@ class RatingController:
                 )
             )
     
-    async def get_track_rating_stats(self, db: AsyncSession, track_id: int) -> JSONResponse:
+    async def get_track_rating_stats(self, db: AsyncSession, track_id: str) -> JSONResponse:
         """
         Get rating statistics for a specific track.
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             
         Returns:
             JSON response with rating statistics
         """
         log_request("get_track_rating_stats", "GET", {"track_id": track_id})
-        
-        # Validate track_id
-        if track_id <= 0:
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(
-                    success=False,
-                    error="track_id must be a positive integer"
-                )
-            )
         
         try:
             result = await self.rating_service.get_track_rating_stats(db, track_id)

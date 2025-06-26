@@ -106,7 +106,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
     async def async_get_track_rating(
         self, 
         db: AsyncSession, 
-        track_id: int, 
+        track_id: str,  # Changed from int to str (UUID)
         user_id: Optional[str] = None
     ) -> Optional[TrackRating]:
         """
@@ -114,14 +114,23 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
             TrackRating instance or None if not found
         """
         try:
-            return await self._async_find_existing(db, user_id=user_id, track_id=track_id)
+            # First, get the numeric track ID from UUID
+            track_query = await db.execute(
+                select(Track.id).where(Track.uuid == track_id)
+            )
+            track_numeric_id = track_query.scalar_one_or_none()
+            
+            if not track_numeric_id:
+                return None  # Track not found
+            
+            return await self._async_find_existing(db, user_id=user_id, track_id=track_numeric_id)
         except Exception as e:
             print(f"Error getting track rating: {e}")
             raise e
@@ -129,7 +138,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
     async def async_delete_track_rating(
         self, 
         db: AsyncSession, 
-        track_id: int, 
+        track_id: str,  # Changed from int to str (UUID)
         user_id: Optional[str] = None
     ) -> bool:
         """
@@ -137,16 +146,25 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
             True if deleted, False if not found
         """
         try:
+            # First, get the numeric track ID from UUID
+            track_query = await db.execute(
+                select(Track.id).where(Track.uuid == track_id)
+            )
+            track_numeric_id = track_query.scalar_one_or_none()
+            
+            if not track_numeric_id:
+                return False  # Track not found
+            
             stmt = delete(self.model).where(
                 and_(
-                    self.model.track_id == track_id,
+                    self.model.track_id == track_numeric_id,
                     self.model.user_id == user_id
                 )
             )
@@ -158,24 +176,37 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             print(f"Error deleting track rating: {e}")
             raise e
     
-    async def async_get_track_rating_stats(self, db: AsyncSession, track_id: int) -> Dict[str, Any]:
+    async def async_get_track_rating_stats(self, db: AsyncSession, track_id: str) -> Dict[str, Any]:
         """
         Get rating statistics for a specific track.
         
         Args:
             db: Database session
-            track_id: Track ID
+            track_id: Track UUID
             
         Returns:
             Dictionary with rating statistics
         """
         try:
+            # First, get the numeric track ID from UUID
+            track_query = await db.execute(
+                select(Track.id).where(Track.uuid == track_id)
+            )
+            track_numeric_id = track_query.scalar_one_or_none()
+            
+            if not track_numeric_id:
+                return {
+                    "total_ratings": 0,
+                    "average_rating": None,
+                    "rating_distribution": {"0": 0, "1": 0}
+                }
+            
             # Get total count and distribution
             stmt = select(
                 func.count(self.model.id).label('total_ratings'),
                 func.sum(func.case((self.model.rating == 0, 1), else_=0)).label('not_similar'),
                 func.sum(func.case((self.model.rating == 1, 1), else_=0)).label('similar')
-            ).where(self.model.track_id == track_id)
+            ).where(self.model.track_id == track_numeric_id)
             
             result = await db.execute(stmt)
             row = result.first()
