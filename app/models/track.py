@@ -89,6 +89,9 @@ class Track(Base):
     track_artists = relationship("TrackArtist", back_populates="track", cascade="all, delete-orphan")
     artists = relationship("Artist", secondary="track_artists", viewonly=True)
     
+    # One-to-one relationship with external platform track IDs
+    transfer_track = relationship("PlaylistTransferTrack", back_populates="track", uselist=False, cascade="all, delete-orphan")
+    
     def __repr__(self):
         return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}', type='{self.type}')>"
 

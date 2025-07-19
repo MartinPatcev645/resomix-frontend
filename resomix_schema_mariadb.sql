@@ -127,6 +127,23 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     KEY idx_pt_track (track_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/* External platform track ID cache for playlist transfers */
+CREATE TABLE IF NOT EXISTS playlist_transfer_tracks (
+    track_id        BIGINT UNSIGNED NOT NULL,
+    spotify_id      VARCHAR(100) NULL,                -- Spotify track ID/URI
+    apple_music_id  VARCHAR(100) NULL,                -- Apple Music track ID
+    beatport_id     VARCHAR(100) NULL,                -- Beatport track ID
+    deezer_id       VARCHAR(100) NULL,                -- Deezer track ID
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (track_id),
+    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    KEY idx_ptt_spotify (spotify_id),
+    KEY idx_ptt_apple (apple_music_id),
+    KEY idx_ptt_beatport (beatport_id),
+    KEY idx_ptt_deezer (deezer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 /* ---------- 5. Billing (purchases + subscriptions) -------- */
 
 CREATE TABLE IF NOT EXISTS purchases (

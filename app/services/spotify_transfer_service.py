@@ -28,6 +28,7 @@ import time
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
+from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
 from app.utils.logging_utils import log_request
 
 # Set up logger specifically for Spotify transfer
@@ -51,6 +52,7 @@ class SpotifyTransferService:
         """Initialize the Spotify transfer service"""
         self.playlist_repository = PlaylistRepository()
         self.track_repository = TrackRepository()
+        self.transfer_track_repository = PlaylistTransferTrackRepository()
         
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
@@ -302,6 +304,45 @@ class SpotifyTransferService:
         
         return results
 
+    async def _get_cached_spotify_ids(self, db: AsyncSession, track_ids: List[int]) -> Dict[int, str]:
+        """
+        Get cached Spotify IDs for tracks
+        
+        Args:
+            db: Database session
+            track_ids: List of track IDs to check
+            
+        Returns:
+            Dictionary mapping track_id -> spotify_id for cached entries
+        """
+        logger.info("Checking cache for Spotify IDs for %d tracks", len(track_ids))
+        
+        cached_ids = await self.transfer_track_repository.async_get_spotify_ids(db, track_ids)
+        
+        logger.info("Found %d cached Spotify IDs out of %d tracks", len(cached_ids), len(track_ids))
+        
+        return cached_ids
+
+    async def _update_spotify_cache(self, db: AsyncSession, track_spotify_map: Dict[int, str]) -> None:
+        """
+        Update cache with newly found Spotify IDs
+        
+        Args:
+            db: Database session
+            track_spotify_map: Dictionary mapping track_id -> spotify_id
+        """
+        if not track_spotify_map:
+            logger.info("No new Spotify IDs to cache")
+            return
+            
+        logger.info("Caching %d new Spotify IDs", len(track_spotify_map))
+        
+        try:
+            await self.transfer_track_repository.async_batch_upsert_spotify_ids(db, track_spotify_map)
+            logger.info("✅ Successfully cached %d Spotify IDs", len(track_spotify_map))
+        except Exception as e:
+            logger.error("❌ Failed to cache Spotify IDs: %s", str(e))
+
     async def _add_tracks_to_playlist(self, spotify_client: spotipy.Spotify, 
                                     playlist_id: str, track_uris: List[str]) -> None:
         """
@@ -419,18 +460,58 @@ class SpotifyTransferService:
             # Step 6: Search for tracks on Spotify (concurrent)
             logger.info("Step 6: Searching for tracks on Spotify concurrently...")
             
-            # Convert track_data format for concurrent search: (track_id, title, first_artist)
-            concurrent_track_data = []
+            # Step 6a: Check cache for existing Spotify IDs
+            logger.info("Step 6a: Checking cache for existing Spotify IDs...")
+            track_ids = [track_id for track_id, _, _ in track_data]
+            cached_spotify_ids = await self._get_cached_spotify_ids(db, track_ids)
+            
+            # Step 6b: Separate cached and uncached tracks
+            cached_tracks = []
+            uncached_tracks = []
+            
             for track_id, title, artists in track_data:
-                concurrent_track_data.append((track_id, title, artists[0]))  # Use first artist
+                if track_id in cached_spotify_ids:
+                    cached_tracks.append((track_id, cached_spotify_ids[track_id]))
+                    logger.debug("Using cached Spotify ID for track %d: %s", track_id, cached_spotify_ids[track_id])
+                else:
+                    uncached_tracks.append((track_id, title, artists))
             
-            search_results = await self._search_tracks_concurrently(spotify_client, concurrent_track_data)
+            logger.info("Found %d cached tracks, need to search %d tracks", len(cached_tracks), len(uncached_tracks))
             
-            # Step 7: Process search results
-            logger.info("Step 7: Processing search results...")
+            # Step 6c: Search for uncached tracks only
+            search_results = []
+            new_spotify_ids = {}  # For caching newly found IDs
+            
+            if uncached_tracks:
+                logger.info("Step 6c: Searching for %d uncached tracks...", len(uncached_tracks))
+                
+                # Convert to format expected by concurrent search: (track_id, title, first_artist)
+                concurrent_track_data = []
+                for track_id, title, artists in uncached_tracks:
+                    concurrent_track_data.append((track_id, title, artists[0]))  # Use first artist
+                
+                search_results = await self._search_tracks_concurrently(spotify_client, concurrent_track_data)
+                
+                # Collect newly found Spotify IDs for caching
+                for track_id, spotify_uri in search_results:
+                    if spotify_uri:
+                        new_spotify_ids[track_id] = spotify_uri
+            
+            # Step 6d: Update cache with newly found Spotify IDs
+            if new_spotify_ids:
+                logger.info("Step 6d: Updating cache with %d new Spotify IDs...", len(new_spotify_ids))
+                await self._update_spotify_cache(db, new_spotify_ids)
+            
+            # Step 7: Process all results (cached + searched)
+            logger.info("Step 7: Processing all results...")
             found_tracks = []
             not_found_tracks = []
             
+            # Add cached tracks to found_tracks
+            for track_id, spotify_uri in cached_tracks:
+                found_tracks.append(spotify_uri)
+            
+            # Add searched tracks to appropriate lists
             for track_id, spotify_uri in search_results:
                 if spotify_uri:
                     found_tracks.append(spotify_uri)
@@ -441,7 +522,8 @@ class SpotifyTransferService:
                         _, title, artists = original_track
                         not_found_tracks.append(f"{', '.join(artists)} - {title}")
             
-            logger.info("Search results: %d found, %d not found", len(found_tracks), len(not_found_tracks))
+            logger.info("Final results: %d found (%d cached + %d searched), %d not found", 
+                       len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
             
             # Step 8: Add found tracks to Spotify playlist
             tracks_added = 0
