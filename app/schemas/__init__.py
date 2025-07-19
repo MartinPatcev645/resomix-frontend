@@ -122,6 +122,13 @@ from .playlist import (
     PlaylistSimilarityResponse,
 )
 
+# Spotify Transfer schemas
+from .spotify_transfer import (
+    SpotifyTransferRequest,
+    SpotifyTransferResponse,
+    SpotifyTransferErrorResponse,
+)
+
 # Make all schemas available at package level
 __all__ = [
     # Common
@@ -214,4 +221,7 @@ __all__ = [
     "PlaylistOperationResponse",
     "PlaylistErrorResponse",
     "PlaylistSimilarityResponse",
+    "SpotifyTransferRequest",
+    "SpotifyTransferResponse",
+    "SpotifyTransferErrorResponse",
 ]

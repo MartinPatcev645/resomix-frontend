@@ -14,3 +14,4 @@ mutagen==1.47.0
 aiomysql
 mariadb
 cryptography==45.0.4
+spotipy==2.24.0

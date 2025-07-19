@@ -81,6 +81,16 @@ class Settings(BaseModel):
         description="Name of the contact submissions worksheet"
     )
     
+    # Spotify Configuration
+    spotify_client_id: Optional[str] = Field(
+        default=None,
+        description="Spotify client ID for API access"
+    )
+    spotify_client_secret: Optional[str] = Field(
+        default=None,
+        description="Spotify client secret for API access"
+    )
+    
     # Preview Service Configuration
     # Note: Only URL generation is handled, no actual downloading
     
@@ -158,6 +168,8 @@ class Settings(BaseModel):
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
+            "SPOTIFY_CLIENT_ID": "spotify_client_id",
+            "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
         }
         
         for env_key, config_key in direct_env_vars.items():

@@ -486,6 +486,24 @@ class TrackRepository(BaseRepository[Track]):
             .all()
         )
     
+    async def async_get_track_artists(self, db: AsyncSession, track_id: int) -> List[Artist]:
+        """Get all artists for a track (async version).
+        
+        Args:
+            db: Database session
+            track_id: Track ID
+            
+        Returns:
+            List of Artist instances
+        """
+        stmt = (
+            select(Artist)
+            .join(TrackArtist)
+            .where(TrackArtist.track_id == track_id)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    
     def get_tracks_for_artist(self, db: Session, artist_id: int, skip: int = 0, limit: int = 100) -> List[Track]:
         """Get all tracks for an artist.
         
