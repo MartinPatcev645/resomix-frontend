@@ -391,7 +391,7 @@ class SpotifyTransferService:
         try:
             # Step 1: Get playlist from database
             logger.info("Step 1: Fetching playlist from database...")
-            playlist = await self.playlist_repository.get_playlist_by_id(db, playlist_id)
+            playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
             if not playlist:
                 logger.error("❌ Playlist not found: %s", playlist_id)
                 raise ValueError(f"Playlist with ID {playlist_id} not found")
@@ -400,20 +400,23 @@ class SpotifyTransferService:
             
             # Step 2: Get tracks for playlist
             logger.info("Step 2: Fetching tracks for playlist...")
-            tracks = await self.playlist_repository.get_tracks_for_playlist(db, playlist_id)
-            if not tracks:
+            playlist_tracks = await self.playlist_repository.async_get_tracks_by_playlist_id(db, playlist.id)
+            if not playlist_tracks:
                 logger.warning("❌ Playlist has no tracks: %s", playlist_id)
                 raise ValueError(f"Playlist {playlist_id} has no tracks to transfer")
             
-            logger.info("✅ Found %d tracks in playlist", len(tracks))
+            logger.info("✅ Found %d tracks in playlist", len(playlist_tracks))
             
-            # Step 3: Get artist information for each track
-            logger.info("Step 3: Fetching artist information for tracks...")
+            # Step 3: Get track and artist information for each playlist track
+            logger.info("Step 3: Fetching track and artist information...")
             track_data = []
-            for track in tracks:
-                artists = await self.track_repository.async_get_track_artists(db, track.id)
-                artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
-                track_data.append((track.id, track.title or "Unknown Track", artist_names))
+            for playlist_track in playlist_tracks:
+                # Get the actual track object
+                track = await self.track_repository.async_get_by_id(db, playlist_track.track_id)
+                if track:
+                    artists = await self.track_repository.async_get_track_artists(db, track.id)
+                    artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
+                    track_data.append((track.id, track.title or "Unknown Track", artist_names))
                 
             logger.info("✅ Prepared %d tracks with artist information", len(track_data))
             
@@ -479,7 +482,7 @@ class SpotifyTransferService:
                 "spotify_playlist_id": spotify_playlist_id,
                 "spotify_playlist_url": spotify_playlist_url,
                 "spotify_playlist_name": playlist_name,
-                "total_tracks": len(tracks),
+                "total_tracks": len(playlist_tracks),
                 "tracks_added": len(found_tracks),
                 "tracks_not_found": len(not_found_tracks),
                 "not_found_tracks": not_found_tracks[:10],  # Limit to first 10 for response size
@@ -489,7 +492,7 @@ class SpotifyTransferService:
             logger.info("=== TRANSFER COMPLETED SUCCESSFULLY ===")
             logger.info("Total time: %.2f seconds", total_time)
             logger.info("Success rate: %.1f%% (%d/%d tracks found)", 
-                       (len(found_tracks) / len(tracks)) * 100, len(found_tracks), len(tracks))
+                       (len(found_tracks) / len(playlist_tracks)) * 100, len(found_tracks), len(playlist_tracks))
             logger.info("Spotify playlist: %s", spotify_playlist_url)
             
             return result

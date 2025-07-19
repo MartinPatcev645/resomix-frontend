@@ -67,7 +67,84 @@ Transfer a ResomiX playlist to user's Spotify account.
 }
 ```
 
+## Performance & Optimization
+
+### Concurrent Track Search
+
+The service uses **concurrent processing** for optimal performance:
+
+- **Concurrent API Calls**: Up to 10 simultaneous Spotify API calls for track searching
+- **ThreadPoolExecutor**: Efficient thread management for I/O-bound operations
+- **Progress Tracking**: Real-time logging of search progress
+- **Batch Processing**: Tracks are added to playlists in batches of 100 (Spotify's limit)
+
+### Search Strategy
+
+The service employs a **multi-strategy approach** for finding tracks:
+
+1. **Strategy 1**: Search with exact title and primary artist
+2. **Strategy 2**: Search with title and all artists
+3. **Strategy 3**: Search with title only (broader search)
+4. **Strategy 4**: Simple search without quotes (most permissive)
+
+Each strategy has fallback mechanisms to maximize the chance of finding matches.
+
+## Logging & Monitoring
+
+### Comprehensive Logging
+
+The Spotify transfer feature includes detailed logging for monitoring and debugging:
+
+```
+2025-01-11 10:30:15 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] === STARTING SPOTIFY PLAYLIST TRANSFER ===
+2025-01-11 10:30:15 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Playlist ID: 7b821bef-e168-4511-8525-5e1664b7e483
+2025-01-11 10:30:15 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Step 1: Fetching playlist from database...
+2025-01-11 10:30:15 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] ✅ Found playlist: 'My Playlist' (ID: 123)
+2025-01-11 10:30:16 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Step 6: Searching for tracks on Spotify...
+2025-01-11 10:30:16 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Starting concurrent track search for 25 tracks with max_concurrent=10
+2025-01-11 10:30:18 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Search progress: 10/25 tracks completed (40.0%)
+2025-01-11 10:30:20 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] ✅ Found match for track ID 456 using Strategy 1 (0.85s): Track Name - Artist Name
+2025-01-11 10:30:22 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Concurrent search completed: 22/25 tracks found (88.0%) in 6.2s (avg 0.25s per track)
+2025-01-11 10:30:23 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] === TRANSFER COMPLETED SUCCESSFULLY ===
+2025-01-11 10:30:23 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Total time: 8.45 seconds
+2025-01-11 10:30:23 - app.services.spotify_transfer_service - INFO - [SPOTIFY_TRANSFER] Success rate: 88.0% (22/25 tracks found)
+```
+
+### Log Levels
+
+- **INFO**: General progress and success messages
+- **DEBUG**: Detailed search queries and strategies
+- **WARNING**: Failed searches and validation issues
+- **ERROR**: Critical errors and exceptions
+
+### What Gets Logged
+
+1. **Request Details**: Playlist ID, custom names, token length
+2. **Process Steps**: Each major step of the transfer process
+3. **Search Progress**: Real-time progress updates during concurrent searches
+4. **Track Matching**: Success/failure for each track with timing
+5. **Performance Metrics**: Total time, success rates, average search time
+6. **Errors**: Detailed error information with context
+
 ## Configuration
+
+### Concurrent Processing Settings
+
+You can adjust the performance settings in the service:
+
+```python
+# In SpotifyTransferService.__init__()
+self.max_concurrent_searches = 10  # Maximum concurrent Spotify API calls
+self.batch_size = 100  # Spotify's limit for adding tracks to playlist
+```
+
+### Recommended Settings
+
+- **Small playlists (1-20 tracks)**: `max_concurrent_searches = 5`
+- **Medium playlists (21-50 tracks)**: `max_concurrent_searches = 10` (default)
+- **Large playlists (51+ tracks)**: `max_concurrent_searches = 15`
+
+**Note**: Higher concurrency may hit Spotify's rate limits, so test with your specific use case.
 
 ### Environment Variables
 

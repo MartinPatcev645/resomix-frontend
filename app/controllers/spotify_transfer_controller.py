@@ -101,8 +101,7 @@ class SpotifyTransferController:
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
                         success=False,
-                        error=error_message,
-                        details={"error_type": "playlist_not_found"}
+                        error=error_message
                     )
                 )
             else:
@@ -110,8 +109,7 @@ class SpotifyTransferController:
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     content=format_response(
                         success=False,
-                        error=error_message,
-                        details={"error_type": "validation_error"}
+                        error=error_message
                     )
                 )
         
@@ -128,8 +126,7 @@ class SpotifyTransferController:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content=format_response(
                         success=False,
-                        error="Invalid or expired Spotify access token",
-                        details={"spotify_error": error_message}
+                        error="Invalid or expired Spotify access token"
                     )
                 )
             
@@ -138,7 +135,6 @@ class SpotifyTransferController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
                     success=False,
-                    error="An internal error occurred during playlist transfer",
-                    details={"error": error_message}
+                    error="An internal error occurred during playlist transfer"
                 )
             ) 
