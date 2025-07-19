@@ -53,8 +53,7 @@ class SpotifyTransferService:
         self.track_repository = TrackRepository()
         
         # Concurrent processing settings
-        self.max_concurrent_searches = 2  # Reduced from 10 to 2 for better success rate
-        self.batch_size = 100  # Spotify's limit for adding tracks to playlist
+        self.max_concurrent_searches = 2  # Process 2 tracks at a time
         
         logger.info("SpotifyTransferService initialized with max_concurrent_searches=%d", 
                    self.max_concurrent_searches)
@@ -113,238 +112,139 @@ class SpotifyTransferService:
             
         return cleaned
 
-    def _search_track_on_spotify(self, spotify_client: spotipy.Spotify, 
-                                track_title: str, artist_names: List[str], 
-                                track_id: int) -> Optional[Dict[str, Any]]:
+    def _clean_search_query(self, title: str, artist: str) -> str:
         """
-        Search for a single track on Spotify with fallback strategies
+        Clean and format the search query for Spotify.
         
         Args:
-            spotify_client: Authenticated Spotify client
-            track_title: Track title to search for
-            artist_names: List of artist names
-            track_id: Internal track ID for logging
+            title: Track title
+            artist: Track artist
             
         Returns:
-            Best matching Spotify track or None
+            Cleaned search query string
         """
-        start_time = time.time()
-        cleaned_title = self._clean_track_title(track_title)
+        # Remove common strings that might interfere with search
+        title_clean = title
+        removal_strings = [
+            "(Original Mix)",
+            "(Radio Edit)", 
+            "(Extended Mix)",
+            "(Club Mix)",
+            "(Remix)"
+        ]
         
-        logger.info("Searching track ID %d: '%s' by %s", 
-                   track_id, cleaned_title, ', '.join(artist_names))
+        for remove_str in removal_strings:
+            title_clean = re.sub(re.escape(remove_str), '', title_clean, flags=re.IGNORECASE)
         
-        # Strategy 1: Search with title and primary artist
-        if artist_names and cleaned_title:
-            primary_artist = artist_names[0]
-            query = f"track:\"{cleaned_title}\" artist:\"{primary_artist}\""
-            logger.debug("Strategy 1 - Searching with query: %s", query)
-            
-            try:
-                results = spotify_client.search(q=query, type='track', limit=10)
-                tracks = results.get('tracks', {}).get('items', [])
-                
-                if tracks:
-                    best_match = self._find_best_track_match(tracks, cleaned_title, artist_names)
-                    if best_match:
-                        search_time = time.time() - start_time
-                        logger.info("✅ Found match for track ID %d using Strategy 1 (%.2fs): %s - %s", 
-                                   track_id, search_time, best_match['name'], 
-                                   ', '.join([artist['name'] for artist in best_match['artists']]))
-                        return best_match
-                        
-            except Exception as e:
-                logger.warning("Strategy 1 failed for track ID %d: %s", track_id, str(e))
+        # Remove stopper strings
+        stopper_strings = ["http://", "https://", "www.", ".com", ".net", ".org"]
+        for stopper in stopper_strings:
+            if stopper.lower() in title_clean.lower():
+                title_clean = title_clean.split(stopper)[0]
+                break
         
-        # Strategy 2: Search with title and all artists
-        if artist_names and cleaned_title:
-            all_artists = ' '.join(artist_names)
-            query = f"track:\"{cleaned_title}\" artist:\"{all_artists}\""
-            logger.debug("Strategy 2 - Searching with query: %s", query)
-            
-            try:
-                results = spotify_client.search(q=query, type='track', limit=10)
-                tracks = results.get('tracks', {}).get('items', [])
-                
-                if tracks:
-                    best_match = self._find_best_track_match(tracks, cleaned_title, artist_names)
-                    if best_match:
-                        search_time = time.time() - start_time
-                        logger.info("✅ Found match for track ID %d using Strategy 2 (%.2fs): %s - %s", 
-                                   track_id, search_time, best_match['name'],
-                                   ', '.join([artist['name'] for artist in best_match['artists']]))
-                        return best_match
-                        
-            except Exception as e:
-                logger.warning("Strategy 2 failed for track ID %d: %s", track_id, str(e))
+        # Clean up extra spaces and special characters
+        title_clean = re.sub(r'[^\w\s\-\(\)]', ' ', title_clean).strip()
+        title_clean = re.sub(r'\s+', ' ', title_clean)
         
-        # Strategy 3: Search with title only (broader search)
-        if cleaned_title:
-            query = f"track:\"{cleaned_title}\""
-            logger.debug("Strategy 3 - Searching with query: %s", query)
-            
-            try:
-                results = spotify_client.search(q=query, type='track', limit=20)
-                tracks = results.get('tracks', {}).get('items', [])
-                
-                if tracks:
-                    best_match = self._find_best_track_match(tracks, cleaned_title, artist_names)
-                    if best_match:
-                        search_time = time.time() - start_time
-                        logger.info("✅ Found match for track ID %d using Strategy 3 (%.2fs): %s - %s", 
-                                   track_id, search_time, best_match['name'],
-                                   ', '.join([artist['name'] for artist in best_match['artists']]))
-                        return best_match
-                        
-            except Exception as e:
-                logger.warning("Strategy 3 failed for track ID %d: %s", track_id, str(e))
+        # Clean artist name similarly
+        artist_clean = artist
+        meta_stopper_strings = ["http://", "https://", "www.", ".com", ".net", ".org"]
+        for stopper in meta_stopper_strings:
+            if stopper.lower() in artist_clean.lower():
+                artist_clean = artist_clean.split(stopper)[0]
+                break
         
-        # Strategy 4: Simple search without quotes (most permissive)
-        if cleaned_title and artist_names:
-            query = f"{cleaned_title} {artist_names[0]}"[:100]  # Limit query length
-            logger.debug("Strategy 4 - Searching with query: %s", query)
-            
-            try:
-                results = spotify_client.search(q=query, type='track', limit=20)
-                tracks = results.get('tracks', {}).get('items', [])
-                
-                if tracks:
-                    best_match = self._find_best_track_match(tracks, cleaned_title, artist_names)
-                    if best_match:
-                        search_time = time.time() - start_time
-                        logger.info("✅ Found match for track ID %d using Strategy 4 (%.2fs): %s - %s", 
-                                   track_id, search_time, best_match['name'],
-                                   ', '.join([artist['name'] for artist in best_match['artists']]))
-                        return best_match
-                        
-            except Exception as e:
-                logger.warning("Strategy 4 failed for track ID %d: %s", track_id, str(e))
+        artist_clean = re.sub(r'[^\w\s\-]', ' ', artist_clean).strip()
+        artist_clean = re.sub(r'\s+', ' ', artist_clean)
         
-        # Strategy 5: Search with original uncleaned title (fallback for over-cleaning)
-        if track_title and artist_names and track_title != cleaned_title:
-            query = f"{track_title} {artist_names[0]}"[:100]  # Use original title
-            logger.debug("Strategy 5 - Searching with original title: %s", query)
-            
-            try:
-                results = spotify_client.search(q=query, type='track', limit=20)
-                tracks = results.get('tracks', {}).get('items', [])
-                
-                if tracks:
-                    best_match = self._find_best_track_match(tracks, track_title, artist_names)
-                    if best_match:
-                        search_time = time.time() - start_time
-                        logger.info("✅ Found match for track ID %d using Strategy 5 (%.2fs): %s - %s", 
-                                   track_id, search_time, best_match['name'],
-                                   ', '.join([artist['name'] for artist in best_match['artists']]))
-                        return best_match
-                        
-            except Exception as e:
-                logger.warning("Strategy 5 failed for track ID %d: %s", track_id, str(e))
-        
-        # Strategy 6: Search with first few words only (ultra-broad search)
-        if cleaned_title:
-            # Take first 2-3 words of the title for very broad search
-            title_words = cleaned_title.split()[:4]  # First 3 words max
-            if title_words:
-                query = ' '.join(title_words)
-                if artist_names:
-                    query += f" {artist_names[0]}"
-                query = query[:100]  # Limit length
-                
-                logger.debug("Strategy 6 - Ultra-broad search with query: %s", query)
-                
-                try:
-                    results = spotify_client.search(q=query, type='track', limit=30)  # More results for broader search
-                    tracks = results.get('tracks', {}).get('items', [])
-                    
-                    if tracks:
-                        best_match = self._find_best_track_match(tracks, cleaned_title, artist_names)
-                        if best_match:
-                            search_time = time.time() - start_time
-                            logger.info("✅ Found match for track ID %d using Strategy 6 (%.2fs): %s - %s", 
-                                       track_id, search_time, best_match['name'],
-                                       ', '.join([artist['name'] for artist in best_match['artists']]))
-                            return best_match
-                            
-                except Exception as e:
-                    logger.warning("Strategy 6 failed for track ID %d: %s", track_id, str(e))
-        
-        search_time = time.time() - start_time
-        logger.warning("❌ No match found for track ID %d after all strategies (%.2fs): '%s' by %s", 
-                      track_id, search_time, cleaned_title, ', '.join(artist_names))
-        return None
+        # Create search query
+        query = f"{title_clean} {artist_clean}".strip()
+        return query[:100]  # Limit query length
 
-    def _find_best_track_match(self, spotify_tracks: List[Dict], 
-                              target_title: str, target_artists: List[str]) -> Optional[Dict[str, Any]]:
+    async def _search_spotify_track(self, sp: spotipy.Spotify, title: str, artist: str) -> Optional[str]:
         """
-        Find the best matching track from Spotify search results
+        Search for a track on Spotify and return the best match URI.
         
         Args:
-            spotify_tracks: List of Spotify track objects
-            target_title: Target track title
-            target_artists: List of target artist names
+            sp: Spotify client
+            title: Track title
+            artist: Track artist
             
         Returns:
-            Best matching track or None
+            Spotify track URI if found, None otherwise
         """
-        if not spotify_tracks:
-            return None
+        try:
+            # Create search query
+            query = self._clean_search_query(title, artist)
             
-        best_match = None
-        best_score = 0
-        
-        target_title_lower = target_title.lower()
-        target_artists_lower = [artist.lower() for artist in target_artists]
-        
-        for track in spotify_tracks:
-            score = 0
-            track_title = track['name'].lower()
-            track_artists = [artist['name'].lower() for artist in track['artists']]
+            if not query.strip():
+                return None
             
-            # Title similarity (extremely permissive scoring)
-            if target_title_lower in track_title or track_title in target_title_lower:
-                score += 0.8  # Increased from 0.7
-            elif any(word in track_title for word in target_title_lower.split() if len(word) > 1):  # Lowered from 2 to 1
-                score += 0.5  # Increased from 0.4
-            # Additional partial matching for very short words
-            elif any(word in track_title for word in target_title_lower.split() if len(word) == 1):
-                score += 0.2  # Even single character matches get some score
+            # Run the search in a thread to avoid blocking
+            loop = asyncio.get_event_loop()
+            results = await loop.run_in_executor(
+                None, 
+                lambda: sp.search(q=query, type='track', limit=10)
+            )
             
-            # Artist similarity (very permissive)
-            for target_artist in target_artists_lower:
+            if not results['tracks']['items']:
+                # Try searching with just the title if no results
+                title_only_query = self._clean_search_query(title, "")
+                if title_only_query.strip() and title_only_query != query:
+                    results = await loop.run_in_executor(
+                        None,
+                        lambda: sp.search(q=title_only_query, type='track', limit=10)
+                    )
+            
+            if not results['tracks']['items']:
+                return None
+            
+            # Find the best match
+            best_match = None
+            best_score = 0
+            
+            for track in results['tracks']['items']:
+                score = 0
+                track_title = track['name'].lower()
+                track_artists = [artist['name'].lower() for artist in track['artists']]
+                
+                # Score based on title similarity
+                if title.lower() in track_title or track_title in title.lower():
+                    score += 3
+                elif any(word in track_title for word in title.lower().split()):
+                    score += 1
+                
+                # Score based on artist similarity
                 for track_artist in track_artists:
-                    if target_artist in track_artist or track_artist in target_artist:
-                        score += 0.6 / len(target_artists_lower)  # Increased from 0.5
+                    if artist.lower() in track_artist or track_artist in artist.lower():
+                        score += 2
                         break
-                    elif any(word in track_artist for word in target_artist.split() if len(word) > 1):
-                        score += 0.3 / len(target_artists_lower)  # Increased from 0.2
+                    elif any(word in track_artist for word in artist.lower().split()):
+                        score += 1
                         break
-                    # Even single character matches in artist names
-                    elif any(word in track_artist for word in target_artist.split() if len(word) == 1):
-                        score += 0.1 / len(target_artists_lower)
-                        break
+                
+                if score > best_score:
+                    best_score = score
+                    best_match = track
             
-            if score > best_score:
-                best_score = score
-                best_match = track
-        
-        # Only return matches with reasonable confidence
-        if best_score >= 0.05:  # Extremely permissive - lowered from 0.1 to 0.05 (5% similarity)
-            return best_match
+            return best_match['uri'] if best_match else results['tracks']['items'][0]['uri']
             
-        return None
+        except Exception as e:
+            logger.error("Error searching for track '%s' by '%s': %s", title, artist, str(e))
+            return None
 
     async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify, 
-                                        track_data: List[Tuple[int, str, List[str]]]) -> List[Tuple[int, Optional[Dict[str, Any]]]]:
+                                        track_data: List[Tuple[int, str, str]]) -> List[Tuple[int, Optional[str]]]:
         """
-        Search for multiple tracks concurrently on Spotify
+        Search for multiple tracks concurrently on Spotify using the simple search logic
         
         Args:
             spotify_client: Authenticated Spotify client
-            track_data: List of tuples (track_id, title, artist_names)
+            track_data: List of tuples (track_id, title, artist)
             
         Returns:
-            List of tuples (track_id, spotify_track_data or None)
+            List of tuples (track_id, spotify_track_uri or None)
         """
         logger.info("Starting concurrent track search for %d tracks with max_concurrent=%d", 
                    len(track_data), self.max_concurrent_searches)
@@ -352,8 +252,17 @@ class SpotifyTransferService:
         start_time = time.time()
         
         def search_single_track(track_info):
-            track_id, title, artists = track_info
-            return (track_id, self._search_track_on_spotify(spotify_client, title, artists, track_id))
+            track_id, title, artist = track_info
+            # Create a new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(
+                    self._search_spotify_track(spotify_client, title, artist)
+                )
+                return (track_id, result)
+            finally:
+                loop.close()
         
         # Use ThreadPoolExecutor for concurrent API calls
         with ThreadPoolExecutor(max_workers=self.max_concurrent_searches) as executor:
@@ -406,20 +315,29 @@ class SpotifyTransferService:
         logger.info("Adding %d tracks to Spotify playlist %s", len(track_uris), playlist_id)
         
         # Add tracks in batches (Spotify limit is 100 tracks per request)
-        for i in range(0, len(track_uris), self.batch_size):
-            batch = track_uris[i:i + self.batch_size]
-            batch_num = (i // self.batch_size) + 1
-            total_batches = (len(track_uris) + self.batch_size - 1) // self.batch_size
+        batch_size = 100
+        tracks_added = 0
+        
+        for i in range(0, len(track_uris), batch_size):
+            batch = track_uris[i:i + batch_size]
+            batch_num = (i // batch_size) + 1
+            total_batches = (len(track_uris) + batch_size - 1) // batch_size
             
             logger.info("Adding batch %d/%d (%d tracks) to playlist", 
                        batch_num, total_batches, len(batch))
             
             try:
-                spotify_client.playlist_add_items(playlist_id, batch)
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(
+                    None,
+                    lambda: spotify_client.playlist_add_items(playlist_id, batch)
+                )
+                tracks_added += len(batch)
                 logger.info("✅ Successfully added batch %d/%d to playlist", batch_num, total_batches)
             except Exception as e:
                 logger.error("❌ Failed to add batch %d/%d to playlist: %s", batch_num, total_batches, str(e))
-                raise
+                
+        return tracks_added
 
     async def transfer_playlist_to_spotify(self, db: AsyncSession, playlist_id: str, 
                                          access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
@@ -499,17 +417,23 @@ class SpotifyTransferService:
             logger.info("Playlist URL: %s", spotify_playlist_url)
             
             # Step 6: Search for tracks on Spotify (concurrent)
-            logger.info("Step 6: Searching for tracks on Spotify...")
-            search_results = await self._search_tracks_concurrently(spotify_client, track_data)
+            logger.info("Step 6: Searching for tracks on Spotify concurrently...")
+            
+            # Convert track_data format for concurrent search: (track_id, title, first_artist)
+            concurrent_track_data = []
+            for track_id, title, artists in track_data:
+                concurrent_track_data.append((track_id, title, artists[0]))  # Use first artist
+            
+            search_results = await self._search_tracks_concurrently(spotify_client, concurrent_track_data)
             
             # Step 7: Process search results
             logger.info("Step 7: Processing search results...")
             found_tracks = []
             not_found_tracks = []
             
-            for track_id, spotify_track in search_results:
-                if spotify_track:
-                    found_tracks.append(spotify_track['uri'])
+            for track_id, spotify_uri in search_results:
+                if spotify_uri:
+                    found_tracks.append(spotify_uri)
                 else:
                     # Find original track info for not found list
                     original_track = next((t for t in track_data if t[0] == track_id), None)
@@ -520,10 +444,11 @@ class SpotifyTransferService:
             logger.info("Search results: %d found, %d not found", len(found_tracks), len(not_found_tracks))
             
             # Step 8: Add found tracks to Spotify playlist
+            tracks_added = 0
             if found_tracks:
                 logger.info("Step 8: Adding %d tracks to Spotify playlist...", len(found_tracks))
-                await self._add_tracks_to_playlist(spotify_client, spotify_playlist_id, found_tracks)
-                logger.info("✅ Successfully added tracks to Spotify playlist")
+                tracks_added = await self._add_tracks_to_playlist(spotify_client, spotify_playlist_id, found_tracks)
+                logger.info("✅ Successfully added %d tracks to Spotify playlist", tracks_added)
             else:
                 logger.warning("⚠️  No tracks were found on Spotify to add to playlist")
             
@@ -536,7 +461,7 @@ class SpotifyTransferService:
                 "spotify_playlist_url": spotify_playlist_url,
                 "spotify_playlist_name": playlist_name,
                 "total_tracks": len(playlist_tracks),
-                "tracks_added": len(found_tracks),
+                "tracks_added": tracks_added,
                 "tracks_not_found": len(not_found_tracks),
                 "not_found_tracks": not_found_tracks[:10],  # Limit to first 10 for response size
                 "transfer_time_seconds": round(total_time, 2)
