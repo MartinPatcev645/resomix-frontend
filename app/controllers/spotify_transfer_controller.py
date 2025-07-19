@@ -85,8 +85,7 @@ class SpotifyTransferController:
                 status_code=status.HTTP_200_OK,
                 content=format_response(
                     success=True,
-                    data=result,
-                    message=success_message
+                    data=result
                 )
             )
             
