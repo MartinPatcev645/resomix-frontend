@@ -108,5 +108,5 @@ async def transfer_playlist_to_spotify_endpoint(
         db, 
         request_data.playlist_id, 
         request_data.access_token,
-        request_data.playlist_name
-    ) 
+        custom_playlist_name=request_data.playlist_name
+    )
