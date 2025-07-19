@@ -29,7 +29,7 @@ from app.schemas.spotify_transfer import (
 )
 
 router = APIRouter(
-    prefix="/playlists",
+    prefix="/spotify",
     tags=["spotify-transfer"],
     responses={
         401: {"model": SpotifyTransferErrorResponse},
@@ -44,7 +44,7 @@ spotify_transfer_controller = SpotifyTransferController()
 
 
 @router.post(
-    "/transfer-to-spotify/",
+    "/transfer-playlist/",
     response_model=SpotifyTransferResponse,
     summary="Transfer Playlist to Spotify",
     description="Transfer a ResomiX playlist to user's Spotify account. Requires OAuth access token from frontend.",
