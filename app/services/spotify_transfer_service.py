@@ -94,12 +94,10 @@ class SpotifyTransferService:
         if not title:
             return ""
             
-        # Remove only the most common unwanted strings (less aggressive than before)
+        # Remove only the most basic unwanted strings (extremely minimal cleaning)
         unwanted_patterns = [
-            r'\(Original Mix\)',
-            r'\(Radio Edit\)',
-            r'\(Extended Mix\)',
-            # Removed more patterns to be less aggressive
+            r'\(Original Mix\)',  # Only keep this one - it's the most common
+            # Removed almost all other patterns to prevent over-cleaning
         ]
         
         cleaned = title
@@ -243,6 +241,34 @@ class SpotifyTransferService:
             except Exception as e:
                 logger.warning("Strategy 5 failed for track ID %d: %s", track_id, str(e))
         
+        # Strategy 6: Search with first few words only (ultra-broad search)
+        if cleaned_title:
+            # Take first 2-3 words of the title for very broad search
+            title_words = cleaned_title.split()[:4]  # First 3 words max
+            if title_words:
+                query = ' '.join(title_words)
+                if artist_names:
+                    query += f" {artist_names[0]}"
+                query = query[:100]  # Limit length
+                
+                logger.debug("Strategy 6 - Ultra-broad search with query: %s", query)
+                
+                try:
+                    results = spotify_client.search(q=query, type='track', limit=30)  # More results for broader search
+                    tracks = results.get('tracks', {}).get('items', [])
+                    
+                    if tracks:
+                        best_match = self._find_best_track_match(tracks, cleaned_title, artist_names)
+                        if best_match:
+                            search_time = time.time() - start_time
+                            logger.info("✅ Found match for track ID %d using Strategy 6 (%.2fs): %s - %s", 
+                                       track_id, search_time, best_match['name'],
+                                       ', '.join([artist['name'] for artist in best_match['artists']]))
+                            return best_match
+                            
+                except Exception as e:
+                    logger.warning("Strategy 6 failed for track ID %d: %s", track_id, str(e))
+        
         search_time = time.time() - start_time
         logger.warning("❌ No match found for track ID %d after all strategies (%.2fs): '%s' by %s", 
                       track_id, search_time, cleaned_title, ', '.join(artist_names))
@@ -275,20 +301,27 @@ class SpotifyTransferService:
             track_title = track['name'].lower()
             track_artists = [artist['name'].lower() for artist in track['artists']]
             
-            # Title similarity (more permissive scoring)
+            # Title similarity (extremely permissive scoring)
             if target_title_lower in track_title or track_title in target_title_lower:
-                score += 0.7  # Increased from 0.6
-            elif any(word in track_title for word in target_title_lower.split() if len(word) > 2):  # Lowered from 3 to 2
-                score += 0.4  # Increased from 0.3
+                score += 0.8  # Increased from 0.7
+            elif any(word in track_title for word in target_title_lower.split() if len(word) > 1):  # Lowered from 2 to 1
+                score += 0.5  # Increased from 0.4
+            # Additional partial matching for very short words
+            elif any(word in track_title for word in target_title_lower.split() if len(word) == 1):
+                score += 0.2  # Even single character matches get some score
             
-            # Artist similarity (more permissive)
+            # Artist similarity (very permissive)
             for target_artist in target_artists_lower:
                 for track_artist in track_artists:
                     if target_artist in track_artist or track_artist in target_artist:
-                        score += 0.5 / len(target_artists_lower)  # Increased from 0.4
+                        score += 0.6 / len(target_artists_lower)  # Increased from 0.5
                         break
-                    elif any(word in track_artist for word in target_artist.split() if len(word) > 2):
-                        score += 0.2 / len(target_artists_lower)  # Added partial artist matching
+                    elif any(word in track_artist for word in target_artist.split() if len(word) > 1):
+                        score += 0.3 / len(target_artists_lower)  # Increased from 0.2
+                        break
+                    # Even single character matches in artist names
+                    elif any(word in track_artist for word in target_artist.split() if len(word) == 1):
+                        score += 0.1 / len(target_artists_lower)
                         break
             
             if score > best_score:
@@ -296,7 +329,7 @@ class SpotifyTransferService:
                 best_match = track
         
         # Only return matches with reasonable confidence
-        if best_score >= 0.1:  # Lowered from 0.3 to 0.1 for more permissive matching
+        if best_score >= 0.05:  # Extremely permissive - lowered from 0.1 to 0.05 (5% similarity)
             return best_match
             
         return None
