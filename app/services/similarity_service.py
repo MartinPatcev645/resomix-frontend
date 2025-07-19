@@ -131,7 +131,6 @@ class SimilarityService:
                 # else: track details not found in DB for this path, so it's omitted from results
 
             # Deduplicate tracks before returning
-            # The target count should be the original requested amount (top_k - threshold)
             target_count_after_deduplication = top_k - similarity_duplication_threshold
             if target_count_after_deduplication < 0: 
                 target_count_after_deduplication = 0  # Ensure not negative
@@ -139,12 +138,32 @@ class SimilarityService:
             # Apply response-level filtering to existing tracks before deduplication
             filtered_enriched_tracks = self._apply_response_filtering(enriched_similar_tracks)
             
+            # NEW: Fetch uploaded track details to use as reference track and update duration
+            try:
+                uploaded_track_details = await self._fetch_reference_track_details_from_db_by_uuid(db, track_uuid)
+            except Exception as e:
+                print(f"Error fetching uploaded track details: {e}")
+                return {"success": False, "error": "Failed to retrieve uploaded track details"}
+            
+            if not uploaded_track_details:
+                print(f"Warning: Could not fetch details for uploaded track {track_uuid}")
+                return {"success": False, "error": "Could not retrieve uploaded track details"}
+            
+            final_duration = server_duration if server_duration is not None and server_duration > 0 else (calculated_duration if calculated_duration is not None and calculated_duration > 0 else None)
+            uploaded_track_details["duration"] = final_duration
+            if final_duration is not None and final_duration > 0:
+                try:
+                    await self._update_track_duration_in_db(db, track_uuid, final_duration)
+                    print(f"Updated track {track_uuid} duration to {final_duration} seconds")
+                except Exception as e:
+                    print(f"Warning: Could not update track duration in database: {e}")
+            
             deduplicated_enriched_tracks = self._deduplicate_tracks(
                 filtered_enriched_tracks, 
                 target_count_after_deduplication,
-                reference_track=None  # No reference track for upload similarity
+                reference_track=uploaded_track_details  # Passing reference track for upload similarity
             )
-
+            
             # Get corresponding track IDs and scores for deduplicated tracks
             deduplicated_track_ids = []
             deduplicated_track_scores = []
@@ -156,73 +175,48 @@ class SimilarityService:
                             deduplicated_track_ids.append(track_ids[i])
                             deduplicated_track_scores.append(track_scores[i] if i < len(track_scores) else 0.0)
                         break
-
-            # NEW: Get uploaded track details to construct response similar to similarity by ID
-            try:
-                uploaded_track_details = await self._fetch_reference_track_details_from_db_by_uuid(db, track_uuid)
-                if uploaded_track_details:
-                    # Use server duration if available, otherwise fall back to calculated duration
-                    final_duration = server_duration if server_duration is not None and server_duration > 0 else (calculated_duration if calculated_duration is not None and calculated_duration > 0 else None)
-                    uploaded_track_details["duration"] = final_duration
-                    
-                    # Update the track's duration in the database if we have a valid duration
-                    if final_duration is not None and final_duration > 0:
-                        try:
-                            await self._update_track_duration_in_db(db, track_uuid, final_duration)
-                            print(f"Updated track {track_uuid} duration to {final_duration} seconds")
-                        except Exception as e:
-                            print(f"Warning: Could not update track duration in database: {e}")
-                            # Don't fail the request if duration update fails
-                    
-                    # Create similarity playlist if we have tracks
-                    playlist_info = None
-                    if deduplicated_track_ids:
-                        try:
-                            # Get the uploaded track's database ID
-                            uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
-                            if uploaded_track:
-                                # Generate playlist name based on uploaded track details
-                                playlist_name = self._generate_playlist_name_from_seed_track(uploaded_track_details)
-                                
-                                playlist_info = await self.playlist_repository.async_create_similarity_playlist(
-                                    db=db,
-                                    seed_track_id=uploaded_track.id,
-                                    track_ids=deduplicated_track_ids,
-                                    track_scores=deduplicated_track_scores,
-                                    name=playlist_name
-                                )
-                                
-                                # Send playlist peaks request (fire and forget)
-                                if playlist_info:
-                                    await self._send_playlist_peaks_request(track_uuid, deduplicated_enriched_tracks)
-                                    
-                        except Exception as e:
-                            print(f"Error creating playlist for upload similarity: {e}")
-                            # Don't fail the whole request if playlist creation fails
-                    
-                    # Format response like similarity by ID
-                    response_data = {
-                        "queried_track": uploaded_track_details,
-                        "similar_tracks": deduplicated_enriched_tracks
-                    }
-                    
-                    # Add playlist info if created
-                    if playlist_info:
-                        response_data["playlist"] = playlist_info
-                    
-                    # Apply filtering to queried track as well
-                    if response_data.get("queried_track"):
-                        filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
-                        if filtered_queried_tracks:
-                            response_data["queried_track"] = filtered_queried_tracks[0]
-                    
-                    return response_data
-                else:
-                    print(f"Warning: Could not fetch details for uploaded track {track_uuid}")
-                    return {"success": False, "error": "Could not retrieve uploaded track details"}
-            except Exception as e:
-                print(f"Error fetching uploaded track details: {e}")
-                return {"success": False, "error": "Failed to retrieve uploaded track details"}
+            
+            # Create similarity playlist if we have tracks
+            playlist_info = None
+            if deduplicated_track_ids:
+                try:
+                    # Get the uploaded track's database ID
+                    uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
+                    if uploaded_track:
+                        # Generate playlist name based on uploaded track details
+                        playlist_name = self._generate_playlist_name_from_seed_track(uploaded_track_details)
+                        
+                        playlist_info = await self.playlist_repository.async_create_similarity_playlist(
+                              db=db,
+                              seed_track_id=uploaded_track.id,
+                              track_ids=deduplicated_track_ids,
+                              track_scores=deduplicated_track_scores,
+                              name=playlist_name
+                        )
+                        
+                        # Send playlist peaks request (fire and forget)
+                        if playlist_info:
+                            await self._send_playlist_peaks_request(track_uuid, deduplicated_enriched_tracks)
+                except Exception as e:
+                    print(f"Error creating playlist for upload similarity: {e}")
+            
+            # Format response like similarity by ID
+            response_data = {
+                "queried_track": uploaded_track_details,
+                "similar_tracks": deduplicated_enriched_tracks
+            }
+            
+            # Add playlist info if created
+            if playlist_info:
+                response_data["playlist"] = playlist_info
+            
+            # Apply filtering to queried track as well
+            if response_data.get("queried_track"):
+                filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
+                if filtered_queried_tracks:
+                    response_data["queried_track"] = filtered_queried_tracks[0]
+            
+            return response_data
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
             error_message = similarity_response.get("message", "Unknown error during similarity processing.")
@@ -744,9 +738,10 @@ class SimilarityService:
             # Create a key from normalized artist set and title
             artist_title_key = (normalized_artists_tuple, title)
             
-            # Skip if this matches the reference track
+            # Skip this track if its normalized key matches that of the reference track.
+            # This ensures consistency between track-to-track and reference track deduplication (both use normalized artist set and filtered title).
             if reference_normalized_key and artist_title_key == reference_normalized_key:
-                continue  # Skip the reference track itself
+                continue
             
             if artist_title_key not in seen_artist_title_tracks:
                 final_deduplicated_list.append(track)
