@@ -55,10 +55,7 @@ class SpotifyTransferController:
         Returns:
             JSONResponse with transfer results
         """
-        logger.info("=== SPOTIFY TRANSFER REQUEST ===")
-        logger.info("Request - Playlist ID: %s", playlist_id)
-        logger.info("Request - Custom name: %s", custom_playlist_name or "None")
-        logger.info("Request - Access token length: %d chars", len(access_token) if access_token else 0)
+        logger.info("Processing Spotify transfer request for playlist: %s", playlist_id)
         
         try:
             # Call the service to perform the transfer
@@ -75,11 +72,8 @@ class SpotifyTransferController:
                 f"{result['tracks_added']} tracks added, {result['tracks_not_found']} tracks not found."
             )
             
-            logger.info("=== TRANSFER REQUEST COMPLETED SUCCESSFULLY ===")
-            logger.info("Response - Tracks added: %d", result['tracks_added'])
-            logger.info("Response - Tracks not found: %d", result['tracks_not_found'])
-            logger.info("Response - Transfer time: %.2f seconds", result.get('transfer_time_seconds', 0))
-            logger.info("Response - Spotify playlist URL: %s", result['spotify_playlist_url'])
+            logger.info("Transfer completed: %d/%d tracks added in %.1fs", 
+                       result['tracks_added'], result['total_tracks'], result.get('transfer_time_seconds', 0))
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
@@ -92,7 +86,6 @@ class SpotifyTransferController:
         except ValueError as e:
             # Handle validation errors (playlist not found, no tracks, etc.)
             error_message = str(e)
-            logger.warning("=== TRANSFER REQUEST FAILED - VALIDATION ERROR ===")
             logger.warning("Validation error: %s", error_message)
             
             if "not found" in error_message.lower():
@@ -115,9 +108,7 @@ class SpotifyTransferController:
         except Exception as e:
             # Handle Spotify API errors and other exceptions
             error_message = str(e)
-            logger.error("=== TRANSFER REQUEST FAILED - UNEXPECTED ERROR ===")
-            logger.error("Unexpected error: %s", error_message)
-            logger.error("Exception type: %s", type(e).__name__)
+            logger.error("Transfer failed: %s", error_message)
             
             # Check if it's a Spotify authentication error
             if any(keyword in error_message.lower() for keyword in ['token', 'auth', 'unauthorized', 'forbidden']):

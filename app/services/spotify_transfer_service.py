@@ -69,17 +69,27 @@ class SpotifyTransferService:
         Returns:
             Configured Spotify client
         """
-        logger.info("Creating Spotify client with provided access token")
+        logger.info("Authenticating with Spotify...")
         try:
             client = spotipy.Spotify(auth=access_token)
             # Test the token by getting user info
             user_info = client.me()
-            logger.info("Successfully authenticated with Spotify for user: %s (ID: %s)", 
-                       user_info.get('display_name', 'Unknown'), user_info.get('id'))
+            logger.info("Successfully authenticated with Spotify for user: %s", 
+                       user_info.get('display_name', 'Unknown'))
             return client
         except Exception as e:
-            logger.error("Failed to create Spotify client: %s", str(e))
-            raise
+            error_msg = str(e)
+            logger.error("Failed to create Spotify client: %s", error_msg)
+            
+            # Provide specific error message for 403 errors
+            if "403" in error_msg and "not be registered" in error_msg:
+                raise ValueError("This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list.")
+            elif "403" in error_msg:
+                raise ValueError("Spotify access denied. Please check your access token permissions.")
+            elif "401" in error_msg:
+                raise ValueError("Invalid or expired Spotify access token. Please re-authenticate.")
+            else:
+                raise
 
     def _clean_track_title(self, title: str) -> str:
         """
@@ -377,9 +387,7 @@ class SpotifyTransferService:
         Returns:
             Transfer result with statistics and details
         """
-        logger.info("=== STARTING SPOTIFY PLAYLIST TRANSFER ===")
-        logger.info("Playlist ID: %s", playlist_id)
-        logger.info("Custom name: %s", custom_playlist_name or "None (will use ResomiX playlist name)")
+        logger.info("Starting playlist transfer...")
         
         transfer_start_time = time.time()
         
