@@ -57,8 +57,7 @@ class SpotifyTransferService:
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
         
-        logger.info("SpotifyTransferService initialized with max_concurrent_searches=%d", 
-                   self.max_concurrent_searches)
+        logger.info("SpotifyTransferService initialized")
 
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
         """
@@ -233,7 +232,7 @@ class SpotifyTransferService:
             return best_match['uri'] if best_match else results['tracks']['items'][0]['uri']
             
         except Exception as e:
-            logger.error("Error searching for track '%s' by '%s': %s", title, artist, str(e))
+            logger.warning("Search failed for '%s' by '%s': %s", title, artist, str(e))
             return None
 
     async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify, 
@@ -248,8 +247,7 @@ class SpotifyTransferService:
         Returns:
             List of tuples (track_id, spotify_track_uri or None)
         """
-        logger.info("Starting concurrent track search for %d tracks with max_concurrent=%d", 
-                   len(track_data), self.max_concurrent_searches)
+        logger.info("Searching %d tracks concurrently", len(track_data))
         
         start_time = time.time()
         
@@ -283,11 +281,6 @@ class SpotifyTransferService:
                     result = await future
                     results.append(result)
                     completed += 1
-                    
-                    # Log progress every 10 tracks or at the end
-                    if completed % 10 == 0 or completed == len(track_data):
-                        logger.info("Search progress: %d/%d tracks completed (%.1f%%)", 
-                                   completed, len(track_data), (completed / len(track_data)) * 100)
                         
                 except Exception as e:
                     track_id = future_to_track.get(future, 'unknown')
@@ -297,10 +290,8 @@ class SpotifyTransferService:
         total_time = time.time() - start_time
         successful_searches = sum(1 for _, result in results if result is not None)
         
-        logger.info("Concurrent search completed: %d/%d tracks found (%.1f%%) in %.2fs (avg %.2fs per track)", 
-                   successful_searches, len(track_data), 
-                   (successful_searches / len(track_data)) * 100 if track_data else 0,
-                   total_time, total_time / len(track_data) if track_data else 0)
+        logger.info("Search completed: %d/%d tracks found in %.1fs", 
+                   successful_searches, len(track_data), total_time)
         
         return results
 
@@ -315,11 +306,10 @@ class SpotifyTransferService:
         Returns:
             Dictionary mapping track_id -> spotify_id for cached entries
         """
-        logger.info("Checking cache for Spotify IDs for %d tracks", len(track_ids))
-        
         cached_ids = await self.transfer_track_repository.async_get_spotify_ids(db, track_ids)
         
-        logger.info("Found %d cached Spotify IDs out of %d tracks", len(cached_ids), len(track_ids))
+        if cached_ids:
+            logger.info("Found %d cached Spotify IDs", len(cached_ids))
         
         return cached_ids
 
@@ -332,16 +322,13 @@ class SpotifyTransferService:
             track_spotify_map: Dictionary mapping track_id -> spotify_id
         """
         if not track_spotify_map:
-            logger.info("No new Spotify IDs to cache")
             return
             
-        logger.info("Caching %d new Spotify IDs", len(track_spotify_map))
-        
         try:
             await self.transfer_track_repository.async_batch_upsert_spotify_ids(db, track_spotify_map)
-            logger.info("✅ Successfully cached %d Spotify IDs", len(track_spotify_map))
+            logger.info("Cached %d new Spotify IDs", len(track_spotify_map))
         except Exception as e:
-            logger.error("❌ Failed to cache Spotify IDs: %s", str(e))
+            logger.error("Failed to cache Spotify IDs: %s", str(e))
 
     async def _add_tracks_to_playlist(self, spotify_client: spotipy.Spotify, 
                                     playlist_id: str, track_uris: List[str]) -> None:
@@ -353,7 +340,7 @@ class SpotifyTransferService:
             playlist_id: Spotify playlist ID
             track_uris: List of Spotify track URIs to add
         """
-        logger.info("Adding %d tracks to Spotify playlist %s", len(track_uris), playlist_id)
+        logger.info("Adding %d tracks to Spotify playlist", len(track_uris))
         
         # Add tracks in batches (Spotify limit is 100 tracks per request)
         batch_size = 100
@@ -361,11 +348,6 @@ class SpotifyTransferService:
         
         for i in range(0, len(track_uris), batch_size):
             batch = track_uris[i:i + batch_size]
-            batch_num = (i // batch_size) + 1
-            total_batches = (len(track_uris) + batch_size - 1) // batch_size
-            
-            logger.info("Adding batch %d/%d (%d tracks) to playlist", 
-                       batch_num, total_batches, len(batch))
             
             try:
                 loop = asyncio.get_event_loop()
@@ -374,10 +356,11 @@ class SpotifyTransferService:
                     lambda: spotify_client.playlist_add_items(playlist_id, batch)
                 )
                 tracks_added += len(batch)
-                logger.info("✅ Successfully added batch %d/%d to playlist", batch_num, total_batches)
             except Exception as e:
-                logger.error("❌ Failed to add batch %d/%d to playlist: %s", batch_num, total_batches, str(e))
+                batch_num = (i // batch_size) + 1
+                logger.error("Failed to add batch %d: %s", batch_num, str(e))
                 
+        logger.info("Successfully added %d tracks to playlist", tracks_added)
         return tracks_added
 
     async def transfer_playlist_to_spotify(self, db: AsyncSession, playlist_id: str, 
@@ -402,25 +385,22 @@ class SpotifyTransferService:
         
         try:
             # Step 1: Get playlist from database
-            logger.info("Step 1: Fetching playlist from database...")
+            logger.info("Fetching playlist from database...")
             playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
             if not playlist:
-                logger.error("❌ Playlist not found: %s", playlist_id)
+                logger.error("Playlist not found: %s", playlist_id)
                 raise ValueError(f"Playlist with ID {playlist_id} not found")
             
-            logger.info("✅ Found playlist: '%s' (ID: %s)", playlist.name, playlist.id)
-            
             # Step 2: Get tracks for playlist
-            logger.info("Step 2: Fetching tracks for playlist...")
+            logger.info("Fetching tracks for playlist...")
             playlist_tracks = await self.playlist_repository.async_get_tracks_by_playlist_id(db, playlist.id)
             if not playlist_tracks:
-                logger.warning("❌ Playlist has no tracks: %s", playlist_id)
+                logger.warning("Playlist has no tracks: %s", playlist_id)
                 raise ValueError(f"Playlist {playlist_id} has no tracks to transfer")
             
-            logger.info("✅ Found %d tracks in playlist", len(playlist_tracks))
+            logger.info("Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name)
             
             # Step 3: Get track and artist information for each playlist track
-            logger.info("Step 3: Fetching track and artist information...")
             track_data = []
             for playlist_track in playlist_tracks:
                 # Get the actual track object
@@ -429,20 +409,16 @@ class SpotifyTransferService:
                     artists = await self.track_repository.async_get_track_artists(db, track.id)
                     artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
                     track_data.append((track.id, track.title or "Unknown Track", artist_names))
-                
-            logger.info("✅ Prepared %d tracks with artist information", len(track_data))
             
             # Step 4: Create Spotify client
-            logger.info("Step 4: Authenticating with Spotify...")
+            logger.info("Authenticating with Spotify...")
             spotify_client = self._create_spotify_client(access_token)
             
             # Step 5: Create Spotify playlist
-            logger.info("Step 5: Creating Spotify playlist...")
+            logger.info("Creating Spotify playlist...")
             playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
             user_info = spotify_client.me()
             user_id = user_info['id']
-            
-            logger.info("Creating playlist '%s' for user %s", playlist_name, user_id)
             
             spotify_playlist = spotify_client.user_playlist_create(
                 user=user_id,
@@ -454,37 +430,30 @@ class SpotifyTransferService:
             spotify_playlist_id = spotify_playlist['id']
             spotify_playlist_url = spotify_playlist['external_urls']['spotify']
             
-            logger.info("✅ Created Spotify playlist: %s (ID: %s)", playlist_name, spotify_playlist_id)
-            logger.info("Playlist URL: %s", spotify_playlist_url)
+            logger.info("Created Spotify playlist: %s", playlist_name)
             
             # Step 6: Search for tracks on Spotify (concurrent)
-            logger.info("Step 6: Searching for tracks on Spotify concurrently...")
+            logger.info("Searching for tracks on Spotify...")
             
-            # Step 6a: Check cache for existing Spotify IDs
-            logger.info("Step 6a: Checking cache for existing Spotify IDs...")
+            # Check cache for existing Spotify IDs
             track_ids = [track_id for track_id, _, _ in track_data]
             cached_spotify_ids = await self._get_cached_spotify_ids(db, track_ids)
             
-            # Step 6b: Separate cached and uncached tracks
+            # Separate cached and uncached tracks
             cached_tracks = []
             uncached_tracks = []
             
             for track_id, title, artists in track_data:
                 if track_id in cached_spotify_ids:
                     cached_tracks.append((track_id, cached_spotify_ids[track_id]))
-                    logger.debug("Using cached Spotify ID for track %d: %s", track_id, cached_spotify_ids[track_id])
                 else:
                     uncached_tracks.append((track_id, title, artists))
             
-            logger.info("Found %d cached tracks, need to search %d tracks", len(cached_tracks), len(uncached_tracks))
-            
-            # Step 6c: Search for uncached tracks only
+            # Search for uncached tracks only
             search_results = []
             new_spotify_ids = {}  # For caching newly found IDs
             
             if uncached_tracks:
-                logger.info("Step 6c: Searching for %d uncached tracks...", len(uncached_tracks))
-                
                 # Convert to format expected by concurrent search: (track_id, title, first_artist)
                 concurrent_track_data = []
                 for track_id, title, artists in uncached_tracks:
@@ -497,13 +466,11 @@ class SpotifyTransferService:
                     if spotify_uri:
                         new_spotify_ids[track_id] = spotify_uri
             
-            # Step 6d: Update cache with newly found Spotify IDs
+            # Update cache with newly found Spotify IDs
             if new_spotify_ids:
-                logger.info("Step 6d: Updating cache with %d new Spotify IDs...", len(new_spotify_ids))
                 await self._update_spotify_cache(db, new_spotify_ids)
             
-            # Step 7: Process all results (cached + searched)
-            logger.info("Step 7: Processing all results...")
+            # Process all results (cached + searched)
             found_tracks = []
             not_found_tracks = []
             
@@ -522,21 +489,18 @@ class SpotifyTransferService:
                         _, title, artists = original_track
                         not_found_tracks.append(f"{', '.join(artists)} - {title}")
             
-            logger.info("Final results: %d found (%d cached + %d searched), %d not found", 
+            logger.info("Found %d tracks (%d cached + %d searched), %d not found", 
                        len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
             
-            # Step 8: Add found tracks to Spotify playlist
+            # Step 7: Add found tracks to Spotify playlist
             tracks_added = 0
             if found_tracks:
-                logger.info("Step 8: Adding %d tracks to Spotify playlist...", len(found_tracks))
                 tracks_added = await self._add_tracks_to_playlist(spotify_client, spotify_playlist_id, found_tracks)
-                logger.info("✅ Successfully added %d tracks to Spotify playlist", tracks_added)
             else:
-                logger.warning("⚠️  No tracks were found on Spotify to add to playlist")
+                logger.warning("No tracks found on Spotify to add to playlist")
             
-            # Step 9: Prepare response
+            # Prepare response
             total_time = time.time() - transfer_start_time
-            logger.info("Step 9: Preparing response...")
             
             result = {
                 "spotify_playlist_id": spotify_playlist_id,
@@ -549,17 +513,12 @@ class SpotifyTransferService:
                 "transfer_time_seconds": round(total_time, 2)
             }
             
-            logger.info("=== TRANSFER COMPLETED SUCCESSFULLY ===")
-            logger.info("Total time: %.2f seconds", total_time)
-            logger.info("Success rate: %.1f%% (%d/%d tracks found)", 
-                       (len(found_tracks) / len(playlist_tracks)) * 100, len(found_tracks), len(playlist_tracks))
-            logger.info("Spotify playlist: %s", spotify_playlist_url)
+            logger.info("Transfer completed successfully in %.1fs - %d/%d tracks added", 
+                       total_time, tracks_added, len(playlist_tracks))
             
             return result
             
         except Exception as e:
             total_time = time.time() - transfer_start_time
-            logger.error("=== TRANSFER FAILED ===")
-            logger.error("Error after %.2f seconds: %s", total_time, str(e))
-            logger.error("Exception type: %s", type(e).__name__)
+            logger.error("Transfer failed after %.1fs: %s", total_time, str(e))
             raise
