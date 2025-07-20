@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 from app.services.tidal_transfer_service import TidalTransferService
-from app.utils.response_formatter import format_response
+from app.utils.response_utils import format_response
 from app.utils.playlist_transfer_utils import format_success_message, get_platform_error_message
 
 # Set up logger
