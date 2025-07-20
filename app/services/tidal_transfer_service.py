@@ -424,15 +424,32 @@ class TidalTransferService:
                         logger.error("Token exchange response missing access_token: %s", token_response)
                         raise ValueError("Invalid token response from Tidal")
                     
+                    # Log the successful token response for debugging
                     logger.info("Successfully obtained Tidal access token")
+                    logger.info("Access token (first 20 chars): %s...", token_response["access_token"][:20])
+                    logger.info("Token type: %s", token_response.get("token_type", "Bearer"))
+                    logger.info("Expires in: %s seconds", token_response.get("expires_in", 3600))
+                    logger.info("Refresh token available: %s", bool(token_response.get("refresh_token")))
+                    logger.info("Granted scopes: %s", token_response.get("scope", "N/A"))
                     
-                    return {
+                    response_data = {
                         "access_token": token_response["access_token"],
                         "token_type": token_response.get("token_type", "Bearer"),
                         "expires_in": token_response.get("expires_in", 3600),
                         "refresh_token": token_response.get("refresh_token"),
                         "scope": token_response.get("scope")
                     }
+                    
+                    # Log the complete response data being returned
+                    logger.info("Returning token response data: %s", {
+                        "access_token": f"{response_data['access_token'][:20]}..." if response_data['access_token'] else None,
+                        "token_type": response_data['token_type'],
+                        "expires_in": response_data['expires_in'],
+                        "refresh_token": f"{response_data['refresh_token'][:20]}..." if response_data['refresh_token'] else None,
+                        "scope": response_data['scope']
+                    })
+                    
+                    return response_data
                     
             except aiohttp.ClientError as e:
                 logger.error("Network error during token exchange: %s", str(e))

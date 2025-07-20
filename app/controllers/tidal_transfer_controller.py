@@ -79,15 +79,21 @@ class TidalTransferController:
             authorization_url = f"https://auth.tidal.com/v1/oauth2/authorize?{urlencode(auth_params)}"
             
             logger.info("Generated Tidal authorization URL for redirect_uri: %s", request_data.redirect_uri)
+            logger.info("Authorization URL: %s", authorization_url)
+            logger.info("Generated state parameter: %s", state)
+            
+            response_data = {
+                "authorization_url": authorization_url,
+                "state": state
+            }
+            
+            logger.info("Returning authorization response to frontend: %s", response_data)
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(
                     success=True,
-                    data={
-                        "authorization_url": authorization_url,
-                        "state": state
-                    }
+                    data=response_data
                 )
             )
             
@@ -131,6 +137,15 @@ class TidalTransferController:
             )
             
             logger.info("Successfully exchanged authorization code for Tidal access token")
+            
+            # Log the response being sent to frontend (with truncated sensitive data)
+            logger.info("Sending token response to frontend: %s", {
+                "access_token": f"{token_response['access_token'][:20]}..." if token_response.get('access_token') else None,
+                "token_type": token_response.get('token_type'),
+                "expires_in": token_response.get('expires_in'),
+                "refresh_token": f"{token_response['refresh_token'][:20]}..." if token_response.get('refresh_token') else None,
+                "scope": token_response.get('scope')
+            })
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
