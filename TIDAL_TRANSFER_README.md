@@ -92,15 +92,15 @@ Transfer a ResomiX playlist to user's Tidal account.
 
 ## Frontend Integration Guide
 
-### Step 1: Set up Tidal OAuth PKCE
+### Step 1: Set up Tidal OAuth with Server-Side Authentication
 
-First, register your application with Tidal Developer Platform and obtain your client credentials.
+The ResomiX server now handles Tidal client credentials server-side for enhanced security. The frontend only needs to handle the OAuth flow without exposing client secrets.
 
 #### Required Tidal Scopes
 - `playlists.read` - To read user playlists
 - `playlists.write` - To create and modify playlists
 
-#### Step 2: Generate PKCE Parameters
+#### Step 2: Generate PKCE Parameters (Frontend)
 
 ```javascript
 // Generate code verifier (43-128 characters)
@@ -128,64 +128,90 @@ const codeChallenge = await generateCodeChallenge(codeVerifier);
 localStorage.setItem('tidal_code_verifier', codeVerifier);
 ```
 
-#### Step 3: Redirect to Tidal Authorization
+#### Step 3: Get Authorization URL from Server
 
 ```javascript
-const initiateOAuth = () => {
-  const clientId = 'your_tidal_client_id';
-  const redirectUri = 'http://localhost:3000/callback';
-  const scope = 'playlists.read playlists.write';
+const getAuthorizationUrl = async () => {
+  const redirectUri = `${window.location.origin}/tidal-callback`;
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
   
-  const authUrl = new URL('https://auth.tidal.com/v1/oauth2/authorize');
-  authUrl.searchParams.append('response_type', 'code');
-  authUrl.searchParams.append('client_id', clientId);
-  authUrl.searchParams.append('redirect_uri', redirectUri);
-  authUrl.searchParams.append('scope', scope);
-  authUrl.searchParams.append('code_challenge', codeChallenge);
-  authUrl.searchParams.append('code_challenge_method', 'S256');
-  authUrl.searchParams.append('state', generateRandomString(16)); // Optional but recommended
+  // Store code verifier for token exchange
+  localStorage.setItem('tidal_code_verifier', codeVerifier);
   
-  window.location.href = authUrl.toString();
+  const response = await fetch('/tidal/auth/authorize?api_key=YOUR_API_KEY', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      redirect_uri: redirectUri,
+      code_challenge: codeChallenge
+    })
+  });
+  
+  const result = await response.json();
+  
+  if (result.success) {
+    // Store state for validation
+    localStorage.setItem('tidal_oauth_state', result.data.state);
+    
+    // Redirect to Tidal authorization
+    window.location.href = result.data.authorization_url;
+  } else {
+    throw new Error(result.error || 'Failed to get authorization URL');
+  }
 }
 ```
 
-#### Step 4: Exchange Code for Access Token
+#### Step 4: Handle OAuth Callback and Exchange Code for Token
 
 ```javascript
-const getAccessToken = async (code) => {
-  const codeVerifier = localStorage.getItem('tidal_code_verifier');
-  const clientId = 'your_tidal_client_id';
-  const redirectUri = 'http://localhost:3000/callback';
+const handleTidalCallback = async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  const state = urlParams.get('state');
+  const storedState = localStorage.getItem('tidal_oauth_state');
   
-  const tokenUrl = 'https://auth.tidal.com/v1/oauth2/token';
-  const payload = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: clientId,
-      code: code,
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-    }),
+  // Validate state parameter
+  if (!state || state !== storedState) {
+    throw new Error('Invalid OAuth state parameter');
   }
-
-  const response = await fetch(tokenUrl, payload);
-  const data = await response.json();
   
-  if (data.access_token) {
-    // Store access token
-    localStorage.setItem('tidal_access_token', data.access_token);
-    localStorage.setItem('tidal_refresh_token', data.refresh_token);
+  if (code) {
+    const codeVerifier = localStorage.getItem('tidal_code_verifier');
+    const redirectUri = `${window.location.origin}/tidal-callback`;
     
-    // Clean up
-    localStorage.removeItem('tidal_code_verifier');
+    // Exchange code for tokens using server endpoint
+    const response = await fetch('/tidal/auth/token?api_key=YOUR_API_KEY', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code: code,
+        redirect_uri: redirectUri,
+        code_verifier: codeVerifier
+      })
+    });
     
-    return data.access_token;
+    const result = await response.json();
+    
+    if (result.success) {
+      // Store access token
+      localStorage.setItem('tidal_access_token', result.data.access_token);
+      localStorage.setItem('tidal_refresh_token', result.data.refresh_token);
+      
+      // Clean up temporary storage
+      localStorage.removeItem('tidal_code_verifier');
+      localStorage.removeItem('tidal_oauth_state');
+      
+      return result.data.access_token;
+    } else {
+      throw new Error(result.error || 'Failed to exchange code for token');
+    }
   } else {
-    throw new Error('Failed to get access token');
+    throw new Error('No authorization code received');
   }
 }
 ```
@@ -218,47 +244,6 @@ const transferPlaylistToTidal = async (playlistId, customName = null) => {
 }
 ```
 
-### Token Refresh (Recommended)
-
-Tidal access tokens have limited lifespan. Implement token refresh for better user experience:
-
-```javascript
-const refreshAccessToken = async () => {
-  const refreshToken = localStorage.getItem('tidal_refresh_token');
-  const clientId = 'your_tidal_client_id';
-  
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-  
-  const tokenUrl = 'https://auth.tidal.com/v1/oauth2/token';
-  const payload = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: clientId,
-      refresh_token: refreshToken,
-    }),
-  }
-
-  const response = await fetch(tokenUrl, payload);
-  const data = await response.json();
-  
-  if (data.access_token) {
-    localStorage.setItem('tidal_access_token', data.access_token);
-    if (data.refresh_token) {
-      localStorage.setItem('tidal_refresh_token', data.refresh_token);
-    }
-    return data.access_token;
-  } else {
-    throw new Error('Failed to refresh token');
-  }
-}
-```
-
 ### Complete React Component Example
 
 ```jsx
@@ -268,34 +253,127 @@ const TidalTransferComponent = ({ playlistId, playlistName }) => {
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferResult, setTransferResult] = useState(null);
   const [tidalConnected, setTidalConnected] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   useEffect(() => {
     // Check if user has Tidal access token
     const token = localStorage.getItem('tidal_access_token');
     setTidalConnected(!!token);
+    
+    // Handle OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code && !token) {
+      handleTidalCallback();
+    }
   }, []);
 
+  const generateCodeVerifier = () => {
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const values = crypto.getRandomValues(new Uint8Array(64));
+    return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+  }
+
+  const generateCodeChallenge = async (codeVerifier) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+  }
+
   const handleTidalAuth = async () => {
-    // Generate PKCE parameters
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
-    
-    localStorage.setItem('tidal_code_verifier', codeVerifier);
-    
-    // Redirect to Tidal
-    const clientId = process.env.REACT_APP_TIDAL_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/tidal-callback`;
-    const scope = 'playlists.read playlists.write';
-    
-    const authUrl = new URL('https://auth.tidal.com/v1/oauth2/authorize');
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('client_id', clientId);
-    authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('scope', scope);
-    authUrl.searchParams.append('code_challenge', codeChallenge);
-    authUrl.searchParams.append('code_challenge_method', 'S256');
-    
-    window.location.href = authUrl.toString();
+    setIsAuthenticating(true);
+    try {
+      const redirectUri = `${window.location.origin}/tidal-callback`;
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+      
+      // Store code verifier for token exchange
+      localStorage.setItem('tidal_code_verifier', codeVerifier);
+      
+      const response = await fetch(`/tidal/auth/authorize?api_key=${process.env.REACT_APP_RESOMIX_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          redirect_uri: redirectUri,
+          code_challenge: codeChallenge
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Store state for validation
+        localStorage.setItem('tidal_oauth_state', result.data.state);
+        
+        // Redirect to Tidal authorization
+        window.location.href = result.data.authorization_url;
+      } else {
+        throw new Error(result.error || 'Failed to get authorization URL');
+      }
+    } catch (error) {
+      console.error('Error starting Tidal auth:', error);
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleTidalCallback = async () => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      const storedState = localStorage.getItem('tidal_oauth_state');
+      
+      // Validate state parameter
+      if (!state || state !== storedState) {
+        throw new Error('Invalid OAuth state parameter');
+      }
+      
+      if (code) {
+        const codeVerifier = localStorage.getItem('tidal_code_verifier');
+        const redirectUri = `${window.location.origin}/tidal-callback`;
+        
+        // Exchange code for tokens using server endpoint
+        const response = await fetch(`/tidal/auth/token?api_key=${process.env.REACT_APP_RESOMIX_API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code: code,
+            redirect_uri: redirectUri,
+            code_verifier: codeVerifier
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Store access token
+          localStorage.setItem('tidal_access_token', result.data.access_token);
+          localStorage.setItem('tidal_refresh_token', result.data.refresh_token);
+          
+          // Clean up temporary storage
+          localStorage.removeItem('tidal_code_verifier');
+          localStorage.removeItem('tidal_oauth_state');
+          
+          setTidalConnected(true);
+          
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          throw new Error(result.error || 'Failed to exchange code for token');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling Tidal callback:', error);
+    }
+    setIsAuthenticating(false);
   };
 
   const transferPlaylist = async () => {
@@ -342,8 +420,12 @@ const TidalTransferComponent = ({ playlistId, playlistName }) => {
       {!tidalConnected ? (
         <div>
           <p>Connect your Tidal account to transfer this playlist</p>
-          <button onClick={handleTidalAuth} className="btn btn-primary">
-            Connect Tidal Account
+          <button 
+            onClick={handleTidalAuth} 
+            disabled={isAuthenticating}
+            className="btn btn-primary"
+          >
+            {isAuthenticating ? 'Connecting...' : 'Connect Tidal Account'}
           </button>
         </div>
       ) : (

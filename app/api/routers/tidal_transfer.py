@@ -25,7 +25,10 @@ from app.api.dependencies.database import get_database_session
 from app.schemas.tidal_transfer import (
     TidalTransferRequest,
     TidalTransferResponse,
-    TidalTransferErrorResponse
+    TidalTransferErrorResponse,
+    TidalAuthRequest,
+    TidalTokenRequest,
+    TidalTokenResponse
 )
 
 router = APIRouter(
@@ -42,6 +45,97 @@ router = APIRouter(
 
 # Initialize controller
 tidal_transfer_controller = TidalTransferController()
+
+
+@router.post(
+    "/auth/authorize",
+    summary="Generate Tidal Authorization URL",
+    description="Generate authorization URL for Tidal OAuth PKCE flow. Client credentials are handled server-side.",
+    responses={
+        200: {
+            "description": "Authorization URL generated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "authorization_url": "https://auth.tidal.com/v1/oauth2/authorize?...",
+                            "state": "random_state_value"
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
+async def generate_authorization_url(
+    request_data: TidalAuthRequest,
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Generate Tidal OAuth authorization URL with PKCE parameters.
+    
+    This endpoint handles the server-side generation of the authorization URL
+    while keeping client secrets secure. The frontend only needs to provide
+    the redirect URI and code challenge parameters.
+    
+    **Process:**
+    1. Validates the request parameters
+    2. Uses server-side client credentials
+    3. Generates secure authorization URL
+    4. Returns URL and state for frontend redirect
+    
+    **Security:**
+    - Client secret never exposed to frontend
+    - State parameter for CSRF protection
+    - PKCE code challenge validation
+    """
+    return await tidal_transfer_controller.generate_authorization_url(request_data)
+
+
+@router.post(
+    "/auth/token",
+    response_model=TidalTokenResponse,
+    summary="Exchange Authorization Code for Access Token",
+    description="Exchange authorization code for Tidal access token. Handles token exchange server-side.",
+    responses={
+        200: {
+            "model": TidalTokenResponse,
+            "description": "Token exchange successful"
+        },
+        400: {
+            "model": TidalTransferErrorResponse,
+            "description": "Invalid authorization code or parameters"
+        },
+        401: {
+            "model": TidalTransferErrorResponse,
+            "description": "Invalid client credentials"
+        }
+    }
+)
+async def exchange_token(
+    request_data: TidalTokenRequest,
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Exchange authorization code for Tidal access token.
+    
+    This endpoint handles the server-side token exchange using the authorization
+    code received from Tidal's OAuth callback. Client credentials are managed
+    server-side for security.
+    
+    **Process:**
+    1. Validates the authorization code and parameters
+    2. Uses server-side client credentials for token exchange
+    3. Exchanges code for access and refresh tokens
+    4. Returns tokens to frontend (securely)
+    
+    **Security:**
+    - Client secret used server-side only
+    - PKCE code verifier validation
+    - Secure token handling
+    """
+    return await tidal_transfer_controller.exchange_authorization_code(request_data)
 
 
 @router.post(

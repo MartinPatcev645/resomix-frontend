@@ -19,10 +19,14 @@ from fastapi import status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+import secrets
+from urllib.parse import urlencode
 
+from app.core.config import settings
 from app.services.tidal_transfer_service import TidalTransferService
 from app.utils.response_utils import format_response
 from app.utils.playlist_transfer_utils import format_success_message, get_platform_error_message
+from app.schemas.tidal_transfer import TidalAuthRequest, TidalTokenRequest
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -35,6 +39,142 @@ class TidalTransferController:
         """Initialize the Tidal transfer controller"""
         self.tidal_service = TidalTransferService()
         logger.info("TidalTransferController initialized")
+
+    async def generate_authorization_url(self, request_data: TidalAuthRequest) -> JSONResponse:
+        """
+        Generate Tidal OAuth authorization URL with server-side client credentials
+        
+        Args:
+            request_data: Authorization request containing redirect_uri and PKCE parameters
+            
+        Returns:
+            JSONResponse with authorization URL and state
+        """
+        try:
+            # Validate that we have client credentials
+            if not settings.tidal_client_id:
+                logger.error("Tidal client ID not configured")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(
+                        success=False,
+                        error="Tidal authentication not properly configured"
+                    )
+                )
+            
+            # Generate secure state parameter
+            state = secrets.token_urlsafe(32)
+            
+            # Build authorization URL using server-side client ID
+            auth_params = {
+                "response_type": "code",
+                "client_id": settings.tidal_client_id,  # Use server-side client ID
+                "redirect_uri": request_data.redirect_uri,
+                "scope": "playlists.read playlists.write",
+                "code_challenge": request_data.code_challenge,
+                "code_challenge_method": "S256",
+                "state": state
+            }
+            
+            authorization_url = f"https://auth.tidal.com/v1/oauth2/authorize?{urlencode(auth_params)}"
+            
+            logger.info("Generated Tidal authorization URL for redirect_uri: %s", request_data.redirect_uri)
+            
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(
+                    success=True,
+                    data={
+                        "authorization_url": authorization_url,
+                        "state": state
+                    }
+                )
+            )
+            
+        except Exception as e:
+            logger.error("Failed to generate authorization URL: %s", str(e))
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error="Failed to generate authorization URL"
+                )
+            )
+
+    async def exchange_authorization_code(self, request_data: TidalTokenRequest) -> JSONResponse:
+        """
+        Exchange authorization code for access token using server-side credentials
+        
+        Args:
+            request_data: Token request containing authorization code and PKCE verifier
+            
+        Returns:
+            JSONResponse with access token and refresh token
+        """
+        try:
+            # Validate that we have client credentials
+            if not settings.tidal_client_id or not settings.tidal_client_secret:
+                logger.error("Tidal client credentials not configured")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(
+                        success=False,
+                        error="Tidal authentication not properly configured"
+                    )
+                )
+            
+            # Use the service to exchange the code for tokens
+            token_response = await self.tidal_service.exchange_authorization_code(
+                authorization_code=request_data.code,
+                redirect_uri=request_data.redirect_uri,
+                code_verifier=request_data.code_verifier
+            )
+            
+            logger.info("Successfully exchanged authorization code for Tidal access token")
+            
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(
+                    success=True,
+                    data=token_response
+                )
+            )
+            
+        except ValueError as e:
+            # Handle validation errors (invalid code, expired, etc.)
+            error_message = str(e)
+            logger.warning("Token exchange validation error: %s", error_message)
+            
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content=format_response(
+                    success=False,
+                    error=error_message
+                )
+            )
+            
+        except Exception as e:
+            # Handle other errors
+            error_message = str(e)
+            logger.error("Token exchange failed: %s", error_message)
+            
+            # Check if it's an authentication error
+            if any(keyword in error_message.lower() for keyword in ['unauthorized', 'invalid_client', 'invalid_grant']):
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content=format_response(
+                        success=False,
+                        error="Invalid client credentials or authorization code"
+                    )
+                )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error="Failed to exchange authorization code for access token"
+                )
+            )
 
     async def transfer_playlist_to_tidal(
         self, 

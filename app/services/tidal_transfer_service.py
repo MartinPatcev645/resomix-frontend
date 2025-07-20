@@ -363,6 +363,81 @@ class TidalTransferService:
         logger.info("Successfully added %d tracks to Tidal playlist", tracks_added)
         return tracks_added
 
+    async def exchange_authorization_code(self, authorization_code: str, redirect_uri: str, 
+                                        code_verifier: str) -> Dict[str, Any]:
+        """
+        Exchange authorization code for access token using server-side client credentials
+        
+        Args:
+            authorization_code: Authorization code from Tidal OAuth callback
+            redirect_uri: Redirect URI used in authorization request
+            code_verifier: PKCE code verifier
+            
+        Returns:
+            Token response with access_token, refresh_token, etc.
+            
+        Raises:
+            ValueError: If token exchange fails due to invalid parameters
+            Exception: If API request fails
+        """
+        if not self.client_id or not self.client_secret:
+            raise ValueError("Tidal client credentials not configured")
+        
+        logger.info("Exchanging authorization code for access token")
+        
+        async with aiohttp.ClientSession() as session:
+            token_url = "https://auth.tidal.com/v1/oauth2/token"
+            
+            # Prepare token exchange request
+            token_data = {
+                "grant_type": "authorization_code",
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "code": authorization_code,
+                "redirect_uri": redirect_uri,
+                "code_verifier": code_verifier
+            }
+            
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "ResomiX/1.0"
+            }
+            
+            try:
+                async with session.post(token_url, data=token_data, headers=headers) as response:
+                    response_text = await response.text()
+                    
+                    if response.status == 400:
+                        logger.error("Bad request during token exchange: %s", response_text)
+                        raise ValueError("Invalid authorization code or parameters")
+                    elif response.status == 401:
+                        logger.error("Unauthorized during token exchange: %s", response_text)
+                        raise ValueError("Invalid client credentials")
+                    elif response.status >= 400:
+                        logger.error("Token exchange failed with status %d: %s", response.status, response_text)
+                        raise Exception(f"Tidal token exchange failed: {response.status}")
+                    
+                    token_response = await response.json()
+                    
+                    # Validate response has required fields
+                    if not token_response.get("access_token"):
+                        logger.error("Token exchange response missing access_token: %s", token_response)
+                        raise ValueError("Invalid token response from Tidal")
+                    
+                    logger.info("Successfully obtained Tidal access token")
+                    
+                    return {
+                        "access_token": token_response["access_token"],
+                        "token_type": token_response.get("token_type", "Bearer"),
+                        "expires_in": token_response.get("expires_in", 3600),
+                        "refresh_token": token_response.get("refresh_token"),
+                        "scope": token_response.get("scope")
+                    }
+                    
+            except aiohttp.ClientError as e:
+                logger.error("Network error during token exchange: %s", str(e))
+                raise Exception(f"Network error connecting to Tidal: {str(e)}")
+
     async def transfer_playlist_to_tidal(self, db: AsyncSession, playlist_id: str, 
                                        access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
         """

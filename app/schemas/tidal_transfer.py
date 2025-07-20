@@ -108,13 +108,11 @@ class TidalTransferErrorResponse(BaseModel):
 
 
 class TidalAuthRequest(BaseModel):
-    """Request schema for Tidal OAuth authorization."""
-    client_id: str = Field(..., description="Tidal application client ID")
+    """Request schema for Tidal OAuth authorization URL generation."""
     redirect_uri: str = Field(..., description="OAuth redirect URI")
-    code_verifier: str = Field(..., description="PKCE code verifier")
     code_challenge: str = Field(..., description="PKCE code challenge")
 
-    @validator('client_id', 'redirect_uri', 'code_verifier', 'code_challenge')
+    @validator('redirect_uri', 'code_challenge')
     def validate_not_empty(cls, v):
         """Validate that fields are not empty."""
         if not v or not v.strip():
@@ -124,9 +122,7 @@ class TidalAuthRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "client_id": "your_tidal_client_id",
                 "redirect_uri": "http://localhost:3000/callback",
-                "code_verifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
                 "code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
             }
         }
@@ -134,12 +130,11 @@ class TidalAuthRequest(BaseModel):
 
 class TidalTokenRequest(BaseModel):
     """Request schema for exchanging authorization code for access token."""
-    client_id: str = Field(..., description="Tidal application client ID")
     code: str = Field(..., description="Authorization code from Tidal")
     redirect_uri: str = Field(..., description="OAuth redirect URI")
     code_verifier: str = Field(..., description="PKCE code verifier")
 
-    @validator('client_id', 'code', 'redirect_uri', 'code_verifier')
+    @validator('code', 'redirect_uri', 'code_verifier')
     def validate_not_empty(cls, v):
         """Validate that fields are not empty."""
         if not v or not v.strip():
@@ -149,7 +144,6 @@ class TidalTokenRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "client_id": "your_tidal_client_id",
                 "code": "authorization_code_from_tidal",
                 "redirect_uri": "http://localhost:3000/callback",
                 "code_verifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
