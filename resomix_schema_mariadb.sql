@@ -1,5 +1,22 @@
+/*
+Database Schema
+===============
+
+MariaDB schema definitions for the ResomiX Audio Similarity API.
+This file contains table definitions, indexes, constraints, and relationships
+for the complete database structure supporting audio similarity operations.
+
+Includes tables for tracks, artists, albums, genres, labels, users, feedback,
+contact forms, playlists, ratings, purchases, and system logging.
+
+Version: 3.0.1
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+*/
+
 /* ===========================================================
-   Resomix – Application DB  (MariaDB 10.5+ / InnoDB)
+   ResomiX – Application DB  (MariaDB 10.5+ / InnoDB)
    Auth is still handled by Supabase; user IDs are UUID strings.
    =========================================================== */
 
@@ -113,7 +130,8 @@ CREATE TABLE IF NOT EXISTS playlists (
     seed_track_id BIGINT UNSIGNED,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
-    KEY idx_playlist_user (user_id)
+    KEY idx_playlist_user (user_id),
+    KEY idx_playlist_uuid (uuid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS playlist_tracks (
@@ -127,13 +145,15 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     KEY idx_pt_track (track_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-/* External platform track ID cache for playlist transfers */
+/* ---------- 4.5 Playlist Transfer Tracks (External Platform Caching) ---------- */
+
 CREATE TABLE IF NOT EXISTS playlist_transfer_tracks (
     track_id        BIGINT UNSIGNED NOT NULL,
     spotify_id      VARCHAR(100) NULL,                -- Spotify track ID/URI
     apple_music_id  VARCHAR(100) NULL,                -- Apple Music track ID
     beatport_id     VARCHAR(100) NULL,                -- Beatport track ID
     deezer_id       VARCHAR(100) NULL,                -- Deezer track ID
+    tidal_id        VARCHAR(100) NULL,                -- Tidal track ID
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (track_id),
@@ -141,7 +161,8 @@ CREATE TABLE IF NOT EXISTS playlist_transfer_tracks (
     KEY idx_ptt_spotify (spotify_id),
     KEY idx_ptt_apple (apple_music_id),
     KEY idx_ptt_beatport (beatport_id),
-    KEY idx_ptt_deezer (deezer_id)
+    KEY idx_ptt_deezer (deezer_id),
+    KEY idx_ptt_tidal (tidal_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /* ---------- 5. Billing (purchases + subscriptions) -------- */
@@ -194,8 +215,8 @@ CREATE TABLE IF NOT EXISTS playlist_ratings (
     id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id    CHAR(36),
     playlist_id BIGINT UNSIGNED NOT NULL,
-    message    TEXT NULL,            -- Optional user message/feedback
     rating     TINYINT UNSIGNED,     -- 0-3 stars
+    message    TEXT NULL,            -- Optional user message/feedback
     rated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     KEY idx_pr_user (user_id, playlist_id)

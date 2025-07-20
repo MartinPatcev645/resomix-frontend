@@ -4,10 +4,10 @@ Playlist Transfer Track Model
 
 This model represents the playlist_transfer_tracks table that stores
 external music platform track IDs for caching purposes during playlist transfers.
-It prevents repeated searches on platforms like Spotify, Apple Music, etc.
+It prevents repeated searches on platforms like Spotify, Apple Music, Tidal, etc.
 
 Version: 3.0.1
-Init Date: June 11, 2025
+Init Date: July 19, 2025
 Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
@@ -32,6 +32,7 @@ class PlaylistTransferTrack(Base):
     apple_music_id = Column(String(100), nullable=True, index=True)
     beatport_id = Column(String(100), nullable=True, index=True)
     deezer_id = Column(String(100), nullable=True, index=True)
+    tidal_id = Column(String(100), nullable=True, index=True)
     
     # Timestamps
     created_at = Column(DateTime, default=func.current_timestamp())
@@ -41,16 +42,17 @@ class PlaylistTransferTrack(Base):
     track = relationship("Track", back_populates="transfer_track")
     
     def __repr__(self):
-        return f"<PlaylistTransferTrack(track_id={self.track_id}, spotify_id={self.spotify_id})>"
-    
+        return f"<PlaylistTransferTrack(track_id={self.track_id}, spotify_id={self.spotify_id}, tidal_id={self.tidal_id})>"
+
     def to_dict(self):
-        """Convert to dictionary representation"""
+        """Convert model to dictionary for API responses"""
         return {
             "track_id": self.track_id,
             "spotify_id": self.spotify_id,
             "apple_music_id": self.apple_music_id,
             "beatport_id": self.beatport_id,
             "deezer_id": self.deezer_id,
+            "tidal_id": self.tidal_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
