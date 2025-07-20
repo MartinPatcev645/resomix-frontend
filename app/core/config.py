@@ -91,6 +91,16 @@ class Settings(BaseModel):
         description="Spotify client secret for API access"
     )
     
+    # Tidal Configuration
+    tidal_client_id: Optional[str] = Field(
+        default=None,
+        description="Tidal client ID for API access"
+    )
+    tidal_client_secret: Optional[str] = Field(
+        default=None,
+        description="Tidal client secret for API access"
+    )
+    
     # Preview Service Configuration
     # Note: Only URL generation is handled, no actual downloading
     
@@ -170,6 +180,8 @@ class Settings(BaseModel):
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
             "SPOTIFY_CLIENT_ID": "spotify_client_id",
             "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
+            "TIDAL_CLIENT_ID": "tidal_client_id",
+            "TIDAL_CLIENT_SECRET": "tidal_client_secret",
         }
         
         for env_key, config_key in direct_env_vars.items():

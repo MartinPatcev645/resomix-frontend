@@ -63,10 +63,25 @@ class TidalTransferService:
         self.listen_base_url = "https://listen.tidal.com"
         self.api_version = "v2"
         
+        # Client credentials configuration
+        self.client_id = settings.tidal_client_id
+        self.client_secret = settings.tidal_client_secret
+        
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
         
-        logger.info("TidalTransferService initialized")
+        # Log configuration status
+        if self.client_id:
+            logger.info("TidalTransferService initialized with client ID: %s", self.client_id[:8] + "...")
+        else:
+            logger.warning("TidalTransferService initialized without client ID - OAuth flows may not work properly")
+        
+        if self.client_secret:
+            logger.info("Tidal client secret configured")
+        else:
+            logger.info("Tidal client secret not configured - using PKCE flow")
+        
+        logger.info("TidalTransferService initialization complete")
 
     def _get_headers(self, access_token: str) -> Dict[str, str]:
         """

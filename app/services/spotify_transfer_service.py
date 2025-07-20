@@ -54,10 +54,25 @@ class SpotifyTransferService:
         self.track_repository = TrackRepository()
         self.transfer_track_repository = PlaylistTransferTrackRepository()
         
+        # Client credentials configuration
+        self.client_id = settings.spotify_client_id
+        self.client_secret = settings.spotify_client_secret
+        
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
         
-        logger.info("SpotifyTransferService initialized")
+        # Log configuration status
+        if self.client_id:
+            logger.info("SpotifyTransferService initialized with client ID: %s", self.client_id[:8] + "...")
+        else:
+            logger.warning("SpotifyTransferService initialized without client ID - OAuth flows may not work properly")
+        
+        if self.client_secret:
+            logger.info("Spotify client secret configured")
+        else:
+            logger.info("Spotify client secret not configured - using PKCE flow")
+        
+        logger.info("SpotifyTransferService initialization complete")
 
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
         """

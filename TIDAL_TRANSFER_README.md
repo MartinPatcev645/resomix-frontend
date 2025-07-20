@@ -394,6 +394,18 @@ const TidalTransferComponent = ({ playlistId, playlistName }) => {
 export default TidalTransferComponent;
 ```
 
+### Environment Variables
+
+Add the following environment variables to your `.env` file:
+
+```env
+# Tidal Configuration
+TIDAL_CLIENT_ID=your_tidal_client_id_here
+TIDAL_CLIENT_SECRET=your_tidal_client_secret_here  # Optional for PKCE flow
+```
+
+**Note**: For PKCE flow, only the `TIDAL_CLIENT_ID` is required on the frontend. The `TIDAL_CLIENT_SECRET` is optional and only needed if you plan to use server-side OAuth flows in the future.
+
 ## Technical Implementation Details
 
 ### Architecture

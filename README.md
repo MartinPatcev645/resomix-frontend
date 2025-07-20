@@ -112,6 +112,14 @@ RESOMIX_SERVER_URL=http://localhost:8000
 SERVICE_ACCOUNT_FILE=path/to/service-account.json
 GOOGLE_SHEET_ID=your_sheet_id
 
+# Spotify Configuration (optional)
+SPOTIFY_CLIENT_ID=your_spotify_client_id_here
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
+
+# Tidal Configuration (optional)  
+TIDAL_CLIENT_ID=your_tidal_client_id_here
+TIDAL_CLIENT_SECRET=your_tidal_client_secret_here
+
 # Security
 PREVIEW_FERNET_SECRET=32-byte-secret-key
 PREVIEW_HMAC_SECRET=hmac-secret-key
