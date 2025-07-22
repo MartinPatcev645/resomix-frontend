@@ -40,73 +40,6 @@ class TidalTransferController:
         self.tidal_service = TidalTransferService()
         logger.info("TidalTransferController initialized")
 
-    async def generate_authorization_url(self, request_data: TidalAuthRequest) -> JSONResponse:
-        """
-        Generate Tidal OAuth authorization URL with server-side client credentials
-        
-        Args:
-            request_data: Authorization request containing redirect_uri and PKCE parameters
-            
-        Returns:
-            JSONResponse with authorization URL and state
-        """
-        try:
-            # Validate that we have client credentials
-            if not settings.tidal_client_id:
-                logger.error("Tidal client ID not configured")
-                return JSONResponse(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=format_response(
-                        success=False,
-                        error="Tidal authentication not properly configured"
-                    )
-                )
-            
-            # Generate secure state parameter
-            state = secrets.token_urlsafe(32)
-            
-            # Build authorization URL using server-side client ID
-            auth_params = {
-                "response_type": "code",
-                "client_id": settings.tidal_client_id,  # Use server-side client ID
-                "redirect_uri": request_data.redirect_uri,
-                "scope": "playlists.read playlists.write",
-                "code_challenge": request_data.code_challenge,
-                "code_challenge_method": "S256",
-                "state": state
-            }
-            
-            authorization_url = f"https://auth.tidal.com/v1/oauth2/authorize?{urlencode(auth_params)}"
-            
-            logger.info("Generated Tidal authorization URL for redirect_uri: %s", request_data.redirect_uri)
-            logger.info("Authorization URL: %s", authorization_url)
-            logger.info("Generated state parameter: %s", state)
-            
-            response_data = {
-                "authorization_url": authorization_url,
-                "state": state
-            }
-            
-            logger.info("Returning authorization response to frontend: %s", response_data)
-            
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=format_response(
-                    success=True,
-                    data=response_data
-                )
-            )
-            
-        except Exception as e:
-            logger.error("Failed to generate authorization URL: %s", str(e))
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="Failed to generate authorization URL"
-                )
-            )
-
     async def exchange_authorization_code(self, request_data: TidalTokenRequest) -> JSONResponse:
         """
         Exchange authorization code for access token using server-side credentials
@@ -273,7 +206,7 @@ class TidalTransferController:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content=format_response(
                         success=False,
-                        error="Invalid or expired Tidal access token"
+                        error="Your Tidal session is invalid, expired, or missing required permissions. Please reconnect your Tidal account and try again."
                     )
                 )
             
@@ -283,7 +216,7 @@ class TidalTransferController:
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     content=format_response(
                         success=False,
-                        error="Tidal API rate limit exceeded. Please try again later."
+                        error="Tidal API rate limit exceeded. Please wait a moment and try again."
                     )
                 )
             
@@ -292,6 +225,6 @@ class TidalTransferController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
                     success=False,
-                    error="An internal error occurred during playlist transfer"
+                    error="An unexpected error occurred during playlist transfer. Please try again or contact support if the problem persists."
                 )
-            ) 
+            )

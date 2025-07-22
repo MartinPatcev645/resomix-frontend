@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Tidal Transfer feature allows users to transfer their ResomiX playlists to their personal Tidal accounts. This feature integrates with the Tidal API (both official v2 and unofficial endpoints) to search for tracks and create playlists in the user's Tidal library.
+The Tidal Transfer feature allows users to transfer their ResomiX playlists to their personal Tidal accounts. This feature integrates with the latest Tidal API (OAuth 2.1 PKCE and Playlist API v2) to search for tracks and create playlists in the user's Tidal library.
 
 ## Features
 
-- **OAuth PKCE Authentication**: Secure user authentication through Tidal OAuth 2.0 with PKCE flow
+- **OAuth PKCE Authentication**: Secure user authentication through Tidal OAuth 2.1 with PKCE flow
 - **Intelligent Track Matching**: Advanced track search algorithm with fallback strategies
 - **Batch Processing**: Efficient handling of large playlists with Tidal's API limits
 - **Comprehensive Reporting**: Detailed transfer statistics including success/failure counts
@@ -92,401 +92,113 @@ Transfer a ResomiX playlist to user's Tidal account.
 
 ## Frontend Integration Guide
 
-### Step 1: Set up Tidal OAuth with Server-Side Authentication
-
-The ResomiX server now handles Tidal client credentials server-side for enhanced security. The frontend only needs to handle the OAuth flow without exposing client secrets.
-
-#### Required Tidal Scopes
-- `playlists.read` - To read user playlists
-- `playlists.write` - To create and modify playlists
-
-#### Step 2: Generate PKCE Parameters (Frontend)
+### Step 1: Generate PKCE Parameters (Frontend)
 
 ```javascript
-// Generate code verifier (43-128 characters)
-const generateCodeVerifier = () => {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  const values = crypto.getRandomValues(new Uint8Array(64));
-  return values.reduce((acc, x) => acc + possible[x % possible.length], "");
-}
-
-// Generate code challenge
-const generateCodeChallenge = async (codeVerifier) => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(codeVerifier);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-}
-
-const codeVerifier = generateCodeVerifier();
-const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-// Store code verifier for later use
-localStorage.setItem('tidal_code_verifier', codeVerifier);
+const code_verifier  = base64url(crypto.getRandomValues(32));
+const code_challenge = base64url(await sha256(code_verifier));
+const state          = crypto.randomUUID();
+sessionStorage.pkce  = JSON.stringify({ code_verifier, state });
 ```
 
-#### Step 3: Get Authorization URL from Server
+### Step 2: Redirect User to TIDAL Login (Frontend)
 
-```javascript
-const getAuthorizationUrl = async () => {
-  const redirectUri = `${window.location.origin}/tidal-callback`;
-  const codeVerifier = generateCodeVerifier();
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-  
-  // Store code verifier for token exchange
-  localStorage.setItem('tidal_code_verifier', codeVerifier);
-  
-  const response = await fetch('/tidal/auth/authorize?api_key=YOUR_API_KEY', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      redirect_uri: redirectUri,
-      code_challenge: codeChallenge
-    })
-  });
-  
-  const result = await response.json();
-  
-  if (result.success) {
-    // Store state for validation
-    localStorage.setItem('tidal_oauth_state', result.data.state);
-    
-    // Redirect to Tidal authorization
-    window.location.href = result.data.authorization_url;
-  } else {
-    throw new Error(result.error || 'Failed to get authorization URL');
-  }
+Build the authorization URL as follows (do not use fetch, use a browser redirect):
+
+```
+https://login.tidal.com/authorize
+    ?response_type=code
+    &client_id=YOUR_CLIENT_ID
+    &redirect_uri=https%3A%2F%2Fapp.example.com%2Fauth%2Ftidal
+    &scope=user.read%20playlists.read%20playlists.write
+    &code_challenge=... (S256)
+    &code_challenge_method=S256
+    &state=...
+```
+
+- Add `collection.read`, `collection.write` if you also need to read/write favourites.
+- The user will be redirected to the TIDAL login/consent screen.
+
+### Step 3: Handle OAuth Callback (Frontend)
+
+After login, TIDAL will redirect back to your frontend with `?code=...&state=...` in the URL.
+
+### Step 4: Exchange Code for Token (Frontend → Backend)
+
+POST the following to your backend:
+
+```json
+{
+  "code": "...",
+  "code_verifier": "...",
+  "state": "..."
 }
 ```
 
-#### Step 4: Handle OAuth Callback and Exchange Code for Token
+### Step 5: Backend Exchanges Code for Token (Backend → TIDAL)
 
-```javascript
-const handleTidalCallback = async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  const state = urlParams.get('state');
-  const storedState = localStorage.getItem('tidal_oauth_state');
-  
-  // Validate state parameter
-  if (!state || state !== storedState) {
-    throw new Error('Invalid OAuth state parameter');
-  }
-  
-  if (code) {
-    const codeVerifier = localStorage.getItem('tidal_code_verifier');
-    const redirectUri = `${window.location.origin}/tidal-callback`;
-    
-    // Exchange code for tokens using server endpoint
-    const response = await fetch('/tidal/auth/token?api_key=YOUR_API_KEY', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        code: code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier
-      })
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      // Store access token
-      localStorage.setItem('tidal_access_token', result.data.access_token);
-      localStorage.setItem('tidal_refresh_token', result.data.refresh_token);
-      
-      // Clean up temporary storage
-      localStorage.removeItem('tidal_code_verifier');
-      localStorage.removeItem('tidal_oauth_state');
-      
-      return result.data.access_token;
-    } else {
-      throw new Error(result.error || 'Failed to exchange code for token');
-    }
-  } else {
-    throw new Error('No authorization code received');
-  }
+POST to:
+
+```
+POST https://auth.tidal.com/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&client_id=YOUR_CLIENT_ID
+&code_verifier={code_verifier}
+&redirect_uri=https://app.example.com/auth/tidal
+&code={code}
+```
+
+Response:
+```json
+{
+  "access_token": "...",
+  "refresh_token": "...",
+  "expires_in": 3600
 }
 ```
 
-#### Step 5: Call ResomiX Transfer API
+### Step 6: Backend Subscription Check (Recommended)
 
-```javascript
-const transferPlaylistToTidal = async (playlistId, customName = null) => {
-  const tidalAccessToken = localStorage.getItem('tidal_access_token');
-  
-  if (!tidalAccessToken) {
-    throw new Error('No Tidal access token available');
-  }
-  
-  const response = await fetch('/tidal/transfer-playlist/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${YOUR_RESOMIX_API_KEY}` // Your ResomiX API key
-    },
-    body: JSON.stringify({
-      playlist_id: playlistId,
-      access_token: tidalAccessToken,
-      playlist_name: customName
-    })
-  });
-  
-  const result = await response.json();
-  return result;
-}
+Check the user's subscription status before proceeding:
+
+```
+GET https://api.tidal.com/v2/users/me
+Authorization: Bearer {access_token}
 ```
 
-### Complete React Component Example
+- Ensure `subscriptionStatus` is `ACTIVE` or `TRIAL`.
+- If not, return an error to the frontend (TIDAL no longer has a free tier as of April 2024).
 
-```jsx
-import React, { useState, useEffect } from 'react';
+### Step 7: Playlist Transfer (Backend)
 
-const TidalTransferComponent = ({ playlistId, playlistName }) => {
-  const [isTransferring, setIsTransferring] = useState(false);
-  const [transferResult, setTransferResult] = useState(null);
-  const [tidalConnected, setTidalConnected] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+1. **Search each track** (cache results!):
+   - `GET /v2/catalog/US/search?query={artist%20track}&types=TRACKS&limit=1`
+2. **Create playlist**:
+   - `POST /v2/users/{userId}/playlists` → returns `playlistId`.
+3. **Batch add tracks**:
+   - `POST /v2/playlists/{playlistId}/items` with up to 100 `trackIds` per call.
+4. Return success JSON to the frontend.
 
-  useEffect(() => {
-    // Check if user has Tidal access token
-    const token = localStorage.getItem('tidal_access_token');
-    setTidalConnected(!!token);
-    
-    // Handle OAuth callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    if (code && !token) {
-      handleTidalCallback();
-    }
-  }, []);
+### Step 8: UI Feedback (Frontend)
 
-  const generateCodeVerifier = () => {
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-    const values = crypto.getRandomValues(new Uint8Array(64));
-    return values.reduce((acc, x) => acc + possible[x % possible.length], "");
-  }
+Show the user a summary, e.g.:
 
-  const generateCodeChallenge = async (codeVerifier) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(codeVerifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
-  }
+> “93 / 100 tracks copied – 7 missing from TIDAL catalogue”
 
-  const handleTidalAuth = async () => {
-    setIsAuthenticating(true);
-    try {
-      const redirectUri = `${window.location.origin}/tidal-callback`;
-      const codeVerifier = generateCodeVerifier();
-      const codeChallenge = await generateCodeChallenge(codeVerifier);
-      
-      // Store code verifier for token exchange
-      localStorage.setItem('tidal_code_verifier', codeVerifier);
-      
-      const response = await fetch(`/tidal/auth/authorize?api_key=${process.env.REACT_APP_RESOMIX_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          redirect_uri: redirectUri,
-          code_challenge: codeChallenge
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        // Store state for validation
-        localStorage.setItem('tidal_oauth_state', result.data.state);
-        
-        // Redirect to Tidal authorization
-        window.location.href = result.data.authorization_url;
-      } else {
-        throw new Error(result.error || 'Failed to get authorization URL');
-      }
-    } catch (error) {
-      console.error('Error starting Tidal auth:', error);
-      setIsAuthenticating(false);
-    }
-  };
+---
 
-  const handleTidalCallback = async () => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
-      const storedState = localStorage.getItem('tidal_oauth_state');
-      
-      // Validate state parameter
-      if (!state || state !== storedState) {
-        throw new Error('Invalid OAuth state parameter');
-      }
-      
-      if (code) {
-        const codeVerifier = localStorage.getItem('tidal_code_verifier');
-        const redirectUri = `${window.location.origin}/tidal-callback`;
-        
-        // Exchange code for tokens using server endpoint
-        const response = await fetch(`/tidal/auth/token?api_key=${process.env.REACT_APP_RESOMIX_API_KEY}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code: code,
-            redirect_uri: redirectUri,
-            code_verifier: codeVerifier
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          // Store access token
-          localStorage.setItem('tidal_access_token', result.data.access_token);
-          localStorage.setItem('tidal_refresh_token', result.data.refresh_token);
-          
-          // Clean up temporary storage
-          localStorage.removeItem('tidal_code_verifier');
-          localStorage.removeItem('tidal_oauth_state');
-          
-          setTidalConnected(true);
-          
-          // Clean up URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-          throw new Error(result.error || 'Failed to exchange code for token');
-        }
-      }
-    } catch (error) {
-      console.error('Error handling Tidal callback:', error);
-    }
-    setIsAuthenticating(false);
-  };
-
-  const transferPlaylist = async () => {
-    setIsTransferring(true);
-    try {
-      const tidalAccessToken = localStorage.getItem('tidal_access_token');
-      
-      const response = await fetch('/tidal/transfer-playlist/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.REACT_APP_RESOMIX_API_KEY}`
-        },
-        body: JSON.stringify({
-          playlist_id: playlistId,
-          access_token: tidalAccessToken,
-          playlist_name: `ResomiX - ${playlistName}`
-        })
-      });
-      
-      const result = await response.json();
-      setTransferResult(result);
-    } catch (error) {
-      console.error('Error transferring playlist:', error);
-      setTransferResult({
-        success: false,
-        error: 'Failed to transfer playlist'
-      });
-    }
-    setIsTransferring(false);
-  };
-
-  const disconnectTidal = () => {
-    localStorage.removeItem('tidal_access_token');
-    localStorage.removeItem('tidal_refresh_token');
-    setTidalConnected(false);
-    setTransferResult(null);
-  };
-
-  return (
-    <div className="tidal-transfer">
-      <h3>Transfer to Tidal</h3>
-      
-      {!tidalConnected ? (
-        <div>
-          <p>Connect your Tidal account to transfer this playlist</p>
-          <button 
-            onClick={handleTidalAuth} 
-            disabled={isAuthenticating}
-            className="btn btn-primary"
-          >
-            {isAuthenticating ? 'Connecting...' : 'Connect Tidal Account'}
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p>Tidal account connected ✓</p>
-          <button 
-            onClick={transferPlaylist} 
-            disabled={isTransferring}
-            className="btn btn-success"
-          >
-            {isTransferring ? 'Transferring...' : 'Transfer to Tidal'}
-          </button>
-          <button onClick={disconnectTidal} className="btn btn-secondary">
-            Disconnect Tidal
-          </button>
-        </div>
-      )}
-
-      {transferResult && (
-        <div className={`transfer-result ${transferResult.success ? 'success' : 'error'}`}>
-          {transferResult.success ? (
-            <div>
-              <p>✅ Playlist transferred successfully!</p>
-              <p>Added {transferResult.data.tracks_added} out of {transferResult.data.total_tracks} tracks</p>
-              {transferResult.data.tracks_not_found > 0 && (
-                <p>⚠️ {transferResult.data.tracks_not_found} tracks not found on Tidal</p>
-              )}
-              <a 
-                href={transferResult.data.tidal_playlist_url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn btn-link"
-              >
-                Open in Tidal
-              </a>
-            </div>
-          ) : (
-            <div>
-              <p>❌ Transfer failed: {transferResult.error}</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default TidalTransferComponent;
-```
-
-### Environment Variables
+## Environment Variables
 
 Add the following environment variables to your `.env` file:
 
 ```env
 # Tidal Configuration
 TIDAL_CLIENT_ID=your_tidal_client_id_here
-TIDAL_CLIENT_SECRET=your_tidal_client_secret_here  # Optional for PKCE flow
 ```
 
-**Note**: For PKCE flow, only the `TIDAL_CLIENT_ID` is required on the frontend. The `TIDAL_CLIENT_SECRET` is optional and only needed if you plan to use server-side OAuth flows in the future.
+**Note**: For PKCE flow, only the `TIDAL_CLIENT_ID` is required. Do not use or expose `client_secret` in the frontend.
 
 ## Technical Implementation Details
 
@@ -510,10 +222,10 @@ The Tidal transfer feature follows a clean architecture pattern:
 - Caches successful matches to prevent repeated searches
 
 #### Playlist Creation
-- Uses unofficial Tidal endpoints for playlist creation (official write endpoints not yet public)
+- Uses Tidal's official Playlist API v2 endpoints for playlist creation and modification
 - Creates private playlists by default
 - Supports custom playlist names and descriptions
-- Handles batch track additions with appropriate rate limiting
+- Handles batch track additions with appropriate rate limiting (up to 100 tracks per call)
 
 #### Error Handling
 - Comprehensive error handling for authentication, rate limiting, and API errors
@@ -558,9 +270,8 @@ The feature requires the following Python packages:
 ## API Limitations and Considerations
 
 ### Tidal API Constraints
-- **Official API**: Currently supports search and catalog operations
-- **Unofficial Endpoints**: Required for playlist creation and modification
-- **Rate Limiting**: Tidal enforces rate limits (specific limits not publicly documented)
+- **Official API**: Now supports search, catalog, and playlist operations
+- **Rate Limiting**: Tidal enforces rate limits (see developer docs for details)
 - **Regional Availability**: Track availability varies by region
 
 ### Best Practices
@@ -569,19 +280,21 @@ The feature requires the following Python packages:
 3. **User Feedback**: Provide clear feedback about transfer progress and results
 4. **Token Management**: Implement proper token refresh logic
 5. **Caching**: Leverage the built-in caching system for better performance
+6. **Subscription Check**: Always verify the user has an active or trial subscription before attempting playlist operations
 
 ## Troubleshooting
 
 ### Common Issues
 
-**401 Unauthorized**
-- Check if access token is valid and not expired
-- Verify required scopes are included in the token
-- Implement token refresh logic
+**403 Bearer token is missing or empty**
+- Ensure you are using `https://login.tidal.com/authorize` for the login redirect, not `auth.tidal.com/v1/oauth2/authorize`.
+- Check that the access token is present and valid.
 
-**403 Forbidden**
-- User may not have necessary permissions
-- Check if user's Tidal subscription supports playlist creation
+**403 Token missing required scope**
+- Add `user.read` to your scope string, along with `playlists.read` and `playlists.write`.
+
+**403 User has no valid subscription**
+- Check `/users/me.subscriptionStatus` first and prompt user to start trial/paid plan.
 
 **429 Rate Limited**
 - Implement exponential backoff
@@ -613,11 +326,10 @@ logging.getLogger('app.services.tidal_transfer_service').setLevel(logging.DEBUG)
 
 ## Future Enhancements
 
-1. **Official API Integration**: Migrate to official playlist write endpoints when available
-2. **Batch Operations**: Improve batch processing for large playlists
-3. **Advanced Matching**: Implement more sophisticated track matching algorithms
-4. **User Preferences**: Allow users to configure transfer preferences
-5. **Sync Features**: Implement two-way sync between ResomiX and Tidal
+1. **Batch Operations**: Improve batch processing for large playlists
+2. **Advanced Matching**: Implement more sophisticated track matching algorithms
+3. **User Preferences**: Allow users to configure transfer preferences
+4. **Sync Features**: Implement two-way sync between ResomiX and Tidal
 
 ## Support
 
@@ -631,4 +343,4 @@ For issues related to the Tidal transfer feature:
 
 ---
 
-**Note**: This feature uses both official Tidal API v2 endpoints and unofficial endpoints. The unofficial endpoints may change without notice. Monitor Tidal's developer platform for updates on official playlist write API availability. 
+**Note**: This feature uses the official Tidal API v2 endpoints for all playlist operations. Monitor Tidal's developer platform for updates and changes to the API.

@@ -274,40 +274,48 @@ class TidalTransferService:
         except Exception as e:
             logger.error("Failed to cache Tidal IDs: %s", str(e))
 
+    async def _get_user_info(self, access_token: str) -> dict:
+        """
+        Get the Tidal user info from /users/me endpoint (id and subscriptionStatus).
+        """
+        async with aiohttp.ClientSession() as session:
+            url = "https://api.tidal.com/v2/users/me"
+            headers = self._get_headers(access_token)
+            response = await self._make_api_request(session, "GET", url, headers)
+            return response
+
+    async def _check_subscription_status(self, user_info: dict) -> None:
+        """
+        Check the user's Tidal subscription status using the user info dict.
+        Raises an exception if the user is not ACTIVE or TRIAL.
+        """
+        status = user_info.get("subscriptionStatus")
+        if status not in ("ACTIVE", "TRIAL"):
+            raise ValueError(f"Tidal user does not have an active or trial subscription. Subscription status: {status}")
+
     async def _create_tidal_playlist(self, session: aiohttp.ClientSession, access_token: str,
-                                   playlist_name: str, description: str = "") -> Dict[str, Any]:
+                                   playlist_name: str, description: str = "", user_id: str = None) -> Dict[str, Any]:
         """
-        Create a new playlist on Tidal
-        
-        Args:
-            session: aiohttp session
-            access_token: Tidal access token
-            playlist_name: Name for the new playlist
-            description: Playlist description
-            
-        Returns:
-            Created playlist data
+        Create a new playlist on Tidal using the official API v2 endpoint.
         """
-        # Using unofficial Tidal endpoint for playlist creation
-        create_url = f"{self.listen_base_url}/v2/my-collection/playlists/folders/create-playlist"
-        
+        if not user_id:
+            user_info = await self._get_user_info(access_token)
+            user_id = user_info.get("id")
+            if not user_id:
+                raise Exception("Failed to retrieve Tidal userId from /users/me.")
+        create_url = f"https://api.tidal.com/v2/users/{user_id}/playlists"
         payload = {
-            "name": playlist_name,
+            "title": playlist_name,
             "description": description,
-            "public": False  # Create as private by default
+            "publicPlaylist": False  # Create as private by default
         }
-        
         headers = self._get_headers(access_token)
-        
         response_data = await self._make_api_request(
             session, "POST", create_url, headers, json=payload
         )
-        
-        # Extract playlist information
-        playlist_id = response_data.get("data", {}).get("id")
+        playlist_id = response_data.get("id")
         if not playlist_id:
             raise Exception("Failed to create Tidal playlist: No playlist ID returned")
-        
         return {
             "id": playlist_id,
             "name": playlist_name,
@@ -318,48 +326,28 @@ class TidalTransferService:
                                           access_token: str, playlist_id: str, 
                                           track_ids: List[str]) -> int:
         """
-        Add tracks to Tidal playlist
-        
-        Args:
-            session: aiohttp session
-            access_token: Tidal access token
-            playlist_id: Tidal playlist ID
-            track_ids: List of Tidal track IDs to add
-            
-        Returns:
-            Number of tracks successfully added
+        Add tracks to Tidal playlist using the official API v2 endpoint.
         """
         if not track_ids:
             return 0
-        
         logger.info("Adding %d tracks to Tidal playlist", len(track_ids))
-        
-        # Using unofficial Tidal endpoint for adding tracks
-        add_url = f"{self.listen_base_url}/v2/my-collection/playlists/{playlist_id}/items"
-        
+        add_url = f"https://api.tidal.com/v2/playlists/{playlist_id}/items"
         headers = self._get_headers(access_token)
         tracks_added = 0
-        
-        # Add tracks in batches (Tidal might have limits)
-        batch_size = 50  # Conservative batch size
+        batch_size = 100  # Official API allows up to 100 per call
         batches = batch_list(track_ids, batch_size)
-        
         for i, batch in enumerate(batches):
             try:
                 payload = {
                     "trackIds": batch
                 }
-                
                 await self._make_api_request(
                     session, "POST", add_url, headers, json=payload
                 )
-                
                 tracks_added += len(batch)
                 log_transfer_progress(logger, "Adding tracks to playlist", i + 1, len(batches))
-                
             except Exception as e:
                 logger.error(f"Failed to add batch {i + 1}: {str(e)}")
-        
         logger.info("Successfully added %d tracks to Tidal playlist", tracks_added)
         return tracks_added
 
@@ -367,32 +355,20 @@ class TidalTransferService:
                                         code_verifier: str) -> Dict[str, Any]:
         """
         Exchange authorization code for access token using server-side client credentials
-        
-        Args:
-            authorization_code: Authorization code from Tidal OAuth callback
-            redirect_uri: Redirect URI used in authorization request
-            code_verifier: PKCE code verifier
-            
-        Returns:
-            Token response with access_token, refresh_token, etc.
-            
-        Raises:
-            ValueError: If token exchange fails due to invalid parameters
-            Exception: If API request fails
+        Also checks the user's subscription status after token exchange.
         """
-        if not self.client_id or not self.client_secret:
-            raise ValueError("Tidal client credentials not configured")
+        if not self.client_id:
+            raise ValueError("Tidal client ID not configured")
         
         logger.info("Exchanging authorization code for access token")
         
         async with aiohttp.ClientSession() as session:
             token_url = "https://auth.tidal.com/v1/oauth2/token"
             
-            # Prepare token exchange request
+            # Prepare token exchange request (PKCE: no client_secret)
             token_data = {
                 "grant_type": "authorization_code",
                 "client_id": self.client_id,
-                "client_secret": self.client_secret,
                 "code": authorization_code,
                 "redirect_uri": redirect_uri,
                 "code_verifier": code_verifier
@@ -424,6 +400,10 @@ class TidalTransferService:
                         logger.error("Token exchange response missing access_token: %s", token_response)
                         raise ValueError("Invalid token response from Tidal")
                     
+                    # Get user info once and check subscription
+                    user_info = await self._get_user_info(token_response["access_token"])
+                    await self._check_subscription_status(user_info)
+                    
                     # Log the successful token response for debugging
                     logger.info("Successfully obtained Tidal access token")
                     logger.info("Access token (first 20 chars): %s...", token_response["access_token"][:20])
@@ -437,7 +417,8 @@ class TidalTransferService:
                         "token_type": token_response.get("token_type", "Bearer"),
                         "expires_in": token_response.get("expires_in", 3600),
                         "refresh_token": token_response.get("refresh_token"),
-                        "scope": token_response.get("scope")
+                        "scope": token_response.get("scope"),
+                        "user_id": user_info.get("id")
                     }
                     
                     # Log the complete response data being returned
@@ -446,7 +427,8 @@ class TidalTransferService:
                         "token_type": response_data['token_type'],
                         "expires_in": response_data['expires_in'],
                         "refresh_token": f"{response_data['refresh_token'][:20]}..." if response_data['refresh_token'] else None,
-                        "scope": response_data['scope']
+                        "scope": response_data['scope'],
+                        "user_id": response_data['user_id']
                     })
                     
                     return response_data

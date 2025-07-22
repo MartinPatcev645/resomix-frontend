@@ -48,52 +48,6 @@ tidal_transfer_controller = TidalTransferController()
 
 
 @router.post(
-    "/auth/authorize",
-    summary="Generate Tidal Authorization URL",
-    description="Generate authorization URL for Tidal OAuth PKCE flow. Client credentials are handled server-side.",
-    responses={
-        200: {
-            "description": "Authorization URL generated successfully",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "data": {
-                            "authorization_url": "https://auth.tidal.com/v1/oauth2/authorize?...",
-                            "state": "random_state_value"
-                        }
-                    }
-                }
-            }
-        }
-    }
-)
-async def generate_authorization_url(
-    request_data: TidalAuthRequest,
-    api_key: str = Security(get_api_key)
-) -> JSONResponse:
-    """
-    Generate Tidal OAuth authorization URL with PKCE parameters.
-    
-    This endpoint handles the server-side generation of the authorization URL
-    while keeping client secrets secure. The frontend only needs to provide
-    the redirect URI and code challenge parameters.
-    
-    **Process:**
-    1. Validates the request parameters
-    2. Uses server-side client credentials
-    3. Generates secure authorization URL
-    4. Returns URL and state for frontend redirect
-    
-    **Security:**
-    - Client secret never exposed to frontend
-    - State parameter for CSRF protection
-    - PKCE code challenge validation
-    """
-    return await tidal_transfer_controller.generate_authorization_url(request_data)
-
-
-@router.post(
     "/auth/token",
     response_model=TidalTokenResponse,
     summary="Exchange Authorization Code for Access Token",
@@ -150,7 +104,7 @@ async def exchange_token(
         },
         401: {
             "model": TidalTransferErrorResponse,
-            "description": "Invalid or expired Tidal access token"
+            "description": "Invalid or expired Tidal access token or insufficient permissions"
         },
         404: {
             "model": TidalTransferErrorResponse,
@@ -176,37 +130,35 @@ async def transfer_playlist_to_tidal_endpoint(
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Transfer a ResomiX playlist to user's Tidal account.
-    
+    Transfer a ResomiX playlist to user's Tidal account using official Tidal API v2 endpoints.
+
     This endpoint takes a ResomiX playlist and creates an equivalent playlist
     in the user's Tidal account. It searches for each track on Tidal
-    and adds the best matches to the new playlist.
-    
+    and adds the best matches to the new playlist using only official endpoints.
+
     **Process:**
     1. Validates the playlist exists and has tracks
     2. Authenticates with Tidal using the provided access token
-    3. Creates a new playlist in user's Tidal account
+    3. Creates a new playlist in user's Tidal account (official API v2)
     4. Searches for each track on Tidal using title and artist
-    5. Adds found tracks to the Tidal playlist
+    5. Adds found tracks to the Tidal playlist (official API v2)
     6. Returns summary of transfer results
-    
+
     **OAuth Flow:**
     The frontend should handle Tidal OAuth PKCE flow and provide the access token.
-    Required Tidal scopes: `playlists.read` and `playlists.write`
-    
+    Required Tidal scopes: `user.read playlists.read playlists.write`
+
     **Parameters:**
     - **playlist_id**: The UUID of the ResomiX playlist to transfer
     - **access_token**: Valid Tidal OAuth access token from user
     - **playlist_name**: Optional custom name for the Tidal playlist
-    
+
     **Returns:**
     - Success: Tidal playlist details and transfer statistics
     - Error: Detailed error message and context
-    
+
     **Note:**
-    This integration uses both official Tidal API v2 for search operations
-    and unofficial endpoints for playlist creation, as the official playlist
-    write operations are not yet publicly available.
+    This integration uses only official Tidal API v2 endpoints for all playlist operations.
     """
     return await tidal_transfer_controller.transfer_playlist_to_tidal(
         db, 
