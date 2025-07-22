@@ -51,6 +51,9 @@ class TidalTransferController:
             JSONResponse with access token and refresh token
         """
         try:
+            # Log the incoming request payload for debugging
+            logger.info("Received /tidal/auth/token request: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
+
             # Validate that we have client credentials
             if not settings.tidal_client_id or not settings.tidal_client_secret:
                 logger.error("Tidal client credentials not configured")
@@ -68,6 +71,12 @@ class TidalTransferController:
                 redirect_uri=request_data.redirect_uri,
                 code_verifier=request_data.code_verifier
             )
+            
+            logger.info("Token exchange successful. Response: %s", token_response)
+            logger.info("Returned access_token (first 20 chars): %s...", token_response.get("access_token", "")[:20])
+            logger.info("Returned refresh_token (first 20 chars): %s...", (token_response.get("refresh_token") or "")[:20])
+            logger.info("Returned scope: %s", token_response.get("scope"))
+            logger.info("Returned user_id: %s", token_response.get("user_id"))
             
             logger.info("Successfully exchanged authorization code for Tidal access token")
             
@@ -92,6 +101,7 @@ class TidalTransferController:
             # Handle validation errors (invalid code, expired, etc.)
             error_message = str(e)
             logger.warning("Token exchange validation error: %s", error_message)
+            logger.warning("Request details: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
             
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -105,6 +115,7 @@ class TidalTransferController:
             # Handle other errors
             error_message = str(e)
             logger.error("Token exchange failed: %s", error_message)
+            logger.error("Request details: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
             
             # Check if it's an authentication error
             if any(keyword in error_message.lower() for keyword in ['unauthorized', 'invalid_client', 'invalid_grant']):
