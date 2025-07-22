@@ -344,3 +344,33 @@ For issues related to the Tidal transfer feature:
 ---
 
 **Note**: This feature uses the official Tidal API v2 endpoints for all playlist operations. Monitor Tidal's developer platform for updates and changes to the API.
+
+---
+
+## Implementation Summary: Tidal Integration (Backend)
+
+This server implements a secure, robust, and fully compliant Tidal integration for playlist transfer, following Tidal's OAuth 2.1 PKCE and Playlist API v2 specifications. Here’s what is handled and how:
+
+- **OAuth 2.1 PKCE Flow:**
+  - The frontend initiates the PKCE flow and handles user redirection to Tidal.
+  - The backend exposes `/tidal/auth/token`, which receives the authorization code, code_verifier, and redirect_uri from the frontend, and exchanges them for Tidal access and refresh tokens using the official Tidal `/token` endpoint.
+  - The backend validates the user's subscription status (must be ACTIVE or TRIAL) by calling `/users/me` with the access token.
+
+- **API Key Security:**
+  - All backend endpoints are protected by an API key, which must be provided as a query parameter (`api_key`).
+
+- **Playlist Transfer:**
+  - The backend exposes `/tidal/transfer-playlist/`, which takes a ResomiX playlist and a Tidal access token.
+  - It creates a new playlist in the user's Tidal account using the official API v2 endpoint, searches for each track, and adds found tracks in batches (up to 100 per call).
+  - Caching is used to avoid redundant Tidal searches for the same tracks.
+
+- **Error Handling & Logging:**
+  - All errors (auth, rate limit, validation, etc.) are logged and surfaced with clear, actionable messages.
+  - Detailed logging is implemented for all key steps, including incoming requests, payloads, and Tidal API responses, to aid debugging and ensure frontend-backend alignment.
+
+- **Security & Compliance:**
+  - No client secrets are ever exposed to the frontend.
+  - All sensitive operations (token exchange, playlist creation) are performed server-side.
+  - Only official Tidal API v2 endpoints are used for all playlist and track operations.
+
+This architecture ensures a secure, maintainable, and future-proof Tidal integration for ResomiX users.

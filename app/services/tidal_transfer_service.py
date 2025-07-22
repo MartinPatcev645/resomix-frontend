@@ -23,6 +23,7 @@ import json
 import logging
 import time
 from urllib.parse import urlencode, quote
+import urllib.parse
 
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
@@ -366,12 +367,16 @@ class TidalTransferService:
         async with aiohttp.ClientSession() as session:
             token_url = "https://auth.tidal.com/v1/oauth2/token"
             
+            # URL-encode the redirect_uri exactly as the frontend does
+            encoded_redirect_uri = urllib.parse.quote(redirect_uri, safe='')
+            print(encoded_redirect_uri)
+            
             # Prepare token exchange request (PKCE: no client_secret)
             token_data = {
                 "grant_type": "authorization_code",
                 "client_id": self.client_id,
                 "code": authorization_code,
-                "redirect_uri": redirect_uri,
+                "redirect_uri": encoded_redirect_uri,
                 "code_verifier": code_verifier
             }
             
