@@ -365,18 +365,18 @@ class TidalTransferService:
         
         async with aiohttp.ClientSession() as session:
             token_url = "https://auth.tidal.com/v1/oauth2/token"
-            print(redirect_uri)
             
             # Prepare token exchange request (PKCE: no client_secret)
             token_data = {
                 "grant_type": "authorization_code",
                 "client_id": self.client_id,
                 "code": authorization_code,
-                "redirect_uri": redirect_uri,  # must match /authorize, do not encode
+                "redirect_uri": redirect_uri,  # must be raw, unencoded
                 "code_verifier": code_verifier
             }
             token_payload = urlencode(token_data)
-            logger.info("Token exchange payload: %s", token_payload)
+            logger.info("Token exchange payload (decoded): %s", token_data)
+            logger.info("Token exchange payload (encoded): %s", token_payload)
             
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
