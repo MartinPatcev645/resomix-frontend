@@ -54,40 +54,12 @@ class TidalTransferController:
             # Log the incoming request payload for debugging
             logger.info("Received /tidal/auth/token request: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
 
-            # Validate that we have client credentials
-            if not settings.tidal_client_id or not settings.tidal_client_secret:
-                logger.error("Tidal client credentials not configured")
-                return JSONResponse(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=format_response(
-                        success=False,
-                        error="Tidal authentication not properly configured"
-                    )
-                )
-            
             # Use the service to exchange the code for tokens
             token_response = await self.tidal_service.exchange_authorization_code(
                 authorization_code=request_data.code,
                 redirect_uri=request_data.redirect_uri,
                 code_verifier=request_data.code_verifier
             )
-            
-            logger.info("Token exchange successful. Response: %s", token_response)
-            logger.info("Returned access_token (first 20 chars): %s...", token_response.get("access_token", "")[:20])
-            logger.info("Returned refresh_token (first 20 chars): %s...", (token_response.get("refresh_token") or "")[:20])
-            logger.info("Returned scope: %s", token_response.get("scope"))
-            logger.info("Returned user_id: %s", token_response.get("user_id"))
-            
-            logger.info("Successfully exchanged authorization code for Tidal access token")
-            
-            # Log the response being sent to frontend (with truncated sensitive data)
-            logger.info("Sending token response to frontend: %s", {
-                "access_token": f"{token_response['access_token'][:20]}..." if token_response.get('access_token') else None,
-                "token_type": token_response.get('token_type'),
-                "expires_in": token_response.get('expires_in'),
-                "refresh_token": f"{token_response['refresh_token'][:20]}..." if token_response.get('refresh_token') else None,
-                "scope": token_response.get('scope')
-            })
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
@@ -116,16 +88,6 @@ class TidalTransferController:
             error_message = str(e)
             logger.error("Token exchange failed: %s", error_message)
             logger.error("Request details: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
-            
-            # Check if it's an authentication error
-            if any(keyword in error_message.lower() for keyword in ['unauthorized', 'invalid_client', 'invalid_grant']):
-                return JSONResponse(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    content=format_response(
-                        success=False,
-                        error="Invalid client credentials or authorization code"
-                    )
-                )
             
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

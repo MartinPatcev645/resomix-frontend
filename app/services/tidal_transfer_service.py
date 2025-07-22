@@ -283,6 +283,7 @@ class TidalTransferService:
             url = "https://api.tidal.com/v2/users/me"
             headers = self._get_headers(access_token)
             response = await self._make_api_request(session, "GET", url, headers)
+            logger.info("/users/me API response: %s", response)
             return response
 
     async def _check_subscription_status(self, user_info: dict) -> None:
