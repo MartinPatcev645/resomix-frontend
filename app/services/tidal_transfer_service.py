@@ -365,6 +365,7 @@ class TidalTransferService:
         
         async with aiohttp.ClientSession() as session:
             token_url = "https://auth.tidal.com/v1/oauth2/token"
+            print(redirect_uri)
             
             # Prepare token exchange request (PKCE: no client_secret)
             token_data = {
