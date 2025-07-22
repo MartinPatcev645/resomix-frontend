@@ -62,6 +62,7 @@ class TidalTransferService:
         self.api_base_url = "https://openapi.tidal.com"
         self.listen_base_url = "https://listen.tidal.com"
         self.api_version = "v2"
+        self.client_id = settings.tidal_client_id
         
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
