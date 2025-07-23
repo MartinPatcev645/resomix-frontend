@@ -145,6 +145,8 @@ class TidalTransferService:
             response_data = await self._make_api_request(
                 session, "GET", search_url, headers, params=params
             )
+
+            print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
             
             # Parse Tidal API v2 response format
             tracks = response_data.get("data", [])
@@ -156,6 +158,7 @@ class TidalTransferService:
                     response_data = await self._make_api_request(
                         session, "GET", search_url, headers, params=params
                     )
+                    print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
                     tracks = response_data.get("data", [])
             
             if not tracks:
@@ -273,7 +276,6 @@ class TidalTransferService:
             url = "https://openapi.tidal.com/v2/users/me"
             headers = self._get_headers(access_token)
             response = await self._make_api_request(session, "GET", url, headers)
-            logger.info("/users/me API response: %s", response)
             return response
 
     async def _check_subscription_status(self, user_info: dict) -> None:
@@ -305,6 +307,7 @@ class TidalTransferService:
         response_data = await self._make_api_request(
             session, "POST", create_url, headers, json=payload
         )
+        print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
         playlist_id = response_data.get("id")
         if not playlist_id:
             raise Exception("Failed to create Tidal playlist: No playlist ID returned")
