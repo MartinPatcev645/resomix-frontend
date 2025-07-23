@@ -272,9 +272,9 @@ class TidalTransferService:
         Get the Tidal user info from /users/me endpoint (id and subscriptionStatus).
         """
         async with aiohttp.ClientSession() as session:
-            logger.info("Calling Tidal /users/me: url=%s, headers=%s", url, headers)
             url = "https://api.tidal.com/v2/users/me"
             headers = self._get_headers(access_token)
+            logger.info("Calling Tidal /users/me: url=%s, headers=%s", url, headers)
             response = await self._make_api_request(session, "GET", url, headers)
             logger.info("/users/me API response: %s", response)
             return response
