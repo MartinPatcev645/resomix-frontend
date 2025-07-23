@@ -403,10 +403,14 @@ class TidalTransferService:
                         raise ValueError("Invalid token response from Tidal")
                     
                     # Get user info once and check subscription
-                    user_info = await self._get_user_info(token_response["access_token"])
-                    logger.info("Tidal /users/me response: %s", user_info)
-                    logger.info("Tidal subscription status: %s", user_info.get("subscriptionStatus"))
-                    await self._check_subscription_status(user_info)
+                    try:
+                        user_info = await self._get_user_info(token_response["access_token"])
+                        logger.info("Tidal /users/me response: %s", user_info)
+                        logger.info("Tidal subscription status: %s", user_info.get("subscriptionStatus"))
+                        await self._check_subscription_status(user_info)
+                    except Exception as e:
+                        logger.error("Error during user info fetch or subscription check: %s", e, exc_info=True)
+                        raise
                     
                     # Log the successful token response for debugging
                     logger.info("Successfully obtained Tidal access token")

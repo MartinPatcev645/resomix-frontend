@@ -74,7 +74,7 @@ class TidalTransferController:
             error_message = str(e)
             logger.warning("Token exchange validation error: %s", error_message)
             logger.warning("Request details: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
-            
+            logger.warning("Exception details:", exc_info=True)
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=format_response(
@@ -88,7 +88,7 @@ class TidalTransferController:
             error_message = str(e)
             logger.error("Token exchange failed: %s", error_message)
             logger.error("Request details: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
-            
+            logger.error("Exception details:", exc_info=True)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
