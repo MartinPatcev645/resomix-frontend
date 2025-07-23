@@ -104,6 +104,7 @@ class TidalTransferService:
             Exception: If request fails
         """
         try:
+            print("method:", method, "url:", url, "headers:", headers, "kwargs:", kwargs, "\n\n\n")
             async with session.request(method, url, headers=headers, **kwargs) as response:
                 response_text = await response.text()
                 response_headers = dict(response.headers)
