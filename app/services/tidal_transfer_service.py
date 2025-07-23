@@ -105,16 +105,8 @@ class TidalTransferService:
         """
         try:
             async with session.request(method, url, headers=headers, **kwargs) as response:
-                if response.status == 401:
-                    raise ValueError("Invalid or expired Tidal access token")
-                elif response.status == 403:
-                    raise ValueError("Tidal access denied. Please check your permissions.")
-                elif response.status == 429:
-                    raise ValueError("Tidal API rate limit exceeded. Please try again later.")
-                elif response.status >= 400:
-                    error_text = await response.text()
-                    raise Exception(f"Tidal API error {response.status}: {error_text}")
-                
+                print("\n\n\n\n\n\n", response, "\n\n\n\n\n\n")
+                logger.info("Tidal API response: status=%d, headers=%s, body=%s", response.status, response.headers, await response.text())
                 return await response.json()
                 
         except aiohttp.ClientError as e:
@@ -280,6 +272,7 @@ class TidalTransferService:
         Get the Tidal user info from /users/me endpoint (id and subscriptionStatus).
         """
         async with aiohttp.ClientSession() as session:
+            logger.info("Calling Tidal /users/me: url=%s, headers=%s", url, headers)
             url = "https://api.tidal.com/v2/users/me"
             headers = self._get_headers(access_token)
             response = await self._make_api_request(session, "GET", url, headers)
