@@ -105,10 +105,22 @@ class TidalTransferService:
         """
         try:
             async with session.request(method, url, headers=headers, **kwargs) as response:
-                print("\n\n\n\n\n\n", response, "\n\n\n\n\n\n")
-                to_return_response = await response.json()
-                print(to_return_response, "\n\n\n\n\n\n")
-                return to_return_response
+                response_text = await response.text()
+                response_headers = dict(response.headers)
+                print("\n\n\n\n\n\n",
+                      f"Tidal API call: {method} {url}",
+                      f"Status: {response.status}",
+                      f"Headers: {response_headers}",
+                      f"Body: {response_text}",
+                      "\n\n\n\n\n\n")
+                # Special handling: Tidal returns 404 for no search results
+                if response.status == 404 and method == "GET" and "/searchresults/" in url:
+                    return {"data": []}
+                try:
+                    return json.loads(response_text)
+                except Exception as e:
+                    logger.error("Failed to parse Tidal API response as JSON: %s", e)
+                    return {"error": "Failed to parse response", "raw": response_text, "status": response.status}
         except aiohttp.ClientError as e:
             raise Exception(f"Network error connecting to Tidal: {str(e)}")
 
