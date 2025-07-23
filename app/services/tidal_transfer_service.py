@@ -298,7 +298,7 @@ class TidalTransferService:
             user_id = user_info.get("id")
             if not user_id:
                 raise Exception("Failed to retrieve Tidal userId from /users/me.")
-        create_url = f"https://api.tidal.com/v2/users/{user_id}/playlists"
+        create_url = f"https://openapi.tidal.com/v2/users/{user_id}/playlists"
         payload = {
             "title": playlist_name,
             "description": description,
@@ -326,7 +326,7 @@ class TidalTransferService:
         if not track_ids:
             return 0
         logger.info("Adding %d tracks to Tidal playlist", len(track_ids))
-        add_url = f"https://api.tidal.com/v2/playlists/{playlist_id}/items"
+        add_url = f"https://openapi.tidal.com/v2/playlists/{playlist_id}/items"
         headers = self._get_headers(access_token)
         tracks_added = 0
         batch_size = 100  # Official API allows up to 100 per call
@@ -392,28 +392,24 @@ class TidalTransferService:
                         logger.error("Token exchange response missing access_token: %s", token_response)
                         raise ValueError("Invalid token response from Tidal")
                     
-                    # Get user info once and check subscription
+                    # Get user info (no subscription check)
                     try:
                         user_info = await self._get_user_info(token_response["access_token"])
                         logger.info("Tidal /users/me response: %s", user_info)
-                        logger.info("Tidal subscription status: %s", user_info.get("subscriptionStatus"))
-                        await self._check_subscription_status(user_info)
                     except Exception as e:
-                        logger.error("Error during user info fetch or subscription check: %s", e, exc_info=True)
+                        logger.error("Error during user info fetch: %s", e, exc_info=True)
                         raise
                     
-                    # Log the complete response data being returned
-                    logger.info("Returning token response data: %s", {
-                        "access_token": f"{token_response['access_token'][:20]}..." if token_response['access_token'] else None,
-                        "token_type": token_response['token_type'],
-                        "expires_in": token_response['expires_in'],
-                        "refresh_token": f"{token_response['refresh_token'][:20]}..." if token_response['refresh_token'] else None,
-                        "scope": token_response['scope'],
-                        "user_id": user_info.get("id")
-                    })
-                    
-                    return token_response
-                    
+                    # Return both token and user info to frontend
+                    return {
+                        "access_token": token_response["access_token"],
+                        "token_type": token_response.get("token_type", "Bearer"),
+                        "expires_in": token_response.get("expires_in", 3600),
+                        "refresh_token": token_response.get("refresh_token"),
+                        "scope": token_response.get("scope"),
+                        "user": user_info
+                    }
+            
             except aiohttp.ClientError as e:
                 logger.error("Network error during token exchange: %s", str(e))
                 raise Exception(f"Network error connecting to Tidal: {str(e)}")
