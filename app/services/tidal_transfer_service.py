@@ -288,27 +288,35 @@ class TidalTransferService:
             raise ValueError(f"Tidal user does not have an active or trial subscription. Subscription status: {status}")
 
     async def _create_tidal_playlist(self, session: aiohttp.ClientSession, access_token: str,
-                                   playlist_name: str, description: str = "", user_id: str = None) -> Dict[str, Any]:
+                                   playlist_name: str, description: str = "", user_id: str = None, user_country: str = None) -> Dict[str, Any]:
         """
         Create a new playlist on Tidal using the official API v2 endpoint.
         """
-        if not user_id:
+        # Get user info if not provided
+        if not user_country or not user_id:
             user_info = await self._get_user_info(access_token)
-            user_id = user_info.get("id")
+            user_id = user_id or user_info.get("data", {}).get("id")
+            user_country = user_country or user_info.get("data", {}).get("attributes", {}).get("country", "US")
             if not user_id:
                 raise Exception("Failed to retrieve Tidal userId from /users/me.")
-        create_url = f"https://openapi.tidal.com/v2/users/{user_id}/playlists"
+        create_url = "https://openapi.tidal.com/v2/playlists"
+        params = {"countryCode": user_country}
         payload = {
-            "title": playlist_name,
-            "description": description,
-            "publicPlaylist": False  # Create as private by default
+            "data": {
+                "attributes": {
+                    "accessType": "PRIVATE",  # or "PUBLIC" if you want public playlists
+                    "description": description,
+                    "name": playlist_name
+                },
+                "type": "playlists"
+            }
         }
         headers = self._get_headers(access_token)
         response_data = await self._make_api_request(
-            session, "POST", create_url, headers, json=payload
+            session, "POST", create_url, headers, params=params, json=payload
         )
         print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
-        playlist_id = response_data.get("id")
+        playlist_id = response_data.get("data", {}).get("id")
         if not playlist_id:
             raise Exception("Failed to create Tidal playlist: No playlist ID returned")
         return {
@@ -461,10 +469,14 @@ class TidalTransferService:
             playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
             
             async with aiohttp.ClientSession() as session:
+                # Get user info for country code
+                user_info = await self._get_user_info(access_token)
+                user_country = user_info.get("data", {}).get("attributes", {}).get("country", "US")
                 # Create playlist
                 tidal_playlist = await self._create_tidal_playlist(
                     session, access_token, playlist_name, 
-                    f"Transferred from ResomiX playlist '{playlist.name}'"
+                    f"Transferred from ResomiX playlist '{playlist.name}'",
+                    user_id=None, user_country=user_country
                 )
                 
                 tidal_playlist_id = tidal_playlist['id']
