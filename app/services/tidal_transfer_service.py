@@ -130,10 +130,11 @@ class TidalTransferService:
             query = f"{artist} {title}".strip()
             if not query:
                 return None
-            search_url = f"{self.api_base_url}/{self.api_version}/searchresults/"
+            search_query = quote(query)
+            search_url = f"{self.api_base_url}/{self.api_version}/searchresults/{search_query}"
             params = {
-                "id": query,  # Tidal expects the search query as the 'id' query parameter
                 "countryCode": country_code,
+                "explicitFilter": "include",
                 "include": "tracks"
             }
             headers = self._get_headers(access_token)
