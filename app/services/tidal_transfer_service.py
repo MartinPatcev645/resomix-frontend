@@ -105,8 +105,6 @@ class TidalTransferService:
         """
         try:
             async with session.request(method, url, headers=headers, **kwargs) as response:
-                print("\n\n\n\n\n\n", response, "\n\n\n\n\n\n")
-                logger.info("Tidal API response: status=%d, headers=%s, body=%s", response.status, response.headers, await response.text())
                 return await response.json()
                 
         except aiohttp.ClientError as e:
@@ -274,7 +272,6 @@ class TidalTransferService:
         async with aiohttp.ClientSession() as session:
             url = "https://openapi.tidal.com/v2/users/me"
             headers = self._get_headers(access_token)
-            logger.info("Calling Tidal /users/me: url=%s, headers=%s", url, headers)
             response = await self._make_api_request(session, "GET", url, headers)
             logger.info("/users/me API response: %s", response)
             return response
@@ -355,8 +352,6 @@ class TidalTransferService:
         if not self.client_id:
             raise ValueError("Tidal client ID not configured")
         
-        logger.info("Exchanging authorization code for access token")
-        
         async with aiohttp.ClientSession() as session:
             token_url = "https://auth.tidal.com/v1/oauth2/token"
             
@@ -382,7 +377,6 @@ class TidalTransferService:
                     # Try to parse JSON, but log if it fails
                     try:
                         token_response = json.loads(response_text)
-                        logger.info("Tidal token exchange parsed JSON: %s", token_response)
                     except Exception as e:
                         logger.error("Failed to parse Tidal token response as JSON: %s", e)
                         token_response = None
