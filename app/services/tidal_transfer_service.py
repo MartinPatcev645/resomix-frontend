@@ -105,7 +105,19 @@ class TidalTransferService:
         """
         try:
             async with session.request(method, url, headers=headers, **kwargs) as response:
-                return await response.json()
+                response_text = await response.text()
+                response_headers = dict(response.headers)
+                print("\n\n\n\n\n\n",
+                      f"Tidal API call: {method} {url}",
+                      f"Status: {response.status}",
+                      f"Headers: {response_headers}",
+                      f"Body: {response_text}",
+                      "\n\n\n\n\n\n")
+                try:
+                    return json.loads(response_text)
+                except Exception as e:
+                    logger.error("Failed to parse Tidal API response as JSON: %s", e)
+                    return {"error": "Failed to parse response", "raw": response_text, "status": response.status}
                 
         except aiohttp.ClientError as e:
             raise Exception(f"Network error connecting to Tidal: {str(e)}")
@@ -526,4 +538,4 @@ class TidalTransferService:
             total_time = time.time() - transfer_start_time
             error_message = get_platform_error_message("Tidal", str(e))
             logger.error("Transfer failed after %.1fs: %s", total_time, error_message)
-            raise Exception(error_message) 
+            raise Exception(error_message)
