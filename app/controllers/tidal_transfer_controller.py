@@ -51,9 +51,6 @@ class TidalTransferController:
             JSONResponse with access token and refresh token
         """
         try:
-            # Log the incoming request payload for debugging
-            logger.info("Received /tidal/auth/token request: code=%s, redirect_uri=%s, code_verifier=%s", request_data.code, request_data.redirect_uri, request_data.code_verifier)
-
             # Use the service to exchange the code for tokens
             token_response = await self.tidal_service.exchange_authorization_code(
                 authorization_code=request_data.code,

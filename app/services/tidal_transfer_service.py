@@ -376,8 +376,6 @@ class TidalTransferService:
                 "code_verifier": code_verifier
             }
             token_payload = urlencode(token_data)
-            logger.info("Token exchange payload (decoded): %s", token_data)
-            logger.info("Token exchange payload (encoded): %s", token_payload)
             
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -388,7 +386,6 @@ class TidalTransferService:
                 async with session.post(token_url, data=token_payload, headers=headers) as response:
                     response_text = await response.text()
                     response_headers = dict(response.headers)
-                    logger.info("Tidal token exchange raw response: status=%d, headers=%s, body=%s", response.status, response_headers, response_text)
                     # Try to parse JSON, but log if it fails
                     try:
                         token_response = json.loads(response_text)
@@ -412,34 +409,17 @@ class TidalTransferService:
                         logger.error("Error during user info fetch or subscription check: %s", e, exc_info=True)
                         raise
                     
-                    # Log the successful token response for debugging
-                    logger.info("Successfully obtained Tidal access token")
-                    logger.info("Access token (first 20 chars): %s...", token_response["access_token"][:20])
-                    logger.info("Token type: %s", token_response.get("token_type", "Bearer"))
-                    logger.info("Expires in: %s seconds", token_response.get("expires_in", 3600))
-                    logger.info("Refresh token available: %s", bool(token_response.get("refresh_token")))
-                    logger.info("Granted scopes: %s", token_response.get("scope", "N/A"))
-                    
-                    response_data = {
-                        "access_token": token_response["access_token"],
-                        "token_type": token_response.get("token_type", "Bearer"),
-                        "expires_in": token_response.get("expires_in", 3600),
-                        "refresh_token": token_response.get("refresh_token"),
-                        "scope": token_response.get("scope"),
-                        "user_id": user_info.get("id")
-                    }
-                    
                     # Log the complete response data being returned
                     logger.info("Returning token response data: %s", {
-                        "access_token": f"{response_data['access_token'][:20]}..." if response_data['access_token'] else None,
-                        "token_type": response_data['token_type'],
-                        "expires_in": response_data['expires_in'],
-                        "refresh_token": f"{response_data['refresh_token'][:20]}..." if response_data['refresh_token'] else None,
-                        "scope": response_data['scope'],
-                        "user_id": response_data['user_id']
+                        "access_token": f"{token_response['access_token'][:20]}..." if token_response['access_token'] else None,
+                        "token_type": token_response['token_type'],
+                        "expires_in": token_response['expires_in'],
+                        "refresh_token": f"{token_response['refresh_token'][:20]}..." if token_response['refresh_token'] else None,
+                        "scope": token_response['scope'],
+                        "user_id": user_info.get("id")
                     })
                     
-                    return response_data
+                    return token_response
                     
             except aiohttp.ClientError as e:
                 logger.error("Network error during token exchange: %s", str(e))
