@@ -386,18 +386,16 @@ class TidalTransferService:
             
             try:
                 async with session.post(token_url, data=token_payload, headers=headers) as response:
-                    print("\n\n\n\n\n\n", response, "\n\n\n\n\n\n")
                     response_text = await response.text()
                     response_headers = dict(response.headers)
-                    if response.status >= 400:
-                        logger.error("Tidal token exchange failed: status=%d, headers=%s, body=%s", response.status, response_headers, response_text)
-                        if response.status == 400:
-                            raise ValueError(f"Tidal token exchange 400 Bad Request: {response_text}")
-                        elif response.status == 401:
-                            raise ValueError(f"Tidal token exchange 401 Unauthorized: {response_text}")
-                        else:
-                            raise Exception(f"Tidal token exchange failed: {response.status} - {response_text}")
-                    token_response = await response.json()
+                    logger.info("Tidal token exchange raw response: status=%d, headers=%s, body=%s", response.status, response_headers, response_text)
+                    # Try to parse JSON, but log if it fails
+                    try:
+                        token_response = json.loads(response_text)
+                        logger.info("Tidal token exchange parsed JSON: %s", token_response)
+                    except Exception as e:
+                        logger.error("Failed to parse Tidal token response as JSON: %s", e)
+                        token_response = None
                     
                     # Validate response has required fields
                     if not token_response.get("access_token"):
