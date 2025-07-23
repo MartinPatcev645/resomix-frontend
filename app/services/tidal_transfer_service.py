@@ -111,91 +111,44 @@ class TidalTransferService:
             raise Exception(f"Network error connecting to Tidal: {str(e)}")
 
     async def _search_tidal_track(self, session: aiohttp.ClientSession, access_token: str, 
-                                title: str, artist: str) -> Optional[str]:
+                                title: str, artist: str, country_code: str = "US") -> Optional[str]:
         """
-        Search for a track on Tidal and return the best match ID.
-        
-        Args:
-            session: aiohttp session
-            access_token: Tidal access token
-            title: Track title
-            artist: Track artist
-            
-        Returns:
-            Tidal track ID if found, None otherwise
+        Search for a track on Tidal and return the canonical resourceId.
         """
         try:
-            # Create search query
+            # Create search query (artist + title + mix/version if available)
             query = clean_search_query(title, artist)
-            
             if not query.strip():
                 return None
-            
             # Tidal search endpoint (using official API v2)
             search_url = f"{self.api_base_url}/{self.api_version}/searchresults"
             params = {
                 "query": query,
                 "type": "track",
                 "limit": 10,
-                "countryCode": "US"  # Default to US, could be configurable
+                "countryCode": country_code
             }
-            
             headers = self._get_headers(access_token)
-            
             response_data = await self._make_api_request(
                 session, "GET", search_url, headers, params=params
             )
-
-            print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
-            
-            # Parse Tidal API v2 response format
             tracks = response_data.get("data", [])
+            # Fallback: if no results, try title-only
             if not tracks:
-                # Try searching with just the title if no results
                 title_only_query = clean_search_query(title, "")
                 if title_only_query.strip() and title_only_query != query:
                     params["query"] = title_only_query
                     response_data = await self._make_api_request(
                         session, "GET", search_url, headers, params=params
                     )
-                    print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
                     tracks = response_data.get("data", [])
-            
             if not tracks:
                 return None
-            
-            # Find the best match
-            best_match = None
-            best_score = 0
-            
-            for track in tracks:
-                # Get track details
-                track_title = track.get("attributes", {}).get("title", "")
-                
-                # Get artist names from relationships
-                track_artists = []
-                if "relationships" in track and "artists" in track["relationships"]:
-                    artists_data = track["relationships"]["artists"].get("data", [])
-                    # We need to get artist names from included data or make separate requests
-                    # For now, we'll use a simplified approach
-                    if artists_data:
-                        track_artists = [f"Artist_{artist.get('id', '')}" for artist in artists_data]
-                
-                track_artist = ", ".join(track_artists) if track_artists else ""
-                
-                # Calculate similarity score
-                similarity = calculate_similarity_score(title, artist, track_title, track_artist)
-                
-                if similarity > best_score:
-                    best_score = similarity
-                    best_match = track
-            
-            # Return the best match if similarity is above threshold
-            if best_match and best_score > 0.5:  # 50% similarity threshold
-                return best_match.get("id")
-            
-            return None
-            
+            # Extract canonical track ID from data[0].attributes.resourceId
+            first_track = tracks[0]
+            attributes = first_track.get("attributes", {})
+            resource_id = attributes.get("resourceId")
+            return resource_id if resource_id else None
         except Exception as e:
             logger.error(f"Error searching Tidal for '{artist} - {title}': {str(e)}")
             return None
@@ -218,7 +171,7 @@ class TidalTransferService:
             return {}
 
     async def _search_tracks_concurrently(self, access_token: str, 
-                                        track_data: List[Tuple[int, str, str]]) -> List[Tuple[int, Optional[str]]]:
+                                        track_data: List[Tuple[int, str, str]], country_code: str = "US") -> List[Tuple[int, Optional[str]]]:
         """
         Search for multiple tracks on Tidal concurrently
         
@@ -237,12 +190,10 @@ class TidalTransferService:
         if not valid_tracks:
             return []
         
-        logger.info(f"Searching for {len(valid_tracks)} tracks on Tidal...")
-        
         async with aiohttp.ClientSession() as session:
             # Create search function for concurrent execution
             async def search_function(title: str, artist: str) -> Optional[str]:
-                return await self._search_tidal_track(session, access_token, title, artist)
+                return await self._search_tidal_track(session, access_token, title, artist, country_code)
             
             # Execute concurrent searches
             results = await search_tracks_concurrently(
@@ -315,7 +266,6 @@ class TidalTransferService:
         response_data = await self._make_api_request(
             session, "POST", create_url, headers, params=params, json=payload
         )
-        print("\n\n\n\n\n\n", response_data, "\n\n\n\n\n\n")
         playlist_id = response_data.get("data", {}).get("id")
         if not playlist_id:
             raise Exception("Failed to create Tidal playlist: No playlist ID returned")
@@ -506,7 +456,7 @@ class TidalTransferService:
                 new_tidal_ids = {}  # For caching newly found IDs
                 
                 if uncached_tracks:
-                    search_results = await self._search_tracks_concurrently(access_token, uncached_tracks)
+                    search_results = await self._search_tracks_concurrently(access_token, uncached_tracks, user_country)
                     
                     # Collect newly found Tidal IDs for caching
                     for track_id, tidal_id in search_results:
