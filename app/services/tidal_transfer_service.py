@@ -106,7 +106,9 @@ class TidalTransferService:
         try:
             async with session.request(method, url, headers=headers, **kwargs) as response:
                 print("\n\n\n\n\n\n", response, "\n\n\n\n\n\n")
-                return await response.json()
+                to_return_response = await response.json()
+                print(to_return_response, "\n\n\n\n\n\n")
+                return to_return_response
         except aiohttp.ClientError as e:
             raise Exception(f"Network error connecting to Tidal: {str(e)}")
 
