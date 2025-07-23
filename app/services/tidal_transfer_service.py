@@ -130,7 +130,7 @@ class TidalTransferService:
             query = f"{artist} {title}".strip()
             if not query:
                 return None
-            search_url = f"{self.api_base_url}/{self.api_version}/searchresults"
+            search_url = f"{self.api_base_url}/{self.api_version}/searchresults/"
             params = {
                 "id": query,  # Tidal expects the search query as the 'id' query parameter
                 "countryCode": country_code,
