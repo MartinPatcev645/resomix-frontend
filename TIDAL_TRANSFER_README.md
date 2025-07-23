@@ -374,3 +374,101 @@ This server implements a secure, robust, and fully compliant Tidal integration f
   - Only official Tidal API v2 endpoints are used for all playlist and track operations.
 
 This architecture ensures a secure, maintainable, and future-proof Tidal integration for ResomiX users.
+
+
+
+
+
+
+
+
+
+
+
+
+## Backend-to-Tidal API Call Flow for /tidal/transfer-playlist
+
+This section documents the exact sequence of Tidal API calls made by the backend when a user requests a playlist transfer via `/tidal/transfer-playlist/`. Internal processing steps are summarized; all external (Tidal) API calls are shown in detail with method, endpoint, query parameters, and payload.
+
+### 1. Internal: Fetch Playlist and Tracks
+- Fetch playlist metadata and track list from the ResomiX database using the provided `playlist_id`.
+
+### 2. Tidal API: Get User Info (Country Code)
+- **Method:** `GET`
+- **Endpoint:** `https://openapi.tidal.com/v2/users/me`
+- **Headers:**
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `User-Agent: ResomiX/1.0`
+- **Query Parameters:** _None_
+- **Payload:** _None_
+- **Purpose:** Retrieve the user's Tidal country code (e.g., `"country": "GR"`).
+
+### 3. Tidal API: Create Playlist
+- **Method:** `POST`
+- **Endpoint:** `https://openapi.tidal.com/v2/playlists`
+- **Headers:**
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `User-Agent: ResomiX/1.0`
+- **Query Parameters:**
+  - `countryCode=<user_country>` (e.g., `countryCode=GR`)
+- **Payload Example:**
+```json
+{
+  "data": {
+    "attributes": {
+      "accessType": "PRIVATE", // or "PUBLIC" if public playlist is desired
+      "description": "Transferred from ResomiX playlist 'Playlist Name'",
+      "name": "<playlist_name>"
+    },
+    "type": "playlists"
+  }
+}
+```
+- **Purpose:** Create a new playlist in the user's Tidal account.
+
+### 4. Internal: Track Search and Caching
+- For each track in the playlist, check the cache for an existing Tidal track ID.
+- For uncached tracks, search Tidal for the best match.
+
+### 5. Tidal API: Search for Tracks
+- **Method:** `GET`
+- **Endpoint:** `https://openapi.tidal.com/v2/searchresults`
+- **Headers:**
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `User-Agent: ResomiX/1.0`
+- **Query Parameters:**
+  - `query=<artist and title>` (e.g., `query=Daft Punk One More Time`)
+  - `type=track`
+  - `limit=10`
+  - `countryCode=<user_country>`
+- **Payload:** _None_
+- **Purpose:** Find the best matching Tidal track for each playlist entry.
+- If no match is found, a fallback search with only the title is performed.
+
+### 6. Tidal API: Add Tracks to Playlist
+- **Method:** `POST`
+- **Endpoint:** `https://openapi.tidal.com/v2/playlists/<playlist_id>/items`
+- **Headers:**
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `User-Agent: ResomiX/1.0`
+- **Query Parameters:** _None_
+- **Payload Example (batch of up to 100 track IDs):**
+```json
+{
+  "trackIds": ["tidal_track_id_1", "tidal_track_id_2", ...]
+}
+```
+- **Purpose:** Add found tracks to the newly created Tidal playlist. Multiple requests are made if the playlist has more than 100 tracks.
+
+### 7. Internal: Finalize and Respond
+- Prepare a summary of the transfer (tracks added, not found, playlist URL, etc.) and return it to the frontend.
+
+---
+
+**Note:**
+- All Tidal API calls require a valid OAuth access token with scopes: `user.read`, `playlists.read`, `playlists.write`.
+- If any Tidal API call fails (e.g., 403 Forbidden), the backend logs the full request/response for debugging and returns an error to the frontend.

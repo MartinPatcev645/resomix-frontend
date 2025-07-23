@@ -304,7 +304,7 @@ class TidalTransferService:
         payload = {
             "data": {
                 "attributes": {
-                    "accessType": "PRIVATE",  # or "PUBLIC" if you want public playlists
+                    "access": "private",  # or "public" if you want public playlists
                     "description": description,
                     "name": playlist_name
                 },
