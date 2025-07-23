@@ -130,37 +130,25 @@ class TidalTransferService:
         Search for a track on Tidal and return the canonical resourceId.
         """
         try:
-            # Create search query (artist + title + mix/version if available)
-            query = clean_search_query(title, artist)
-            if not query.strip():
+            from urllib.parse import quote
+            # Use raw artist + title as the search query
+            query = f"{artist} {title}".strip()
+            if not query:
                 return None
-            # Tidal search endpoint (using official API v2, path-based)
             search_query = quote(query)
             search_url = f"{self.api_base_url}/{self.api_version}/searchresults/{search_query}"
             params = {
                 "countryCode": country_code,
-                "limit": 10,
-                "include": "tracks",
-                "types": "tracks"
+                "include": "tracks"
+                # 'explicitFilter' can be added here if needed
             }
             headers = self._get_headers(access_token)
             response_data = await self._make_api_request(
                 session, "GET", search_url, headers, params=params
             )
             tracks = response_data.get("data", [])
-            # Fallback: if no results, try title-only
-            if not tracks:
-                title_only_query = clean_search_query(title, "")
-                if title_only_query.strip() and title_only_query != query:
-                    search_query = quote(title_only_query)
-                    search_url = f"{self.api_base_url}/{self.api_version}/searchresults/{search_query}"
-                    response_data = await self._make_api_request(
-                        session, "GET", search_url, headers, params=params
-                    )
-                    tracks = response_data.get("data", [])
             if not tracks:
                 return None
-            # Extract canonical track ID from data[0].attributes.resourceId
             first_track = tracks[0]
             attributes = first_track.get("attributes", {})
             resource_id = attributes.get("resourceId")
