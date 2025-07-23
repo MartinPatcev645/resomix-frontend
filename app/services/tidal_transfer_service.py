@@ -132,13 +132,14 @@ class TidalTransferService:
             query = clean_search_query(title, artist)
             if not query.strip():
                 return None
-            # Tidal search endpoint (using official API v2)
-            search_url = f"{self.api_base_url}/{self.api_version}/searchresults"
+            # Tidal search endpoint (using official API v2, path-based)
+            search_query = quote(query)
+            search_url = f"{self.api_base_url}/{self.api_version}/searchresults/{search_query}"
             params = {
-                "query": query,
-                "type": "track",
+                "countryCode": country_code,
                 "limit": 10,
-                "countryCode": country_code
+                "include": "tracks",
+                "types": "tracks"
             }
             headers = self._get_headers(access_token)
             response_data = await self._make_api_request(
@@ -149,7 +150,8 @@ class TidalTransferService:
             if not tracks:
                 title_only_query = clean_search_query(title, "")
                 if title_only_query.strip() and title_only_query != query:
-                    params["query"] = title_only_query
+                    search_query = quote(title_only_query)
+                    search_url = f"{self.api_base_url}/{self.api_version}/searchresults/{search_query}"
                     response_data = await self._make_api_request(
                         session, "GET", search_url, headers, params=params
                     )
