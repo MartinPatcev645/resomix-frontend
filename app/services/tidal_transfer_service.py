@@ -404,6 +404,8 @@ class TidalTransferService:
                     
                     # Get user info once and check subscription
                     user_info = await self._get_user_info(token_response["access_token"])
+                    logger.info("Tidal /users/me response: %s", user_info)
+                    logger.info("Tidal subscription status: %s", user_info.get("subscriptionStatus"))
                     await self._check_subscription_status(user_info)
                     
                     # Log the successful token response for debugging
