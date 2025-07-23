@@ -107,20 +107,15 @@ class TidalTransferService:
             async with session.request(method, url, headers=headers, **kwargs) as response:
                 response_text = await response.text()
                 response_headers = dict(response.headers)
-                print("\n\n\n\n\n\n",
-                      f"Tidal API call: {method} {url}",
-                      f"Status: {response.status}",
-                      f"Headers: {response_headers}",
-                      f"Body: {response_text}",
-                      "\n\n\n\n\n\n")
+                print("\n\n\n\n\n\n", response, "\n\n\n\n\n\n")
+                try:
+                    print(await response.json(), "\n\n\n\n\n\n")
+                except Exception as e:
+                    print("Could not print or parse as json")
                 # Special handling: Tidal returns 404 for no search results
                 if response.status == 404 and method == "GET" and "/searchresults/" in url:
                     return {"data": []}
-                try:
-                    return json.loads(response_text)
-                except Exception as e:
-                    logger.error("Failed to parse Tidal API response as JSON: %s", e)
-                    return {"error": "Failed to parse response", "raw": response_text, "status": response.status}
+                return await response.json()
         except aiohttp.ClientError as e:
             raise Exception(f"Network error connecting to Tidal: {str(e)}")
 
@@ -135,18 +130,18 @@ class TidalTransferService:
             query = f"{artist} {title}".strip()
             if not query:
                 return None
-            search_query = quote(query)
-            search_url = f"{self.api_base_url}/{self.api_version}/searchresults/{search_query}"
+            search_url = f"{self.api_base_url}/{self.api_version}/searchresults"
             params = {
+                "id": query,  # Tidal expects the search query as the 'id' query parameter
                 "countryCode": country_code,
                 "include": "tracks"
-                # 'explicitFilter' can be added here if needed
             }
             headers = self._get_headers(access_token)
             response_data = await self._make_api_request(
                 session, "GET", search_url, headers, params=params
             )
             tracks = response_data.get("data", [])
+            print("tracks:", tracks, "\n\n\n\n\n\n")
             if not tracks:
                 return None
             first_track = tracks[0]
