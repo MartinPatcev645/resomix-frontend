@@ -2,7 +2,6 @@
   "name": "@resomix/hooks",
   "version": "0.0.0",
   "description": "",
-  "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p tsconfig.json"
@@ -18,17 +17,17 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
-  "private": "true",
   "type": "module",
-  "module": "dist/index.mjs",
+  "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
+  "private": true,
   "files": [
     "dist"
   ]
