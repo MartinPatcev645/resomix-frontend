@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Navbar } from "@resomix/ui";
 import { useTest } from "@resomix/hooks";
 import { fetchDummyData } from "@resomix/api-client";

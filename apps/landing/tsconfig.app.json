@@ -6,14 +6,18 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "NodeNext",
     "skipLibCheck": true,
+    "composite": true,
 
     /* Bundler mode */
     "moduleResolution": "NodeNext",
     "baseUrl": ".",
     "paths": {
-      "@resomix/ui": ["../../packages/ui/src"],
-      "@resomix/hooks": ["../../packages/hooks/src"],
-      "@resomix/api-client": ["../../packages/api-client/src"]
+      "@resomix/ui": ["../../packages/ui/src/index.ts"],
+      "@resomix/ui/*": ["../../packages/ui/src/*"],
+      "@resomix/hooks": ["../../packages/hooks/src/index.ts"],
+      "@resomix/hooks/*": ["../../packages/hooks/src/*"],
+      "@resomix/api-client": ["../../packages/api-client/src/index.ts"],
+      "@resomix/api-client/*": ["../../packages/api-client/src/*"]
     },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
