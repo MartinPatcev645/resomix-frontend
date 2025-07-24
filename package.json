@@ -1,0 +1,20 @@
+{
+  "name": "resomix-web",
+  "version": "1.0.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:landing": "pnpm --filter ./apps/landing dev",
+    "dev:webapp": "pnpm --filter ./apps/webapp dev",
+    "build": "turbo run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "turbo": "^2.5.5",
+    "typescript": "~5.8.3"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "private": "true"
+}
