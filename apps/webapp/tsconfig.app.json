@@ -23,5 +23,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/hooks" },
+    { "path": "../../packages/api-client" }
+  ]
 }

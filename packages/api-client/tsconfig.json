@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
+    "composite": true,
     "declaration": true,
+    "declarationDir": "dist",
     "emitDeclarationOnly": false,
     "outDir": "dist",
     "module": "ESNext",
