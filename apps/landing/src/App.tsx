@@ -3,6 +3,7 @@ import { Navbar } from "@resomix/ui";
 import { ButtonHeavyLeft } from "@resomix/ui";
 import { useTest } from "@resomix/hooks";
 import { fetchDummyData } from "@resomix/api-client";
+import { HeroSection } from "./sections/index.js";
 
 function App() {
   const { value, setValue } = useTest();
@@ -16,6 +17,7 @@ function App() {
   return (
     <div>
       <Navbar />
+      <HeroSection />
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-4">{value}</h1>
         <ButtonHeavyLeft />
