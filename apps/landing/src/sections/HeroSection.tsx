@@ -1,7 +1,7 @@
 import React from "react";
 
 const HeroSection: React.FC = () => (
-  <div className="bg-brand">HeroSection</div>
+  <div className="w-20 h-20 bg-gray-500 font-bold">HeroSection</div>
 );
 
 export default HeroSection;
