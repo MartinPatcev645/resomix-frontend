@@ -9,4 +9,4 @@ export const Navbar: React.FC = () => (
       <a href="#" className="hover:underline">Contact</a>
     </div>
   </nav>
-); 
+);
