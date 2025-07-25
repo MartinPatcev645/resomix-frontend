@@ -18,8 +18,8 @@ function App() {
     <div>
       <Navbar />
       <HeroSection />
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">{value}</h1>
+      <div className="p-4 bg-secondary">
+        <h1 className="text-2xl  font-bold mb-4">{value}</h1>
         <ButtonHeavyLeft />
         <button
           className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded"
