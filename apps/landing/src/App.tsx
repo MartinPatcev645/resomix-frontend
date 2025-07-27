@@ -2,6 +2,7 @@ import { Navbar } from "@resomix/ui";
 import { HeroSection } from "./sections/index.js";
 import tvNoiseGif from "./assets/gifs/tv_noise.gif";
 import sideFrameSvg from "./assets/icons/layout/side_frame.svg";
+import logoHeaderSvg from "./assets/icons/logo header.svg";
 
 function App() {
   return (
@@ -36,14 +37,14 @@ function App() {
         style={{
           maxWidth: '1280px',
           margin: '0 auto',
-          color: 'var(--color-text-primary)',
+          color: 'var(--color-text-secondary)',
           position: 'relative',
           zIndex: 5,
           minHeight: '100vh',
         }} className="p-5"
       >
         {/* Actual Content Sections */}
-        <Navbar />
+        <Navbar logo={<img src={logoHeaderSvg} alt="ResomiX Logo" />} />
         <HeroSection />
       </div>
     </div>

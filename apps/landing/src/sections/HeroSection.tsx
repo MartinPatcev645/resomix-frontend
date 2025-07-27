@@ -1,5 +1,8 @@
 import React from "react";
-import { FlyingThroughSpace } from "@resomix/ui";
+import { FlyingThroughSpace, IconComp } from "@resomix/ui";
+import XSvg from "../assets/icons/X.svg";
+import InstaSvg from "../assets/icons/instagram.svg";
+import FbSvg from "../assets/icons/fb.svg";
 
 const HeroSection: React.FC = () => (
   <div className="relative">
@@ -7,7 +10,7 @@ const HeroSection: React.FC = () => (
     <svg className="absolute w-0 h-0">
       <defs>
         <clipPath id="heroClip">
-          <path d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" stroke="white" stroke-opacity="0.7" stroke-width="0.37037" stroke-dasharray="0.74 0.74" />
+          <path d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" stroke="white" strokeOpacity="0.7" strokeWidth="0.37037" strokeDasharray="0.74 0.74" />
         </clipPath>
       </defs>
     </svg>
@@ -26,10 +29,56 @@ const HeroSection: React.FC = () => (
       </div>
 
       {/* Optional overlay content */}
-      <div className="absolute inset-0 flex items-center justify-center text-white z-10">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">ResomiX</h1>
-          <p className="text-lg opacity-80">Professional Audio Mixing</p>
+      <div className="absolute inset-0 flex flex-col items-end justify-between z-15 w-full h-full">
+        <div className="flex flex-col text-start my-auto w-full">
+          <div className="justify-start text-[133px] font-normal font-['Helvetica_Neue'] uppercase">Resomix </div>
+          <div className='flex w-full justify-between items-center -mt-12'>
+            <div className='flex gap-3'>
+              <svg xmlns="http://www.w3.org/2000/svg" width="46" height="47" viewBox="0 0 46 47" fill="none">
+                <path d="M1.80397e-06 46.8142L2.26019e-06 36.3806L18.1883 36.3806L21.2678 39.472L30.9874 39.472L0.00385252 8.26786L7.41005 0.832965L38.4937 31.9367L38.4937 21.9861L35.4142 18.8947L35.4142 0.829101L46 0.829102L46 39.3754L38.59 46.8142L1.80397e-06 46.8142Z" fill="white" />
+              </svg>
+              <div className="justify-start text-[17px] font-normal font-['Helvetica_Neue'] uppercase">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
+            </div>
+            <div className="text-[59px] font-medium font-['Helvetica_Neue'] uppercase">the Soul of Sound</div>
+          </div>
+        </div>
+        <div className="flex gap-1 mr-2 mb-2">
+          <IconComp
+            svg={
+              <img src={FbSvg} alt="Fb" />
+            }
+            size="24"
+            padding=""
+            backgroundColor="bg-white"
+            borderColor="outline-white"
+            strokeColor="black"
+            width="24px"
+            height="24px"
+          />
+          <IconComp
+            svg={
+              <img src={InstaSvg} alt="Insta" />
+            }
+            size="24"
+            padding=""
+            backgroundColor="bg-white"
+            borderColor="outline-white"
+            strokeColor="black"
+            width="24px"
+            height="24px"
+          />
+          <IconComp
+            svg={
+              <img src={XSvg} alt="X" />
+            }
+            size="24"
+            padding=""
+            backgroundColor="bg-white"
+            borderColor="outline-white"
+            strokeColor="black"
+            width="24px"
+            height="24px"
+          />
         </div>
       </div>
     </div>
