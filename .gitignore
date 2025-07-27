@@ -34,7 +34,4 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# Turbo
-.turbo
-.turbo/
 x_assets/
