@@ -4,6 +4,7 @@ import XSvg from "../assets/icons/X.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
 import FbSvg from "../assets/icons/fb.svg";
 import SoundWaves from "../assets/icons/sound waves.svg";
+import ArrowSmallDown from "../assets/icons/arrow small down.svg";
 
 const HeroSection: React.FC = () => (
   <div className="relative">
@@ -32,13 +33,11 @@ const HeroSection: React.FC = () => (
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-between z-15 w-full h-full">
         <div className="flex flex-col text-start my-auto w-full">
-          <div className="justify-start text-[133px] font-bold font-helvetica uppercase">Resomix</div>
+          <div className="justify-start text-[133px] font-normal font-helvetica uppercase">Resomix </div>
           <div className='flex w-full justify-between items-center -mt-12'>
             <div className='flex gap-3'>
-              <svg xmlns="http://www.w3.org/2000/svg" width="46" height="47" viewBox="0 0 46 47" fill="none">
-                <path d="M1.80397e-06 46.8142L2.26019e-06 36.3806L18.1883 36.3806L21.2678 39.472L30.9874 39.472L0.00385252 8.26786L7.41005 0.832965L38.4937 31.9367L38.4937 21.9861L35.4142 18.8947L35.4142 0.829101L46 0.829102L46 39.3754L38.59 46.8142L1.80397e-06 46.8142Z" fill="white" />
-              </svg>
-              <div className="justify-start text-[17px] font-normal font-helvetica uppercase">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
+              <img src={ArrowSmallDown} alt="Arrow Small Down" />
+              <div className="justify-start text-[17px] font-normal font-helvetica uppercase leading-5">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
             </div>
             <div className="text-[59px] font-medium font-helvetica uppercase">the Soul of Sound</div>
           </div>

@@ -137,6 +137,14 @@
   font-weight: 700 !important;
 }
 
+.font-auger {
+  font-family: 'Auger Mono TEST', 'Auger Mono', 'AugerMono', 'Auger Mono Test', 'AugerMonoTEST', 'AugerMono TEST', monospace !important;
+}
+
+.font-auger.font-bold {
+  font-weight: 700 !important;
+}
+
 @font-face {
   font-family: 'Auger Mono';
   src: url('/fonts/AugerMonoTEST-Regular-BF662b23b84f7d0.otf') format('opentype');
