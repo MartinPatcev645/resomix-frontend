@@ -1,29 +1,14 @@
 import { Navbar } from "@resomix/ui";
-import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven } from "./sections/index.js";
+import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, AnimationsSection } from "./sections/index.js";
 import tvNoiseGif from "./assets/gifs/tv_noise.gif";
-import purpleAnimationGif from "./assets/gifs/purple_animation.gif";
 import sideFrameSvg from "./assets/icons/layout/side_frame.svg";
 import logoHeaderSvg from "./assets/icons/logo header.svg";
 
 function App() {
   return (
     <div className="bg-black w-full min-h-full relative">
-      {/* Purple Animation Background */}
-      <div
-        style={{
-          backgroundImage: `url(${purpleAnimationGif})`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          position: 'absolute',
-          width: '550px',
-          height: '550px',
-          top: '1750px',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 10,
-        }}
-      />
+      {/* Background Animations */}
+      <AnimationsSection />
       {/* Background Noise GIF layer with opacity */}
       <div
         style={{

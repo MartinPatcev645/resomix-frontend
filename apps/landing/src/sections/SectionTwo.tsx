@@ -16,7 +16,7 @@ const SectionTwo: React.FC = () => (
       <div className='my-8'>
         <img src={VerticalLineSvg} alt="Vertical Line" />
       </div>
-      <div className="opacity-80 justify-start text-white text-[10px] font-light font-['Fira_Code']">instant_inspiration.module[active]</div>
+      <div className="opacity-80 justify-start text-white text-[7px] font-light font-['Fira_Code'] tracking-widest">instant_inspiration.module[active]</div>
     </div>
   </div>
 );
