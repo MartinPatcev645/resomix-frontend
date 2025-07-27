@@ -8,11 +8,11 @@ const SectionThree: React.FC = () => (
           <svg xmlns="http://www.w3.org/2000/svg" width="46" height="47" viewBox="0 0 46 47" fill="none">
             <path d="M1.80397e-06 46.8142L2.26019e-06 36.3806L18.1883 36.3806L21.2678 39.472L30.9874 39.472L0.00385252 8.26786L7.41005 0.832965L38.4937 31.9367L38.4937 21.9861L35.4142 18.8947L35.4142 0.829101L46 0.829102L46 39.3754L38.59 46.8142L1.80397e-06 46.8142Z" fill="white" />
           </svg>
-          <div className="justify-start text-white text-7xl font-light font-['Helvetica_Neue'] uppercase">RESOMIX BRINGS</div>
+          <div className="justify-start text-white text-7xl font-light font-helvetica uppercase">RESOMIX BRINGS</div>
         </div>
         <div className="text-right justify-start text-white text-lg font-extralight font-['Auger_Mono_TEST']">The thrill and excitement of crate digging, but with the power,<br />speed, and convenience of cutting-edge technology.</div>
       </div>
-      <div className="justify-start text-white text-7xl font-light font-['Helvetica_Neue'] uppercase">THE ART OF SELECTION<br />INTO THE AGE OF DEEP LEARNING</div>
+      <div className="justify-start text-white text-7xl font-light font-helvetica uppercase">THE ART OF SELECTION<br />INTO THE AGE OF DEEP LEARNING</div>
     </div>
     <div className='my-40 flex justify-between items-center'>
       <div className="w-[734px] justify-start text-white text-4xl font-light font-['Montserrat'] uppercase">A safe haven for DJs escaping the<br />noise of algorithms and trends</div>
