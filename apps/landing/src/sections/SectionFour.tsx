@@ -1,7 +1,7 @@
 import React from "react";
 
 const SectionFour: React.FC = () => (
-  <div className='my-20'>
+  <div className='mt-[350px]'>
     <div className='flex justify-between items-start'>
       <div className='flex flex-col'>
         <div className='flex flex-col'>

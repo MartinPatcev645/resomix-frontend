@@ -8,6 +8,7 @@ export default {
         'helvetica': ['Helvetica_Neue', 'sans-serif'],
         'auger': ['Auger Mono', 'monospace'],
         'fira': ['Fira Code', 'monospace'],
+        'montserrat': ['Montserrat', 'sans-serif'],
       },
     },
   },
