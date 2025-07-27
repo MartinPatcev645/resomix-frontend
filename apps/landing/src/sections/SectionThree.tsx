@@ -15,7 +15,7 @@ const SectionThree: React.FC = () => (
       <div className="justify-start text-white text-7xl font-light font-helvetica uppercase">THE ART OF SELECTION<br />INTO THE AGE OF DEEP LEARNING</div>
     </div>
     <div className='my-40 flex justify-between items-center'>
-      <div className="w-[734px] justify-start text-white text-4xl font-light font-['Montserrat'] uppercase">A safe haven for DJs escaping the<br />noise of algorithms and trends</div>
+      <div className="justify-start text-white text-4xl font-light font-['Montserrat'] uppercase">A safe haven for DJs escaping the<br />noise of algorithms and trends</div>
       <svg xmlns="http://www.w3.org/2000/svg" width="55" height="44" viewBox="0 0 55 44" fill="none">
         <path d="M53.592 42.1365L53.592 43.3836C47.8816 43.3836 43.7645 37.9461 39.7735 32.6833C36.0191 27.7197 32.1228 22.594 27.3115 22.594L27.3115 21.3469C33.0219 21.3469 37.1391 26.7844 41.1301 32.0472C44.8845 36.9983 48.765 42.1365 53.592 42.1365Z" fill="white" stroke="white" />
         <path d="M53.592 31.7344L53.592 32.9816C48.0394 32.9816 43.9222 30.2628 39.947 27.6439C36.0033 25.0498 32.2805 22.593 27.3115 22.593L27.3115 21.3459C32.8642 21.3459 36.9814 24.0646 40.9566 26.6836C44.8845 29.2901 48.6073 31.7344 53.592 31.7344Z" fill="white" stroke="white" />
@@ -28,7 +28,7 @@ const SectionThree: React.FC = () => (
         <path d="M27.2961 21.3462L27.2961 22.5934C22.3114 22.5934 18.5886 25.0502 14.6607 27.6442C10.6855 30.2757 6.56829 32.9819 1.01562 32.9819L1.01562 31.7348C6.00041 31.7348 9.72321 29.278 13.6511 26.684C17.6263 24.065 21.7435 21.3462 27.2961 21.3462Z" fill="white" stroke="white" />
         <path d="M27.2961 21.3469L27.2961 22.594C22.4691 22.594 18.5886 27.7197 14.8342 32.6833C10.8432 37.9461 6.72604 43.3836 1.01562 43.3836L1.01562 42.1365C5.84266 42.1365 9.72322 37.0108 13.4776 32.0472C17.4686 26.7844 21.5857 21.3469 27.2961 21.3469Z" fill="white" stroke="white" />
       </svg>
-      <div className="w-[801px] text-right justify-start text-white text-4xl font-light font-['Montserrat'] uppercase">Resomix will expand your sonic<br />horizon, discover threads you never<br />knew were there.</div>
+      <div className="text-right justify-start text-white text-4xl font-light font-['Montserrat'] uppercase">Resomix will expand your sonic<br />horizon, discover threads you never<br />knew were there.</div>
     </div>
   </div>
 );
