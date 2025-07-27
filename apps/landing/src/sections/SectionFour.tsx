@@ -5,8 +5,7 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-import PurpleAnimation from "../assets/gifs/purple_animation.gif";
-// import RingsShow from "../assets/gifs/rings_show.mp4";
+import RingsShow from "../assets/gifs/rings_show.gif";
 
 const SectionFour: React.FC = () => (
   <div className='mt-[350px] px-[45px]'>
@@ -52,9 +51,9 @@ const SectionFour: React.FC = () => (
             >
               {/* Purple animation background */}
               <img 
-                src={PurpleAnimation} 
+                src={RingsShow} 
                 alt="Purple Animation" 
-                className="w-full h-full object-cover"
+                className="w-[90%] object-contain my-auto mx-auto absolute inset-0"
               />
             </div>
 
