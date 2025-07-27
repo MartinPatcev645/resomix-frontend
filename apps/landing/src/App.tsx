@@ -11,8 +11,9 @@ function App() {
       <div
         style={{
           backgroundImage: `url(${tvNoiseGif})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundSize: 'auto',
+          backgroundRepeat: 'repeat',
+          backgroundPosition: 'top left',
           position: 'absolute',
           width: '100%',
           top: 0,
@@ -21,7 +22,7 @@ function App() {
           bottom: 0,
           opacity: 0.30,
           zIndex: 1,
-        }} className="min-h-full"
+        }}
       />
       {/* SVG Overlay inside 1280px content */}
       <div
