@@ -1,6 +1,6 @@
 import React from "react";
 import { FlyingThroughSpace, IconComp } from "@resomix/ui";
-import XSvg from "../assets/icons/X.svg";
+import XSvg from "../assets/icons/x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
 import FbSvg from "../assets/icons/fb.svg";
 import SoundWaves from "../assets/icons/sound waves.svg";
