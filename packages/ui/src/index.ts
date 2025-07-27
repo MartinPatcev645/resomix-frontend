@@ -10,7 +10,7 @@ import { ButtonHeavyRight } from "./Buttons/ButtonHeavyRight";
 import { RoundContainer } from "./Buttons/RoundContainer";
 import { ButtonHeavyLeft } from "./Buttons/ButtonHeavyLeft";
 import { ButtonSleek } from "./Buttons/ButtonSleek";
-import { LinkButton } from "./Buttons/LinkButtons";
+import { LinkButton } from "./Buttons/LinkButton";
 import { SearchDropdown } from "./Elements/SearchDropdown";
 import { SearchInput } from "./Elements/SearchInput";
 import { IconComp } from "./Elements/IconComp";
