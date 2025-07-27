@@ -19,10 +19,19 @@ const SectionFour: React.FC = () => (
             RESOMIX<br />WORKS
           </div>
         </div>
-        <div className='mt-16'>
+        <div className='mt-16 flex flex-col'>
+          <div className='text-[7px] font-light font-fira tracking-widest leading-2 mb-1 opacity-80'>
+            search_now()<br />// lightning_fast.query()
+          </div>
+          <div className='text-[7px] font-light font-fira -mb-8 tracking-widest opacity-80'>
+            Resomix.run[...]
+          </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="308" height="171" viewBox="0 0 308 171" fill="none">
             <path d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z" stroke="white" stroke-width="0.37037" stroke-dasharray="0.74 0.74" />
           </svg>
+          <div className='text-[7px] font-light font-fira tracking-widest leading-2 mt-1 opacity-80'>
+            deep_sonic_analysis [mode=granular]<br />system.listens(...)
+          </div>
         </div>
       </div>
       <div className='flex flex-col'>
