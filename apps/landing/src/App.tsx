@@ -1,5 +1,5 @@
 import { Navbar } from "@resomix/ui";
-import { HeroSection } from "./sections/index.js";
+import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven } from "./sections/index.js";
 import tvNoiseGif from "./assets/gifs/tv_noise.gif";
 import sideFrameSvg from "./assets/icons/layout/side_frame.svg";
 import logoHeaderSvg from "./assets/icons/logo header.svg";
@@ -46,6 +46,13 @@ function App() {
         {/* Actual Content Sections */}
         <Navbar logo={<img src={logoHeaderSvg} alt="ResomiX Logo" />} />
         <HeroSection />
+        <SectionOne />
+        <SectionTwo />
+        <SectionThree />
+        <SectionFour />
+        <SectionFive />
+        <SectionSix />
+        <SectionSeven />
       </div>
     </div>
   );

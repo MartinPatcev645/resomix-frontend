@@ -15,8 +15,6 @@ import { SearchDropdown } from "./Elements/SearchDropdown";
 import { SearchInput } from "./Elements/SearchInput";
 import { IconComp } from "./Elements/IconComp";
 import { TextComp } from "./Elements/TextComp";
-import { LandingContainer } from "./Hero/LandingContainer";
-import { LandingContent } from "./Hero/LandingContent";
 import { SeparatorLine } from "./Vectors/SeparatorLine";
 import { PageExoskeleton } from "./Vectors/PageExoskeleton";
 import { StyleThree } from "./Vectors/LineContainer/StyleThree";
@@ -41,8 +39,6 @@ export {
   SearchInput,
   IconComp,
   TextComp,
-  LandingContainer,
-  LandingContent,
   SeparatorLine,
   PageExoskeleton,
   StyleThree,
