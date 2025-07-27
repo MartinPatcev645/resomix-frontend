@@ -6,7 +6,7 @@ import sideFrameSvg from "./assets/icons/layout/side_frame.svg";
 function App() {
   return (
     <div className="bg-black w-full min-h-full relative">
-      {/* Background layer with opacity */}
+      {/* Background Noise GIF layer with opacity */}
       <div
         style={{
           backgroundImage: `url(${tvNoiseGif})`,
@@ -22,7 +22,6 @@ function App() {
           zIndex: 1,
         }} className="min-h-full"
       />
-
       {/* SVG Overlay inside 1280px content */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[1280px] h-full pointer-events-none z-10"
@@ -43,6 +42,7 @@ function App() {
           minHeight: '100vh',
         }} className="p-5"
       >
+        {/* Actual Content Sections */}
         <Navbar />
         <HeroSection />
       </div>
