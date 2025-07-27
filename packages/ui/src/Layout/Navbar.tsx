@@ -4,7 +4,7 @@ import { LinkButton } from "../Buttons/LinkButton";
 import { ButtonHeavyRight } from "../Buttons/ButtonHeavyRight";
 
 export const Navbar: React.FC = () => (
-  <nav className='flex justify-between items-center align-center pb-2 pt-6 mx-12'>
+  <nav className='flex justify-between items-center align-center pt-2 mx-12'>
     <div className="inline-flex justify-center items-center gap-4"
       style={{
         color: "var(--color-text-secondary)",
