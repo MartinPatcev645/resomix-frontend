@@ -3,6 +3,7 @@ import { FlyingThroughSpace, IconComp } from "@resomix/ui";
 import XSvg from "../assets/icons/X.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
 import FbSvg from "../assets/icons/fb.svg";
+import SoundWaves from "../assets/icons/sound waves.svg";
 
 const HeroSection: React.FC = () => (
   <div className="relative">
@@ -28,7 +29,7 @@ const HeroSection: React.FC = () => (
         <FlyingThroughSpace />
       </div>
 
-      {/* Optional overlay content */}
+      {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-between z-15 w-full h-full">
         <div className="flex flex-col text-start my-auto w-full">
           <div className="justify-start text-[133px] font-normal font-['Helvetica_Neue'] uppercase">Resomix </div>
@@ -81,6 +82,12 @@ const HeroSection: React.FC = () => (
           />
         </div>
       </div>
+    </div>
+
+    {/* Text below the SVG clip path */}
+    <div className='flex justify-center items-center gap-2'>
+      <div className="text-right justify-start text-[18px] font-light font-['Helvetica_Neue'] uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
+      <img src={SoundWaves} className="w-[38px] h-[31px]" alt="Sound Waves" />
     </div>
   </div>
 );
