@@ -6,7 +6,7 @@ const SectionSix: React.FC = () => (
   <div className='mt-[250px] px-[45px]'>
     <div className='relative w-full'>
       {/* SVG Background - stretched to full width */}
-      <div className='w-full'>
+      <div className='w-full opacity-80'>
         <img
           src={GridTunnelSvg}
           alt="Grid Tunnel"

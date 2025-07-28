@@ -1,35 +1,33 @@
 import React from "react";
+import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
+import SectionSevenGraphicSvg from "../assets/icons/composites/section_seven_graphic.svg";
 
 const SextionSeven: React.FC = () => (
-  <div className='my-20'>
-    {/* <div className='flex flex-col w-full'>
+  <div className='mt-[200px] px-[45px]'>
+    <div className='flex flex-col w-full'>
       <div className='flex flex-col justify-start items-start w-full'>
-        <div className='flex items-center justify-between w-full'>
-          <div className='flex items-center justify-start'>
-            <svg xmlns="http://www.w3.org/2000/svg" width="57" height="58" viewBox="0 0 57 58" fill="none">
-              <path d="M1.32315e-06 57.211L1.88846e-06 44.2824L22.5377 44.2824L26.3536 48.1131L38.3975 48.1131L0.00477178 9.44709L9.18201 0.234279L47.6987 38.7758L47.6987 26.4458L43.8828 22.6151L43.8828 0.229492L57 0.229492L57 47.9934L47.818 57.211L1.32315e-06 57.211Z" fill="white" />
-            </svg>
-            <div className=''>
+        <div className='flex items-start justify-between w-full'>
+          <div className='flex items-center justify-start gap-6'>
+            <img src={ArrowBigDownSvg} alt="Arrow Big Down" />
+            <div className='text-[59px] font-helvetica uppercase font-light leading-16'>
               DROP A TRACK
             </div>
           </div>
-          <div className=''>
+          <div className='text-[13px] font-extralight font-auger opacity-50 text-right'>
             Simplicity and minimalism.<br />Just upload a sound, and Resomix will listen.
           </div>
         </div>
-        <div className=''>
+        <div className='text-[59px] font-helvetica uppercase font-light leading-16'>
           AND EXPLORE NEW POSSIBILITIES
         </div>
       </div>
-      <div className='flex flex-col justify-start items-start'>
-        <svg width="1554" height="416" viewBox="0 0 1554 416" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M717 162.5H210L0.5 1M1169.5 329H1340.5L1454.5 415H1554" stroke="white" stroke-width="0.5" stroke-dasharray="0.4 0.4" />
-        </svg>
+      <div className='flex flex-col justify-start items-start mt-[200px]'>
+        <img src={SectionSevenGraphicSvg} alt="Section Seven Graphic" />
         <div className=''>
           machine_listening...
         </div>
       </div>
-    </div> */}
+    </div>
   </div>
 );
 
