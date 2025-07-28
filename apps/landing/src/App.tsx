@@ -19,7 +19,7 @@ function App() {
           position: 'relative',
           zIndex: 30,
           minHeight: '100vh',
-        }} className="p-5 bg-black"
+        }} className="bg-black"
       >
         
       {/* SVG Overlay inside 1280px content */}

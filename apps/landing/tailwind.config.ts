@@ -9,6 +9,7 @@ export default {
         'auger': ['Auger Mono', 'monospace'],
         'fira': ['Fira Code', 'monospace'],
         'montserrat': ['Montserrat', 'sans-serif'],
+        'benzin': ['Benzin', 'Benzin-Bold', 'sans-serif'],
       },
     },
   },

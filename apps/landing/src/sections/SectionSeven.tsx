@@ -5,7 +5,7 @@ import dropletGif from "../assets/gifs/droplet.gif";
 import LineThreeSvg from "../assets/icons/line3.svg";
 
 const SextionSeven: React.FC = () => (
-  <div className='mt-[200px] px-[45px] relative z-15'>
+  <div className='mt-[200px] px-[65px] relative z-15'>
     {/* Droplet Animation Background */}
     <div
       style={{

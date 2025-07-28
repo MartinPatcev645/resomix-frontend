@@ -4,7 +4,7 @@ import VerticalLineSvg from "../assets/icons/vertical_line.svg";
 import purpleAnimationGif from "../assets/gifs/purple_animation.gif";
 
 const SectionTwo: React.FC = () => (
-  <div className='mt-[450px] relative  px-[45px]'>
+  <div className='mt-[450px] relative  px-[65px]'>
     {/* Purple Animation Background */}
     <div
       style={{

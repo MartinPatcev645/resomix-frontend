@@ -161,6 +161,14 @@
   font-weight: 700 !important;
 }
 
+.font-benzin {
+  font-family: 'Benzin', 'Benzin-Bold', 'Benzin Bold', 'BenzinBold', sans-serif !important;
+}
+
+.font-benzin.font-bold {
+  font-weight: 700 !important;
+}
+
 @font-face {
   font-family: 'Auger Mono';
   src: url('/fonts/AugerMonoTEST-Regular-BF662b23b84f7d0.otf') format('opentype');
@@ -244,6 +252,15 @@
 @font-face {
   font-family: 'Fira Code';
   src: url('/fonts/FiraCode-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Benzin Font Declarations */
+@font-face {
+  font-family: 'Benzin';
+  src: url('/fonts/benzin-bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;

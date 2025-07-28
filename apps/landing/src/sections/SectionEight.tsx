@@ -4,7 +4,7 @@ import SectionEightGraphicLeftSvg from "../assets/icons/composites/section_eight
 import DividerSvg from "../assets/icons/divider.svg";
 
 const SectionEight: React.FC = () => (
-  <div className="mt-[200px] px-[45px] relative z-15 flex flex-col justify-between">
+  <div className="mt-[200px] px-[65px] relative z-15 flex flex-col justify-between">
     <div className="flex justify-end w-full relative">
       {/* Right graphic here */}
       <div className="absolute top-1/3 right-0 transform text-[13px] font-light font-auger text-right z-20 mr-15 -mt-1 leading-4 opacity-50">

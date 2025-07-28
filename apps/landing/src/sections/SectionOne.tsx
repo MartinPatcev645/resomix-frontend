@@ -3,7 +3,7 @@ import SectionOneGraphicRight from "../assets/icons/composites/section_one_graph
 import SectionOneGraphicLeft from "../assets/icons/composites/section_one_graphic_left.svg"
 
 const SectionOne: React.FC = () => (
-  <div className='my-40 px-[45px]'>
+  <div className='my-40 px-[65px]'>
     <div className='flex flex-col w-full relative z-15'>
       <div className='flex justify-between items-end'>
         <div className="justify-end text-[33px] font-extralight font-helvetica uppercase leading-9">Resomix is the first sonic<br />analysis platform<br />of its kind</div>
