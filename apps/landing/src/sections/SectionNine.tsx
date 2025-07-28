@@ -1,7 +1,7 @@
 import React from "react";
 
 const SectionNine: React.FC = () => (
-  <div className="my-96">SectionNine</div>
+  <div className="mt-[200px] px-[45px] relative z-15">SectionNine</div>
 );
 
 export default SectionNine;

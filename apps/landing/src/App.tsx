@@ -9,15 +9,6 @@ function App() {
     <div className="bg-black w-full min-h-full relative">
       {/* Global Background Noise - covers entire viewport */}
       <BackgroundNoise zIndex={1} />
-      
-      {/* SVG Overlay inside 1280px content */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[1280px] h-full pointer-events-none z-10"
-        aria-hidden="true"
-      >
-        <img src={sideFrameSvg} alt="Side Frame" />
-
-      </div>
 
       {/* Content layer */}
       <div
@@ -30,6 +21,15 @@ function App() {
           minHeight: '100vh',
         }} className="p-5 bg-black"
       >
+        
+      {/* SVG Overlay inside 1280px content */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[1280px] h-full pointer-events-none z-30"
+        aria-hidden="true"
+      >
+        <img src={sideFrameSvg} alt="Side Frame" />
+
+      </div>
         {/* Content-specific Background Noise - only within content layer */}
         <BackgroundNoise zIndex={5} />
         
