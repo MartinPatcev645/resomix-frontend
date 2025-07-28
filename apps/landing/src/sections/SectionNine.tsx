@@ -15,7 +15,7 @@ const SectionNine: React.FC = () => (
         position: 'absolute',
         width: '520px',
         height: '520px',
-        top: '600px',
+        top: '585px',
         left: '50%',
         opacity: 1,
         transform: 'translate(-50%, -50%)',
