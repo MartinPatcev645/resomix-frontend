@@ -1,9 +1,27 @@
 import React from "react";
 import LayersSvg from "../assets/icons/layers.svg";
 import VerticalLineSvg from "../assets/icons/vertical_line.svg";
+import purpleAnimationGif from "../assets/gifs/purple_animation.gif";
 
 const SectionTwo: React.FC = () => (
   <div className='mt-[450px] relative  px-[45px]'>
+    {/* Purple Animation Background */}
+    <div
+      style={{
+        backgroundImage: `url(${purpleAnimationGif})`,
+        backgroundSize: 'contain',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        position: 'absolute',
+        width: '550px',
+        height: '550px',
+        top: '30%',
+        left: '50%',
+        opacity: 0.4,
+        transform: 'translate(-50%, -50%)',
+        zIndex: 2,
+      }}
+    />
     {/* Content with higher z-index */}
     <div className='flex flex-col justify-between items-center relative' style={{ zIndex: 25 }}>
       <div className=''></div>
