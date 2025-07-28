@@ -23,7 +23,7 @@ const SectionTwo: React.FC = () => (
       }}
     />
     {/* Content with higher z-index */}
-    <div className='flex flex-col justify-between items-center relative' style={{ zIndex: 25 }}>
+    <div className='flex flex-col justify-between items-center relative z-15'>
       <div className=''></div>
       <div className='flex flex-col justify-center items-center'>
         <div className=''>

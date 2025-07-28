@@ -8,7 +8,7 @@ interface BackgroundNoiseProps {
 
 export function BackgroundNoise({ 
   opacity = 0.30, 
-  zIndex = 20, 
+  zIndex = 10, 
   className = "" 
 }: BackgroundNoiseProps) {
   return (

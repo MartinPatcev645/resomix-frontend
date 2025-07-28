@@ -12,9 +12,21 @@ const HeroSection: React.FC = () => (
     <svg className="absolute w-0 h-0">
       <defs>
         <clipPath id="heroClip">
-          <path d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" stroke="white" strokeOpacity="0.7" strokeWidth="0.37037" strokeDasharray="0.74 0.74" />
+          <path d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
         </clipPath>
       </defs>
+    </svg>
+
+    {/* Visible stroke outline */}
+    <svg className="absolute inset-0 w-[1152px] h-[628px] mx-auto pointer-events-none z-10">
+      <path 
+        d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" 
+        stroke="white" 
+        strokeOpacity="0.7" 
+        strokeWidth="0.37037" 
+        strokeDasharray="0.74 0.74"
+        fill="none"
+      />
     </svg>
 
     {/* Clip content inside shape */}
@@ -31,8 +43,8 @@ const HeroSection: React.FC = () => (
       </div>
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-end justify-between z-15 w-full h-full">
-        <div className="flex flex-col text-start my-auto w-full">
+      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full">
+        <div className="flex flex-col text-start my-auto w-full relative z-15">
           <div className="justify-start text-[133px] font-normal font-helvetica uppercase">Resomix </div>
           <div className='flex w-full justify-between items-center -mt-12'>
             <div className='flex gap-3'>
@@ -42,7 +54,7 @@ const HeroSection: React.FC = () => (
             <div className="text-[59px] font-medium font-helvetica uppercase">the Soul of Sound</div>
           </div>
         </div>
-        <div className="flex gap-1 mr-2 mb-2">
+        <div className="flex gap-1 mr-2 mb-2 relative z-15">
           <IconComp
             svg={
               <img src={FbSvg} alt="Fb" />
@@ -84,7 +96,7 @@ const HeroSection: React.FC = () => (
     </div>
 
     {/* Text below the SVG clip path */}
-    <div className='flex justify-center items-center gap-2'>
+    <div className='flex justify-center items-center gap-2 relative z-15'>
       <div className="text-right justify-start text-[18px] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
       <img src={SoundWaves} className="w-[38px] h-[31px]" alt="Sound Waves" />
     </div>

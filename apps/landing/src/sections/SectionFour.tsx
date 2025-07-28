@@ -8,7 +8,7 @@ import LineTwoSvg from "../assets/icons/line2.svg";
 import RingsShow from "../assets/gifs/rings_show.gif";
 
 const SectionFour: React.FC = () => (
-  <div className='mt-[350px] px-[45px]'>
+  <div className='mt-[350px] px-[45px] relative z-15'>
     <div className='flex justify-between'>
       <div className='flex flex-col justify-between h-full items-center'>
         <div className='flex flex-col text-[65px] font-bold font-helvetica uppercase leading-16'>

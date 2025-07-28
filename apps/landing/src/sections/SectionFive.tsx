@@ -4,7 +4,7 @@ import SectionFiveGraphicRight from "../assets/icons/composites/section_five_gra
 import ArrowBigDownSvg from "../assets/icons/arrow_big_down_stroke.svg";
 
 const SectionFive: React.FC = () => (
-  <div className='mt-[300px] px-[45px] flex flex-col'>
+  <div className='mt-[300px] px-[45px] flex flex-col relative z-15'>
     {/* Section Five A */}
     <div className='flex flex-col w-full my-20'>
       <div className='flex w-full justify-end relative'>

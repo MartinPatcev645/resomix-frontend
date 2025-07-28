@@ -3,14 +3,13 @@ import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, Section
 import { BackgroundNoise } from "./components/index.ts";
 import sideFrameSvg from "./assets/icons/layout/side_frame.svg";
 import logoHeaderSvg from "./assets/icons/logo header.svg";
-import purpleAnimationGif from "./assets/gifs/purple_animation.gif";
 
 function App() {
   return (
     <div className="bg-black w-full min-h-full relative">
-
-
-
+      {/* Global Background Noise - covers entire viewport */}
+      <BackgroundNoise zIndex={1} />
+      
       {/* SVG Overlay inside 1280px content */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[1280px] h-full pointer-events-none z-10"
@@ -29,9 +28,9 @@ function App() {
           position: 'relative',
           zIndex: 30,
           minHeight: '100vh',
-        }} className="p-5"
+        }} className="p-5 bg-black"
       >
-        {/* TV Noise at content level */}
+        {/* Content-specific Background Noise - only within content layer */}
         <BackgroundNoise zIndex={5} />
         
         {/* Actual Content Sections */}
