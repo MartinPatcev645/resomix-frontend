@@ -1,10 +1,29 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
 import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
+import qrCodeGif from "../assets/gifs/qr_code.gif";
 
 const SectionNine: React.FC = () => (
   <div className="mt-[200px] px-[45px] relative z-15">
-    <div className="flex flex-col justify-between">
+    {/* QR Code Animation Background */}
+    <div
+      style={{
+        backgroundImage: `url(${qrCodeGif})`,
+        backgroundSize: 'contain',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        position: 'absolute',
+        width: '520px',
+        height: '520px',
+        top: '600px',
+        left: '50%',
+        opacity: 1,
+        transform: 'translate(-50%, -50%)',
+        zIndex: 2,
+      }}
+    />
+    {/* Content with higher z-index */}
+    <div className="flex flex-col justify-between relative z-15">
       {/* Section 9 A */}
       <div className="flex justify-between mx-[250px]">
         <div className="mt-[40px] text-left text-[7px] font-light font-fira opacity-50 tracking-[2px]">
@@ -40,14 +59,21 @@ const SectionNine: React.FC = () => (
             blending &gt;&gt;
           </div>
           <div className="w-full flex justify-end mt-[50px]">
-            <ButtonHeavyRight text="resomix" onClick={() => {}} transparent={true} />
+            <ButtonHeavyRight text="resomix" onClick={() => { }} transparent={true} />
           </div>
         </div>
       </div>
 
       {/* Section 9 B */}
       <div className="mt-[400px]">
-        resomix 9B
+        <div className="flex justify-between mx-[240px] -mb-[6px]">
+          <div className="text-[7px] font-light font-fira opacity-50 tracking-[2px] ml-[20px]">
+            A New Era of Music
+          </div>
+          <div className="text-[7px] font-light font-fira opacity-50 tracking-[2px]">
+            Tune Into the Unknown
+          </div>
+        </div>
         <img src={SectionNineGraphic} alt="Section Nine Graphic" />
       </div>
     </div>
