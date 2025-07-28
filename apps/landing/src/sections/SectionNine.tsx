@@ -1,5 +1,6 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
+import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
 
 const SectionNine: React.FC = () => (
   <div className="mt-[200px] px-[45px] relative z-15">
@@ -25,7 +26,7 @@ const SectionNine: React.FC = () => (
             :: tune_into(the_unknown)
           </div>
         </div>
-        <div className="text-right text-[7px] font-light font-fira opacity-50 tracking-[2px]">
+        <div className="flex flex-col items-end text-right text-[7px] font-light font-fira opacity-50 tracking-[2px]">
           <div className="leading-8">
           // ML.engine::Enhancing_Human_Creativity()
           </div>
@@ -38,15 +39,16 @@ const SectionNine: React.FC = () => (
           <div className="leading-2">
             blending &gt;&gt;
           </div>
-          <div className="">
+          <div className="w-full flex justify-end mt-[50px]">
             <ButtonHeavyRight text="resomix" onClick={() => {}} transparent={true} />
           </div>
         </div>
       </div>
 
       {/* Section 9 B */}
-      <div className="mt-[200px]">
+      <div className="mt-[400px]">
         resomix 9B
+        <img src={SectionNineGraphic} alt="Section Nine Graphic" />
       </div>
     </div>
   </div>
