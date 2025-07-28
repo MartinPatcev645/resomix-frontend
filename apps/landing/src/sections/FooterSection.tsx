@@ -2,7 +2,7 @@ import React from "react";
 import RIconFooter from "../assets/icons/r_icon_footer.svg";
 
 const FooterSection: React.FC = () => (
-  <div className="mt-[310px] pb-[20px] relative z-15">
+  <div className="mt-[290px] pb-[20px] relative z-15">
     <div className="flex flex-col">
       <div className="flex flex-col px-[120px]">
         <div className="flex w-full justify-start">

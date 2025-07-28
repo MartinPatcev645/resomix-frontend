@@ -8,7 +8,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ logo }) => (
-  <nav className='flex justify-between items-center align-center pt-2 px-[65px] z-20 relative'>
+  <nav className='flex justify-between items-center align-center pt-[28px] px-[65px] z-20 relative'>
     <div className="inline-flex justify-center items-center gap-4"
       style={{
         color: "var(--color-text-secondary)",
