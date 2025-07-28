@@ -1,5 +1,5 @@
 import { Navbar } from "@resomix/ui";
-import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven } from "./sections/index.ts";
+import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "./sections/index.ts";
 import { BackgroundNoise } from "./components/index.ts";
 import sideFrameSvg from "./assets/icons/layout/side_frame.svg";
 import logoHeaderSvg from "./assets/icons/logo header.svg";
@@ -43,6 +43,9 @@ function App() {
         <SectionFive />
         <SectionSix />
         <SectionSeven />
+        <SectionEight />
+        <SectionNine />
+        <FooterSection />
       </div>
     </div>
   );

@@ -6,5 +6,8 @@ import SectionFour from "./SectionFour.tsx";
 import SectionFive from "./SectionFive.tsx";
 import SectionSix from "./SectionSix.tsx";
 import SectionSeven from "./SectionSeven.tsx";
+import SectionEight from "./SectionEight.tsx";
+import SectionNine from "./SectionNine.tsx";
 import FooterSection from "./FooterSection.tsx";
-export { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, FooterSection };
+
+export { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection };

@@ -24,10 +24,19 @@ The rest:
 
 
 
-ffmpeg -i "droplet.gif" -vf "fps=10,palettegen=max_colors=64" -y "purple_animation_pal.png" && ffmpeg -i "droplet.gif" -i "purple_animation_pal.png" -filter_complex "fps=10[x];[x][1:v]paletteuse" -y "droplet_optimized.gif" && del "purple_animation_pal.png"
+ffmpeg -i "droplet.gif" -vf "fps=10,palettegen=max_colors=64" -y "droplet_pal.png" && ffmpeg -i "droplet.gif" -i "droplet_pal.png" -filter_complex "fps=10[x];[x][1:v]paletteuse" -y "droplet_optimized.gif" && del "droplet_pal.png"
+
+
+
+:: To also remove bg this command:
+
+ffmpeg -i "droplet.gif" -vf "fps=15,format=rgba, colorkey=0x000000:0.1:0.0, palettegen=reserve_transparent=1:max_colors=16" -y "droplet_pal.png" && ffmpeg -i "droplet.gif" -i "droplet_pal.png" -filter_complex "[0:v]fps=10,format=rgba, colorkey=0x000000:0.1:0.0[x]; [x][1:v]paletteuse=dither=bayer:bayer_scale=5:alpha_threshold=128" -y "droplet_optimized.gif" && del "droplet_pal.png"
+
+
 
 
 ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames,width,height,r_frame_rate,duration -of default=noprint_wrappers=1:nokey=1 tv_noise.gif
+
 
 
 :: tv_noise.gif  →  tv_noise_short.gif  (≈ 0.5‑1 MB)

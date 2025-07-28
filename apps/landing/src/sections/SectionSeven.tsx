@@ -1,10 +1,29 @@
 import React from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
 import SectionSevenGraphicSvg from "../assets/icons/composites/section_seven_graphic.svg";
+import dropletGif from "../assets/gifs/droplet.gif";
 
 const SextionSeven: React.FC = () => (
   <div className='mt-[200px] px-[45px] relative z-15'>
-    <div className='flex flex-col w-full'>
+    {/* Droplet Animation Background */}
+    <div
+      style={{
+        backgroundImage: `url(${dropletGif})`,
+        backgroundSize: 'contain',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        position: 'absolute',
+        width: '489px',
+        height: '489px',
+        top: '450px',
+        left: '50%',
+        opacity: 0.4,
+        transform: 'translate(-50%, -50%)',
+        zIndex: 2,
+      }}
+    />
+    {/* Content with higher z-index */}
+    <div className='flex flex-col w-full relative z-15'>
       <div className='flex flex-col justify-start items-start w-full'>
         <div className='flex items-start justify-between w-full'>
           <div className='flex items-center justify-start gap-6'>

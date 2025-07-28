@@ -1,7 +1,7 @@
 import React from "react";
 
 const FooterSection: React.FC = () => (
-  <div className="bg-brand">FooterSection</div>
+  <div className="my-96">FooterSection</div>
 );
 
 export default FooterSection;
