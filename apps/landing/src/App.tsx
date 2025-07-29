@@ -17,6 +17,7 @@ function App() {
           color: 'var(--color-text-secondary)',
           position: 'relative',
           zIndex: 30,
+          maxWidth: '2560px',
         }} className="bg-black"
       >
 

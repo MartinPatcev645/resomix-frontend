@@ -9,21 +9,23 @@ import ArrowSmallDown from "../assets/icons/arrow small down.svg";
 const HeroSection: React.FC = () => (
   <div className="relative">
     {/* Hidden SVG defs for clip-path */}
-    <svg className="absolute w-0 h-0">
+    <svg
+      viewBox="0 0 1153 628"
+      preserveAspectRatio="none"
+      className="absolute inset-0 w-[length:var(--px-1153)] h-[length:var(--px-628)] mx-[var(--px-63)] pointer-events-none z-10"
+    >
       <defs>
-        <clipPath id="heroClip">
-          <path d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
+        <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
+          <path transform="scale(0.0008680556,0.0015923567)" d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
         </clipPath>
       </defs>
-    </svg>
 
-    {/* Visible stroke outline */}
-    <svg className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-628)] mx-auto pointer-events-none z-10">
-      <path 
-        d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" 
-        stroke="white" 
-        strokeOpacity="0.7" 
-        strokeWidth="0.37037" 
+      {/* stroke outline */}
+      <path
+        d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
+        stroke="white"
+        strokeOpacity="0.7"
+        strokeWidth="0.37037"
         strokeDasharray="0.74 0.74"
         fill="none"
       />
@@ -31,7 +33,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto"
+      className="relative w-[var(--px-1153)] h-[var(--px-628)] mx-auto"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -59,8 +61,7 @@ const HeroSection: React.FC = () => (
             svg={
               <img src={FbSvg} alt="Fb" />
             }
-            size="24"
-            padding=""
+            padding="px-auto"
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
@@ -71,8 +72,7 @@ const HeroSection: React.FC = () => (
             svg={
               <img src={InstaSvg} alt="Insta" />
             }
-            size="24"
-            padding=""
+            padding="px-auto"
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
@@ -83,8 +83,7 @@ const HeroSection: React.FC = () => (
             svg={
               <img src={XSvg} alt="X" />
             }
-            size="24"
-            padding=""
+            padding="px-auto"
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"

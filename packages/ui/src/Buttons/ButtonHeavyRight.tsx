@@ -20,7 +20,6 @@ export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClic
           <path d="M14.5898 6.33995C14.5898 9.2497 17.1524 12 20.2499 12" stroke={transparent ? "var(--color-text-secondary)" : "var(--color-text-primary)"} strokeWidth="0.8" strokeLinecap="square" />
         </svg>
       }
-      size="24"
       padding="p-1.5"
       backgroundColor={transparent ? "bg-transparent" : "bg-[var(--color-primary)]"}
       borderColor="outline-[var(--color-primary)]"
