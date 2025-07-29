@@ -26,7 +26,7 @@ function App() {
           className="absolute top-0 w-[var(--px-1280)] h-[var(--px-9137)] pointer-events-none z-30"
           aria-hidden="true"
         >
-          <img src={sideFrameSvg} alt="Side Frame" />
+          <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)] h-[var(--px-9137)]" />
 
         </div>
         {/* Content-specific Background Noise - only within content layer */}
