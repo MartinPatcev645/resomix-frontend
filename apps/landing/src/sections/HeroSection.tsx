@@ -61,7 +61,6 @@ const HeroSection: React.FC = () => (
             svg={
               <img src={FbSvg} alt="Fb" />
             }
-            padding="px-auto"
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
@@ -72,7 +71,6 @@ const HeroSection: React.FC = () => (
             svg={
               <img src={InstaSvg} alt="Insta" />
             }
-            padding="px-auto"
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
@@ -83,7 +81,6 @@ const HeroSection: React.FC = () => (
             svg={
               <img src={XSvg} alt="X" />
             }
-            padding="px-auto"
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
