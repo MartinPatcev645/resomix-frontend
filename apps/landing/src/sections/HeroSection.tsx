@@ -45,16 +45,16 @@ const HeroSection: React.FC = () => (
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
-          <div className="justify-start text-[133px] font-normal font-helvetica uppercase">Resomix </div>
-          <div className='flex w-full justify-between items-center -mt-12'>
-            <div className='flex gap-3'>
+          <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase">Resomix </div>
+          <div className='flex w-full justify-between items-center -mt-[var(--px-48)]'>
+            <div className='flex gap-[var(--px-12)]'>
               <img src={ArrowSmallDown} alt="Arrow Small Down" />
-              <div className="justify-start text-[17px] font-normal font-helvetica uppercase leading-5">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
+              <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-5">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
             </div>
-            <div className="text-[59px] font-medium font-helvetica uppercase">the Soul of Sound</div>
+            <div className="text-[length:var(--px-59)] font-medium font-helvetica uppercase">the Soul of Sound</div>
           </div>
         </div>
-        <div className="flex gap-1 mr-2 mb-2 relative z-15">
+        <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
           <IconComp
             svg={
               <img src={FbSvg} alt="Fb" />
@@ -64,8 +64,8 @@ const HeroSection: React.FC = () => (
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
-            width="24px"
-            height="24px"
+            width="var(--px-24)"
+            height="var(--px-24)"
           />
           <IconComp
             svg={
@@ -76,8 +76,8 @@ const HeroSection: React.FC = () => (
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
-            width="24px"
-            height="24px"
+            width="var(--px-24)"
+            height="var(--px-24)"
           />
           <IconComp
             svg={
@@ -88,17 +88,17 @@ const HeroSection: React.FC = () => (
             backgroundColor="bg-white"
             borderColor="outline-white"
             strokeColor="black"
-            width="24px"
-            height="24px"
+            width="var(--px-24)"
+            height="var(--px-24)"
           />
         </div>
       </div>
     </div>
 
     {/* Text below the SVG clip path */}
-    <div className='flex justify-center items-center gap-2 relative z-15'>
-      <div className="text-right justify-start text-[18px] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
-      <img src={SoundWaves} className="w-[38px] h-[31px]" alt="Sound Waves" />
+    <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15'>
+      <div className="text-right justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
+      <img src={SoundWaves} className="w-[var(--px-38)] h-[var(--px-31)]" alt="Sound Waves" />
     </div>
   </div>
 );
