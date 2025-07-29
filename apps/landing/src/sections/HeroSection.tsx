@@ -3,8 +3,8 @@ import { FlyingThroughSpace, IconComp } from "@resomix/ui";
 import XSvg from "../assets/icons/x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
 import FbSvg from "../assets/icons/fb.svg";
-import SoundWaves from "../assets/icons/sound waves.svg";
-import ArrowSmallDown from "../assets/icons/arrow small down.svg";
+import SoundWaves from "../assets/icons/sound_waves.svg";
+import ArrowSmallDown from "../assets/icons/arrow_small_down.svg";
 
 const HeroSection: React.FC = () => (
   <div className="relative">
@@ -50,7 +50,7 @@ const HeroSection: React.FC = () => (
           <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase">Resomix </div>
           <div className='flex w-full justify-between items-center -mt-[var(--px-48)]'>
             <div className='flex gap-[var(--px-12)]'>
-              <img src={ArrowSmallDown} alt="Arrow Small Down" />
+              <img className="w-[var(--px-35)] h-[var(--px-35)]" src={ArrowSmallDown} alt="Arrow Small Down" />
               <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-5">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
             </div>
             <div className="text-[length:var(--px-59)] font-medium font-helvetica uppercase">the Soul of Sound</div>
@@ -59,7 +59,7 @@ const HeroSection: React.FC = () => (
         <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
           <IconComp
             svg={
-              <img src={FbSvg} alt="Fb" />
+              <img className="w-[var(--px-33)] h-[var(--px-33)]" src={FbSvg} alt="Fb" />
             }
             backgroundColor="bg-white"
             borderColor="outline-white"
@@ -69,7 +69,7 @@ const HeroSection: React.FC = () => (
           />
           <IconComp
             svg={
-              <img src={InstaSvg} alt="Insta" />
+              <img className="w-[var(--px-33)] h-[var(--px-33)]" src={InstaSvg} alt="Insta" />
             }
             backgroundColor="bg-white"
             borderColor="outline-white"
@@ -79,7 +79,7 @@ const HeroSection: React.FC = () => (
           />
           <IconComp
             svg={
-              <img src={XSvg} alt="X" />
+              <img className="w-[var(--px-33)] h-[var(--px-33)]" src={XSvg} alt="X" />
             }
             backgroundColor="bg-white"
             borderColor="outline-white"
@@ -94,7 +94,7 @@ const HeroSection: React.FC = () => (
     {/* Text below the SVG clip path */}
     <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15'>
       <div className="text-right justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
-      <img src={SoundWaves} className="w-[var(--px-38)] h-[var(--px-31)]" alt="Sound Waves" />
+      <img src={SoundWaves} className="w-[var(--px-55)] h-[var(--px-44)]" alt="Sound Waves" />
     </div>
   </div>
 );
