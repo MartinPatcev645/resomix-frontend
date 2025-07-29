@@ -14,8 +14,7 @@ interface IconCompProps {
 
 export const IconComp: React.FC<IconCompProps> = ({ 
   svg, 
-  padding = "p-1.5", 
-  size = "24", 
+  padding = "p-[var(--px-6)]",
   width, 
   height, 
   backgroundColor = "bg-white", 
@@ -24,8 +23,8 @@ export const IconComp: React.FC<IconCompProps> = ({
   className = ""
 }) => {
   const containerStyle = {
-    width: width || `${size}px`,
-    height: height || `${size}px`,
+    width: width,
+    height: height,
   };
 
   return (
@@ -34,8 +33,8 @@ export const IconComp: React.FC<IconCompProps> = ({
       style={containerStyle}
     >
       {React.cloneElement(svg as React.ReactElement, {
-        width: size,
-        height: size,
+        width: width,
+        height: height,
         style: { stroke: strokeColor }
       })}
     </div>

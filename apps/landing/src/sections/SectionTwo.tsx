@@ -4,7 +4,7 @@ import VerticalLineSvg from "../assets/icons/vertical_line.svg";
 import purpleAnimationGif from "../assets/gifs/purple_animation.gif";
 
 const SectionTwo: React.FC = () => (
-  <div className='mt-[450px] relative  px-[65px]'>
+  <div className='mt-[var(--px-450)] relative px-[var(--px-65)]'>
     {/* Purple Animation Background */}
     <div
       style={{
@@ -13,8 +13,8 @@ const SectionTwo: React.FC = () => (
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
         position: 'absolute',
-        width: '550px',
-        height: '550px',
+        width: 'var(--px-550)',
+        height: 'var(--px-550)',
         top: '30%',
         left: '50%',
         opacity: 0.4,
@@ -27,14 +27,14 @@ const SectionTwo: React.FC = () => (
       <div className=''></div>
       <div className='flex flex-col justify-center items-center'>
         <div className=''>
-          <img src={LayersSvg} alt="Layers" />
+          <img src={LayersSvg} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
         </div>
-        <div className="text-center justify-start text-[13px] font-extralight font-auger mt-6 leading-4 opacity-70">Resomix goes deeper than anyone else, carefully selecting music <br />that reflects the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
+        <div className="text-center justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-70">Resomix goes deeper than anyone else, carefully selecting music <br />that reflects the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
       </div>
-      <div className='my-8'>
-        <img src={VerticalLineSvg} alt="Vertical Line" />
+      <div className='my-[var(--px-32)]'>
+        <img src={VerticalLineSvg} alt="Vertical Line" className="w-[var(--px-2)] h-[var(--px-63)]" />
       </div>
-      <div className="opacity-80 justify-start text-white text-[7px] font-light font-fira tracking-widest">instant_inspiration.module[active]</div>
+      <div className="opacity-80 justify-start text-white text-[length:var(--px-7)] font-light font-fira tracking-widest">instant_inspiration.module[active]</div>
     </div>
   </div>
 );
