@@ -46,7 +46,7 @@ const SectionFive: React.FC = () => (
         </div>
       </div>
       <div className='flex flex-col'>
-        <div className='text-[22px] font-fira font-semibold uppercase leading-7 text-right'>
+        <div className='text-[length:var(--px-22)] font-fira font-semibold uppercase leading-7 text-right'>
           Explore a vast catalog in seconds and discover<br />sonic connections where no one else sees them
         </div>
         <div className='text-[13px] font-extralight font-auger text-right opacity-60 leading-4 my-3'>

@@ -18,7 +18,7 @@ const HeroSection: React.FC = () => (
     </svg>
 
     {/* Visible stroke outline */}
-    <svg className="absolute inset-0 w-[1152px] h-[628px] mx-auto pointer-events-none z-10">
+    <svg className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-628)] mx-auto pointer-events-none z-10">
       <path 
         d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" 
         stroke="white" 
@@ -31,7 +31,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[1152px] h-[628px] mx-auto"
+      className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"

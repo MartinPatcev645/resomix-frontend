@@ -412,47 +412,66 @@
   font-display: swap;
 }
 
-@import "tailwindcss";
-@source "../../../packages/ui/src";
-
 :root {
-    /* Dark theme (default) */
-    --color-primary: #ffffff;
-    --color-secondary: #000000;
-    --color-text-primary: #000000;
-    --color-text-secondary: #ffffff;
-    /* Transparency levels (black base) */
-    --opacity-10: rgba(0, 0, 0, 0.10);
-    --opacity-15: rgba(0, 0, 0, 0.15);
-    --opacity-20: rgba(0, 0, 0, 0.20);
-    --opacity-25: rgba(0, 0, 0, 0.25);
-    --opacity-30: rgba(0, 0, 0, 0.30);
-    --opacity-40: rgba(0, 0, 0, 0.40);
-    --opacity-50: rgba(0, 0, 0, 0.50);
-    --opacity-60: rgba(0, 0, 0, 0.60);
-    --opacity-70: rgba(0, 0, 0, 0.70);
-    --opacity-80: rgba(0, 0, 0, 0.80);
-    --opacity-90: rgba(0, 0, 0, 0.90);
-    --opacity-95: rgba(0, 0, 0, 0.95);
+  /* Dark theme (default) */
+  --color-primary: #ffffff;
+  --color-secondary: #000000;
+  --color-text-primary: #000000;
+  --color-text-secondary: #ffffff;
+  /* Transparency levels (black base) */
+  --opacity-10: rgba(0, 0, 0, 0.10);
+  --opacity-15: rgba(0, 0, 0, 0.15);
+  --opacity-20: rgba(0, 0, 0, 0.20);
+  --opacity-25: rgba(0, 0, 0, 0.25);
+  --opacity-30: rgba(0, 0, 0, 0.30);
+  --opacity-40: rgba(0, 0, 0, 0.40);
+  --opacity-50: rgba(0, 0, 0, 0.50);
+  --opacity-60: rgba(0, 0, 0, 0.60);
+  --opacity-70: rgba(0, 0, 0, 0.70);
+  --opacity-80: rgba(0, 0, 0, 0.80);
+  --opacity-90: rgba(0, 0, 0, 0.90);
+  --opacity-95: rgba(0, 0, 0, 0.95);
 }
 
 .light {
-    /* Light theme overrides */
-    --color-primary: #000000;
-    --color-secondary: #ffffff;
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #000000;
-    /* Transparency levels (white base) */
-    --opacity-10: rgba(255, 255, 255, 0.10);
-    --opacity-15: rgba(255, 255, 255, 0.15);
-    --opacity-20: rgba(255, 255, 255, 0.20);
-    --opacity-25: rgba(255, 255, 255, 0.25);
-    --opacity-30: rgba(255, 255, 255, 0.30);
-    --opacity-40: rgba(255, 255, 255, 0.40);
-    --opacity-50: rgba(255, 255, 255, 0.50);
-    --opacity-60: rgba(255, 255, 255, 0.60);
-    --opacity-70: rgba(255, 255, 255, 0.70);
-    --opacity-80: rgba(255, 255, 255, 0.80);
-    --opacity-90: rgba(255, 255, 255, 0.90);
-    --opacity-95: rgba(255, 255, 255, 0.95);
+  /* Light theme overrides */
+  --color-primary: #000000;
+  --color-secondary: #ffffff;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #000000;
+  /* Transparency levels (white base) */
+  --opacity-10: rgba(255, 255, 255, 0.10);
+  --opacity-15: rgba(255, 255, 255, 0.15);
+  --opacity-20: rgba(255, 255, 255, 0.20);
+  --opacity-25: rgba(255, 255, 255, 0.25);
+  --opacity-30: rgba(255, 255, 255, 0.30);
+  --opacity-40: rgba(255, 255, 255, 0.40);
+  --opacity-50: rgba(255, 255, 255, 0.50);
+  --opacity-60: rgba(255, 255, 255, 0.60);
+  --opacity-70: rgba(255, 255, 255, 0.70);
+  --opacity-80: rgba(255, 255, 255, 0.80);
+  --opacity-90: rgba(255, 255, 255, 0.90);
+  --opacity-95: rgba(255, 255, 255, 0.95);
 }
+
+
+@import "tailwindcss";
+@source "../../../packages/ui/src";
+@import "./pixels.css";
+
+/* ─── Fluid desktop scaling (html) ───────────────────────── */
+:root {
+  /* design reference */
+  --ideal-width: 1280;
+  --min-width: 1280px;
+  --max-width: 2560px;
+}
+
+/* scale the REM unit */
+html {
+  font-size: clamp(16px, 1.25vw, 32px);
+  /* 1.25vw = 16px at 1280 px because 1280 × 1.25% = 16 px */
+}
+
+/* optional crisp lines */
+svg { vector-effect: non-scaling-stroke; }
