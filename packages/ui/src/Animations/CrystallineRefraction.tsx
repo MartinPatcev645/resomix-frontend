@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
-import { initCrystallineCube } from "./raw/crystallineCube";
+import { initCrystallineRefraction } from "./raw/crystallineRefraction";
 
-export const CrystallineCube: React.FC = () => {
+export const CrystallineRefraction: React.FC = () => {
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!boxRef.current) return;
-    const dispose = initCrystallineCube(boxRef.current);
+    const dispose = initCrystallineRefraction(boxRef.current);
     return dispose;
   }, []);
 

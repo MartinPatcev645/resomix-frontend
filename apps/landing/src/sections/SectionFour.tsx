@@ -5,7 +5,7 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-import { CrystallineCube } from "@resomix/ui";
+import { CrystallineRefraction } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
   <div className='mt-[var(--px-300)] px-[var(--px-65)] relative z-15'>
@@ -55,12 +55,12 @@ const SectionFour: React.FC = () => (
               />
             </svg>
 
-            {/* CrystallineCube animation clipped to the frame */}
+            {/* CrystallineRefraction animation clipped to the frame */}
             <div
               className="absolute inset-0 w-full h-full opacity-80"
               style={{ clipPath: "url(#cubeClip)", WebkitClipPath: "url(#cubeClip)" }}
             >
-              <CrystallineCube />
+              <CrystallineRefraction />
             </div>
           </div>
 
