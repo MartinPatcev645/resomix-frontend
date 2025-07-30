@@ -48,11 +48,11 @@ const SectionFour: React.FC = () => (
             </svg>
 
             {/* Centered Spiral Galaxy */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center ml-[var(--px-40)]  mt-[var(--px-20)] pointer-events-none">
               {/* Size: ~75% of frame height, stays square & centered */}
-              <div className="h-[55%] aspect-square rounded-full overflow-hidden">
+              <div className="h-[85%] aspect-square rounded-full overflow-hidden">
                 <SpiralGalaxy />
-              </div>
+              </div> 
             </div>
           </div>
 
