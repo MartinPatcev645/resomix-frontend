@@ -7,10 +7,10 @@ interface BackgroundNoiseProps {
   className?: string;
 }
 
-export function BackgroundNoise({ 
-  opacity = 1, 
-  zIndex = 10, 
-  className = "" 
+export function BackgroundNoise({
+  opacity = 1,
+  zIndex = 10,
+  className = ""
 }: BackgroundNoiseProps) {
   return (
     <div
@@ -24,6 +24,17 @@ export function BackgroundNoise({
         zIndex,
       }}
       aria-hidden="true"
-    />
+    >
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: `url(${noiseImg})`,
+        backgroundSize: 'auto',
+        backgroundRepeat: 'repeat',
+        backgroundPosition: 'top left',
+        opacity,
+        zIndex,
+      }}
+        aria-hidden="true"
+      />
+    </div>
   );
 }
