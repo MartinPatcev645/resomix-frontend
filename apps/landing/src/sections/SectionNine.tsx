@@ -74,7 +74,7 @@ const SectionNine: React.FC = () => (
             Tune Into the Unknown
           </div>
         </div>
-        <img src={SectionNineGraphic} className="w-[var(--px-1280)] h-[var(--px-4)]" alt="Section Nine Graphic" />
+        <img src={SectionNineGraphic} className="max-w-full h-[var(--px-4)]" alt="Section Nine Graphic" />
       </div>
     </div>
   </div>

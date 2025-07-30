@@ -6,7 +6,7 @@ import logoHeaderSvg from "./assets/icons/logo_header.svg";
 
 function App() {
   return (
-    <div className="bg-black w-full min-h-full relative">
+    <div className="bg-black relative">
       {/* Global Background Noise - covers entire viewport */}
       <BackgroundNoise zIndex={1} />
 
@@ -23,12 +23,12 @@ function App() {
 
         {/* SVG Overlay inside 1280px content */}
         <div
-          className="absolute top-0 w-[var(--px-1280)] h-[var(--px-9137)] pointer-events-none z-30"
+          className="absolute top-0 max-w-full max-h-full pointer-events-none z-30"
           aria-hidden="true"
         >
-          <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)] h-[var(--px-9137)]" />
-
+          <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)]" />
         </div>
+
         {/* Content-specific Background Noise - only within content layer */}
         <BackgroundNoise zIndex={5} />
 
