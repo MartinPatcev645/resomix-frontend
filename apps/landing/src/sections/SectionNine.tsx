@@ -1,12 +1,13 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
 import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
-import qrCodeGif from "../assets/gifs/qr_code.gif";
+// import qrCodeGif from "../assets/gifs/qr_code.gif";
+import { GoldenSpiral } from "@resomix/ui";
 
 const SectionNine: React.FC = () => (
   <div className="mt-[var(--px-180)] px-[var(--px-65)] relative z-15">
     {/* QR Code Animation Background */}
-    <div
+    {/* <div
       style={{
         backgroundImage: `url(${qrCodeGif})`,
         backgroundSize: 'contain',
@@ -21,7 +22,10 @@ const SectionNine: React.FC = () => (
         transform: 'translate(-50%, -50%)',
         zIndex: 2,
       }}
-    />
+    /> */}
+    <div className="absolute top-[var(--px-560)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
+      <GoldenSpiral />
+    </div>
     {/* Content with higher z-index */}
     <div className="flex flex-col justify-between relative z-15">
       {/* Section 9 A */}
@@ -67,10 +71,10 @@ const SectionNine: React.FC = () => (
       {/* Section 9 B */}
       <div className="mt-[var(--px-350)]">
         <div className="flex justify-between mx-[var(--px-240)] -mb-[var(--px-6)]">
-          <div className="text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)] ml-[var(--px-20)]">
+          <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)] ml-[var(--px-20)]">
             A New Era of Music
           </div>
-          <div className="text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
+          <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)]">
             Tune Into the Unknown
           </div>
         </div>

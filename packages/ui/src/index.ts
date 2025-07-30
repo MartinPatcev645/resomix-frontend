@@ -3,9 +3,10 @@ import { DottedLine } from "./Vectors/DottedLine";
 import { GlitchText } from "./Animations/GlitchText";
 import { ExplainContainer } from "./Animations/ExplainContainer";
 import { StarExplain } from "./Animations/StarExplain";
-import { CodeTyping } from "./Animations/CodeTyping";
+import { CodeTyping } from "./Animations/TypeWriter";
 import { HorizontalRoots } from "./Animations/HorizontalRoots";
 import { FlyingThroughSpace } from "./Animations/FlyingThroughSpace";
+import { GoldenSpiral } from "./Animations/GoldenSpiral";
 import { ButtonHeavyRight } from "./Buttons/ButtonHeavyRight";
 import { RoundContainer } from "./Buttons/RoundContainer";
 import { ButtonHeavyLeft } from "./Buttons/ButtonHeavyLeft";
@@ -30,6 +31,7 @@ export {
   CodeTyping,
   HorizontalRoots,
   FlyingThroughSpace,
+  GoldenSpiral,
   ButtonHeavyRight,
   RoundContainer,
   ButtonHeavyLeft,

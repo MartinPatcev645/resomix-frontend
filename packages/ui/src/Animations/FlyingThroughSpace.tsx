@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { initStarfield } from "./starfield";  // adjust path as needed
+import { initStarfield } from "./raw/starfield";  // adjust path as needed
 
 export const FlyingThroughSpace: React.FC = () => {
   const boxRef = useRef<HTMLDivElement>(null);
