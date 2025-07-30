@@ -25,7 +25,7 @@ interface BackgroundNoiseProps {
 export function BackgroundNoise({
   opacity = 1,
   zIndex = 10,
-  className = ""
+  className = "overflow-clip"
 }: BackgroundNoiseProps) {
   const layerARef = useRef<HTMLDivElement>(null);
   const layerBRef = useRef<HTMLDivElement>(null);

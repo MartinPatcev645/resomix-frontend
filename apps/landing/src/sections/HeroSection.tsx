@@ -1,5 +1,5 @@
 import React from "react";
-import { FlyingThroughSpace } from "@resomix/ui";
+import { FractalOrb } from "@resomix/ui";
 import XSvg from "../assets/icons/x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
 import FbSvg from "../assets/icons/fb.svg";
@@ -41,7 +41,7 @@ const HeroSection: React.FC = () => (
     >
       {/* FlyingThroughSpace background animation */}
       <div className="absolute inset-0 w-full h-full">
-        <FlyingThroughSpace />
+        <FractalOrb />
       </div>
 
       {/* Overlay content */}
