@@ -459,6 +459,12 @@
 @source "../../../packages/ui/src";
 @import "./pixels.css";
 
+@layer utilities {
+  .w-fluid-1280 {
+    width: clamp(1280px, 100vw, 2560px);
+  }
+}
+
 /* ─── Fluid desktop scaling (html) ───────────────────────── */
 :root {
   /* design reference */
