@@ -57,10 +57,13 @@ const SectionFour: React.FC = () => (
 
             {/* CrystallineRefraction animation clipped to the frame */}
             <div
-              className="absolute inset-0 w-full h-full opacity-80"
+              className="absolute inset-0 flex items-center justify-center opacity-80"
               style={{ clipPath: "url(#cubeClip)", WebkitClipPath: "url(#cubeClip)" }}
             >
-              <CrystallineRefraction />
+              {/* Square wrapper to avoid stretching; 85% of frame height for subtle zoom-out */}
+              <div className="h-[85%] aspect-square">
+                <CrystallineRefraction />
+              </div>
             </div>
           </div>
 
