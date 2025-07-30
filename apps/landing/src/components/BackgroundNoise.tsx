@@ -1,4 +1,5 @@
-import tvNoiseGif from "../assets/gifs/tv_noise.gif";
+// import tvNoiseGif from "../assets/gifs/tv_noise.gif";
+import noiseImg from "../assets/noise-transparent.png";
 
 interface BackgroundNoiseProps {
   opacity?: number;
@@ -7,7 +8,7 @@ interface BackgroundNoiseProps {
 }
 
 export function BackgroundNoise({ 
-  opacity = 0.30, 
+  opacity = 1, 
   zIndex = 10, 
   className = "" 
 }: BackgroundNoiseProps) {
@@ -15,7 +16,7 @@ export function BackgroundNoise({
     <div
       className={`absolute inset-0 pointer-events-none ${className}`}
       style={{
-        backgroundImage: `url(${tvNoiseGif})`,
+        backgroundImage: `url(${noiseImg})`,
         backgroundSize: 'auto',
         backgroundRepeat: 'repeat',
         backgroundPosition: 'top left',
@@ -25,4 +26,4 @@ export function BackgroundNoise({
       aria-hidden="true"
     />
   );
-} 
+}

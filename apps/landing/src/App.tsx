@@ -2,9 +2,9 @@ import { useResponsive } from "@resomix/hooks";
 import { DesktopLanding } from "./pages/DesktopLanding.tsx";
 import { MobileLanding } from "./pages/MobileLanding.tsx";
 import { Routes, Route } from "react-router-dom";
-import { Menu } from "./pages/Menu.tsx";
-import { About } from "./pages/About.tsx";
-import { Terms } from "./pages/Terms.tsx";
+import { Menu } from "./pages/MenuPage.tsx";
+import { About } from "./pages/AboutPage.tsx";
+import { Terms } from "./pages/TermsPage.tsx";
 
 function LandingPage() {
   const { isDesktop } = useResponsive();
