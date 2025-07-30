@@ -5,7 +5,7 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-import { SpiralGalaxy } from "@resomix/ui";
+import { CrystallineCube } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
   <div className='mt-[var(--px-300)] px-[var(--px-65)] relative z-15'>
@@ -30,29 +30,37 @@ const SectionFour: React.FC = () => (
             Resomix.run[...]
           </div>
 
-          {/* SVG frame with centered Spiral Galaxy */}
+          {/* SVG frame with crystalline cube */}
           <div className="relative w-[var(--px-308)] h-[var(--px-171)]">
-            {/* Stroke frame */}
+            {/* Hidden SVG defs for clip-path */}
             <svg
-              xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 308 171"
-              fill="none"
-              className="absolute inset-0 w-full h-full"
+              preserveAspectRatio="none"
+              className="absolute inset-0 w-full h-full pointer-events-none"
             >
+              <defs>
+                <clipPath id="cubeClip" clipPathUnits="objectBoundingBox">
+                  {/* Scale the path coordinates to object bounding box space */}
+                  <path transform="scale(0.003246753,0.005847953)" d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z" />
+                </clipPath>
+              </defs>
+
+              {/* Stroke outline */}
               <path
                 d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z"
                 stroke="white"
                 strokeWidth="0.37037"
                 strokeDasharray="0.74 0.74"
+                fill="none"
               />
             </svg>
 
-            {/* Centered Spiral Galaxy */}
-            <div className="absolute inset-0 flex items-center justify-center ml-[var(--px-40)]  mt-[var(--px-20)] pointer-events-none">
-              {/* Size: ~75% of frame height, stays square & centered */}
-              <div className="h-[85%] aspect-square rounded-full overflow-hidden">
-                <SpiralGalaxy />
-              </div> 
+            {/* CrystallineCube animation clipped to the frame */}
+            <div
+              className="absolute inset-0 w-full h-full opacity-80"
+              style={{ clipPath: "url(#cubeClip)", WebkitClipPath: "url(#cubeClip)" }}
+            >
+              <CrystallineCube />
             </div>
           </div>
 

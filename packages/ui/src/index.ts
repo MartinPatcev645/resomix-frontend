@@ -9,6 +9,7 @@ import { FlyingThroughSpace } from "./Animations/FlyingThroughSpace";
 import { GoldenSpiral } from "./Animations/GoldenSpiral";
 import { SpiralGalaxy } from "./Animations/SpiralGalaxy";
 import { FractalOrb } from "./Animations/FractalOrb";
+import { CrystallineCube } from "./Animations/CrystallineCube";
 import { ButtonHeavyRight } from "./Buttons/ButtonHeavyRight";
 import { RoundContainer } from "./Buttons/RoundContainer";
 import { ButtonHeavyLeft } from "./Buttons/ButtonHeavyLeft";
@@ -36,6 +37,7 @@ export {
   GoldenSpiral,
   SpiralGalaxy,
   FractalOrb,
+  CrystallineCube,
   ButtonHeavyRight,
   RoundContainer,
   ButtonHeavyLeft,
