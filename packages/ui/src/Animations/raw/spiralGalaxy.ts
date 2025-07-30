@@ -25,7 +25,7 @@ export function initSpiralGalaxy(container: HTMLElement): () => void {
   let lastTime = 0;
 
   // Configuration copied from original JS
-  const scale = size / 90; // original design size
+  const scale = size / 120; // original design size
   const dotRings = [
     { radius: 15 * scale, count: 6 },
     { radius: 30 * scale, count: 12 },
