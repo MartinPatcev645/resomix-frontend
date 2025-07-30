@@ -7,6 +7,7 @@ import { CodeTyping } from "./Animations/TypeWriter";
 import { HorizontalRoots } from "./Animations/HorizontalRoots";
 import { FlyingThroughSpace } from "./Animations/FlyingThroughSpace";
 import { GoldenSpiral } from "./Animations/GoldenSpiral";
+import { SpiralGalaxy } from "./Animations/SpiralGalaxy";
 import { ButtonHeavyRight } from "./Buttons/ButtonHeavyRight";
 import { RoundContainer } from "./Buttons/RoundContainer";
 import { ButtonHeavyLeft } from "./Buttons/ButtonHeavyLeft";
@@ -32,6 +33,7 @@ export {
   HorizontalRoots,
   FlyingThroughSpace,
   GoldenSpiral,
+  SpiralGalaxy,
   ButtonHeavyRight,
   RoundContainer,
   ButtonHeavyLeft,

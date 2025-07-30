@@ -1,28 +1,10 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
 import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
-// import qrCodeGif from "../assets/gifs/qr_code.gif";
 import { GoldenSpiral } from "@resomix/ui";
 
 const SectionNine: React.FC = () => (
   <div className="mt-[var(--px-180)] px-[var(--px-65)] relative z-15">
-    {/* QR Code Animation Background */}
-    {/* <div
-      style={{
-        backgroundImage: `url(${qrCodeGif})`,
-        backgroundSize: 'contain',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        position: 'absolute',
-        width: 'var(--px-520)',
-        height: 'var(--px-520)',
-        top: 'var(--px-560)',
-        left: '50%',
-        opacity: 1,
-        transform: 'translate(-50%, -50%)',
-        zIndex: 2,
-      }}
-    /> */}
     <div className="absolute top-[var(--px-560)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
       <GoldenSpiral />
     </div>

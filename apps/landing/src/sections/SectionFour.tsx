@@ -5,7 +5,7 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-import RingsShow from "../assets/gifs/rings_show.gif";
+import { SpiralGalaxy } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
   <div className='mt-[var(--px-300)] px-[var(--px-65)] relative z-15'>
@@ -29,40 +29,33 @@ const SectionFour: React.FC = () => (
           <div className='text-[length:var(--px-7)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60'>
             Resomix.run[...]
           </div>
-          
-          {/* Hidden SVG defs for clip-path */}
-          <svg className="absolute w-0 h-0">
-            <defs>
-              <clipPath id="sectionFourClip">
-                <path d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z" />
-              </clipPath>
-            </defs>
-          </svg>
 
-          {/* Container for clip path and overlay */}
+          {/* SVG frame with centered Spiral Galaxy */}
           <div className="relative w-[var(--px-308)] h-[var(--px-171)]">
-            {/* Clip content inside shape */}
-            <div
+            {/* Stroke frame */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 308 171"
+              fill="none"
               className="absolute inset-0 w-full h-full"
-              style={{
-                clipPath: "url(#sectionFourClip)",
-                WebkitClipPath: "url(#sectionFourClip)"
-              }}
             >
-              {/* Purple animation background */}
-              <img 
-                src={RingsShow} 
-                alt="Purple Animation" 
-                className="w-[90%] object-contain my-auto mx-auto absolute inset-0"
+              <path
+                d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z"
+                stroke="white"
+                strokeWidth="0.37037"
+                strokeDasharray="0.74 0.74"
               />
-            </div>
-
-            {/* Original SVG overlay for the stroke effect */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="308" height="171" viewBox="0 0 308 171" fill="none" className="absolute inset-0">
-              <path d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z" stroke="white" strokeWidth="0.37037" strokeDasharray="0.74 0.74" />
             </svg>
+
+            {/* Centered Spiral Galaxy */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              {/* Size: ~75% of frame height, stays square & centered */}
+              <div className="h-[55%] aspect-square rounded-full overflow-hidden">
+                <SpiralGalaxy />
+              </div>
+            </div>
           </div>
-          
+
           <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] -mt-[var(--px-4)] opacity-60'>
             deep_sonic_analysis [mode=granular]<br />system.listens(...)
           </div>
