@@ -1,4 +1,3 @@
-// import tvNoiseGif from "../assets/gifs/tv_noise.gif";
 import { useEffect, useRef } from "react";
 import noiseImg from "../assets/noise-transparent.png";
 

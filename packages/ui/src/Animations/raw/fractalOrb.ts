@@ -32,7 +32,7 @@ export function initFractalOrb(container: HTMLElement): () => void {
     primaryColor: { value: new THREE.Color(1, 1, 1) },
     secondaryColor: { value: new THREE.Color(1, 1, 1) },
     accentColor: { value: new THREE.Color(0, 0, 0) },
-    fractalScale: { value: 0.3 },
+    fractalScale: { value: 1.0 },
     fractalOffset: { value: new THREE.Vector2(0, 0) },
     lightCount: { value: 1 },
     lightIntensity: { value: 1.0 },
@@ -72,56 +72,54 @@ export function initFractalOrb(container: HTMLElement): () => void {
 
     #define PI 3.14159265359
 
-    float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y);} 
-    mat2  rot(float a){ float s=sin(a),c=cos(a); return mat2(c,-s,s,c); }
+    float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
+    mat2  rot(float a){ float s = sin(a), c = cos(a); return mat2(c,-s,s,c); }
 
-    /* distance to spokes */
-    float spokeDist(vec2 p){
-      float ang = atan(p.y,p.x);
-      float spoke = PI/4.0;
-      float d = abs(mod(ang+spoke*0.5,spoke)-spoke*0.5);
-      return d;
+    float lineSDF(vec2 p, vec2 a, vec2 b, float w){ vec2 pa = p-a, ba = b-a; float h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0); return length(pa - ba*h) - w; }
+
+    float starShape(vec2 uv){
+      vec2 p = uv*2.0 - 1.0;
+      p.x *= iResolution.x / iResolution.y;
+      p  = p*fractalScale + fractalOffset;
+
+      float spokeMask = 0.0;
+      float spokeLen  = 1.2;
+      float halfW     = 0.025;
+      for(int i=0;i<8;i++){
+        float a = PI*0.25*float(i);
+        vec2 dir = vec2(cos(a), sin(a));
+        float d = lineSDF(p, vec2(0.0), dir*spokeLen, halfW);
+        spokeMask = max(spokeMask, 1.0 - smoothstep(0.0, 0.02, d));
+      }
+
+      vec2 dir = normalize(vec2( 1.0,  1.0));
+      float r  = 0.11;
+      float d1 = length(p - dir*0.7) - r;
+      float d2 = length(p + dir*0.7) - r;
+      float caps = 1.0 - smoothstep(0.0, 0.02, min(d1,d2));
+
+      return pow(max(spokeMask, caps), 0.8);
     }
 
-    float disk(vec2 p, vec2 c, float r){ return length(p-c)-r; }
-
-    float starGraphic(vec2 uv){
-      vec2 p = uv*2.0-1.0;
-      p.x *= iResolution.x/iResolution.y;
-      p*=fractalScale;
-      p+=fractalOffset;
-
-      float lineWidth=0.04;
-      float spokes = 1.0-smoothstep(lineWidth,0.0,abs(sin(4.0*atan(p.y,p.x)))*length(p));
-      float maxLen=1.2;
-      spokes*=1.0-smoothstep(maxLen,maxLen+0.02,length(p));
-
-      vec2 dir=normalize(vec2(1.0,1.0));
-      float d1=1.0-smoothstep(0.12,0.11,disk(p, dir*0.7,0.11));
-      float d2=1.0-smoothstep(0.12,0.11,disk(p,-dir*0.7,0.11));
-
-      return max(spokes,max(d1,d2));
-    }
-
-    vec3 getLightPos(int i,float t){float a=float(i)*(2.0*PI/float(lightCount))+t*lightSpeed;return vec3(1.5*cos(a),sin(t*lightSpeed*0.5+float(i))*0.5,1.5*sin(a));}
-    float accumulateLights(vec2 p,float t){vec3 pos=vec3(p,0.0);float L=0.0;for(int i=0;i<10;i++){if(i>=lightCount)break;vec3 l=getLightPos(i,t);float d=length(pos-l);L+=lightIntensity/(1.0+d*d*2.0);}vec2 m=(smoothedMouse/iResolution.xy)*2.0-1.0;m.x*=iResolution.x/iResolution.y;float md=length(p-m);L+=lightIntensity*2.0/(1.0+md*md*4.0);return L;}
+    vec3 lightPos(int i, float t){ float a=float(i)*(2.0*PI/float(lightCount))+t*lightSpeed; return vec3(1.5*cos(a), sin(t*lightSpeed*0.5+float(i))*0.5, 1.5*sin(a)); }
+    float accumulateLights(vec2 p, float t){ vec3 pos=vec3(p,0.0); float L=0.0; for(int i=0;i<10;i++){ if(i>=lightCount) break; vec3 lp=lightPos(i,t); float d=length(pos-lp); L+=lightIntensity/(1.0+d*d*2.0);} vec2 m=(smoothedMouse/iResolution.xy)*2.0-1.0; m.x*=iResolution.x/iResolution.y; float md=length(p-m); L+=lightIntensity*2.0/(1.0+md*md*4.0); return L; }
 
     void main(){
-      vec2 uv=gl_FragCoord.xy/iResolution.xy;
-      vec2 p=uv*2.0-1.0; p.x*=iResolution.x/iResolution.y;
+      vec2 uv = gl_FragCoord.xy / iResolution.xy;
+      vec2 p  = uv*2.0 - 1.0; p.x *= iResolution.x / iResolution.y;
 
-      float shape=starGraphic(uv);
-      float L=accumulateLights(p,iTime);
+      float shape = starShape(uv);
+      float L     = accumulateLights(p, iTime);
 
-      vec3 col=mix(primaryColor,secondaryColor,shape);
-      col=mix(col,accentColor,pow(shape,3.0)*0.5);
-      col*=L*(shape+0.2);
+      vec3 col = mix(primaryColor, secondaryColor, shape);
+      col      = mix(col, accentColor, pow(shape,3.0)*0.5);
+      col     *= L * (shape + 0.2);
 
-      vec2 randUV=vUv; randUV.y*=hash(vec2(randUV.y,iTime*0.01));
-      float n=hash(randUV*grainSize+iTime*0.1)*grainStrength;
-      col+=n-grainStrength*0.5;
+      vec2 nUV = vUv; nUV.y *= hash(vec2(nUV.y, iTime*0.01));
+      float n = hash(nUV*grainSize + iTime*0.1) * grainStrength;
+      col += n - grainStrength*0.5;
 
-      gl_FragColor=vec4(col,1.0);
+      gl_FragColor = vec4(col, 1.0);
     }
   `;
 
