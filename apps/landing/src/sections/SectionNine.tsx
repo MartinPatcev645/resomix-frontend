@@ -4,7 +4,7 @@ import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.
 import qrCodeGif from "../assets/gifs/qr_code.gif";
 
 const SectionNine: React.FC = () => (
-  <div className="mt-[var(--px-200)] px-[var(--px-65)] relative z-15">
+  <div className="mt-[var(--px-180)] px-[var(--px-65)] relative z-15">
     {/* QR Code Animation Background */}
     <div
       style={{
@@ -15,7 +15,7 @@ const SectionNine: React.FC = () => (
         position: 'absolute',
         width: 'var(--px-520)',
         height: 'var(--px-520)',
-        top: 'var(--px-585)',
+        top: 'var(--px-560)',
         left: '50%',
         opacity: 1,
         transform: 'translate(-50%, -50%)',
@@ -65,7 +65,7 @@ const SectionNine: React.FC = () => (
       </div>
 
       {/* Section 9 B */}
-      <div className="mt-[var(--px-400)]">
+      <div className="mt-[var(--px-350)]">
         <div className="flex justify-between mx-[var(--px-240)] -mb-[var(--px-6)]">
           <div className="text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)] ml-[var(--px-20)]">
             A New Era of Music
