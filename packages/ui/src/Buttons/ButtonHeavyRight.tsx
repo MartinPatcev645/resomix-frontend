@@ -24,8 +24,6 @@ export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClic
       backgroundColor={transparent ? "bg-transparent" : "bg-[var(--color-primary)]"}
       borderColor="outline-[var(--color-primary)]"
       strokeColor={transparent ? "var(--color-text-secondary)" : "var(--color-text-primary)"}
-      width="var(--px-36)"
-      height="var(--px-36)"
     />
   </div>
 );
