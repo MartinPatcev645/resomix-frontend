@@ -12,8 +12,9 @@ export function initFractalOrb(container: HTMLElement): () => void {
   const height = container.clientHeight;
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const pixelRatio = window.devicePixelRatio || 1;
+  renderer.setPixelRatio(pixelRatio);
   renderer.setSize(width, height);
-  renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
   container.appendChild(renderer.domElement);
 
   // ---------------------------------------------------------------------
@@ -25,14 +26,14 @@ export function initFractalOrb(container: HTMLElement): () => void {
 
   // Uniform defaults (mirroring original JS)
   const uniforms: { [key: string]: THREE.IUniform } = {
-    iResolution: { value: new THREE.Vector2(width, height) },
+    iResolution: { value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
     iTime: { value: 0.0 },
     smoothedMouse: { value: new THREE.Vector2(0, 0) },
     mouseDown: { value: 0.0 },
     primaryColor: { value: new THREE.Color(1, 1, 1) },
     secondaryColor: { value: new THREE.Color(1, 1, 1) },
     accentColor: { value: new THREE.Color(0, 0, 0) },
-    fractalScale: { value: 1.0 },
+    fractalScale: { value: 0.3 },
     fractalOffset: { value: new THREE.Vector2(0, 0) },
     lightCount: { value: 1 },
     lightIntensity: { value: 1.0 },
@@ -160,7 +161,8 @@ export function initFractalOrb(container: HTMLElement): () => void {
     const w = container.clientWidth;
     const h = container.clientHeight;
     renderer.setSize(w, h);
-    uniforms.iResolution.value.set(w, h);
+    const pr = renderer.getPixelRatio();
+    uniforms.iResolution.value.set(renderer.domElement.width, renderer.domElement.height);
   });
   ro.observe(container);
 
@@ -168,8 +170,9 @@ export function initFractalOrb(container: HTMLElement): () => void {
   const animate = () => {
     const t = performance.now() * 0.001;
     uniforms.iTime.value = t;
-    // smooth mouse
-    smoothedMouse.lerp(rawMouse.clone().multiplyScalar(width), 0.1);
+    const dpr = renderer.getPixelRatio();
+    smoothedMouse.lerp(rawMouse, 0.1);
+    uniforms.smoothedMouse.value.set(smoothedMouse.x * width * dpr, smoothedMouse.y * height * dpr);
 
     renderer.render(scene, camera);
     rafId = requestAnimationFrame(animate);

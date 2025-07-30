@@ -1,4 +1,4 @@
-export function Terms() {
+export function TermsPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
       <h1 className="text-4xl font-bold mb-4">Terms & Conditions</h1>

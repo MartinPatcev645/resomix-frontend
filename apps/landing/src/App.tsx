@@ -2,9 +2,9 @@ import { useResponsive } from "@resomix/hooks";
 import { DesktopLanding } from "./pages/DesktopLanding.tsx";
 import { MobileLanding } from "./pages/MobileLanding.tsx";
 import { Routes, Route } from "react-router-dom";
-import { Menu } from "./pages/MenuPage.tsx";
-import { About } from "./pages/AboutPage.tsx";
-import { Terms } from "./pages/TermsPage.tsx";
+import MenuPage from "./pages/MenuPage.tsx";
+import { AboutPage } from "./pages/AboutPage.tsx";
+import { TermsPage } from "./pages/TermsPage.tsx";
 
 function LandingPage() {
   const { isDesktop } = useResponsive();
@@ -20,9 +20,9 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/menu" element={<Menu />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/terms" element={<Terms />} />
+      <Route path="/menu" element={<MenuPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/terms" element={<TermsPage />} />
     </Routes>
   );
 }
