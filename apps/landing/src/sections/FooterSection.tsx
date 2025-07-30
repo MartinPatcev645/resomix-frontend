@@ -38,7 +38,7 @@ const FooterSection: React.FC = () => (
           </div>
         </div>
       </div>
-      <div className="max-w-full text-[length:var(--px-63)] font-benzin uppercase">
+      <div className="max-w-full text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase">
         Join the Resomix Universe
       </div>
       <div className="flex justify-between px-[var(--px-120)]">
