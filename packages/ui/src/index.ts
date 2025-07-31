@@ -24,6 +24,7 @@ import { PageExoskeleton } from "./Vectors/PageExoskeleton";
 import { StyleThree } from "./Vectors/LineContainer/StyleThree";
 import { StyleTwo } from "./Vectors/LineContainer/StyleTwo";
 import { StyleOne } from "./Vectors/LineContainer/StyleOne";
+import { SineWaves } from "./Animations/SineWaves";
 
 export {
   Navbar,
@@ -52,4 +53,5 @@ export {
   StyleThree,
   StyleTwo,
   StyleOne,
+  SineWaves,
 };

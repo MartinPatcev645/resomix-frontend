@@ -5,7 +5,8 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-import { CrystallineRefraction } from "@resomix/ui";
+// import { CrystallineRefraction } from "@resomix/ui";
+import { SineWaves } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
   <div className='mt-[var(--px-300)] px-[var(--px-65)] relative z-15'>
@@ -57,17 +58,17 @@ const SectionFour: React.FC = () => (
 
             {/* CrystallineRefraction animation clipped to the frame */}
             <div
-              className="absolute inset-0 flex items-center justify-center opacity-80"
+              className="absolute inset-0 flex items-center justify-center"
               style={{ clipPath: "url(#cubeClip)", WebkitClipPath: "url(#cubeClip)" }}
             >
               {/* Square wrapper to avoid stretching; 85% of frame height for subtle zoom-out */}
-              <div className="h-[85%] aspect-square">
-                <CrystallineRefraction />
+              <div className="w-full h-[var(--px-310)] mt-[var(--px-20)]">  {/* ~3:1 aspect inside 308×171 frame */}
+                <SineWaves />
               </div>
             </div>
           </div>
 
-          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] -mt-[var(--px-4)] opacity-60'>
+          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] opacity-60'>
             deep_sonic_analysis [mode=granular]<br />system.listens(...)
           </div>
         </div>
