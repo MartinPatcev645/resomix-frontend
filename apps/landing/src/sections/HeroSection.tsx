@@ -33,7 +33,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-1142)] h-[var(--px-621)] mx-auto"
+      className="relative w-[var(--px-1142)] h-[var(--px-621)] mx-auto z-20"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
