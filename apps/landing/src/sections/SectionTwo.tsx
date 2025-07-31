@@ -2,6 +2,7 @@ import React from "react";
 import LayersSvg from "../assets/icons/layers.svg";
 import VerticalLineSvg from "../assets/icons/vertical_line.svg";
 import { ContourSphere } from "@resomix/ui";
+import { CodeTyping } from "@resomix/ui";
 
 const SectionTwo: React.FC = () => (
   <div className='mt-[var(--px-450)] relative px-[var(--px-65)]'>
@@ -29,7 +30,12 @@ const SectionTwo: React.FC = () => (
       <div className='my-[var(--px-32)]'>
         <img src={VerticalLineSvg} alt="Vertical Line" className="w-[var(--px-2)] h-[var(--px-63)]" />
       </div>
-      <div className="opacity-80 justify-start text-white text-[length:var(--px-7)] font-light font-fira tracking-widest">instant_inspiration.module[active]</div>
+      <div className="opacity-80 justify-start text-white text-[length:var(--px-7)] font-light font-fira tracking-widest min-h-[var(--px-10-5)]">
+        <CodeTyping
+          speed={50}
+          text="instant_inspiration.module[active]"
+        />
+      </div>
     </div>
   </div>
 );
