@@ -33,7 +33,7 @@ export function DesktopLanding() {
         <BackgroundNoise zIndex={5} />
 
         {/* Actual Content Sections */}
-        <Navbar logo={<LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-white hover:text-[#B9B9B9] transition-colors" />} />
+        <Navbar logo={<LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
         <HeroSection />
         <SectionOne />
         <SectionTwo />

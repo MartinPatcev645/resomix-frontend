@@ -29,7 +29,7 @@ export const IconComp: React.FC<IconCompProps> = ({
 
   return (
     <div 
-      className={`relative ${backgroundColor} rounded-2xl outline outline-[0.37px] outline-offset-[-0.37px] ${borderColor} overflow-hidden ${padding} ${className}`}
+      className={`relative ${backgroundColor} rounded-2xl outline outline-[0.37px] outline-offset-[-0.37px] ${borderColor} group-hover:outline-[var(--color-primary-hover)] transition-colors overflow-hidden ${padding} ${className}`}
       style={containerStyle}
     >
       {React.cloneElement(svg as React.ReactElement, {
