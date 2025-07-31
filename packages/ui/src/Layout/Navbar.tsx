@@ -14,8 +14,8 @@ export const Navbar: React.FC<NavbarProps> = ({ logo }) => (
         color: "var(--color-text-secondary)",
       }}>
       <LinkButton text="About Us" path="/about" />
-      <LinkButton text="Playlist" path="/playlist" />
       <LinkButton text="Contact" path="/contact" />
+      <div className="p-[var(--px-8)] w-[var(--px-10)]"></div>
     </div>
     <div>
       {logo}
