@@ -52,15 +52,16 @@ export const ContourSphere: React.FC<{
   // whatever you need via later composition, but we provide sensible defaults
   // to keep GSAP timelines happy.
   const renderedSections = Array.from({ length: sections }).map((_, i) => (
-    <section key={i} className="section">
-      <div className="section-inner">
-        <h1 className="title">&nbsp;</h1>
-        <p className="description">&nbsp;</p>
+    <section key={i} className="contour_sphere_section">
+      <div className="contour_sphere_section_inner">
+        <h1 className="contour_sphere_title">&nbsp;</h1>
+        <p className="contour_sphere_description">&nbsp;</p>
       </div>
     </section>
   ));
 
-  const wrapperClass = `contour-sphere-wrapper${localScroll ? " local" : ""}`;
+  // derive wrapper class
+  const wrapperClass = `contour_sphere_wrapper${localScroll ? " local" : ""}`;
 
   const wrapperStyle: React.CSSProperties | undefined = localScroll
     ? {
