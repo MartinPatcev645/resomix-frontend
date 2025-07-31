@@ -1,27 +1,22 @@
 import React from "react";
 import LayersSvg from "../assets/icons/layers.svg";
 import VerticalLineSvg from "../assets/icons/vertical_line.svg";
-import purpleAnimationGif from "../assets/gifs/purple_animation.gif";
+import { ContourSphere } from "@resomix/ui";
 
 const SectionTwo: React.FC = () => (
   <div className='mt-[var(--px-450)] relative px-[var(--px-65)]'>
-    {/* Purple Animation Background */}
+    {/* Contour Sphere Animation */}
     <div
       style={{
-        backgroundImage: `url(${purpleAnimationGif})`,
-        backgroundSize: 'contain',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
         position: 'absolute',
-        width: 'var(--px-550)',
-        height: 'var(--px-550)',
-        top: '30%',
+        top: '15%',
         left: '50%',
-        opacity: 0.4,
         transform: 'translate(-50%, -50%)',
         zIndex: 2,
       }}
-    />
+    >
+      <ContourSphere localScroll size={550} scrollAreaHeight={1650} />
+    </div>
     {/* Content with higher z-index */}
     <div className='flex flex-col justify-between items-center relative z-15'>
       <div className=''></div>
