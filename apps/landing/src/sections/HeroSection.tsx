@@ -1,9 +1,9 @@
 import React from "react";
-import { FractalOrb } from "@resomix/ui";
+import { FractalOrb, IconComp } from "@resomix/ui";
 import { BackgroundNoise } from "../components/index.ts";
-import XSvg from "../assets/icons/x.svg";
+import XSvg from "../assets/icons/twitter_x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
-import FbSvg from "../assets/icons/fb.svg";
+import FbSvg from "../assets/icons/facebook.svg";
 import SoundWaves from "../assets/icons/sound_waves.svg";
 import ArrowSmallDown from "../assets/icons/arrow_small_down.svg";
 
@@ -62,9 +62,24 @@ const HeroSection: React.FC = () => (
           </div>
         </div>
         <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
-          <img className="w-[var(--px-24)] h-[var(--px-24)]" src={FbSvg} alt="Fb" />
-          <img className="w-[var(--px-24)] h-[var(--px-24)]" src={InstaSvg} alt="Insta" />
-          <img className="w-[var(--px-24)] h-[var(--px-24)]" src={XSvg} alt="X" />
+          <IconComp
+            svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={FbSvg} alt="Fb" />}
+            className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
+            padding=""
+            onClick={() => window.open("https://www.facebook.com/resomix", "_blank")}
+          />
+          <IconComp
+            svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={InstaSvg} alt="Insta" />}
+            className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
+            padding=""
+            onClick={() => window.open("https://www.instagram.com/resomix", "_blank")}
+          />
+          <IconComp
+            svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={XSvg} alt="X" />}
+            className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
+            padding=""
+            onClick={() => window.open("https://twitter.com/resomix", "_blank")}
+          />
         </div>
       </div>
     </div>
