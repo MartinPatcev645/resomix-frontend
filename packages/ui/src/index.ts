@@ -25,6 +25,7 @@ import { StyleThree } from "./Vectors/LineContainer/StyleThree";
 import { StyleTwo } from "./Vectors/LineContainer/StyleTwo";
 import { StyleOne } from "./Vectors/LineContainer/StyleOne";
 import { SineWaves } from "./Animations/SineWaves";
+import { ContourSphere } from "./Animations/ContourSphere";
 
 export {
   Navbar,
@@ -54,4 +55,5 @@ export {
   StyleTwo,
   StyleOne,
   SineWaves,
+  ContourSphere,
 };
