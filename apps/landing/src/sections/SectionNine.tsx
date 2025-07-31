@@ -2,6 +2,7 @@ import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
 import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
 import { GoldenSpiral } from "@resomix/ui";
+import { CodeTyping } from "@resomix/ui";
 
 const SectionNine: React.FC = () => (
   <div className="mt-[var(--px-180)] px-[var(--px-62)] mr-[var(--px-1)] relative z-15">
@@ -11,38 +12,76 @@ const SectionNine: React.FC = () => (
     {/* Content with higher z-index */}
     <div className="flex flex-col justify-between relative z-15">
       {/* Section 9 A */}
-      <div className="flex justify-between mx-[var(--px-250)]">
+      <div className="flex justify-between mx-[var(--px-250)] min-h-[var(--px-198-5)]">
         <div className="mt-[var(--px-40)] text-left text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
           <div className="leading-[var(--px-8)]">
-            upload(track.wav) → extract_sonic_DNA()
+            <CodeTyping
+              speed={50}
+              text="upload(track.wav) → extract_sonic_DNA()"
+            />
           </div>
           <div className="leading-[var(--px-12)]">
-            deep_sonic_analysis(mode=granular)
+            <CodeTyping
+              speed={50}
+              text="deep_sonic_analysis(mode=granular)"
+            />
           </div>
           <div className="leading-[var(--px-32)]">
-            let result = Resomix.listen(input: feeling)          </div>
+            <CodeTyping
+              speed={50}
+              text="let result = Resomix.listen(input: feeling)"
+              delay={800}
+            />
+          </div>
           <div className="leading-[var(--px-32)]">
-            init.crate_digging(powered_by_AI)
+            <CodeTyping
+              speed={50}
+              text="init.crate_digging(powered_by_AI)"
+              delay={1100}
+            />
           </div>
           <div className="leading-[var(--px-64)]">
-            system.listens() ∴ you.create()
+            <CodeTyping
+              speed={50}
+              text="system.listens() ∴ you.create()"
+              delay={2200}
+            />
           </div>
           <div className="">
-            :: tune_into(the_unknown)
+            <CodeTyping
+              speed={50}
+              text=":: tune_into(the_unknown)"
+              delay={3300}
+            />
           </div>
         </div>
-        <div className="flex flex-col items-end text-right text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
-          <div className="leading-[var(--px-32)]">
-          // ML.engine::Enhancing_Human_Creativity()
+        <div className="flex flex-col items-end text-right text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)] min-h-[var(--px-184)]">
+          <div className="leading-[var(--px-32)] min-h-[var(--px-32)]">
+            <CodeTyping
+              speed={50}
+              text="// ML.engine::Enhancing_Human_Creativity()"
+            />
           </div>
-          <div className="mb-[var(--px-32)]">
-            neural_waveform
+          <div className="mb-[var(--px-32)] min-h-[var(--px-8)]">
+            <CodeTyping
+              speed={50}
+              text="neural_waveform"
+              delay={1100}
+            />
+          </div>
+          <div className="leading-[var(--px-8)] min-h-[var(--px-8)]">
+            <CodeTyping
+              speed={50}
+              text="wave_resonance &gt;&gt;&gt;"
+              delay={1100}
+            />
           </div>
           <div className="leading-[var(--px-8)]">
-            wave_resonance &gt;&gt;&gt;
-          </div>
-          <div className="leading-[var(--px-8)]">
-            blending &gt;&gt;
+            <CodeTyping
+              speed={50}
+              text="blending &gt;&gt;"
+              delay={2100}
+            />
           </div>
           <div className="w-full flex justify-end mt-[var(--px-50)]">
             <ButtonHeavyRight text="resomix" onClick={() => { }} transparent={true} />

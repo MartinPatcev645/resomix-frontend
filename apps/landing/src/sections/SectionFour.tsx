@@ -5,7 +5,7 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-import { SineWaves } from "@resomix/ui";
+import { SineWaves, CodeTyping } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
   <div className='mt-[var(--px-300)] px-[var(--px-62)] relative z-15'>
@@ -23,11 +23,19 @@ const SectionFour: React.FC = () => (
           </div>
         </div>
         <div className='mt-[var(--px-64)] flex flex-col'>
-          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)]'>
-            search_now()<br />// lightning_fast.query()
+          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)] min-h-[var(--px-16)]'>
+            <CodeTyping
+              speed={25}
+              text="search_now()<br />// lightning_fast.query()"
+              multiline={true}
+            />
           </div>
-          <div className='text-[length:var(--px-7)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60 ml-[var(--px-1)]'>
-            Resomix.run[...]
+          <div className='text-[length:var(--px-7)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60 ml-[var(--px-1)] min-h-[var(--px-10-5)]'>
+            <CodeTyping
+              speed={25}
+              text="Resomix.run[...]"
+              delay={2200}
+            />
           </div>
 
           {/* SVG frame with crystalline cube */}
@@ -68,7 +76,11 @@ const SectionFour: React.FC = () => (
           </div>
 
           <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] opacity-60 ml-[var(--px-1)]'>
-            deep_sonic_analysis [mode=granular]<br />system.listens(...)
+            <CodeTyping
+              speed={25}
+              text="deep_sonic_analysis [mode=granular]<br />system.listens(...)"
+              multiline={true}
+            />
           </div>
         </div>
       </div>

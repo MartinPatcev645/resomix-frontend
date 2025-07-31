@@ -3,6 +3,7 @@ import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
 import SectionSevenGraphicSvg from "../assets/icons/composites/section_seven_graphic.svg";
 import dropletGif from "../assets/gifs/droplet.gif";
 import LineThreeSvg from "../assets/icons/line3.svg";
+import { CodeTyping } from "@resomix/ui";
 
 const SextionSeven: React.FC = () => (
   <div className='mt-[var(--px-200)] px-[var(--px-62)] relative z-15'>
@@ -43,36 +44,66 @@ const SextionSeven: React.FC = () => (
       </div>
       <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
         <img src={SectionSevenGraphicSvg} alt="Section Seven Graphic" className="w-full h-auto" />
-        <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-50'>
-          <div className="flex flex-col justify-start items-start">
+        <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-50 min-h-[var(--px-121-5)]'>
+          <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              machine_listening...
+              <CodeTyping
+                speed={50}
+                text="machine_listening..."
+              />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              resonance_activated();
+              <CodeTyping
+                speed={50}
+                text="resonance_activated();"
+                delay={700}
+              />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              waveform::quantized
+              <CodeTyping
+                speed={50}
+                text="waveform::quantized"
+                delay={1200}
+              />
             </div>
             <div className="w-full my-[var(--px-4)]">
               <img src={LineThreeSvg} alt="Line Three" className="w-[var(--px-3)] h-[var(--px-29)]" />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-            loop_density &gt; 97%
+              <CodeTyping
+                speed={50}
+                text="loop_density &gt; 97%"
+                delay={1700}
+              />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              feedback_loop::stable
+              <CodeTyping
+                speed={50}
+                text="feedback_loop::stable"
+                delay={2200}
+              />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
-              spectral_analysis...
+              <CodeTyping
+                speed={50}
+                text="spectral_analysis..."
+                delay={2700}
+              />
             </div>
           </div>
-          <div className="flex flex-col justify-start items-end">
+          <div className="flex flex-col justify-start items-end min-w-[var(--px-117-8)]">
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              AI.sync.beatmap[OK]
+              <CodeTyping
+                speed={50}
+                text="AI.sync.beatmap[OK]"
+              />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
-              sound.check: PASS
+              <CodeTyping
+                speed={50}
+                text="sound.check: PASS"
+                delay={3800}
+              />
             </div>
           </div>
         </div>
