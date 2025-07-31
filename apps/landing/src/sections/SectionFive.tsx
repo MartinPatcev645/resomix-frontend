@@ -4,7 +4,7 @@ import SectionFiveGraphicRight from "../assets/icons/composites/section_five_gra
 import ArrowBigDownSvg from "../assets/icons/arrow_big_down_stroke.svg";
 
 const SectionFive: React.FC = () => (
-  <div className='mt-[var(--px-250)] px-[var(--px-65)] flex flex-col relative z-15'>
+  <div className='mt-[var(--px-250)] px-[var(--px-62)] flex flex-col relative z-15'>
     {/* Section Five A */}
     <div className='flex flex-col w-full my-[var(--px-80)]'>
       <div className='flex w-full justify-end relative'>
@@ -30,7 +30,7 @@ const SectionFive: React.FC = () => (
     </div>
 
     {/* Section Five B */}
-    <div className='mt-[var(--px-300)] flex flex-row w-full my-[var(--px-80)] justify-between items-center'>
+    <div className='mt-[var(--px-300)] pr-[var(--px-2)] flex flex-row w-full mb-[var(--px-80)] justify-between items-center'>
       <div className='flex flex-col text-[length:var(--px-66)] font-bold leading-[var(--px-64)] font-helvetica uppercase'>
         <div className=''>
           INSTANT

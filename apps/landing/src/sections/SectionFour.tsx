@@ -5,11 +5,10 @@ import AnalysisSvg from "../assets/icons/analysis.svg";
 import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
-// import { CrystallineRefraction } from "@resomix/ui";
 import { SineWaves } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
-  <div className='mt-[var(--px-300)] px-[var(--px-65)] relative z-15'>
+  <div className='mt-[var(--px-300)] px-[var(--px-62)] relative z-15'>
     <div className='flex justify-between'>
       <div className='flex flex-col justify-between h-full items-center'>
         <div className='flex flex-col text-[length:var(--px-65)] font-bold font-helvetica uppercase leading-[var(--px-64)]'>
@@ -24,10 +23,10 @@ const SectionFour: React.FC = () => (
           </div>
         </div>
         <div className='mt-[var(--px-64)] flex flex-col'>
-          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] mb-[var(--px-4)] opacity-60'>
+          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)]'>
             search_now()<br />// lightning_fast.query()
           </div>
-          <div className='text-[length:var(--px-7)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60'>
+          <div className='text-[length:var(--px-7)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60 ml-[var(--px-1)]'>
             Resomix.run[...]
           </div>
 
@@ -68,7 +67,7 @@ const SectionFour: React.FC = () => (
             </div>
           </div>
 
-          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] opacity-60'>
+          <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] opacity-60 ml-[var(--px-1)]'>
             deep_sonic_analysis [mode=granular]<br />system.listens(...)
           </div>
         </div>

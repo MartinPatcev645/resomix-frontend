@@ -1,5 +1,6 @@
 import React from "react";
 import { FractalOrb } from "@resomix/ui";
+import { BackgroundNoise } from "../components/index.ts";
 import XSvg from "../assets/icons/x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
 import FbSvg from "../assets/icons/fb.svg";
@@ -39,6 +40,10 @@ const HeroSection: React.FC = () => (
         WebkitClipPath: "url(#heroClip)"
       }}
     >
+      {/* Background noise layers (two, for consistency with other sections) */}
+      <BackgroundNoise zIndex={1} opacity={0.8} />
+      {/* <BackgroundNoise zIndex={4} /> */}
+
       {/* FlyingThroughSpace background animation */}
       <div className="absolute inset-0 w-full h-full">
         <FractalOrb />
