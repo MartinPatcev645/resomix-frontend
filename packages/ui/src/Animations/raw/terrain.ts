@@ -59,7 +59,8 @@ export function initTerrain(
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
   renderer.setSize(width, height);
-  renderer.setClearColor(0x000000, 1);
+  // Render with transparent background so underlying content can show through
+  renderer.setClearColor(0x000000, 0);
 
   /* ------------------------------------------------------------
    * 2. basic THREE scene / camera / light

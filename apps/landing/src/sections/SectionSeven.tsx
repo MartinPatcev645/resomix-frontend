@@ -16,7 +16,7 @@ const SextionSeven: React.FC = () => (
         transform: 'translate(-50%, -50%)',
         zIndex: -1,
         pointerEvents: 'none',
-        opacity: '40%'
+        opacity: '60%'
       }}
     >
       <Terrain
