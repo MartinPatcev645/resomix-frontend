@@ -84,7 +84,7 @@ const SectionNine: React.FC = () => (
             />
           </div>
           <div className="w-full flex justify-end mt-[var(--px-50)]">
-            <ButtonHeavyRight text="resomix" onClick={() => { }} transparent={true} />
+            <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} transparent={true} />
           </div>
         </div>
       </div>

@@ -10,9 +10,9 @@ function animate(layerA: HTMLElement, layerB: HTMLElement) {
     layerB.style.backgroundPosition = `-${rand()}px -${rand()}px`;
   };
 
-  // 20 times per second → 50 ms interval (2× faster)
+  // 10 times per second → 100 ms interval
   tick(); // initial jitter
-  const id = window.setInterval(tick, 25);
+  const id = window.setInterval(tick, 100);
   return () => clearInterval(id);
 }
 

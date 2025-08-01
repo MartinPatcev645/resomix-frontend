@@ -29,6 +29,7 @@ import { ContourSphere } from "./Animations/ContourSphere";
 import { Remains } from "./Animations/Remains";
 import { RockRing } from "./Animations/RockRing";
 import { Terrain } from "./Animations/Terrain";
+import { StaticNoise } from "./Animations/StaticNoise";
 
 export {
   Navbar,
@@ -62,4 +63,5 @@ export {
   Remains,
   RockRing,
   Terrain,
+  StaticNoise,
 };
