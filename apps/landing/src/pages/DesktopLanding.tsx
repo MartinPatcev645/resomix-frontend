@@ -18,8 +18,9 @@ export function DesktopLanding() {
           position: 'relative',
           zIndex: 30,
           maxWidth: '2560px',
-        }} className="bg-black"
+        }} className="bg-[#131415]"
       >
+        {/* 242422 */}
 
         {/* SVG Overlay inside 1280px content */}
         <div
