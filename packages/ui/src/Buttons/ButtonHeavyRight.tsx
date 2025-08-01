@@ -10,7 +10,7 @@ interface ButtonHeavyRightProps {
 export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClick, transparent = false }) => (
   <div className='flex justify-center items-center cursor-pointer group' onClick={onClick}>
     <div className={`w-[var(--px-160)] h-[var(--px-36)] px-[var(--px-20)] py-[var(--px-8)] rounded-3xl outline outline-[0.37px] outline-offset-[-0.37px] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-8)] ${transparent ? 'bg-transparent' : 'bg-[var(--color-primary)] group-hover:bg-[var(--color-primary-hover)]'}`}>
-      <div className={`justify-start text-[length:var(--px-10-37)] font-light font-['Fira_Code'] ${transparent ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-primary)]'}`}>{text}</div>
+      <div className={`justify-start text-[length:var(--px-10-37)] font-light font-fira ${transparent ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-primary)]'}`}>{text}</div>
     </div>
     <IconComp
       className="ml-[var(--px-1)]"
