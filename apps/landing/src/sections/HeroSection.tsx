@@ -52,13 +52,13 @@ const HeroSection: React.FC = () => (
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
-          <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase">Resomix </div>
+          <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase -ml-[var(--px-10)]">Resomix </div>
           <div className='flex w-full justify-between items-center -mt-[var(--px-48)]'>
-            <div className='flex gap-[var(--px-12)] ml-[var(--px-10)]'>
+            <div className='flex gap-[var(--px-12)]'>
               <img className="w-[var(--px-35)] h-[var(--px-35)]" src={ArrowSmallDown} alt="Arrow Small Down" />
               <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5">A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
             </div>
-            <div className="text-[length:var(--px-57)] font-medium font-helvetica uppercase mr-[var(--px-10)]">the Soul of Sound</div>
+            <div className="text-[length:var(--px-57)] font-medium font-helvetica uppercase">the Soul of Sound</div>
           </div>
         </div>
         <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
