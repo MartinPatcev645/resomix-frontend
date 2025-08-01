@@ -1,13 +1,15 @@
 import React from "react";
-import RIconFooter from "../assets/icons/r_icon_footer.svg";
 import { CodeTyping } from "@resomix/ui";
+import { LogoRFooter } from "../components/LogoRFooter.tsx";
 
 const FooterSection: React.FC = () => (
   <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col">
       <div className="flex flex-col px-[var(--px-120)] min-h-[var(--px-129)]">
         <div className="flex w-full justify-start">
-          <img src={RIconFooter} className="w-[var(--px-27)] h-[var(--px-27)]" alt="RIconFooter" />
+          <a href="https://resomix.com" className="cursor-default">
+            <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
+          </a>
         </div>
         <div className="flex justify-between">
           <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">

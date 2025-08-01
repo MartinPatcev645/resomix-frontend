@@ -34,7 +34,7 @@ export function DesktopLanding() {
         <BackgroundNoise zIndex={5} />
 
         {/* Actual Content Sections */}
-        <Navbar logo={<LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+        <Navbar logo={<a href="https://resomix.com" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>} />
         <HeroSection />
         <SectionOne />
         <SectionTwo />
