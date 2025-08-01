@@ -11,19 +11,19 @@ const HeroSection: React.FC = () => (
   <div className="relative">
     {/* Hidden SVG defs for clip-path */}
     <svg
-      viewBox="0 0 1142 628"
+      viewBox="0 0 1152 628"
       preserveAspectRatio="none"
-      className="absolute inset-0 w-[length:var(--px-1142)] h-[length:var(--px-621)] mx-[var(--px-63)] pointer-events-none z-10"
+      className="absolute inset-0 w-[length:var(--px-1152)] h-[length:var(--px-628)] mx-[var(--px-63)] pointer-events-none z-10"
     >
       <defs>
         <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
-          <path transform="scale(0.0008680556,0.0015923567)" d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
+          <path transform="scale(0.0008680556,0.0015923567)" d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
         </clipPath>
       </defs>
 
       {/* stroke outline */}
       <path
-        d="M279.222 1.07413H0.333008L0.333336 627.441H279.222L347.74 585.889H779.963L848.481 627.441H1151.81L1151.81 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
+        d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
         stroke="white"
         strokeOpacity="0.7"
         strokeWidth="0.37037"
@@ -34,7 +34,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-1142)] h-[var(--px-621)] mx-auto z-20"
+      className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto z-20"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -45,7 +45,7 @@ const HeroSection: React.FC = () => (
       {/* <BackgroundNoise zIndex={4} /> */}
 
       {/* FlyingThroughSpace background animation */}
-      <div className="absolute inset-0 w-[var(--px-1142)] h-[var(--px-621)] opacity-40">
+      <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)] opacity-40">
         <Remains />
       </div>
 
