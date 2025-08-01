@@ -49,7 +49,7 @@ const HeroSection: React.FC = () => (
       </div>
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full">
+      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
           <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase -ml-[var(--px-10)] text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix </div>
           <div className='flex w-full justify-between items-center -mt-[var(--px-48)]'>
