@@ -26,6 +26,7 @@ import { StyleTwo } from "./Vectors/LineContainer/StyleTwo";
 import { StyleOne } from "./Vectors/LineContainer/StyleOne";
 import { SineWaves } from "./Animations/SineWaves";
 import { ContourSphere } from "./Animations/ContourSphere";
+import { Remains } from "./Animations/Remains";
 
 export {
   Navbar,
@@ -56,4 +57,5 @@ export {
   StyleOne,
   SineWaves,
   ContourSphere,
+  Remains,
 };

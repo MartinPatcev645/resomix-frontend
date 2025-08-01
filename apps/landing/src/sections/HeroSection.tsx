@@ -1,5 +1,5 @@
 import React from "react";
-import { FractalOrb, IconComp } from "@resomix/ui";
+import { Remains, IconComp } from "@resomix/ui";
 import { BackgroundNoise } from "../components/index.ts";
 import XSvg from "../assets/icons/twitter_x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
@@ -45,8 +45,8 @@ const HeroSection: React.FC = () => (
       {/* <BackgroundNoise zIndex={4} /> */}
 
       {/* FlyingThroughSpace background animation */}
-      <div className="absolute inset-0 w-full h-full">
-        <FractalOrb />
+      <div className="absolute inset-0 w-[var(--px-1142)] h-[var(--px-621)] opacity-40">
+        <Remains />
       </div>
 
       {/* Overlay content */}
