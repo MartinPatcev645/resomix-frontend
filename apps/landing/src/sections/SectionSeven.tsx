@@ -1,29 +1,27 @@
 import React from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
 import SectionSevenGraphicSvg from "../assets/icons/composites/section_seven_graphic.svg";
-import dropletGif from "../assets/gifs/droplet.gif";
+import { RockRing } from "@resomix/ui";
 import LineThreeSvg from "../assets/icons/line3.svg";
 import { CodeTyping } from "@resomix/ui";
 
 const SextionSeven: React.FC = () => (
   <div className='mt-[var(--px-200)] px-[var(--px-62)] relative z-15'>
-    {/* Droplet Animation Background */}
+    {/* Rock ring animation */}
     <div
       style={{
-        backgroundImage: `url(${dropletGif})`,
-        backgroundSize: 'contain',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
         position: 'absolute',
         width: 'var(--px-489)',
         height: 'var(--px-489)',
         top: 'var(--px-448)',
         left: '50%',
-        opacity: 1,
         transform: 'translate(-50%, -50%)',
-        zIndex: 2,
+        zIndex: 30,  // Set to 2 if you want this behind the line
+        pointerEvents: 'none',
       }}
-    />
+    >
+      <RockRing />
+    </div>
     {/* Content with higher z-index */}
     <div className='flex flex-col w-full relative z-15'>
       <div className='flex flex-col justify-start items-start w-full'>
