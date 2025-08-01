@@ -11,7 +11,7 @@ const SextionSeven: React.FC = () => (
     <div
       style={{
         position: 'absolute',
-        width: 'var(--px-489)',
+        width: '100%',
         height: 'var(--px-489)',
         top: 'var(--px-448)',
         left: '50%',
