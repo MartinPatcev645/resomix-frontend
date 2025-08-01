@@ -1,8 +1,7 @@
 import React from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
-import { Terrain } from "@resomix/ui";
+import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
 import LineThreeSvg from "../assets/icons/line3.svg";
-import { CodeTyping } from "@resomix/ui";
 
 const SextionSeven: React.FC = () => (
   <div className='mt-[var(--px-200)] px-[var(--px-62)] relative'>
@@ -51,8 +50,11 @@ const SextionSeven: React.FC = () => (
           AND EXPLORE NEW POSSIBILITIES
         </div>
       </div>
+      <div className="w-full flex justify-center items-center pt-[var(--px-60)] pb-[var(--px-140)] min-h-[var(--px-309)]">
+        <ButtonHeavyRight text="Align With Your Sound" onClick={() => { }} transparent={true} />
+      </div>
       <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
-        <div className="h-[var(--px-309)]"></div>
+        {/* <div className="min-h-[var(--px-309)]"></div> */}
         <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-50 min-h-[var(--px-121-5)]'>
           <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">

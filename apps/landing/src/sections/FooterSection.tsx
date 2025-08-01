@@ -43,7 +43,7 @@ const FooterSection: React.FC = () => (
             <div className="leading-[var(--px-8)] mt-[var(--px-40)]">
               <CodeTyping
                 speed={100}
-                text="A.I. Audio Engine: v5.3.9 [ML model: R-BeatNet]<br />latency: zero-latency-mode = active<br />data_nodes: [New York] [London] [Singapore]"
+                text="Deep Learning Audio Engine: v5.3.9 [ML model: R-BeatNet]<br />latency: zero-latency-mode = active<br />data_nodes: [New York] [London] [Singapore]"
                 multiline={true}
               />
             </div>
@@ -57,7 +57,7 @@ const FooterSection: React.FC = () => (
         <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
           <CodeTyping
             speed={50}
-            text="© 2025 Resolmix // built on beatmaps and algorithms"
+            text="© 2025 Resomix // built on beatmaps and algorithms"
             multiline={true}
           />
         </div>
