@@ -1,12 +1,12 @@
 import React from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
 import SectionSevenGraphicSvg from "../assets/icons/composites/section_seven_graphic.svg";
-import { RockRing } from "@resomix/ui";
+import { Terrain } from "@resomix/ui";
 import LineThreeSvg from "../assets/icons/line3.svg";
 import { CodeTyping } from "@resomix/ui";
 
 const SextionSeven: React.FC = () => (
-  <div className='mt-[var(--px-200)] px-[var(--px-62)] relative z-15'>
+  <div className='mt-[var(--px-200)] px-[var(--px-62)] relative'>
     {/* Rock ring animation */}
     <div
       style={{
@@ -16,11 +16,23 @@ const SextionSeven: React.FC = () => (
         top: 'var(--px-448)',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        zIndex: 30,  // Set to 2 if you want this behind the line
+        zIndex: -1,
         pointerEvents: 'none',
+        opacity: '40%'
       }}
     >
-      <RockRing />
+      <Terrain
+        speed={1.2}
+        segments={324}
+        perlinPasses={1}
+        elevation={1}
+        noiseRange={2.14}
+        sombreroAmplitude={0.6}
+        sombreroFrequency={10}
+        wireframe={true}
+        wireframeColor="#FFFFFF"
+        floorVisible={false}
+      />
     </div>
     {/* Content with higher z-index */}
     <div className='flex flex-col w-full relative z-15'>

@@ -28,6 +28,7 @@ import { SineWaves } from "./Animations/SineWaves";
 import { ContourSphere } from "./Animations/ContourSphere";
 import { Remains } from "./Animations/Remains";
 import { RockRing } from "./Animations/RockRing";
+import { Terrain } from "./Animations/Terrain";
 
 export {
   Navbar,
@@ -60,4 +61,5 @@ export {
   ContourSphere,
   Remains,
   RockRing,
+  Terrain,
 };
