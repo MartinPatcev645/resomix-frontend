@@ -57,7 +57,7 @@ const HeroSection: React.FC = () => (
               <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
               <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-white" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
             </div>
-            <div className="text-[length:var(--px-57)] font-medium font-helvetica uppercase text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>the Soul of Sound</div>
+            <div className="text-[length:var(--px-45)] font-medium font-helvetica uppercase text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Align With Your Sound</div>
           </div>
         </div>
         <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
