@@ -18,7 +18,7 @@ export function DesktopLanding() {
           position: 'relative',
           zIndex: 30,
           maxWidth: '2560px',
-        }} className="bg-[#131415]"
+        }} className="bg-[var(--color-secondary)]"
       >
         {/* 242422 */}
 
