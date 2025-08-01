@@ -27,6 +27,7 @@ import { StyleOne } from "./Vectors/LineContainer/StyleOne";
 import { SineWaves } from "./Animations/SineWaves";
 import { ContourSphere } from "./Animations/ContourSphere";
 import { Remains } from "./Animations/Remains";
+import { RockRing } from "./Animations/RockRing";
 
 export {
   Navbar,
@@ -58,4 +59,5 @@ export {
   SineWaves,
   ContourSphere,
   Remains,
+  RockRing,
 };
