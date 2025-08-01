@@ -1,6 +1,5 @@
 import React from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
-import SectionSevenGraphicSvg from "../assets/icons/composites/section_seven_graphic.svg";
 import { Terrain } from "@resomix/ui";
 import LineThreeSvg from "../assets/icons/line3.svg";
 import { CodeTyping } from "@resomix/ui";
@@ -53,7 +52,7 @@ const SextionSeven: React.FC = () => (
         </div>
       </div>
       <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
-        <img src={SectionSevenGraphicSvg} alt="Section Seven Graphic" className="w-full h-auto" />
+        <div className="h-[var(--px-309)]"></div>
         <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-50 min-h-[var(--px-121-5)]'>
           <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
