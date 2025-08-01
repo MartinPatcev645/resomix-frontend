@@ -16,4 +16,4 @@ export const FractalOrb: React.FC = () => {
       className="relative w-full h-full overflow-hidden pointer-events-none"
     />
   );
-}; 
+};
