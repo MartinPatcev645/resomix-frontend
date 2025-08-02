@@ -1,4 +1,4 @@
-import { Navbar, StaticNoise } from "@resomix/ui";
+import { MobileNavbar, StaticNoise } from "@resomix/ui";
 import {
   HeroSection,
   SectionOne,
@@ -32,7 +32,7 @@ export function MobileLanding() {
         className="bg-black min-h-screen px-4 py-6"
       >
         {/* Navbar */}
-        <Navbar
+        <MobileNavbar
           logo={<a href="https://resomix.com" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
         />
 

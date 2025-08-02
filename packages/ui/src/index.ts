@@ -30,6 +30,7 @@ import { Remains } from "./Animations/Remains";
 import { RockRing } from "./Animations/RockRing";
 import { Terrain } from "./Animations/Terrain";
 import { StaticNoise } from "./Animations/StaticNoise";
+import { MobileNavbar } from "./Layout/MobileNavbar";
 
 export {
   Navbar,
@@ -64,4 +65,5 @@ export {
   RockRing,
   Terrain,
   StaticNoise,
+  MobileNavbar,
 };
