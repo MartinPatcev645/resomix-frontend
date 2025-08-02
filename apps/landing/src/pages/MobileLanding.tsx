@@ -1,17 +1,17 @@
 import { Navbar, StaticNoise } from "@resomix/ui";
-import {
-  HeroSection,
-  SectionOne,
-  SectionTwo,
-  SectionThree,
-  SectionFour,
-  SectionFive,
-  SectionSix,
-  SectionSeven,
-  SectionEight,
-  SectionNine,
-  FooterSection,
-} from "../sections/index.ts";
+// import {
+//   HeroSection,
+//   SectionOne,
+//   SectionTwo,
+//   SectionThree,
+//   SectionFour,
+//   SectionFive,
+//   SectionSix,
+//   SectionSeven,
+//   SectionEight,
+//   SectionNine,
+//   FooterSection,
+// } from "../sections/index.ts";
 import logoHeaderSvg from "../assets/icons/logo_header.svg";
 
 export function MobileLanding() {
