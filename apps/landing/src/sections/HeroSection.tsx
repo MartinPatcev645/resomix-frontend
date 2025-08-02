@@ -1,6 +1,5 @@
 import React from "react";
-// import { Remains, IconComp } from "@resomix/ui";
-import { IconComp } from "@resomix/ui";
+import { Remains, IconComp } from "@resomix/ui";
 // import { BackgroundNoise } from "../components/index.ts";
 import XSvg from "../assets/icons/twitter_x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
@@ -46,7 +45,7 @@ const HeroSection: React.FC = () => (
 
       {/* FlyingThroughSpace background animation */}
       <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)]">
-        {/* <Remains /> */}
+        <Remains />
       </div>
 
       {/* Overlay content */}

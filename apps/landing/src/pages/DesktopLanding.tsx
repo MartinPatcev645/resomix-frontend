@@ -1,4 +1,5 @@
-import { Navbar, StaticNoise } from "@resomix/ui";
+import { Navbar } from "@resomix/ui";
+// import { Navbar, StaticNoise } from "@resomix/ui";
 import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../sections/index.ts";
 import sideFrameSvg from "../assets/icons/layout/side_frame.svg";
 import { LogoHeader } from "../components/LogoHeader.tsx";
@@ -7,7 +8,7 @@ export function DesktopLanding() {
   return (
     <>
       {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#323233" zIndex={1} />
+      {/* <StaticNoise color="#323233" zIndex={1} /> */}
 
       {/* Content layer */}
       <div
