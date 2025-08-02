@@ -10,9 +10,9 @@ function LandingPage() {
   const { isDesktop } = useResponsive();
 
   return (
-    <>
+    <div className="bg-[#323233]">
       {isDesktop ? <DesktopLanding /> : <MobileLanding />}
-    </>
+    </div>
   );
 }
 
