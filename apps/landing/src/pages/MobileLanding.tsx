@@ -1,18 +1,9 @@
 import { MobileNavbar, StaticNoise } from "@resomix/ui";
-import {
-  HeroSection,
-  SectionOne,
-  SectionTwo,
-  SectionThree,
-  SectionFour,
-  SectionFive,
-  SectionSix,
-  SectionSeven,
-  SectionEight,
-  SectionNine,
-  FooterSection,
-} from "../mobile_sections/index.ts";
+// import {
+//   HeroSection,
+// } from "../mobile_sections/index.ts";
 import { LogoHeader } from "../components/LogoHeader.tsx";
+import { MenuIcon } from "../components/MenuIcon.tsx";
 
 export function MobileLanding() {
   return (
@@ -34,22 +25,11 @@ export function MobileLanding() {
         {/* Navbar */}
         <MobileNavbar
           logo={<a href="https://resomix.com" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          menuIcon={<a href="https://resomix.com" className="cursor-default"><MenuIcon className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"/></a>}
         />
 
         {/* Content Sections */}
-        <HeroSection />
-        <SectionOne />
-        <SectionTwo />
-        <SectionThree />
-        <SectionFour />
-        <SectionFive />
-        <SectionSix />
-        <SectionSeven />
-        <SectionEight />
-        <SectionNine />
-
-        {/* Footer */}
-        <FooterSection />
+        {/* <HeroSection /> */}
       </div>
     </>
   );
