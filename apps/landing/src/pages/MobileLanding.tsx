@@ -1,21 +1,36 @@
-import { Navbar } from "@resomix/ui";
-import logoHeaderSvg from "../assets/icons/logo_header.svg";
+import { MobileNavbar, StaticNoise } from "@resomix/ui";
+// import {
+//   HeroSection,
+// } from "../mobile_sections/index.ts";
+import { LogoHeader } from "../components/LogoHeader.tsx";
+import { MenuIcon } from "../components/MenuIcon.tsx";
 
 export function MobileLanding() {
   return (
-    <div className="bg-black min-h-screen">
-      {/* Mobile-specific layout */}
-      <div className="px-4 py-6">
-        <Navbar logo={<img className="w-20 h-4" src={logoHeaderSvg} alt="ResomiX Logo" />} />
-        
-        {/* Mobile content sections will go here */}
-        <div className="mt-8 text-white text-center">
-          <h1 className="text-2xl font-bold mb-4">Mobile View</h1>
-          <p className="text-gray-300">
-            Mobile-specific design will be implemented here
-          </p>
-        </div>
+    <>
+      {/* Global Static Noise - covers entire viewport */}
+      <StaticNoise color="#323233" zIndex={1} />
+
+      {/* Content layer */}
+      <div
+        style={{
+          margin: "0 auto",
+          color: "var(--color-text-secondary)",
+          position: "relative",
+          zIndex: 30,
+          maxWidth: "1023px",
+        }}
+        className="bg-black min-h-screen px-4 py-6"
+      >
+        {/* Navbar */}
+        <MobileNavbar
+          logo={<a href="https://resomix.com" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          menuIcon={<a href="https://resomix.com" className="cursor-default"><MenuIcon className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"/></a>}
+        />
+
+        {/* Content Sections */}
+        {/* <HeroSection /> */}
       </div>
-    </div>
+    </>
   );
 }

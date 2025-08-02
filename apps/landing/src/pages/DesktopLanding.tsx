@@ -1,4 +1,5 @@
-import { Navbar, StaticNoise } from "@resomix/ui";
+import { Navbar } from "@resomix/ui";
+// import { Navbar, StaticNoise } from "@resomix/ui";
 import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../sections/index.ts";
 import sideFrameSvg from "../assets/icons/layout/side_frame.svg";
 import { LogoHeader } from "../components/LogoHeader.tsx";
@@ -7,7 +8,7 @@ export function DesktopLanding() {
   return (
     <>
       {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#323233" zIndex={1} />
+      {/* <StaticNoise color="#323233" zIndex={1} /> */}
 
       {/* Content layer */}
       <div
@@ -19,7 +20,6 @@ export function DesktopLanding() {
           maxWidth: '2560px',
         }}
       >
-        {/* 242422 */}
 
         {/* SVG Overlay inside 1280px content */}
         <div
@@ -30,7 +30,7 @@ export function DesktopLanding() {
         </div>
 
         {/* Content-specific Static Noise - within content layer */}
-        {/* <StaticNoise color="#323233" zIndex={5} opacity={0.4}/> */}
+        {/* <StaticNoise color="#313132" zIndex={5} opacity={0.4}/> */}
 
         {/* Actual Content Sections */}
         <Navbar logo={<a href="https://resomix.com" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>} />

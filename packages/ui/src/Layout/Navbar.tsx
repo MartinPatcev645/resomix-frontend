@@ -1,5 +1,4 @@
 import React from "react";
-// import { LogoHeader } from "../Logo/LogoHeader";
 import { LinkButton } from "../Buttons/LinkButton";
 import { ButtonHeavyRight } from "../Buttons/ButtonHeavyRight";
 

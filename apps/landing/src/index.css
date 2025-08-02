@@ -73,6 +73,23 @@ html {
 /* optional crisp lines */
 svg { vector-effect: non-scaling-stroke; }
 
+/* ─── Fluid mobile scaling (html) ───────────────────────── */
+@media (max-width: 1023px) {
+  :root {
+    /* design reference */
+    --ideal-width: 393;
+    --min-width: 250px;
+    --max-width: 1023px;
+  }
+
+  /* scale the REM unit for mobile */
+  html {
+    /* 16px at 393px viewport, ~10px at 250px, ~26px at 1023px */
+    font-size: clamp(10px, 4.07vw, 26px);
+    /* 4.07vw ≈ 16px at a 393px viewport (393 × 0.0407 ≈ 16) */
+  }
+}
+
 /* ─── Hide scrollbars across all browsers ───────────────────────── */
 html, body {
   -ms-overflow-style: none; /* IE and Edge */
