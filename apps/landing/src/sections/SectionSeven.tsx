@@ -1,6 +1,7 @@
 import React from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
-import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
+import { ButtonHeavyRight, CodeTyping } from "@resomix/ui";
+// import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
 import LineThreeSvg from "../assets/icons/line3.svg";
 
 const SextionSeven: React.FC = () => (
@@ -19,7 +20,7 @@ const SextionSeven: React.FC = () => (
         opacity: '60%'
       }}
     >
-      <Terrain
+      {/* <Terrain
         speed={1.2}
         segments={324}
         perlinPasses={1}
@@ -30,7 +31,7 @@ const SextionSeven: React.FC = () => (
         wireframe={true}
         wireframeColor="#FFFFFF"
         floorVisible={false}
-      />
+      /> */}
     </div>
     {/* Content with higher z-index */}
     <div className='flex flex-col w-full relative z-15'>
