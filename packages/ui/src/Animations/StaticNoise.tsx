@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 export interface StaticNoiseProps {
-  /** Background colour on which the noise canvas sits (e.g. "#323233"). */
+  /** Background colour on which the noise canvas sits (e.g. "#313132"). */
   color?: string;
   /** Opacity of the whole noise layer (0-1). */
   opacity?: number;
@@ -17,7 +17,7 @@ export interface StaticNoiseProps {
  * through the `className` prop just like any other element.
  */
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
-  color = "#323233",
+  color = "#313132",
   opacity = 1,
   zIndex,
   className = "",
@@ -58,7 +58,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       const imageData = ctx.createImageData(width, height);
       const buffer32 = new Uint32Array(imageData.data.buffer);
       const len = buffer32.length;
-      for (let i = 0; i < len; i++) buffer32[i] = (Math.random() * 255) << 24;
+      for (let i = 0; i < len; i++) buffer32[i] = (Math.random() * 205) << 24;
       ctx.putImageData(imageData, 0, 0);
     };
 
