@@ -3,7 +3,7 @@ import { StaticNoise } from "@resomix/ui";
 
 const MenuPage: React.FC = () => (
   <div className="w-screen h-screen">
-    <StaticNoise color="#323233" className="fixed inset-0" />
+    <StaticNoise color="#323233" zIndex={1}/>
   </div>
 );
 

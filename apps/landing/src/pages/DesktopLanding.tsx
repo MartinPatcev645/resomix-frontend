@@ -7,7 +7,7 @@ export function DesktopLanding() {
   return (
     <>
       {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#313132" zIndex={1} />
+      <StaticNoise color="#323233" zIndex={1} />
 
       {/* Content layer */}
       <div
