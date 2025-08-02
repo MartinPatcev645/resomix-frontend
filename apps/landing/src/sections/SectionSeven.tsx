@@ -1,12 +1,18 @@
-import React from "react";
+import React, { useRef } from "react";
 import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
-import { ButtonHeavyRight, CodeTyping } from "@resomix/ui";
-// import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
+// import { ButtonHeavyRight, CodeTyping } from "@resomix/ui";
+import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
+import { useOnScreen } from "@resomix/hooks";
 import LineThreeSvg from "../assets/icons/line3.svg";
 
-const SextionSeven: React.FC = () => (
-  <div className='mt-[var(--px-200)] px-[var(--px-62)] relative'>
+const SextionSeven: React.FC = () => {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const isVisible = useOnScreen(sectionRef, "1000px 0px 1000px 0px");
+
+  return (
+  <div ref={sectionRef} className='mt-[var(--px-200)] px-[var(--px-62)] relative'>
     {/* Rock ring animation */}
+    {isVisible && (
     <div
       style={{
         position: 'absolute',
@@ -20,7 +26,7 @@ const SextionSeven: React.FC = () => (
         opacity: '60%'
       }}
     >
-      {/* <Terrain
+      <Terrain
         speed={1.2}
         segments={324}
         perlinPasses={1}
@@ -31,8 +37,9 @@ const SextionSeven: React.FC = () => (
         wireframe={true}
         wireframeColor="#FFFFFF"
         floorVisible={false}
-      /> */}
+      />
     </div>
+    )}
     {/* Content with higher z-index */}
     <div className='flex flex-col w-full relative z-15'>
       <div className='flex flex-col justify-start items-start w-full'>
@@ -122,6 +129,7 @@ const SextionSeven: React.FC = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default SextionSeven;

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Remains, IconComp } from "@resomix/ui";
+import { useOnScreen } from "@resomix/hooks";
 // import { BackgroundNoise } from "../components/index.ts";
 import XSvg from "../assets/icons/twitter_x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
@@ -7,8 +8,12 @@ import FbSvg from "../assets/icons/facebook.svg";
 import SoundWaves from "../assets/icons/sound_waves.svg";
 import ArrowSmallDown from "../assets/icons/arrow_small_down.svg";
 
-const HeroSection: React.FC = () => (
-  <div className="relative">
+const HeroSection: React.FC = () => {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
+
+  return (
+  <div ref={sectionRef} className="relative">
     {/* Hidden SVG defs for clip-path */}
     <svg
       viewBox="0 0 1152 628"
@@ -45,7 +50,7 @@ const HeroSection: React.FC = () => (
 
       {/* FlyingThroughSpace background animation */}
       <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)]">
-        <Remains />
+        {isVisible && <Remains />}
       </div>
 
       {/* Overlay content */}
@@ -89,6 +94,7 @@ const HeroSection: React.FC = () => (
       <img src={SoundWaves} className="w-[var(--px-55)] h-[var(--px-44)]" alt="Sound Waves" />
     </div>
   </div>
-);
+  );
+};
 
 export default HeroSection;

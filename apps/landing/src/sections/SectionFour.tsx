@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import ArrowSmallUp from "../assets/icons/arrow_small_up.svg";
 import ReferenceSvg from "../assets/icons/reference.svg";
 import AnalysisSvg from "../assets/icons/analysis.svg";
@@ -6,9 +6,14 @@ import MatchesSvg from "../assets/icons/matches.svg";
 import LineOneSvg from "../assets/icons/line1.svg";
 import LineTwoSvg from "../assets/icons/line2.svg";
 import { SineWaves, CodeTyping } from "@resomix/ui";
+import { useOnScreen } from "@resomix/hooks";
 
-const SectionFour: React.FC = () => (
-  <div className='mt-[var(--px-300)] px-[var(--px-62)] relative z-15'>
+const SectionFour: React.FC = () => {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
+
+  return (
+  <div ref={sectionRef} className='mt-[var(--px-300)] px-[var(--px-62)] relative z-15'>
     <div className='flex justify-between'>
       <div className='flex flex-col justify-between h-full items-center'>
         <div className='flex flex-col text-[length:var(--px-65)] font-bold font-helvetica uppercase leading-[var(--px-64)]'>
@@ -70,7 +75,7 @@ const SectionFour: React.FC = () => (
             >
               {/* Square wrapper to avoid stretching; 85% of frame height for subtle zoom-out */}
               <div className="w-full h-[var(--px-310)] mt-[var(--px-20)]">  {/* ~3:1 aspect inside 308×171 frame */}
-                <SineWaves />
+                {isVisible && <SineWaves />}
               </div>
             </div>
           </div>
@@ -125,6 +130,7 @@ const SectionFour: React.FC = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default SectionFour;

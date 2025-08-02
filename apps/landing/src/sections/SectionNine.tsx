@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useRef } from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
 import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
-import { GoldenSpiral } from "@resomix/ui";
-import { CodeTyping } from "@resomix/ui";
+import { GoldenSpiral, CodeTyping } from "@resomix/ui";
+import { useOnScreen } from "@resomix/hooks";
 
-const SectionNine: React.FC = () => (
-  <div className="mt-[var(--px-240)] px-[var(--px-62)] mr-[var(--px-1)] relative z-15">
+const SectionNine: React.FC = () => {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
+
+  return (
+  <div ref={sectionRef} className="mt-[var(--px-240)] px-[var(--px-62)] mr-[var(--px-1)] relative z-15">
     <div className="absolute top-[var(--px-560)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
-      <GoldenSpiral />
+      {isVisible && <GoldenSpiral />}
     </div>
     {/* Content with higher z-index */}
     <div className="flex flex-col justify-between relative z-15">
@@ -103,6 +107,7 @@ const SectionNine: React.FC = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default SectionNine;
