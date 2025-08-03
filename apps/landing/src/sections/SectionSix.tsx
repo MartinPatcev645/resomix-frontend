@@ -10,7 +10,7 @@ const SectionSix: React.FC = () => (
         <img
           src={GridTunnelSvg}
           alt="Grid Tunnel"
-          className='w-full h-auto'
+          className="w-full h-auto opacity-80 mix-blend-screen"
         />
       </div>
 
