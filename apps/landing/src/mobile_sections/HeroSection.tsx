@@ -11,19 +11,19 @@ const HeroSection: React.FC = () => (
   <div className="relative">
     {/* Hidden SVG defs for clip-path */}
     <svg
-      viewBox="0 0 1152 628"
+      viewBox="0 0 314 718"
       preserveAspectRatio="none"
-      className="absolute inset-0 w-[length:var(--px-1152)] h-[length:var(--px-628)] mx-[var(--px-63)] pointer-events-none z-10"
+      className="absolute inset-0 w-[length:var(--px-314)] h-[length:var(--px-718)] mx-[var(--px-40)] -mt-[var(--px-8)] pointer-events-none z-10"
     >
       <defs>
         <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
-          <path transform="scale(0.0008680556,0.0015923567)" d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
+          <path transform="scale(0.0031847134,0.0013927577)" d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z" />
         </clipPath>
       </defs>
 
       {/* stroke outline */}
       <path
-        d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
+        d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z"
         stroke="white"
         strokeOpacity="0.7"
         strokeWidth="0.37037"
@@ -34,7 +34,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto z-20"
+      className="relative w-[var(--px-314)] h-[var(--px-718)] mx-auto z-20"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -43,39 +43,34 @@ const HeroSection: React.FC = () => (
       {/* Background noise layers (two, for consistency with other sections) */}
       {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
-      {/* FlyingThroughSpace background animation */}
-      <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)]">
+      {/* Remains background animation */}
+      <div className="absolute inset-0 w-[var(--px-314)] h-[var(--px-718)] mx-[var(--px-40)] -mt-[var(--px-8)]">
         <Remains />
       </div>
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none">
+      <div className="absolute inset-0 flex flex-col items-end justify-between w-[var(--px-314)] h-full select-none mx-[var(--px-40)] -mt-[var(--px-8)]">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
-          <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase -ml-[var(--px-10)] text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix </div>
-          <div className='flex w-full justify-between items-center -mt-[var(--px-48)]'>
-            <div className='flex gap-[var(--px-12)]'>
-              <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
-              <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-white" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
-            </div>
-            <div className="text-[length:var(--px-45)] font-medium font-helvetica uppercase text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Align With Your Sound</div>
-          </div>
+          <div className="justify-start text-[length:var(--px-40)] font-bold font-helvetica uppercase leading-[var(--px-40)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— the Soul<br />of Sound </div>
+          <div className="justify-start text-[length:var(--px-16)] font-light font-helvetica uppercase mt-[var(--px-10)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
+          <img className="w-[var(--px-34)] h-[var(--px-34)] mt-[var(--px-10)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
         </div>
-        <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
+        <div className="flex gap-[var(--px-4)] mx-auto mb-[var(--px-40)] relative z-15">
           <IconComp
-            svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={FbSvg} alt="Fb" />}
-            className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
+            svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={FbSvg} alt="Fb" />}
+            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
             padding=""
             onClick={() => window.open("https://www.facebook.com/resomix", "_blank")}
           />
           <IconComp
-            svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={InstaSvg} alt="Insta" />}
-            className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
+            svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={InstaSvg} alt="Insta" />}
+            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
             padding=""
             onClick={() => window.open("https://www.instagram.com/resomix", "_blank")}
           />
           <IconComp
-            svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={XSvg} alt="X" />}
-            className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
+            svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={XSvg} alt="X" />}
+            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
             padding=""
             onClick={() => window.open("https://twitter.com/resomix", "_blank")}
           />
@@ -84,9 +79,9 @@ const HeroSection: React.FC = () => (
     </div>
 
     {/* Text below the SVG clip path */}
-    <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15'>
-      <div className="text-right justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
-      <img src={SoundWaves} className="w-[var(--px-55)] h-[var(--px-44)]" alt="Sound Waves" />
+    <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15 mt-[var(--px-40)]'>
+      <div className="text-right justify-start text-[length:var(--px-16)] font-extralight font-helvetica uppercase leading-[var(--px-16)]">Unbounded by trends,<br />built for emotional<br />resonance</div>
+      <img src={SoundWaves} className="w-[var(--px-31)] h-[var(--px-38)]" alt="Sound Waves" />
     </div>
   </div>
 );

@@ -48,7 +48,7 @@ const HeroSection: React.FC = () => {
       {/* Background noise layers (two, for consistency with other sections) */}
       {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
-      {/* FlyingThroughSpace background animation */}
+      {/* Remains background animation */}
       <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)]">
         {isVisible && <Remains />}
       </div>
