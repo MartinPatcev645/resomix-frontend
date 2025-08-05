@@ -26,8 +26,8 @@ export function HomeMobile() {
         </div> */}
         {/* Navbar */}
         <MobileNavbar
-          logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-          menuIcon={<a href="/menu" className="cursor-default"><MenuIcon className="w-[var(--px-21)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          menuIcon={<a href="/menu" className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
         />
 
         {/* Content Layer Sections */}
