@@ -1,23 +1,33 @@
 import React from "react";
-import ArrowDownRightSvg from "../assets/icons/arrow_down_right.svg";
-import SoundWavesSvg from "../assets/icons/sound_waves_2.svg";
+import ArrowDownLeftSvg from "../assets/icons/arrow_big_down_left_stroke.svg";
+import SoundWavesSvg from "../assets/icons/sound_waves_outline.svg";
 
 const SectionThree: React.FC = () => (
-  <div className='mt-[var(--px-350)] flex flex-col w-full px-[var(--px-65)] relative z-15'>
+  <div className='mt-[var(--px-200)] flex flex-col w-full px-[var(--px-40)] relative z-15'>
     <div className='flex flex-col w-full'>
-      <div className='flex justify-between items-start'>
-        <div className='flex gap-[var(--px-20)] justify-start items-center'>
-          <img className="w-[var(--px-43)] h-[var(--px-44)]" src={ArrowDownRightSvg} alt="Arrow Down Right" />
-          <div className="justify-start text-[length:var(--px-59)] font-light font-helvetica uppercase leading-[var(--px-64)]">RESOMIX BRINGS</div>
+      <div className="flex flex-col">
+        <div className="flex items-start justify-between">
+          <div className="text-[length:var(--px-16)] font-light font-helvetica uppercase leading-[var(--px-18)] tracking-wide uppercase text-left">
+            Resomix brings<br />the art of selection<br />into the age of deep learning
+          </div>
+          <div className="flex items-center justify-center">
+            <img src={ArrowDownLeftSvg} alt="Arrow Down" className="w-[var(--px-33)] h-[var(--px-33)]" />
+          </div>
         </div>
-        <div className="text-right justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-12)] opacity-50">The thrill and excitement of crate digging, but with the power,<br />speed, and convenience of cutting-edge technology.</div>
+        <div className="text-[length:var(--px-10)] text-right font-extralight font-auger mt-[var(--px-24)] opacity-50 leading-[var(--px-12)]">
+          The thrill and excitement of crate digging,<br />but with the power, speed, and convenience<br />of cutting-edge technology.
+        </div>
+        <div className="text-[length:var(--px-10)] text-right font-extralight font-auger mt-[var(--px-12)] opacity-50 leading-[var(--px-12)]">
+          Our unique approach amplifies personal<br />taste, and shines a light on hidden gems at<br />the edges of catalogs, archives, and time.
+        </div>
       </div>
-      <div className="justify-start text-[length:var(--px-59)] font-light font-helvetica uppercase leading-[var(--px-64)]">THE ART OF SELECTION<br />INTO THE AGE OF DEEP LEARNING</div>
     </div>
-    <div className='mt-[var(--px-350)] flex justify-between items-start'>
-      <div className="justify-start text-[length:var(--px-25)] font-light font-montserrat uppercase leading-[var(--px-28)]">A safe haven for DJs escaping the<br />noise of algorithms and trends</div>
-      <img src={SoundWavesSvg} alt="Sound Waves" className="mt-[var(--px-4)] w-[var(--px-59)] h-[var(--px-48)]" />
-      <div className="text-right justify-start text-[length:var(--px-25)] font-light font-montserrat uppercase leading-[var(--px-28)]">Resomix will expand your sonic<br />horizon, discover threads you never<br />knew were there.</div>
+    <div className='mt-[var(--px-180)] flex flex-col justify-between w-full'>
+      <div className="justify-start text-[length:var(--px-15)] font-light font-helvetica uppercase leading-[var(--px-18)] tracking-wide">A safe haven for DJs escaping<br />the noise of algorithms and trends</div>
+      <div className="flex items-center justify-center my-[var(--px-40)]">
+        <img src={SoundWavesSvg} alt="Sound Waves" className="w-[var(--px-160)] h-[var(--px-131)]" />
+      </div>
+      <div className="text-right justify-start text-[length:var(--px-15)] font-light font-helvetica uppercase leading-[var(--px-18)] tracking-wider">Resomix will expand your sonic<br />horizon, discover threads you<br />never knew were there.</div>
     </div>
   </div>
 );
