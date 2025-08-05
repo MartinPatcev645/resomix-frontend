@@ -8,7 +8,7 @@ export function HomePage() {
   return (
     <>
       {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#313132" zIndex={1} />
+      <StaticNoise color="#313132" opacity={0.7} zIndex={1} />
 
       {/* Content layer */}
       <div

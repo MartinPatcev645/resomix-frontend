@@ -9,7 +9,7 @@ export function HomeMobile() {
   return (
     <>
       {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#323233" zIndex={1} />
+      <StaticNoise color="#323233" opacity={0.7} zIndex={1} />
 
       {/* Content layer */}
       <div
