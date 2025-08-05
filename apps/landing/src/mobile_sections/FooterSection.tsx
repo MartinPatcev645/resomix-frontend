@@ -8,7 +8,7 @@ const FooterSection: React.FC = () => (
       <div className="max-w-full text-[length:var(--px-30)] font-benzin uppercase">
         Join the Resomix<br />Universe
       </div>
-      <div className="flex flex-col items-center px-[var(--px-40)] min-h-[var(--px-129)] mt-[var(--px-40)]">
+      <div className="flex flex-col items-start px-[var(--px-40)] min-h-[var(--px-129)] mt-[var(--px-40)]">
         <div className="flex w-full justify-start">
           <a href="https://resomix.com" className="cursor-default">
             <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />

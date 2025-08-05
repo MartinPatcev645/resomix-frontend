@@ -6,14 +6,14 @@ import { CodeTyping } from "@resomix/ui";
 
 const SectionNine: React.FC = () => (
   <div className="mt-[var(--px-240)] relative z-15">
-    <div className="absolute top-[var(--px-800)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
+    <div className="absolute top-[var(--px-800)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-393)] h-[var(--px-393)] opacity-90">
       <GoldenSpiral />
     </div>
     {/* Content with higher z-index */}
     <div className="flex flex-col justify-between relative z-15">
       {/* Section 9 A */}
-      <div className="flex flex-col justify-between min-h-[var(--px-198-5)]">
-        <div className="mt-[var(--px-40)] text-center text-[length:var(--px-6)] font-light font-fira opacity-50 tracking-[var(--px-1-2)]">
+      <div className="flex flex-col justify-between min-h-[var(--px-403)]">
+        <div className="mt-[var(--px-40)] text-center text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-1-2)]">
           <div className="leading-[var(--px-8)]">
             <CodeTyping
               speed={50}
@@ -55,7 +55,7 @@ const SectionNine: React.FC = () => (
             />
           </div>
         </div>
-        <div className="flex flex-col items-center text-center text-[length:var(--px-6)] font-light font-fira min-h-[var(--px-184)] mt-[var(--px-60)]">
+        <div className="flex flex-col items-center text-center text-[length:var(--px-7)] font-light font-fira min-h-[var(--px-184)] mt-[var(--px-60)]">
           <div className="opacity-50 leading-[var(--px-32)] min-h-[var(--px-32)] tracking-[var(--px-1-2)]">
             <CodeTyping
               speed={50}
@@ -90,12 +90,12 @@ const SectionNine: React.FC = () => (
       </div>
 
       {/* Section 9 B */}
-      <div className="flex flex-col justify-between mt-[var(--px-220)] gap-[var(--px-171)] w-full items-center">
-        <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-1-2)]">
+      <div className="flex flex-col justify-between mt-[var(--px-167)] gap-[var(--px-220)] w-full items-center">
+        <div className="text-[length:var(--px-8)] font-light font-fira opacity-70 tracking-[var(--px-1-5)]">
           A New Era of Music
         </div>
-        <img src={SectionNineGraphic} className="w-[var(--px-313)] h-[var(--px-4)]" alt="Section Nine Graphic" />
-        <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-1-2)]">
+        <img src={SectionNineGraphic} className="w-[var(--px-394)] h-[var(--px-6)]" alt="Section Nine Graphic" />
+        <div className="text-[length:var(--px-8)] font-light font-fira opacity-70 tracking-[var(--px-1-5)]">
           Tune Into the Unknown
         </div>
       </div>

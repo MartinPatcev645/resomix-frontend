@@ -35,7 +35,7 @@ const SectionEight: React.FC = () => (
     </div>
     <div className="flex justify-start w-full relative mt-[var(--px-80)]">
       {/* Left graphic here */}
-      <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-12)] font-auger font-light z-20 -mt-[var(--px-4)] leading-[var(--px-12)] opacity-50">
+      <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-12)] font-auger font-light z-20 -mt-[var(--px-4)] leading-[var(--px-12)] opacity-50 ml-[var(--px-20)]">
         Resomix is designed<br />to save you time and<br />expand your music taste.
       </div>
       <img src={SectionEightGraphicLeftSvg} className="w-[var(--px-251)] h-[var(--px-97)]" alt="Section Eight Graphic Left" />

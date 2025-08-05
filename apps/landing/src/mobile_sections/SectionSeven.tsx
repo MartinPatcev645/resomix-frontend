@@ -55,7 +55,7 @@ const SextionSeven: React.FC = () => (
       </div>
       <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
         {/* <div className="min-h-[var(--px-309)]"></div> */}
-        <div className='flex justify-between items-start w-full opacity-50 min-h-[var(--px-121-5)]'>
+        <div className='flex justify-between items-start w-full opacity-50 min-h-[var(--px-134)]'>
           <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
             <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
               <CodeTyping

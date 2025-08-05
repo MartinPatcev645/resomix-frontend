@@ -56,7 +56,7 @@ const SectionFour: React.FC = () => (
         <ButtonHeavyRight className="w-full mx-[var(--px-2)]" text="Upload Your Track" onClick={() => { }} />
       </div>
 
-      <div className='flex mt-[var(--px-150)] flex-col w-full'>
+      <div className='flex mt-[var(--px-150)] flex-col w-full min-h-[var(--px-245)]'>
         <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)] min-h-[var(--px-16)]'>
           <CodeTyping
             speed={25}
