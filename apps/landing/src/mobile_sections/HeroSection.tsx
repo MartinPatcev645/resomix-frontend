@@ -52,9 +52,9 @@ const HeroSection: React.FC = () => (
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-between w-[var(--px-393)] h-full select-none -mt-[var(--px-8)]">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
-          <div className="justify-start text-[length:var(--px-40)] font-bold font-helvetica uppercase leading-[var(--px-40)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— the Soul<br />of Sound </div>
-          <div className="justify-start text-[length:var(--px-16)] font-light font-helvetica uppercase mt-[var(--px-10)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
-          <img className="w-[var(--px-34)] h-[var(--px-34)] mt-[var(--px-10)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
+          <div className="justify-start text-[length:var(--px-45)] font-bold font-helvetica uppercase leading-[var(--px-45)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— the Soul<br />of Sound </div>
+          <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
+          <img className="w-[var(--px-35)] h-[var(--px-35)] mt-[var(--px-12)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
         </div>
         <div className="flex gap-[var(--px-4)] mx-auto mb-[var(--px-40)] relative z-15">
           <IconComp
