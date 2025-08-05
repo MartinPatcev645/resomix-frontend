@@ -1,19 +1,19 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
-import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
+import SectionNineGraphic from "../assets/icons/composites/mobile/section_nine_graphic.svg";
 import { GoldenSpiral } from "@resomix/ui";
 import { CodeTyping } from "@resomix/ui";
 
 const SectionNine: React.FC = () => (
-  <div className="mt-[var(--px-240)] px-[var(--px-62)] mr-[var(--px-1)] relative z-15">
-    <div className="absolute top-[var(--px-560)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
+  <div className="mt-[var(--px-240)] px-[var(--px-40)] relative z-15">
+    <div className="absolute top-[var(--px-800)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
       <GoldenSpiral />
     </div>
     {/* Content with higher z-index */}
     <div className="flex flex-col justify-between relative z-15">
       {/* Section 9 A */}
-      <div className="flex justify-between mx-[var(--px-250)] min-h-[var(--px-198-5)]">
-        <div className="mt-[var(--px-40)] text-left text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
+      <div className="flex flex-col justify-between min-h-[var(--px-198-5)]">
+        <div className="mt-[var(--px-40)] text-center text-[length:var(--px-6)] font-light font-fira opacity-50 tracking-[var(--px-1-2)]">
           <div className="leading-[var(--px-8)]">
             <CodeTyping
               speed={50}
@@ -26,21 +26,21 @@ const SectionNine: React.FC = () => (
               text="deep_sonic_analysis(mode=granular)"
             />
           </div>
-          <div className="leading-[var(--px-32)]">
+          <div className="leading-[var(--px-24)]">
             <CodeTyping
               speed={50}
               text="let result = Resomix.listen(input: feeling)"
               delay={800}
             />
           </div>
-          <div className="leading-[var(--px-32)]">
+          <div className="leading-[var(--px-24)]">
             <CodeTyping
               speed={50}
               text="init.crate_digging(powered_by_AI)"
               delay={1100}
             />
           </div>
-          <div className="leading-[var(--px-64)]">
+          <div className="leading-[var(--px-40)]">
             <CodeTyping
               speed={50}
               text="system.listens() ∴ you.create()"
@@ -55,28 +55,28 @@ const SectionNine: React.FC = () => (
             />
           </div>
         </div>
-        <div className="flex flex-col items-end text-right text-[length:var(--px-7)] font-light font-fira opacity-50 min-h-[var(--px-184)]">
-          <div className="leading-[var(--px-32)] min-h-[var(--px-32)] tracking-[var(--px-2)]">
+        <div className="flex flex-col items-center text-center text-[length:var(--px-6)] font-light font-fira min-h-[var(--px-184)] mt-[var(--px-60)]">
+          <div className="opacity-50 leading-[var(--px-32)] min-h-[var(--px-32)] tracking-[var(--px-1-2)]">
             <CodeTyping
               speed={50}
               text="// ML.engine::Enhancing_Human_Creativity()"
             />
           </div>
-          <div className="mb-[var(--px-32)] min-h-[var(--px-8)] tracking-[var(--px-2)]">
+          <div className="opacity-50 mb-[var(--px-32)] min-h-[var(--px-8)] tracking-[var(--px-1-2)]">
             <CodeTyping
               speed={50}
               text="neural_waveform"
               delay={1100}
             />
           </div>
-          <div className="leading-[var(--px-8)] min-h-[var(--px-8)] tracking-[var(--px-2)]">
+          <div className="opacity-50 leading-[var(--px-8)] min-h-[var(--px-8)] tracking-[var(--px-1-2)]">
             <CodeTyping
               speed={50}
               text="wave_resonance &gt;&gt;&gt;"
               delay={1100}
             />
           </div>
-          <div className="leading-[var(--px-8)] tracking-[var(--px-2)]">
+          <div className="opacity-50 leading-[var(--px-8)] tracking-[var(--px-1-2)]">
             <CodeTyping
               speed={50}
               text="blending &gt;&gt;"
@@ -84,22 +84,20 @@ const SectionNine: React.FC = () => (
             />
           </div>
           <div className="flex justify-end mt-[var(--px-50)] min-w-[var(--px-204-5)]">
-            <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} transparent={true} />
+            <ButtonHeavyRight className="w-[var(--px-204-5)]" text="Upload Your Track" onClick={() => { }} transparent={true} />
           </div>
         </div>
       </div>
 
       {/* Section 9 B */}
-      <div className="mt-[var(--px-350)]">
-        <div className="flex justify-between mx-[var(--px-240)] -mb-[var(--px-6)]">
-          <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)] ml-[var(--px-20)]">
-            A New Era of Music
-          </div>
-          <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)]">
-            Tune Into the Unknown
-          </div>
+      <div className="flex flex-col justify-between mt-[var(--px-220)] gap-[var(--px-171)] w-full items-center">
+        <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-1-2)]">
+          A New Era of Music
         </div>
-        <img src={SectionNineGraphic} className="max-w-full h-[var(--px-4)]" alt="Section Nine Graphic" />
+        <img src={SectionNineGraphic} className="w-[var(--px-313)] h-[var(--px-4)]" alt="Section Nine Graphic" />
+        <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-1-2)]">
+          Tune Into the Unknown
+        </div>
       </div>
     </div>
   </div>
