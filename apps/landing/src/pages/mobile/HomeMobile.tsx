@@ -8,8 +8,8 @@ import { MenuIcon } from "../../components/MenuIcon.tsx";
 export function HomeMobile() {
   return (
     <>
-      {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#323233" opacity={0.7} zIndex={1} />
+      {/* Static noise now overscans 25 vh above & below viewport to avoid flashes during fast scroll */}
+      <StaticNoise color="#323233" opacity={0.7} zIndex={1} overscanVh={25} />
 
       {/* Content layer */}
       <div

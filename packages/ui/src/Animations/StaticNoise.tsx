@@ -9,6 +9,8 @@ export interface StaticNoiseProps {
   zIndex?: number;
   /** Extra Tailwind / CSS classes applied to the wrapper. */
   className?: string;
+  /** Extra vertical coverage outside the viewport, in viewport-height units (vh). Useful to prevent flashes during rapid scroll. For example, 25 means the noise layer starts 25 vh above the viewport and extends 25 vh below it. Defaults to 0. */
+  overscanVh?: number;
 }
 
 /**
@@ -21,6 +23,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
   opacity = 1,
   zIndex,
   className = "",
+  overscanVh = 0,
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -83,13 +86,16 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
   }, [color]);
 
   /* --------------------------- wrapper element --------------------------- */
+  const extra = overscanVh > 0 ? `${overscanVh}vh` : "0";
+
   return (
     <div
       ref={boxRef}
-      className={"pointer-events-none fixed inset-0 " + className}
+      className={"pointer-events-none fixed left-0 right-0 " + className}
       style={{
+        top: `-${extra}`,
         width: "100%",
-        height: "100%",
+        height: `calc(100vh + ${overscanVh * 2}vh)`,
         opacity,
         zIndex,
       }}

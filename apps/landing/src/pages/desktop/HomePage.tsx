@@ -7,8 +7,8 @@ import { LogoHeader } from "../../components/LogoHeader.tsx";
 export function HomePage() {
   return (
     <>
-      {/* Global Static Noise - covers entire viewport */}
-      <StaticNoise color="#313132" opacity={0.7} zIndex={1} />
+      {/* Static noise now overscans 50 vh above & below viewport to avoid flashes during fast scroll */}
+      <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
 
       {/* Content layer */}
       <div
