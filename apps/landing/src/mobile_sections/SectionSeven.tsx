@@ -4,7 +4,7 @@ import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
 import LineThreeSvg from "../assets/icons/line3.svg";
 
 const SextionSeven: React.FC = () => (
-  <div className='mt-[var(--px-200)] px-[var(--px-40)] relative'>
+  <div className='mt-[var(--px-200)] relative'>
     {/* Rock ring animation */}
     <div
       style={{

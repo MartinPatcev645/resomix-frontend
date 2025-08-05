@@ -6,7 +6,7 @@ import MatchesSvg from "../assets/icons/matches.svg";
 import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 
 const SectionFour: React.FC = () => (
-  <div className='mt-[var(--px-200)] px-[var(--px-40)] relative z-15'>
+  <div className='mt-[var(--px-200)] relative z-15'>
     <div className='flex flex-col gap-[var(--px-40)]'>
       <div className='flex flex-col text-[length:var(--px-33)] font-bold font-helvetica uppercase leading-[var(--px-33)]'>
         <div className='flex items-center justify-start'>

@@ -3,7 +3,7 @@ import ArrowDownLeftSvg from "../assets/icons/arrow_big_down_left_stroke.svg";
 import SoundWavesSvg from "../assets/icons/sound_waves_outline.svg";
 
 const SectionThree: React.FC = () => (
-  <div className='mt-[var(--px-200)] flex flex-col w-full px-[var(--px-40)] relative z-15'>
+  <div className='mt-[var(--px-200)] flex flex-col w-full relative z-15'>
     <div className='flex flex-col w-full'>
       <div className="flex flex-col">
         <div className="flex items-start justify-between">

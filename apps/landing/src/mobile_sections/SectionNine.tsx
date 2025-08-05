@@ -5,7 +5,7 @@ import { GoldenSpiral } from "@resomix/ui";
 import { CodeTyping } from "@resomix/ui";
 
 const SectionNine: React.FC = () => (
-  <div className="mt-[var(--px-240)] px-[var(--px-40)] relative z-15">
+  <div className="mt-[var(--px-240)] relative z-15">
     <div className="absolute top-[var(--px-800)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
       <GoldenSpiral />
     </div>

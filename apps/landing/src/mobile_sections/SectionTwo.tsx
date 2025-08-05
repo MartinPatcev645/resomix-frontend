@@ -5,7 +5,7 @@ import { ContourSphere } from "@resomix/ui";
 import { CodeTyping } from "@resomix/ui";
 
 const SectionTwo: React.FC = () => (
-  <div className='mt-[var(--px-330)] relative px-[var(--px-40)]'>
+  <div className='mt-[var(--px-330)] relative'>
     {/* Contour Sphere Animation */}
     <div
       style={{

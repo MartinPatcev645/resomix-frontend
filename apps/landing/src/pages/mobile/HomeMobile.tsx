@@ -2,7 +2,7 @@ import { MobileNavbar, StaticNoise } from "@resomix/ui";
 import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../mobile_sections/index.ts";
 import { LogoHeader } from "../../components/LogoHeader.tsx";
 import { MenuIcon } from "../../components/MenuIcon.tsx";
-import mobileSideFrameSvg from "../../assets/icons/layout/mobile_side_frame_flexible.svg";
+// import mobileSideFrameSvg from "../../assets/icons/layout/mobile_side_frame_flexible.svg";
 // import mobileSideFrameSvg from "../../assets/icons/layout/mobile_full_side_frame.svg";
 
 export function HomeMobile() {
@@ -21,9 +21,9 @@ export function HomeMobile() {
           maxWidth: "1023px",
         }}
       >
-        <div className="absolute top-0 left-0 w-full max-w-full max-h-full pointer-events-none z-30" aria-hidden="true">
+        {/* <div className="absolute top-0 left-0 w-full max-w-full max-h-full pointer-events-none z-30" aria-hidden="true">
           <img src={mobileSideFrameSvg} alt="Side Frame" className="w-full h-auto" />
-        </div>
+        </div> */}
         {/* Navbar */}
         <MobileNavbar
           logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}

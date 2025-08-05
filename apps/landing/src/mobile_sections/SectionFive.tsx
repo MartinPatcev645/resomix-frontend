@@ -9,7 +9,7 @@ const SectionFive: React.FC = () => {
   const { query, results, handleQueryChange } = useSearch();
 
   return (
-    <div className='mt-[var(--px-200)] px-[var(--px-38)] mr-[var(--px-1)] flex flex-col relative z-15'>
+    <div className='mt-[var(--px-200)] flex flex-col relative z-15'>
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>

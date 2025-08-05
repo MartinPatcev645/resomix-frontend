@@ -1,5 +1,6 @@
 import React from "react";
-import { Remains, IconComp } from "@resomix/ui";
+import { IconComp } from "@resomix/ui";
+// import { Remains, IconComp } from "@resomix/ui";
 // import { BackgroundNoise } from "../components/index.ts";
 import XSvg from "../assets/icons/twitter_x.svg";
 import InstaSvg from "../assets/icons/instagram.svg";
@@ -13,7 +14,7 @@ const HeroSection: React.FC = () => (
     <svg
       viewBox="0 0 314 718"
       preserveAspectRatio="none"
-      className="absolute inset-0 w-[length:var(--px-314)] h-[length:var(--px-718)] mx-[var(--px-40)] pointer-events-none z-10"
+      className="absolute inset-0 w-[length:var(--px-393)] h-[length:var(--px-718)] pointer-events-none z-10"
     >
       <defs>
         <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -34,7 +35,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-314)] h-[var(--px-718)] mx-auto z-20 -mt-[var(--px-8)]"
+      className="relative w-[var(--px-393)] h-[var(--px-718)] z-20 -mt-[var(--px-8)]"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -44,12 +45,12 @@ const HeroSection: React.FC = () => (
       {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
       {/* Remains background animation */}
-      <div className="absolute inset-0 w-[var(--px-314)] h-[var(--px-718)]">
+      {/* <div className="absolute inset-0 w-[var(--px-393)] h-[var(--px-718)]">
         <Remains />
-      </div>
+      </div> */}
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-end justify-between w-[var(--px-314)] h-full select-none -mt-[var(--px-8)]">
+      <div className="absolute inset-0 flex flex-col items-end justify-between w-[var(--px-393)] h-full select-none -mt-[var(--px-8)]">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
           <div className="justify-start text-[length:var(--px-40)] font-bold font-helvetica uppercase leading-[var(--px-40)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— the Soul<br />of Sound </div>
           <div className="justify-start text-[length:var(--px-16)] font-light font-helvetica uppercase mt-[var(--px-10)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
