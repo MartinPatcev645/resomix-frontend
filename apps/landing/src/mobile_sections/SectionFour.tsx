@@ -8,12 +8,12 @@ import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 const SectionFour: React.FC = () => (
   <div className='mt-[var(--px-200)] relative z-15'>
     <div className='flex flex-col gap-[var(--px-40)]'>
-      <div className='flex flex-col text-[length:var(--px-33)] font-bold font-helvetica uppercase leading-[var(--px-33)]'>
+      <div className='flex flex-col text-[length:var(--px-40)] font-bold font-helvetica uppercase leading-[var(--px-36)]'>
         <div className='flex items-center justify-start'>
           <div className='mr-[var(--px-8)]'>
             HOW
           </div>
-          <img className="w-[var(--px-28)] h-[var(--px-28)]" src={ArrowDownRightSvg} alt="Arrow Small Up" />
+          <img className="w-[var(--px-32)] h-[var(--px-32)]" src={ArrowDownRightSvg} alt="Arrow Small Up" />
         </div>
         <div className=''>
           RESOMIX<br />WORKS
@@ -21,59 +21,59 @@ const SectionFour: React.FC = () => (
       </div>
       <div className='flex flex-col items-start'>
         <div className='flex items-end justify-start mb-[var(--px-16)]'>
-          <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-40)] h-[var(--px-40)]" />
-          <div className='text-[length:var(--px-16)] font-bold font-helvetica uppercase'>
+          <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-46)] h-[var(--px-46)]" />
+          <div className='text-[length:var(--px-18)] font-bold font-helvetica uppercase'>
             1 — Upload Your<br />Reference Track
           </div>
         </div>
-        <div className='text-[length:var(--px-10)] font-extralight font-auger opacity-70 leading-[var(--px-12)] tracking-[var(--px-0-15)]'>
+        <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-70 leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
           You can upload any audio file: a released or<br />unreleased track, a sketch from your archive,<br />or a short clip.Metadata is not important; Resomix<br />listens to your reference audio and extrapolates<br />its sonic DNA to find a perfect match.
         </div>
       </div>
       <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
         <div className='flex items-end justify-start mb-[var(--px-16)]'>
-          <img className="w-[var(--px-46)] h-[var(--px-48)] mr-[var(--px-12)]" src={AnalysisSvg} alt="Analysis" />
-          <div className='text-[length:var(--px-16)] font-bold font-helvetica uppercase'>
+          <img className="w-[var(--px-48)] h-[var(--px-50)] mr-[var(--px-12)] mb-[var(--px-4)]" src={AnalysisSvg} alt="Analysis" />
+          <div className='text-[length:var(--px-18)] font-bold font-helvetica uppercase'>
             2 — Deep Sonic<br />Analysis
           </div>
         </div>
-        <div className='text-[length:var(--px-10)] font-extralight font-auger opacity-70 leading-[var(--px-12)] tracking-[var(--px-0-1)]'>
+        <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-70 leading-[var(--px-14)] tracking-[var(--px-0-1)]'>
           Here's when the magic happens.<br />Our system performs a full spectral analysis on a<br />granular level, exploring every aspect of your tune<br />rhythm, harmonic content, energy flow, dynamics,<br />and tonal balance.
         </div>
       </div>
       <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
         <div className='flex items-end justify-start mb-[var(--px-16)]'>
-          <img className="w-[var(--px-41)] h-[var(--px-41)] mr-[var(--px-12)]" src={MatchesSvg} alt="Matches" />
-          <div className='text-[length:var(--px-16)] font-bold font-helvetica uppercase'>
+          <img className="w-[var(--px-44)] h-[var(--px-44)] mr-[var(--px-12)] mb-[var(--px-4)]" src={MatchesSvg} alt="Matches" />
+          <div className='text-[length:var(--px-18)] font-bold font-helvetica uppercase'>
             3 — Get Perfect<br />Matches
           </div>
         </div>
-        <div className='text-[length:var(--px-10)] font-extralight font-auger opacity-70 leading-[var(--px-12)] tracking-[var(--px-0-15)]'>
+        <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-70 leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
           Within seconds, you'll have a carefully crafted<br />selection of tracks that resonate with your<br />reference's vibe, regardless of genre, release<br />date, or popularity.
         </div>
       </div>
       <div>
-        <ButtonHeavyRight className="w-full" text="Upload Your Track" onClick={() => { }} />
+        <ButtonHeavyRight className="w-full mx-[var(--px-2)]" text="Upload Your Track" onClick={() => { }} />
       </div>
 
       <div className='flex mt-[var(--px-150)] flex-col w-full'>
-        <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)] min-h-[var(--px-16)]'>
+        <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)] min-h-[var(--px-16)]'>
           <CodeTyping
             speed={25}
             text="search_now()<br />// lightning_fast.query()"
             multiline={true}
           />
         </div>
-        <div className='text-[length:var(--px-7)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60 ml-[var(--px-1)] min-h-[var(--px-10-5)]'>
+        <div className='text-[length:var(--px-9)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60 ml-[var(--px-1)] min-h-[var(--px-10-5)]'>
           <CodeTyping
-            speed={25}
+            speed={50}
             text="Resomix.run[...]"
             delay={2200}
           />
         </div>
 
         {/* SVG frame with crystalline cube */}
-        <div className="relative w-[var(--px-314)] h-[var(--px-171)]">
+        <div className="relative w-[var(--px-393)] h-[var(--px-220)]">
           {/* Hidden SVG defs for clip-path */}
           <svg
             viewBox="0 0 308 171"
@@ -103,13 +103,13 @@ const SectionFour: React.FC = () => (
             style={{ clipPath: "url(#cubeClip)", WebkitClipPath: "url(#cubeClip)" }}
           >
             {/* Square wrapper to avoid stretching; 85% of frame height for subtle zoom-out */}
-            <div className="w-full h-[var(--px-310)] mt-[var(--px-20)]">  {/* ~3:1 aspect inside 308×171 frame */}
+            <div className="w-full h-[var(--px-275)] mt-[var(--px-20)]">  {/* ~3:1 aspect inside 308×171 frame */}
               <SineWaves />
             </div>
           </div>
         </div>
 
-        <div className='text-[length:var(--px-7)] font-light font-fira tracking-widest leading-[var(--px-8)] opacity-60 ml-[var(--px-1)]'>
+        <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] opacity-60 ml-[var(--px-1)]'>
           <CodeTyping
             speed={25}
             text="deep_sonic_analysis [mode=granular]<br />system.listens(...)"
