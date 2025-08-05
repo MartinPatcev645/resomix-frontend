@@ -4,9 +4,10 @@ interface SearchInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
+  width?: string;
 }
 
-export const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, placeholder = "Search Now" }) => (
+export const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, placeholder = "Search Now", width = "w-[var(--px-588)]" }) => (
   <div className="flex items-center w-full">
     <div className="relative bg-[var(--color-primary)] rounded-3xl outline outline-[0.50px] outline-offset-[-0.50px] outline-[var(--color-primary)] overflow-hidden p-[var(--px-10)]">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="4 2 16 16" fill="none">
@@ -20,7 +21,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, place
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-[var(--px-588)] h-[var(--px-34)] py-[var(--px-8-889)] px-[var(--px-19-259)] bg-[var(--color-primary)] rounded-[30px] outline outline-[0.50px] outline-offset-[-0.50px] outline-[var(--color-primary)] text-[var(--color-text-primary)] text-[length:var(--px-11)] font-fira inline-flex justify-center items-center gap-[var(--px-10)]"
+      className={`h-[var(--px-34)] py-[var(--px-8-889)] px-[var(--px-19-259)] bg-[var(--color-primary)] rounded-[30px] outline outline-[0.50px] outline-offset-[-0.50px] outline-[var(--color-primary)] text-[var(--color-text-primary)] text-[length:var(--px-11)] font-fira inline-flex justify-center items-center gap-[var(--px-10)] ${width}`}
     />
   </div>
 );

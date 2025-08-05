@@ -1,7 +1,7 @@
 import React from "react";
-import SectionFiveGraphicLeft from "../assets/icons/composites/section_five_graphic_left.svg";
-import SectionFiveGraphicRight from "../assets/icons/composites/section_five_graphic_right.svg";
-import ArrowBigDownSvg from "../assets/icons/arrow_big_down_stroke.svg";
+import SectionFiveGraphicLeft from "../assets/icons/composites/mobile/section_five_graphic_left.svg";
+import SectionFiveGraphicRight from "../assets/icons/composites/mobile/section_five_graphic_right.svg";
+import ArrowBigDownSvg from "../assets/icons/arrow_down_right.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 
@@ -9,39 +9,39 @@ const SectionFive: React.FC = () => {
   const { query, results, handleQueryChange } = useSearch();
 
   return (
-    <div className='mt-[var(--px-250)] px-[var(--px-62)] flex flex-col relative z-15'>
+    <div className='mt-[var(--px-200)] px-[var(--px-38)] mr-[var(--px-1)] flex flex-col relative z-15'>
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
-          <div className="absolute top-1/3 right-0 transform text-[length:var(--px-13)] font-light font-auger text-right z-20 mr-[var(--px-60)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-50">
-            Deep sonic analysis, pure and simple,<br />unaffected by metadata or trends.
+          <div className="absolute top-1/3 right-0 transform text-[length:var(--px-10)] font-extralight font-auger text-right z-20 mr-[var(--px-35)] -mt-[var(--px-12)] leading-[var(--px-12)] opacity-50">
+            Deep sonic analysis, pure<br />and simple, unaffected by<br />metadata or trends.
           </div>
-          <img src={SectionFiveGraphicRight} alt="Section Five Graphic Right" className="w-[var(--px-444)] h-[var(--px-154)]" />
+          <img src={SectionFiveGraphicRight} alt="Section Five Graphic Right" className="w-[var(--px-220)] h-[var(--px-76)]" />
         </div>
         <div className='flex flex-col w-full justify-center'>
-          <div className="mx-auto text-center text-[length:var(--px-25)] font-extralight leading-[var(--px-28)] mt-[var(--px-24)] opacity-90 font-helvetica uppercase">
-            Resomix is the only platform in the world that<br />focuses on the “soul” of your reference track to<br />find music that matches its mood and spirit.
+          <div className="mx-auto text-center text-[length:var(--px-16)] font-light leading-[var(--px-20)] mt-[var(--px-60)] opacity-90 font-helvetica uppercase">
+            Resomix is the only platform in<br />the world that focuses on the<br />“soul” of your reference track<br />to find music that matches its<br />mood and spirit.
           </div>
-          <div className='mx-auto text-center text-[length:var(--px-13)] font-extralight mt-[var(--px-12)] opacity-60 font-auger'>
+          <div className='mx-auto text-center text-[length:var(--px-8)] font-extralight mt-[var(--px-10)] opacity-60 font-auger tracking-wider'>
             Cutting-Edge Innovation
           </div>
         </div>
-        <div className='flex w-full justify-start relative'>
-          <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-50">
+        <div className='flex w-full justify-start relative mt-[var(--px-60)]'>
+          <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-10)] font-extralight font-auger z-20 ml-[var(--px-32)] -mt-[var(--px-2)] leading-[var(--px-12)] opacity-50">
             A human approach<br />to modern technology
           </div>
-          <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-276)] h-[var(--px-83)]" />
+          <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-220)] h-[var(--px-76)]" />
         </div>
       </div>
 
       {/* Section Five B */}
-      <div className='mt-[var(--px-300)] pr-[var(--px-2)] flex flex-row w-full mb-[var(--px-80)] justify-between items-center'>
-        <div className='flex flex-col text-[length:var(--px-66)] font-bold leading-[var(--px-64)] font-helvetica uppercase'>
+      <div className='mt-[var(--px-150)] pr-[var(--px-2)] flex flex-col w-full mb-[var(--px-80)] justify-between items-start'>
+        <div className='flex flex-col text-[length:var(--px-33)] font-bold leading-[var(--px-33)] font-helvetica uppercase'>
           <div className=''>
             INSTANT
           </div>
-          <div className='flex items-center'>
-            <img src={ArrowBigDownSvg} alt="Arrow Big Down" className="w-[var(--px-49)] h-[var(--px-49)]" />
+          <div className='flex items-center gap-[var(--px-12)]'>
+            <img src={ArrowBigDownSvg} alt="Arrow Big Down" className="w-[var(--px-24)] h-[var(--px-24)]" />
             <div className=''>
               CATALOG
             </div>
@@ -51,18 +51,13 @@ const SectionFive: React.FC = () => {
           </div>
         </div>
         <div className='flex flex-col'>
-          <div className='text-[length:var(--px-22)] font-fira font-semibold uppercase leading-7 text-right'>
-            Explore a vast catalog in seconds and discover<br />sonic connections where no one else sees them
+          <div className='text-[length:var(--px-16)] font-fira font-semibold uppercase leading-[var(--px-20)] tracking-[var(--px-1)] text-left my-[var(--px-30)]'>
+            Explore a vast catalog<br />in seconds and discover<br />sonic connections where<br />no one else sees them
           </div>
-          <div className='text-[length:var(--px-13)] font-extralight font-auger text-right opacity-60 leading-[var(--px-16)] my-[var(--px-12)]'>
-            Whether you're looking for underground gems or timeless hits,<br />
-            Resomix can help you create unforgettable sets<br />
-            that resonate with people.
-          </div>
-          <div className='mt-[var(--px-16)] relative w-[var(--px-588)] self-end'>
+          <div className='mt-[var(--px-60)] relative w-[var(--px-312)] self-end'>
             {/** Search bar & dropdown */}
-            <SearchInput value={query} onChange={handleQueryChange} />
-            <SearchDropdown show={query.length > 0} results={results} onSelect={() => { }} />
+            <SearchInput value={query} onChange={handleQueryChange} width="w-[var(--px-312)]" />
+            <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-312)]" truncateLength={24} onSelect={() => { }} />
           </div>
         </div>
       </div>
