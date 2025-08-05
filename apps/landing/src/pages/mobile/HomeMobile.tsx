@@ -1,9 +1,9 @@
 import { MobileNavbar, StaticNoise } from "@resomix/ui";
-import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine } from "../../mobile_sections/index.ts";
+import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../mobile_sections/index.ts";
 import { LogoHeader } from "../../components/LogoHeader.tsx";
 import { MenuIcon } from "../../components/MenuIcon.tsx";
-// import mobileSideFrameSvg from "../../assets/icons/layout/mobile_side_frame_flexible.svg";
-import mobileSideFrameSvg from "../../assets/icons/layout/mobile_full_side_frame.svg";
+import mobileSideFrameSvg from "../../assets/icons/layout/mobile_side_frame_flexible.svg";
+// import mobileSideFrameSvg from "../../assets/icons/layout/mobile_full_side_frame.svg";
 
 export function HomeMobile() {
   return (
@@ -41,6 +41,7 @@ export function HomeMobile() {
         <SectionSeven />
         <SectionEight />
         <SectionNine />
+        <FooterSection />
       </div>
     </>
   );

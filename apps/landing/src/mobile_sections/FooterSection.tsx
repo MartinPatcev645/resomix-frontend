@@ -5,6 +5,11 @@ import { LogoRFooter } from "../components/LogoRFooter.tsx";
 const FooterSection: React.FC = () => (
   <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col">
+      <div className="max-w-full text-[length:var(--px-31)] font-benzin uppercase">
+        Join the Resomix Universe
+      </div>
+
+
       <div className="flex flex-col px-[var(--px-120)] min-h-[var(--px-129)]">
         <div className="flex w-full justify-start">
           <a href="https://resomix.com" className="cursor-default">
@@ -51,9 +56,6 @@ const FooterSection: React.FC = () => (
             </div>
           </div>
         </div>
-      </div>
-      <div className="max-w-full text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase">
-        Join the Resomix Universe
       </div>
       <div className="flex justify-between px-[var(--px-120)]">
         <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
