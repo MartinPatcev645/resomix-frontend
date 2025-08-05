@@ -16,16 +16,16 @@ const SectionSix: React.FC = () => (
 
       {/* Text Overlay - positioned absolutely over the SVG */}
       <div className='absolute inset-0 flex flex-col justify-between my-[var(--px-150)] items-center text-center z-10'>
-        <div className='flex w-full justify-center text-[length:var(--px-10)] leading-[var(--px-12)] font-extralight font-auger opacity-50'>
+        <div className='flex w-full justify-center text-[length:var(--px-12)] leading-[var(--px-14)] font-extralight font-auger opacity-50'>
           To all DJs lost in the vastness of the<br />modern sound universe:
           let Resomix<br />be the gravitational force that<br />draws you
           to the tracks you need.
         </div>
-        <div className='flex w-full justify-center text-[length:var(--px-16)] font-helvetica uppercase leading-[var(--px-16)]'>
+        <div className='flex w-full justify-center text-[length:var(--px-18)] font-helvetica uppercase leading-[var(--px-18)]'>
           RESOMIX revolutionized music<br />
           discovery by putting sound first
         </div>
-        <div className='flex w-full justify-center text-[length:var(--px-10)] leading-[var(--px-12)] font-extralight font-auger opacity-50'>
+        <div className='flex w-full justify-center text-[length:var(--px-12)] leading-[var(--px-14)] font-extralight font-auger opacity-50'>
           Cutting-edge Machine Learning to Enhance<br />
           Human Imagination, Proprietary models<br />designed
           to listen like producers,<br />and discover like DJs.
