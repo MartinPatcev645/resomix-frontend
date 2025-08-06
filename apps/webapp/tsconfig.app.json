@@ -12,6 +12,7 @@
     "moduleResolution": "NodeNext",
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./src/*"],
       "@resomix/ui": ["../../packages/ui/src/index.ts"],
       "@resomix/ui/*": ["../../packages/ui/src/*"],
       "@resomix/hooks": ["../../packages/hooks/src/index.ts"],

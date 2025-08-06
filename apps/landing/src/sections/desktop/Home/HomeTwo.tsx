@@ -1,6 +1,6 @@
 import React from "react";
-import LayersSvg from "../../../assets/icons/layers.svg";
-import VerticalLineSvg from "../../../assets/icons/vertical_line.svg";
+import LayersSvg from "@/assets/icons/layers.svg";
+import VerticalLineSvg from "@/assets/icons/vertical_line.svg";
 import { ContourSphere, CodeTyping } from "@resomix/ui";
 
 const HomeTwo: React.FC = () => (

@@ -1,6 +1,6 @@
 import React from "react";
 import { CodeTyping } from "@resomix/ui";
-import { LogoRFooter } from "../../../components/LogoRFooter.tsx";
+import { LogoRFooter } from "@/components/LogoRFooter.tsx";
 
 const HomeFooter: React.FC = () => (
   <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">

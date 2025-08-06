@@ -1,12 +1,12 @@
 import React from "react";
 import { FlyingThroughSpace, IconComp } from "@resomix/ui";
 // import { Remains, IconComp } from "@resomix/ui";
-// import { BackgroundNoise } from "../../../components/index.ts";
-import XSvg from "../../../assets/icons/twitter_x.svg";
-import InstaSvg from "../../../assets/icons/instagram.svg";
-import FbSvg from "../../../assets/icons/facebook.svg";
-import SoundWaves from "../../../assets/icons/sound_waves.svg";
-import ArrowSmallDown from "../../../assets/icons/arrow_small_down.svg";
+// import { BackgroundNoise } from "@/components/index.ts";
+import XSvg from "@/assets/icons/twitter_x.svg";
+import InstaSvg from "@/assets/icons/instagram.svg";
+import FbSvg from "@/assets/icons/facebook.svg";
+import SoundWaves from "@/assets/icons/sound_waves.svg";
+import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
 
 const HomeHero: React.FC = () => (
   <div className="relative">

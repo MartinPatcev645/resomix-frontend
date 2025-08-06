@@ -1,12 +1,12 @@
 import React, { useRef } from "react";
 import { Remains, IconComp } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
-// import { BackgroundNoise } from "../../../components/index.ts";
-import XSvg from "../../../assets/icons/twitter_x.svg";
-import InstaSvg from "../../../assets/icons/instagram.svg";
-import FbSvg from "../../../assets/icons/facebook.svg";
-import SoundWaves from "../../../assets/icons/sound_waves.svg";
-import ArrowSmallDown from "../../../assets/icons/arrow_small_down.svg";
+// import { BackgroundNoise } from "@/components/index.ts";
+import XSvg from "@/assets/icons/twitter_x.svg";
+import InstaSvg from "@/assets/icons/instagram.svg";
+import FbSvg from "@/assets/icons/facebook.svg";
+import SoundWaves from "@/assets/icons/sound_waves.svg";
+import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
 
 const HomeHero: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);

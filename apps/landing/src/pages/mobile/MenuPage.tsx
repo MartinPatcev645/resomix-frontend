@@ -1,9 +1,9 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
 // import { StaticNoise, ButtonHeavyRight } from "@resomix/ui";
-import CrossSvg from "../../assets/icons/cross.svg";
-import RIconsFooter from "../../assets/icons/r_icon_footer.svg";
-import MenuSeparator from "../../assets/icons/menu_separator.svg";
+import CrossSvg from "@/assets/icons/cross.svg";
+import RIconsFooter from "@/assets/icons/r_icon_footer.svg";
+import MenuSeparator from "@/assets/icons/menu_separator.svg";
 
 interface MenuPageProps {
   onClose?: () => void;

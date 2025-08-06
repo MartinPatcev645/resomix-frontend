@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { useOnScreen } from "@resomix/hooks";
-import SectionNineGraphic from "../../../assets/icons/composites/mobile/section_nine_graphic.svg";
+import SectionNineGraphic from "@/assets/icons/composites/mobile/section_nine_graphic.svg";
 import { GoldenSpiral, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 
 const HomeNine: React.FC = () => {

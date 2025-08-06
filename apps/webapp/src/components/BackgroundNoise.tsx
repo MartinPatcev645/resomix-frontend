@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import noiseImg from "../assets/noise-transparent.png";
+import noiseImg from "@/assets/noise-transparent.png";
 
 // Animate two layers of noise by randomising their background positions
 function animate(layerA: HTMLElement, layerB: HTMLElement) {

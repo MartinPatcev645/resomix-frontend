@@ -1,6 +1,6 @@
 import React from "react";
-import ArrowDownRightSvg from "../../../assets/icons/arrow_down_right.svg";
-import SoundWavesSvg from "../../../assets/icons/sound_waves_2.svg";
+import ArrowDownRightSvg from "@/assets/icons/arrow_down_right.svg";
+import SoundWavesSvg from "@/assets/icons/sound_waves_2.svg";
 
 const HomeThree: React.FC = () => (
   <div className='mt-[var(--px-350)] flex flex-col w-full px-[var(--px-65)] relative z-15'>

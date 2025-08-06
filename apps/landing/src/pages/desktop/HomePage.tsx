@@ -1,8 +1,8 @@
 // import { Navbar } from "@resomix/ui";
 import { Navbar, StaticNoise } from "@resomix/ui";
-import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine, HomeFooter } from "../../sections/desktop/index.ts";
-import sideFrameSvg from "../../assets/icons/layout/side_frame.svg";
-import { LogoHeader } from "../../components/index.ts";
+import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine, HomeFooter } from "@/sections/desktop/index.ts";
+import sideFrameSvg from "@/assets/icons/layout/side_frame.svg";
+import { LogoHeader } from "@/components/index.ts";
 
 export function HomePage() {
   return (

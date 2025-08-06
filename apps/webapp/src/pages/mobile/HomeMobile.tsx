@@ -1,7 +1,7 @@
 import { MobileNavbar, StaticNoise } from "@resomix/ui";
 import { useState } from "react";
 import MenuPage from "./MenuPage.tsx";
-import { LogoHeader, MenuIcon } from "../../components/index.ts";
+import { LogoHeader, MenuIcon } from "@/components/index.ts";
 
 export function HomeMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

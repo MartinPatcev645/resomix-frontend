@@ -1,8 +1,8 @@
 import React, { useRef } from "react";
-import ArrowDownRightSvg from "../../../assets/icons/arrow_down_right.svg";
-import ReferenceSvg from "../../../assets/icons/reference.svg";
-import AnalysisSvg from "../../../assets/icons/analysis.svg";
-import MatchesSvg from "../../../assets/icons/matches.svg";
+import ArrowDownRightSvg from "@/assets/icons/arrow_down_right.svg";
+import ReferenceSvg from "@/assets/icons/reference.svg";
+import AnalysisSvg from "@/assets/icons/analysis.svg";
+import MatchesSvg from "@/assets/icons/matches.svg";
 // import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { ButtonHeavyRight } from "@resomix/ui";
 // import { useOnScreen } from "@resomix/hooks";
