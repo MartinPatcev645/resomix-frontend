@@ -8,6 +8,7 @@ import FbSvg from "@/assets/icons/facebook.svg";
 import SoundWaves from "@/assets/icons/sound_waves.svg";
 import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
 
+
 const UploadHero: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
