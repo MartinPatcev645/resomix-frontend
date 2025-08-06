@@ -4,12 +4,12 @@ import ReferenceSvg from "../../assets/icons/reference.svg";
 import AnalysisSvg from "../../assets/icons/analysis.svg";
 import MatchesSvg from "../../assets/icons/matches.svg";
 // import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
-import { CodeTyping, ButtonHeavyRight } from "@resomix/ui";
-import { useOnScreen } from "@resomix/hooks";
+import { ButtonHeavyRight } from "@resomix/ui";
+// import { useOnScreen } from "@resomix/hooks";
 
 const SectionFour: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
+  // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
   return (
     <div ref={sectionRef} className='mt-[var(--px-200)] relative z-15'>
       <div className='flex flex-col gap-[var(--px-40)]'>
