@@ -1,6 +1,6 @@
 // import { Navbar } from "@resomix/ui";
 import { Navbar, StaticNoise } from "@resomix/ui";
-import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../desktop_sections/index.ts";
+import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine, HomeFooter } from "../../sections/desktop/index.ts";
 import sideFrameSvg from "../../assets/icons/layout/side_frame.svg";
 import { LogoHeader } from "../../components/index.ts";
 
@@ -34,17 +34,17 @@ export function HomePage() {
 
         {/* Actual Content Sections */}
         <Navbar logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>} />
-        <HeroSection />
-        <SectionOne />
-        <SectionTwo />
-        <SectionThree />
-        <SectionFour />
-        <SectionFive />
-        <SectionSix />
-        <SectionSeven />
-        <SectionEight />
-        <SectionNine />
-        <FooterSection />
+        <HomeHero />
+        <HomeOne />
+        <HomeTwo />
+        <HomeThree />
+        <HomeFour />
+        <HomeFive />
+        <HomeSix />
+        <HomeSeven />
+        <HomeEight />
+        <HomeNine />
+        <HomeFooter />
       </div>
     </>
   );

@@ -2,7 +2,7 @@
 import { MobileNavbar } from "@resomix/ui";
 import { useState } from "react";
 import MenuPage from "./MenuPage.tsx";
-import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../mobile_sections/index.ts";
+import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine, HomeFooter } from "../../sections/mobile/index.ts";
 import { LogoHeader, MenuIcon } from "../../components/index.ts";
 // import mobileSideFrameSvg from "../../assets/icons/layout/new_mobile_side_frame.svg";
 // import mobileSideFrameSvg from "../../assets/icons/layout/mobile_full_side_frame.svg";
@@ -35,17 +35,17 @@ export function HomeMobile() {
           />
 
           {/* Content Layer Sections */}
-          <HeroSection />
-          <SectionOne />
-          <SectionTwo />
-          <SectionThree />
-          <SectionFour />
-          <SectionFive />
-          <SectionSix />
-          <SectionSeven />
-          <SectionEight />
-          <SectionNine />
-          <FooterSection />
+          <HomeHero />
+          <HomeOne />
+          <HomeTwo />
+          <HomeThree />
+          <HomeFour />
+          <HomeFive />
+          <HomeSix />
+          <HomeSeven />
+          <HomeEight />
+          <HomeNine />
+          <HomeFooter />
         </div>
       </div>
       {isMenuOpen && (
