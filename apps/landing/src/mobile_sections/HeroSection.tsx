@@ -17,14 +17,15 @@ const HeroSection: React.FC = () => (
       className="absolute inset-0 w-[length:var(--px-393)] h-[length:var(--px-718)] pointer-events-none z-10"
     >
       <defs>
-        <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
-          <path transform="scale(0.0031847134,0.0013927577)" d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z" />
+        <clipPath id="heroClip" clipPathUnits="objectBoundingBox" transform="scale(0.0031847134,0.0013927577)">
+          <path d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z" />
         </clipPath>
       </defs>
 
       {/* stroke outline */}
       <path
         d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z"
+        transform="scale(0.0031847134,0.0013927577)"
         stroke="white"
         strokeOpacity="0.7"
         strokeWidth="0.37037"
