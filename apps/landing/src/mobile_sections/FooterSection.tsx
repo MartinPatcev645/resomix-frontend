@@ -5,7 +5,7 @@ import { LogoRFooter } from "../components/LogoRFooter.tsx";
 const FooterSection: React.FC = () => (
   <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col w-full">
-      <div className="max-w-full text-[length:var(--px-30)] font-benzin uppercase">
+      <div className="max-w-full text-[length:var(--px-27)] font-benzin uppercase">
         Join the Resomix<br />Universe
       </div>
       <div className="flex flex-col items-start px-[var(--px-40)] min-h-[var(--px-129)] mt-[var(--px-40)]">

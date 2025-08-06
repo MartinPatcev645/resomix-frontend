@@ -1,5 +1,5 @@
 import React from "react";
-import { IconComp } from "@resomix/ui";
+import { FlyingThroughSpace, IconComp } from "@resomix/ui";
 // import { Remains, IconComp } from "@resomix/ui";
 // import { BackgroundNoise } from "../components/index.ts";
 import XSvg from "../assets/icons/twitter_x.svg";
@@ -12,20 +12,19 @@ const HeroSection: React.FC = () => (
   <div className="relative">
     {/* Hidden SVG defs for clip-path */}
     <svg
-      viewBox="0 0 314 718"
+      viewBox="0 0 359 688"
       preserveAspectRatio="none"
-      className="absolute inset-0 w-[length:var(--px-393)] h-[length:var(--px-718)] pointer-events-none z-10"
+      className="absolute inset-0 w-full h-[length:var(--px-718)] pointer-events-none z-10"
     >
       <defs>
-        <clipPath id="heroClip" clipPathUnits="objectBoundingBox" transform="scale(0.0031847134,0.0013927577)">
-          <path d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z" />
+        <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
+          <path transform="scale(0.0027855153,0.0014534883)" d="M0.5 1 L358.5 1 L358.5 687 L0.5 687 Z" />
         </clipPath>
       </defs>
 
       {/* stroke outline */}
       <path
-        d="M267.893 0.348633H314V716.849H267.893L242.444 690.833H81.9099L56.461 716.849H0.5V0.348633H56.461L81.9099 25.1167H242.444L267.893 0.348633Z"
-        transform="scale(0.0031847134,0.0013927577)"
+        d="M0.5 1V687 M358.5 1V687 M0.5 1L358.5 1 M0.5 687H358.5"
         stroke="white"
         strokeOpacity="0.7"
         strokeWidth="0.37037"
@@ -36,7 +35,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-393)] h-[var(--px-718)] z-20 -mt-[var(--px-8)]"
+      className="relative w-full h-[var(--px-718)] z-20 -mt-[var(--px-8)]"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -45,13 +44,13 @@ const HeroSection: React.FC = () => (
       {/* Background noise layers (two, for consistency with other sections) */}
       {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
-      {/* Remains background animation */}
-      {/* <div className="absolute inset-0 w-[var(--px-393)] h-[var(--px-718)]">
-        <Remains />
-      </div> */}
+      {/* FlyingThroughSpace background animation */}
+      <div className="absolute inset-0 w-full h-full">
+        <FlyingThroughSpace />
+      </div>
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-end justify-between w-[var(--px-393)] h-full select-none -mt-[var(--px-8)]">
+      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none -mt-[var(--px-8)]">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
           <div className="justify-start text-[length:var(--px-45)] font-bold font-helvetica uppercase leading-[var(--px-45)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— the Soul<br />of Sound </div>
           <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>

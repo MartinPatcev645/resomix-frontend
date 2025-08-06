@@ -54,10 +54,10 @@ const SectionFive: React.FC = () => {
           <div className='text-[length:var(--px-18)] font-fira font-semibold uppercase leading-[var(--px-22)] tracking-[var(--px-1)] text-left my-[var(--px-40)]'>
             Explore a vast catalog<br />in seconds and discover<br />sonic connections where<br />no one else sees them
           </div>
-          <div className='mt-[var(--px-60)] relative w-[var(--px-393)] self-end'>
+          <div className='mt-[var(--px-60)] relative w-full'>
             {/** Search bar & dropdown */}
-            <SearchInput value={query} onChange={handleQueryChange} width="w-[var(--px-393)]" />
-            <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-393)]" truncateLength={24} onSelect={() => { }} />
+            <SearchInput value={query} onChange={handleQueryChange} width="w-[var(--px-310)]" />
+            <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-310)]" truncateLength={24} onSelect={() => { }} />
           </div>
         </div>
       </div>

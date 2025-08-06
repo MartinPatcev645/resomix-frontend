@@ -3,7 +3,8 @@ import ArrowDownRightSvg from "../../assets/icons/arrow_down_right.svg";
 import ReferenceSvg from "../../assets/icons/reference.svg";
 import AnalysisSvg from "../../assets/icons/analysis.svg";
 import MatchesSvg from "../../assets/icons/matches.svg";
-import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
+// import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
+import { CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
 
 const SectionFour: React.FC = () => {
@@ -60,7 +61,9 @@ const SectionFour: React.FC = () => {
           <ButtonHeavyRight className="w-full mx-[var(--px-2)]" text="Upload Your Track" onClick={() => { }} />
         </div>
 
-        <div className='flex mt-[var(--px-150)] flex-col w-full min-h-[var(--px-245)]'>
+        {/* SVG frame with Sinewave, commented out for now */}
+
+        {/* <div className='flex mt-[var(--px-150)] flex-col w-full min-h-[var(--px-245)]'>
           <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] mb-[var(--px-4)] ml-[var(--px-1)] min-h-[var(--px-16)]'>
             <CodeTyping
               speed={25}
@@ -76,9 +79,7 @@ const SectionFour: React.FC = () => {
             />
           </div>
 
-          {/* SVG frame with crystalline cube */}
           <div className="relative w-[var(--px-393)] h-[var(--px-220)]">
-            {/* Hidden SVG defs for clip-path */}
             <svg
               viewBox="0 0 308 171"
               preserveAspectRatio="none"
@@ -86,12 +87,10 @@ const SectionFour: React.FC = () => {
             >
               <defs>
                 <clipPath id="cubeClip" clipPathUnits="objectBoundingBox">
-                  {/* Scale the path coordinates to object bounding box space */}
                   <path transform="scale(0.003246753,0.005847953)" d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z" />
                 </clipPath>
               </defs>
 
-              {/* Stroke outline */}
               <path
                 d="M132.667 34.8519H0.444336V170.037H307.111V0.777832H174.889L132.667 34.8519Z"
                 stroke="white"
@@ -101,13 +100,11 @@ const SectionFour: React.FC = () => {
               />
             </svg>
 
-            {/* CrystallineRefraction animation clipped to the frame */}
             <div
               className="absolute inset-0 flex items-center justify-center"
               style={{ clipPath: "url(#cubeClip)", WebkitClipPath: "url(#cubeClip)" }}
             >
-              {/* Square wrapper to avoid stretching; 85% of frame height for subtle zoom-out */}
-              <div className="w-full h-[var(--px-275)] mt-[var(--px-20)]">  {/* ~3:1 aspect inside 308×171 frame */}
+              <div className="w-full h-[var(--px-275)] mt-[var(--px-20)]">
                 {isVisible && <SineWaves />}
               </div>
             </div>
@@ -120,7 +117,7 @@ const SectionFour: React.FC = () => {
               multiline={true}
             />
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
