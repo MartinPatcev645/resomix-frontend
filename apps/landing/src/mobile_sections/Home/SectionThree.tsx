@@ -1,6 +1,6 @@
 import React from "react";
-import ArrowDownLeftSvg from "../assets/icons/arrow_big_down_left_stroke.svg";
-import SoundWavesSvg from "../assets/icons/sound_waves_outline.svg";
+import ArrowDownLeftSvg from "../../assets/icons/arrow_big_down_left_stroke.svg";
+import SoundWavesSvg from "../../assets/icons/sound_waves_outline.svg";
 
 const SectionThree: React.FC = () => (
   <div className='mt-[var(--px-200)] flex flex-col w-full relative z-15'>

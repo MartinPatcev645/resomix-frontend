@@ -1,6 +1,6 @@
 import React from "react";
-import SectionOneGraphicRight from "../assets/icons/composites/mobile/section_one_graphic_right.svg"
-import SectionOneGraphicLeft from "../assets/icons/composites/mobile/section_one_graphic_left.svg"
+import SectionOneGraphicRight from "../../assets/icons/composites/mobile/section_one_graphic_right.svg"
+import SectionOneGraphicLeft from "../../assets/icons/composites/mobile/section_one_graphic_left.svg"
 
 const SectionOne: React.FC = () => (
   <div className='mt-[var(--px-200)]'>

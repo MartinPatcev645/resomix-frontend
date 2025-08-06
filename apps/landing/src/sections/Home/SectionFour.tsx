@@ -1,10 +1,10 @@
 import React, { useRef } from "react";
-import ArrowSmallUp from "../assets/icons/arrow_small_up.svg";
-import ReferenceSvg from "../assets/icons/reference.svg";
-import AnalysisSvg from "../assets/icons/analysis.svg";
-import MatchesSvg from "../assets/icons/matches.svg";
-import LineOneSvg from "../assets/icons/line1.svg";
-import LineTwoSvg from "../assets/icons/line2.svg";
+import ArrowSmallUp from "../../assets/icons/arrow_small_up.svg";
+import ReferenceSvg from "../../assets/icons/reference.svg";
+import AnalysisSvg from "../../assets/icons/analysis.svg";
+import MatchesSvg from "../../assets/icons/matches.svg";
+import LineOneSvg from "../../assets/icons/line1.svg";
+import LineTwoSvg from "../../assets/icons/line2.svg";
 import { SineWaves, CodeTyping } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
 

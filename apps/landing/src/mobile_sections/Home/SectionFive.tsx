@@ -1,7 +1,7 @@
 import React from "react";
-import SectionFiveGraphicLeft from "../assets/icons/composites/mobile/section_five_graphic_left.svg";
-import SectionFiveGraphicRight from "../assets/icons/composites/mobile/section_five_graphic_right.svg";
-import ArrowBigDownSvg from "../assets/icons/arrow_down_right.svg";
+import SectionFiveGraphicLeft from "../../assets/icons/composites/mobile/section_five_graphic_left.svg";
+import SectionFiveGraphicRight from "../../assets/icons/composites/mobile/section_five_graphic_right.svg";
+import ArrowBigDownSvg from "../../assets/icons/arrow_down_right.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 

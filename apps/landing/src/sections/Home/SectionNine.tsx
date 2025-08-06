@@ -1,7 +1,6 @@
 import React, { useRef } from "react";
-import { ButtonHeavyRight } from "@resomix/ui";
-import SectionNineGraphic from "../assets/icons/composites/section_nine_graphic.svg";
-import { GoldenSpiral, CodeTyping } from "@resomix/ui";
+import SectionNineGraphic from "../../assets/icons/composites/section_nine_graphic.svg";
+import { GoldenSpiral, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
 
 const SectionNine: React.FC = () => {

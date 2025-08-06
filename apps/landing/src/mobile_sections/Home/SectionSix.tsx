@@ -1,6 +1,6 @@
 import React from "react";
-import GridTunnelSvg from "../assets/icons/mobile_tunnel.svg";
-import AngleDownSvg from "../assets/icons/AngleDown.svg";
+import GridTunnelSvg from "../../assets/icons/mobile_tunnel.svg";
+import AngleDownSvg from "../../assets/icons/AngleDown.svg";
 
 const SectionSix: React.FC = () => (
   <div className='mt-[var(--px-250)] relative z-15'>

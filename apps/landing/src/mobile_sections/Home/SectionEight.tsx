@@ -1,7 +1,7 @@
 import React from "react";
-import SectionEightGraphicRightSvg from "../assets/icons/composites/section_eight_graphic_right.svg";
-import SectionEightGraphicLeftSvg from "../assets/icons/composites/section_eight_graphic_left.svg";
-import DividerSvg from "../assets/icons/divider.svg";
+import SectionEightGraphicRightSvg from "../../assets/icons/composites/section_eight_graphic_right.svg";
+import SectionEightGraphicLeftSvg from "../../assets/icons/composites/section_eight_graphic_left.svg";
+import DividerSvg from "../../assets/icons/divider.svg";
 
 const SectionEight: React.FC = () => (
   <div className="mt-[var(--px-200)] relative z-15 flex flex-col justify-between">

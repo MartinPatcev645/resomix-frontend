@@ -1,13 +1,25 @@
-import HeroSection from "./HeroSection.tsx";
-import SectionOne from "./SectionOne.tsx";
-import SectionTwo from "./SectionTwo.tsx";
-import SectionThree from "./SectionThree.tsx";
-import SectionFour from "./SectionFour.tsx";
-import SectionFive from "./SectionFive.tsx";
-import SectionSix from "./SectionSix.tsx";
-import SectionSeven from "./SectionSeven.tsx";
-import SectionEight from "./SectionEight.tsx";
-import SectionNine from "./SectionNine.tsx";
+import SectionOne from "./Home/SectionOne.tsx";
+import SectionTwo from "./Home/SectionTwo.tsx";
+import SectionThree from "./Home/SectionThree.tsx";
+import SectionFour from "./Home/SectionFour.tsx";
+import SectionFive from "./Home/SectionFive.tsx";
+import SectionSix from "./Home/SectionSix.tsx";
+import SectionSeven from "./Home/SectionSeven.tsx";
+import SectionEight from "./Home/SectionEight.tsx";
+import SectionNine from "./Home/SectionNine.tsx";
 import FooterSection from "./FooterSection.tsx";
+import HeroSection from "./HeroSection.tsx";
 
-export { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection };
+export {
+  HeroSection,
+  SectionOne,
+  SectionTwo,
+  SectionThree,
+  SectionFour,
+  SectionFive,
+  SectionSix,
+  SectionSeven,
+  SectionEight,
+  SectionNine,
+  FooterSection,
+};

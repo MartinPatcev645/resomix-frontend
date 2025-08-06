@@ -1,9 +1,9 @@
 import React, { useRef } from "react";
-import ArrowBigDownSvg from "../assets/icons/ArrowBigDown2.svg";
+import ArrowBigDownSvg from "../../assets/icons/ArrowBigDown2.svg";
 // import { ButtonHeavyRight, CodeTyping } from "@resomix/ui";
 import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
-import LineThreeSvg from "../assets/icons/line3.svg";
+import LineThreeSvg from "../../assets/icons/line3.svg";
 
 const SextionSeven: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
