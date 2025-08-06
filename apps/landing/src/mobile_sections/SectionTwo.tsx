@@ -25,12 +25,12 @@ const SectionTwo: React.FC = () => (
         <div className=''>
           <img src={LayersSvg} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
         </div>
-        <div className="text-center justify-start text-[length:var(--px-12)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-12)] opacity-70">Resomix goes deeper than anyone else,<br />carefully selecting music that reflects<br />the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
+        <div className="text-center justify-start text-[length:var(--px-12)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-12)]">Resomix goes deeper than anyone else,<br />carefully selecting music that reflects<br />the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
       </div>
       <div className='my-[var(--px-32)]'>
         <img src={VerticalLineSvg} alt="Vertical Line" className="w-[var(--px-2)] h-[var(--px-63)]" />
       </div>
-      <div className="opacity-80 justify-start text-white text-[length:var(--px-7)] font-light font-fira tracking-widest min-h-[var(--px-10-5)]">
+      <div className="justify-start text-white text-[length:var(--px-7)] font-light font-fira tracking-widest min-h-[var(--px-10-5)]">
         <CodeTyping
           speed={50}
           text="instant_inspiration.module[active]"

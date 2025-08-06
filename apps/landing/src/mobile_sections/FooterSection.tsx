@@ -15,7 +15,7 @@ const FooterSection: React.FC = () => (
           </a>
         </div>
         <div className="flex justify-between">
-          <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
+          <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira tracking-[var(--px-2)]">
             <div className="leading-[var(--px-8)] my-[var(--px-10)]">
               <CodeTyping
                 speed={50}
@@ -41,14 +41,16 @@ const FooterSection: React.FC = () => (
         </div>
       </div>
       <div className="flex flex-col items-center text-center justify-between">
-        <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)] items-end my-[var(--px-60)]">
-          <CodeTyping
-            speed={50}
-            text="legal.terms()<br />privacy_policy()"
-            multiline={true}
-          />
+        <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira tracking-[var(--px-2)] items-end my-[var(--px-60)]">
+        <a href="/terms" className="hover:underline decoration-[var(--px-0-5)]">
+            legal.terms()
+          </a>
+          <br />
+          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)]">
+            privacy_policy()
+          </a>
         </div>
-        <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
+        <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira tracking-[var(--px-2)]">
           <CodeTyping
             speed={50}
             text="© 2025 Resomix // built on beatmaps and algorithms"

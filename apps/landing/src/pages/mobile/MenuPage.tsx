@@ -4,15 +4,25 @@ import CrossSvg from "../../assets/icons/cross.svg";
 import RIconsFooter from "../../assets/icons/r_icon_footer.svg";
 import MenuSeparator from "../../assets/icons/menu_separator.svg";
 
-const MenuPage: React.FC = () => (
+interface MenuPageProps {
+  onClose?: () => void;
+}
+
+const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => (
   <div className="w-screen h-full min-h-screen relative overflow-hidden">
     {/* Background static noise */}
     <StaticNoise color="#323233" zIndex={0} />
     <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)]">
       <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
-        <a href="/">
-          <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
-        </a>
+        {onClose ? (
+          <button onClick={onClose} aria-label="Close menu">
+            <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
+          </button>
+        ) : (
+          <a href="/">
+            <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
+          </a>
+        )}
       </div>
       <div className="flex flex-col gap-[var(--px-30)] items-center">
         <div className="">

@@ -30,7 +30,7 @@ const SectionFour: React.FC = () => {
               1 — Upload Your<br />Reference Track
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-70 leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
+          <div className='text-[length:var(--px-12)] font-extralight font-auger leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
             You can upload any audio file: a released or<br />unreleased track, a sketch from your archive,<br />or a short clip.Metadata is not important; Resomix<br />listens to your reference audio and extrapolates<br />its sonic DNA to find a perfect match.
           </div>
         </div>
@@ -41,7 +41,7 @@ const SectionFour: React.FC = () => {
               2 — Deep Sonic<br />Analysis
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-70 leading-[var(--px-14)] tracking-[var(--px-0-1)]'>
+          <div className='text-[length:var(--px-12)] font-extralight font-auger leading-[var(--px-14)] tracking-[var(--px-0-1)]'>
             Here's when the magic happens.<br />Our system performs a full spectral analysis on a<br />granular level, exploring every aspect of your tune<br />rhythm, harmonic content, energy flow, dynamics,<br />and tonal balance.
           </div>
         </div>
@@ -52,7 +52,7 @@ const SectionFour: React.FC = () => {
               3 — Get Perfect<br />Matches
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-70 leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
+          <div className='text-[length:var(--px-12)] font-extralight font-auger leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
             Within seconds, you'll have a carefully crafted<br />selection of tracks that resonate with your<br />reference's vibe, regardless of genre, release<br />date, or popularity.
           </div>
         </div>
@@ -61,14 +61,14 @@ const SectionFour: React.FC = () => {
         </div>
 
         <div className='flex mt-[var(--px-150)] flex-col w-full min-h-[var(--px-245)]'>
-          <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] mb-[var(--px-4)] opacity-60 ml-[var(--px-1)] min-h-[var(--px-16)]'>
+          <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] mb-[var(--px-4)] ml-[var(--px-1)] min-h-[var(--px-16)]'>
             <CodeTyping
               speed={25}
               text="search_now()<br />// lightning_fast.query()"
               multiline={true}
             />
           </div>
-          <div className='text-[length:var(--px-9)] font-light font-fira -mb-[var(--px-32)] tracking-widest opacity-60 ml-[var(--px-1)] min-h-[var(--px-10-5)]'>
+          <div className='text-[length:var(--px-9)] font-light font-fira -mb-[var(--px-32)] tracking-widest ml-[var(--px-1)] min-h-[var(--px-10-5)]'>
             <CodeTyping
               speed={50}
               text="Resomix.run[...]"
@@ -113,7 +113,7 @@ const SectionFour: React.FC = () => {
             </div>
           </div>
 
-          <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] opacity-60 ml-[var(--px-1)]'>
+          <div className='text-[length:var(--px-9)] font-light font-fira tracking-widest leading-[var(--px-10)] ml-[var(--px-1)]'>
             <CodeTyping
               speed={25}
               text="deep_sonic_analysis [mode=granular]<br />system.listens(...)"

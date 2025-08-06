@@ -7,13 +7,13 @@ const SectionEight: React.FC = () => (
   <div className="mt-[var(--px-200)] relative z-15 flex flex-col justify-between">
     <div className="flex justify-end w-full relative">
       {/* Right graphic here */}
-      <div className="absolute top-1/3 right-0 transform text-[length:var(--px-12)] font-extralight font-auger text-right z-20 mr-[var(--px-20)] -mt-[var(--px-2)] leading-[var(--px-12)] opacity-50">
+      <div className="absolute top-1/3 right-0 transform text-[length:var(--px-12)] font-extralight font-auger text-right z-20 mr-[var(--px-20)] -mt-[var(--px-2)] leading-[var(--px-12)]">
         The DJ's Secret Weapon<br />for Instant Inspiration
       </div>
       <img src={SectionEightGraphicRightSvg} className="w-[var(--px-232)] h-[var(--px-66)]" alt="Section Eight Graphic Right" />
     </div>
     <div className="flex flex-col justify-center items-center w-full mt-[var(--px-60)]">
-      <div className="flex flex-col uppercase text-[length:var(--px-18)] font-light leading-[var(--px-18)] mt-[var(--px-24)] opacity-90 font-helvetica items-center">
+      <div className="flex flex-col uppercase text-[length:var(--px-18)] font-light leading-[var(--px-18)] mt-[var(--px-24)] font-helvetica items-center">
         <div className="">
           Let us do the heavy lifting,<br />while you focus on creating
         </div>
@@ -29,13 +29,13 @@ const SectionEight: React.FC = () => (
           </div>
         </div>
       </div>
-      <div className="text-[length:var(--px-12)] font-extralight font-auger opacity-50 mt-[var(--px-10)] text-center leading-[var(--px-12)]">
+      <div className="text-[length:var(--px-12)] font-extralight font-auger mt-[var(--px-10)] text-center leading-[var(--px-12)]">
         Discovery Through Sound.<br />Connection Through Emotion.
       </div>
     </div>
     <div className="flex justify-start w-full relative mt-[var(--px-80)]">
       {/* Left graphic here */}
-      <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-12)] font-auger font-light z-20 -mt-[var(--px-4)] leading-[var(--px-12)] opacity-50 ml-[var(--px-20)]">
+      <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-12)] font-auger font-light z-20 -mt-[var(--px-4)] leading-[var(--px-12)] ml-[var(--px-20)]">
         Resomix is designed<br />to save you time and<br />expand your music taste.
       </div>
       <img src={SectionEightGraphicLeftSvg} className="w-[var(--px-251)] h-[var(--px-97)]" alt="Section Eight Graphic Left" />

@@ -2,7 +2,6 @@ import { useResponsive } from "@resomix/hooks";
 import { HomePage } from "./pages/desktop/HomePage.tsx";
 import { HomeMobile } from "./pages/mobile/HomeMobile.tsx";
 import { Routes, Route } from "react-router-dom";
-import MenuPage from "./pages/mobile/MenuPage.tsx";
 import { AboutPage } from "./pages/AboutPage.tsx";
 import { TermsPage } from "./pages/TermsPage.tsx";
 import TestPage from "./pages/TestPage.tsx";
@@ -21,7 +20,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/menu" element={<MenuPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/test" element={<TestPage />} />

@@ -14,10 +14,10 @@ const SectionThree: React.FC = () => (
             <img src={ArrowDownLeftSvg} alt="Arrow Down" className="w-[var(--px-36)] h-[var(--px-36)]" />
           </div>
         </div>
-        <div className="text-[length:var(--px-12)] text-right font-extralight font-auger mt-[var(--px-28)] opacity-50 leading-[var(--px-14)]">
+        <div className="text-[length:var(--px-12)] text-right font-extralight font-auger mt-[var(--px-28)] leading-[var(--px-14)]">
           The thrill and excitement of crate digging,<br />but with the power, speed, and convenience<br />of cutting-edge technology.
         </div>
-        <div className="text-[length:var(--px-12)] text-right font-extralight font-auger mt-[var(--px-14)] opacity-50 leading-[var(--px-14)]">
+        <div className="text-[length:var(--px-12)] text-right font-extralight font-auger mt-[var(--px-14)] leading-[var(--px-14)]">
           Our unique approach amplifies personal<br />taste, and shines a light on hidden gems at<br />the edges of catalogs, archives, and time.
         </div>
       </div>

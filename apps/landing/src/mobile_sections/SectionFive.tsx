@@ -13,21 +13,21 @@ const SectionFive: React.FC = () => {
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
-          <div className="absolute top-1/3 right-0 transform text-[length:var(--px-12)] font-extralight font-auger text-right z-20 mr-[var(--px-35)] -mt-[var(--px-12)] leading-[var(--px-14)] opacity-50">
+          <div className="absolute top-1/3 right-0 transform text-[length:var(--px-12)] font-extralight font-auger text-right z-20 mr-[var(--px-35)] -mt-[var(--px-12)] leading-[var(--px-14)]">
             Deep sonic analysis, pure<br />and simple, unaffected by<br />metadata or trends.
           </div>
           <img src={SectionFiveGraphicRight} alt="Section Five Graphic Right" className="w-[var(--px-264)] h-[var(--px-91)]" />
         </div>
         <div className='flex flex-col w-full justify-center'>
-          <div className="mx-auto text-center text-[length:var(--px-18)] font-light leading-[var(--px-22)] mt-[var(--px-80)] opacity-90 font-helvetica uppercase">
+          <div className="mx-auto text-center text-[length:var(--px-18)] font-light leading-[var(--px-22)] mt-[var(--px-80)] font-helvetica uppercase">
             Resomix is the only platform in<br />the world that focuses on the<br />“soul” of your reference track<br />to find music that matches its<br />mood and spirit.
           </div>
-          <div className='mx-auto text-center text-[length:var(--px-9)] font-extralight mt-[var(--px-10)] opacity-60 font-auger tracking-wider'>
+          <div className='mx-auto text-center text-[length:var(--px-9)] font-extralight mt-[var(--px-10)] font-auger tracking-wider'>
             Cutting-Edge Innovation
           </div>
         </div>
         <div className='flex w-full justify-start relative mt-[var(--px-80)]'>
-          <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-12)] font-extralight font-auger z-20 ml-[var(--px-32)] -mt-[var(--px-2)] leading-[var(--px-14)] opacity-50">
+          <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-12)] font-extralight font-auger z-20 ml-[var(--px-32)] -mt-[var(--px-2)] leading-[var(--px-14)]">
             A human approach<br />to modern technology
           </div>
           <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-264)] h-[var(--px-91)]" />

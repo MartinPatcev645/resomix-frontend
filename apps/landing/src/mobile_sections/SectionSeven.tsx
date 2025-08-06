@@ -52,7 +52,7 @@ const SextionSeven: React.FC = () => {
               A TRACK AND<br />EXPLORE NEW<br />POSSIBILITIES
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger opacity-50 text-left mt-[var(--px-14)] leading-[var(--px-12)]'>
+          <div className='text-[length:var(--px-12)] font-extralight font-auger text-left mt-[var(--px-14)] leading-[var(--px-12)]'>
             Simplicity and minimalism.<br />Just upload a sound, and Resomix will listen.
           </div>
         </div>
@@ -61,7 +61,7 @@ const SextionSeven: React.FC = () => {
         </div>
         <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
           {/* <div className="min-h-[var(--px-309)]"></div> */}
-          <div className='flex justify-between items-start w-full opacity-50 min-h-[var(--px-134)]'>
+          <div className='flex justify-between items-start w-full min-h-[var(--px-134)]'>
             <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
               <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping

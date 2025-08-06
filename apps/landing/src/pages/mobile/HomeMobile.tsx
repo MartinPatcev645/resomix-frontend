@@ -1,4 +1,6 @@
 import { MobileNavbar, StaticNoise } from "@resomix/ui";
+import { useState } from "react";
+import MenuPage from "./MenuPage.tsx";
 import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../mobile_sections/index.ts";
 import { LogoHeader } from "../../components/LogoHeader.tsx";
 import { MenuIcon } from "../../components/MenuIcon.tsx";
@@ -6,6 +8,7 @@ import { MenuIcon } from "../../components/MenuIcon.tsx";
 // import mobileSideFrameSvg from "../../assets/icons/layout/mobile_full_side_frame.svg";
 
 export function HomeMobile() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   return (
     <>
       {/* Static noise now overscans 25 vh above & below viewport to avoid flashes during fast scroll */}
@@ -27,7 +30,7 @@ export function HomeMobile() {
         {/* Navbar */}
         <MobileNavbar
           logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-          menuIcon={<a href="/menu" className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
         />
 
         {/* Content Layer Sections */}
@@ -43,6 +46,11 @@ export function HomeMobile() {
         <SectionNine />
         <FooterSection />
       </div>
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-[100]">
+          <MenuPage onClose={() => setIsMenuOpen(false)} />
+        </div>
+      )}
     </>
   );
 }

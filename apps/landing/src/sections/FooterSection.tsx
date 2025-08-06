@@ -63,12 +63,14 @@ const FooterSection: React.FC = () => (
             multiline={true}
           />
         </div>
-        <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira opacity-50 tracking-[var(--px-2)] items-end">
-          <CodeTyping
-            speed={50}
-            text="legal.terms(): open('/legal/terms')<br />privacy_policy(): fetch('/legal/privacy')"
-            multiline={true}
-          />
+        <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
+          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+            legal.terms(): open('/terms')
+          </a>
+          <br />
+          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+            privacy_policy(): fetch('/privacy')
+          </a>
         </div>
       </div>
     </div>
