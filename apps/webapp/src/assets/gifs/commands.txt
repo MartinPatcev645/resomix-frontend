@@ -1,0 +1,43 @@
+converted.mp4:
+- File type: MP4
+- Size: 54 MBs
+- Duration: 7 min 30 seconds
+- Goal: Trim from start to 30.2 seconds and Reduce Size
+- Goal: Export as GIF
+
+:: step‑1 create palette and step‑2 make the GIF in one go
+ffmpeg -ss 0 -t 30.2 -i rings_show.mp4 -vf "fps=8,scale=480:-1:flags=lanczos,palettegen" -y palette.png &&ffmpeg -ss 0 -t 30.2 -i rings_show.mp4 -i palette.png -filter_complex "fps=15,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse" ^ -y rings_show.gif
+del palette.png
+
+ffmpeg -ss 0 -t 30.2 -i rings_show.mp4 -vf "fps=10,scale=472:750:flags=lanczos,format=rgba, colorkey=0x000000:0.1:00, palettegen=reserve_transparent=1:max_colors=16" -y palette.png
+
+ffmpeg -ss 0 -t 30.2 -i rings_show.mp4 -i palette.png -filter_complex "[0:v]fps=10,scale=472:750:flags=lanczos,format=rgba, colorkey=0x000000:0.1:0.0[x]; [x][1:v]paletteuse=dither=bayer:bayer_scale=5:alpha_threshold=128" -y rings_show.gif
+
+del palette.png
+
+
+
+The rest:
+- File type: GIF
+- Size: Between 2 - 8 MBs
+- Goal: Reduce Size
+
+
+
+ffmpeg -i "droplet.gif" -vf "fps=10,palettegen=max_colors=64" -y "droplet_pal.png" && ffmpeg -i "droplet.gif" -i "droplet_pal.png" -filter_complex "fps=10[x];[x][1:v]paletteuse" -y "droplet_optimized.gif" && del "droplet_pal.png"
+
+
+
+:: To also remove bg this command:
+
+ffmpeg -i "qr_code.gif" -vf "fps=15,format=rgba, colorkey=0x000000:0.1:0.0, palettegen=reserve_transparent=1:max_colors=16" -y "droplet_pal.png" && ffmpeg -i "qr_code.gif" -i "droplet_pal.png" -filter_complex "[0:v]fps=10,format=rgba, colorkey=0x000000:0.1:0.0[x]; [x][1:v]paletteuse=dither=bayer:bayer_scale=5:alpha_threshold=128" -y "qr_code_optimized.gif" && del "droplet_pal.png"
+
+
+
+
+ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames,width,height,r_frame_rate,duration -of default=noprint_wrappers=1:nokey=1 tv_noise.gif
+
+
+
+:: tv_noise.gif  →  tv_noise_short.gif  (≈ 0.5‑1 MB)
+ffmpeg -t 1.5 -i "tv_noise.gif" -vf "fps=30,format=gray,palettegen=max_colors=16" -y "tv_noise_pal.png" && ffmpeg -t 1.5 -i "tv_noise.gif" -i "tv_noise_pal.png" -filter_complex "[0:v]fps=10,format=gray[x];[x][1:v]paletteuse" -y "tv_noise_short.gif" && del "tv_noise_pal.png"

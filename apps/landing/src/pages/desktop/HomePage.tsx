@@ -1,8 +1,8 @@
 // import { Navbar } from "@resomix/ui";
 import { Navbar, StaticNoise } from "@resomix/ui";
-import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../sections/index.ts";
+import { HeroSection, SectionOne, SectionTwo, SectionThree, SectionFour, SectionFive, SectionSix, SectionSeven, SectionEight, SectionNine, FooterSection } from "../../desktop_sections/index.ts";
 import sideFrameSvg from "../../assets/icons/layout/side_frame.svg";
-import { LogoHeader } from "../../components/LogoHeader.tsx";
+import { LogoHeader } from "../../components/index.ts";
 
 export function HomePage() {
   return (

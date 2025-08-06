@@ -1,30 +1,29 @@
-import { useEffect } from "react";
-import { Navbar } from "@resomix/ui";
-import { useTest } from "@resomix/hooks";
-import { fetchDummyData } from "@resomix/api-client";
+import { useResponsive } from "@resomix/hooks";
+import { HomePage } from "./pages/desktop/HomePage.tsx";
+import { HomeMobile } from "./pages/mobile/HomeMobile.tsx";
+import { Routes, Route } from "react-router-dom";
+import { AboutPage } from "./pages/AboutPage.tsx";
+import { TermsPage } from "./pages/TermsPage.tsx";
+import TestPage from "./pages/TestPage.tsx";
 
-function App() {
-  const { value, setValue } = useTest();
-
-  useEffect(() => {
-    fetchDummyData().then((data: { message: string }) => {
-      setValue(data.message);
-    });
-  }, [setValue]);
+function LandingPage() {
+  const { isDesktop } = useResponsive();
 
   return (
-    <div>
-      <Navbar />
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">{value}</h1>
-        <button
-          className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded"
-          onClick={() => setValue("Button Clicked!")}
-        >
-          Change Value
-        </button>
-      </div>
+    <div className="bg-[var(--color-secondary)]">
+      {isDesktop ? <HomePage /> : <HomeMobile />}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/test" element={<TestPage />} />
+    </Routes>
   );
 }
 
