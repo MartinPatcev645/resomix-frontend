@@ -44,16 +44,16 @@ const SextionSeven: React.FC = () => {
           <div className='flex flex-col items-start w-full'>
             <div className='flex items-center justify-start gap-[var(--px-12)]'>
               <img src={ArrowBigDownSvg} alt="Arrow Big Down" className="w-[var(--px-26)] h-[var(--px-26)]" />
-              <div className='text-[length:var(--px-36)] font-helvetica uppercase font-bold leading-[var(--px-44)]'>
+              <div className='text-[length:var(--px-43)] font-helvetica uppercase font-bold leading-[var(--px-50)]'>
                 DROP
               </div>
             </div>
-            <div className='text-[length:var(--px-36)] font-helvetica uppercase font-bold leading-[var(--px-44)]'>
+            <div className='text-[length:var(--px-43)] font-helvetica uppercase font-bold leading-[var(--px-50)]'>
               A TRACK AND<br />EXPLORE NEW<br />POSSIBILITIES
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger text-left mt-[var(--px-14)] leading-[var(--px-12)]'>
-            Simplicity and minimalism.<br />Just upload a sound, and Resomix will listen.
+          <div className='text-[length:var(--px-14)] font-extralight font-auger text-left mt-[var(--px-14)] leading-[var(--px-14)]'>
+            Simplicity and minimalism. Just upload<br />a sound, and Resomix will listen.
           </div>
         </div>
         <div className="w-full flex justify-center items-center pb-[var(--px-140)] min-h-[var(--px-309)]">
@@ -63,20 +63,20 @@ const SextionSeven: React.FC = () => {
           {/* <div className="min-h-[var(--px-309)]"></div> */}
           <div className='flex justify-between items-start w-full min-h-[var(--px-134)]'>
             <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping
                   speed={50}
                   text="machine_listening..."
                 />
               </div>
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping
                   speed={50}
                   text="resonance_activated();"
                   delay={700}
                 />
               </div>
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping
                   speed={50}
                   text="waveform::quantized"
@@ -84,23 +84,23 @@ const SextionSeven: React.FC = () => {
                 />
               </div>
               <div className="w-full my-[var(--px-4)] ml-[var(--px-30)]">
-                <img src={LineThreeSvg} alt="Line Three" className="w-[var(--px-4)] h-[var(--px-34)]" />
+                <img src={LineThreeSvg} alt="Line Three" className="w-[var(--px-4)] h-[var(--px-45)]" />
               </div>
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping
                   speed={50}
                   text="loop_density &gt; 97%"
                   delay={1700}
                 />
               </div>
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping
                   speed={50}
                   text="feedback_loop::stable"
                   delay={2200}
                 />
               </div>
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
                 <CodeTyping
                   speed={50}
                   text="spectral_analysis..."
@@ -109,13 +109,13 @@ const SextionSeven: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col justify-start items-end min-w-[var(--px-117-8)]">
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping
                   speed={50}
                   text="AI.sync.beatmap[OK]"
                 />
               </div>
-              <div className="text-[length:var(--px-8)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
+              <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
                 <CodeTyping
                   speed={50}
                   text="sound.check: PASS"

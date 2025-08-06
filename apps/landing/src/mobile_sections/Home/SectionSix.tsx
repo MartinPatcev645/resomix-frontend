@@ -16,16 +16,16 @@ const SectionSix: React.FC = () => (
 
       {/* Text Overlay - positioned absolutely over the SVG */}
       <div className='absolute inset-0 flex flex-col justify-between my-[var(--px-150)] items-center text-center z-10'>
-        <div className='flex w-full justify-center text-[length:var(--px-12)] leading-[var(--px-14)] font-extralight font-auger'>
+        <div className='flex w-full justify-center text-[length:var(--px-14)] leading-[var(--px-16)] font-extralight font-auger'>
           To all DJs lost in the vastness of the<br />modern sound universe:
           let Resomix<br />be the gravitational force that<br />draws you
           to the tracks you need.
         </div>
-        <div className='flex w-full justify-center text-[length:var(--px-18)] font-helvetica uppercase leading-[var(--px-18)]'>
+        <div className='flex w-full justify-center text-[length:var(--px-20)] font-helvetica uppercase leading-[var(--px-20)]'>
           RESOMIX revolutionized music<br />
-          discovery by putting sound first
+          discovery by putting<br />sound first
         </div>
-        <div className='flex w-full justify-center text-[length:var(--px-12)] leading-[var(--px-14)] font-extralight font-auger'>
+        <div className='flex w-full justify-center text-[length:var(--px-14)] leading-[var(--px-16)] font-extralight font-auger'>
           Cutting-edge Machine Learning to Enhance<br />
           Human Imagination, Proprietary models<br />designed
           to listen like producers,<br />and discover like DJs.
@@ -33,7 +33,7 @@ const SectionSix: React.FC = () => (
       </div>
     </div>
     <div className="flex w-full justify-center mt-[var(--px-40)]">
-      <img src={AngleDownSvg} alt="Angle Down" className="w-[var(--px-52)] h-[var(--px-53)]" />
+      <img src={AngleDownSvg} alt="Angle Down" className="w-[var(--px-67)] h-[var(--px-67)]" />
     </div>
   </div>
 );

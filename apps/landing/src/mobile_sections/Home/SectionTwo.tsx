@@ -15,7 +15,7 @@ const SectionTwo: React.FC = () => (
         zIndex: 2,
       }}
     >
-      <ContourSphere localScroll size={394} scrollAreaHeight={1400} />
+      <ContourSphere localScroll size={394} scrollAreaHeight={1600} />
     </div>
     {/* Content with higher z-index */}
     <div className='flex flex-col justify-between items-center relative z-15'>

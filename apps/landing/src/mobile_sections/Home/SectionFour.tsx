@@ -13,48 +13,48 @@ const SectionFour: React.FC = () => {
   return (
     <div ref={sectionRef} className='mt-[var(--px-200)] relative z-15'>
       <div className='flex flex-col gap-[var(--px-40)]'>
-        <div className='flex flex-col text-[length:var(--px-40)] font-bold font-helvetica uppercase leading-[var(--px-36)]'>
+        <div className='flex flex-col text-[length:var(--px-43)] font-bold font-helvetica uppercase leading-[var(--px-43)]'>
           <div className='flex items-center justify-start'>
             <div className='mr-[var(--px-8)]'>
               HOW
             </div>
-            <img className="w-[var(--px-32)] h-[var(--px-32)]" src={ArrowDownRightSvg} alt="Arrow Small Up" />
+            <img className="w-[var(--px-33)] h-[var(--px-33)] -mt-[var(--px-2)]" src={ArrowDownRightSvg} alt="Arrow Small Up" />
           </div>
           <div className=''>
             RESOMIX<br />WORKS
           </div>
         </div>
         <div className='flex flex-col items-start'>
-          <div className='flex items-end justify-start mb-[var(--px-16)]'>
-            <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-46)] h-[var(--px-46)]" />
-            <div className='text-[length:var(--px-18)] font-bold font-helvetica uppercase'>
+          <div className='flex items-center justify-start mb-[var(--px-16)]'>
+            <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-52)] h-[var(--px-52)]" />
+            <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
               1 — Upload Your<br />Reference Track
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
-            You can upload any audio file: a released or<br />unreleased track, a sketch from your archive,<br />or a short clip.Metadata is not important; Resomix<br />listens to your reference audio and extrapolates<br />its sonic DNA to find a perfect match.
+          <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
+            You can upload any audio file: a released or unreleased track, a sketch from your archive, or a short clip. Metadata is not important; Resomix listens to your reference audio and extrapolates its sonic DNA to find a perfect match.
           </div>
         </div>
         <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
-          <div className='flex items-end justify-start mb-[var(--px-16)]'>
-            <img className="w-[var(--px-48)] h-[var(--px-50)] mr-[var(--px-12)] mb-[var(--px-4)]" src={AnalysisSvg} alt="Analysis" />
-            <div className='text-[length:var(--px-18)] font-bold font-helvetica uppercase'>
+          <div className='flex items-center justify-start mb-[var(--px-16)]'>
+            <img className="w-[var(--px-58)] h-[var(--px-60)] mr-[var(--px-12)] mb-[var(--px-4)]" src={AnalysisSvg} alt="Analysis" />
+            <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
               2 — Deep Sonic<br />Analysis
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger leading-[var(--px-14)] tracking-[var(--px-0-1)]'>
-            Here's when the magic happens.<br />Our system performs a full spectral analysis on a<br />granular level, exploring every aspect of your tune<br />rhythm, harmonic content, energy flow, dynamics,<br />and tonal balance.
+          <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
+            Here's when the magic happens. Our system performs a full spectral analysis on a granular level, exploring every aspect of your tune rhythm, harmonic content, energy flow, dynamics, and tonal balance.
           </div>
         </div>
         <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
-          <div className='flex items-end justify-start mb-[var(--px-16)]'>
-            <img className="w-[var(--px-44)] h-[var(--px-44)] mr-[var(--px-12)] mb-[var(--px-4)]" src={MatchesSvg} alt="Matches" />
-            <div className='text-[length:var(--px-18)] font-bold font-helvetica uppercase'>
+          <div className='flex items-center justify-start mb-[var(--px-16)]'>
+            <img className="w-[var(--px-52)] h-[var(--px-52)] mr-[var(--px-12)] mb-[var(--px-4)]" src={MatchesSvg} alt="Matches" />
+            <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
               3 — Get Perfect<br />Matches
             </div>
           </div>
-          <div className='text-[length:var(--px-12)] font-extralight font-auger leading-[var(--px-14)] tracking-[var(--px-0-15)]'>
-            Within seconds, you'll have a carefully crafted<br />selection of tracks that resonate with your<br />reference's vibe, regardless of genre, release<br />date, or popularity.
+          <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
+            Within seconds, you'll have a carefully crafted selection of tracks that resonate with your reference's vibe, regardless of genre, release date, or popularity.
           </div>
         </div>
         <div>

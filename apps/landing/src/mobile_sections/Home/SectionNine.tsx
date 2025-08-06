@@ -15,7 +15,7 @@ const SectionNine: React.FC = () => {
       <div className="flex flex-col justify-between relative z-15">
         {/* Section 9 A */}
         <div className="flex flex-col justify-between min-h-[var(--px-403)]">
-          <div className="mt-[var(--px-40)] text-center text-[length:var(--px-7)] font-light font-fira tracking-[var(--px-1-2)]">
+          <div className="mt-[var(--px-40)] text-center text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-2)]">
             <div className="leading-[var(--px-8)]">
               <CodeTyping
                 speed={50}
@@ -57,7 +57,7 @@ const SectionNine: React.FC = () => {
               />
             </div>
           </div>
-          <div className="flex flex-col items-center text-center text-[length:var(--px-7)] font-light font-fira min-h-[var(--px-184)] mt-[var(--px-60)]">
+          <div className="flex flex-col items-center text-center text-[length:var(--px-10)] font-light font-fira min-h-[var(--px-184)] mt-[var(--px-60)]">
             <div className="leading-[var(--px-32)] min-h-[var(--px-32)] tracking-[var(--px-1-2)]">
               <CodeTyping
                 speed={50}
@@ -92,12 +92,12 @@ const SectionNine: React.FC = () => {
         </div>
 
         {/* Section 9 B */}
-        <div className="flex flex-col justify-between mt-[var(--px-167)] gap-[var(--px-220)] w-full items-center">
-          <div className="text-[length:var(--px-8)] font-light font-fira tracking-[var(--px-1-5)]">
+        <div className="flex flex-col justify-between mt-[var(--px-160)] gap-[var(--px-220)] w-full items-center">
+          <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-5)]">
             A New Era of Music
           </div>
           <img src={SectionNineGraphic} className="w-[var(--px-394)] h-[var(--px-6)]" alt="Section Nine Graphic" />
-          <div className="text-[length:var(--px-8)] font-light font-fira tracking-[var(--px-1-5)]">
+          <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-5)]">
             Tune Into the Unknown
           </div>
         </div>
