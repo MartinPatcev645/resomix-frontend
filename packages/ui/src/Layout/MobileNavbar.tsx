@@ -6,7 +6,7 @@ interface MobileNavbarProps {
 }
 
 export const MobileNavbar: React.FC<MobileNavbarProps> = ({ logo, menuIcon }) => (
-  <nav className='flex justify-between items-center align-center pt-[var(--px-39)] px-[var(--px-29)] z-50 relative'>
+  <nav className='flex justify-between items-center align-center pt-[var(--px-26)] z-50 relative'>
     <div className="w-[var(--px-35)]">
     </div>
     {logo}

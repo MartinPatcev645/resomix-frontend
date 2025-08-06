@@ -35,7 +35,7 @@ const HeroSection: React.FC = () => (
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-full h-[var(--px-718)] z-20 -mt-[var(--px-8)]"
+      className="relative w-full h-[var(--px-718)] z-20 -mt-[var(--px-20)]"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -50,13 +50,13 @@ const HeroSection: React.FC = () => (
       </div>
 
       {/* Overlay content */}
-      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none -mt-[var(--px-8)]">
+      <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none -mt-[var(--px-20)]">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
-          <div className="justify-start text-[length:var(--px-45)] font-bold font-helvetica uppercase leading-[var(--px-45)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— the Soul<br />of Sound </div>
+          <div className="justify-start text-[length:var(--px-46)] font-bold font-helvetica uppercase leading-[var(--px-52)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— Align with<br />your Sound </div>
           <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
           <img className="w-[var(--px-35)] h-[var(--px-35)] mt-[var(--px-12)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
         </div>
-        <div className="flex gap-[var(--px-4)] mx-auto mb-[var(--px-40)] relative z-15">
+        <div className="flex gap-[var(--px-4)] mx-auto relative z-15 -mb-[var(--px-16)]">
           <IconComp
             svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={FbSvg} alt="Fb" />}
             className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
@@ -81,8 +81,8 @@ const HeroSection: React.FC = () => (
 
     {/* Text below the SVG clip path */}
     <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15 mt-[var(--px-40)]'>
-      <div className="text-right justify-start text-[length:var(--px-16)] font-extralight font-helvetica uppercase leading-[var(--px-16)]">Unbounded by trends,<br />built for emotional<br />resonance</div>
-      <img src={SoundWaves} className="w-[var(--px-31)] h-[var(--px-38)]" alt="Sound Waves" />
+      <div className="text-right justify-start text-[length:var(--px-20)] font-extralight font-helvetica uppercase leading-[var(--px-20)]">Unbounded by trends,<br />built for emotional<br />resonance</div>
+      <img src={SoundWaves} className="w-[var(--px-41)] h-[var(--px-50)]" alt="Sound Waves" />
     </div>
   </div>
 );
