@@ -11,7 +11,7 @@ interface ButtonHeavyRightProps {
 export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClick, transparent = false, className }) => (
   <div className='flex justify-center items-center cursor-pointer group' onClick={onClick}>
     <div
-      className={`min-w-[var(--px-160)] h-[var(--px-36)] px-[var(--px-20)] py-[var(--px-8)] rounded-3xl outline outline-[0.6px] outline-offset-[-0.6px] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-8)] ${transparent
+      className={`min-w-[var(--px-160)] h-[var(--px-36)] px-[var(--px-20)] py-[var(--px-8)] rounded-3xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-8)] ${transparent
         ? 'bg-transparent group-hover:bg-[var(--color-primary-hover)]'
         : 'bg-[var(--color-primary)] group-hover:bg-[var(--color-primary-hover)]'
         } ${className}`}
