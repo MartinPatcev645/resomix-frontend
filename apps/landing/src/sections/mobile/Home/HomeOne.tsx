@@ -3,7 +3,7 @@ import SectionOneGraphicRight from "@/assets/icons/composites/mobile/section_one
 import SectionOneGraphicLeft from "@/assets/icons/composites/mobile/section_one_graphic_left.svg"
 
 const HomeOne: React.FC = () => (
-  <div className='mt-[var(--px-150)]'>
+  <div className='-mt-[var(--px-80)]'>
     <div className='flex flex-col w-full relative z-15'>
       <div className='flex flex-col justify-between items-end w-full'>
         <div className='flex items-end mb-[var(--px-32)] relative'>
