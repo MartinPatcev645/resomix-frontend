@@ -57,7 +57,7 @@ const HomeSeven: React.FC = () => {
           </div>
         </div>
         <div className="w-full flex justify-center items-center pb-[var(--px-140)] min-h-[var(--px-309)]">
-          <ButtonHeavyRight className="w-[var(--px-310)]" text="Align With Your Sound" onClick={() => { }} transparent={true} />
+          <ButtonHeavyRight className="w-[var(--px-280)]" text="Align With Your Sound" onClick={() => { }} transparent={true} />
         </div>
         <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
           {/* <div className="min-h-[var(--px-309)]"></div> */}
