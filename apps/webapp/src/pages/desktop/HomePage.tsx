@@ -1,7 +1,7 @@
 import { Navbar, StaticNoise } from "@resomix/ui";
 import { LogoHeader } from "@/components/index.ts";
 import { UploadHero, UploadFooter, UploadOne } from "@/sections/desktop/index.ts";
-import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
+// import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
 
 export function HomePage() {
   return (
