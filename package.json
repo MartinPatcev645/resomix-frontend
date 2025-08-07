@@ -11,7 +11,7 @@
     "build": "turbo run build",
     "cold:build": "turbo run build --cache=local:r,remote:r",
     "build:landing": "TURBO_DISABLE_DAEMON=1 pnpm turbo run build --filter=landing  --cache=local:r",
-    "build:webapp":  "TURBO_DISABLE_DAEMON=1 pnpm turbo run build --filter=webapp"
+    "build:webapp":  "TURBO_DISABLE_DAEMON=1 pnpm turbo run build --filter=webapp  --cache=local:r"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",
