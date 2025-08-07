@@ -31,7 +31,7 @@ export const IconComp: React.FC<IconCompProps> = ({
 
   return (
     <div 
-      className={`relative cursor-pointer ${backgroundColor} rounded-2xl outline outline-[0.37px] outline-offset-[-0.37px] ${borderColor} group-hover:outline-[var(--color-primary-hover)] hover:bg-[var(--color-primary-hover)] transition-colors overflow-hidden ${padding} ${className}`}
+      className={`relative cursor-pointer ${backgroundColor} rounded-2xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] ${borderColor} group-hover:outline-[var(--color-primary-hover)] hover:bg-[var(--color-primary-hover)] transition-colors overflow-hidden ${padding} ${className}`}
       style={containerStyle}
       onClick={onClick}
     >
