@@ -11,18 +11,16 @@ interface ButtonHeavyRightProps {
 export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClick, transparent = false, className }) => (
   <div className='flex justify-center items-center cursor-pointer group' onClick={onClick}>
     <div
-      className={`min-w-[var(--px-160)] h-[var(--px-36)] px-[var(--px-20)] py-[var(--px-8)] rounded-3xl outline outline-[0.37px] outline-offset-[-0.37px] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-8)] ${
-        transparent
-          ? 'bg-transparent group-hover:bg-[var(--color-primary-hover)]'
-          : 'bg-[var(--color-primary)] group-hover:bg-[var(--color-primary-hover)]'
-      } ${className}`}
+      className={`min-w-[var(--px-160)] h-[var(--px-36)] px-[var(--px-20)] py-[var(--px-8)] rounded-3xl outline outline-[0.37px] outline-offset-[-0.37px] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-8)] ${transparent
+        ? 'bg-transparent group-hover:bg-[var(--color-primary-hover)]'
+        : 'bg-[var(--color-primary)] group-hover:bg-[var(--color-primary-hover)]'
+        } ${className}`}
     >
       <div
-        className={`tracking-normal whitespace-nowrap text-[length:var(--px-10-37)] font-light font-fira ${
-          transparent
-            ? 'text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]'
-            : 'text-[var(--color-text-primary)]'
-        }`}
+        className={`tracking-normal whitespace-nowrap text-[length:var(--px-10-37)] font-light font-fira ${transparent
+          ? 'text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]'
+          : 'text-[var(--color-text-primary)]'
+          }`}
       >
         {text}
       </div>
@@ -31,11 +29,10 @@ export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClic
       className="ml-[var(--px-1)]"
       svg={
         <svg
-          className={`w-[var(--px-24)] h-[var(--px-24)] ${
-            transparent
-              ? 'text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]'
-              : 'text-[var(--color-text-primary)]'
-          }`}
+          className={`w-[var(--px-24)] h-[var(--px-24)] ${transparent
+            ? 'text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]'
+            : 'text-[var(--color-text-primary)]'
+            }`}
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="none"
@@ -48,17 +45,12 @@ export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClic
           </g>
 
           {/* Hover vertical arrow icon */}
-          <g className="hidden group-hover:block">  
-            <svg
-              className="w-[var(--px-24)] h-[var(--px-24)]"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 19 19"
-              fill="none"
-            >
-              <path d="M9.33301 15.4072L9.33301 3.55554" stroke="currentColor" strokeWidth="0.592593" strokeLinecap="square" />
-              <path d="M5.14042 11.2148C7.29575 11.2148 9.33301 13.1131 9.33301 15.4075" stroke="currentColor" strokeWidth="0.592593" strokeLinecap="square" />
-              <path d="M13.5264 11.2148C11.371 11.2148 9.33374 13.1131 9.33374 15.4075" stroke="currentColor" strokeWidth="0.592593" strokeLinecap="square" />
-              <line x1="2.66699" y1="17.889" x2="16.0003" y2="17.889" stroke="currentColor" strokeWidth="0.592593" />
+          <g className="hidden group-hover:block">
+            <svg className="w-[var(--px-24)] h-[var(--px-24)]" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.33399 3.55585L9.33398 15.4075" stroke="black" stroke-width="0.592593" stroke-linecap="square" />
+              <path d="M13.5266 7.74823C11.3712 7.74823 9.33398 5.85001 9.33398 3.55556" stroke="black" stroke-width="0.592593" stroke-linecap="square" />
+              <path d="M5.14062 7.74823C7.29599 7.74823 9.33325 5.85001 9.33325 3.55557" stroke="black" stroke-width="0.592593" stroke-linecap="square" />
+              <line x1="2.66699" y1="17.8889" x2="16.0003" y2="17.8889" stroke="black" stroke-width="0.592593" />
             </svg>
           </g>
         </svg>

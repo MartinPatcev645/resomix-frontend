@@ -1,12 +1,14 @@
 import React from "react";
 import { LinkButton } from "../Buttons/LinkButton";
 import { ButtonHeavyRight } from "../Buttons/ButtonHeavyRight";
+import { ButtonHeavyLeft } from "../Buttons/ButtonHeavyLeft";
 
 interface NavbarProps {
   logo?: React.ReactNode;
+  mode?: 'home' | 'upload' | 'playlist';
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ logo }) => (
+export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home' }) => (
   <nav className='flex justify-between items-center align-center pt-[var(--px-28)] px-[var(--px-65)] z-20 relative'>
     <div className="inline-flex justify-center items-center gap-[var(--px-16)]"
       style={{
@@ -19,7 +21,16 @@ export const Navbar: React.FC<NavbarProps> = ({ logo }) => (
     <div>
       {logo}
     </div>
-    <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} />
-
+    {mode === 'home' && (
+      <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} />
+    )}
+    {mode === 'upload' && (
+      <ButtonHeavyLeft text="Why Resomix?" onClick={() => { }} transparent={true} />
+    )}
+    {mode === 'playlist' && (
+      <div className="text-[var(--color-text-secondary)] text-[length:var(--px-10-37)] font-light font-fira">
+        Playlist
+      </div>
+    )}
   </nav>
 );
