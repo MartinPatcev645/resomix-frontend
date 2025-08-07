@@ -1,6 +1,7 @@
 :root {
   /* Dark theme (default) */
   --color-primary: #ffffff;
+  --color-primary-background: #111111;
   --color-primary-hover: #B9B9B9;
   --color-secondary: #000000;
   --color-text-primary: #000000;
