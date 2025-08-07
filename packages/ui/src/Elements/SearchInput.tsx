@@ -21,7 +21,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, place
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`h-[var(--px-34)] py-[var(--px-8-889)] px-[var(--px-19-259)] bg-[var(--color-primary)] rounded-[30px] outline outline-[0.50px] outline-offset-[-0.50px] outline-[var(--color-primary)] text-[var(--color-text-primary)] text-[length:var(--px-11)] font-fira inline-flex justify-center items-center gap-[var(--px-10)] ${width}`}
+      className={`h-[var(--px-34)] py-[var(--px-8-889)] px-[var(--px-19-259)] bg-[var(--color-primary)] rounded-[30px] outline outline-[0.50px] outline-offset-[-0.50px] outline-[var(--color-primary)] text-[var(--color-text-primary)] text-[length:var(--px-16)] font-fira inline-flex justify-center items-center gap-[var(--px-10)] ${width}`}
     />
   </div>
 );
