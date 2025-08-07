@@ -29,7 +29,7 @@ const UploadHero: React.FC = () => {
           d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
           stroke="white"
           strokeOpacity="0.7"
-          strokeWidth="0.37037"
+          strokeWidth="1"
           strokeDasharray="0.74 0.74"
           fill="none"
         />
