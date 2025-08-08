@@ -1,6 +1,5 @@
 import React from "react";
 import { ButtonHeavyRight } from "@resomix/ui";
-// import { StaticNoise, ButtonHeavyRight } from "@resomix/ui";
 import CrossSvg from "@/assets/icons/cross.svg";
 import RIconsFooter from "@/assets/icons/r_icon_footer.svg";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
@@ -10,10 +9,8 @@ interface MenuPageProps {
 }
 
 const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => (
-  <div className="w-screen h-full min-h-screen relative overflow-hidden">
-    {/* Background static noise */}
-    {/* <StaticNoise color="#323233" zIndex={0} /> */}
-    <div className="absolute inset-0 w-full h-full bg-[var(--color-secondary)]"></div>
+  <div className="w-screen h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
+    <div className="absolute inset-0 w-full h-full"></div>
     <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)]">
       <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
         {onClose ? (
