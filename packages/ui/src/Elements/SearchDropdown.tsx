@@ -4,7 +4,7 @@ const truncateText = (text: string | undefined, max: number) =>
   text && text.length > max ? `${text.slice(0, max)}…` : text;
 
 interface SearchResult {
-  id: string | number;
+  uuid: string | number;
   title: string;
   artist?: string;
   duration?: string;
@@ -31,7 +31,7 @@ export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, o
         <ul className="max-h-[var(--px-300)] overflow-y-auto divide-y divide-[var(--opacity-10)]">
           {results.map((item) => (
             <li
-              key={item.id}
+              key={item.uuid}
               className="flex justify-between items-center py-[var(--px-12)] px-[var(--px-19-259)] hover:bg-[var(--color-primary-hover)] cursor-pointer select-none shadow-md"
               onClick={() => onSelect?.(item)}
             >

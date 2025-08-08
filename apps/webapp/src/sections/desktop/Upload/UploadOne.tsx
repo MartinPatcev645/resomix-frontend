@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import InfoSvg from "@/assets/icons/info.svg";
-import { SearchComponent } from "@/components/SearchComponent.tsx";
-import { UploadComponent } from "@/components/UploadComponent.tsx";
+import { SearchComponent, UploadComponent, PopularComponent } from "@/components/index.ts";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -15,7 +14,7 @@ const UploadOne: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col mx-auto items-center justify-center my-[var(--px-100)]">
+        <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
             <div className="w-[var(--px-880)] h-[var(--px-61)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
                 <div className="">
                     <div className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
@@ -44,7 +43,7 @@ const UploadOne: React.FC = () => {
                 </div>
             </div>
             <div className="flex w-[var(--px-880)] h-auto justify-between mt-[var(--px-20)]">
-                <div className="">
+                <div className="flex-1/2 mr-[var(--px-15)]">
                     {activeComponent === 'search' ? (
                         <SearchComponent 
                             onUploadClick={handleUploadClick}
@@ -55,8 +54,8 @@ const UploadOne: React.FC = () => {
                         />
                     )}
                 </div>
-                <div className="">
-                    One
+                <div className="flex-1/2 ml-[var(--px-15)]">
+                    <PopularComponent />
                 </div>
             </div>
         </div>

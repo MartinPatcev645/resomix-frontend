@@ -1,13 +1,17 @@
 import { LogoHeader } from "./LogoHeader.tsx";
 import { LogoRFooter } from "./LogoRFooter.tsx";
 import { MenuIcon } from "./MenuIcon.tsx";
-import { BackgroundNoise } from "./BackgroundNoise.tsx";
-import { SearchComponent } from "./SearchComponent.tsx";
+import { BackgroundNoise } from ".//BackgroundNoise.tsx";
+import { SearchComponent } from "./upload/SearchComponent.tsx";
+import { UploadComponent } from "./upload/UploadComponent.tsx";
+import { PopularComponent } from "./upload/PopularComponent.tsx";
 
 export {
     LogoHeader,
     LogoRFooter,
     MenuIcon,
     BackgroundNoise,
-    SearchComponent
-} 
+    SearchComponent,
+    UploadComponent,
+    PopularComponent
+}
