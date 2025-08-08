@@ -10,6 +10,10 @@ import HomeNine from "./Home/HomeNine.tsx";
 import HomeFooter from "./Home/HomeFooter.tsx";
 import HomeHero from "./Home/HomeHero.tsx";
 
+import AboutHero from "./About/AboutHero.tsx";
+import AboutOne from "./About/AboutOne.tsx";
+import AboutFooter from "./About/AboutFooter.tsx";
+
 export {
   HomeHero,
   HomeOne,
@@ -22,4 +26,8 @@ export {
   HomeEight,
   HomeNine,
   HomeFooter,
+
+  AboutHero,
+  AboutOne,
+  AboutFooter,
 };
