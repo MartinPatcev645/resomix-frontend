@@ -68,7 +68,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                                 <div className="text-[length:var(--px-9)] font-fira font-light my-[var(--px-20)] text-center">
                                     or
                                 </div>
-                                <ButtonSleek text="Upload" onClick={() => { }} />
+                                <ButtonSleek text="Upload Your Audio" onClick={() => { }} />
                             </div>
                         </div>
                     </div>

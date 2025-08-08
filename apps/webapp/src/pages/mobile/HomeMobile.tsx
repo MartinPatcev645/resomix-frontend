@@ -1,8 +1,9 @@
 import { MobileNavbar, StaticNoise } from "@resomix/ui";
 import { useState } from "react";
 import MenuPage from "./MenuPage.tsx";
+import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, MenuIcon } from "@/components/index.ts";
-import { UploadHero } from "@/sections/mobile/index.ts";
+import { UploadOne, UploadHero, UploadFooter } from "@/sections/mobile/index.ts";
 
 export function HomeMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -34,9 +35,12 @@ export function HomeMobile() {
             <UploadHero />
           </div>
 
+          <img src={AngleDown} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
+
           {/* Section One */}
           <div className="relative z-20 mt-[var(--px-60)]">
-            TESTING
+            <UploadOne />
+            <UploadFooter />
           </div>
         </div>
       </div>
@@ -49,4 +53,4 @@ export function HomeMobile() {
       )}
     </>
   );
-} 
+}

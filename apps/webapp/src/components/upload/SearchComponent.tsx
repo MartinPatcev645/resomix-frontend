@@ -60,7 +60,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick 
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] relative">
                                     {/** Search bar & dropdown */}
-                                    <SearchInput value={query} onChange={handleQueryChange} width="w-[var(--px-310)]" />
+                                    <SearchInput value={query} onChange={handleQueryChange} placeholder="Find Existing Tracks..." width="w-[var(--px-310)]" />
                                     <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-310)]" truncateLength={24} onSelect={() => { }} />
                                 </div>
                                 <div className="text-[length:var(--px-11)] font-fira font-light text-center mt-[var(--px-30)]">

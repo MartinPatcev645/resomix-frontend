@@ -5,6 +5,9 @@ import { BackgroundNoise } from ".//BackgroundNoise.tsx";
 import { SearchComponent } from "./upload/SearchComponent.tsx";
 import { UploadComponent } from "./upload/UploadComponent.tsx";
 import { PopularComponent } from "./upload/PopularComponent.tsx";
+import { SearchComponentMobile } from "./upload/SearchComponentMobile.tsx";
+import { UploadComponentMobile } from "./upload/UploadComponentMobile.tsx";
+import { PopularComponentMobile } from "./upload/PopularComponentMobile.tsx";
 
 export {
     LogoHeader,
@@ -13,5 +16,8 @@ export {
     BackgroundNoise,
     SearchComponent,
     UploadComponent,
-    PopularComponent
+    PopularComponent,
+    SearchComponentMobile,
+    UploadComponentMobile,
+    PopularComponentMobile
 }
