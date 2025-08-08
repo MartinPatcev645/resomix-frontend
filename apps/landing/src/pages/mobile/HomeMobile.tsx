@@ -16,7 +16,6 @@ export function HomeMobile() {
           position: "relative",
           zIndex: 30,
           maxWidth: "1023px",
-          backgroundColor: "var(--color-primary-background)"
         }}
       >
         <div className="mx-[var(--px-20)] border border-dotted border-slate-200">
