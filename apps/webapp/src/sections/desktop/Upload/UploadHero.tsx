@@ -97,7 +97,7 @@ const UploadHero: React.FC = () => {
               <img className="w-[var(--px-35)] h-[var(--px-35)]" src={ArrowSmallDown} alt="Arrow Small Down" />
               <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-[var(--px-20)] text-white">Upload a reference track,<br />and unlock a universe of sounds.</div>
             </div>
-            <div className="text-[length:var(--px-62)] font-semibold font-helvetica uppercase text-right">The Journey Begins</div>
+            <div className="text-[length:var(--px-62)] font-semibold font-helvetica uppercase text-right">The Journey <span className="italic">Begins</span></div>
           </div>
           <div className="flex justify-center items-center w-full relative z-15">
             <img src={LineThree} className="w-[var(--px-4)] h-[var(--px-60)]" alt="Line Three" />

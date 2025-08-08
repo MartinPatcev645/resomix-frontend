@@ -1,46 +1,55 @@
-import { Navbar, StaticNoise } from "@resomix/ui";
-import { LogoHeader } from "@/components/index.ts";
-import { AboutHero, AboutOne, AboutFooter } from "@/sections/desktop/index.ts";
-// import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
+import { MobileNavbar } from "@resomix/ui";
+import { useState } from "react";
+import MenuPage from "./MenuPage.tsx";
+import AngleDown from "@/assets/icons/AngleDown.svg";
+import { LogoHeader, MenuIcon } from "@/components/index.ts";
+import { AboutOne, AboutHero, AboutFooter } from "@/sections/mobile/index.ts";
 
 export function AboutMobile() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <>
-      {/* Static noise background */}
-      <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
-
       {/* Content layer */}
       <div
         style={{
-          margin: '0 auto',
-          color: 'var(--color-text-secondary)',
-          position: 'relative',
+          margin: "0 auto",
+          color: "var(--color-text-secondary)",
+          position: "relative",
           zIndex: 30,
-          maxWidth: '2560px',
+          maxWidth: "1023px",
+          backgroundColor: "var(--color-primary-background)",
+          overflowX: "clip"
         }}
       >
-        <div className="border-l border-r border-dotted border-slate-200 mx-[var(--px-63)]">
+        {/* Main Content */}
+        <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative">
+          {/* Navbar & Hero Section */}
+          <div className="border-t border-b border-dotted border-slate-200">
+            <MobileNavbar
+              logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+              menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
+              customClass="flex justify-between items-center align-center z-50 relative"
+            />
+            <AboutHero />
+          </div>
 
-          {/* SVG Overlay inside 1280px content */}
-          {/* <div
-            className="absolute top-0 max-w-full max-h-full pointer-events-none z-30"
-            aria-hidden="true"
-          >
-            <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)]" />
-          </div> */}
+          <img src={AngleDown} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
 
-          {/* Navbar */}
-          <Navbar
-            logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-            mode="upload"
-            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-          />
-
-          <AboutHero />
-          <AboutOne />
-          <AboutFooter />
+          {/* Section One */}
+          <div className="relative z-20 mt-[var(--px-60)]">
+            <AboutOne />
+            <AboutFooter />
+          </div>
         </div>
       </div>
+
+      {/* Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-[100]">
+          <MenuPage onClose={() => setIsMenuOpen(false)} />
+        </div>
+      )}
     </>
   );
 }
