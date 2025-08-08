@@ -2,7 +2,7 @@ import { useResponsive } from "@resomix/hooks";
 import { HomePage } from "./pages/desktop/HomePage.tsx";
 import { HomeMobile } from "./pages/mobile/HomeMobile.tsx";
 import { Routes, Route } from "react-router-dom";
-import { AboutPage } from "./pages/AboutPage.tsx";
+import { AboutPage } from "./pages/desktop/AboutPage.tsx";
 import { TermsPage } from "./pages/TermsPage.tsx";
 import TestPage from "./pages/TestPage.tsx";
 

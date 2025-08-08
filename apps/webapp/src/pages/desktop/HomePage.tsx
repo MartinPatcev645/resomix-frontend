@@ -30,7 +30,11 @@ export function HomePage() {
           </div> */}
 
           {/* Navbar */}
-          <Navbar logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>} mode="upload" />
+          <Navbar
+            logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+            mode="upload"
+            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+          />
 
           <UploadHero />
           <UploadOne />
