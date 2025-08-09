@@ -83,7 +83,7 @@ const HomeSeven: React.FC = () => {
                   delay={1200}
                 />
               </div>
-              <div className="w-full my-[var(--px-4)] ml-[var(--px-30)]">
+              <div className="w-full my-[var(--px-4)] flex justify-end items-center">
                 <img src={LineThreeSvg} alt="Line Three" className="w-[var(--px-4)] h-[var(--px-45)]" />
               </div>
               <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
