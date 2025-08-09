@@ -14,6 +14,7 @@ import AboutHero from "./About/AboutHero.tsx";
 import AboutOne from "./About/AboutOne.tsx";
 import AboutTwo from "./About/AboutTwo.tsx";
 import AboutThree from "./About/AboutThree.tsx";
+import AboutFour from "./About/AboutFour.tsx";
 import AboutFooter from "./About/AboutFooter.tsx";
 
 export {
@@ -33,5 +34,6 @@ export {
   AboutOne,
   AboutTwo,
   AboutThree,
+  AboutFour,
   AboutFooter,
 };

@@ -1,6 +1,6 @@
 import { Navbar, StaticNoise } from "@resomix/ui";
 import { LogoHeader } from "@/components/index.ts";
-import { AboutHero, AboutOne, AboutFooter, AboutTwo, AboutThree } from "@/sections/desktop/index.ts";
+import { AboutHero, AboutOne, AboutFooter, AboutTwo, AboutThree, AboutFour } from "@/sections/desktop/index.ts";
 // import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
 
 export function AboutPage() {
@@ -17,6 +17,7 @@ export function AboutPage() {
           position: 'relative',
           zIndex: 30,
           maxWidth: '2560px',
+          overflowX: 'hidden',
         }}
       >
         {/* Four lines around hero section to maintain design consistency */}
@@ -51,6 +52,7 @@ export function AboutPage() {
           <AboutOne />
           <AboutTwo />
           <AboutThree />
+          <AboutFour />
           <AboutFooter />
         </div>
       </div>
