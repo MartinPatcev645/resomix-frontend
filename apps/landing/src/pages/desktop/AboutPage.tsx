@@ -30,7 +30,11 @@ export function AboutPage() {
         </div>
 
       {/* Content Layer */}
-        <div className="border-l border-r border-dotted border-slate-200 mx-[var(--px-63)]">
+        <div className="mx-[var(--px-63)] relative">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[60]">
+            <div className="absolute left-0 top-0 bottom-0 border-l border-dotted border-slate-200" />
+            <div className="absolute right-0 top-0 bottom-0 border-r border-dotted border-slate-200" />
+          </div>
 
           {/* Navbar */}
           <Navbar

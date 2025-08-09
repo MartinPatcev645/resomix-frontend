@@ -13,9 +13,9 @@ const AboutHero: React.FC = () => {
     <div ref={sectionRef} className="relative">
       {/* Hidden SVG defs for clip-path */}
       <svg
-        viewBox="0 0 1152 628"
+        viewBox="0 0 1154 628"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-[length:var(--px-1152)] h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-[length:var(--px-1156)] h-[length:var(--px-628)] pointer-events-none z-10"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -36,7 +36,7 @@ const AboutHero: React.FC = () => {
 
       {/* Clip content inside shape */}
       <div
-        className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto z-20"
+        className="relative w-[var(--px-1156)] h-[var(--px-628)] mx-auto z-20"
         style={{
           clipPath: "url(#heroClip)",
           WebkitClipPath: "url(#heroClip)"

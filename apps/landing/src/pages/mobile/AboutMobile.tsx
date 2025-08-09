@@ -34,7 +34,12 @@ export function AboutMobile() {
         </div>
 
         {/* Main Content */}
-        <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative z-20">
+        <div className="mx-[var(--px-20)] h-full min-h-screen pt-[var(--px-35)] relative z-20">
+          {/* Vertical border overlay so borders sit above inner content */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[60]">
+            <div className="absolute left-0 top-0 bottom-0 border-l border-dotted border-slate-200" />
+            <div className="absolute right-0 top-0 bottom-0 border-r border-dotted border-slate-200" />
+          </div>
           {/* Navbar & Hero Section */}
           <div className="border-t border-b border-dotted border-slate-200">
             <MobileNavbar
