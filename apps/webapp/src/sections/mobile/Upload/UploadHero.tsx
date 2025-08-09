@@ -10,8 +10,8 @@ const UploadHero: React.FC = () => {
   // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
-    <div ref={sectionRef} className="relative z-20 flex flex-col items-center justify-center gap-[var(--px-40)]">
-      <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] mt-[var(--px-60)]">
+    <div ref={sectionRef} className="relative z-20 flex flex-col items-center justify-center gap-[var(--px-40)] min-h-[var(--px-512)]">
+      <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] mt-[var(--px-60)] min-h-[var(--px-33)]">
         <CodeTyping
           text='// RESOMIX SYSTEM v1.0.9 [booting...]<br />init.protocol("resonance_scan")'
           speed={100}
@@ -23,7 +23,7 @@ const UploadHero: React.FC = () => {
         <div className="text-[length:var(--px-20)] font-helvetica font-extralight leading-[var(--px-24)] uppercase">upload a reference track,<br />and unlock a universe<br />of sounds</div>
         <img src={ArrowDownRightSvg} alt="arrow_down_right" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>
-      <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)]">
+      <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] min-h-[var(--px-33)]">
         <CodeTyping
           text='/* Beginning Sonic Transition */<br />[✓] Welcome to Resomix'
           speed={100}

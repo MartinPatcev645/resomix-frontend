@@ -19,6 +19,17 @@ export function AboutPage() {
           maxWidth: '2560px',
         }}
       >
+        {/* Four lines around hero section to maintain design consistency */}
+        <div className="absolute left-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute right-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute left-0 top-[var(--px-691)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute right-0 top-[var(--px-691)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+
+      {/* Content Layer */}
         <div className="border-l border-r border-dotted border-slate-200 mx-[var(--px-63)]">
 
           {/* SVG Overlay inside 1280px content */}

@@ -22,8 +22,19 @@ export function AboutMobile() {
           overflowX: "clip"
         }}
       >
+
+        {/* Four lines around hero section to maintain design consistency */}
+        <div className="absolute left-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute right-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute left-0 top-[var(--px-716)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute right-0 top-[var(--px-716)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        
         {/* Main Content */}
-        <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative">
+        <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative z-20">
           {/* Navbar & Hero Section */}
           <div className="border-t border-b border-dotted border-slate-200">
             <MobileNavbar

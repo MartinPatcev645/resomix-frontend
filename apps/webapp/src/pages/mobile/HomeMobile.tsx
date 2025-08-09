@@ -21,10 +21,21 @@ export function HomeMobile() {
           backgroundColor: "var(--color-primary-background)"
         }}
       >
+
+        {/* Four lines around hero section to maintain design consistency */}
+        <div className="absolute left-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute right-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute left-0 top-[var(--px-691)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+        <div className="absolute right-0 top-[var(--px-691)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        </div>
+
         {/* Main Content */}
         <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative">
           {/* Navbar & Hero Section */}
-          <div className="border-t border-b border-dotted border-slate-200">
+          <div className="border-t border-b border-dotted border-slate-200 min-h-[var(--px-527-5)]">
             <MobileNavbar
               logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
               menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
