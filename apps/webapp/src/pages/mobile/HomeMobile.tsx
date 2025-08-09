@@ -18,7 +18,8 @@ export function HomeMobile() {
           position: "relative",
           zIndex: 30,
           maxWidth: "1023px",
-          backgroundColor: "var(--color-primary-background)"
+          backgroundColor: "var(--color-primary-background)",
+          overflowX: "hidden"
         }}
       >
 
@@ -27,7 +28,7 @@ export function HomeMobile() {
         </div>
         <div className="absolute right-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
         </div>
-        <div className="absolute left-0 top-[var(--px-691)] w-full border-t border-slate-200 border-dotted pointer-events-none z-1">
+        <div className="absolute left-0 top-[var(--px-691)] w-[var(--px-392)] border-t border-slate-200 border-dotted pointer-events-none z-1">
         </div>
 
         {/* Main Content */}

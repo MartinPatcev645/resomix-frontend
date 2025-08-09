@@ -52,7 +52,7 @@ const AboutFooter: React.FC = () => (
           </div>
         </div>
       </div>
-      <div className="text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase w-[var(--px-1278)] -ml-[var(--px-62)]">
+      <div className="text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase w-[var(--px-1280)] -ml-[var(--px-62)]">
         Join the Resomix Universe
       </div>
       <div className="flex justify-between px-[var(--px-120)]">
