@@ -1,6 +1,6 @@
 import { Navbar, StaticNoise } from "@resomix/ui";
 import { LogoHeader } from "@/components/index.ts";
-import { AboutHero, AboutOne, AboutFooter } from "@/sections/desktop/index.ts";
+import { AboutHero, AboutOne, AboutFooter, AboutTwo, AboutThree } from "@/sections/desktop/index.ts";
 // import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
 
 export function AboutPage() {
@@ -49,6 +49,8 @@ export function AboutPage() {
 
           <AboutHero />
           <AboutOne />
+          <AboutTwo />
+          <AboutThree />
           <AboutFooter />
         </div>
       </div>
