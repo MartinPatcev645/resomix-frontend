@@ -3,7 +3,7 @@ import { CodeTyping } from "@resomix/ui";
 import { LogoRFooter } from "@/components/LogoRFooter.tsx";
 
 const AboutFooter: React.FC = () => (
-  <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
+  <div className="mt-[var(--px-200)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col">
       <div className="flex flex-col px-[var(--px-60)] min-h-[var(--px-129)]">
         <div className="flex w-full justify-start">
