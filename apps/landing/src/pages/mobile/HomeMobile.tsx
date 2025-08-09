@@ -18,7 +18,9 @@ export function HomeMobile() {
           maxWidth: "1023px",
         }}
       >
-        <div className="mx-[var(--px-20)] border border-dotted border-slate-200">
+        <div className="absolute inset-0 w-full mt-[var(--px-23)] border-t border-slate-200 border-dotted pointer-events-none z-10">
+        </div>
+        <div className="mx-[var(--px-19)] border-l border-r border-dotted border-slate-200">
           {/* Navbar */}
           <MobileNavbar
             logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
