@@ -19,7 +19,7 @@ export function AboutMobile() {
           zIndex: 30,
           maxWidth: "1023px",
           backgroundColor: "var(--color-primary-background)",
-          // overflowX: "hidden"
+          overflowX: "hidden"
         }}
       >
 

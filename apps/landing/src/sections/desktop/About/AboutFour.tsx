@@ -74,7 +74,7 @@ const AboutFour: React.FC = () => {
                     <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-right">
                         who want to build a better way<br />to discover and enjoy music across genres
                     </div>
-                    <div className="text-[length:var(--px-17)] font-extralight font-helvetica leading-[var(--px-25)] tracking-[var(--px-1)] underline opacity-80 hover:opacity-100 transition-opacity duration-100 hover: cursor-pointer text-right w-full">
+                    <div className="text-[length:var(--px-17)] font-extralight font-helvetica leading-[var(--px-25)] tracking-[var(--px-1)] underline opacity-80 hover:opacity-100 transition-opacity duration-100 hover:cursor-pointer text-right w-full">
                         Reach us anytime: hello@resomix.com
                     </div>
                 </div>
