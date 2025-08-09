@@ -3,7 +3,7 @@ import { useState } from "react";
 import MenuPage from "./MenuPage.tsx";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, MenuIcon } from "@/components/index.ts";
-import { AboutOne, AboutHero, AboutFooter } from "@/sections/mobile/index.ts";
+import { AboutHero, AboutOne, AboutFooter, AboutTwo, AboutThree, AboutFour } from "@/sections/mobile/index.ts";
 
 export function AboutMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,7 +19,7 @@ export function AboutMobile() {
           zIndex: 30,
           maxWidth: "1023px",
           backgroundColor: "var(--color-primary-background)",
-          overflowX: "clip"
+          // overflowX: "hidden"
         }}
       >
 
@@ -32,7 +32,7 @@ export function AboutMobile() {
         </div>
         <div className="absolute right-0 top-[var(--px-716)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
         </div>
-        
+
         {/* Main Content */}
         <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative z-20">
           {/* Navbar & Hero Section */}
@@ -50,6 +50,9 @@ export function AboutMobile() {
           {/* Section One */}
           <div className="relative z-20 mt-[var(--px-60)]">
             <AboutOne />
+            <AboutTwo />
+            <AboutThree />
+            <AboutFour />
             <AboutFooter />
           </div>
         </div>

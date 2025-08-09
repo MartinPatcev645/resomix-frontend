@@ -1,7 +1,6 @@
 import { Navbar, StaticNoise } from "@resomix/ui";
 import { LogoHeader } from "@/components/index.ts";
 import { AboutHero, AboutOne, AboutFooter, AboutTwo, AboutThree, AboutFour } from "@/sections/desktop/index.ts";
-// import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
 
 export function AboutPage() {
   return (
@@ -32,14 +31,6 @@ export function AboutPage() {
 
       {/* Content Layer */}
         <div className="border-l border-r border-dotted border-slate-200 mx-[var(--px-63)]">
-
-          {/* SVG Overlay inside 1280px content */}
-          {/* <div
-            className="absolute top-0 max-w-full max-h-full pointer-events-none z-30"
-            aria-hidden="true"
-          >
-            <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)]" />
-          </div> */}
 
           {/* Navbar */}
           <Navbar

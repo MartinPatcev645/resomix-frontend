@@ -1,11 +1,6 @@
 import React from "react";
 import ArrowSmallUp from "@/assets/icons/arrow_small_up.svg"
-// import AboutSeparatorLineTwo from "@/assets/icons/about_section_one_line_2.svg"
 import PlaySvg from "@/assets/icons/play.svg"
-// import MatchesSvg from "@/assets/icons/matches.svg"
-// import CraftSvg from "@/assets/icons/craft.svg"
-// import GradientThree from "@/assets/images/gradient 3.png"
-// import GradientFour from "@/assets/images/gradient 4.png"
 
 const AboutFour: React.FC = () => {
     return (
@@ -40,7 +35,7 @@ const AboutFour: React.FC = () => {
                                     Producers
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — looking for new inspiration to reflect a song’s vibe.
+                                    — looking for new inspiration to reflect a song's vibe.
                                 </div>
                             </div>
                         </div>
@@ -51,7 +46,8 @@ const AboutFour: React.FC = () => {
                                     Curators
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — who create cohesive playlists with their unique taste.                                </div>
+                                    — who create cohesive playlists with their unique taste.
+                                </div>
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-20)] z-15">
@@ -61,7 +57,8 @@ const AboutFour: React.FC = () => {
                                     Music Enthusiasts
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — exploring the boundaries of music, beyond charts or trends.                                </div>
+                                    — exploring the boundaries of music, beyond charts or trends.
+                                </div>
                             </div>
                         </div>
                     </div>
