@@ -7,7 +7,6 @@ import HomeSix from "./Home/HomeSix.tsx";
 import HomeSeven from "./Home/HomeSeven.tsx";
 import HomeEight from "./Home/HomeEight.tsx";
 import HomeNine from "./Home/HomeNine.tsx";
-import HomeFooter from "./Home/HomeFooter.tsx";
 import HomeHero from "./Home/HomeHero.tsx";
 
 import AboutHero from "./About/AboutHero.tsx";
@@ -15,7 +14,6 @@ import AboutOne from "./About/AboutOne.tsx";
 import AboutTwo from "./About/AboutTwo.tsx";
 import AboutThree from "./About/AboutThree.tsx";
 import AboutFour from "./About/AboutFour.tsx";
-import AboutFooter from "./About/AboutFooter.tsx";
 
 export {
   HomeHero,
@@ -28,12 +26,10 @@ export {
   HomeSeven,
   HomeEight,
   HomeNine,
-  HomeFooter,
 
   AboutHero,
   AboutOne,
   AboutTwo,
   AboutThree,
   AboutFour,
-  AboutFooter,
 };

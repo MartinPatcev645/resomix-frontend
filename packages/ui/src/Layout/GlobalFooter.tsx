@@ -1,14 +1,18 @@
 import React from "react";
-import { CodeTyping } from "@resomix/ui";
-import { LogoRFooter } from "@/components/LogoRFooter.tsx";
+import { CodeTyping } from "../index";
 
-const AboutFooter: React.FC = () => (
-  <div className="mt-[var(--px-200)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
+// Add a prop for the LogoRFooter
+interface GlobalFooterProps {
+  logo: React.ReactNode;
+}
+
+const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
+  <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col">
       <div className="flex flex-col px-[var(--px-60)] min-h-[var(--px-129)]">
         <div className="flex w-full justify-start">
           <a href="https://resomix.com" className="cursor-default">
-            <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
+            {logo}
           </a>
         </div>
         <div className="flex justify-between">
@@ -52,7 +56,7 @@ const AboutFooter: React.FC = () => (
           </div>
         </div>
       </div>
-      <div className="text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase w-[var(--px-1280)] -ml-[var(--px-62)]">
+      <div className="text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase w-[var(--px-1278)] -ml-[var(--px-62)]">
         Join the Resomix Universe
       </div>
       <div className="flex justify-between px-[var(--px-120)]">
@@ -77,4 +81,4 @@ const AboutFooter: React.FC = () => (
   </div>
 );
 
-export default AboutFooter;
+export default GlobalFooter;

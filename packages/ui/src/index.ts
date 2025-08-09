@@ -32,6 +32,9 @@ import { Terrain } from "./Animations/Terrain";
 import { StaticNoise } from "./Animations/StaticNoise";
 import { MobileNavbar } from "./Layout/MobileNavbar";
 
+import GlobalFooter from "./Layout/GlobalFooter";
+import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
+
 export {
   Navbar,
   DottedLine,
@@ -66,4 +69,7 @@ export {
   Terrain,
   StaticNoise,
   MobileNavbar,
+  
+  GlobalFooter,
+  GlobalMobileFooter,
 };

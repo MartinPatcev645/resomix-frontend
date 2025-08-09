@@ -1,8 +1,8 @@
-import { MobileNavbar } from "@resomix/ui";
+import { MobileNavbar, GlobalMobileFooter } from "@resomix/ui";
 import { useState } from "react";
 import MenuPage from "./MenuPage.tsx";
-import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine, HomeFooter } from "@/sections/mobile/index.ts";
-import { LogoHeader, MenuIcon } from "@/components/index.ts";
+import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine } from "@/sections/mobile/index.ts";
+import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 
 export function HomeMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -38,7 +38,7 @@ export function HomeMobile() {
           <HomeSeven />
           <HomeEight />
           <HomeNine />
-          <HomeFooter />
+          <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
         </div>
       </div>
       {isMenuOpen && (

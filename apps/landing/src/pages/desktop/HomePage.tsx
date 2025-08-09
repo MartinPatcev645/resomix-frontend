@@ -1,8 +1,7 @@
-// import { Navbar } from "@resomix/ui";
-import { Navbar, StaticNoise } from "@resomix/ui";
-import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine, HomeFooter } from "@/sections/desktop/index.ts";
+import { Navbar, StaticNoise, GlobalFooter } from "@resomix/ui";
+import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine } from "@/sections/desktop/index.ts";
 import sideFrameSvg from "@/assets/icons/layout/side_frame.svg";
-import { LogoHeader } from "@/components/index.ts";
+import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 
 export function HomePage() {
   return (
@@ -29,9 +28,6 @@ export function HomePage() {
           <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)]" />
         </div>
 
-        {/* Content-specific Static Noise - within content layer */}
-        {/* <StaticNoise color="#313132" zIndex={5} opacity={0.4}/> */}
-
         {/* Actual Content Sections */}
         <Navbar logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>} />
         <HomeHero />
@@ -44,7 +40,7 @@ export function HomePage() {
         <HomeSeven />
         <HomeEight />
         <HomeNine />
-        <HomeFooter />
+        <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
       </div>
     </>
   );

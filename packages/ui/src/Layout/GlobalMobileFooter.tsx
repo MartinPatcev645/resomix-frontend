@@ -1,8 +1,11 @@
 import React from "react";
-import { CodeTyping } from "@resomix/ui";
-import { LogoRFooter } from "@/components/LogoRFooter.tsx";
+import { CodeTyping } from "../index";
 
-const UploadFooter: React.FC = () => (
+interface GlobalMobileFooterProps {
+  logo: React.ReactNode;
+}
+
+const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo }) => (
   <div className="mt-[var(--px-250)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col w-full">
       <div className="absolute -left-[var(--px-20)] -top-[var(--px-80)] w-[var(--px-393)] text-[length:var(--px-30)] font-benzin uppercase leading-[var(--px-40)]">
@@ -11,7 +14,7 @@ const UploadFooter: React.FC = () => (
       <div className="flex flex-col items-start px-[var(--px-10)] min-h-[var(--px-129)] mt-[var(--px-40)]">
         <div className="flex w-full justify-start">
           <a href="https://resomix.com" className="cursor-default">
-            <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
+            {logo}
           </a>
         </div>
         <div className="flex justify-between">
@@ -62,4 +65,4 @@ const UploadFooter: React.FC = () => (
   </div>
 );
 
-export default UploadFooter;
+export default GlobalMobileFooter;
