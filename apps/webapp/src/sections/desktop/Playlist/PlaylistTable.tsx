@@ -4,7 +4,7 @@ import { IconComp } from "@resomix/ui";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
 import PlaySvg from "@/assets/icons/play.svg";
 
-const SimilarityTrackStatus = "Loading..."
+// const SimilarityTrackStatus = "Loading..."
 const PlaylistResult = {
     "success": true,
     "data": {
