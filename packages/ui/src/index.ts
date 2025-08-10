@@ -31,6 +31,7 @@ import { RockRing } from "./Animations/RockRing";
 import { Terrain } from "./Animations/Terrain";
 import { StaticNoise } from "./Animations/StaticNoise";
 import { MobileNavbar } from "./Layout/MobileNavbar";
+import { ToggleButton } from "./Buttons/ToggleButton";
 
 import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
@@ -69,7 +70,7 @@ export {
   Terrain,
   StaticNoise,
   MobileNavbar,
-  
+  ToggleButton,
   GlobalFooter,
   GlobalMobileFooter,
 };

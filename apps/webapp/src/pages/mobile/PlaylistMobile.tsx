@@ -5,7 +5,7 @@ import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
 
-export function HomeMobile() {
+export function PlaylistMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (

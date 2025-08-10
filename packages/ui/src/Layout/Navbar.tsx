@@ -2,6 +2,8 @@ import React from "react";
 import { LinkButton } from "../Buttons/LinkButton";
 import { ButtonHeavyRight } from "../Buttons/ButtonHeavyRight";
 import { ButtonHeavyLeft } from "../Buttons/ButtonHeavyLeft";
+import { ToggleButton } from "../Buttons/ToggleButton";
+import { ButtonSleek } from "../Buttons/ButtonSleek";
 
 interface NavbarProps {
   logo?: React.ReactNode;
@@ -29,8 +31,9 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
       <ButtonHeavyLeft text="Why Resomix?" onClick={() => { }} transparent={true} />
     )}
     {mode === 'playlist' && (
-      <div className="text-[var(--color-text-secondary)] text-[length:var(--px-10-37)] font-light font-fira">
-        Playlist
+      <div className="flex justify-center items-center">
+        <ToggleButton text="Autoplay" customWidth="min-w-[var(--px-120)]" onClick={() => { }} />
+        <ButtonSleek text="Feedback" transparent={true} customWidth="min-w-[var(--px-120)]" onClick={() => { }} />
       </div>
     )}
   </nav>

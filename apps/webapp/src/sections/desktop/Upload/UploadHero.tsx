@@ -1,17 +1,13 @@
-import React, { useRef } from "react";
+import React from "react";
 import { CodeTyping } from "@resomix/ui";
-// import { Remains } from "@resomix/ui";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
 import LineThree from "@/assets/icons/line3.svg";
 
 
 const UploadHero: React.FC = () => {
-  const sectionRef = useRef<HTMLDivElement | null>(null);
-  // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
-
   return (
-    <div ref={sectionRef} className="relative">
+    <div className="relative">
       {/* Hidden SVG defs for clip-path */}
       <svg
         viewBox="0 0 1152 628"
@@ -43,14 +39,6 @@ const UploadHero: React.FC = () => {
           WebkitClipPath: "url(#heroClip)"
         }}
       >
-        {/* Background noise layers (two, for consistency with other sections) */}
-        {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
-
-        {/* Remains background animation */}
-        {/* <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)]">
-        {isVisible && <Remains />}
-      </div> */}
-
         {/* Overlay content */}
         <div className="absolute inset-0 flex flex-col justify-center w-full h-full select-none py-auto">
           <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[var(--px-42)]">
