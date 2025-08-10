@@ -31,9 +31,9 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                 </defs>
 
                 {/* stroke outline */}
-                <path d="M473.594 382.481V0.629456H272.8L205.816 67.2962H1.00116V382.481H473.594Z" stroke="white" stroke-width="1" stroke-dasharray="0.74 0.74" fill="none" />
-                <path d="M1.37248 53.9628V0.629456H255.076L200.632 53.9628H1.37248Z" stroke="white" stroke-width="1" stroke-dasharray="0.74 0.74" fill="none" />
-                <path d="M251.742 54.7036H450.631" stroke="white" stroke-width="1" stroke-dasharray="0.74 0.74" />
+                <path d="M473.594 382.481V0.629456H272.8L205.816 67.2962H1.00116V382.481H473.594Z" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" fill="none" />
+                <path d="M1.37248 53.9628V0.629456H255.076L200.632 53.9628H1.37248Z" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" fill="none" />
+                <path d="M251.742 54.7036H450.631" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" />
             </svg>
 
             {/* Tab container - positioned above the main content */}

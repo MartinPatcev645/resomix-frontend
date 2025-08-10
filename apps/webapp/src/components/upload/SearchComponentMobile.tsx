@@ -33,9 +33,9 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                 </defs>
 
                 {/* stroke outline */}
-                <path d="M1 383V1H133.987L178.35 67.6926H314V383H1Z" stroke="white" stroke-width="1" stroke-dasharray="0.74 0.74" fill="none" />
-                <path d="M314 54.3541V1H145.971L164 27.677L182.03 54.3541H314Z" stroke="white" stroke-width="1" stroke-dasharray="0.74 0.74" fill="none" />
-                <path d="M21 55H152" stroke="white" stroke-width="1" stroke-dasharray="0.74 0.74" />
+                <path d="M1 383V1H133.987L178.35 67.6926H314V383H1Z" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" fill="none" />
+                <path d="M314 54.3541V1H145.971L164 27.677L182.03 54.3541H314Z" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" fill="none" />
+                <path d="M21 55H152" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" />
             </svg>
 
             {/* Tab container - positioned above the main content */}

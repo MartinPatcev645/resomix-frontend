@@ -1,6 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
+import { InputPlayer } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -9,6 +10,9 @@ import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
+import InfoSvg from "@/assets/icons/info.svg";
+
+const InputTrackStatus = "Loading..."
 
 // Add a javascript object here to create data for the playlist result
 const PlaylistResult = {
@@ -55,6 +59,7 @@ const PlaylistResult = {
 
 
 const PlaylistHero: React.FC = () => {
+  const [showMeta, setShowMeta] = React.useState(false);
   return (
     <div className="relative">
       {/* Hidden SVG defs for clip-path */}
@@ -91,8 +96,8 @@ const PlaylistHero: React.FC = () => {
         {/* Overlay content */}
         <div className="absolute inset-0 flex flex-col items-center justify-between w-full h-full select-none py-[var(--px-55)]">
           <div></div>
-          <div className="flex flex-col w-[var(--px-700)]">
-            <div className="flex w-full justify-between">
+          <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
+            <div className="flex w-full justify-between items-center">
               <div onClick={() => { }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
                 <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-13)] h-[var(--px-13)]" />
                 Generate track similarity
@@ -101,7 +106,7 @@ const PlaylistHero: React.FC = () => {
                 <IconButton
                   text="Rename"
                   transparent={true}
-                  customWidth="min-w-[var(--px-120)]"
+                  customWidth="min-w-[var(--px-100)]"
                   onClick={() => { }}
                   icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
@@ -109,7 +114,7 @@ const PlaylistHero: React.FC = () => {
                 <IconButton
                   text="Share"
                   transparent={true}
-                  customWidth="min-w-[var(--px-120)]"
+                  customWidth="min-w-[var(--px-100)]"
                   onClick={() => { }}
                   icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
@@ -127,32 +132,59 @@ const PlaylistHero: React.FC = () => {
                     <div className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</div>
                   </div>
                 </div>
-                <div className="flex flex-col w-full gap-[var(--px-10)] max-w-[var(--px-480)]">
-                  <div className="flex flex-col gap-[var(--px-7)]">
+                <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-480)]">
+                  <div className="flex flex-col gap-[var(--px-7)] min-h-[var(--px-61)]">
                     <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
                       <HoverFlow
                         text={PlaylistResult.data.playlist.name}
-                        maxChars={40}
-                        delay={50}
+                        maxChars={35}
+                        delay={800}
                         speed={80}
                         endPause={1000}
-                        maxWidth="430px"
+                        maxWidth="400px"
                       />
                     </div>
                     <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title) === PlaylistResult.data.playlist.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
-                      {PlaylistResult.data.queried_track.artist} - {PlaylistResult.data.queried_track.title}
+                      <HoverFlow
+                        text={PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title}
+                        maxChars={70}
+                        delay={800}
+                        speed={80}
+                        endPause={1000}
+                        maxWidth="400px"
+                      />
                     </div>
+                    <div className={`${(PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title) === PlaylistResult.data.playlist.name ? '' : 'hidden'}`}></div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
                       <img src={TimeSvg} alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
                       <div>{formatDuration(PlaylistResult.data.queried_track.duration)}</div>
                       <div>|</div>
+                      <div>{PlaylistResult.data.queried_track.year}</div>
+                      <div>|</div>
+                      <div>{PlaylistResult.data.queried_track.label}</div>
+                      <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
                     </div>
                   </div>
-                  <div className="flex flex-col gap-[var(--px-10)]">Okay</div>
+                  <div className="flex flex-col gap-[var(--px-10)]">
+                    {/* Hidden Meta Info */}
+                    <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center ${showMeta ? '' : 'hidden'}`}>
+                      <div>ID: {PlaylistResult.data.queried_track.id}</div>
+                      <div>|</div>
+                      <div>Duration: {formatDuration(PlaylistResult.data.queried_track.duration)}</div>
+                      <div>|</div>
+                      <div>Status: {InputTrackStatus}</div>
+                      <div>|</div>
+                      <div>Mode: Independent</div>
+                      <div>|</div>
+                      <div>Instance: Input Track</div>
+                    </div>
+                    {/* The actual Input player */}
+                    <InputPlayer />
+                  </div>
                 </div>
               </div>
-              <div className="absolute right-0 top-0">Input Track</div>
+              <div className="absolute right-[var(--px-10)] top-[var(--px-10)] px-[var(--px-16)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
             </div>
           </div>
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
