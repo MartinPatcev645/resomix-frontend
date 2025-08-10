@@ -7,7 +7,7 @@ import SpeedSvg from "@/assets/icons/speed.svg"
 import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
 import LayersSvg from "@/assets/icons/layers.svg"
 import GradientFive from "@/assets/images/gradient 5.png"
-// import GradientSix from "@/assets/images/gradient 6.svg"
+import GradientSix from "@/assets/images/gradient 6.png"
 
 const AboutThree: React.FC = () => {
     return (
@@ -18,9 +18,9 @@ const AboutThree: React.FC = () => {
                 <div className="absolute -top-[var(--px-150)] w-[var(--px-622)] -right-[var(--px-170)] pointer-events-none z-5">
                     <img src={GradientFive} alt="gradient_five" className="w-full h-auto" />
                 </div>
-                {/* <div className="absolute top-[var(--px-500)] w-[var(--px-550)] -left-[var(--px-300)] pointer-events-none z-5">
+                <div className="absolute top-[var(--px-500)] w-[var(--px-550)] -left-[var(--px-220)] pointer-events-none z-5">
                     <img src={GradientSix} alt="gradient_six" className="w-full h-auto" />
-                </div> */}
+                </div>
 
                 {/* Content */}
                 <div className="flex flex-col w-full z-15 items-end justify-between">
