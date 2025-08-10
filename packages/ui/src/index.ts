@@ -3,7 +3,7 @@ import { DottedLine } from "./Vectors/DottedLine";
 import { GlitchText } from "./Animations/GlitchText";
 import { ExplainContainer } from "./Animations/ExplainContainer";
 import { StarExplain } from "./Animations/StarExplain";
-import { CodeTyping } from "./Animations/TypeWriter";
+import { CodeTyping } from "./Animations/CodeTyping";
 import { HorizontalRoots } from "./Animations/HorizontalRoots";
 import { FlyingThroughSpace } from "./Animations/FlyingThroughSpace";
 import { GoldenSpiral } from "./Animations/GoldenSpiral";
@@ -33,6 +33,7 @@ import { StaticNoise } from "./Animations/StaticNoise";
 import { MobileNavbar } from "./Layout/MobileNavbar";
 import { ToggleButton } from "./Buttons/ToggleButton";
 import { IconButton } from "./Buttons/IconButton";
+import { HoverFlow } from "./Animations/HoverFlow";
 
 import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
@@ -75,4 +76,5 @@ export {
   GlobalFooter,
   GlobalMobileFooter,
   IconButton,
+  HoverFlow,
 };
