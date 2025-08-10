@@ -1,4 +1,9 @@
 import React from "react";
+import { IconButton } from "@resomix/ui";
+import RenameSvg from "@/assets/icons/rename.svg";
+import RenameBlackSvg from "@/assets/icons/rename_black.svg";
+import ShareSvg from "@/assets/icons/share.svg";
+import ShareBlackSvg from "@/assets/icons/share_black.svg";
 
 const PlaylistHero: React.FC = () => {
   return (
@@ -35,8 +40,42 @@ const PlaylistHero: React.FC = () => {
         }}
       >
         {/* Overlay content */}
-        <div className="absolute inset-0 flex flex-col justify-center w-full h-full select-none py-auto">
-          OKAY
+        <div className="absolute inset-0 flex flex-col items-center justify-between w-full h-full select-none py-[var(--px-55)]">
+          <div></div>
+          <div className="flex flex-col w-[var(--px-700)]">
+            <div className="flex w-full justify-between">
+              <div className="flex">
+                <img src="" alt="" />
+                Generate track similarity
+              </div>
+              <div className="flex items-center gap-[var(--px-8)]">
+                <IconButton 
+                  text="Rename"
+                  transparent={true}
+                  customWidth="min-w-[var(--px-120)]"
+                  onClick={() => { }}
+                  icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                  hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                />
+                <IconButton 
+                  text="Share"
+                  transparent={true}
+                  customWidth="min-w-[var(--px-120)]"
+                  onClick={() => { }}
+                  icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                  hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                />
+              </div>
+            </div>
+            <div className="">
+              <div className="flex">
+                <div className="">Okay</div>
+                <div className="">Okay</div>
+              </div>
+              <div className="absolute for input track label">Okay</div>
+            </div>
+          </div>
+          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
         </div>
       </div>
     </div>

@@ -32,6 +32,7 @@ import { Terrain } from "./Animations/Terrain";
 import { StaticNoise } from "./Animations/StaticNoise";
 import { MobileNavbar } from "./Layout/MobileNavbar";
 import { ToggleButton } from "./Buttons/ToggleButton";
+import { IconButton } from "./Buttons/IconButton";
 
 import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
@@ -73,4 +74,5 @@ export {
   ToggleButton,
   GlobalFooter,
   GlobalMobileFooter,
+  IconButton,
 };
