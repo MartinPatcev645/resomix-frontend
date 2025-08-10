@@ -20,3 +20,7 @@ export function formatDuration(seconds: number): string {
   }
 }
 
+// Function to convert 0-1 points into a percentage
+export function formatPercentage(percentage: number): string {
+  return `${(percentage * 100).toFixed(2)}%`;
+}

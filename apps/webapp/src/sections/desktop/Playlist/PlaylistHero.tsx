@@ -13,8 +13,6 @@ import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 
 const InputTrackStatus = "Loading..."
-
-// Add a javascript object here to create data for the playlist result
 const PlaylistResult = {
   "success": true,
   "data": {

@@ -11,6 +11,7 @@ import { PopularComponentMobile } from "./upload/PopularComponentMobile.tsx";
 import WaveformPlayer from "./Playlist/WaveformPlayer.tsx";
 import InputPlayer from "./Playlist/InputPlayer.tsx";
 import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
+import { ThumbIcon } from "./ThumbIcon.tsx";
 
 export {
     LogoHeader,
@@ -25,5 +26,6 @@ export {
     PopularComponentMobile,
     WaveformPlayer,
     InputPlayer,
-    SimilarityPlayer
+    SimilarityPlayer,
+    ThumbIcon
 }
