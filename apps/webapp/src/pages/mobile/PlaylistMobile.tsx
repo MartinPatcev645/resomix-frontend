@@ -3,7 +3,7 @@ import { useState } from "react";
 import MenuPage from "./MenuPage.tsx";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
-import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
+import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 
 export function PlaylistMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,8 +28,6 @@ export function PlaylistMobile() {
         </div>
         <div className="absolute right-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
         </div>
-        <div className="absolute left-0 top-[var(--px-691)] w-[var(--px-392)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-        </div>
 
         {/* Main Content */}
         <div className="mx-[var(--px-20)] border-l border-r h-full min-h-screen border-dotted border-slate-200 pt-[var(--px-35)] relative">
@@ -40,14 +38,14 @@ export function PlaylistMobile() {
               menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
               customClass="flex justify-between items-center align-center z-50 relative"
             />
-            <UploadHero />
+            <PlaylistHero />
           </div>
 
           <img src={AngleDown} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
 
           {/* Section One */}
           <div className="relative z-20 mt-[var(--px-60)]">
-            <UploadOne />
+            <PlaylistTable />
             <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
           </div>
         </div>
