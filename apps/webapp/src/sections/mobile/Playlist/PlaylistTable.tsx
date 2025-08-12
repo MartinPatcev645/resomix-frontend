@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { WaveformPlayer } from "@/components/index.ts";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
-import PlaySvg from "@/assets/icons/play.svg";
+import PauseSvg from "@/assets/icons/pause.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
+import MoreSvg from "@/assets/icons/more.svg";
 
 // const SimilarityTrackStatus = "Loading..."
 const PlaylistResult = {
@@ -47,16 +48,39 @@ const PlaylistResult = {
     }
 }
 
-const PlaylistTable: React.FC = () => {
+interface PlaylistTableProps {
+  onMoreClick?: (trackId: string) => void;
+}
+
+const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
+    const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+
+    const handleTrackClick = (trackId: string) => {
+        if (playingTrackId === trackId) {
+            setPlayingTrackId(null);
+        } else {
+            setPlayingTrackId(trackId);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]">
             {PlaylistResult.data.similar_tracks.map((track) => (
-                <div className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)]">
+                <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative">
                     <div className="flex flex-col w-full">
-                        <div key={track.id} className="flex items-center gap-[var(--px-7)]">
-                            <div className="min-w-[var(--px-40)] h-[var(--px-40)]">
+                        <div onClick={() => handleTrackClick(track.id)} className="flex items-center gap-[var(--px-7)]">
+                            <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
-                                <img src={PlaySvg} alt="Play" className="w-[var(--px-16)] h-[var(--px-16)] hidden" />
+                                {playingTrackId === track.id && (
+                                    <>
+                                        <div className="absolute inset-0 backdrop-blur-[3px] rounded-sm"></div>
+                                        <img
+                                            src={PauseSvg}
+                                            alt="Play"
+                                            className="absolute inset-0 w-[var(--px-16)] h-[var(--px-16)] m-auto z-10"
+                                        />
+                                    </>
+                                )}
                             </div>
                             <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]">
                                 <div className="w-full">
@@ -82,7 +106,14 @@ const PlaylistTable: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="hidden"><WaveformPlayer /></div>
+                        {playingTrackId === track.id && (
+                            <div>
+                                <WaveformPlayer />
+                            </div>
+                        )}
+                    </div>
+                    <div onClick={() => onMoreClick?.(track.id)} className="absolute right-[var(--px-8)] top-[var(--px-8)] select-none text-[#5C5C5C]">
+                        <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
                     </div>
                 </div>
             ))}

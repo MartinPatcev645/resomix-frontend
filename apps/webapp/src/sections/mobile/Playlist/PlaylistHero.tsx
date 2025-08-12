@@ -57,8 +57,11 @@ const PlaylistResult = {
   }
 }
 
+interface PlaylistHeroProps {
+  onMoreClick?: (trackId: string) => void;
+}
 
-const PlaylistHero: React.FC = () => {
+const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [showMeta, setShowMeta] = React.useState(false);
   return (
     <div className="relative">
@@ -159,7 +162,9 @@ const PlaylistHero: React.FC = () => {
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
-              <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
+              <div onClick={() => onMoreClick?.(PlaylistResult.data.queried_track.id)} className="cursor-pointer">
+                <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
+              </div>
             </div>
           </div>
         </div>
