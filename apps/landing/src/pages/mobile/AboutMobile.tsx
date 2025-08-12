@@ -28,9 +28,7 @@ export function AboutMobile() {
         </div>
         <div className="absolute right-0 top-[var(--px-35)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
         </div>
-        <div className="absolute left-0 top-[var(--px-716)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-        </div>
-        <div className="absolute right-0 top-[var(--px-716)] w-[var(--px-20)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+        <div className="absolute left-0 top-[var(--px-716)] w-[var(--px-393)] border-t border-slate-200 border-dotted pointer-events-none z-1">
         </div>
 
         {/* Main Content */}
@@ -41,7 +39,7 @@ export function AboutMobile() {
             <div className="absolute right-0 top-0 bottom-0 border-r border-dotted border-slate-200" />
           </div>
           {/* Navbar & Hero Section */}
-          <div className="border-t border-b border-dotted border-slate-200">
+          <div className="border-t border-dotted border-slate-200">
             <MobileNavbar
               logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
               menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
