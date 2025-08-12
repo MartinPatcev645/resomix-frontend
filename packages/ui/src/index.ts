@@ -34,6 +34,7 @@ import { MobileNavbar } from "./Layout/MobileNavbar";
 import { ToggleButton } from "./Buttons/ToggleButton";
 import { IconButton } from "./Buttons/IconButton";
 import { HoverFlow } from "./Animations/HoverFlow";
+import { InfoPageLayout } from "./Layout/InfoPageLayout";
 
 import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
@@ -77,4 +78,5 @@ export {
   GlobalMobileFooter,
   IconButton,
   HoverFlow,
+  InfoPageLayout,
 };

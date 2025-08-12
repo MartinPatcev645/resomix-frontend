@@ -1,8 +1,17 @@
-export function TermsPage() {
+import { InfoPageLayout } from "@resomix/ui";
+import { LogoHeader, LogoRFooter } from "@/components/index.ts";
+
+export default function TermsPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
-      <h1 className="text-4xl font-bold mb-4">Terms & Conditions</h1>
-      <p className="text-gray-400">The legal stuff goes here.</p>
-    </div>
+    <InfoPageLayout
+    LogoHeader={<LogoHeader />} 
+    LogoRFooter={<LogoRFooter />}
+    mode="terms"
+    >
+      <div className="py-[var(--px-120)] text-center">
+        <h1 className="text-4xl font-bold mb-8">Terms and Conditions</h1>
+        <p className="text-xl">Okay</p>
+      </div>
+    </InfoPageLayout>
   );
-} 
+}

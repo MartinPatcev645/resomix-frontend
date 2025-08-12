@@ -7,7 +7,7 @@ import { ButtonSleek } from "../Buttons/ButtonSleek";
 
 interface NavbarProps {
   logo?: React.ReactNode;
-  mode?: 'home' | 'upload' | 'playlist';
+  mode?: string;
   customClass?: string;
 }
 
@@ -24,11 +24,11 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
     <div>
       {logo}
     </div>
-    {mode === 'home' && (
+    {(mode === 'home' || mode === 'contact' || mode === 'error') && (
       <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} />
     )}
-    {mode === 'upload' && (
-      <ButtonHeavyLeft text="Why Resomix?" onClick={() => { }} transparent={true} />
+    {(mode === 'upload' || mode === 'terms' || mode === 'privacy') && (
+      <ButtonHeavyLeft text="Why Resomix?" onClick={() => { }} transparent={true} link_arrow={true} />
     )}
     {mode === 'playlist' && (
       <div className="flex justify-center items-center">

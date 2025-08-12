@@ -5,7 +5,7 @@ import { AboutPage } from "./desktop/AboutPage.tsx";
 import { HomeMobile } from "./mobile/HomeMobile.tsx";
 import { AboutMobile } from "./mobile/AboutMobile.tsx";
 
-import { TermsPage } from "./TermsPage.tsx";
+import TermsPage from "./TermsPage.tsx";
 import TestPage from "./TestPage.tsx";
 
 export {
