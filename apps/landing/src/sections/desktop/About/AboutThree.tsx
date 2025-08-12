@@ -18,8 +18,8 @@ const AboutThree: React.FC = () => {
                 <div className="absolute -top-[var(--px-190)] w-[var(--px-700)] -right-[var(--px-200)] pointer-events-none z-5">
                     <img src={GradientFive} alt="gradient_five" className="w-full h-auto" />
                 </div>
-                <div className="absolute top-[var(--px-500)] w-[var(--px-550)] -left-[var(--px-100)] pointer-events-none z-5">
-                    <img src={GradientSix} alt="gradient_six" style={{ mixBlendMode: "lighten" }} className="w-full h-auto" />
+                <div className="absolute -top-[var(--px-140)] -left-[var(--px-63)] w-[var(--px-1280)] pointer-events-none z-5">
+                    <img src={GradientSix} alt="gradient_six" style={{ mixBlendMode: "lighten" }} className="w-full h-[var(--px-2990)]" />
                 </div>
 
                 {/* Content */}
