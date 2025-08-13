@@ -11,7 +11,7 @@ interface InfoPageLayoutProps {
 export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: InfoPageLayoutProps) {
     return (
         <div className="bg-[var(--color-primary-background)]">
-                {/* Static noise background for Desktop only */}
+            {/* Static noise background for Desktop only */}
             <div className="hidden lg:block">
                 <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
             </div>
@@ -32,6 +32,24 @@ export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: In
                     <SideLines>
                         {/* Navbar */}
                         {navbar}
+
+                        {/* Top Frame Only */}
+                        {(mode === "terms" || mode === "privacy" || mode === "contact" || mode === "error") && (
+                            <svg
+                                viewBox="0 0 1152 41"
+                                preserveAspectRatio="none"
+                                className="absolute left-0 top-[var(--px-65)] w-full h-[length:var(--px-41)] pointer-events-none z-10"
+                            >
+                                <path d="M0 1H278.889L347.407 40.5592H779.63L848.148 1L1151.48 1"
+                                    stroke="white"
+                                    strokeOpacity="1"
+                                    strokeWidth="1"
+                                    strokeDasharray="0.74 0.74"
+                                    fill="none"
+                                />
+                            </svg>
+                        )}
+
                         {/* Content */}
                         {children}
                         {/* Footer */}
