@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
-import { InputPlayer } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -63,6 +63,8 @@ interface PlaylistHeroProps {
 
 const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [showMeta, setShowMeta] = React.useState(false);
+  const [showRating, setShowRating] = React.useState(false);
+
   return (
     <div className="relative">
       {/* Overlay content */}
@@ -97,7 +99,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 transparent={true}
                 customWidth="min-w-[var(--px-80)]"
                 mobile={true}
-                onClick={() => { }}
+                onClick={() => setShowRating(true)}
                 icon={<img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
               />
             </div>
@@ -171,6 +173,9 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <img src={AngleDownSvg} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
         <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
       </div>
+      
+      {/* PlaylistRating Modal */}
+      <PlaylistRating isOpen={showRating} onClose={() => setShowRating(false)} />
     </div>
   );
 };

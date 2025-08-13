@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration, useSimplePlaylist } from "@resomix/hooks";
-import { InputPlayer } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -16,6 +16,7 @@ const InputTrackStatus = "Loading..."
 
 const PlaylistHero: React.FC = () => {
   const [showMeta, setShowMeta] = React.useState(false);
+  const [showRating, setShowRating] = React.useState(false);
   const { playlistData, isLoading, error, loadDummyData } = useSimplePlaylist();
   
   // Load data when component mounts
@@ -90,7 +91,7 @@ const PlaylistHero: React.FC = () => {
                   <div className="border border-dotted border-slate-200 p-[var(--px-20)]">
                     <img src={TrackSvg} alt="Track" className="w-[var(--px-90)] h-[var(--px-90)]" />
                   </div>
-                  <div className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end hover:cursor-pointer">
+                  <div onClick={() => setShowRating(true)} className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end hover:cursor-pointer">
                     <img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
                     <div className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</div>
                   </div>
@@ -165,6 +166,7 @@ const PlaylistHero: React.FC = () => {
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
         </div>
       </div>
+      <PlaylistRating isOpen={showRating} onClose={() => setShowRating(false)} />
     </div>
   );
 };
