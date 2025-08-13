@@ -5,18 +5,18 @@ import { Routes, Route } from "react-router-dom";
 function UploadLanding() {
   const { isDesktop } = useResponsive();
   return (
-    <div>
+    <>
       {isDesktop ? <UploadPage /> : <UploadMobile />}
-    </div>
+    </>
   );
 }
 
 function PlaylistLanding() {
   const { isDesktop } = useResponsive();
   return (
-    <div>
+    <>
       {isDesktop ? <PlaylistPage /> : <PlaylistMobile />}
-    </div>
+    </>
   );
 }
 

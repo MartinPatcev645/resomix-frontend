@@ -13,9 +13,9 @@ function UsedHomePage() {
   const { isDesktop } = useResponsive();
 
   return (
-    <div>
+    <>
       {isDesktop ? <HomePage /> : <HomeMobile />}
-    </div>
+    </>
   );
 }
 
@@ -23,9 +23,9 @@ function UsedAboutPage() {
   const { isDesktop } = useResponsive();
 
   return (
-    <div>
+    <>
       {isDesktop ? <AboutPage /> : <AboutMobile />}
-    </div>
+    </>
   );
 }
 
