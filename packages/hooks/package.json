@@ -1,34 +1,35 @@
 {
-  "name": "@resomix/hooks",
-  "version": "0.0.0",
-  "description": "",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc -p tsconfig.json"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0"
-  },
-  "devDependencies": {
-    "react": "^18.0.0",
-    "@types/react": "^18.0.0"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.13.1",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
-    }
-  },
-  "private": true,
-  "files": [
-    "dist"
-  ]
+    "name": "@resomix/hooks",
+    "version": "0.0.0",
+    "description": "",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "tsc -p tsconfig.json"
+    },
+    "peerDependencies": {
+        "react": "^18.0.0",
+        "@resomix/stores": "workspace:*"
+    },
+    "devDependencies": {
+        "react": "^18.0.0",
+        "@types/react": "^18.0.0"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.13.1",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        }
+    },
+    "private": true,
+    "files": [
+        "dist"
+    ]
 }

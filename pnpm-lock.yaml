@@ -109,6 +109,9 @@ importers:
       '@resomix/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
+      '@resomix/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@resomix/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -171,6 +174,23 @@ importers:
   packages/api-client: {}
 
   packages/hooks:
+    dependencies:
+      '@resomix/stores':
+        specifier: workspace:*
+        version: link:../stores
+    devDependencies:
+      '@types/react':
+        specifier: ^18.0.0
+        version: 18.3.23
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
+
+  packages/stores:
+    dependencies:
+      zustand:
+        specifier: ^5.0.7
+        version: 5.0.7(@types/react@18.3.23)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1))
     devDependencies:
       '@types/react':
         specifier: ^18.0.0
@@ -1770,6 +1790,24 @@ packages:
       use-sync-external-store:
         optional: true
 
+  zustand@5.0.7:
+    resolution: {integrity: sha512-Ot6uqHDW/O2VdYsKLLU8GQu8sCOM1LcoE8RwvLv9uuRT9s6SOHCKs0ZEOhxg+I1Ld+A1Q5lwx+UlKXXUoCZITg==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
 snapshots:
 
   '@ampproject/remapping@2.3.0':
@@ -3233,3 +3271,9 @@ snapshots:
       '@types/react': 19.1.8
       react: 19.1.0
       use-sync-external-store: 1.5.0(react@19.1.0)
+
+  zustand@5.0.7(@types/react@18.3.23)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1)):
+    optionalDependencies:
+      '@types/react': 18.3.23
+      react: 18.3.1
+      use-sync-external-store: 1.5.0(react@18.3.1)

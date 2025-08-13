@@ -1,6 +1,6 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
-import { formatDuration } from "@resomix/hooks";
+import { formatDuration, usePlaylistSimulator } from "@resomix/hooks";
 import { InputPlayer } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -13,51 +13,34 @@ import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 
 const InputTrackStatus = "Loading..."
-const PlaylistResult = {
-  "success": true,
-  "data": {
-    "queried_track": {
-      "rank": 0,
-      "score": 1.0,
-      "id": "1a9983daf38caac5a8e8adaf",
-      "title": "Ursa Minor (Marcel Dettmann Remix)",
-      "year": 2025,
-      "duration": 271,
-      "label": "Break New Soil Recordings",
-      "artist": "Gregor Tresher, Petar Dundov"
-    },
-    "similar_tracks": [
-      {
-        "rank": 1,
-        "score": 0.95250189,
-        "id": "67adb0d5799206f8d65102a8",
-        "title": "Chapter 1",
-        "year": 2023,
-        "duration": 301,
-        "label": "Abstract Mechanisms",
-        "artist": "Møntero"
-      },
-      {
-        "rank": 2,
-        "score": 0.94865525,
-        "id": "67add9769387d00fbdc2dc3d",
-        "title": "Opto",
-        "year": null,
-        "duration": 335,
-        "label": "Balance Music",
-        "artist": "Etapp Kyle"
-      }
-    ],
-    "playlist": {
-      "id": "7b821bef-e168-4511-8525-5e1664b7e483",
-      "name": "Gregor Tresher, Petar Dundov - Ursa Minor (Marcel Dettmann Remix)"
-    }
-  }
-}
 
 
 const PlaylistHero: React.FC = () => {
   const [showMeta, setShowMeta] = React.useState(false);
+  
+  // Use the playlist simulator hook
+  const {
+    simulateLoad,
+    startSimulation,
+    stopSimulation,
+    resetSimulation,
+    isSimulating,
+    simulationCount,
+    isLoading,
+    error,
+    playlistData
+  } = usePlaylistSimulator({
+    delay: 1500,
+    successRate: 0.9,
+    autoStart: false,
+    interval: 5000
+  });
+
+  // Auto-load data when component mounts
+  React.useEffect(() => {
+    simulateLoad();
+  }, [simulateLoad]);
+
   return (
     <div className="relative">
       {/* Hidden SVG defs for clip-path */}
@@ -96,24 +79,24 @@ const PlaylistHero: React.FC = () => {
           <div></div>
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
-              <div onClick={() => { }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
+              <div onClick={simulateLoad} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
                 <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-13)] h-[var(--px-13)]" />
-                Generate track similarity
+                {isLoading ? "Loading..." : "Generate track similarity"}
               </div>
               <div className="flex items-center gap-[var(--px-8)]">
                 <IconButton
-                  text="Rename"
+                  text={isSimulating ? "Stop" : "Start"}
                   transparent={true}
                   customWidth="min-w-[var(--px-100)]"
-                  onClick={() => { }}
+                  onClick={isSimulating ? stopSimulation : startSimulation}
                   icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                 />
                 <IconButton
-                  text="Share"
+                  text="Reset"
                   transparent={true}
                   customWidth="min-w-[var(--px-100)]"
-                  onClick={() => { }}
+                  onClick={resetSimulation}
                   icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                 />
@@ -132,51 +115,69 @@ const PlaylistHero: React.FC = () => {
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-480)]">
                   <div className="flex flex-col gap-[var(--px-7)] min-h-[var(--px-61)]">
-                    <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
-                      <HoverFlow
-                        text={PlaylistResult.data.playlist.name}
-                        maxChars={35}
-                        delay={800}
-                        speed={80}
-                        endPause={1000}
-                        maxWidth="400px"
-                      />
-                    </div>
-                    <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title) === PlaylistResult.data.playlist.name ? 'hidden' : ''}`}>
-                      {/* Display only if default is changed */}
-                      <HoverFlow
-                        text={PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title}
-                        maxChars={70}
-                        delay={800}
-                        speed={80}
-                        endPause={1000}
-                        maxWidth="400px"
-                      />
-                    </div>
-                    <div className={`${(PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title) === PlaylistResult.data.playlist.name ? '' : 'hidden'}`}></div>
-                    <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
-                      <img src={TimeSvg} alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
-                      <div>{formatDuration(PlaylistResult.data.queried_track.duration)}</div>
-                      <div>|</div>
-                      <div>{PlaylistResult.data.queried_track.year}</div>
-                      <div>|</div>
-                      <div>{PlaylistResult.data.queried_track.label}</div>
-                      <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
-                    </div>
+                    {error && (
+                      <div className="text-red-500 text-[length:var(--px-9)] font-fira">
+                        Error: {error}
+                      </div>
+                    )}
+                    
+                    {playlistData ? (
+                      <>
+                        <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
+                          <HoverFlow
+                            text={playlistData.playlist.name}
+                            maxChars={35}
+                            delay={800}
+                            speed={80}
+                            endPause={1000}
+                            maxWidth="400px"
+                          />
+                        </div>
+                        <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(playlistData.queried_track.artist + ' - ' + playlistData.queried_track.title) === playlistData.playlist.name ? 'hidden' : ''}`}>
+                          {/* Display only if default is changed */}
+                          <HoverFlow
+                            text={playlistData.queried_track.artist + ' - ' + playlistData.queried_track.title}
+                            maxChars={70}
+                            delay={800}
+                            speed={80}
+                            endPause={1000}
+                            maxWidth="400px"
+                          />
+                        </div>
+                        <div className={`${(playlistData.queried_track.artist + ' - ' + playlistData.queried_track.title) === playlistData.playlist.name ? '' : 'hidden'}`}></div>
+                        <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
+                          <img src={TimeSvg} alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
+                          <div>{formatDuration(playlistData.queried_track.duration)}</div>
+                          <div>|</div>
+                          <div>{playlistData.queried_track.year}</div>
+                          <div>|</div>
+                          <div>{playlistData.queried_track.label}</div>
+                          <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
+                        {isLoading ? "Loading playlist..." : "No playlist data"}
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col gap-[var(--px-10)]">
                     {/* Hidden Meta Info */}
-                    <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center ${showMeta ? '' : 'hidden'}`}>
-                      <div>ID: {PlaylistResult.data.queried_track.id}</div>
-                      <div>|</div>
-                      <div>Duration: {formatDuration(PlaylistResult.data.queried_track.duration)}</div>
-                      <div>|</div>
-                      <div>Status: {InputTrackStatus}</div>
-                      <div>|</div>
-                      <div>Mode: Independent</div>
-                      <div>|</div>
-                      <div>Instance: Input Track</div>
-                    </div>
+                    {playlistData && (
+                      <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center ${showMeta ? '' : 'hidden'}`}>
+                        <div>ID: {playlistData.queried_track.id}</div>
+                        <div>|</div>
+                        <div>Duration: {formatDuration(playlistData.queried_track.duration)}</div>
+                        <div>|</div>
+                        <div>Status: {InputTrackStatus}</div>
+                        <div>|</div>
+                        <div>Mode: Independent</div>
+                        <div>|</div>
+                        <div>Instance: Input Track</div>
+                        <div>|</div>
+                        <div>Simulations: {simulationCount}</div>
+                      </div>
+                    )}
                     {/* The actual Input player */}
                     <InputPlayer />
                   </div>
@@ -185,7 +186,9 @@ const PlaylistHero: React.FC = () => {
               <div className="absolute right-[var(--px-10)] top-[var(--px-10)] px-[var(--px-16)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
             </div>
           </div>
-          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
+          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">
+            {playlistData ? `SIMILAR TRACKS FOUND (${playlistData.similar_tracks.length})` : "SIMILAR TRACKS FOUND"}
+          </div>
         </div>
       </div>
     </div>
