@@ -4,7 +4,7 @@ import VerticalLineSvg from "@/assets/icons/vertical_line.svg";
 import { ContourSphere, CodeTyping } from "@resomix/ui";
 
 const HomeTwo: React.FC = () => (
-  <div className='mt-[var(--px-450)] relative px-[var(--px-65)]'>
+  <div className='mt-[var(--px-450)] relative'>
     {/* Contour Sphere Animation */}
     <div
       style={{

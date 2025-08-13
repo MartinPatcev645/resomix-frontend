@@ -8,7 +8,7 @@ const HomeNine: React.FC = () => {
   const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
-  <div ref={sectionRef} className="mt-[var(--px-240)] px-[var(--px-62)] mr-[var(--px-1)] relative z-15">
+  <div ref={sectionRef} className="mt-[var(--px-240)] mr-[var(--px-1)] relative z-15">
     <div className="absolute top-[var(--px-560)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
       {isVisible && <GoldenSpiral />}
     </div>

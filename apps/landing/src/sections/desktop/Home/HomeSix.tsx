@@ -3,7 +3,7 @@ import GridTunnelSvg from "@/assets/icons/grid_tunnel.svg";
 import AngleDownSvg from "@/assets/icons/AngleDown.svg";
 
 const HomeSix: React.FC = () => (
-  <div className='mt-[var(--px-250)] px-[var(--px-65)] relative z-15'>
+  <div className='mt-[var(--px-250)] relative z-15'>
     <div className='relative w-full'>
       {/* SVG Background - stretched to full width */}
       <div className='w-full opacity-80'>

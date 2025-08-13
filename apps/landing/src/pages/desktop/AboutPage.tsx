@@ -1,4 +1,4 @@
-import { Navbar, StaticNoise, GlobalFooter } from "@resomix/ui";
+import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections/desktop/index.ts";
 
@@ -19,37 +19,24 @@ export function AboutPage() {
           overflowX: 'hidden',
         }}
       >
-        {/* Four lines around hero section to maintain design consistency */}
-        <div className="absolute left-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-        </div>
-        <div className="absolute right-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-        </div>
-        <div className="absolute left-0 top-[var(--px-691)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-        </div>
-        <div className="absolute right-0 top-[var(--px-691)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-        </div>
-
         {/* Content Layer */}
-        <div className="mx-[var(--px-63)] relative">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[60]">
-            <div className="absolute left-0 top-0 bottom-0 border-l border-dotted border-slate-200" />
-            <div className="absolute right-0 top-0 bottom-0 border-r border-dotted border-slate-200" />
+        <SideLines>
+          <div className="">
+            {/* Navbar */}
+            <Navbar
+              logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+              mode="home"
+              customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+            />
+
+            <AboutHero />
+            <AboutOne />
+            <AboutTwo />
+            <AboutThree />
+            <AboutFour />
+            <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
           </div>
-
-          {/* Navbar */}
-          <Navbar
-            logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-            mode="home"
-            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-          />
-
-          <AboutHero />
-          <AboutOne />
-          <AboutTwo />
-          <AboutThree />
-          <AboutFour />
-          <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
-        </div>
+        </SideLines>
       </div>
     </>
   );

@@ -9,7 +9,7 @@ const HomeFive: React.FC = () => {
   const { query, results, handleQueryChange } = useSearch();
 
   return (
-    <div className='mt-[var(--px-250)] px-[var(--px-62)] flex flex-col relative z-15'>
+    <div className='mt-[var(--px-250)] flex flex-col relative z-15'>
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>

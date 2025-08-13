@@ -3,7 +3,7 @@ import SectionOneGraphicRight from "@/assets/icons/composites/section_one_graphi
 import SectionOneGraphicLeft from "@/assets/icons/composites/section_one_graphic_left.svg"
 
 const HomeOne: React.FC = () => (
-  <div className='my-[var(--px-160)] px-[var(--px-63)] mr-[var(--px-1)]'>
+  <div className='my-[var(--px-160)]'>
     <div className='flex flex-col w-full relative z-15'>
       <div className='flex justify-between items-end'>
         <div className="justify-end text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">Resomix is the first sonic<br />analysis platform<br />of its kind</div>

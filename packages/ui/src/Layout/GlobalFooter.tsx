@@ -8,7 +8,10 @@ interface GlobalFooterProps {
 
 const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
   <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
-    <div className="flex flex-col">
+    <div className="absolute text-[length:var(--px-63)] -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase">
+      Join the Resomix Universe
+    </div>
+    <div className="flex flex-col gap-[var(--px-130)]">
       <div className="flex flex-col px-[var(--px-65)] min-h-[var(--px-129)]">
         <div className="flex w-full justify-start">
           <a href="https://resomix.com" className="cursor-default">
@@ -56,10 +59,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
           </div>
         </div>
       </div>
-      <div className="text-[length:var(--px-62)] xl:text-[length:var(--px-63)] font-benzin uppercase w-[var(--px-1278)] -ml-[var(--px-62)]">
-        Join the Resomix Universe
-      </div>
-      <div className="flex justify-between px-[var(--px-120)]">
+      <div className="flex justify-between px-[var(--px-65)]">
         <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
           <CodeTyping
             speed={50}

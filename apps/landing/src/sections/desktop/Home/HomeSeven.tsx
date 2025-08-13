@@ -10,7 +10,7 @@ const HomeSeven: React.FC = () => {
   const isVisible = useOnScreen(sectionRef, "1000px 0px 1000px 0px");
 
   return (
-  <div ref={sectionRef} className='mt-[var(--px-200)] px-[var(--px-62)] relative'>
+  <div ref={sectionRef} className='mt-[var(--px-200)] relative'>
     {/* Rock ring animation */}
     {isVisible && (
     <div

@@ -1,6 +1,5 @@
-import { Navbar, StaticNoise, GlobalFooter } from "@resomix/ui";
+import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine } from "@/sections/desktop/index.ts";
-import sideFrameSvg from "@/assets/icons/layout/side_frame.svg";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 
 export function HomePage() {
@@ -19,28 +18,24 @@ export function HomePage() {
           maxWidth: '2560px',
         }}
       >
-
-        {/* SVG Overlay inside 1280px content */}
-        <div
-          className="absolute top-0 max-w-full max-h-full pointer-events-none z-30"
-          aria-hidden="true"
-        >
-          <img src={sideFrameSvg} alt="Side Frame" className="w-[var(--px-1280)]" />
-        </div>
-
-        {/* Actual Content Sections */}
-        <Navbar logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>} />
-        <HomeHero />
-        <HomeOne />
-        <HomeTwo />
-        <HomeThree />
-        <HomeFour />
-        <HomeFive />
-        <HomeSix />
-        <HomeSeven />
-        <HomeEight />
-        <HomeNine />
-        <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+        <SideLines>
+          {/* Actual Content Sections */}
+          <Navbar
+            logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+            mode="home"
+            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative" />
+          <HomeHero />
+          <HomeOne />
+          <HomeTwo />
+          <HomeThree />
+          <HomeFour />
+          <HomeFive />
+          <HomeSix />
+          <HomeSeven />
+          <HomeEight />
+          <HomeNine />
+          <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+        </SideLines>
       </div>
     </>
   );

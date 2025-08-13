@@ -38,6 +38,7 @@ import { InfoPageLayout } from "./Layout/InfoPageLayout";
 
 import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
+import { SideLines } from "./Layout/SideLines";
 
 export {
   Navbar,
@@ -79,4 +80,5 @@ export {
   IconButton,
   HoverFlow,
   InfoPageLayout,
+  SideLines,
 };

@@ -12,7 +12,7 @@ const UploadHero: React.FC = () => {
       <svg
         viewBox="0 0 1152 628"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-[length:var(--px-1152)] h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">

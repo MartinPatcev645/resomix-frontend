@@ -13,7 +13,7 @@ const HomeFour: React.FC = () => {
   const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
-  <div ref={sectionRef} className='mt-[var(--px-300)] px-[var(--px-62)] relative z-15'>
+  <div ref={sectionRef} className='mt-[var(--px-300)] relative z-15'>
     <div className='flex justify-between'>
       <div className='flex flex-col justify-between h-full items-center'>
         <div className='flex flex-col text-[length:var(--px-65)] font-bold font-helvetica uppercase leading-[var(--px-64)]'>
@@ -90,7 +90,7 @@ const HomeFour: React.FC = () => {
         </div>
       </div>
       <div className='flex flex-col'>
-        <div className='flex flex-col items-start mr-[var(--px-16)]'>
+        <div className='flex flex-col items-start'>
           <div className='flex items-end justify-start gap-[var(--px-20)] mb-[var(--px-16)]'>
             <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-42)] h-[var(--px-42)]" />
             <div className='text-[length:var(--px-22)] font-bold font-helvetica uppercase'>

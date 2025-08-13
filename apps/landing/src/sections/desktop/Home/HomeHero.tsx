@@ -18,7 +18,7 @@ const HomeHero: React.FC = () => {
     <svg
       viewBox="0 0 1152 628"
       preserveAspectRatio="none"
-      className="absolute inset-0 w-[length:var(--px-1152)] h-[length:var(--px-628)] mx-[var(--px-63)] pointer-events-none z-10"
+      className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
     >
       <defs>
         <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -31,7 +31,7 @@ const HomeHero: React.FC = () => {
         d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
         stroke="white"
         strokeOpacity="0.7"
-        strokeWidth="0.37037"
+        strokeWidth="1"
         strokeDasharray="0.74 0.74"
         fill="none"
       />
@@ -39,7 +39,7 @@ const HomeHero: React.FC = () => {
 
     {/* Clip content inside shape */}
     <div
-      className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto z-20"
+      className="relative w-full h-[var(--px-628)] z-20"
       style={{
         clipPath: "url(#heroClip)",
         WebkitClipPath: "url(#heroClip)"
@@ -49,7 +49,7 @@ const HomeHero: React.FC = () => {
       {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
       {/* Remains background animation */}
-      <div className="absolute inset-0 w-[var(--px-1152)] h-[var(--px-627-5)]">
+      <div className="absolute left-[var(--px-1)] top-[var(--px-1)] w-[var(--px-1151)] h-[var(--px-626)]">
         {isVisible && <Remains />}
       </div>
 
