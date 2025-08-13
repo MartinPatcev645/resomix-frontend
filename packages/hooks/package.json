@@ -7,8 +7,11 @@
         "build": "tsc -p tsconfig.json"
     },
     "peerDependencies": {
-        "react": "^18.0.0",
-        "@resomix/stores": "workspace:*"
+        "react": "^18.0.0"
+    },
+    "dependencies": {
+        "@resomix/stores": "workspace:*",
+        "zustand": "^5.0.7"
     },
     "devDependencies": {
         "react": "^18.0.0",
