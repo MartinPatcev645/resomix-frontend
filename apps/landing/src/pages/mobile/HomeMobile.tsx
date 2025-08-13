@@ -1,6 +1,6 @@
 import { MobileNavbar, GlobalMobileFooter } from "@resomix/ui";
 import { useState } from "react";
-import MenuPage from "./MenuPage.tsx";
+import { MenuPage } from "../index.ts";
 import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine } from "@/sections/mobile/index.ts";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 
@@ -16,6 +16,8 @@ export function HomeMobile() {
           position: "relative",
           zIndex: 30,
           maxWidth: "1023px",
+          backgroundColor: 'var(--color-primary-background)',
+          overflowX: "hidden"
         }}
       >
         <div className="absolute inset-0 w-full mt-[var(--px-23)] border-t border-slate-200 border-dotted pointer-events-none z-10">

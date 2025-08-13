@@ -7,6 +7,7 @@ import { AboutMobile } from "./mobile/AboutMobile.tsx";
 
 import TermsPage from "./TermsPage.tsx";
 import TestPage from "./TestPage.tsx";
+import MenuPage from "./MenuPage.tsx";
 
 export {
     HomePage,
@@ -15,4 +16,5 @@ export {
     AboutMobile,
     TermsPage,
     TestPage,
+    MenuPage,
 }

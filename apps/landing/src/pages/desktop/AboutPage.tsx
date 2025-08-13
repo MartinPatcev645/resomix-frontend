@@ -4,7 +4,7 @@ import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections
 
 export function AboutPage() {
   return (
-    <>
+    <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
       <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
 
@@ -38,6 +38,6 @@ export function AboutPage() {
           </div>
         </SideLines>
       </div>
-    </>
+    </div>
   );
 }

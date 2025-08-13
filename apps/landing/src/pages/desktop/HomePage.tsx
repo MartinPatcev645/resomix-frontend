@@ -4,7 +4,7 @@ import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 
 export function HomePage() {
   return (
-    <>
+    <div className="bg-[var(--color-secondary)]">
       {/* Static noise now overscans 50 vh above & below viewport to avoid flashes during fast scroll */}
       <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
 
@@ -16,6 +16,7 @@ export function HomePage() {
           position: 'relative',
           zIndex: 30,
           maxWidth: '2560px',
+          overflowX: "hidden"
         }}
       >
         <SideLines>
@@ -37,6 +38,6 @@ export function HomePage() {
           <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
         </SideLines>
       </div>
-    </>
+    </div>
   );
 }

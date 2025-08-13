@@ -13,7 +13,7 @@ function UsedHomePage() {
   const { isDesktop } = useResponsive();
 
   return (
-    <div className="bg-[var(--color-secondary)]">
+    <div>
       {isDesktop ? <HomePage /> : <HomeMobile />}
     </div>
   );
@@ -23,7 +23,7 @@ function UsedAboutPage() {
   const { isDesktop } = useResponsive();
 
   return (
-    <div className="bg-[var(--color-secondary)]">
+    <div>
       {isDesktop ? <AboutPage /> : <AboutMobile />}
     </div>
   );

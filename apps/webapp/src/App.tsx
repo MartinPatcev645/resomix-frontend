@@ -5,7 +5,7 @@ import { Routes, Route } from "react-router-dom";
 function UploadLanding() {
   const { isDesktop } = useResponsive();
   return (
-    <div className="bg-[var(--color-secondary)]">
+    <div>
       {isDesktop ? <UploadPage /> : <UploadMobile />}
     </div>
   );
@@ -14,7 +14,7 @@ function UploadLanding() {
 function PlaylistLanding() {
   const { isDesktop } = useResponsive();
   return (
-    <div className="bg-[var(--color-secondary)]">
+    <div>
       {isDesktop ? <PlaylistPage /> : <PlaylistMobile />}
     </div>
   );

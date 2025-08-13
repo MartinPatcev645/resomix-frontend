@@ -21,7 +21,7 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-605)] h-[var(--px-114)]" src={SectionOneGraphicLeft} alt="Section One Graphic Left" />
         </div>
-        <div className="text-right justify-start text-white text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">bringing back results that<br />match its mood and spirit<br />in fresh, surprising ways</div>
+        <div className="text-right justify-start text-[var(--color-primary)] text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">bringing back results that<br />match its mood and spirit<br />in fresh, surprising ways</div>
       </div>
     </div>
   </div>

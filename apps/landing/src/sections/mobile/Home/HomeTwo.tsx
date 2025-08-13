@@ -29,7 +29,7 @@ const HomeTwo: React.FC = () => (
       <div className='my-[var(--px-32)]'>
         <img src={VerticalLineSvg} alt="Vertical Line" className="w-[var(--px-4)] h-[var(--px-63)]" />
       </div>
-      <div className="justify-start text-white text-[length:var(--px-10)] font-light font-fira tracking-widest min-h-[var(--px-15)]">
+      <div className="justify-start text-[var(--color-primary)] text-[length:var(--px-10)] font-light font-fira tracking-widest min-h-[var(--px-15)]">
         <CodeTyping
           speed={50}
           text="instant_inspiration.module[active]"

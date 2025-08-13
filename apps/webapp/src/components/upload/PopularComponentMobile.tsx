@@ -30,7 +30,7 @@ export const PopularComponentMobile: React.FC = () => {
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none gap-[var(--px-10)]">
                     <div className="w-full h-[var(--px-70)] text-center gap-2 flex items-center justify-center">
-                        <div className="text-white text-[length:var(--px-18)] font-helvetica uppercase font-light">Beats Ready For You</div>
+                        <div className="text-[var(--color-primary)] text-[length:var(--px-18)] font-helvetica uppercase font-light">Beats Ready For You</div>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-10)]">
                         {popularTracks.map((track) => (
@@ -52,15 +52,15 @@ export const PopularComponentMobile: React.FC = () => {
                                         />
                                     </span>
                                     <div className="flex flex-col items-start">
-                                        <div className="text-white group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-15)] font-helvetica leading-[var(--px-20)] font-light tracking-[var(--px-1)] uppercase">
+                                        <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-15)] font-helvetica leading-[var(--px-20)] font-light tracking-[var(--px-1)] uppercase">
                                             {track.title}
                                         </div>
-                                        <div className="text-white group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-12)] font-fira leading-[var(--px-18)] font-light tracking-[var(--px-1)]">
+                                        <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-12)] font-fira leading-[var(--px-18)] font-light tracking-[var(--px-1)]">
                                             {track.artist}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-white group-hover:text-[color:var(--color-text-primary)] group-hover:opacity-100 transition-colors text-[length:var(--px-12)] font-fira font-light opacity-70 mr-[var(--px-16)]">
+                                <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] group-hover:opacity-100 transition-colors text-[length:var(--px-12)] font-fira font-light opacity-70 mr-[var(--px-16)]">
                                     {track.duration}
                                 </div>
                             </div>

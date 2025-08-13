@@ -18,9 +18,9 @@ export const IconComp: React.FC<IconCompProps> = ({
   padding = "p-[var(--px-6)]",
   width, 
   height, 
-  backgroundColor = "bg-white", 
-  borderColor = "outline-white", 
-  strokeColor = "stroke-black",
+  backgroundColor = "bg-[var(--color-primary)]",
+  borderColor = "outline-[var(--color-primary)]", 
+  strokeColor = "stroke-[var(--color-primary)]",
   className = "",
   onClick = () => {},
 }) => {

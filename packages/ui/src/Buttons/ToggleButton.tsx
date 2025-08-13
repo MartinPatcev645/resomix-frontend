@@ -66,7 +66,7 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
 
     if (value) {
       // on: knob is secondary (black)
-      base.push("bg-[var(--color-secondary)]");
+      base.push("bg-[var(--color-primary-background)]");
       base.push("right-[var(--px-4)]");
     } else {
       // off: knob is primary (white), hover -> primary-hover

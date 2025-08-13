@@ -5,7 +5,7 @@ import { UploadHero, UploadOne } from "@/sections/desktop/index.ts";
 
 export function UploadPage() {
   return (
-    <>
+    <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
       <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
 
@@ -17,6 +17,7 @@ export function UploadPage() {
           position: 'relative',
           zIndex: 30,
           maxWidth: '2560px',
+          overflowX: "hidden"
         }}
       >
         <SideLines>
@@ -31,7 +32,7 @@ export function UploadPage() {
           <UploadOne />
           <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
         </SideLines >
-      </div >
-    </>
+      </div>
+    </div>
   );
 }

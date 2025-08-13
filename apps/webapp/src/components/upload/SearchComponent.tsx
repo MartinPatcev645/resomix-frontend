@@ -44,14 +44,14 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick 
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
                     <div className="flex">
                         <div className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2">
-                            <div className="text-white text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</div>
+                            <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</div>
                             <img src={searchIcon} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                         <div 
                             className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline"
                             onClick={onUploadClick}
                         >
-                            <div className="text-white text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
+                            <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
                             <img src={uploadIcon} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                     </div>

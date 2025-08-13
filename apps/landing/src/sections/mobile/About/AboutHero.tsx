@@ -8,14 +8,14 @@ import GradientOne from "@/assets/images/gradient 1.png";
 
 const AboutHero: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
-    <div ref={sectionRef} className="relative z-20 flex flex-col items-center justify-center gap-[var(--px-40)]">
-      <div className="absolute -left-[var(--px-130)] top-[var(--px-28)] flex justify-center items-center w-[var(--px-605)] h-[var(--px-489)]">
+    <div ref={sectionRef} className="relative z-20 flex flex-col items-center justify-between gap-[var(--px-40)] min-h-[var(--px-670)] h-[var(--px-670)]">
+      <div className="absolute -left-[var(--px-130)] top-[var(--px-28)] w-[var(--px-605)] h-[var(--px-489)]">
         <img src={GradientOne} className="w-full h-full mt-[var(--px-6)]" alt="Gradient" />
       </div>
-      <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-40)] font-helvetica leading-[var(--px-40)] font-bold uppercase my-[var(--px-200)] ml-[var(--px-30)] z-20">
+      <div></div>
+      <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-40)] font-helvetica leading-[var(--px-40)] font-bold uppercase my-[var(--px-2)] ml-[var(--px-30)] z-20">
         <div className="">
           A Discovery<br />Engine
         </div>

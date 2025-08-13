@@ -1,17 +1,20 @@
-import { Navbar, StaticNoise, GlobalFooter, GlobalMobileFooter, SideLines } from "../index";
+import { StaticNoise, GlobalFooter, GlobalMobileFooter, SideLines } from "../index";
 
 interface InfoPageLayoutProps {
-    LogoHeader: React.ReactNode;
     LogoRFooter: React.ReactNode;
     children: React.ReactNode;
+    navbar?: React.ReactNode;
+    hero?: React.ReactNode;
     mode: string;
 }
 
-export function InfoPageLayout({ LogoHeader, LogoRFooter, children, mode }: InfoPageLayoutProps) {
+export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: InfoPageLayoutProps) {
     return (
-        <div className="bg-[var(--color-secondary)]">
-            {/* Static noise background */}
-            <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
+        <div className="bg-[var(--color-primary-background)]">
+                {/* Static noise background for Desktop only */}
+            <div className="hidden lg:block">
+                <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
+            </div>
 
             {/* Content layer */}
             <div
@@ -24,43 +27,31 @@ export function InfoPageLayout({ LogoHeader, LogoRFooter, children, mode }: Info
                 }}
                 className="max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]"
             >
-                <SideLines className="mx-[var(--px-63)] relative">
+                {/* Desktop Frame */}
+                <div className="hidden lg:block">
+                    <SideLines>
                         {/* Navbar */}
-                        <div className="hidden md:block">
-                            <Navbar
-                                logo={LogoHeader}
-                                mode={mode}
-                                customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-                            />
-                        </div>
-                        <div className="block md:hidden">
-                            <Navbar
-                                logo={LogoHeader}
-                                mode={mode}
-                                customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-                            />
-                            {/* <div className="border-t border-b border-dotted border-slate-200">
-                            <MobileNavbar
-                                logo={LogoHeader}
-                                menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
-                                customClass="flex justify-between items-center align-center z-50 relative"
-                            />
-                        </div> */}
-                        </div>
-
-                        {/* Content is Injected here */}
+                        {navbar}
+                        {/* Content */}
                         {children}
+                        {/* Footer */}
+                        <GlobalFooter logo={LogoRFooter} />
+                    </SideLines>
+                </div>
 
-
-                        {/* Display footer based on device */}
-                        <div className="hidden md:block">
-                            <GlobalFooter logo={LogoRFooter} />
-                        </div>
-                        <div className="block md:hidden">
-                            <GlobalMobileFooter logo={LogoRFooter} />
-                        </div>
-
-                </SideLines>
+                {/* Mobile Frame */}
+                <div className="block lg:hidden">
+                    <SideLines
+                        navbar={navbar}
+                        hero={hero}
+                        mode={mode}
+                    >
+                        {/* Content */}
+                        {children}
+                        {/* Footer */}
+                        <GlobalMobileFooter logo={LogoRFooter} />
+                    </SideLines>
+                </div>
             </div>
         </div>
     );

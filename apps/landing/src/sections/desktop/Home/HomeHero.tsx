@@ -56,13 +56,13 @@ const HomeHero: React.FC = () => {
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none">
         <div className="flex flex-col text-start my-auto w-full relative z-15">
-          <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase -ml-[var(--px-10)] text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix </div>
+          <div className="justify-start text-[length:var(--px-133)] font-normal font-helvetica uppercase -ml-[var(--px-10)] text-[var(--color-primary)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix </div>
           <div className='flex w-full justify-between items-center -mt-[var(--px-48)]'>
             <div className='flex gap-[var(--px-12)]'>
               <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
-              <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-white" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
+              <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
             </div>
-            <div className="text-[length:var(--px-45)] font-medium font-helvetica uppercase text-white" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Align With Your Sound</div>
+            <div className="text-[length:var(--px-45)] font-medium font-helvetica uppercase text-[var(--color-primary)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Align With Your Sound</div>
           </div>
         </div>
         <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
