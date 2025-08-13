@@ -1,7 +1,6 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
-import { formatDuration } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
+import { formatDuration, useSimplePlaylist } from "@resomix/hooks";
 import { InputPlayer } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -17,7 +16,13 @@ const InputTrackStatus = "Loading..."
 
 const PlaylistHero: React.FC = () => {
   const [showMeta, setShowMeta] = React.useState(false);
-  const { playlistData } = usePlaylistStore();
+  const { playlistData, isLoading, error, loadDummyData } = useSimplePlaylist();
+  
+  // Load data when component mounts
+  React.useEffect(() => {
+    loadDummyData();
+  }, [loadDummyData]);
+
   return (
     <div className="relative">
       {/* Hidden SVG defs for clip-path */}
@@ -92,16 +97,28 @@ const PlaylistHero: React.FC = () => {
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-480)]">
                   <div className="flex flex-col gap-[var(--px-7)] min-h-[var(--px-61)]">
-                    <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
-                      <HoverFlow
-                        text={playlistData?.playlist.name || "Loading..."}
-                        maxChars={35}
-                        delay={800}
-                        speed={80}
-                        endPause={1000}
-                        maxWidth="400px"
-                      />
-                    </div>
+                    {error && (
+                      <div className="text-red-500 text-[length:var(--px-9)] font-fira">
+                        Error: {error}
+                      </div>
+                    )}
+                    
+                    {isLoading ? (
+                      <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
+                        Loading playlist...
+                      </div>
+                    ) : (
+                      <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
+                        <HoverFlow
+                          text={playlistData?.playlist.name || "No playlist data"}
+                          maxChars={35}
+                          delay={800}
+                          speed={80}
+                          endPause={1000}
+                          maxWidth="400px"
+                        />
+                      </div>
+                    )}
                     <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
                       <HoverFlow
