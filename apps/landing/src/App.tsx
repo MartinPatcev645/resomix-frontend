@@ -4,7 +4,7 @@ import {
   HomeMobile,
   AboutPage,
   AboutMobile,
-  TermsPage,
+  InfoPage,
   TestPage,
 } from "./pages/index.ts";
 import { Routes, Route } from "react-router-dom";
@@ -35,7 +35,10 @@ function App() {
     <Routes>
       <Route path="/" element={<UsedHomePage />} />
       <Route path="/about" element={<UsedAboutPage />} />
-      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/terms" element={<InfoPage mode="terms" />} />
+      <Route path="/privacy" element={<InfoPage mode="privacy" />} />
+      <Route path="/contact" element={<InfoPage mode="contact" />} />
+      <Route path="/error" element={<InfoPage mode="error" />} />
       <Route path="/test" element={<TestPage />} />
     </Routes>
   );

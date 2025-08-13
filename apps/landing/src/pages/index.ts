@@ -5,7 +5,7 @@ import { AboutPage } from "./desktop/AboutPage.tsx";
 import { HomeMobile } from "./mobile/HomeMobile.tsx";
 import { AboutMobile } from "./mobile/AboutMobile.tsx";
 
-import TermsPage from "./TermsPage.tsx";
+import InfoPage from "./InfoPage.tsx";
 import TestPage from "./TestPage.tsx";
 import MenuPage from "./MenuPage.tsx";
 
@@ -14,7 +14,7 @@ export {
     AboutPage,
     HomeMobile,
     AboutMobile,
-    TermsPage,
+    InfoPage,
     TestPage,
     MenuPage,
 }

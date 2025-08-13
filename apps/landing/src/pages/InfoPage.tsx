@@ -2,8 +2,13 @@ import { InfoPageLayout, MobileNavbar, Navbar } from "@resomix/ui";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { useState } from "react";
 import { MenuPage } from "./index.ts";
+import TermsContent from "../content/TermsContent.tsx";
 
-export default function TermsPage() {
+interface InfoPageProps {
+  mode: string;
+}
+
+export default function InfoPage({ mode }: InfoPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navbar = (
@@ -11,7 +16,7 @@ export default function TermsPage() {
       <div className="hidden md:block">
         <Navbar
           logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-          mode="terms"
+          mode={mode}
           customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
         />
       </div>
@@ -30,12 +35,12 @@ export default function TermsPage() {
       <InfoPageLayout
         navbar={navbar}
         LogoRFooter={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />}
-        mode="terms"
+        mode={mode}
       >
-        <div className="py-[var(--px-120)] text-center">
-          <h1 className="text-4xl font-bold mb-8">Terms and Conditions</h1>
-          <p className="text-xl">Okay</p>
-        </div>
+        {mode === "terms" && <TermsContent />}
+        {/* {mode === "privacy" && <PrivacyContent />}
+        {mode === "contact" && <ContactContent />}
+        {mode === "error" && <ErrorContent />} */}
       </InfoPageLayout>
       {/* Menu Overlay */}
       {isMenuOpen && (
