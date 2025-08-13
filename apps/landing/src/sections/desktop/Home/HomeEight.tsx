@@ -7,7 +7,7 @@ const HomeEight: React.FC = () => (
   <div className="mt-[var(--px-200)] relative z-15 flex flex-col justify-between">
     <div className="flex justify-end w-full relative">
       {/* Right graphic here */}
-      <div className="absolute top-1/3 right-0 transform text-[length:var(--px-13)] font-light font-auger text-right z-20 mr-[var(--px-60)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-50">
+      <div className="absolute top-1/3 right-0 transform text-[length:var(--px-13)] font-light font-auger text-right z-20 mr-[var(--px-60)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
         The DJ's Secret Weapon<br />for Instant Inspiration
       </div>
       <img src={SectionEightGraphicRightSvg} className="w-[var(--px-324)] h-[var(--px-93)]" alt="Section Eight Graphic Right" />
@@ -29,13 +29,13 @@ const HomeEight: React.FC = () => (
           </div>
         </div>
       </div>
-      <div className="text-[length:var(--px-13)] font-extralight font-auger opacity-50 mt-[var(--px-24)] text-center leading-[var(--px-16)]">
+      <div className="text-[length:var(--px-13)] font-extralight font-auger opacity-70 mt-[var(--px-24)] text-center leading-[var(--px-16)]">
         Discovery Through Sound.<br />Connection Through Emotion.
       </div>
     </div>
     <div className="flex justify-start w-full relative">
       {/* Left graphic here */}
-      <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-50">
+      <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
         Resomix is designed<br />to save you time and<br />expand your music taste.
       </div>
       <img src={SectionEightGraphicLeftSvg} className="w-[var(--px-276)] h-[var(--px-108)]" alt="Section Eight Graphic Left" />

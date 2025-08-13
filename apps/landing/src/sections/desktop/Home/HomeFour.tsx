@@ -101,7 +101,7 @@ const HomeFour: React.FC = () => {
             You can upload any audio file: a released or unreleased track, a sketch<br />from your archive, or a short clip.Metadata is not important; Resomix<br />listens to your reference audio and extrapolates its sonic DNA to find<br />a perfect match.
           </div>
         </div>
-        <div className='mt-[var(--px-12)] mb-[var(--px-32)] opacity-50'>
+        <div className='mt-[var(--px-12)] mb-[var(--px-32)] opacity-70'>
           <img className="w-[var(--px-763)] h-[var(--px-1)]" src={LineOneSvg} alt="Line One" />
         </div>
         <div className='flex justify-between items-start mr-[var(--px-16)]'>

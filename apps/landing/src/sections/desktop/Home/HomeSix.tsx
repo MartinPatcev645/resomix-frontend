@@ -16,7 +16,7 @@ const HomeSix: React.FC = () => (
 
       {/* Text Overlay - positioned absolutely over the SVG */}
       <div className='absolute inset-0 flex flex-col justify-between my-[var(--px-245)] mx-[var(--px-100)] items-center text-center z-10'>
-        <div className='flex w-full justify-end mr-[var(--px-80)] text-[length:var(--px-13)] font-extralight text-right font-auger opacity-50'>
+        <div className='flex w-full justify-end mr-[var(--px-80)] text-[length:var(--px-13)] font-extralight text-right font-auger opacity-70'>
           To all DJs lost in the vastness of the modern sound universe:<br />
           let Resomix be the gravitational force that draws you<br />
           to the tracks you need.
@@ -25,7 +25,7 @@ const HomeSix: React.FC = () => (
           RESOMIX revolutionized music<br />
           discovery by putting sound first
         </div>
-        <div className='flex w-full justify-start ml-[var(--px-80)] text-[length:var(--px-13)] font-extralight text-left font-auger opacity-50'>
+        <div className='flex w-full justify-start ml-[var(--px-80)] text-[length:var(--px-13)] font-extralight text-left font-auger opacity-70'>
           Cutting-edge Machine Learning to Enhance<br />
           Human Imagination, Proprietary models designed<br />
           to listen like producers, and discover like DJs.

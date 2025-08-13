@@ -13,7 +13,7 @@ const HomeFive: React.FC = () => {
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
-          <div className="absolute top-1/3 right-0 transform text-[length:var(--px-13)] font-light font-auger text-right z-20 mr-[var(--px-60)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-50">
+          <div className="absolute top-1/3 right-0 transform text-[length:var(--px-13)] font-light font-auger text-right z-20 mr-[var(--px-60)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
             Deep sonic analysis, pure and simple,<br />unaffected by metadata or trends.
           </div>
           <img src={SectionFiveGraphicRight} alt="Section Five Graphic Right" className="w-[var(--px-444)] h-[var(--px-154)]" />
@@ -27,7 +27,7 @@ const HomeFive: React.FC = () => {
           </div>
         </div>
         <div className='flex w-full justify-start relative'>
-          <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-50">
+          <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
             A human approach<br />to modern technology
           </div>
           <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-276)] h-[var(--px-83)]" />

@@ -50,7 +50,7 @@ const HomeSeven: React.FC = () => {
               DROP A TRACK
             </div>
           </div>
-          <div className='text-[length:var(--px-13)] font-extralight font-auger opacity-50 text-right'>
+          <div className='text-[length:var(--px-13)] font-extralight font-auger opacity-70 text-right'>
             Simplicity and minimalism.<br />Just upload a sound, and Resomix will listen.
           </div>
         </div>
@@ -63,7 +63,7 @@ const HomeSeven: React.FC = () => {
       </div>
       <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
         {/* <div className="min-h-[var(--px-309)]"></div> */}
-        <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-50 min-h-[var(--px-121-5)]'>
+        <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-70 min-h-[var(--px-121-5)]'>
           <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
               <CodeTyping
