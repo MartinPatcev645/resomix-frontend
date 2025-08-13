@@ -10,7 +10,7 @@ interface InfoPageLayoutProps {
 
 export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: InfoPageLayoutProps) {
     return (
-        <div className="bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)]">
+        <div className="bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] min-h-screen">
             {/* Static noise background for Desktop only */}
             <div className="hidden lg:block">
                 <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />

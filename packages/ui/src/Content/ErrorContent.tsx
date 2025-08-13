@@ -1,30 +1,19 @@
+import { ButtonSleek } from "../index";
+
 export default function ErrorContent() {
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
+    <div className="w-full flex flex-col items-center text-[var(--color-primary)] pt-[var(--px-120)]">
+      <div className="max-w-[var(--px-650)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
+        <div className="flex flex-col items-center w-full gap-[var(--px-20)]">
+          <svg className="w-[var(--px-35)] h-[var(--px-35)]" viewBox="0 0 19 19" fill="none">
+            <path d="M17.8337 17.8333L1.16699 1.16667M17.8337 1.16667L1.16699 17.8333" stroke="white" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
 
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica">TERMS OF SERVICE</h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-10)] font-extralight opacity-80 font-helvetica tracking-[var(--px-1)]">
-            Please read these terms carefully before using our audio intelligence platform.
-          </p>
-        </header>
-
-        <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
-          <div className="mb-[var(--px-24)]">
-            <a href="/" className="text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</a>
-          </div>
-
-          <p className="mt-[var(--px-8)] text-[length:var(--px-10)] font-extralight opacity-80 font-helvetica tracking-[var(--px-1)]">
-            Whether you have a question about our service, need technical support, or want to give us feedback,
-            our team is here to help.
-          </p>
-
-          <div className="flex flex-col w-full gap-[var(--px-10)]">
-            Okat
-          </div>
+          <div className="text-center text-[length:var(--px-19)] font-semibold font-helvetica leading-[var(--px-23)] uppercase">Oops! Something went wrong.</div>
+          <div className="text-center text-[length:var(--px-11)] font-light font-fira leading-[var(--px-18)] mb-[var(--px-20)]">No track data found. Please go back and try again.<br />This could happen if you navigated to this page directly without providing a track.</div>
+          <ButtonSleek text="Upload Another Track" onClick={() => { window.location.href = "/upload"; }} />
         </div>
       </div>
-    </section>
+    </div>
   );
 }
