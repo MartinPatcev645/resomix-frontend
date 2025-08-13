@@ -1,5 +1,5 @@
 import { useResponsive } from "@resomix/hooks";
-import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile } from "./pages/index.ts";
+import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage } from "./pages/index.ts";
 import { Routes, Route } from "react-router-dom";
 
 function UploadLanding() {
@@ -25,6 +25,9 @@ function App() {
     <Routes>
       <Route path="/" element={<UploadLanding />} />
       <Route path="/playlist" element={<PlaylistLanding />} />
+      <Route path="/contact" element={<InfoPage mode="contact" />} />
+      <Route path="/error" element={<InfoPage mode="error" />} />
+      <Route path="*" element={<InfoPage mode="404" />} />
     </Routes>
   );
 }
