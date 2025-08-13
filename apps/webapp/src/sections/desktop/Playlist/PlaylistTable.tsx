@@ -30,6 +30,86 @@ const PlaylistResult = {
                 "artist": "Møntero"
             },
             {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
+              "rank": 1,
+              "score": 0.95250189,
+              "id": "67adb0d5799206f8d65102a8",
+              "title": "Chapter 1",
+              "year": 2023,
+              "duration": 301,
+              "label": "Abstract Mechanisms",
+              "artist": "Møntero"
+            },
+            {
                 "rank": 2,
                 "score": 0.94865525,
                 "id": "67add9769387d00fbdc2dc3d",

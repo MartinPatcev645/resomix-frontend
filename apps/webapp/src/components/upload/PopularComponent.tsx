@@ -30,7 +30,7 @@ export const PopularComponent: React.FC = () => {
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
                     <div className="p-4 text-center gap-2">
-                        <div className="text-white text-[length:var(--px-16)] font-helvetica uppercase font-light">Beats Made For You</div>
+                        <div className="text-white text-[length:var(--px-16)] font-helvetica uppercase font-light">Beats Ready For You</div>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-10)]">
                         {popularTracks.map((track) => (

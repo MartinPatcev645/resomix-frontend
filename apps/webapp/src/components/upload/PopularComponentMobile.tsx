@@ -30,7 +30,7 @@ export const PopularComponentMobile: React.FC = () => {
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none gap-[var(--px-10)]">
                     <div className="w-full h-[var(--px-70)] text-center gap-2 flex items-center justify-center">
-                        <div className="text-white text-[length:var(--px-18)] font-helvetica uppercase font-light">Beats Made For You</div>
+                        <div className="text-white text-[length:var(--px-18)] font-helvetica uppercase font-light">Beats Ready For You</div>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-10)]">
                         {popularTracks.map((track) => (
