@@ -40,6 +40,9 @@ import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
 import { SideLines } from "./Layout/SideLines";
 
+import ErrorContent from "./Content/ErrorContent";
+import ContactContent from "./Content/ContactContent";
+
 export {
   Navbar,
   DottedLine,
@@ -81,4 +84,6 @@ export {
   HoverFlow,
   InfoPageLayout,
   SideLines,
+  ErrorContent,
+  ContactContent,
 };

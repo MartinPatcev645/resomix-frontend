@@ -1,8 +1,9 @@
-import { InfoPageLayout, MobileNavbar, Navbar } from "@resomix/ui";
+import { InfoPageLayout, MobileNavbar, Navbar, ContactContent, ErrorContent } from "@resomix/ui";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { useState } from "react";
 import { MenuPage } from "./index.ts";
 import TermsContent from "../content/TermsContent.tsx";
+import PrivacyContent from "@/content/PrivacyContent.tsx";
 
 interface InfoPageProps {
   mode: string;
@@ -38,9 +39,9 @@ export default function InfoPage({ mode }: InfoPageProps) {
         mode={mode}
       >
         {mode === "terms" && <TermsContent />}
-        {/* {mode === "privacy" && <PrivacyContent />}
+        {mode === "privacy" && <PrivacyContent />}
         {mode === "contact" && <ContactContent />}
-        {mode === "error" && <ErrorContent />} */}
+        {mode === "error" && <ErrorContent />}
       </InfoPageLayout>
       {/* Menu Overlay */}
       {isMenuOpen && (

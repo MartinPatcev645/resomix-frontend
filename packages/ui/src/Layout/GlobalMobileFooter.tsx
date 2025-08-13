@@ -49,7 +49,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo }) => (
             legal.terms()
           </a>
           <br />
-          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)]">
+          <a href="/privacy" className="hover:underline decoration-[var(--px-0-5)]">
             privacy_policy()
           </a>
         </div>

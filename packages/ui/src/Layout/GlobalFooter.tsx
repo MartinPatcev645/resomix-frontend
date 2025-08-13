@@ -7,7 +7,7 @@ interface GlobalFooterProps {
 }
 
 const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
-  <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
+  <div className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="absolute text-[length:var(--px-63)] -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase">
       Join the Resomix Universe
     </div>
@@ -72,7 +72,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
             legal.terms(): open('/terms')
           </a>
           <br />
-          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+          <a href="/privacy" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
             privacy_policy(): fetch('/privacy')
           </a>
         </div>
