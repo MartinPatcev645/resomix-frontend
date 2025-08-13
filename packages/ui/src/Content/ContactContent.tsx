@@ -4,11 +4,9 @@ export default function ContactContent() {
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
 
         <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica">TERMS OF SERVICE</h1>
+          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">Contact us</h1>
           <p className="mt-[var(--px-8)] text-[length:var(--px-10)] font-extralight opacity-80 font-helvetica tracking-[var(--px-1)]">
-            Please read these terms carefully before using our audio intelligence platform.
-            <br />
-            Last updated: August 15, 2025
+            We'd love to hear from you! Our team is ready to answer your questions and provide support.
           </p>
         </header>
 
