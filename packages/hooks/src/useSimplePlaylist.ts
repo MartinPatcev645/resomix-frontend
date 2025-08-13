@@ -41,6 +41,12 @@ const dummyPlaylistData: PlaylistData = {
   }
 }
 
+
+const generateShareLink = (id: string): string => {
+  return `https://beta.resomix.com/playlist-share?id=${id}`;
+};
+
+
 /**
  * Simple hook to load dummy data into store and get playlist data
  * @returns playlist data and load function
@@ -72,7 +78,7 @@ export function useSimplePlaylist() {
     playlistData,
     isLoading,
     error,
-    
+    generateShareLink,
     // Actions
     loadDummyData
   }

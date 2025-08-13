@@ -16,6 +16,8 @@ import WaveformPlayer from "./Playlist/WaveformPlayer.tsx";
 import InputPlayer from "./Playlist/InputPlayer.tsx";
 import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Playlist/PlaylistRating.tsx";
+import PlaylistShare from "./Playlist/PlaylistShare.tsx";
+import PlaylistRename from "./Playlist/PlaylistRename.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
 
 export {
@@ -37,5 +39,7 @@ export {
     InputPlayer,
     SimilarityPlayer,
     PlaylistRating,
+    PlaylistShare,
+    PlaylistRename,
     ThumbIcon
 }

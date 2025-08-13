@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
-import { InputPlayer, PlaylistRating } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -64,6 +64,8 @@ interface PlaylistHeroProps {
 const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
+  const [showShare, setShowShare] = React.useState(false);
+  const [showRename, setShowRename] = React.useState(false);
 
   return (
     <div className="relative">
@@ -81,7 +83,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 transparent={true}
                 customWidth="min-w-[var(--px-70)]"
                 mobile={true}
-                onClick={() => { }}
+                onClick={() => setShowRename(true)}
                 icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
               />
@@ -90,7 +92,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 transparent={true}
                 customWidth="min-w-[var(--px-70)]"
                 mobile={true}
-                onClick={() => { }}
+                onClick={() => setShowShare(true)}
                 icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
               />
@@ -174,8 +176,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
       </div>
       
-      {/* PlaylistRating Modal */}
+      {/* Modals */}
       <PlaylistRating isOpen={showRating} onClose={() => setShowRating(false)} />
+      <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={PlaylistResult.data?.playlist.id || ''} />
+      <PlaylistRename isOpen={showRename} onClose={() => setShowRename(false)} />
     </div>
   );
 };

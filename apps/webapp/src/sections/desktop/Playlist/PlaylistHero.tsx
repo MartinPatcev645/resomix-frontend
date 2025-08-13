@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration, useSimplePlaylist } from "@resomix/hooks";
-import { InputPlayer, PlaylistRating } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -17,6 +17,8 @@ const InputTrackStatus = "Loading..."
 const PlaylistHero: React.FC = () => {
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
+  const [showShare, setShowShare] = React.useState(false);
+  const [showRename, setShowRename] = React.useState(false);
   const { playlistData, isLoading, error, loadDummyData } = useSimplePlaylist();
   
   // Load data when component mounts
@@ -71,7 +73,7 @@ const PlaylistHero: React.FC = () => {
                   text="Rename"
                   transparent={true}
                   customWidth="min-w-[var(--px-100)]"
-                  onClick={() => { }}
+                  onClick={() => setShowRename(true)}
                   icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                 />
@@ -79,7 +81,7 @@ const PlaylistHero: React.FC = () => {
                   text="Share"
                   transparent={true}
                   customWidth="min-w-[var(--px-100)]"
-                  onClick={() => { }}
+                  onClick={() => setShowShare(true)}
                   icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                 />
@@ -166,7 +168,11 @@ const PlaylistHero: React.FC = () => {
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
         </div>
       </div>
+      
+      {/* Modals */}
       <PlaylistRating isOpen={showRating} onClose={() => setShowRating(false)} />
+      <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={playlistData?.playlist.id || ''} />
+      <PlaylistRename isOpen={showRename} onClose={() => setShowRename(false)} />
     </div>
   );
 };

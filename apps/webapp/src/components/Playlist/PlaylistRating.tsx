@@ -7,13 +7,11 @@ type RatingType = 'bad' | 'fine' | 'good' | 'fire'
 interface PlaylistRatingProps {
     isOpen: boolean
     onClose: () => void
-    message?: string
 }
 
 export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
     isOpen,
-    onClose,
-    message = "Rate the similarity results of this playlist"
+    onClose
 }) => {
     const [selectedRating, setSelectedRating] = useState<RatingType | null>(null)
     const [hoveredRating, setHoveredRating] = useState<RatingType | null>(null)
@@ -29,6 +27,8 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
         // Cleanup on unmount
         return () => {
             document.body.style.overflow = 'unset'
+            setSelectedRating(null)
+            setHoveredRating(null)
         }
     }, [isOpen])
 
@@ -74,19 +74,19 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
             <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)]">
                 <div className="text-center mb-[var(--px-24)] w-full">
                     <div className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
-                        {message}
+                        "Rate the similarity results of this playlist"
                     </div>
                 </div>
 
                 <div className='flex items-center w-full justify-evenly mb-[var(--px-10)]'>
-                    <div 
+                    <div
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
                         onClick={() => handleRatingSelect('bad')}
                         onMouseEnter={() => setHoveredRating('bad')}
                         onMouseLeave={() => setHoveredRating(null)}
                     >
-                        <BadIcon 
-                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors' 
+                        <BadIcon
+                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'bad'}
                             color={getIconColor('bad')}
                         />
@@ -94,14 +94,14 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                             Bad
                         </div>
                     </div>
-                    <div 
+                    <div
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
                         onClick={() => handleRatingSelect('fine')}
                         onMouseEnter={() => setHoveredRating('fine')}
                         onMouseLeave={() => setHoveredRating(null)}
                     >
-                        <FineIcon 
-                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors' 
+                        <FineIcon
+                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'fine'}
                             color={getIconColor('fine')}
                         />
@@ -109,14 +109,14 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                             Fine
                         </div>
                     </div>
-                    <div 
+                    <div
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
                         onClick={() => handleRatingSelect('good')}
                         onMouseEnter={() => setHoveredRating('good')}
                         onMouseLeave={() => setHoveredRating(null)}
                     >
-                        <GoodIcon 
-                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors' 
+                        <GoodIcon
+                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'good'}
                             color={getIconColor('good')}
                         />
@@ -124,14 +124,14 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                             Good
                         </div>
                     </div>
-                    <div 
+                    <div
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
                         onClick={() => handleRatingSelect('fire')}
                         onMouseEnter={() => setHoveredRating('fire')}
                         onMouseLeave={() => setHoveredRating(null)}
                     >
-                        <FireIcon 
-                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors' 
+                        <FireIcon
+                            className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'fire'}
                             color={getIconColor('fire')}
                         />
@@ -143,7 +143,7 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
 
                 <div className="flex flex-col items-start gap-[var(--px-10)] w-full">
                     <div className="text-[length:var(--px-11)] font-medium leading-[var(--px-16)] font-fira">
-                    Share your experience <span className="text-[length:var(--px-10)] opacity-80 font-extralight">(optional)</span>
+                        Share your experience <span className="text-[length:var(--px-10)] opacity-80 font-extralight">(optional)</span>
                     </div>
                     <textarea
                         className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
@@ -161,4 +161,4 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
     )
 }
 
-export default PlaylistRating
+export default PlaylistRating;
