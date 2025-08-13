@@ -24,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
     <div>
       {logo}
     </div>
-    {(mode === 'home' || mode === 'contact' || mode === 'error') && (
+    {(mode === 'home' || mode === 'contact' || mode === 'error' || mode === '404') && (
       <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} />
     )}
     {(mode === 'upload' || mode === 'terms' || mode === 'privacy') && (

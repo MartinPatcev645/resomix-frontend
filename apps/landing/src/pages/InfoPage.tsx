@@ -1,4 +1,4 @@
-import { InfoPageLayout, MobileNavbar, Navbar, ContactContent, ErrorContent } from "@resomix/ui";
+import { InfoPageLayout, MobileNavbar, Navbar, ContactContent, ErrorContent, Error404 } from "@resomix/ui";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { useState } from "react";
 import { MenuPage } from "./index.ts";
@@ -42,6 +42,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
         {mode === "privacy" && <PrivacyContent />}
         {mode === "contact" && <ContactContent />}
         {mode === "error" && <ErrorContent />}
+        {mode === "404" && <Error404 />}
       </InfoPageLayout>
       {/* Menu Overlay */}
       {isMenuOpen && (

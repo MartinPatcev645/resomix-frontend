@@ -41,6 +41,7 @@ import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
 import { SideLines } from "./Layout/SideLines";
 
 import ErrorContent from "./Content/ErrorContent";
+import Error404 from "./Content/Error404";
 import ContactContent from "./Content/ContactContent";
 
 export {
@@ -86,4 +87,5 @@ export {
   SideLines,
   ErrorContent,
   ContactContent,
+  Error404,
 };

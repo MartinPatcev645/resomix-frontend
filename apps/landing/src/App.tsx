@@ -40,6 +40,7 @@ function App() {
       <Route path="/contact" element={<InfoPage mode="contact" />} />
       <Route path="/error" element={<InfoPage mode="error" />} />
       <Route path="/test" element={<TestPage />} />
+      <Route path="*" element={<InfoPage mode="404" />} />
     </Routes>
   );
 }

@@ -34,7 +34,7 @@ export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: In
                         {navbar}
 
                         {/* Top Frame Only */}
-                        {(mode === "terms" || mode === "privacy" || mode === "contact" || mode === "error") && (
+                        {(mode === "terms" || mode === "privacy" || mode === "contact" || mode === "error" || mode === "404") && (
                             <svg
                                 viewBox="0 0 1152 41"
                                 preserveAspectRatio="none"
