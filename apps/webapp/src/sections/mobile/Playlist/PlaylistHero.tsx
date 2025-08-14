@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, StatusMessage } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -66,6 +66,41 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [showRating, setShowRating] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
+  const [showStatus, setShowStatus] = React.useState(false);
+  const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
+  const [statusMessage, setStatusMessage] = React.useState('');
+
+  const handleRenameClose = () => {
+    setShowRename(false);
+    // Show loading status
+    setStatusType('loading');
+    setStatusMessage('Renaming playlist...');
+    setShowStatus(true);
+    
+    // After 3 seconds, switch to error
+    setTimeout(() => {
+      setStatusType('error');
+      setStatusMessage('Please Try Again.');
+    }, 3000);
+  };
+
+  const handleRatingClose = () => {
+    setShowRating(false);
+    // Show loading status
+    setStatusType('loading');
+    setStatusMessage('Submitting feedback...');
+    setShowStatus(true);
+    
+    // After 3 seconds, switch to success
+    setTimeout(() => {
+      setStatusType('success');
+      setStatusMessage('Feedback Submitted Successfully!');
+    }, 3000);
+  };
+
+  const handleStatusClose = () => {
+    setShowStatus(false);
+  };
 
   return (
     <div className="relative">
@@ -177,9 +212,17 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
       </div>
       
       {/* Modals */}
-      <PlaylistRating isOpen={showRating} onClose={() => setShowRating(false)} />
+      <PlaylistRating isOpen={showRating} onClose={handleRatingClose} />
       <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={PlaylistResult.data?.playlist.id || ''} />
-      <PlaylistRename isOpen={showRename} onClose={() => setShowRename(false)} />
+      <PlaylistRename isOpen={showRename} onClose={handleRenameClose} />
+      
+      {/* Status Message */}
+      <StatusMessage 
+        isOpen={showStatus} 
+        onClose={handleStatusClose} 
+        status={statusType}
+        message={statusMessage}
+      />
     </div>
   );
 };

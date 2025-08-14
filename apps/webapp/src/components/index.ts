@@ -18,6 +18,7 @@ import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Playlist/PlaylistRating.tsx";
 import PlaylistShare from "./Playlist/PlaylistShare.tsx";
 import PlaylistRename from "./Playlist/PlaylistRename.tsx";
+import StatusMessage from "./Playlist/StatusMessage.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
 
 export {
@@ -41,5 +42,6 @@ export {
     PlaylistRating,
     PlaylistShare,
     PlaylistRename,
+    StatusMessage,
     ThumbIcon
 }

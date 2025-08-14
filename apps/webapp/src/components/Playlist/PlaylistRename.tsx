@@ -60,7 +60,7 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
             />
 
             {/* Modal content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)]">
+            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
                 <div className="text-center w-full">
                     <div className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
                         Rename Playlist
