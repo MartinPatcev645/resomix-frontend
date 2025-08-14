@@ -58,6 +58,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     /* --------------------------- 3. draw noise ----------------------------- */
     const drawNoise = () => {
       const { width, height } = canvas;
+      if (width <= 0 || height <= 0) return; // Guard against zero dimensions
       const imageData = ctx.createImageData(width, height);
       const buffer32 = new Uint32Array(imageData.data.buffer);
       const len = buffer32.length;

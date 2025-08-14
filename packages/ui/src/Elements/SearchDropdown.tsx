@@ -13,17 +13,22 @@ interface SearchResult {
 interface SearchDropdownProps {
   results: SearchResult[];
   show: boolean;
+  isLoading?: boolean;
   onSelect?: (result: SearchResult) => void;
   width?: string;
   truncateLength?: number;
 }
 
-export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, onSelect, width = "w-[var(--px-550)]", truncateLength = 50 }) => {
+export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, isLoading = false, onSelect, width = "w-[var(--px-550)]", truncateLength = 50 }) => {
   if (!show) return null;
 
   return (
     <div className={`absolute right-0 top-[var(--px-34)] mt-[var(--px-4)] bg-[var(--color-primary)] rounded-[12px] shadow-lg overflow-hidden z-30 outline outline-[0.5px] outline-[var(--color-primary)] text-[var(--color-text-primary)] ${width}`}>
-      {results.length === 0 ? (
+      {isLoading ? (
+        <div className="py-[var(--px-10)] px-[var(--px-19-259)] text-[var(--color-text-primary)] text-[length:var(--px-11)] font-fira opacity-60">
+          Searching...
+        </div>
+      ) : results.length === 0 ? (
         <div className="py-[var(--px-10)] px-[var(--px-19-259)] text-[var(--color-text-primary)] text-[length:var(--px-11)] font-fira opacity-60">
           No results found.
         </div>

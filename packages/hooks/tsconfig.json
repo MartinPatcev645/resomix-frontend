@@ -11,7 +11,12 @@
     "moduleResolution": "bundler",
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@resomix/api-client": ["../api-client/dist/src"],
+      "@resomix/ui": ["../ui/dist"],
+      "@resomix/stores": ["../stores/dist"]
+    }
   },
   "include": ["src"]
 }

@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@resomix/stores": "workspace:*",
+        "@resomix/api-client": "workspace:*",
         "zustand": "^5.0.7"
     },
     "devDependencies": {

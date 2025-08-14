@@ -6,7 +6,7 @@ import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 
 const HomeFive: React.FC = () => {
-  const { query, results, handleQueryChange } = useSearch();
+  const { query, results, isLoading, handleQueryChange } = useSearch();
 
   return (
     <div className='mt-[var(--px-150)] flex flex-col relative z-15'>
@@ -57,7 +57,7 @@ const HomeFive: React.FC = () => {
           <div className='mt-[var(--px-60)] relative w-full'>
             {/** Search bar & dropdown */}
             <SearchInput value={query} onChange={handleQueryChange} width="w-[var(--px-310)]" />
-            <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-310)]" truncateLength={24} onSelect={() => { }} />
+            <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-310)]" isLoading={isLoading} truncateLength={24} onSelect={() => { }} />
           </div>
         </div>
       </div>

@@ -179,6 +179,9 @@ importers:
 
   packages/api-client:
     dependencies:
+      '@resomix/config':
+        specifier: workspace:*
+        version: link:../config
       axios:
         specifier: ^1.11.0
         version: 1.11.0
@@ -191,6 +194,9 @@ importers:
 
   packages/hooks:
     dependencies:
+      '@resomix/api-client':
+        specifier: workspace:*
+        version: link:../api-client
       '@resomix/stores':
         specifier: workspace:*
         version: link:../stores
