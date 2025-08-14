@@ -1,12 +1,13 @@
 import React from "react";
 import { CodeTyping } from "../index";
 
-// Add a prop for the LogoRFooter
+// Add a prop for the LogoRFooter and base URL
 interface GlobalFooterProps {
   logo: React.ReactNode;
+  baseUrl?: string;
 }
 
-const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
+const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://resomix.com" }) => (
   <div className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="absolute text-[length:var(--px-63)] -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase">
       Join the Resomix Universe
@@ -14,7 +15,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
     <div className="flex flex-col gap-[var(--px-130)]">
       <div className="flex flex-col px-[var(--px-65)] min-h-[var(--px-129)]">
         <div className="flex w-full justify-start">
-          <a href="https://resomix.com" className="cursor-default">
+          <a href={baseUrl} className="cursor-default">
             {logo}
           </a>
         </div>
@@ -68,11 +69,11 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo }) => (
           />
         </div>
         <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
-          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+          <a href={`${baseUrl}/terms`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
             legal.terms(): open('/terms')
           </a>
           <br />
-          <a href="/privacy" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+          <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
             privacy_policy(): fetch('/privacy')
           </a>
         </div>

@@ -4,6 +4,7 @@ import { MenuPage } from "../index.ts";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections/mobile/index.ts";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 export function AboutMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,7 +44,7 @@ export function AboutMobile() {
             <AboutTwo />
             <AboutThree />
             <AboutFour />
-            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
           </div>
 
         </SideLines>

@@ -6,9 +6,10 @@ interface InfoPageLayoutProps {
     navbar?: React.ReactNode;
     hero?: React.ReactNode;
     mode: string;
+    baseUrl?: string;
 }
 
-export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: InfoPageLayoutProps) {
+export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero, baseUrl = "https://resomix.com" }: InfoPageLayoutProps) {
     return (
         <div className="bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] min-h-screen">
             {/* Static noise background for Desktop only */}
@@ -53,7 +54,7 @@ export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: In
                         {/* Content */}
                         {children}
                         {/* Footer */}
-                        <GlobalFooter logo={LogoRFooter} />
+                        <GlobalFooter logo={LogoRFooter} baseUrl={baseUrl} />
                     </SideLines>
                 </div>
 
@@ -67,7 +68,7 @@ export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero }: In
                         {/* Content */}
                         {children}
                         {/* Footer */}
-                        <GlobalMobileFooter logo={LogoRFooter} />
+                        <GlobalMobileFooter logo={LogoRFooter} baseUrl={baseUrl} />
                     </SideLines>
                 </div>
             </div>

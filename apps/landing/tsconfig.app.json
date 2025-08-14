@@ -18,7 +18,9 @@
       "@resomix/hooks": ["../../packages/hooks/src/index.ts"],
       "@resomix/hooks/*": ["../../packages/hooks/src/*"],
       "@resomix/api-client": ["../../packages/api-client/src/index.ts"],
-      "@resomix/api-client/*": ["../../packages/api-client/src/*"]
+      "@resomix/api-client/*": ["../../packages/api-client/src/*"],
+      "@resomix/config": ["../../packages/config/src/index.ts"],
+      "@resomix/config/*": ["../../packages/config/src/*"]
     },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -38,6 +40,7 @@
   "references": [
     { "path": "../../packages/ui" },
     { "path": "../../packages/hooks" },
-    { "path": "../../packages/api-client" }
+    { "path": "../../packages/api-client" },
+    { "path": "../../packages/config" }
   ]
 }

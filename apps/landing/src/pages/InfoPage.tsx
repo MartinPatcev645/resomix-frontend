@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MenuPage } from "./index.ts";
 import TermsContent from "../content/TermsContent.tsx";
 import PrivacyContent from "@/content/PrivacyContent.tsx";
+import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 interface InfoPageProps {
   mode: string;
@@ -16,8 +17,10 @@ export default function InfoPage({ mode }: InfoPageProps) {
     <>
       <div className="hidden md:block">
         <Navbar
-          logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          logo={<a href={BASE_LANDING_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
           mode={mode}
+          baseUrl={BASE_LANDING_URL}
+          baseBetaUrl={BASE_BETA_URL}
           customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
         />
       </div>
@@ -35,6 +38,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
     <>
       <InfoPageLayout
         navbar={navbar}
+        baseUrl={BASE_LANDING_URL}
         LogoRFooter={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />}
         mode={mode}
       >

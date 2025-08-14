@@ -3,9 +3,10 @@ import { CodeTyping } from "../index";
 
 interface GlobalMobileFooterProps {
   logo: React.ReactNode;
+  baseUrl?: string;
 }
 
-const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo }) => (
+const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl = "https://resomix.com" }) => (
   <div className="mt-[var(--px-250)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col w-full">
       <div className="absolute -left-[var(--px-20)] -top-[var(--px-80)] w-[var(--px-393)] text-[length:var(--px-30)] font-benzin uppercase leading-[var(--px-40)]">
@@ -13,7 +14,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo }) => (
       </div>
       <div className="flex flex-col items-start px-[var(--px-10)] min-h-[var(--px-129)] mt-[var(--px-40)]">
         <div className="flex w-full justify-start">
-          <a href="https://resomix.com" className="cursor-default">
+          <a href={baseUrl} className="cursor-default">
             {logo}
           </a>
         </div>
@@ -45,11 +46,11 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo }) => (
       </div>
       <div className="flex flex-col items-center text-center justify-between">
         <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)] items-center my-[var(--px-60)]">
-          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)]">
+          <a href={`${baseUrl}/terms`} className="hover:underline decoration-[var(--px-0-5)]">
             legal.terms()
           </a>
           <br />
-          <a href="/privacy" className="hover:underline decoration-[var(--px-0-5)]">
+          <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)]">
             privacy_policy()
           </a>
         </div>

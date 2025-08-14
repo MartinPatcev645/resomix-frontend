@@ -4,6 +4,7 @@ import MenuPage from "./MenuPage.tsx";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -38,7 +39,7 @@ export function UploadMobile() {
           {/* Section One */}
           <div className="relative z-20 mt-[var(--px-60)]">
             <UploadOne />
-            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
           </div>
         </SideLines>
       </div>

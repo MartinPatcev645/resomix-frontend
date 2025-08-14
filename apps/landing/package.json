@@ -12,6 +12,7 @@
   "dependencies": {
     "@react-three/fiber": "^9.2.0",
     "@resomix/api-client": "workspace:*",
+    "@resomix/config": "workspace:*",
     "@resomix/hooks": "workspace:*",
     "@resomix/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.11",

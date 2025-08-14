@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MenuPage } from "../index.ts";
 import { HomeHero, HomeOne, HomeTwo, HomeThree, HomeFour, HomeFive, HomeSix, HomeSeven, HomeEight, HomeNine } from "@/sections/mobile/index.ts";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 export function HomeMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,7 +41,7 @@ export function HomeMobile() {
           <HomeSeven />
           <HomeEight />
           <HomeNine />
-          <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+          <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
         </div>
       </div>
       {isMenuOpen && (

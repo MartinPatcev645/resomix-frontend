@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import SectionNineGraphic from "@/assets/icons/composites/section_nine_graphic.svg";
 import { GoldenSpiral, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeNine: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
@@ -87,7 +88,9 @@ const HomeNine: React.FC = () => {
             />
           </div>
           <div className="flex justify-end mt-[var(--px-50)] min-w-[var(--px-204-5)]">
-            <ButtonHeavyRight text="Upload Your Track" onClick={() => { }} transparent={true} />
+            <ButtonHeavyRight text="Upload Your Track" onClick={() => {
+              window.location.href = BASE_BETA_URL
+            }} transparent={true} />
           </div>
         </div>
       </div>

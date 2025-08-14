@@ -4,6 +4,7 @@ import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
 import GradientOne from "@/assets/images/gradient 1.png";
 import { IconComp } from "@resomix/ui";
+import { FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomix/config";
 
 const AboutHero: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
@@ -59,19 +60,19 @@ const AboutHero: React.FC = () => {
               svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={FbSvg} alt="Fb" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
-              onClick={() => window.open("https://www.facebook.com/resomix", "_blank")}
+              onClick={() => window.open(FACEBOOK_URL, "_blank")}
             />
             <IconComp
               svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={InstaSvg} alt="Insta" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
-              onClick={() => window.open("https://www.instagram.com/resomix", "_blank")}
+              onClick={() => window.open(INSTAGRAM_URL, "_blank")}
             />
             <IconComp
               svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={XSvg} alt="X" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
-              onClick={() => window.open("https://twitter.com/resomix", "_blank")}
+              onClick={() => window.open(TWITTER_URL, "_blank")}
             />
           </div>
         </div>

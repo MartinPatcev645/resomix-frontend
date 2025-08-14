@@ -1,7 +1,7 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { UploadHero, UploadOne } from "@/sections/desktop/index.ts";
-// import sideFrameSvg from "@/assets/icons/layout/desktop_side_frame_flexible.svg";
+import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 export function UploadPage() {
   return (
@@ -23,14 +23,16 @@ export function UploadPage() {
         <SideLines>
           {/* Navbar */}
           <Navbar
-            logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+            logo={<a href={BASE_BETA_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
             mode="upload"
+            baseUrl={BASE_LANDING_URL}
+            baseBetaUrl={BASE_BETA_URL}
             customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
           />
 
           <UploadHero />
           <UploadOne />
-          <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+          <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
         </SideLines >
       </div>
     </div>

@@ -35,3 +35,4 @@ typings/
 .yarn-integrity
 
 x_assets/
+.env

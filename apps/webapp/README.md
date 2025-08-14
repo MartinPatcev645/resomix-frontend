@@ -67,3 +67,10 @@ export default tseslint.config([
   },
 ])
 ```
+
+### Environment variables
+
+Set these in Cloudflare Pages Project > Settings > Environment Variables or in a local `.env` file:
+
+- VITE_BASE_LANDING_URL
+- VITE_BASE_BETA_URL

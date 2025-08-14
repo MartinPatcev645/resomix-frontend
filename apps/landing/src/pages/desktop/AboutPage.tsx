@@ -1,6 +1,7 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections/desktop/index.ts";
+import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 export function AboutPage() {
   return (
@@ -24,7 +25,9 @@ export function AboutPage() {
           <div className="">
             {/* Navbar */}
             <Navbar
-              logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+              logo={<a href={BASE_LANDING_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+              baseUrl={BASE_LANDING_URL}
+              baseBetaUrl={BASE_BETA_URL}
               mode="home"
               customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
             />
@@ -34,7 +37,7 @@ export function AboutPage() {
             <AboutTwo />
             <AboutThree />
             <AboutFour />
-            <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+            <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
           </div>
         </SideLines>
       </div>

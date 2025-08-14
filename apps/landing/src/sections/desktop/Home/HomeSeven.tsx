@@ -4,6 +4,7 @@ import ArrowBigDownSvg from "@/assets/icons/ArrowBigDown2.svg";
 import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
 import LineThreeSvg from "@/assets/icons/line3.svg";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeSeven: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
@@ -59,7 +60,9 @@ const HomeSeven: React.FC = () => {
         </div>
       </div>
       <div className="w-full flex justify-center items-center pt-[var(--px-60)] pb-[var(--px-140)] min-h-[var(--px-309)]">
-        <ButtonHeavyRight text="Align With Your Sound" onClick={() => { }} transparent={true} />
+        <ButtonHeavyRight text="Align With Your Sound" onClick={() => {
+          window.location.href = BASE_BETA_URL
+        }} transparent={true} />
       </div>
       <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
         {/* <div className="min-h-[var(--px-309)]"></div> */}

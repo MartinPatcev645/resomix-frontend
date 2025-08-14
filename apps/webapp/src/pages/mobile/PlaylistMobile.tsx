@@ -4,6 +4,7 @@ import MenuPage from "./MenuPage.tsx";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 export function PlaylistMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,7 +50,7 @@ export function PlaylistMobile() {
           {/* Content Table */}
           <div className="relative z-20">
             <PlaylistTable onMoreClick={handleMoreMenuOpen} />
-            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} />
+            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
           </div>
         </SideLines>
 
