@@ -36,6 +36,9 @@ importers:
       '@resomix/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@resomix/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@resomix/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
@@ -106,6 +109,9 @@ importers:
       '@resomix/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@resomix/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@resomix/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
@@ -176,6 +182,12 @@ importers:
       axios:
         specifier: ^1.11.0
         version: 1.11.0
+
+  packages/config:
+    devDependencies:
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
 
   packages/hooks:
     dependencies:
