@@ -1,0 +1,138 @@
+import { useCallback, useMemo, useRef } from "react";
+import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
+import { create } from "zustand";
+
+export interface UploadResult<T = any> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    details?: unknown;
+}
+
+interface UploadStoreState {
+    isUploading: boolean;
+    progress: number;
+    error: string | null;
+    file: File | null;
+    showOverlay: boolean;
+    response: UploadResult | null;
+    setUploading: (isUploading: boolean) => void;
+    setProgress: (progress: number) => void;
+    setError: (error: string | null) => void;
+    setFile: (file: File | null) => void;
+    setOverlay: (visible: boolean) => void;
+    setResponse: (response: UploadResult | null) => void;
+    reset: () => void;
+}
+
+export const useUploadStore = create<UploadStoreState>((set) => ({
+    isUploading: false,
+    progress: 0,
+    error: null,
+    file: null,
+    showOverlay: false,
+    response: null,
+    setUploading: (isUploading) => set({ isUploading }),
+    setProgress: (progress) => set({ progress }),
+    setError: (error) => set({ error }),
+    setFile: (file) => set({ file }),
+    setOverlay: (visible) => set({ showOverlay: visible }),
+    setResponse: (response) => set({ response }),
+    reset: () => set({ isUploading: false, progress: 0, error: null, file: null, showOverlay: false, response: null })
+}));
+
+/**
+ * Hook for handling audio uploads on web, Android and iOS mobile browsers.
+ * - Provides a hidden input ref and an opener to trigger native pickers
+ * - Validates against API_CONFIG.ALLOWED_AUDIO_TYPES and MAX_FILE_SIZE
+ * - Uploads with progress via getSimilarTracks
+ */
+export function useUpload() {
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, reset } = useUploadStore();
+
+    const inputAccept = useMemo(() => {
+        // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
+        const mimes = API_CONFIG.ALLOWED_AUDIO_TYPES;
+        const extensions = [".mp3", ".wav", ".ogg", ".aac", ".flac"];
+        return ["audio/*", ...mimes, ...extensions].join(",");
+    }, []);
+
+    const openFilePicker = useCallback(() => {
+        if (inputRef.current) {
+            inputRef.current.click();
+        }
+    }, []);
+
+    const validateFile = useCallback((file: File): { valid: boolean; error?: string } => {
+        if (!file) return { valid: false, error: "No file selected." };
+        if (file.size > API_CONFIG.MAX_FILE_SIZE) {
+            return { valid: false, error: `File too large. Maximum size is ${API_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB.` };
+        }
+        // Some mobile browsers may not populate file.type; fallback to extension-based check
+        const typeOk = !!file.type && API_CONFIG.ALLOWED_AUDIO_TYPES.includes(file.type);
+        if (typeOk) return { valid: true };
+        const name = file.name?.toLowerCase() || "";
+        const extOk = [".mp3", ".wav", ".ogg", ".aac", ".flac"].some((ext) => name.endsWith(ext));
+        if (!extOk) return { valid: false, error: "Invalid file type. Please upload an audio file." };
+        return { valid: true };
+    }, []);
+
+    const handleUpload = useCallback(async (file: File | null | undefined) => {
+        if (!file) return;
+        const isValid = validateFile(file);
+        if (!isValid.valid) {
+            setError(isValid.error || "Invalid file.");
+            return;
+        }
+
+        setFile(file);
+        setProgress(0);
+        setError(null);
+        setResponse(null);
+        setUploading(true);
+        setOverlay(true);
+
+        try {
+            const result = await getSimilarTracks(file, 20, (p) => setProgress(Math.min(100, Math.max(0, Math.round(p)))));
+            setResponse(result as UploadResult);
+            // Keep overlay visible; pages can observe progress and decide when to hide/navigate
+            setUploading(false);
+            setProgress(100);
+        } catch (err: any) {
+            setError(err?.message || "Upload failed.");
+            setUploading(false);
+        }
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile]);
+
+    const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
+        const file = e.target.files && e.target.files[0];
+        void handleUpload(file || null);
+        // Reset the value so selecting the same file again retriggers onChange
+        if (inputRef.current) inputRef.current.value = "";
+    }, [handleUpload]);
+
+    const onDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        const file = e.dataTransfer?.files?.[0];
+        void handleUpload(file || null);
+    }, [handleUpload]);
+
+    const onDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+    }, []);
+
+    const hideOverlay = useCallback(() => setOverlay(false), [setOverlay]);
+
+    return {
+        inputRef,
+        inputAccept,
+        openFilePicker,
+        onInputChange,
+        onDrop,
+        onDragOver,
+        handleUpload,
+        hideOverlay,
+        reset,
+    };
+}

@@ -3,6 +3,7 @@ import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import { ButtonSleek } from "@resomix/ui";
+import { useUpload } from "@resomix/hooks";
 
 interface UploadComponentProps {
     onSearchClick?: () => void;
@@ -14,6 +15,7 @@ interface UploadComponentProps {
  */
 export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearchClick }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
+    const { inputRef, inputAccept, onInputChange, openFilePicker } = useUpload();
 
     return (
         <div ref={sectionRef} className="relative">
@@ -35,6 +37,15 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
                 <path d="M1.24744 53.9628V0.629395H169.275L133.217 53.9628H1.24744Z" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" fill="none" />
                 <path d="M167.066 54.7035H298.79" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" />
             </svg>
+
+            {/* Hidden file input for mobile (Android/iOS) */}
+            <input
+                ref={inputRef}
+                type="file"
+                accept={inputAccept}
+                onChange={onInputChange}
+                className="hidden"
+            />
 
             {/* Tab container - positioned above the main content */}
             <div className="relative w-[var(--px-355)] h-[var(--px-384)] mx-auto z-30">
@@ -68,7 +79,7 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
                                 <div className="text-[length:var(--px-12)] opacity-70 font-fira font-light my-[var(--px-20)] text-center">
                                     or
                                 </div>
-                                <ButtonSleek className="w-[var(--px-250)]" text="Upload Your Audio" onClick={() => { }} />
+                                <ButtonSleek className="w-[var(--px-250)]" text="Upload Your Audio" onClick={openFilePicker} />
                             </div>
                         </div>
                     </div>

@@ -3,6 +3,7 @@ import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import { ButtonSleek } from "@resomix/ui";
+import { useUpload } from "@resomix/hooks";
 
 interface UploadComponentProps {
     onSearchClick?: () => void;
@@ -14,6 +15,7 @@ interface UploadComponentProps {
  */
 export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
+    const { inputRef, inputAccept, onInputChange, openFilePicker, onDrop, onDragOver } = useUpload();
 
     return (
         <div ref={sectionRef} className="relative">
@@ -36,6 +38,15 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                 <path d="M251.742 54.7036H450.631" stroke="white" strokeWidth="1" strokeDasharray="0.74 0.74" />
             </svg>
 
+            {/* Hidden file input for desktop (Windows/mac) */}
+            <input
+                ref={inputRef}
+                type="file"
+                accept={inputAccept}
+                onChange={onInputChange}
+                className="hidden"
+            />
+
             {/* Tab container - positioned above the main content */}
             <div className="relative w-[var(--px-474)] h-[var(--px-383)] mx-auto z-30">
                 {/* Tabs positioned to align with the tab shapes */}
@@ -54,7 +65,11 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                         </div>
                     </div>
                     <div className="m-[var(--px-30)]">
-                        <div className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300">
+                        <div
+                            className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300"
+                            onDrop={onDrop}
+                            onDragOver={onDragOver}
+                        >
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] text-[length:var(--px-16)] font-helvetica font-light text-center leading-[var(--px-20)] uppercase">
                                     Upload your Audio
@@ -68,7 +83,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                                 <div className="text-[length:var(--px-9)] font-fira font-light my-[var(--px-20)] text-center">
                                     or
                                 </div>
-                                <ButtonSleek text="Upload Your Audio" onClick={() => { }} />
+                                <ButtonSleek text="Upload Your Audio" onClick={openFilePicker} />
                             </div>
                         </div>
                     </div>

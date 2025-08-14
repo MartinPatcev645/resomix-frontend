@@ -2,8 +2,11 @@ import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { UploadHero, UploadOne } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
+import { UploadLoader } from "@/components/index.ts";
+import { useUploadStore } from "@resomix/hooks";
 
 export function UploadPage() {
+  const { showOverlay } = useUploadStore();
   return (
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
@@ -35,6 +38,12 @@ export function UploadPage() {
           <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
         </SideLines >
       </div>
+
+      {showOverlay && (
+        <div className="fixed inset-0 z-[9999]">
+          <UploadLoader />
+        </div>
+      )}
     </div>
   );
 }

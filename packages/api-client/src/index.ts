@@ -1,3 +1,4 @@
+export * from "./config";
 export * from "./similarity";
 export * from "./search";
 export * from "./feedback";

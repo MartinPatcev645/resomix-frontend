@@ -4,6 +4,7 @@ import SectionFiveGraphicRight from "@/assets/icons/composites/section_five_grap
 import ArrowBigDownSvg from "@/assets/icons/arrow_big_down_stroke.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeFive: React.FC = () => {
   const { query, results, isLoading, handleQueryChange } = useSearch();
@@ -62,7 +63,9 @@ const HomeFive: React.FC = () => {
           <div className='mt-[var(--px-16)] relative w-[var(--px-588)] self-end'>
             {/** Search bar & dropdown */}
             <SearchInput value={query} onChange={handleQueryChange} />
-            <SearchDropdown show={query.length > 0} results={results} isLoading={isLoading} onSelect={() => { }} />
+            <SearchDropdown show={query.length > 0} results={results} isLoading={isLoading} onSelect={(result) => {
+              window.location.href = `${BASE_BETA_URL}/?uuid=${result.uuid}`;
+            }} />
           </div>
         </div>
       </div>

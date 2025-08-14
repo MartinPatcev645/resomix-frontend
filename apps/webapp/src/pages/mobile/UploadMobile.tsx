@@ -5,9 +5,12 @@ import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
 import { BASE_LANDING_URL } from "@resomix/config";
+import { UploadLoader } from "@/components/index.ts";
+import { useUploadStore } from "@resomix/hooks";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { showOverlay } = useUploadStore();
 
   return (
     <>
@@ -48,6 +51,12 @@ export function UploadMobile() {
       {isMenuOpen && (
         <div className="fixed inset-0 z-[100]">
           <MenuPage onClose={() => setIsMenuOpen(false)} />
+        </div>
+      )}
+
+      {showOverlay && (
+        <div className="fixed inset-0 z-[9999]">
+          <UploadLoader />
         </div>
       )}
     </>

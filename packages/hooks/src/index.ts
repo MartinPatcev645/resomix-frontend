@@ -5,3 +5,4 @@ export * from "./useOnScreen";
 export * from "./usePopularTracks";
 export * from "./useSimplePlaylist";
 export * from "./utils"
+export * from "./Similarity/useUpload";
