@@ -1,6 +1,10 @@
 import { ButtonSleek } from "../index";
 
-export default function ContactContent() {
+interface ContactContentProps {
+  baseUrl?: string;
+}
+
+export default function ContactContent({ baseUrl = "https://resomix.com" }: ContactContentProps) {
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
@@ -14,7 +18,7 @@ export default function ContactContent() {
 
         <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
-            <a href="/" className="text-[length:var(--px-11)] font-light font-helvetica  hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</a>
+            <a href={baseUrl} className="text-[length:var(--px-11)] font-light font-helvetica  hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</a>
           </div>
 
           <p className="mt-[var(--px-8)] text-[length:var(--px-10)] font-extralight opacity-80 font-helvetica  ">

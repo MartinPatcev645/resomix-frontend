@@ -19,7 +19,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => (
             <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
           </button>
         ) : (
-          <a href={BASE_BETA_URL}>
+          <a href={BASE_LANDING_URL}>
             <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
           </a>
         )}
@@ -32,17 +32,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => (
         </div>
         <div onClick={() => {
           window.location.href = `${BASE_LANDING_URL}/about`
-        }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center">
+        }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
           [About Us]
         </div>
         <div onClick={() => {
           window.location.href = `${BASE_LANDING_URL}/feedback`
-        }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center">
+        }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
           [Feedback]
         </div>
         <div onClick={() => {
-          window.location.href = `${BASE_BETA_URL}/contact`
-        }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center">
+          window.location.href = `${BASE_LANDING_URL}/contact`
+        }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
           [Contact]
         </div>
         <div className="">

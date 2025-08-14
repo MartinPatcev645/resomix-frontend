@@ -86,7 +86,7 @@ const HomeNine: React.FC = () => {
               />
             </div>
             <div className="flex justify-end mt-[var(--px-50)] min-w-[var(--px-204-5)]">
-              <ButtonHeavyRight className="w-[var(--px-204-5)]" text="Upload Your Track" onClick={() => { }} transparent={true} />
+              <ButtonHeavyRight className="w-[var(--px-204-5)]" text="Upload Your Track" onClick={() => { }} transparent={true} link_arrow={true} />
             </div>
           </div>
         </div>

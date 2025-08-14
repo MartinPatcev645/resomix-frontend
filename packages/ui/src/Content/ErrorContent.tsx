@@ -1,6 +1,10 @@
 import { ButtonSleek } from "../index";
 
-export default function ErrorContent() {
+interface ErrorContentProps {
+  baseUrl?: string;
+}
+
+export default function ErrorContent({ baseUrl = "https://beta.resomix.com" }: ErrorContentProps) {
   return (
     <div className="w-full flex flex-col items-center text-[var(--color-primary)] pt-[var(--px-120)]">
       <div className="max-w-[var(--px-650)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
@@ -11,7 +15,7 @@ export default function ErrorContent() {
 
           <div className="text-center text-[length:var(--px-19)] font-semibold font-helvetica leading-[var(--px-23)] uppercase">Oops! Something went wrong.</div>
           <div className="text-center text-[length:var(--px-11)] font-light font-fira leading-[var(--px-18)] mb-[var(--px-20)]">No track data found. Please go back and try again.<br />This could happen if you navigated to this page directly without providing a track.</div>
-          <ButtonSleek text="Upload Another Track" onClick={() => { window.location.href = "/upload"; }} />
+          <ButtonSleek text="Upload Another Track" onClick={() => { window.location.href = baseUrl; }} />
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { MobileNavbar, GlobalMobileFooter, SideLines } from "@resomix/ui";
 import { useState } from "react";
-import MenuPage from "./MenuPage.tsx";
+import { MenuPage } from "../index.ts";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";

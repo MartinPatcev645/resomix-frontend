@@ -13,6 +13,7 @@ import MoreSvg from "@/assets/icons/more.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const InputTrackStatus = "Loading..."
 const PlaylistResult = {
@@ -109,7 +110,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <div onClick={() => { }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
+            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
               <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-20)] h-[var(--px-20)]" />
             </div>
             <div className="flex items-center gap-[var(--px-8)]">

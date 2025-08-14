@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 export default function TermsContent() {
   return (
@@ -18,7 +19,7 @@ export default function TermsContent() {
 
         <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
-            <Link to="/" className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</Link>
+            <Link to={BASE_LANDING_URL} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</Link>
           </div>
 
           <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">

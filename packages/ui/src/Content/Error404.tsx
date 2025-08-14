@@ -1,6 +1,10 @@
 import { ButtonSleek } from "../index";
 
-export default function Error404() {
+interface Error404Props {
+  baseUrl?: string;
+}
+
+export default function Error404({ baseUrl = "https://resomix.com" }: Error404Props) {
   return (
     <div className="w-full flex flex-col items-center text-[var(--color-primary)] pt-[var(--px-120)]">
       <div className="max-w-[var(--px-650)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
@@ -11,7 +15,7 @@ export default function Error404() {
 
           <div className="text-center text-[length:var(--px-19)] font-semibold font-helvetica leading-[var(--px-23)] uppercase">Page not found</div>
           <div className="text-center text-[length:var(--px-11)] font-light font-fira leading-[var(--px-18)] mb-[var(--px-20)]">The page you are looking for does not exist.<br />Please check the URL or go back to the home page.</div>
-          <ButtonSleek text="Go Back to Home" onClick={() => { window.location.href = "/"; }} />
+          <ButtonSleek text="Go Back to Safety" onClick={() => { window.location.href = baseUrl; }} />
         </div>
       </div>
     </div>

@@ -40,9 +40,9 @@ export default function InfoPage({ mode }: InfoPageProps) {
         LogoRFooter={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />}
         mode={mode}
       >
-        {mode === "contact" && <ContactContent />}
-        {mode === "error" && <ErrorContent />}
-        {mode === "404" && <Error404 />}
+        {mode === "contact" && <ContactContent baseUrl={BASE_BETA_URL} />}
+        {mode === "error" && <ErrorContent baseUrl={BASE_BETA_URL} />}
+        {mode === "404" && <Error404 baseUrl={BASE_BETA_URL} />}
       </InfoPageLayout>
       {/* Menu Overlay */}
       {isMenuOpen && (
