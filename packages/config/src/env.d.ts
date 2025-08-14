@@ -5,6 +5,8 @@ declare interface ImportMetaEnv {
   readonly VITE_INSTAGRAM_URL?: string
   readonly VITE_TWITTER_URL?: string
   readonly VITE_SOUNDCLOUD_URL?: string
+  readonly VITE_SERVER_BACKEND?: string
+  readonly VITE_SERVER_MEDIA?: string
   readonly MODE?: string
 }
 

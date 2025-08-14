@@ -5,6 +5,8 @@ export interface AppConfig {
   instagramUrl: string
   twitterUrl: string
   soundcloudUrl: string
+  serverBackend: string
+  serverMedia: string
   mode: string
 }
 
@@ -17,6 +19,8 @@ export const CONFIG: AppConfig = {
   instagramUrl: env.VITE_INSTAGRAM_URL ?? '',
   twitterUrl: env.VITE_TWITTER_URL ?? '',
   soundcloudUrl: env.VITE_SOUNDCLOUD_URL ?? '',
+  serverBackend: env.VITE_SERVER_BACKEND ?? '',
+  serverMedia: env.VITE_SERVER_MEDIA ?? '',
   mode: env.MODE ?? 'development'
 }
 
@@ -26,3 +30,5 @@ export const FACEBOOK_URL = CONFIG.facebookUrl
 export const INSTAGRAM_URL = CONFIG.instagramUrl
 export const TWITTER_URL = CONFIG.twitterUrl
 export const SOUNDCLOUD_URL = CONFIG.soundcloudUrl
+export const SERVER_BACKEND = CONFIG.serverBackend
+export const SERVER_MEDIA = CONFIG.serverMedia
