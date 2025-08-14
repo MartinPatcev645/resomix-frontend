@@ -1,6 +1,7 @@
 import { useResponsive } from "@resomix/hooks";
 import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage } from "./pages/index.ts";
 import { Routes, Route } from "react-router-dom";
+import { UploadLoader } from "./components/index.ts";
 
 function UploadLanding() {
   const { isDesktop } = useResponsive();
@@ -24,6 +25,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<UploadLanding />} />
+      <Route path="/loader" element={<UploadLoader />} />
       <Route path="/playlist" element={<PlaylistLanding />} />
       <Route path="/contact" element={<InfoPage mode="contact" />} />
       <Route path="/error" element={<InfoPage mode="error" />} />
