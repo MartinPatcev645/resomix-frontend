@@ -1,6 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
-import { formatDuration, useSimplePlaylist } from "@resomix/hooks";
+import { formatDuration } from "@resomix/hooks";
+import { usePlaylistStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, StatusMessage } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -23,12 +24,8 @@ const PlaylistHero: React.FC = () => {
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
-  const { playlistData, isLoading, error, loadDummyData } = useSimplePlaylist();
+  const { playlistData, isLoading, error } = usePlaylistStore();
   
-  // Load data when component mounts
-  React.useEffect(() => {
-    loadDummyData();
-  }, [loadDummyData]);
 
   const handleRenameClose = () => {
     setShowRename(false);
@@ -172,7 +169,7 @@ const PlaylistHero: React.FC = () => {
                     <div className={`${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? '' : 'hidden'}`}></div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
                       <img src={TimeSvg} alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
-                      <div>{formatDuration(playlistData?.queried_track.duration || 0)}</div>
+                      <div>{playlistData?.queried_track.duration ? formatDuration(playlistData.queried_track.duration) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
@@ -185,7 +182,7 @@ const PlaylistHero: React.FC = () => {
                     <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center ${showMeta ? '' : 'hidden'}`}>
                       <div>ID: {playlistData?.queried_track.id}</div>
                       <div>|</div>
-                      <div>Duration: {formatDuration(playlistData?.queried_track.duration || 0)}</div>
+                      <div>Duration: {playlistData?.queried_track.duration ? formatDuration(playlistData.queried_track.duration) : '--:--'}</div>
                       <div>|</div>
                       <div>Status: {InputTrackStatus}</div>
                       <div>|</div>

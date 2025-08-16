@@ -1,6 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
+import { usePlaylistStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, StatusMessage } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -16,47 +17,6 @@ import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL } from "@resomix/config";
 
 const InputTrackStatus = "Loading..."
-const PlaylistResult = {
-  "success": true,
-  "data": {
-    "queried_track": {
-      "rank": 0,
-      "score": 1.0,
-      "id": "1a9983daf38caac5a8e8adaf",
-      "title": "Ursa Minor (Marcel Dettmann Remix)",
-      "year": 2025,
-      "duration": 271,
-      "label": "Break New Soil Recordings",
-      "artist": "Gregor Tresher, Petar Dundov"
-    },
-    "similar_tracks": [
-      {
-        "rank": 1,
-        "score": 0.95250189,
-        "id": "67adb0d5799206f8d65102a8",
-        "title": "Chapter 1",
-        "year": 2023,
-        "duration": 301,
-        "label": "Abstract Mechanisms",
-        "artist": "Møntero"
-      },
-      {
-        "rank": 2,
-        "score": 0.94865525,
-        "id": "67add9769387d00fbdc2dc3d",
-        "title": "Opto",
-        "year": null,
-        "duration": 335,
-        "label": "Balance Music",
-        "artist": "Etapp Kyle"
-      }
-    ],
-    "playlist": {
-      "id": "7b821bef-e168-4511-8525-5e1664b7e483",
-      "name": "regor Tresher, Petar Dundov - Ursa Minor (Marcel Dettmann Remix)"
-    }
-  }
-}
 
 interface PlaylistHeroProps {
   onMoreClick?: (trackId: string) => void;
@@ -70,6 +30,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
+
+  const { playlistData } = usePlaylistStore();
 
   const handleRenameClose = () => {
     setShowRename(false);
@@ -155,7 +117,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div className="flex flex-col justify-between min-h-[var(--px-55)]">
                     <div className="text-[length:var(--px-13)] font-light uppercase font-helvetica leading-[var(--px-11)]">
                       <HoverFlow
-                        text={PlaylistResult.data.playlist.name}
+                        text={playlistData?.playlist.name || ''}
                         maxChars={26}
                         delay={800}
                         speed={80}
@@ -163,10 +125,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                         maxWidth="210px"
                       />
                     </div>
-                    <div className={`text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title) === PlaylistResult.data.playlist.name ? 'hidden' : ''}`}>
+                    <div className={`text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
                       <HoverFlow
-                        text={PlaylistResult.data.queried_track.artist + ' - ' + PlaylistResult.data.queried_track.title}
+                        text={playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title}
                         maxChars={45}
                         delay={800}
                         speed={80}
@@ -176,11 +138,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                     </div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-9)] items-center">
                       <img src={TimeSvg} alt="Time" className="w-[var(--px-8)] h-[var(--px-8)]" />
-                      <div>{formatDuration(PlaylistResult.data.queried_track.duration)}</div>
+                      <div>{playlistData?.queried_track.duration ? formatDuration(playlistData.queried_track.duration) : '--:--'}</div>
                       <div>|</div>
-                      <div>{PlaylistResult.data.queried_track.year}</div>
+                      <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
-                      <div className="truncate max-w-[var(--px-130)]">{PlaylistResult.data.queried_track.label}</div>
+                      <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
                       <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-auto hover:cursor-pointer" />
                     </div>
                   </div>
@@ -189,7 +151,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <div className="flex flex-col gap-[var(--px-10)]">
                 {/* Hidden Meta Info */}
                 <div className={`flex gap-[var(--px-2)] text-[length:var(--px-5-5)] my-[var(--px-5)] font-light font-fira leading-[var(--px-7)] items-center ${showMeta ? '' : 'hidden'}`}>
-                  <div className="truncate max-w-[var(--px-50)]">ID: {PlaylistResult.data.queried_track.id}</div>
+                  <div className="truncate max-w-[var(--px-50)]">ID: {playlistData?.queried_track.id}</div>
                   <div>|</div>
                   <div>Status: {InputTrackStatus}</div>
                   <div>|</div>
@@ -202,7 +164,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
-              <div onClick={() => onMoreClick?.(PlaylistResult.data.queried_track.id)} className="cursor-pointer">
+              <div onClick={() => onMoreClick?.(playlistData?.queried_track.id || '')} className="cursor-pointer">
                 <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
               </div>
             </div>
@@ -214,7 +176,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
       
       {/* Modals */}
       <PlaylistRating isOpen={showRating} onClose={handleRatingClose} />
-      <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={PlaylistResult.data?.playlist.id || ''} />
+      <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={playlistData?.playlist.id || ''} />
       <PlaylistRename isOpen={showRename} onClose={handleRenameClose} />
       
       {/* Status Message */}

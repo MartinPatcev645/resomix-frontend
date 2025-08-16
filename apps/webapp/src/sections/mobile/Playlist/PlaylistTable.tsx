@@ -1,52 +1,10 @@
 import React, { useState } from "react";
 import { WaveformPlayer } from "@/components/index.ts";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
+import { usePlaylistStore } from "@resomix/stores";
 import PauseSvg from "@/assets/icons/pause.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
-
-// const SimilarityTrackStatus = "Loading..."
-const PlaylistResult = {
-    "success": true,
-    "data": {
-        "queried_track": {
-            "rank": 0,
-            "score": 1.0,
-            "id": "1a9983daf38caac5a8e8adaf",
-            "title": "Ursa Minor (Marcel Dettmann Remix)",
-            "year": 2025,
-            "duration": 271,
-            "label": "Break New Soil Recordings",
-            "artist": "Gregor Tresher, Petar Dundov"
-        },
-        "similar_tracks": [
-            {
-                "rank": 1,
-                "score": 0.95250189,
-                "id": "67adb0d5799206f8d65102a8",
-                "title": "Chapter 1",
-                "year": 2023,
-                "duration": 301,
-                "label": "Abstract Mechanisms",
-                "artist": "Møntero"
-            },
-            {
-                "rank": 2,
-                "score": 0.94865525,
-                "id": "67add9769387d00fbdc2dc3d",
-                "title": "Opto",
-                "year": null,
-                "duration": 335,
-                "label": "Balance Music",
-                "artist": "Etapp Kyle"
-            }
-        ],
-        "playlist": {
-            "id": "7b821bef-e168-4511-8525-5e1664b7e483",
-            "name": "Gregor Tresher, Petar Dundov - Ursa Minor (Marcel Dettmann Remix)"
-        }
-    }
-}
 
 interface PlaylistTableProps {
   onMoreClick?: (trackId: string) => void;
@@ -54,6 +12,8 @@ interface PlaylistTableProps {
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+    const { playlistData } = usePlaylistStore();
+    const tracks = playlistData?.similar_tracks ?? [];
 
     const handleTrackClick = (trackId: string) => {
         if (playingTrackId === trackId) {
@@ -65,7 +25,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
 
     return (
         <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]">
-            {PlaylistResult.data.similar_tracks.map((track) => (
+            {tracks.map((track) => (
                 <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative">
                     <div className="flex flex-col w-full">
                         <div onClick={() => handleTrackClick(track.id)} className="flex items-center gap-[var(--px-7)]">

@@ -6,7 +6,7 @@ import ScaleSvg from "@/assets/icons/scale.svg";
 import ScaleMobileSvg from "@/assets/icons/scale_mobile.svg";
 
 const UploadLoader: React.FC = () => {
-    const { progress, isUploading, isFileUpload } = useUploadStore();
+    const { progress, isFileUpload } = useUploadStore();
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
     const [usedMessages, setUsedMessages] = useState<Set<number>>(new Set([0])); // Start with first message used
 
@@ -143,14 +143,14 @@ const UploadLoader: React.FC = () => {
                     </div>
                     <img src={ScaleSvg} alt="Scale" className="w-[var(--px-900)] h-[var(--px-21)]" />
                     {/* Only show progress bar for actual file uploads */}
-                    {isUploading && (
+                    {(loaderProgress < 99) && (
                         <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
                             Uploading...
                         </div>
                     )}
-                    {(loaderProgress >= 99) && !isUploading && (
+                    {(loaderProgress >= 99) && (
                         <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Complete!
+                            Uploaded!
                         </div>
                     )}
                 </div>
@@ -168,14 +168,14 @@ const UploadLoader: React.FC = () => {
                     </div>
                     <img src={ScaleMobileSvg} alt="Scale" className="w-[var(--px-393)] h-[var(--px-23)]" />
                     {/* Only show progress bar for actual file uploads */}
-                    {isUploading && (
+                    {(loaderProgress < 99) && (
                         <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
                             Uploading...
                         </div>
                     )}
-                    {(loaderProgress >= 99) && !isUploading && (
+                    {(loaderProgress >= 99) && (
                         <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Complete!
+                            Uploaded!
                         </div>
                     )}
                 </div>
