@@ -11,12 +11,23 @@ import { useUploadStore } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
 import React from "react";
+import { useTrackSimilarity } from "@resomix/hooks";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse } = usePlaylistStore();
   const navigate = useNavigate();
+
+  const { handleSelectTrack } = useTrackSimilarity();
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) {
+      handleSelectTrack(id);
+    }
+  }, [handleSelectTrack]);
 
   React.useEffect(() => {
     if (response && response.success) {
