@@ -3,7 +3,6 @@ export * from "./useResponsive";
 export * from "./useSearch";
 export * from "./useOnScreen";
 export * from "./usePopularTracks";
-export * from "./useSimplePlaylist";
 export * from "./utils"
 export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
