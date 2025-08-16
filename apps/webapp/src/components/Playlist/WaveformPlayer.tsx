@@ -50,8 +50,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
     }
 
     return (
-        <div className="w-full">
-            <div ref={waveformRef} className="w-full" />
+        <div className="w-full relative z-30" style={{ height: 100 }}>
+            <div ref={waveformRef} className="w-full h-full" />
         </div>
     );
 };

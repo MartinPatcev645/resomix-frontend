@@ -12,7 +12,7 @@ export interface PeaksApiResponse {
  * @returns Peaks array and duration
  */
 export async function getTrackPeaks(trackId: string): Promise<PeaksApiResponse> {
-  const url = `${SERVER_MEDIA}/peaks/${trackId}`;
+  const url = `${SERVER_MEDIA}/peaks/?uuid=${trackId}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch peaks (${res.status})`);
