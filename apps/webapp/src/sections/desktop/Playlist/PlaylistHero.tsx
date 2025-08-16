@@ -177,7 +177,7 @@ const PlaylistHero: React.FC = () => {
                       <div>Instance: Input Track</div>
                     </div>
                     {/* The actual Input player */}
-                    <InputPlayer />
+                    <InputPlayer trackId={playlistData?.queried_track.id || ''} />
                   </div>
                 </div>
               </div>

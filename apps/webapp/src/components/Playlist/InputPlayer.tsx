@@ -1,12 +1,18 @@
 import React from "react";
 import WaveformPlayer from "./WaveformPlayer.tsx";
 
-const InputPlayer: React.FC = () => {
+interface InputPlayerProps {
+    trackId: string;
+}
+
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId }) => {
     return (
         <div>
-            <WaveformPlayer />
+            <WaveformPlayer 
+                trackId={trackId}
+            />
         </div>
-    )
-}
+    );
+};
 
 export default InputPlayer;

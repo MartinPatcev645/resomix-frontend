@@ -1,12 +1,18 @@
 import React from "react";
 import WaveformPlayer from "./WaveformPlayer.tsx";
 
-const SimilarityPlayer: React.FC = () => {
+interface SimilarityPlayerProps {
+    trackId: string;
+}
+
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId }) => {
     return (
         <div>
-            <WaveformPlayer />
+            <WaveformPlayer 
+                trackId={trackId}
+            />
         </div>
-    )
-}
+    );
+};
 
 export default SimilarityPlayer;

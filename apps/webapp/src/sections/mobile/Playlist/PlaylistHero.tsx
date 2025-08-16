@@ -146,7 +146,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div>Instance: Input Track</div>
                 </div>
                 {/* The actual Input player */}
-                <InputPlayer />
+                <InputPlayer trackId={playlistData?.queried_track.id || ''} />
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">

@@ -68,7 +68,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         </div>
                         {playingTrackId === track.id && (
                             <div>
-                                <WaveformPlayer />
+                                <WaveformPlayer trackId={track.id} />
                             </div>
                         )}
                     </div>

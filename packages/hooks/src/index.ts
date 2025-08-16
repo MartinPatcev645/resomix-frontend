@@ -7,3 +7,5 @@ export * from "./utils"
 export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
+export * from "./Waveform/useWaveform";
+export type { WaveformTheme } from "./Waveform/useWaveform";

@@ -98,7 +98,7 @@ const PlaylistTable: React.FC = () => {
                                 })()}
                             </div>
                         </div>
-                        <div className="hidden"><SimilarityPlayer /></div>
+                        <div className="hidden"><SimilarityPlayer trackId={track.id} /></div>
                     </div>
                 </div>
             ))}

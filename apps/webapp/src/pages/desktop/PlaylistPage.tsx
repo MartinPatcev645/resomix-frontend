@@ -1,8 +1,10 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
+import { usePlaylistStore } from "@resomix/stores";
+import { StatusMessage } from "@/components/index.ts";
 
 export function PlaylistPage() {
   // Scroll to top when component mounts
@@ -10,7 +12,27 @@ export function PlaylistPage() {
     window.scrollTo(0, 0);
   }, []);
 
+  const { playlistData } = usePlaylistStore();
+  const [expired, setExpired] = useState(false);
+
+  useEffect(() => {
+    if (!playlistData) {
+      setExpired(true);
+      setTimeout(() => {
+        window.location.href = BASE_BETA_URL;
+      }, 3000);
+    }
+  }, [playlistData]);
+
   return (
+    expired ? (
+      <StatusMessage 
+        isOpen={true}
+        onClose={() => {}}
+        status="error"
+        message="Playlist expired. Redirecting..."
+      />
+    ) : (
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
       <StaticNoise color="#313132" opacity={0.7} zIndex={10} overscanVh={50} />
@@ -42,5 +64,6 @@ export function PlaylistPage() {
         </SideLines>
       </div>
     </div>
+    )
   );
 }
