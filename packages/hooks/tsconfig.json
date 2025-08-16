@@ -13,10 +13,17 @@
     "esModuleInterop": true,
     "strict": true,
     "paths": {
-      "@resomix/api-client": ["../api-client/dist/src", "../api-client/src"],
-      "@resomix/ui": ["../ui/dist"],
-      "@resomix/stores": ["../stores/dist"]
+      "@resomix/api-client": ["../api-client/src", "../api-client/dist/src"],
+      "@resomix/ui": ["../ui/src", "../ui/dist"],
+      "@resomix/stores": ["../stores/src", "../stores/dist"],
+      "@resomix/config": ["../config/src", "../config/dist"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    { "path": "../api-client" },
+    { "path": "../stores" },
+    { "path": "../ui" },
+    { "path": "../config" }
+  ]
 }

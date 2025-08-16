@@ -10,7 +10,13 @@
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@resomix/config": ["../config/src", "../config/dist"]
+    }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    { "path": "../config" }
+  ]
 }

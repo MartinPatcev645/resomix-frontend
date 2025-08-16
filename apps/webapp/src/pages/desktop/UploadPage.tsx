@@ -17,7 +17,7 @@ export function UploadPage() {
 
   const { handleSelectTrack } = useTrackSimilarity();
 
-  // Trigger similarity if uuid param present on first mount
+  // Trigger similarity if id param present on first mount
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');

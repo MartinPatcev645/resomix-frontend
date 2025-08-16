@@ -1,4 +1,5 @@
-export * from "./config";
+export { API_CONFIG, TIDAL_CONFIG } from "./config";
+export type { ApiConfig, TidalConfig } from "./config";
 export * from "./similarity";
 export * from "./search";
 export * from "./feedback";

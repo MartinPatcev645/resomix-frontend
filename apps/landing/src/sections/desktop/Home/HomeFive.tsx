@@ -8,8 +8,7 @@ import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeFive: React.FC = () => {
   const { query, results, isLoading, handleQueryChange } = useSearch();
-  // SearchDropdown expects `uuid` key – mirror `id`
-  const dropdownResults = React.useMemo(() => results.map((r) => ({ ...r, uuid: r.id })), [results]);
+  const dropdownResults = React.useMemo(() => results.map((r) => ({ ...r, id: r.id })), [results]);
 
   return (
     <div className='mt-[var(--px-250)] flex flex-col relative z-15'>
@@ -66,7 +65,7 @@ const HomeFive: React.FC = () => {
             {/** Search bar & dropdown */}
             <SearchInput value={query} onChange={handleQueryChange} />
             <SearchDropdown show={query.length > 0} results={dropdownResults} isLoading={isLoading} onSelect={(result) => {
-              window.location.href = `${BASE_BETA_URL}/?id=${result.uuid}`;
+              window.location.href = `${BASE_BETA_URL}/?id=${result.id}`;
             }} />
           </div>
         </div>
