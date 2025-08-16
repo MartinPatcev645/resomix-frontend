@@ -1,9 +1,15 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
+import { useEffect } from "react";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 export function PlaylistPage() {
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}

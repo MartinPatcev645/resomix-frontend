@@ -1,5 +1,5 @@
 import { MobileNavbar, GlobalMobileFooter, SideLines } from "@resomix/ui";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MenuPage } from "../index.ts";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
@@ -10,6 +10,11 @@ export function PlaylistMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleMoreMenuOpen = (trackId: string) => {
     setSelectedTrackId(trackId);

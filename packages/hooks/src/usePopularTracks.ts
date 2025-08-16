@@ -2,11 +2,11 @@ import React from "react";
 import type { SearchResult } from "./useSearch";
 
 const POPULAR_TRACKS: SearchResult[] = [
-  { id: "p1", title: "CHAMPAGNE DANCER", artist: "Schatrax", duration: "5:10" },
-  { id: "p2", title: "ARSENIC (ORIGINAL MIX)", artist: "Rone White, Deetech", duration: "6:20" },
-  { id: "p3", title: "WHOLE LIFE", artist: "Oxia", duration: "8:05" },
-  { id: "p4", title: "MEMENTO MORI", artist: "Murahni", duration: "7:15" },
-  { id: "p5", title: "AD ASTRA", artist: "Solara", duration: "4:44" },
+  { id: "67ad9cec799206f8d64acd07", title: "Champagne Dancer", artist: "Schatrax", duration: "5:10" },
+  { id: "67ad9cec799206f8d64acdf1", title: "Whole life", artist: "Oxia", duration: "8:05" },
+  { id: "67ad9eb1799206f8d64c2200", title: "Arsenic (Original Mix)", artist: "Rone White, Deetech", duration: "6:20" },
+  { id: "67ad9d34799206f8d64b3315", title: "Memento Mori", artist: "Murahni", duration: "7:15" },
+  { id: "67b1aa3bf4110a1ed672dd89", title: "back in 1995 (extended mix)", artist: "Andrey Exx", duration: "6:14" }
 ];
 
 export const usePopularTracks = () => {
