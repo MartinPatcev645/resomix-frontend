@@ -36,3 +36,7 @@ typings/
 
 x_assets/
 .env
+.turbo/
+*.turbo
+.vscode/
+
