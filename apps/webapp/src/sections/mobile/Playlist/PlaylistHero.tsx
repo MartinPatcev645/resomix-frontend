@@ -33,32 +33,18 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
 
   const { playlistData } = usePlaylistStore();
 
+  const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string) => {
+    setStatusType(type);
+    setStatusMessage(message);
+    setShowStatus(true);
+  };
+
   const handleRenameClose = () => {
     setShowRename(false);
-    // Show loading status
-    setStatusType('loading');
-    setStatusMessage('Renaming playlist...');
-    setShowStatus(true);
-    
-    // After 3 seconds, switch to error
-    setTimeout(() => {
-      setStatusType('error');
-      setStatusMessage('Please Try Again.');
-    }, 3000);
   };
 
   const handleRatingClose = () => {
     setShowRating(false);
-    // Show loading status
-    setStatusType('loading');
-    setStatusMessage('Submitting feedback...');
-    setShowStatus(true);
-    
-    // After 3 seconds, switch to success
-    setTimeout(() => {
-      setStatusType('success');
-      setStatusMessage('Feedback Submitted Successfully!');
-    }, 3000);
   };
 
   const handleStatusClose = () => {
@@ -138,7 +124,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                     </div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-9)] items-center">
                       <img src={TimeSvg} alt="Time" className="w-[var(--px-8)] h-[var(--px-8)]" />
-                      <div>{playlistData?.queried_track.duration ? formatDuration(playlistData.queried_track.duration) : '--:--'}</div>
+                      <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
@@ -175,9 +161,17 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
       </div>
       
       {/* Modals */}
-      <PlaylistRating isOpen={showRating} onClose={handleRatingClose} />
+      <PlaylistRating
+        isOpen={showRating}
+        onClose={handleRatingClose}
+        onStatusChange={handleStatusChange}
+      />
       <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={playlistData?.playlist.id || ''} />
-      <PlaylistRename isOpen={showRename} onClose={handleRenameClose} />
+      <PlaylistRename
+        isOpen={showRename}
+        onClose={handleRenameClose}
+        onStatusChange={handleStatusChange}
+      />
       
       {/* Status Message */}
       <StatusMessage 

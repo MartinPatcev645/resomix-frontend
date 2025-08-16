@@ -1,20 +1,54 @@
 import React, { useEffect, useState } from 'react'
 import { ButtonSleek } from '@resomix/ui'
 import { GoodIcon, BadIcon, FineIcon, FireIcon } from '@/components/index.ts'
+import { ratePlaylist } from '@resomix/api-client';
+import { usePlaylistStore } from '@resomix/stores';
 
 type RatingType = 'bad' | 'fine' | 'good' | 'fire'
 
 interface PlaylistRatingProps {
     isOpen: boolean
     onClose: () => void
+    onStatusChange: (status: 'loading' | 'success' | 'error', message: string) => void
 }
 
 export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
     isOpen,
-    onClose
+    onClose,
+    onStatusChange,
 }) => {
     const [selectedRating, setSelectedRating] = useState<RatingType | null>(null)
     const [hoveredRating, setHoveredRating] = useState<RatingType | null>(null)
+    const [feedback, setFeedback] = useState('')
+    const [submitting, setSubmitting] = useState(false)
+
+    const { playlistData } = usePlaylistStore()
+
+    const ratingMap: Record<RatingType, number> = { bad: 0, fine: 1, good: 2, fire: 3 }
+
+    const handleSubmit = async () => {
+        if (!selectedRating || !playlistData?.playlist.id) {
+            onClose()
+            return
+        }
+        setSubmitting(true)
+        onStatusChange('loading', 'Submitting feedback...')
+        try {
+            const numericRating = ratingMap[selectedRating]
+            const res = await ratePlaylist(playlistData.playlist.id, numericRating, feedback.trim() || null)
+            if (res.success) {
+                onStatusChange('success', 'Feedback submitted successfully!')
+            } else {
+                onStatusChange('error', res.error || 'Failed to submit feedback')
+            }
+        } catch (err) {
+            console.error('Failed to rate playlist', err)
+            onStatusChange('error', 'Unexpected error while submitting feedback')
+        } finally {
+            setSubmitting(false)
+            onClose()
+        }
+    }
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -149,11 +183,13 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                         className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
                         rows={4}
                         placeholder="Please describe your rating or feedback in detail..."
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
                     />
                 </div>
 
                 <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text="Submit Feedback" onClick={onClose} />
+                    <ButtonSleek text={submitting ? 'Submitting...' : 'Submit Feedback'} onClick={handleSubmit} />
                     <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
                 </div>
             </div>

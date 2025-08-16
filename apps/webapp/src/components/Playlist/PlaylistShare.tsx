@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ButtonSleek } from '@resomix/ui'
-import { useSimplePlaylist } from '@resomix/hooks'
+import { changePlaylistVisibility } from '@resomix/api-client';
+import { usePlaylistStore } from '@resomix/stores';
 import BrakesSvg from "@/assets/icons/brakes.svg";
 import SuccessSvg from "@/assets/icons/success.svg";
 
@@ -13,10 +14,34 @@ interface PlaylistShareProps {
 export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     isOpen,
     onClose,
-    id,
+    id: _id,
 }) => {
-    const { generateShareLink } = useSimplePlaylist()
-    const link = generateShareLink(id)
+    const { playlistData } = usePlaylistStore();
+    const [link, setLink] = useState('');
+
+    // Generate share link once visibility is changed
+    useEffect(() => {
+        const share = async () => {
+            if (!isOpen || !playlistData?.playlist.id) return;
+
+            try {
+                const response = await changePlaylistVisibility(playlistData.playlist.id, true);
+
+                if (response.success) {
+                    const generated = response?.details?.share_url || response?.details?.link || `https://beta.resomix.com/playlist-share?id=${playlistData.playlist.id}`;
+                    setLink(generated);
+                } else {
+                    setLink(`https://beta.resomix.com/playlist-share?id=${playlistData.playlist.id}`);
+                }
+            } catch (err) {
+                console.error('Failed to change visibility', err);
+                setLink(`https://beta.resomix.com/playlist-share?id=${playlistData?.playlist.id}`);
+            }
+        };
+
+        share();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -51,7 +76,9 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     }, [isOpen, onClose])
 
     const handleCopyLink = () => {
-        navigator.clipboard.writeText(link)
+        if (link) {
+            navigator.clipboard.writeText(link)
+        }
         setButtonText("Copied!")
         setTimeout(() => {
             onClose()
@@ -86,7 +113,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
 
                 <div onClick={handleCopyLink} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)]'>
                     <img src={BrakesSvg} alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
-                    {link}
+                    {link || 'Generating link...'}
                 </div>
 
                 <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">

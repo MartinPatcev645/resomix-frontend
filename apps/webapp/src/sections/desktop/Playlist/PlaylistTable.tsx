@@ -3,6 +3,7 @@ import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp } from "@resomix/ui";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
+import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 
 // Remove local dummy data; use global store
@@ -11,6 +12,17 @@ const PlaylistTable: React.FC = () => {
     const { playlistData } = usePlaylistStore();
 
     const tracks = playlistData?.similar_tracks ?? [];
+
+    const handleTrackRating = async (trackId: string, rating: number) => {
+        try {
+            const playlistId = playlistData?.playlist.id || null;
+            await rateTrack(trackId, rating, playlistId);
+            // You could add a success notification here if needed
+        } catch (error) {
+            console.error('Failed to rate track:', error);
+            // You could add an error notification here if needed
+        }
+    };
 
     return (
         <div className="flex flex-col items-center justify-center -mt-[var(--px-30)] w-[var(--px-700)] mx-auto gap-[var(--px-10)]">
@@ -60,8 +72,14 @@ const PlaylistTable: React.FC = () => {
                                 {formatPercentage(track.score)}
                             </div>
                             <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-20)]">
-                                <ThumbIcon onClick={() => { }} className="w-[var(--px-16)] h-[var(--px-16)] text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] hover:cursor-pointer" />
-                                <ThumbIcon onClick={() => { }} className="w-[var(--px-16)] h-[var(--px-16)] text-[var(--color-primary-hover)] transform rotate-180 hover:text-[var(--color-primary)] hover:cursor-pointer" />
+                                <ThumbIcon
+                                    onClick={() => handleTrackRating(track.id, 1)}
+                                    className="w-[var(--px-16)] h-[var(--px-16)] text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] hover:cursor-pointer"
+                                />
+                                <ThumbIcon
+                                    onClick={() => handleTrackRating(track.id, 0)}
+                                    className="w-[var(--px-16)] h-[var(--px-16)] text-[var(--color-primary-hover)] transform rotate-180 hover:text-[var(--color-primary)] hover:cursor-pointer"
+                                />
                             </div>
                         </div>
                         <div className="hidden"><SimilarityPlayer /></div>

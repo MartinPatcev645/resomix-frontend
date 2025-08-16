@@ -2,6 +2,8 @@ import React from "react";
 import { ButtonSleek } from "@resomix/ui";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { ThumbIcon } from "@/components/index.ts";
+import { rateTrack } from "@resomix/api-client";
+import { usePlaylistStore } from "@resomix/stores";
 
 interface MoreMenuProps {
     onClose?: () => void;
@@ -9,6 +11,22 @@ interface MoreMenuProps {
 }
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
+    const { playlistData } = usePlaylistStore();
+
+    const handleTrackRating = async (rating: number) => {
+        if (!trackId) return;
+        
+        try {
+            const playlistId = playlistData?.playlist.id || null;
+            await rateTrack(trackId, rating, playlistId);
+            // You could add a success notification here if needed
+            if (onClose) onClose();
+        } catch (error) {
+            console.error('Failed to rate track:', error);
+            // You could add an error notification here if needed
+        }
+    };
+
     // Preserve scroll position when opening menu
     React.useEffect(() => {
         const scrollY = window.scrollY;
@@ -64,8 +82,14 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
                                 Similar:
                             </div>
                             <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-30)]">
-                                <ThumbIcon onClick={() => { }} className="w-[var(--px-26)] h-[var(--px-26)] text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] hover:cursor-pointer" />
-                                <ThumbIcon onClick={() => { }} className="w-[var(--px-26)] h-[var(--px-26)] text-[var(--color-primary-hover)] transform rotate-180 hover:text-[var(--color-primary)] hover:cursor-pointer" />
+                                <ThumbIcon 
+                                    onClick={() => handleTrackRating(1)} 
+                                    className="w-[var(--px-26)] h-[var(--px-26)] text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] hover:cursor-pointer" 
+                                />
+                                <ThumbIcon 
+                                    onClick={() => handleTrackRating(0)} 
+                                    className="w-[var(--px-26)] h-[var(--px-26)] text-[var(--color-primary-hover)] transform rotate-180 hover:text-[var(--color-primary)] hover:cursor-pointer" 
+                                />
                             </div>
                         </div>
                         <div className="flex w-full justify-between">

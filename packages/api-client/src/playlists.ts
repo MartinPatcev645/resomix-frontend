@@ -55,9 +55,9 @@ export const getPlaylistSimilarity = async (playlistId: string) => {
 };
 
 export const rateTrack = async (
-  trackId: number,
+  trackId: string,
   rating: number,
-  playlistId: number | null = null,
+  playlistId: string | null = null,
 ) => {
   try {
     const payload: Record<string, unknown> = { track_id: trackId, rating };
@@ -81,7 +81,7 @@ export const rateTrack = async (
 };
 
 export const ratePlaylist = async (
-  playlistId: number,
+  playlistId: string,
   rating: number,
   message: string | null = null,
 ) => {
