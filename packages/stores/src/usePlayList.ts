@@ -34,10 +34,12 @@ interface PlaylistStore {
   playlistData: PlaylistData | null
   isLoading: boolean
   error: string | null
+  trackRatings: Record<string, number>
   
   // Actions
   setPlaylistData: (data: PlaylistData) => void
   setPlaylistResponse: (response: PlaylistResponse) => void
+  setTrackRating: (trackId: string, rating: number) => void
   clearPlaylistData: () => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
@@ -90,6 +92,7 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
   playlistData: defaultPlaylistData,
   isLoading: false,
   error: null,
+  trackRatings: {},
   
   // Actions
   setPlaylistData: (data) => set({ playlistData: data, error: null }),
@@ -101,6 +104,8 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
       set({ error: 'Failed to load playlist data', playlistData: null })
     }
   },
+
+  setTrackRating: (trackId, rating) => set((state) => ({ trackRatings: { ...state.trackRatings, [trackId]: rating } })),
   
   clearPlaylistData: () => set({ playlistData: null, error: null }),
   
@@ -108,7 +113,7 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
   
   setError: (error) => set({ error }),
   
-  reset: () => set({ playlistData: defaultPlaylistData, isLoading: false, error: null })
+  reset: () => set({ playlistData: defaultPlaylistData, isLoading: false, error: null, trackRatings: {} })
 }))
 
 // Export default store for convenience

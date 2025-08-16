@@ -9,7 +9,7 @@ import PlaySvg from "@/assets/icons/play.svg";
 // Remove local dummy data; use global store
 
 const PlaylistTable: React.FC = () => {
-    const { playlistData } = usePlaylistStore();
+    const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
 
     const tracks = playlistData?.similar_tracks ?? [];
 
@@ -17,6 +17,7 @@ const PlaylistTable: React.FC = () => {
         try {
             const playlistId = playlistData?.playlist.id || null;
             await rateTrack(trackId, rating, playlistId);
+            setTrackRating(trackId, rating);
             // You could add a success notification here if needed
         } catch (error) {
             console.error('Failed to rate track:', error);
@@ -41,7 +42,7 @@ const PlaylistTable: React.FC = () => {
             </div>
             {/* Table */}
             {tracks.map((track) => (
-                <div className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
+                <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
                     <div className="flex flex-col w-full">
                         <div key={track.id} className="flex items-center">
                             <div className="text-[length:var(--px-10)] font-fira font-light mr-[var(--px-5)]">
@@ -72,14 +73,29 @@ const PlaylistTable: React.FC = () => {
                                 {formatPercentage(track.score)}
                             </div>
                             <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-20)]">
-                                <ThumbIcon
-                                    onClick={() => handleTrackRating(track.id, 1)}
-                                    className="w-[var(--px-16)] h-[var(--px-16)] text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] hover:cursor-pointer"
-                                />
-                                <ThumbIcon
-                                    onClick={() => handleTrackRating(track.id, 0)}
-                                    className="w-[var(--px-16)] h-[var(--px-16)] text-[var(--color-primary-hover)] transform rotate-180 hover:text-[var(--color-primary)] hover:cursor-pointer"
-                                />
+                                {(() => {
+                                    const currentRating = trackRatings[track.id];
+                                    const upSelected = currentRating === 1;
+                                    const downSelected = currentRating === 0;
+                                    return (
+                                      <>
+                                        <ThumbIcon
+                                          onClick={() => {
+                                            if (upSelected) return;
+                                            handleTrackRating(track.id, 1);
+                                          }}
+                                          className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                        />
+                                        <ThumbIcon
+                                          onClick={() => {
+                                            if (downSelected) return;
+                                            handleTrackRating(track.id, 0);
+                                          }}
+                                          className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                        />
+                                      </>
+                                    );
+                                })()}
                             </div>
                         </div>
                         <div className="hidden"><SimilarityPlayer /></div>

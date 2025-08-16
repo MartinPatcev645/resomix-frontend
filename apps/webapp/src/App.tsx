@@ -27,6 +27,7 @@ function App() {
       <Route path="/" element={<UploadLanding />} />
       <Route path="/loader" element={<UploadLoader />} />
       <Route path="/playlist" element={<PlaylistLanding />} />
+      <Route path="/sonic-discovery" element={<PlaylistLanding />} />
       <Route path="/contact" element={<InfoPage mode="contact" />} />
       <Route path="/error" element={<InfoPage mode="error" />} />
       <Route path="*" element={<InfoPage mode="404" />} />

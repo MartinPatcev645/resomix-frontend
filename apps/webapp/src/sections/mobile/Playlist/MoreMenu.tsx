@@ -11,7 +11,7 @@ interface MoreMenuProps {
 }
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
-    const { playlistData } = usePlaylistStore();
+    const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
 
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
@@ -19,6 +19,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
         try {
             const playlistId = playlistData?.playlist.id || null;
             await rateTrack(trackId, rating, playlistId);
+            setTrackRating(trackId, rating);
             // You could add a success notification here if needed
             if (onClose) onClose();
         } catch (error) {
@@ -82,14 +83,29 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
                                 Similar:
                             </div>
                             <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-30)]">
-                                <ThumbIcon 
-                                    onClick={() => handleTrackRating(1)} 
-                                    className="w-[var(--px-26)] h-[var(--px-26)] text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] hover:cursor-pointer" 
-                                />
-                                <ThumbIcon 
-                                    onClick={() => handleTrackRating(0)} 
-                                    className="w-[var(--px-26)] h-[var(--px-26)] text-[var(--color-primary-hover)] transform rotate-180 hover:text-[var(--color-primary)] hover:cursor-pointer" 
-                                />
+                                {(() => {
+                                    const currentRating = trackId ? trackRatings[trackId] : undefined;
+                                    const upSelected = currentRating === 1;
+                                    const downSelected = currentRating === 0;
+                                    return (
+                                        <>
+                                            <ThumbIcon
+                                                onClick={() => {
+                                                    if (upSelected) return;
+                                                    handleTrackRating(1);
+                                                }}
+                                                className={`w-[var(--px-26)] h-[var(--px-26)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                            />
+                                            <ThumbIcon
+                                                onClick={() => {
+                                                    if (downSelected) return;
+                                                    handleTrackRating(0);
+                                                }}
+                                                className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                            />
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                         <div className="flex w-full justify-between">

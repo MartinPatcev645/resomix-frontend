@@ -3,7 +3,8 @@ import { ButtonSleek } from '@resomix/ui'
 import { changePlaylistVisibility } from '@resomix/api-client';
 import { usePlaylistStore } from '@resomix/stores';
 import BrakesSvg from "@/assets/icons/brakes.svg";
-import SuccessSvg from "@/assets/icons/success.svg";
+import SuccessSvg from "@/assets/icons/success.svg"
+import { BASE_BETA_URL } from '@resomix/config';
 
 interface PlaylistShareProps {
     isOpen: boolean
@@ -28,14 +29,14 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                 const response = await changePlaylistVisibility(playlistData.playlist.id, true);
 
                 if (response.success) {
-                    const generated = response?.details?.share_url || response?.details?.link || `https://beta.resomix.com/playlist-share?id=${playlistData.playlist.id}`;
+                    const generated = response?.details?.share_url || response?.details?.link || (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                     setLink(generated);
                 } else {
-                    setLink(`https://beta.resomix.com/playlist-share?id=${playlistData.playlist.id}`);
+                    setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                 }
             } catch (err) {
                 console.error('Failed to change visibility', err);
-                setLink(`https://beta.resomix.com/playlist-share?id=${playlistData?.playlist.id}`);
+                setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData?.playlist.id}`);
             }
         };
 
