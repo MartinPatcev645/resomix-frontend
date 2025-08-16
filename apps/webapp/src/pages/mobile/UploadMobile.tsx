@@ -7,10 +7,23 @@ import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
 import { BASE_LANDING_URL } from "@resomix/config";
 import { UploadLoader } from "@/components/index.ts";
 import { useUploadStore } from "@resomix/hooks";
+import { usePlaylistStore } from "@resomix/stores";
+import { useNavigate } from "react-router-dom";
+import React from "react";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { showOverlay } = useUploadStore();
+  const { showOverlay, response, setOverlay } = useUploadStore();
+  const { setPlaylistResponse } = usePlaylistStore();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (response && response.success) {
+      setPlaylistResponse(response as any);
+      setOverlay(false);
+      navigate('/playlist');
+    }
+  }, [response, setPlaylistResponse, navigate, setOverlay]);
 
   return (
     <>

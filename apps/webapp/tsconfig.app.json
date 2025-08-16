@@ -20,7 +20,9 @@
       "@resomix/api-client": ["../../packages/api-client/src/index.ts"],
       "@resomix/api-client/*": ["../../packages/api-client/src/*"],
       "@resomix/config": ["../../packages/config/src/index.ts"],
-      "@resomix/config/*": ["../../packages/config/src/*"]
+      "@resomix/config/*": ["../../packages/config/src/*"],
+      "@resomix/stores": ["../../packages/stores/src/index.ts"],
+      "@resomix/stores/*": ["../../packages/stores/src/*"]
     },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -41,6 +43,7 @@
     { "path": "../../packages/ui" },
     { "path": "../../packages/hooks" },
     { "path": "../../packages/api-client" },
-    { "path": "../../packages/config" }
+    { "path": "../../packages/config" },
+    { "path": "../../packages/stores" }
   ]
 }

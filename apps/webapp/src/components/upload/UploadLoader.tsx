@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { useUploadStore } from "@resomix/hooks";
 import { SineWaves, StaticNoise, CodeTyping } from "@resomix/ui";
 import LoadingBubblesSvg from "@/assets/icons/loading_bubbles.svg";
 import ScaleSvg from "@/assets/icons/scale.svg";
 import ScaleMobileSvg from "@/assets/icons/scale_mobile.svg";
 
 const UploadLoader: React.FC = () => {
+    const { progress, isUploading, isFileUpload } = useUploadStore();
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
     const [usedMessages, setUsedMessages] = useState<Set<number>>(new Set([0])); // Start with first message used
-    const [loaderProgress, setLoaderProgress] = useState(0);
 
     const messages = [
         "The system is reading the shape, structure, and spectral flow...",
@@ -57,19 +58,8 @@ const UploadLoader: React.FC = () => {
         return () => clearInterval(interval);
     }, [usedMessages, messages.length]);
 
-    // Dummy loader effect - increment progress from 0 to 100
-    useEffect(() => {
-        const loaderInterval = setInterval(() => {
-            setLoaderProgress(prev => {
-                if (prev >= 100) {
-                    return 100; // Stay at 100%
-                }
-                return prev + 0.5; // Increment by 0.5% for smoother movement
-            });
-        }, 50); // Update every 50ms for smoother animation
-
-        return () => clearInterval(loaderInterval);
-    }, []);
+    // Use real upload progress from store
+    const loaderProgress = progress;
 
     return (
         <div className="w-screen h-screen relative overflow-hidden bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)]">
@@ -140,7 +130,8 @@ const UploadLoader: React.FC = () => {
                         />
                     </div>
                 </div>
-                {/* Desktop */}
+                {/* Desktop Loader - Only show for file uploads */}
+                {isFileUpload && (
                 <div className="hidden lg:flex flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-900)]">
                     <div className="text-[length:var(--px-11)] font-light font-fira tracking-[var(--px-2)] w-[var(--px-900)] relative">
                         <div
@@ -151,13 +142,21 @@ const UploadLoader: React.FC = () => {
                         </div>
                     </div>
                     <img src={ScaleSvg} alt="Scale" className="w-[var(--px-900)] h-[var(--px-21)]" />
-                    {(loaderProgress >= 99) && (
-                        <div className="text-right text-[length:var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Uploaded!
+                    {/* Only show progress bar for actual file uploads */}
+                    {isUploading && (
+                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                            Uploading...
+                        </div>
+                    )}
+                    {(loaderProgress >= 99) && !isUploading && (
+                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                            Complete!
                         </div>
                     )}
                 </div>
-                {/* Mobile */}
+                )}
+                {/* Mobile Loader - Only show for file uploads */}
+                {isFileUpload && (
                 <div className="flex lg:hidden flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-393)]">
                     <div className="text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2-2)] w-[var(--px-393)] relative">
                         <div
@@ -168,12 +167,19 @@ const UploadLoader: React.FC = () => {
                         </div>
                     </div>
                     <img src={ScaleMobileSvg} alt="Scale" className="w-[var(--px-393)] h-[var(--px-23)]" />
-                    {(loaderProgress >= 99) && (
-                        <div className="text-right text-[length:var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Uploaded!
+                    {/* Only show progress bar for actual file uploads */}
+                    {isUploading && (
+                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                            Uploading...
+                        </div>
+                    )}
+                    {(loaderProgress >= 99) && !isUploading && (
+                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                            Complete!
                         </div>
                     )}
                 </div>
+                )}
             </div>
         </div>
     );

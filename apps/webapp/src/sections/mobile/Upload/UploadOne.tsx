@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useTrackSimilarity } from "@resomix/hooks";
+import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } from "@/components/index.ts";
 
@@ -11,6 +13,12 @@ const UploadOne: React.FC = () => {
 
     const handleUploadClick = () => {
         setActiveComponent('upload');
+    };
+
+    const { handleSelectTrack } = useTrackSimilarity();
+
+    const onTrackSelect = (track: SearchResult) => {
+        handleSelectTrack(track.uuid);
     };
 
     return (
@@ -49,6 +57,7 @@ const UploadOne: React.FC = () => {
                     {activeComponent === 'search' ? (
                         <SearchComponentMobile
                             onUploadClick={handleUploadClick}
+                            onTrackSelect={onTrackSelect}
                         />
                     ) : (
                         <UploadComponentMobile

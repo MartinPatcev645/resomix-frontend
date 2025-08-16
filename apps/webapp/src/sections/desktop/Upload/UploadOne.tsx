@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useTrackSimilarity } from "@resomix/hooks";
+import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponent, UploadComponent, PopularComponent } from "@/components/index.ts";
 
@@ -7,6 +9,13 @@ const UploadOne: React.FC = () => {
 
     const handleSearchClick = () => {
         setActiveComponent('search');
+    };
+
+    // Hook to trigger similarity lookup for a selected track
+    const { handleSelectTrack } = useTrackSimilarity();
+
+    const onTrackSelect = (track: SearchResult) => {
+        handleSelectTrack(track.uuid);
     };
 
     const handleUploadClick = () => {
@@ -47,6 +56,7 @@ const UploadOne: React.FC = () => {
                     {activeComponent === 'search' ? (
                         <SearchComponent 
                             onUploadClick={handleUploadClick}
+                            onTrackSelect={onTrackSelect}
                         />
                     ) : (
                         <UploadComponent 

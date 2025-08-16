@@ -4,16 +4,18 @@ import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
+import type { SearchResult } from "@resomix/hooks";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
+    onTrackSelect?: (track: SearchResult) => void;
 }
 
 /**
  * Simple structural mock-up of the desktop search section.
  * All copy / visuals are placeholders – tweak freely.
  */
-export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUploadClick }) => {
+export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUploadClick, onTrackSelect }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
     const { query, results, isLoading, handleQueryChange } = useSearch();
 
@@ -61,7 +63,14 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                 <div className="mt-[var(--px-10)] relative">
                                     {/** Search bar & dropdown */}
                                     <SearchInput value={query} onChange={handleQueryChange} placeholder="Find Existing..." width="w-[var(--px-200)]" />
-                                    <SearchDropdown show={query.length > 0} results={results} width="w-[var(--px-300)] -mr-[var(--px-30)]" truncateLength={24} isLoading={isLoading} onSelect={() => { }} />
+                                    <SearchDropdown
+                                        show={query.length > 0}
+                                        results={results}
+                                        width="w-[var(--px-300)] -mr-[var(--px-30)]"
+                                        truncateLength={24}
+                                        isLoading={isLoading}
+                                        onSelect={onTrackSelect}
+                                    />
                                 </div>
                                 <div className="text-[length:var(--px-12)] font-fira font-light text-center mt-[var(--px-30)]">
                                     Do you have a song<br />in mind?

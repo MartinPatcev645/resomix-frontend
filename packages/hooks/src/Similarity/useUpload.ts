@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
+import { usePlaylistStore } from "@resomix/stores";
 import { create } from "zustand";
 
 export interface UploadResult<T = any> {
@@ -16,12 +17,14 @@ interface UploadStoreState {
     file: File | null;
     showOverlay: boolean;
     response: UploadResult | null;
+    isFileUpload: boolean;
     setUploading: (isUploading: boolean) => void;
     setProgress: (progress: number) => void;
     setError: (error: string | null) => void;
     setFile: (file: File | null) => void;
     setOverlay: (visible: boolean) => void;
     setResponse: (response: UploadResult | null) => void;
+    setIsFileUpload: (isFileUpload: boolean) => void;
     reset: () => void;
 }
 
@@ -32,13 +35,15 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
     file: null,
     showOverlay: false,
     response: null,
+    isFileUpload: false,
     setUploading: (isUploading) => set({ isUploading }),
     setProgress: (progress) => set({ progress }),
     setError: (error) => set({ error }),
     setFile: (file) => set({ file }),
     setOverlay: (visible) => set({ showOverlay: visible }),
     setResponse: (response) => set({ response }),
-    reset: () => set({ isUploading: false, progress: 0, error: null, file: null, showOverlay: false, response: null })
+    setIsFileUpload: (isFileUpload) => set({ isFileUpload }),
+    reset: () => set({ isUploading: false, progress: 0, error: null, file: null, showOverlay: false, response: null, isFileUpload: false })
 }));
 
 /**
@@ -49,7 +54,8 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
  */
 export function useUpload() {
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, reset } = useUploadStore();
+    const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
+    const { setPlaylistResponse } = usePlaylistStore();
 
     const inputAccept = useMemo(() => {
         // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
@@ -92,18 +98,27 @@ export function useUpload() {
         setResponse(null);
         setUploading(true);
         setOverlay(true);
+        // Mark this as a file upload (not search selection)
+        setIsFileUpload(true);
 
         try {
-            const result = await getSimilarTracks(file, 20, (p) => setProgress(Math.min(100, Math.max(0, Math.round(p)))));
+            const result = await getSimilarTracks(file, 20, (p) => {
+                // Ensure progress is properly bounded and rounded
+                const boundedProgress = Math.min(100, Math.max(0, p));
+                setProgress(Math.round(boundedProgress));
+            });
             setResponse(result as UploadResult);
+            setPlaylistResponse(result as any);
             // Keep overlay visible; pages can observe progress and decide when to hide/navigate
             setUploading(false);
             setProgress(100);
         } catch (err: any) {
+            // Reset file upload flag on error
+            setIsFileUpload(false);
             setError(err?.message || "Upload failed.");
             setUploading(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile]);
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];
