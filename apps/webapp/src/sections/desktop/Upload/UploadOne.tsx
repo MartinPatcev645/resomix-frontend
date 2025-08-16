@@ -15,7 +15,7 @@ const UploadOne: React.FC = () => {
     const { handleSelectTrack } = useTrackSimilarity();
 
     const onTrackSelect = (track: SearchResult) => {
-        handleSelectTrack(track.uuid);
+        handleSelectTrack(track.id);
     };
 
     const handleUploadClick = () => {
@@ -65,7 +65,7 @@ const UploadOne: React.FC = () => {
                     )}
                 </div>
                 <div className="flex-1/2 ml-[var(--px-15)]">
-                    <PopularComponent />
+                    <PopularComponent onTrackSelect={onTrackSelect} />
                 </div>
             </div>
         </div>

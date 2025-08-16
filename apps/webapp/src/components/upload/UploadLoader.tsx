@@ -180,6 +180,8 @@ const UploadLoader: React.FC = () => {
                     )}
                 </div>
                 )}
+
+                {/* Error banner removed – status handled globally */}
             </div>
         </div>
     );

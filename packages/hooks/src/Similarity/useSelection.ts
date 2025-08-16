@@ -39,14 +39,23 @@ export function useTrackSimilarity() {
 
       try {
         const result = await getSimilarityForSelectedTrack(String(trackId), topSk);
-        // No progress events – just jump to 100 % when done
-        setProgress(100);
-        setResponse(result as UploadResult);
 
-        // Persist to playlist store; the page component will handle navigation
-        setPlaylistResponse(result as any);
+        if (result && result.success) {
+          // Success path
+          setProgress(100);
+          setResponse(result as UploadResult);
+          setPlaylistResponse(result as any);
+          // Hide overlay to allow navigation handled elsewhere
+          setOverlay(false);
+        } else {
+          // API indicated failure – surface error and keep overlay to show banner
+          setError(result?.error || "Failed to fetch similar tracks.");
+          setOverlay(false);
+        }
       } catch (err: any) {
-        setError(err?.message || "Failed to fetch similar tracks.");
+        // Network / Axios error; show message, keep overlay so banner displays
+        setError(err?.error || err?.message || "Failed to fetch similar tracks.");
+        setOverlay(false);
       }
     },
     [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload],

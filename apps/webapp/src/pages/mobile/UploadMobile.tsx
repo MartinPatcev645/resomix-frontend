@@ -6,6 +6,7 @@ import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
 import { BASE_LANDING_URL } from "@resomix/config";
 import { UploadLoader } from "@/components/index.ts";
+import { StatusMessage } from "@/components/index.ts";
 import { useUploadStore } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +14,7 @@ import React from "react";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { showOverlay, response, setOverlay } = useUploadStore();
+  const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse } = usePlaylistStore();
   const navigate = useNavigate();
 
@@ -71,6 +72,15 @@ export function UploadMobile() {
         <div className="fixed inset-0 z-[9999]">
           <UploadLoader />
         </div>
+      )}
+
+      {error && (
+        <StatusMessage
+          isOpen={true}
+          status="error"
+          message={error}
+          onClose={() => setError(null)}
+        />
       )}
     </>
   );

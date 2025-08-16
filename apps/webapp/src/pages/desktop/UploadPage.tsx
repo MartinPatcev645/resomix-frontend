@@ -3,13 +3,14 @@ import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { UploadHero, UploadOne } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { UploadLoader } from "@/components/index.ts";
+import { StatusMessage } from "@/components/index.ts";
 import { useUploadStore } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
 import React from "react";
 
 export function UploadPage() {
-  const { showOverlay, response, setOverlay } = useUploadStore();
+  const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse } = usePlaylistStore();
   const navigate = useNavigate();
 
@@ -59,6 +60,15 @@ export function UploadPage() {
         <div className="fixed inset-0 z-[9999]">
           <UploadLoader />
         </div>
+      )}
+
+      {error && (
+        <StatusMessage
+          isOpen={true}
+          status="error"
+          message={error}
+          onClose={() => setError(null)}
+        />
       )}
     </div>
   );

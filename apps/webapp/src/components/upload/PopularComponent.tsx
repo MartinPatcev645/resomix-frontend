@@ -2,12 +2,13 @@ import React, { useRef } from "react";
 import soundWhiteIcon from "@/assets/icons/sound_white.svg";
 import soundIcon from "@/assets/icons/sound.svg";
 import { usePopularTracks } from "@resomix/hooks";
+import type { SearchResult } from "@resomix/hooks";
 
 /**
  * Simple structural mock-up of the desktop search section.
  * All copy / visuals are placeholders – tweak freely.
  */
-export const PopularComponent: React.FC = () => {
+export const PopularComponent: React.FC<{ onTrackSelect?: (track: SearchResult) => void }> = ({ onTrackSelect }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
     const { popularTracks } = usePopularTracks();
 
@@ -35,8 +36,9 @@ export const PopularComponent: React.FC = () => {
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-10)]">
                         {popularTracks.map((track) => (
                             <div
-                                key={track.uuid}
+                                key={track.id}
                                 className="group w-full h-[var(--px-53-5)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-auto flex justify-between items-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] transition-colors"
+                                onClick={() => onTrackSelect?.(track)}
                             >
                                 <div className="flex items-center gap-[var(--px-30)] ml-[var(--px-30)]">
                                     <span className="relative w-[var(--px-12)] h-[var(--px-12)] inline-block">

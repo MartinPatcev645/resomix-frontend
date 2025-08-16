@@ -18,7 +18,7 @@ const UploadOne: React.FC = () => {
     const { handleSelectTrack } = useTrackSimilarity();
 
     const onTrackSelect = (track: SearchResult) => {
-        handleSelectTrack(track.uuid);
+        handleSelectTrack(track.id);
     };
 
     return (
@@ -66,7 +66,7 @@ const UploadOne: React.FC = () => {
                     )}
                 </div>
                 <div className="mt-[var(--px-150)]">
-                    <PopularComponentMobile />
+                    <PopularComponentMobile onTrackSelect={onTrackSelect} />
                 </div>
             </div>
         </div>

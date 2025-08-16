@@ -107,16 +107,24 @@ export function useUpload() {
                 const boundedProgress = Math.min(100, Math.max(0, p));
                 setProgress(Math.round(boundedProgress));
             });
-            setResponse(result as UploadResult);
-            setPlaylistResponse(result as any);
-            // Keep overlay visible; pages can observe progress and decide when to hide/navigate
-            setUploading(false);
-            setProgress(100);
+            if (result && result.success) {
+                setResponse(result as UploadResult);
+                setPlaylistResponse(result as any);
+                // Keep overlay visible; UploadPage effect will hide after navigation
+                setUploading(false);
+                setProgress(100);
+            } else {
+                // API indicated failure
+                setError(result?.error || "Upload failed.");
+                setUploading(false);
+                setOverlay(false);
+            }
         } catch (err: any) {
             // Reset file upload flag on error
             setIsFileUpload(false);
-            setError(err?.message || "Upload failed.");
+            setError(err?.error || err?.message || "Upload failed.");
             setUploading(false);
+            setOverlay(false);
         }
     }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload]);
 

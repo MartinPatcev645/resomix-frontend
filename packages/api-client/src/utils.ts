@@ -4,7 +4,7 @@ import { API_CONFIG } from "./config";
 // Create a shared Axios instance
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
-  timeout: 90_000, // 90 seconds default
+  timeout: 300_000, // 5 minutes
 });
 
 // Interceptor to append `api_key` as query parameter for every request

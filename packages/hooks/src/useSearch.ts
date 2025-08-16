@@ -2,7 +2,7 @@ import React from "react";
 import { searchTracks } from "@resomix/api-client";
 
 export interface SearchResult {
-  uuid: string | number;
+  id: string | number;
   title: string;
   artist?: string;
   duration?: string;
@@ -37,7 +37,7 @@ export const useSearch = () => {
       if (response.success && response.data?.tracks) {
         const tracks = response.data.tracks;
         const mappedResults = tracks.map((track: any) => ({
-          uuid: track.id,
+          id: track.id,
           title: track.title,
           artist: track.artist,
           duration: formatSecondsToMmSs(track.duration)
