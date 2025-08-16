@@ -1,7 +1,11 @@
-import { useResponsive } from "@resomix/hooks";
-import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage } from "./pages/index.ts";
 import { Routes, Route } from "react-router-dom";
-import { UploadLoader } from "./components/index.ts";
+import { useFirstVisit, useResponsive } from "@resomix/hooks";
+import { WelcomeMessage } from "@resomix/ui";
+import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage } from "@/pages/index.ts";
+import { UploadLoader } from "@/components/index.ts";
+import ReferenceSvg from "@/assets/icons/reference.svg";
+import MatchesSvg from "@/assets/icons/matches.svg";
+import AnalysisSvg from "@/assets/icons/analysis.svg";
 
 function UploadLanding() {
   const { isDesktop } = useResponsive();
@@ -22,16 +26,26 @@ function PlaylistLanding() {
 }
 
 function App() {
+  const { showWelcome, dismiss } = useFirstVisit();
   return (
-    <Routes>
-      <Route path="/" element={<UploadLanding />} />
-      <Route path="/loader" element={<UploadLoader />} />
-      <Route path="/playlist" element={<PlaylistLanding />} />
-      <Route path="/sonic-discovery" element={<PlaylistLanding />} />
-      <Route path="/contact" element={<InfoPage mode="contact" />} />
-      <Route path="/error" element={<InfoPage mode="error" />} />
-      <Route path="*" element={<InfoPage mode="404" />} />
-    </Routes>
+    <>
+      {showWelcome &&
+      <WelcomeMessage
+        onClose={dismiss}
+        dropSvg={ReferenceSvg}
+        matchSvg={MatchesSvg}
+        discoverSvg={AnalysisSvg}
+      />}
+      <Routes>
+        <Route path="/" element={<UploadLanding />} />
+        <Route path="/loader" element={<UploadLoader />} />
+        <Route path="/playlist" element={<PlaylistLanding />} />
+        <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+        <Route path="/contact" element={<InfoPage mode="contact" />} />
+        <Route path="/error" element={<InfoPage mode="error" />} />
+        <Route path="*" element={<InfoPage mode="404" />} />
+      </Routes>
+    </>
   );
 }
 

@@ -43,6 +43,7 @@ import { SideLines } from "./Layout/SideLines";
 import ErrorContent from "./Content/ErrorContent";
 import Error404 from "./Content/Error404";
 import ContactContent from "./Content/ContactContent";
+import { WelcomeMessage } from "./Layout/WelcomeMessage";
 
 export {
   Navbar,
@@ -88,4 +89,5 @@ export {
   ErrorContent,
   ContactContent,
   Error404,
+  WelcomeMessage,
 };
