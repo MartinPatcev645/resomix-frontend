@@ -11,6 +11,8 @@ interface WaveformPlayerProps {
      */
     audioUrl?: string;
     theme?: WaveformTheme;
+    /** Volume between 0 and 1. Defaults to 1 (100%). */
+    volume?: number;
     /**
      * Whether the player should currently be playing. When this value changes
      * we synchronise the underlying WaveSurfer instance so that it either
@@ -32,6 +34,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
         primary: '#ffffff',
         cardBg: '#000000'
     },
+    volume = 1,
     isPlaying,
     autoPlay = false
 }) => {
@@ -59,53 +62,73 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
     const { setCurrentWs } = usePlayerStore();
 
     // Synchronise playback state whenever the `isPlaying` prop changes. If the
-    // WaveSurfer instance isn’t ready yet we defer `play()` until the `ready`
-    // event to avoid the “NotSupportedError: The element has no supported
-    // sources.” browser exception.
+    // WaveSurfer instance isn't ready yet we defer `play()` until the `ready`
+    // event to avoid the "NotSupportedError: The element has no supported
+    // sources." browser exception.
+     useEffect(() => {
+         const ws = wavesurferRef.current;
+         console.log('[WaveformPlayer] Playback sync effect - isPlaying:', isPlaying, 'ws:', !!ws, 'ws.isPlaying:', ws?.isPlaying?.());
+         if (!ws) return;
+
+         if (isPlaying) {
+             // Already playing? nothing to do.
+            if (ws.isPlaying && ws.isPlaying()) {
+                console.log('[WaveformPlayer] Already playing, skipping play()');
+                return;
+            }
+
+             const tryPlay = () => {
+                 try {
+                     if (typeof setCurrentWs === 'function') {
+                         console.log('[WaveformPlayer] Setting current WS in store');
+                         setCurrentWs(ws);
+                     }
+                     console.log('[WaveformPlayer] Calling ws.play()');
+                     ws.play();
+                 } catch (e) {
+                     /* eslint-disable no-console */
+                     console.error('[WaveformPlayer] play() error', e);
+                     /* eslint-enable no-console */
+                 }
+             };
+
+             // WaveSurfer >=7 exposes `isReady` flag once media is attached.
+             // If ready, play immediately, otherwise wait for the ready event.
+             if ((ws as any).isReady) {
+                 console.log('[WaveformPlayer] WS is ready, playing immediately');
+                 tryPlay();
+             } else {
+                 console.log('[WaveformPlayer] WS not ready, waiting for ready event');
+                 const onReady = () => {
+                     console.log('[WaveformPlayer] Ready event fired, now playing');
+                     tryPlay();
+                     ws.un && ws.un('ready', onReady);
+                 };
+                 // Prefer `once` but fall back to `on` + manual unbind
+                 if ((ws as any).once) {
+                     (ws as any).once('ready', onReady);
+                 } else {
+                     ws.on('ready', onReady);
+                 }
+                 return () => {
+                     (ws as any).un && (ws as any).un('ready', onReady);
+                 };
+             }
+         } else {
+             console.log('[WaveformPlayer] Pausing wavesurfer');
+             ws.pause();
+         }
+     }, [isPlaying, wavesurferRef]);
+
+    // Set volume whenever it changes (and wavesurfer is ready)
     useEffect(() => {
         const ws = wavesurferRef.current;
-        if (!ws) return;
-
-        if (isPlaying) {
-            // Already playing? nothing to do.
-            if (ws.isPlaying && ws.isPlaying()) return;
-
-            const tryPlay = () => {
-                try {
-                    if (typeof setCurrentWs === 'function') {
-                        setCurrentWs(ws);
-                    }
-                    ws.play();
-                } catch (e) {
-                    /* eslint-disable no-console */
-                    console.error('[WaveformPlayer] play() error', e);
-                    /* eslint-enable no-console */
-                }
-            };
-
-            // WaveSurfer >=7 exposes `isReady` flag once media is attached.
-            // If ready, play immediately, otherwise wait for the ready event.
-            if ((ws as any).isReady) {
-                tryPlay();
-            } else {
-                const onReady = () => {
-                    tryPlay();
-                    ws.un && ws.un('ready', onReady);
-                };
-                // Prefer `once` but fall back to `on` + manual unbind
-                if ((ws as any).once) {
-                    (ws as any).once('ready', onReady);
-                } else {
-                    ws.on('ready', onReady);
-                }
-                return () => {
-                    (ws as any).un && (ws as any).un('ready', onReady);
-                };
-            }
-        } else {
-            ws.pause();
+        if (ws && typeof ws.setVolume === 'function') {
+            try {
+                ws.setVolume(volume);
+            } catch {/* ignore */}
         }
-    }, [isPlaying, wavesurferRef]);
+    }, [volume, wavesurferRef]);
 
     // Show loading state while fetching peaks
     if (state.isLoading) {

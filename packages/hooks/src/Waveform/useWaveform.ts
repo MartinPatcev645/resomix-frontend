@@ -113,6 +113,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
     // Create WaveSurfer instance and load audio
     useEffect(() => {
+        console.log('[useWaveform] Effect triggered - containerRef:', !!containerRef.current, 'trackId:', trackId, 'audioUrl:', audioUrl?.substring(0, 50));
         if (!containerRef.current) return;
 
         // If we're using a backend trackId (no direct audioUrl) wait until peaks are fetched
@@ -123,16 +124,29 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
         // Destroy previous instance
         if (wavesurferRef.current) {
+            console.log('[useWaveform] Destroying previous WaveSurfer instance');
+            try {
+                // Pause before destroying to prevent audio overlap
+                if (wavesurferRef.current.isPlaying && wavesurferRef.current.isPlaying()) {
+                    console.log('[useWaveform] Pausing before destroy');
+                    wavesurferRef.current.pause();
+                }
+            } catch (e) {
+                console.warn('[useWaveform] Error pausing before destroy:', e);
+            }
             wavesurferRef.current.destroy();
             wavesurferRef.current = null;
         }
 
         const containerHeight = containerRef.current?.clientHeight ?? 100;
+        console.log('[useWaveform] Creating new WaveSurfer instance, container height:', containerHeight);
 
         // Create WaveSurfer instance
         const wavesurfer = WaveSurfer.create({
             responsive: true,
-            backend: "MediaElement", // Switch back to MediaElement for streaming
+            // Choose backend automatically: use WebAudio for local blobs (better decoding),
+            // otherwise use MediaElement for remote streaming which supports range requests.
+            backend: audioUrl && audioUrl.startsWith('blob:') ? 'WebAudio' : 'MediaElement',
             waveColor: theme.textSecondary,
             progressColor: theme.primary,
             cursorColor: theme.primary,
@@ -180,11 +194,32 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
             }));
         });
 
+        // Add finish event to prevent overlapping playback
+        wavesurfer.on('finish', () => {
+            console.log('[useWaveform] Audio finished playing');
+        });
+
+        // Add seek event logging to diagnose splitting issues
+        wavesurfer.on('seek', (progress: number) => {
+            console.log('[useWaveform] Seek event - progress:', progress, 'time:', wavesurfer.getCurrentTime());
+        });
+
+        // Add play/pause event logging
+        wavesurfer.on('play', () => {
+            console.log('[useWaveform] Play event fired - currentTime:', wavesurfer.getCurrentTime());
+        });
+
+        wavesurfer.on('pause', () => {
+            console.log('[useWaveform] Pause event fired - currentTime:', wavesurfer.getCurrentTime());
+        });
+
         // Add ready event – start playback automatically if requested
         wavesurfer.on('ready', () => {
             console.log('[useWaveform] WaveSurfer ready');
+            console.log('[useWaveform] Duration:', wavesurfer.getDuration(), 'Backend:', wavesurfer.backend);
             if (autoPlay) {
                 try {
+                    console.log('[useWaveform] AutoPlay enabled - starting playback');
                     wavesurfer.play();
                 } catch (e) {
                     console.error('[useWaveform] autoPlay play() error', e);
@@ -221,6 +256,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
         return () => {
             resizeObserver.disconnect();
             if (wavesurferRef.current) {
+                console.log('[useWaveform] Destroying wavesurfer instance');
                 wavesurferRef.current.destroy();
                 wavesurferRef.current = null;
             }
