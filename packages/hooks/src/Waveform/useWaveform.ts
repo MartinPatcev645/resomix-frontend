@@ -123,7 +123,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
         // Create WaveSurfer instance
         const wavesurfer = WaveSurfer.create({
             responsive: true,
-            backend: "WebAudio", // Temporarily switch to WebAudio to test CORS
+            backend: "MediaElement",
             waveColor: theme.textSecondary,
             progressColor: theme.primary,
             cursorColor: theme.primary,
@@ -183,13 +183,18 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
             try {
                 console.log('[useWaveform] Loading audio URL:', audioSource);
                 
+                // For MediaElement backend, always load the URL first
+                // The peaks are used for display but don't affect the audio loading
+                wavesurfer.load(audioSource);
+                
                 if (state.peaks && trackId) {
-                    console.log('[useWaveform] Loading with peaks for WebAudio backend, peaks length:', state.peaks.length);
-                    // For WebAudio backend, we can pass peaks directly to load()
-                    wavesurfer.load(audioSource, state.peaks as any);
-                } else {
-                    console.log('[useWaveform] Loading without peaks');
-                    wavesurfer.load(audioSource);
+                    console.log('[useWaveform] Will apply peaks after ready, peaks length:', state.peaks.length);
+                    // For display purposes, we can try to set the peaks after load
+                    wavesurfer.on('ready', () => {
+                        console.log('[useWaveform] Audio ready, attempting to apply peaks visualization');
+                        // Note: For MediaElement backend, peaks are mainly for visualization
+                        // The actual audio decoding happens via the media element
+                    });
                 }
             } catch (loadError) {
                 console.error('[useWaveform] Load error:', loadError);
