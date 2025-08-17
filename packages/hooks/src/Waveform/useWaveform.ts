@@ -29,6 +29,12 @@ export interface UseWaveformProps {
      * Colour theme for the waveform.
      */
     theme: WaveformTheme;
+
+    /**
+     * When true the audio will start playing automatically once it becomes
+     * ready. Defaults to false so existing callers keep the current behaviour.
+     */
+    autoPlay?: boolean;
 }
 
 export interface WaveformState {
@@ -48,7 +54,7 @@ export interface WaveformState {
  *
  * The hook returns the waveform state and a ref with the underlying WaveSurfer instance.
  */
-export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWaveformProps) {
+export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay = false }: UseWaveformProps) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const [state, setState] = useState<WaveformState>({
         isLoading: false,
@@ -173,9 +179,16 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
             }));
         });
 
-        // Add ready event for debugging
+        // Add ready event – start playback automatically if requested
         wavesurfer.on('ready', () => {
             console.log('[useWaveform] WaveSurfer ready');
+            if (autoPlay) {
+                try {
+                    wavesurfer.play();
+                } catch (e) {
+                    console.error('[useWaveform] autoPlay play() error', e);
+                }
+            }
         });
 
         // Load audio with or without peaks
@@ -211,7 +224,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
                 wavesurferRef.current = null;
             }
         };
-    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg]);
+    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, autoPlay]);
 
     return { wavesurferRef, state };
 }

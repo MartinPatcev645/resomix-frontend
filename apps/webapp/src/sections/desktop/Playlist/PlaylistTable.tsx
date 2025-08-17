@@ -1,23 +1,24 @@
-import React, { useState } from "react";
+import React from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp } from "@resomix/ui";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause.svg";
+import PauseSvg from "@/assets/icons/pause_black.svg";
+import { usePlayerStore } from "@resomix/stores";
 
 // Remove local dummy data; use global store
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+    const { currentTrackId, setCurrentTrack } = usePlayerStore();
 
     const handlePlayPause = (trackId: string) => {
-        if (playingTrackId === trackId) {
-            setPlayingTrackId(null); // Pause
+        if (currentTrackId === trackId) {
+            setCurrentTrack(null); // Pause
         } else {
-            setPlayingTrackId(trackId); // Play this track, pause others
+            setCurrentTrack(trackId); // Play this track, pause others
         }
     };
 
@@ -60,8 +61,12 @@ const PlaylistTable: React.FC = () => {
                             </div>
                             <IconComp
                                 className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)]"
-                                svg={<img src={playingTrackId === track.id ? PauseSvg : PlaySvg} alt={playingTrackId === track.id ? "Pause" : "Play"} className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                                padding="pt-[var(--px-1)]"
+                                svg={<img 
+                                    src={currentTrackId === track.id ? PauseSvg : PlaySvg} 
+                                    alt={currentTrackId === track.id ? "Pause" : "Play"} 
+                                    className={`${currentTrackId === track.id ? 'w-[var(--px-10)] h-[var(--px-10)]' : 'w-[var(--px-16)] h-[var(--px-16)]'}`} 
+                                />}
+                                padding={`${currentTrackId === track.id ? 'py-[var(--px-3)] px-[var(--px-5)]' : 'pt-[var(--px-1)]'}`} 
                                 onClick={() => handlePlayPause(track.id)}
                             />
                             <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-120)]">
@@ -108,8 +113,11 @@ const PlaylistTable: React.FC = () => {
                                 })()}
                             </div>
                         </div>
-                        {playingTrackId === track.id && (
-                            <SimilarityPlayer trackId={track.id} />
+                        {currentTrackId === track.id && (
+                            <SimilarityPlayer 
+                                trackId={track.id} 
+                                isPlaying={currentTrackId === track.id}
+                            />
                         )}
                     </div>
                 </div>

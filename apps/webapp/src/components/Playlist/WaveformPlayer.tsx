@@ -16,6 +16,11 @@ interface WaveformPlayerProps {
      * begins playback or pauses.
      */
     isPlaying?: boolean;
+    /**
+     * When true the audio will start playing automatically once it becomes
+     * ready. Defaults to false to keep existing behaviour.
+     */
+    autoPlay?: boolean;
 }
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ 
@@ -26,7 +31,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
         primary: '#ffffff',
         cardBg: '#000000'
     },
-    isPlaying
+    isPlaying,
+    autoPlay = false
 }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +51,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
         containerRef: waveformRef, 
         trackId, 
         audioUrl,
-        theme: memoTheme
+        theme: memoTheme,
+        autoPlay
     });
 
     // Synchronise playback state whenever the `isPlaying` prop changes. If the
