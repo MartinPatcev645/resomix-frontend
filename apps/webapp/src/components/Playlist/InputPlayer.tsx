@@ -7,14 +7,24 @@ import { usePlayerStore } from "@resomix/stores";
 interface InputPlayerProps {
     trackId?: string;
     audioUrl?: string;
+    /** Auto-start playback once ready */
+    autoPlay?: boolean;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl }) => {
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay = false }) => {
     // Use a fallback id for local uploads so we always have a string
     const effectiveId = trackId ?? 'uploaded-local';
 
     const { currentTrackId, setCurrentTrack } = usePlayerStore();
     const isPlaying = currentTrackId === effectiveId;
+
+    // When autoPlay requested, register this track on mount
+    React.useEffect(() => {
+        if (autoPlay && currentTrackId == null) {
+            setCurrentTrack(effectiveId);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const togglePlay = () => {
         if (isPlaying) {
@@ -37,7 +47,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl }) => {
                     className={isPlaying ? 'w-[var(--px-16)] h-[var(--px-16)]' : 'w-[var(--px-24)] h-[var(--px-24)]'}
                 />
             </button>
-            <WaveformPlayer trackId={trackId} audioUrl={audioUrl} isPlaying={isPlaying} />
+            <WaveformPlayer trackId={trackId} audioUrl={audioUrl} isPlaying={isPlaying} autoPlay={autoPlay} />
         </div>
     );
 };

@@ -72,7 +72,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
 
             const tryPlay = () => {
                 try {
-                    setCurrentWs(ws);
+                    if (typeof setCurrentWs === 'function') {
+                        setCurrentWs(ws);
+                    }
                     ws.play();
                 } catch (e) {
                     /* eslint-disable no-console */
