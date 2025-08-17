@@ -1,15 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp } from "@resomix/ui";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
+import PauseSvg from "@/assets/icons/pause.svg";
 
 // Remove local dummy data; use global store
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
+    const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+
+    const handlePlayPause = (trackId: string) => {
+        if (playingTrackId === trackId) {
+            setPlayingTrackId(null); // Pause
+        } else {
+            setPlayingTrackId(trackId); // Play this track, pause others
+        }
+    };
 
     const tracks = playlistData?.similar_tracks ?? [];
 
@@ -50,9 +60,9 @@ const PlaylistTable: React.FC = () => {
                             </div>
                             <IconComp
                                 className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)]"
-                                svg={<img src={PlaySvg} alt="Play" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                                svg={<img src={playingTrackId === track.id ? PauseSvg : PlaySvg} alt={playingTrackId === track.id ? "Pause" : "Play"} className="w-[var(--px-16)] h-[var(--px-16)]" />}
                                 padding="pt-[var(--px-1)]"
-                                onClick={() => { }}
+                                onClick={() => handlePlayPause(track.id)}
                             />
                             <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-120)]">
                                 {track.artist}
@@ -98,7 +108,9 @@ const PlaylistTable: React.FC = () => {
                                 })()}
                             </div>
                         </div>
-                        <div className="hidden"><SimilarityPlayer trackId={track.id} /></div>
+                        {playingTrackId === track.id && (
+                            <SimilarityPlayer trackId={track.id} />
+                        )}
                     </div>
                 </div>
             ))}

@@ -32,7 +32,12 @@ export function UploadPage() {
       setPlaylistResponse(response as any);
       // Hide loader if it was shown
       setOverlay(false);
-      navigate('/playlist');
+      const playlistId = (response as any).data?.playlist?.id || null;
+      if (playlistId) {
+        navigate(`/playlist?id=${playlistId}`);
+      } else {
+        navigate('/playlist');
+      }
     }
   }, [response, setPlaylistResponse, navigate, setOverlay]);
 

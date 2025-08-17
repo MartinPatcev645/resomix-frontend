@@ -38,10 +38,6 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
         theme.cardBg,
     ]);
 
-    /* eslint-disable no-console */
-    console.log('[WaveformPlayer] render', { trackId, audioUrl, isPlaying });
-    /* eslint-enable no-console */
-
     // Initialize wavesurfer via the shared hook. We also keep a ref to the
     // underlying WaveSurfer instance so that we can imperatively control
     // playback from the parent component via the `isPlaying` prop.
@@ -52,31 +48,56 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
         theme: memoTheme
     });
 
-    // Log state updates for this particular player
+    // Synchronise playback state whenever the `isPlaying` prop changes. If the
+    // WaveSurfer instance isn’t ready yet we defer `play()` until the `ready`
+    // event to avoid the “NotSupportedError: The element has no supported
+    // sources.” browser exception.
     useEffect(() => {
-        /* eslint-disable no-console */
-        console.log('[WaveformPlayer] state update', state);
-        /* eslint-enable no-console */
-    }, [state]);
-
-    // Synchronise playback state whenever the `isPlaying` prop changes.
-    useEffect(() => {
-        if (!wavesurferRef.current) return;
+        const ws = wavesurferRef.current;
+        if (!ws) return;
 
         if (isPlaying) {
-            // Only call play if not already playing to prevent resetting
-            if (!wavesurferRef.current.isPlaying()) {
-                wavesurferRef.current.play();
+            // Already playing? nothing to do.
+            if (ws.isPlaying && ws.isPlaying()) return;
+
+            const tryPlay = () => {
+                try {
+                    ws.play();
+                } catch (e) {
+                    /* eslint-disable no-console */
+                    console.error('[WaveformPlayer] play() error', e);
+                    /* eslint-enable no-console */
+                }
+            };
+
+            // WaveSurfer >=7 exposes `isReady` flag once media is attached.
+            // If ready, play immediately, otherwise wait for the ready event.
+            if ((ws as any).isReady) {
+                tryPlay();
+            } else {
+                const onReady = () => {
+                    tryPlay();
+                    ws.un && ws.un('ready', onReady);
+                };
+                // Prefer `once` but fall back to `on` + manual unbind
+                if ((ws as any).once) {
+                    (ws as any).once('ready', onReady);
+                } else {
+                    ws.on('ready', onReady);
+                }
+                return () => {
+                    (ws as any).un && (ws as any).un('ready', onReady);
+                };
             }
         } else {
-            wavesurferRef.current.pause();
+            ws.pause();
         }
-    }, [isPlaying]);
+    }, [isPlaying, wavesurferRef]);
 
     // Show loading state while fetching peaks
     if (state.isLoading) {
         return (
-            <div className="w-full h-[100px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded">
+            <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded">
                 <div className="text-gray-600 dark:text-gray-400">
                     Fetching the track for you...
                 </div>
@@ -87,7 +108,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
     // Show error state if peaks fetch failed
     if (state.error) {
         return (
-            <div className="w-full h-[100px] flex items-center justify-center bg-red-50 dark:bg-red-900/20 rounded">
+            <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-red-50 dark:bg-red-900/20 rounded">
                 <div className="text-red-600 dark:text-red-400 text-sm">
                     {state.error}
                 </div>
@@ -96,7 +117,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
     }
 
     return (
-        <div className="w-full relative z-30" style={{ height: 100 }}>
+        <div className="w-full relative z-30 h-[var(--px-50)]">
             <div ref={waveformRef} className="w-full h-full" />
         </div>
     );

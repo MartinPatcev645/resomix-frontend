@@ -57,11 +57,14 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
         duration: null,
     });
 
+    // Key that uniquely identifies the currently loaded source. We only want to
+    // destroy/re-create WaveSurfer when this actually changes – *not* when the
+    // parent merely re-renders or when play/pause toggles.
+    const sourceKey = `${trackId ?? ''}|${audioUrl ?? ''}`;
+
     // Debug: log state changes so we can trace what the hook is doing
     useEffect(() => {
-        /* eslint-disable no-console */
-        console.log('[useWaveform] state changed', state);
-        /* eslint-enable no-console */
+        // (debug log removed)
     }, [state]);
 
     // Fetch peaks data only when we have a trackId and are not loading a direct url
@@ -69,17 +72,13 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
         if (!trackId || audioUrl || !SERVER_MEDIA) return;
 
         const fetchPeaks = async () => {
-            /* eslint-disable no-console */
-            console.log('[useWaveform] Fetching peaks for', trackId);
-            /* eslint-enable no-console */
+            // (debug log removed)
 
             setState(prev => ({ ...prev, isLoading: true, error: null }));
             
             try {
                 const resp = await getTrackPeaks(trackId);
-                /* eslint-disable no-console */
-                console.log('[useWaveform] Raw peaks response', resp);
-                /* eslint-enable no-console */
+                // (debug log removed)
 
                 // Back-end can return:
                 // 1) Raw array: [0.1, …]
@@ -99,15 +98,11 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
                     throw new Error('`peaks` array missing in API response');
                 }
 
-                /* eslint-disable no-console */
-                console.log('[useWaveform] Peaks parsed', { count: peaks.length, duration });
-                /* eslint-enable no-console */
+                // (debug log removed)
 
                 setState(prev => ({ ...prev, peaks, duration: duration ?? null, isLoading: false }));
             } catch (error) {
-                /* eslint-disable no-console */
-                console.error('[useWaveform] Peaks fetch error', error);
-                /* eslint-enable no-console */
+                // (debug log removed)
 
                 setState(prev => ({ 
                     ...prev, 
@@ -120,22 +115,14 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
         fetchPeaks();
     }, [trackId]);
 
-    // Initialize WaveSurfer when peaks are loaded
+    // (Re)create WaveSurfer when the audio source changes or when peaks for an
+    // API track have been fetched.
     useEffect(() => {
-        /* eslint-disable no-console */
-        console.log('[useWaveform] Init effect triggered', {
-            hasContainer: !!containerRef.current,
-            isLoading: state.isLoading,
-            peaksLoaded: !!state.peaks,
-        });
-        /* eslint-enable no-console */
+        // (debug log removed)
 
         if (!containerRef.current) return;
-        if (state.isLoading) return;
 
-        // For API tracks we wait until peaks have been fetched before building
-        // the instance to avoid an unnecessary re-render. When loading a direct
-        // URL we have no peak data so we can proceed immediately.
+        // Wait until peaks are fetched for API tracks before creating
         if (trackId && !state.peaks) return;
 
         // Destroy a previous instance if it exists before creating a new one
@@ -144,9 +131,11 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
             wavesurferRef.current = null;
         }
 
+        const containerHeight = containerRef.current?.clientHeight ?? 100;
+
         const wavesurfer = WaveSurfer.create({
             responsive: true,
-            backend: audioUrl ? "WebAudio" : "MediaElement",
+            backend: "MediaElement",
             waveColor: `${theme.textSecondary}`,
             progressColor: theme.primary,
             cursorColor: theme.primary,
@@ -156,21 +145,45 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
             barMinHeight: 4,
             barGap: 1,
             cursorWidth: 1,
-            height: 100,
             pixelRatio: 1,
             hideScrollbar: true,
             interact: true,
             container: containerRef.current,
             partialRender: false,
             skipLength: 5,
-            normalize: true
+            normalize: true,
+            height: containerHeight,
+        } as any);
+
+        // Make the waveform adapt if the container height changes (e.g. when
+        // CSS variables scale with the viewport).
+        const resizeObserver = new ResizeObserver(entries => {
+            const entry = entries[0];
+            if (wavesurfer && entry) {
+                const newHeight = entry.contentRect.height;
+                if (newHeight && newHeight !== containerHeight) {
+                    // (debug log removed)
+                    wavesurfer.setHeight(newHeight);
+                }
+            }
         });
+        resizeObserver.observe(containerRef.current as Element);
+
+        // Ensure consistent preload behaviour for MediaElement backend
+        try {
+            const media = (wavesurfer as any).backend?.mediaElement ?? (wavesurfer as any).media;
+            if (media) {
+                media.preload = 'auto';
+                // Do NOT set crossOrigin initially. Most servers will stream
+                // fine without CORS; enabling it when not supported can cause
+                // the media element to error out immediately. We'll retry with
+                // CORS enabled only if the first load fails.
+            }
+        } catch {/* no-op */}
 
         wavesurferRef.current = wavesurfer;
 
-        /* eslint-disable no-console */
-        console.log('[useWaveform] WaveSurfer instance created');
-        /* eslint-enable no-console */
+        // (debug log removed)
 
         // Resolve the audio source depending on the props provided
         const audioSource = trackId
@@ -182,62 +195,95 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
         // attach the listener mainly for debugging but also to trigger a
         // re-render if we ever want to expose that state.
         wavesurfer.on('ready', () => {
-            /* eslint-disable no-console */
-            console.log('[useWaveform] wavesurfer "ready" event');
-            /* eslint-enable no-console */
+            // (debug log removed)
             
             // If we have peaks but they weren't passed to load(), apply them now
             if (state.peaks && audioSource && !audioSource.includes('signed-audio')) {
-                console.log('[useWaveform] Applying peaks after ready event');
+                // (debug log removed)
                 wavesurfer.loadDecodedBuffer(state.peaks);
             }
         });
 
         wavesurfer.on('waveform-ready', () => {
-            /* eslint-disable no-console */
-            console.log('[useWaveform] wavesurfer "waveform-ready" event');
-            /* eslint-enable no-console */
+            // (debug log removed)
         });
 
         wavesurfer.on('loading', (p: number) => {
-            /* eslint-disable no-console */
-            console.log('[useWaveform] wavesurfer loading', p);
-            /* eslint-enable no-console */
+            // (debug log removed)
             
             // Show waveform as soon as we have any audio data
             if (p > 0 && state.peaks) {
-                console.log('[useWaveform] Audio loading progress, ensuring waveform visibility');
+                // (debug log removed)
                 wavesurfer.zoom(1);
             }
         });
 
+        let retriedWithCORS = false;
+
+        const loadAudio = (useCORS: boolean) => {
+            try {
+                const media = (wavesurfer as any).backend?.mediaElement ?? (wavesurfer as any).media;
+                if (media) {
+                    // Explicitly set or clear crossOrigin before (re)load
+                    if (useCORS) {
+                        media.setAttribute('crossorigin', 'anonymous');
+                    } else {
+                        media.removeAttribute('crossorigin');
+                    }
+                    // Attach a one-time error listener for richer diagnostics
+                    const onMediaError = () => {
+                        // eslint-disable-next-line no-console
+                        console.error('[useWaveform] HTMLMediaElement error', {
+                            code: media.error?.code,
+                            networkState: media.networkState,
+                            readyState: media.readyState,
+                            src: media.currentSrc,
+                            crossorigin: media.getAttribute('crossorigin'),
+                        });
+                        media.removeEventListener('error', onMediaError);
+                    };
+                    media.addEventListener('error', onMediaError, { once: true });
+                }
+            } catch {/* no-op */}
+
+            if (audioSource) {
+                if (state.peaks) {
+                    wavesurfer.load(audioSource, state.peaks as any);
+                } else {
+                    wavesurfer.load(audioSource);
+                }
+            }
+        };
+
+        if (audioSource) {
+            // Initial load without CORS
+            loadAudio(false);
+        }
+
         wavesurfer.on('error', (error: any) => {
-            /* eslint-disable no-console */
-            console.error('[useWaveform] wavesurfer error', error);
-            /* eslint-enable no-console */
+            // Keep explicit error visibility and include media error code/state if available
+            try {
+                const media = (wavesurfer as any).backend?.mediaElement ?? (wavesurfer as any).media;
+                const details = media ? { code: media.error?.code, networkState: media.networkState, readyState: media.readyState, src: media.currentSrc } : {};
+                // eslint-disable-next-line no-console
+                console.error('[useWaveform] wavesurfer error', error, details);
+                // Retry once with CORS enabled if not already retried
+                if (!retriedWithCORS) {
+                    retriedWithCORS = true;
+                    loadAudio(true);
+                }
+            } catch {
+                // eslint-disable-next-line no-console
+                console.error('[useWaveform] wavesurfer error', error);
+            }
         });
 
         wavesurfer.on('decode', () => {
-            /* eslint-disable no-console */
-            console.log('[useWaveform] wavesurfer decode event');
-            /* eslint-enable no-console */
+            // (debug log removed)
         });
 
-        if (audioSource) {
-            if (state.peaks) {
-                /* eslint-disable no-console */
-                console.log('[useWaveform] Loading audio with peaks', audioSource);
-                /* eslint-enable no-console */
-                wavesurfer.load(audioSource, state.peaks, 'auto');
-            } else {
-                /* eslint-disable no-console */
-                console.log('[useWaveform] Loading audio without peaks', audioSource);
-                /* eslint-enable no-console */
-                wavesurfer.load(audioSource);
-            }
-        }
-
         return () => {
+            resizeObserver.disconnect();
             if (wavesurferRef.current) {
                 wavesurferRef.current.destroy();
                 wavesurferRef.current = null;
@@ -248,7 +294,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme }: UseWavef
     // WaveSurfer instance on every parent render, wiping the canvas. If you
     // really need to recreate WaveSurfer when colours change, expose a
     // separate setter instead of mutating the object.
-    }, [containerRef, trackId, audioUrl, state.peaks, state.duration, state.isLoading]);
+    }, [containerRef, sourceKey, state.peaks]);
 
     return { wavesurferRef, state };
 }

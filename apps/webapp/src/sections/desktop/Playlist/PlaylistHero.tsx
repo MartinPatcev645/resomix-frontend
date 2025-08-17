@@ -177,7 +177,10 @@ const PlaylistHero: React.FC = () => {
                       <div>Instance: Input Track</div>
                     </div>
                     {/* The actual Input player */}
-                    <InputPlayer trackId={playlistData?.queried_track.id || ''} />
+                    {/* Render player only when we already know the track ID to avoid extra mounts */}
+                    {playlistData?.queried_track.id && (
+                      <InputPlayer trackId={playlistData.queried_track.id} />
+                    )}
                   </div>
                 </div>
               </div>

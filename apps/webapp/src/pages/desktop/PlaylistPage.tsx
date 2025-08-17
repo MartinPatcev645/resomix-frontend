@@ -1,5 +1,6 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { useEffect, useState } from "react";
+import { usePlaylistLoader } from "@resomix/hooks";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
@@ -12,20 +13,41 @@ export function PlaylistPage() {
     window.scrollTo(0, 0);
   }, []);
 
-  const { playlistData } = usePlaylistStore();
+  const { playlistData, isLoading } = usePlaylistStore();
   const [expired, setExpired] = useState(false);
 
+  // Load from ?id= if store empty
+  usePlaylistLoader();
+
+  // Handle expired fallback
   useEffect(() => {
-    if (!playlistData) {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (!isLoading && !playlistData) {
       setExpired(true);
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         window.location.href = BASE_BETA_URL;
       }, 3000);
+    } else {
+      // Data arrived or still loading – ensure expired flag reset
+      setExpired(false);
+      if (timeoutId) clearTimeout(timeoutId);
     }
-  }, [playlistData]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isLoading, playlistData]);
 
   return (
-    expired ? (
+    isLoading ? (
+      <StatusMessage
+        isOpen={true}
+        status="loading"
+        message="Loading playlist..."
+        onClose={() => {}}
+      />
+    ) : expired ? (
       <StatusMessage 
         isOpen={true}
         onClose={() => {}}

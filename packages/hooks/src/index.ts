@@ -8,4 +8,5 @@ export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export * from "./Waveform/useWaveform";
+export * from './Playlist/usePlaylistLoader';
 export type { WaveformTheme } from "./Waveform/useWaveform";
