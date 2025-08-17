@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo } from "react";
 import { useWaveform } from "@resomix/hooks";
 import type { WaveformTheme } from "@resomix/hooks";
+import { usePlayerStore } from "@resomix/stores";
 
 interface WaveformPlayerProps {
     /** Track ID used to pull peaks & stream from the API. */
@@ -55,6 +56,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
         autoPlay
     });
 
+    const { setCurrentWs } = usePlayerStore();
+
     // Synchronise playback state whenever the `isPlaying` prop changes. If the
     // WaveSurfer instance isn’t ready yet we defer `play()` until the `ready`
     // event to avoid the “NotSupportedError: The element has no supported
@@ -69,6 +72,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
 
             const tryPlay = () => {
                 try {
+                    setCurrentWs(ws);
                     ws.play();
                 } catch (e) {
                     /* eslint-disable no-console */
