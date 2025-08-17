@@ -1,31 +1,77 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { useWaveform } from "@resomix/hooks";
 import type { WaveformTheme } from "@resomix/hooks";
 
 interface WaveformPlayerProps {
+    /** Track ID used to pull peaks & stream from the API. */
     trackId?: string;
+    /** Direct audio URL (e.g. result of URL.createObjectURL) to load instead
+     * of an API track. When provided, `trackId` is ignored.
+     */
     audioUrl?: string;
     theme?: WaveformTheme;
+    /**
+     * Whether the player should currently be playing. When this value changes
+     * we synchronise the underlying WaveSurfer instance so that it either
+     * begins playback or pauses.
+     */
+    isPlaying?: boolean;
 }
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ 
     trackId,
-    audioUrl, 
+    audioUrl,
     theme = {
-        textSecondary: '#666666',
-        primary: '#007bff',
+        textSecondary: '#ffffff',
+        primary: '#ffffff',
         cardBg: '#000000'
-    }
+    },
+    isPlaying
 }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
 
-    // Initialize wavesurfer via the shared hook
-    const { state } = useWaveform({ 
+    // Keep a stable theme reference across renders to avoid re-creating
+    // WaveSurfer unnecessarily (which would wipe the canvas).
+    const memoTheme = useMemo<WaveformTheme>(() => theme as WaveformTheme, [
+        theme.textSecondary,
+        theme.primary,
+        theme.cardBg,
+    ]);
+
+    /* eslint-disable no-console */
+    console.log('[WaveformPlayer] render', { trackId, audioUrl, isPlaying });
+    /* eslint-enable no-console */
+
+    // Initialize wavesurfer via the shared hook. We also keep a ref to the
+    // underlying WaveSurfer instance so that we can imperatively control
+    // playback from the parent component via the `isPlaying` prop.
+    const { state, wavesurferRef } = useWaveform({ 
         containerRef: waveformRef, 
         trackId, 
-        audioUrl, 
-        theme: theme as WaveformTheme
+        audioUrl,
+        theme: memoTheme
     });
+
+    // Log state updates for this particular player
+    useEffect(() => {
+        /* eslint-disable no-console */
+        console.log('[WaveformPlayer] state update', state);
+        /* eslint-enable no-console */
+    }, [state]);
+
+    // Synchronise playback state whenever the `isPlaying` prop changes.
+    useEffect(() => {
+        if (!wavesurferRef.current) return;
+
+        if (isPlaying) {
+            // Only call play if not already playing to prevent resetting
+            if (!wavesurferRef.current.isPlaying()) {
+                wavesurferRef.current.play();
+            }
+        } else {
+            wavesurferRef.current.pause();
+        }
+    }, [isPlaying]);
 
     // Show loading state while fetching peaks
     if (state.isLoading) {

@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive } from "@resomix/hooks";
 import { WelcomeMessage } from "@resomix/ui";
-import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage } from "@/pages/index.ts";
+import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage } from "@/pages/index.ts";
 import { UploadLoader } from "@/components/index.ts";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
@@ -43,6 +43,7 @@ function App() {
         <Route path="/sonic-discovery" element={<PlaylistLanding />} />
         <Route path="/contact" element={<InfoPage mode="contact" />} />
         <Route path="/error" element={<InfoPage mode="error" />} />
+        <Route path="/test" element={<TestPage />} />
         <Route path="*" element={<InfoPage mode="404" />} />
       </Routes>
     </>

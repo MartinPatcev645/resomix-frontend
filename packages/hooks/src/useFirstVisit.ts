@@ -21,13 +21,14 @@ function setCookie(name: string, value: string, domain?: string) {
  * Returns whether the welcome dialog should be shown and a handler to dismiss it.
  */
 export function useFirstVisit() {
-  const [showWelcome, setShowWelcome] = useState(() => getCookie(COOKIE_NAME) === null);
+  // const [showWelcome, setShowWelcome] = useState(() => getCookie(COOKIE_NAME) === null);
+  const [showWelcome, setShowWelcome] = useState(false); // Hardcoded to not show welcome message
 
-  useEffect(() => {
-    if (showWelcome) {
-      setCookie(COOKIE_NAME, COOKIE_VALUE, COOKIE_DOMAIN);
-    }
-  }, [showWelcome]);
+  // useEffect(() => {
+  //   if (showWelcome) {
+  //     setCookie(COOKIE_NAME, COOKIE_VALUE, COOKIE_DOMAIN);
+  //   }
+  // }, [showWelcome]);
 
   const dismiss = () => setShowWelcome(false);
 
