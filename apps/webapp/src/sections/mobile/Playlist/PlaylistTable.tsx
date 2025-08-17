@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { WaveformPlayer } from "@/components/index.ts";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import PauseSvg from "@/assets/icons/pause.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
@@ -11,15 +11,15 @@ interface PlaylistTableProps {
 }
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
-    const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
     const { playlistData } = usePlaylistStore();
+    const { currentTrackId, setCurrentTrack } = usePlayerStore();
     const tracks = playlistData?.similar_tracks ?? [];
 
     const handleTrackClick = (trackId: string) => {
-        if (playingTrackId === trackId) {
-            setPlayingTrackId(null);
+        if (currentTrackId === trackId) {
+            setCurrentTrack(null);
         } else {
-            setPlayingTrackId(trackId);
+            setCurrentTrack(trackId);
         }
     };
 
@@ -31,7 +31,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         <div onClick={() => handleTrackClick(track.id)} className="flex items-center gap-[var(--px-7)]">
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
-                                {playingTrackId === track.id && (
+                                {currentTrackId === track.id && (
                                     <>
                                         <div className="absolute inset-0 backdrop-blur-[3px] rounded-sm"></div>
                                         <img
@@ -66,9 +66,9 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </div>
                             </div>
                         </div>
-                        {playingTrackId === track.id && (
+                        {currentTrackId === track.id && (
                             <div>
-                                <WaveformPlayer trackId={track.id} />
+                                <WaveformPlayer trackId={track.id} isPlaying={currentTrackId===track.id} autoPlay={true} />
                             </div>
                         )}
                     </div>
