@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { useWaveform } from "@resomix/hooks";
 import type { WaveformTheme } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
@@ -26,7 +26,11 @@ interface WaveformPlayerProps {
     autoPlay?: boolean;
 }
 
-const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ 
+export interface WaveformPlayerRef {
+    getWaveSurfer: () => any;
+}
+
+const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({ 
     trackId,
     audioUrl,
     theme = {
@@ -37,8 +41,13 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
     volume = 1,
     isPlaying,
     autoPlay = false
-}) => {
+}, ref) => {
     const waveformRef = useRef<HTMLDivElement>(null);
+
+    // Expose wavesurfer instance to parent via ref
+    useImperativeHandle(ref, () => ({
+        getWaveSurfer: () => wavesurferRef.current
+    }), []);
 
     // Keep a stable theme reference across renders to avoid re-creating
     // WaveSurfer unnecessarily (which would wipe the canvas).
@@ -157,6 +166,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({
             <div ref={waveformRef} className="w-full h-full" />
         </div>
     );
-};
+});
+
+WaveformPlayer.displayName = 'WaveformPlayer';
 
 export default WaveformPlayer;
