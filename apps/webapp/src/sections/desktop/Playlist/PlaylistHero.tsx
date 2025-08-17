@@ -119,7 +119,7 @@ const PlaylistHero: React.FC = () => {
                     <div className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</div>
                   </div>
                 </div>
-                <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-480)]">
+                <div className="flex flex-col w-full gap-[var(--px-20)] max-w-[var(--px-480)]">
                   <div className="flex flex-col gap-[var(--px-7)] min-h-[var(--px-61)]">
                     {error && (
                       <div className="text-red-500 text-[length:var(--px-9)] font-fira">
@@ -167,7 +167,7 @@ const PlaylistHero: React.FC = () => {
                   </div>
                   <div className="flex flex-col gap-[var(--px-10)]">
                     {/* Hidden Meta Info */}
-                    <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center ${showMeta ? '' : 'hidden'}`}>
+                    <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? '' : 'hidden'}`}>
                       <div>ID: {playlistData?.queried_track.id}</div>
                       <div>|</div>
                       <div>Duration: {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
@@ -178,6 +178,7 @@ const PlaylistHero: React.FC = () => {
                       <div>|</div>
                       <div>Instance: Input Track</div>
                     </div>
+                    <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
                     {/* The actual Input player */}
                     {/* Render player only when we already know the track ID to avoid extra mounts */}
                     {playlistData?.queried_track.id && (

@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import WaveformPlayer, { type WaveformPlayerRef } from "./WaveformPlayer.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause_black.svg";
+import NextTrackSvg from "@/assets/icons/next_track.svg";
+import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
+import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
+import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -38,7 +42,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
         if (autoPlay && currentTrackId == null) {
             setCurrentTrack(effectiveId);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Attach event listeners for time / duration when wavesurfer instance changes
@@ -72,10 +76,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
             const cleanup = () => {
                 console.log('[InputPlayer] Cleaning up time tracking events');
                 ws.un && ws.un('audioprocess', updateTime);
-                ws.un && ws.un('seek', updateTime); 
+                ws.un && ws.un('seek', updateTime);
                 ws.un && ws.un('ready', onReady);
             };
-            
+
             // Store cleanup for the effect cleanup
             return cleanup;
         }, 100);
@@ -138,12 +142,20 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
         setVolume(newVolume);
     };
 
+    const handleVolumeIconClick = () => {
+        if (volume === 0) {
+            setVolume(0.7); // Unmute to 70%
+        } else {
+            setVolume(0); // Mute
+        }
+    };
+
     return (
         <div className="flex items-center gap-2 w-full">
             {/* Play / Pause */}
             <button
                 type="button"
-                className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors"
+                className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors mb-[var(--px-17)]"
                 onClick={togglePlay}
             >
                 <img
@@ -152,47 +164,76 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                     className={isPlaying ? 'w-[var(--px-16)] h-[var(--px-16)]' : 'w-[var(--px-24)] h-[var(--px-24)]'}
                 />
             </button>
+            <div className="flex flex-col w-full gap-[var(--px-5)]">
+                {/* Waveform */}
+                <div className="flex-1">
+                    <WaveformPlayer
+                        ref={waveformPlayerRef}
+                        trackId={trackId}
+                        audioUrl={audioUrl}
+                        isPlaying={isPlaying}
+                        autoPlay={autoPlay}
+                        volume={volume}
+                    />
+                </div>
 
-            {/* Skip Backward */}
-            <button type="button" onClick={skipBackward} title="Skip back 10s" className="text-white px-1">«10s</button>
+                <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-[var(--px-10)]">
+                        {/* Skip Backward */}
+                        <button type="button" onClick={skipBackward} title="Skip back 10s" className="font-fira text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
+                            <img src={NextTrackSvg} alt="Previous Track" className="w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
+                            <span className="mt-[var(--px-3)]">10s</span>
+                        </button>
+                        {/* Skip Forward */}
+                        <button type="button" onClick={skipForward} title="Skip forward 10s" className="font-fira text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
+                            <span className="mt-[var(--px-3)]">10s</span>
+                            <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
+                        </button>
+                    </div>
 
-            {/* Waveform */}
-            <div className="flex-1">
-                <WaveformPlayer
-                    ref={waveformPlayerRef}
-                    trackId={trackId}
-                    audioUrl={audioUrl}
-                    isPlaying={isPlaying}
-                    autoPlay={autoPlay}
-                    volume={volume}
-                />
+                    {/* Volume Slider */}
+                    <div className="flex items-center gap-[var(--px-8)]">
+                        {/* Volume Icon */}
+                        <button 
+                            type="button" 
+                            onClick={handleVolumeIconClick}
+                            className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)]"
+                        >
+                            {volume === 0 ? (
+                                <img src={SoundMuteSvg} alt="Muted" className="w-full h-full" />
+                            ) : volume < 0.5 ? (
+                                <img src={SoundLowSvg} alt="Low Volume" className="w-full h-full" />
+                            ) : (
+                                <img src={SoundLoudSvg} alt="High Volume" className="w-full h-full" />
+                            )}
+                        </button>
+                        
+                        {/* Volume Slider */}
+                        <div className="relative flex items-center w-[var(--px-80)]">
+                            {/* White base line track */}
+                            <div className="absolute w-[var(--px-80)] h-[var(--px-1)] bg-white"></div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={volume}
+                                onChange={handleVolumeChange}
+                                className="relative w-full h-[var(--px-2)] appearance-none cursor-pointer bg-transparent z-10 [&::-webkit-slider-track]:bg-transparent [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:cursor-pointer"
+                                style={{
+                                    background: 'transparent',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Time Display */}
+                    <span className="text-xs text-white whitespace-nowrap min-w-[60px] text-right">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                </div>
             </div>
-
-            {/* Skip Forward */}
-            <button type="button" onClick={skipForward} title="Skip forward 10s" className="text-white px-1">10s»</button>
-
-            {/* Volume Slider */}
-            <div className="flex items-center gap-1">
-                <span className="text-xs text-white">🔊</span>
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={volume}
-                    onChange={handleVolumeChange}
-                    className="w-[var(--px-60)] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                    style={{
-                        background: `linear-gradient(to right, #ffffff 0%, #ffffff ${volume * 100}%, #374151 ${volume * 100}%, #374151 100%)`
-                    }}
-                />
-                <span className="text-xs text-white min-w-[30px]">{Math.round(volume * 100)}%</span>
-            </div>
-
-            {/* Time Display */}
-            <span className="text-xs text-white whitespace-nowrap min-w-[60px] text-right">
-                {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { useWaveform } from "@resomix/hooks";
 import type { WaveformTheme } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
