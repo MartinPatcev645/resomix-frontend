@@ -25,11 +25,19 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   currentWs: null,
   setCurrentWs: (ws) => set((state) => {
+    console.log('[PlayerStore] setCurrentWs called - prev:', !!state.currentWs, 'new:', !!ws);
     if (state.currentWs && state.currentWs !== ws) {
+      console.log('[PlayerStore] Pausing previous instance');
       try {
-        state.currentWs.pause();
+        if (state.currentWs.isPlaying && state.currentWs.isPlaying()) {
+          console.log('[PlayerStore] Previous instance was playing, pausing it');
+          state.currentWs.pause();
+        } else {
+          console.log('[PlayerStore] Previous instance was not playing');
+        }
       } catch { /* ignore */ }
     }
+    console.log('[PlayerStore] Setting new current WS');
     return { currentWs: ws };
   }),
 }));
