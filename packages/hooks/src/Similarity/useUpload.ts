@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { create } from "zustand";
 
 export interface UploadResult<T = any> {
@@ -93,6 +93,12 @@ export function useUpload() {
         }
 
         setFile(file);
+        // Save uploaded file URL globally for playback previews
+        try {
+            const objectUrl = URL.createObjectURL(file);
+            const { setUploadedUrl } = usePlayerStore.getState();
+            setUploadedUrl(objectUrl);
+        } catch {/* no-op */}
         setProgress(0);
         setError(null);
         setResponse(null);

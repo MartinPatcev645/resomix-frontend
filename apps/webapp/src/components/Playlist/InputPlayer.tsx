@@ -5,18 +5,22 @@ import PauseSvg from "@/assets/icons/pause_black.svg";
 import { usePlayerStore } from "@resomix/stores";
 
 interface InputPlayerProps {
-    trackId: string;
+    trackId?: string;
+    audioUrl?: string;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId }) => {
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl }) => {
+    // Use a fallback id for local uploads so we always have a string
+    const effectiveId = trackId ?? 'uploaded-local';
+
     const { currentTrackId, setCurrentTrack } = usePlayerStore();
-    const isPlaying = currentTrackId === trackId;
+    const isPlaying = currentTrackId === effectiveId;
 
     const togglePlay = () => {
         if (isPlaying) {
             setCurrentTrack(null);
         } else {
-            setCurrentTrack(trackId);
+            setCurrentTrack(effectiveId);
         }
     };
 
@@ -33,7 +37,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId }) => {
                     className={isPlaying ? 'w-[var(--px-16)] h-[var(--px-16)]' : 'w-[var(--px-24)] h-[var(--px-24)]'}
                 />
             </button>
-            <WaveformPlayer trackId={trackId} isPlaying={isPlaying} />
+            <WaveformPlayer trackId={trackId} audioUrl={audioUrl} isPlaying={isPlaying} />
         </div>
     );
 };

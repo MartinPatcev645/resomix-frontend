@@ -115,8 +115,11 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
     useEffect(() => {
         if (!containerRef.current) return;
 
-        // For trackId, wait until peaks are fetched
-        if (trackId && !state.peaks && !state.error) return;
+        // If we're using a backend trackId (no direct audioUrl) wait until peaks are fetched
+        if (trackId && !audioUrl && !state.peaks && !state.error) {
+            console.log('[useWaveform] Waiting for peaks before creating WaveSurfer');
+            return;
+        }
 
         // Destroy previous instance
         if (wavesurferRef.current) {
@@ -163,10 +166,8 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
         wavesurferRef.current = wavesurfer;
 
-        // Determine audio source
-        const audioSource = trackId
-            ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}`
-            : audioUrl;
+        // Determine audio source – uploaded blobs (audioUrl) take precedence
+        const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
 
         console.log('[useWaveform] Loading audio:', { trackId, audioUrl, audioSource, hasPeaks: !!state.peaks });
 
