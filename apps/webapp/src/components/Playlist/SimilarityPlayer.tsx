@@ -40,12 +40,10 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
 
     // Effect to set up time tracking when component mounts or track changes
     useEffect(() => {
-        console.log('[SimilarityPlayer] Setting up time tracking for track:', trackId);
         
         // Use a small delay to ensure WaveformPlayer has initialized
         const timeoutId = setTimeout(() => {
             const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-            console.log('[SimilarityPlayer] Delayed time tracking setup - ws available:', !!ws);
             
             if (!ws) return;
 
@@ -56,24 +54,20 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
             
             const onReady = () => {
                 const newDuration = ws.getDuration();
-                console.log('[SimilarityPlayer] Got duration:', newDuration);
                 setDuration(newDuration);
             };
 
             // Check if already ready
             if ((ws as any).isReady) {
-                console.log('[SimilarityPlayer] WS already ready, getting duration immediately');
                 onReady();
             }
 
-            console.log('[SimilarityPlayer] Attaching time tracking events');
             ws.on('audioprocess', updateTime);
             ws.on('seek', updateTime);
             ws.on('ready', onReady);
             
             // Store cleanup function on the component instance
             const cleanup = () => {
-                console.log('[SimilarityPlayer] Cleaning up time tracking events');
                 ws.un && ws.un('audioprocess', updateTime);
                 ws.un && ws.un('seek', updateTime); 
                 ws.un && ws.un('ready', onReady);
@@ -91,36 +85,27 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-        console.log('[SimilarityPlayer] Skip backward clicked, currentWs:', currentWs, 'directWs:', !!waveformPlayerRef.current?.getWaveSurfer());
         if (ws && typeof ws.skipBackward === 'function') {
-            console.log('[SimilarityPlayer] Calling skip(-10)');
             ws.skipBackward();
         } else if (ws && typeof ws.skip === 'function') {
-            console.log('[SimilarityPlayer] Calling skip(-10) fallback');
             ws.skip(-10);
         } else {
-            console.log('[SimilarityPlayer] No wavesurfer instance available for skip backward');
         }
     }, [currentWs]);
 
     const skipForward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-        console.log('[SimilarityPlayer] Skip forward clicked, currentWs:', currentWs, 'directWs:', !!waveformPlayerRef.current?.getWaveSurfer());
         if (ws && typeof ws.skipForward === 'function') {
-            console.log('[SimilarityPlayer] Calling skip(10)');
             ws.skipForward();
         } else if (ws && typeof ws.skip === 'function') {
-            console.log('[SimilarityPlayer] Calling skip(10) fallback');
             ws.skip(10);
         } else {
-            console.log('[SimilarityPlayer] No wavesurfer instance available for skip forward');
         }
     }, [currentWs]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
-        console.log('[SimilarityPlayer] Volume change:', newVolume);
         setVolume(newVolume);
     };
 

@@ -76,23 +76,19 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     // sources." browser exception.
      useEffect(() => {
          const ws = wavesurferRef.current;
-         console.log('[WaveformPlayer] Playback sync effect - isPlaying:', isPlaying, 'ws:', !!ws, 'ws.isPlaying:', ws?.isPlaying?.());
          if (!ws) return;
 
          if (isPlaying) {
              // Already playing? nothing to do.
             if (ws.isPlaying && ws.isPlaying()) {
-                console.log('[WaveformPlayer] Already playing, skipping play()');
                 return;
             }
 
              const tryPlay = () => {
                  try {
                      if (typeof setCurrentWs === 'function') {
-                         console.log('[WaveformPlayer] Setting current WS in store');
                          setCurrentWs(ws);
                      }
-                     console.log('[WaveformPlayer] Calling ws.play()');
                      ws.play();
                  } catch (e) {
                      /* eslint-disable no-console */
@@ -104,12 +100,9 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
              // WaveSurfer >=7 exposes `isReady` flag once media is attached.
              // If ready, play immediately, otherwise wait for the ready event.
              if ((ws as any).isReady) {
-                 console.log('[WaveformPlayer] WS is ready, playing immediately');
                  tryPlay();
              } else {
-                 console.log('[WaveformPlayer] WS not ready, waiting for ready event');
                  const onReady = () => {
-                     console.log('[WaveformPlayer] Ready event fired, now playing');
                      tryPlay();
                      ws.un && ws.un('ready', onReady);
                  };
@@ -124,7 +117,6 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
                  };
              }
          } else {
-             console.log('[WaveformPlayer] Pausing wavesurfer');
              ws.pause();
          }
      }, [isPlaying, wavesurferRef]);

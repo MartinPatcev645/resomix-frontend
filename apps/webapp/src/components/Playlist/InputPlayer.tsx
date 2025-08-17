@@ -50,23 +50,19 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
         // Use a timeout to ensure wavesurfer is ready after WaveformPlayer mounts
         const timeoutId = setTimeout(() => {
             const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-            console.log('[InputPlayer] Time tracking setup - ws available:', !!ws);
             if (!ws) return;
 
             const updateTime = () => setCurrentTime(ws.getCurrentTime());
             const onReady = () => {
                 const dur = ws.getDuration();
-                console.log('[InputPlayer] Got duration:', dur);
                 setDuration(dur);
             };
 
-            console.log('[InputPlayer] Attaching time tracking events');
             ws.on('audioprocess', updateTime);
             ws.on('seek', updateTime);
 
             // Check if already ready
             if ((ws as any).isReady) {
-                console.log('[InputPlayer] WS already ready, getting duration');
                 onReady();
             } else {
                 ws.on('ready', onReady);
@@ -74,7 +70,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
 
             // Store cleanup function on the component instance
             const cleanup = () => {
-                console.log('[InputPlayer] Cleaning up time tracking events');
                 ws.un && ws.un('audioprocess', updateTime);
                 ws.un && ws.un('seek', updateTime);
                 ws.un && ws.un('ready', onReady);
@@ -109,36 +104,63 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-        console.log('[InputPlayer] Skip backward clicked, currentWs:', currentWs, 'directWs:', !!waveformPlayerRef.current?.getWaveSurfer());
-        if (ws && typeof ws.skipBackward === 'function') {
-            console.log('[InputPlayer] Calling skip(-10)');
-            ws.skipBackward();
-        } else if (ws && typeof ws.skip === 'function') {
-            console.log('[InputPlayer] Calling skip(-10) fallback');
-            ws.skip(-10);
+        
+        if (ws) {
+            // Store playing state before skip
+            const isPlayingTemp = ws.isPlaying && ws.isPlaying();
+            
+            if (typeof ws.skipBackward === 'function') {
+                ws.skipBackward();
+            } else if (typeof ws.skip === 'function') {
+                ws.skip(-10);
+            }
+            
+            // Check if playing state changed and restore if needed
+            setTimeout(() => {
+                const isPlayingAfter = ws.isPlaying && ws.isPlaying();
+                
+                if (isPlayingTemp && !isPlayingAfter) {
+                    try {
+                        ws.play();
+                    } catch (e) {
+                    }
+                }
+            }, 50);
         } else {
-            console.log('[InputPlayer] No wavesurfer instance available for skip backward');
         }
     }, [currentWs]);
 
     const skipForward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-        console.log('[InputPlayer] Skip forward clicked, currentWs:', currentWs, 'directWs:', !!waveformPlayerRef.current?.getWaveSurfer());
-        if (ws && typeof ws.skipForward === 'function') {
-            console.log('[InputPlayer] Calling skip(10)');
-            ws.skipForward();
-        } else if (ws && typeof ws.skip === 'function') {
-            console.log('[InputPlayer] Calling skip(10) fallback');
-            ws.skip(10);
+        
+        if (ws) {
+            // Store playing state before skip
+            const isPlayingTemp = ws.isPlaying && ws.isPlaying();
+            
+            if (typeof ws.skipForward === 'function') {
+                ws.skipForward();
+            } else if (typeof ws.skip === 'function') {
+                ws.skip(10);
+            }
+            
+            // Check if playing state changed and restore if needed
+            setTimeout(() => {
+                const isPlayingAfter = ws.isPlaying && ws.isPlaying();
+                
+                if (isPlayingTemp && !isPlayingAfter) {
+                    try {
+                        ws.play();
+                    } catch (e) {
+                    }
+                }
+            }, 50);
         } else {
-            console.log('[InputPlayer] No wavesurfer instance available for skip forward');
         }
     }, [currentWs]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
-        console.log('[InputPlayer] Volume change:', newVolume);
         setVolume(newVolume);
     };
 

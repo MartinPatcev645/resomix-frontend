@@ -71,17 +71,14 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
     // Fetch peaks data only when we have a trackId
     useEffect(() => {
         if (!trackId || audioUrl || !SERVER_MEDIA) {
-            console.log('[useWaveform] Skipping peaks fetch:', { trackId, audioUrl, SERVER_MEDIA });
             return;
         }
 
         const fetchPeaks = async () => {
-            console.log('[useWaveform] Fetching peaks for trackId:', trackId);
             setState(prev => ({ ...prev, isLoading: true, error: null }));
             
             try {
                 const resp = await getTrackPeaks(trackId);
-                console.log('[useWaveform] Peaks response:', resp);
 
                 // Handle different response formats from the backend
                 let peaks: number[] | undefined;
@@ -98,10 +95,8 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
                     throw new Error('`peaks` array missing in API response');
                 }
 
-                console.log('[useWaveform] Peaks processed:', { peaksLength: peaks.length, duration });
                 setState(prev => ({ ...prev, peaks, duration: duration ?? null, isLoading: false }));
             } catch (error) {
-                console.error('[useWaveform] Error fetching peaks:', error);
                 setState(prev => ({ 
                     ...prev, 
                     error: error instanceof Error ? error.message : 'Failed to fetch peaks',
@@ -115,19 +110,15 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
     // Create WaveSurfer instance and load audio
     useEffect(() => {
-        const currentInstanceId = ++instanceIdRef.current;
-        console.log('[useWaveform] Effect triggered #' + currentInstanceId + ' - containerRef:', !!containerRef.current, 'trackId:', trackId, 'audioUrl:', audioUrl?.substring(0, 50));
         if (!containerRef.current) return;
 
         // Prevent multiple instances from being created simultaneously
         if (isCreatingRef.current) {
-            console.log('[useWaveform] #' + currentInstanceId + ' - Already creating instance, skipping');
             return;
         }
 
         // If we're using a backend trackId (no direct audioUrl) wait until peaks are fetched
         if (trackId && !audioUrl && !state.peaks && !state.error) {
-            console.log('[useWaveform] #' + currentInstanceId + ' - Waiting for peaks before creating WaveSurfer');
             return;
         }
 
@@ -135,26 +126,22 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
         // Destroy previous instance
         if (wavesurferRef.current) {
-            console.log('[useWaveform] #' + currentInstanceId + ' - Destroying previous WaveSurfer instance');
             try {
                 // Pause before destroying to prevent audio overlap
                 if (wavesurferRef.current.isPlaying && wavesurferRef.current.isPlaying()) {
-                    console.log('[useWaveform] #' + currentInstanceId + ' - Pausing before destroy');
                     wavesurferRef.current.pause();
                 }
             } catch (e) {
-                console.warn('[useWaveform] #' + currentInstanceId + ' - Error pausing before destroy:', e);
+                // ignore
             }
             wavesurferRef.current.destroy();
             wavesurferRef.current = null;
         }
 
         const containerHeight = containerRef.current?.clientHeight ?? 100;
-        console.log('[useWaveform] #' + currentInstanceId + ' - Creating new WaveSurfer instance, container height:', containerHeight);
 
         // Skip creation if container has no height (likely not visible)
         if (containerHeight === 0) {
-            console.log('[useWaveform] #' + currentInstanceId + ' - Container height is 0, skipping creation');
             isCreatingRef.current = false;
             return;
         }
@@ -198,14 +185,19 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
         wavesurferRef.current = wavesurfer;
 
+        // Store playing state before interactions for WebAudio backend
+        let isPlayingBeforeInteraction = false;
+
+        wavesurfer.on('interaction', () => {
+            // Store playing state before user interaction (click/drag on waveform)
+            isPlayingBeforeInteraction = wavesurfer.isPlaying && wavesurfer.isPlaying();
+        });
+
         // Determine audio source – uploaded blobs (audioUrl) take precedence
         const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
 
-        console.log('[useWaveform] #' + currentInstanceId + ' - Loading audio:', { trackId, audioUrl, audioSource, hasPeaks: !!state.peaks });
-
         // Handle errors
         wavesurfer.on('error', (error: any) => {
-            console.error('[useWaveform] WaveSurfer error:', error);
             setState(prev => ({ 
                 ...prev, 
                 error: 'Failed to load audio' 
@@ -214,34 +206,49 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
         // Add finish event to prevent overlapping playback
         wavesurfer.on('finish', () => {
-            console.log('[useWaveform] Audio finished playing');
+            // Audio finished playing
         });
 
-        // Add seek event logging to diagnose splitting issues
+        // Resume immediately after seek for WebAudio backend when necessary
         wavesurfer.on('seek', (progress: number) => {
-            console.log('[useWaveform] Seek event - progress:', progress, 'time:', wavesurfer.getCurrentTime());
+            if (
+                isPlayingBeforeInteraction &&
+                wavesurfer.backend &&
+                wavesurfer.backend.constructor &&
+                wavesurfer.backend.constructor.name === 'WebAudio'
+            ) {
+                // Try to resume playback shortly after seek
+                setTimeout(() => {
+                    if (!wavesurfer.isPlaying()) {
+                        try {
+                            wavesurfer.play();
+                        } catch (e) {
+                            // ignore
+                        }
+                    }
+                }, 30);
+            }
+
+            isPlayingBeforeInteraction = false; // reset regardless
         });
 
         // Add play/pause event logging
         wavesurfer.on('play', () => {
-            console.log('[useWaveform] Play event fired - currentTime:', wavesurfer.getCurrentTime());
+            // Play event fired
         });
 
         wavesurfer.on('pause', () => {
-            console.log('[useWaveform] Pause event fired - currentTime:', wavesurfer.getCurrentTime());
+            // Pause event fired
         });
 
         // Add ready event – start playback automatically if requested
         wavesurfer.on('ready', () => {
-            console.log('[useWaveform] #' + currentInstanceId + ' - WaveSurfer ready');
-            console.log('[useWaveform] #' + currentInstanceId + ' - Duration:', wavesurfer.getDuration(), 'Backend:', wavesurfer.backend);
             isCreatingRef.current = false;
             if (autoPlay) {
                 try {
-                    console.log('[useWaveform] #' + currentInstanceId + ' - AutoPlay enabled - starting playback');
                     wavesurfer.play();
                 } catch (e) {
-                    console.error('[useWaveform] #' + currentInstanceId + ' - autoPlay play() error', e);
+                    // ignore
                 }
             }
         });
@@ -249,20 +256,15 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
         // Load audio with or without peaks
         if (audioSource) {
             try {
-                console.log('[useWaveform] #' + currentInstanceId + ' - Loading audio URL:', audioSource);
-                
                 if (state.peaks && trackId) {
-                    console.log('[useWaveform] #' + currentInstanceId + ' - Has peaks - loading with MediaElement backend, peaks length:', state.peaks.length);
-                    
                     // For MediaElement backend with peaks, pass peaks directly to load()
                     // This should display the waveform immediately using the peaks data
                     wavesurfer.load(audioSource, state.peaks as any);
                 } else {
-                    console.log('[useWaveform] #' + currentInstanceId + ' - Loading without peaks - will decode audio');
+                    // For blob URLs (uploaded files), use direct URL loading with WebAudio backend
                     wavesurfer.load(audioSource);
                 }
             } catch (loadError) {
-                console.error('[useWaveform] #' + currentInstanceId + ' - Load error:', loadError);
                 setState(prev => ({ 
                     ...prev, 
                     error: 'Failed to load audio source' 
@@ -270,15 +272,12 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
                 isCreatingRef.current = false;
             }
         } else {
-            console.warn('[useWaveform] #' + currentInstanceId + ' - No audio source provided');
             isCreatingRef.current = false;
         }
 
         return () => {
-            console.log('[useWaveform] #' + currentInstanceId + ' - Cleanup function called');
             resizeObserver.disconnect();
             if (wavesurferRef.current) {
-                console.log('[useWaveform] #' + currentInstanceId + ' - Destroying wavesurfer instance in cleanup');
                 wavesurferRef.current.destroy();
                 wavesurferRef.current = null;
             }
