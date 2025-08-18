@@ -109,7 +109,7 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
                 </div>
                 <div className="w-full">
                     <input
-                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
+                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica"
                         placeholder="Type new playlist name..."
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}

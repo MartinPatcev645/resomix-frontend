@@ -67,25 +67,25 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Your Name
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
+              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Email Address
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
+              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Subject <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Brief description of your inquiry" />
+              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Brief description of your inquiry" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Phone Number <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Your phone number" />
+              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Your phone number" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
