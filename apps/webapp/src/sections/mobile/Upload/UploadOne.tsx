@@ -16,6 +16,13 @@ const UploadOne: React.FC = () => {
         setActiveComponent('upload');
     };
 
+    // State for dropdown result count (defaults to 20)
+    const [selectedCount, setSelectedCount] = useState<number>(20);
+
+    const handleCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedCount(Number(e.target.value));
+    };
+
     const { handleSelectTrack } = useTrackSimilarity();
 
     const onTrackSelect = (track: SearchResult) => {
@@ -34,14 +41,39 @@ const UploadOne: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex flex-col items-center gap-[var(--px-6)]">
-                    {/* Dropdown menu following same style */}
-                    <div className="">
-                        <select className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]">
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="10">10 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="20" selected>20 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="50">50 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="100">100 tracks</option>
+                    {/* Custom dropdown that works consistently on iOS / Android */}
+                    <div
+                        className="relative w-[var(--px-97)] h-[var(--px-26)] border border-dotted border-slate-200 flex items-center justify-center gap-[var(--px-6)] text-[length:var(--px-11)] font-fira font-extralight text-[var(--color-primary)]"
+                    >
+                        {/* Invisible native select covers full area to keep accessibility & native picker */}
+                        <select
+                            value={selectedCount}
+                            onChange={handleCountChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
+                        >
+                            <option value="10">10 tracks</option>
+                            <option value="20">20 tracks</option>
+                            <option value="50">50 tracks</option>
+                            <option value="100">100 tracks</option>
                         </select>
+
+                        {/* Visible label and arrow */}
+                        <span>{selectedCount} tracks</span>
+                        {/* Inline SVG arrow */}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 52 53"
+                            className="w-[var(--px-10)] h-[var(--px-10)] pointer-events-none"
+                            fill="none"
+                        >
+                            <path
+                                d="M41.6639 19.2529L26.5404 34.3764L11.417 19.2529"
+                                stroke="white"
+                                strokeWidth={5}
+                                strokeLinecap="square"
+                                strokeDasharray="1 1"
+                            />
+                        </svg>
                     </div>
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest.">
                         <div className="flex items-center gap-[var(--px-6)]">
