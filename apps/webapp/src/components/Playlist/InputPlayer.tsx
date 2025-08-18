@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import WaveformPlayer, { type WaveformPlayerRef } from "./WaveformPlayer.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause_black.svg";
+import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
@@ -85,7 +85,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
 
             ws.on('audioprocess', updateTime);
             ws.on('seek', updateTime);
-            
+
             ws.on('finish', onFinish);
             // Check if already ready
             if ((ws as any).isReady) {
@@ -131,21 +131,21 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-        
+
         if (ws) {
             // Store playing state before skip
             const isPlayingTemp = ws.isPlaying && ws.isPlaying();
-            
+
             if (typeof ws.skipBackward === 'function') {
                 ws.skipBackward();
             } else if (typeof ws.skip === 'function') {
                 ws.skip(-10);
             }
-            
+
             // Check if playing state changed and restore if needed
             setTimeout(() => {
                 const isPlayingAfter = ws.isPlaying && ws.isPlaying();
-                
+
                 if (isPlayingTemp && !isPlayingAfter) {
                     try {
                         ws.play();
@@ -160,21 +160,21 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     const skipForward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-        
+
         if (ws) {
             // Store playing state before skip
             const isPlayingTemp = ws.isPlaying && ws.isPlaying();
-            
+
             if (typeof ws.skipForward === 'function') {
                 ws.skipForward();
             } else if (typeof ws.skip === 'function') {
                 ws.skip(10);
             }
-            
+
             // Check if playing state changed and restore if needed
             setTimeout(() => {
                 const isPlayingAfter = ws.isPlaying && ws.isPlaying();
-                
+
                 if (isPlayingTemp && !isPlayingAfter) {
                     try {
                         ws.play();
@@ -204,15 +204,16 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
             {/* Play / Pause */}
             <button
                 type="button"
-                className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors mb-[var(--px-17)]"
+                className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors mb-[var(--px-17)] cursor-pointer"
                 onClick={togglePlay}
             >
                 <img
                     src={isPlaying ? PauseSvg : PlaySvg}
                     alt={isPlaying ? 'Pause' : 'Play'}
-                    className={isPlaying ? 'w-[var(--px-16)] h-[var(--px-16)]' : 'w-[var(--px-24)] h-[var(--px-24)]'}
+                    className='w-[var(--px-16)] h-[var(--px-16)]'
                 />
             </button>
+
             <div className="flex flex-col w-full gap-[var(--px-5)]">
                 {/* Waveform */}
                 <div className="flex-1">
@@ -243,8 +244,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                     {/* Volume Slider */}
                     <div className="flex items-center gap-[var(--px-8)]">
                         {/* Volume Icon */}
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             onClick={handleVolumeIconClick}
                             className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)]"
                         >
@@ -256,7 +257,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                                 <img src={SoundLoudSvg} alt="High Volume" className="w-full h-full" />
                             )}
                         </button>
-                        
+
                         {/* Volume Slider */}
                         <div className="relative flex items-center w-[var(--px-80)]">
                             {/* White base line track */}

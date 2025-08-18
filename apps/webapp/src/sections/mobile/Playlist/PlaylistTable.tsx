@@ -2,7 +2,7 @@ import React from "react";
 import { WaveformPlayer } from "@/components/index.ts";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import PauseSvg from "@/assets/icons/pause.svg";
+import PauseSvg from "@/assets/icons/pause_white.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 

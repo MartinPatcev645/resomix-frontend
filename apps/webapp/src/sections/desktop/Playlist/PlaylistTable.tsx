@@ -5,7 +5,7 @@ import { formatDuration, formatPercentage } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause_black.svg";
+import PauseSvg from "@/assets/icons/pause.svg";
 import { usePlayerStore } from "@resomix/stores";
 
 // Remove local dummy data; use global store
@@ -64,9 +64,9 @@ const PlaylistTable: React.FC = () => {
                                 svg={<img 
                                     src={currentTrackId === track.id ? PauseSvg : PlaySvg} 
                                     alt={currentTrackId === track.id ? "Pause" : "Play"} 
-                                    className={`${currentTrackId === track.id ? 'w-[var(--px-10)] h-[var(--px-10)]' : 'w-[var(--px-16)] h-[var(--px-16)]'}`} 
+                                    className='w-[var(--px-10)] h-[var(--px-10)]' 
                                 />}
-                                padding={`${currentTrackId === track.id ? 'py-[var(--px-3)] px-[var(--px-5)]' : 'pt-[var(--px-1)]'}`} 
+                                padding='py-[var(--px-3)] px-[var(--px-4)]'
                                 onClick={() => handlePlayPause(track.id)}
                             />
                             <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-120)]">
