@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { useFeedbackStore } from "@resomix/stores";
 import { useFeedbackSubmit } from "@resomix/hooks";
+import { StatusMessage } from "../Elements/StatusMessage";
 
 interface FeedbackFormProps {
     onClose?: () => void;
@@ -14,10 +15,33 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
         setRecommendation,
         setFeedback,
         handleSubmit,
+        submitting,
     } = useFeedbackSubmit({
-        onSuccess: hideFeedbackForm,
-        onError: (msg: string) => alert(msg),
+        onSuccess: () => {
+            setStatusType('success');
+            setStatusMessage('Feedback submitted successfully!');
+            setShowStatus(true);
+            hideFeedbackForm();
+        },
+        onError: (msg: string) => {
+            setStatusType('error');
+            setStatusMessage(msg);
+            setShowStatus(true);
+        },
     });
+
+    const [showStatus, setShowStatus] = React.useState(false);
+    const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
+    const [statusMessage, setStatusMessage] = React.useState('');
+
+    const submitHandler = async () => {
+        setStatusType('loading');
+        setShowStatus(true);
+        const ok = await handleSubmit();
+        if (!ok) {
+            // error handled in onError callback
+        }
+    };
 
     // lock body scroll while modal open
     useEffect(() => {
@@ -113,9 +137,16 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                 </div>
 
                 <div className="flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text="Submit" onClick={handleSubmit} />
+                    <ButtonSleek text="Submit" onClick={submitHandler} />
                     <ButtonSleek text="Close" transparent={true} onClick={handleClose} />
                 </div>
+
+                <StatusMessage
+                    isOpen={showStatus}
+                    onClose={() => setShowStatus(false)}
+                    status={statusType}
+                    message={statusMessage}
+                />
             </div>
         </div>
     );

@@ -35,7 +35,6 @@ export const useContactSubmit = () => {
   const handleSubmit = async (): Promise<boolean> => {
     const error = validate();
     if (error) {
-      alert(error);
       return false;
     }
     setSubmitting(true);
@@ -48,14 +47,14 @@ export const useContactSubmit = () => {
         message: form.message.trim(),
       } as any);
       if (res.success) {
-        alert('Message sent successfully!');
+        // success handled by caller
         setForm({ name: '', email: '', subject: '', phone: '', message: '' });
         return true;
       }
-      alert(res.error || 'Failed to send message.');
+      // error handled by caller
     } catch (err) {
       console.error('submitContactForm error', err);
-      alert('Unexpected error while sending message.');
+      // error handled by caller
     } finally {
       setSubmitting(false);
     }

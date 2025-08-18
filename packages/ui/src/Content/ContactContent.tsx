@@ -1,12 +1,34 @@
 import { ButtonSleek } from "../index";
 import { useContactSubmit } from "@resomix/hooks";
+import { StatusMessage } from "../Elements/StatusMessage";
+import { useState } from "react";
 
 interface ContactContentProps {
   baseUrl?: string;
 }
 
 export default function ContactContent({ baseUrl = "https://resomix.com" }: ContactContentProps) {
-  const { form, handleChange, handleSubmit } = useContactSubmit();
+  const { form, handleChange, handleSubmit, submitting } = useContactSubmit();
+
+  const [showStatus, setShowStatus] = useState(false);
+  const [statusType, setStatusType] = useState<'loading' | 'success' | 'error'>('loading');
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const submitHandler = async () => {
+    setStatusType('loading');
+    setShowStatus(true);
+    const ok = await handleSubmit();
+    if (ok) {
+      setStatusType('success');
+      setStatusMessage('Message sent successfully!');
+    } else {
+      // errors handled by StatusMessage
+      if (!ok) {
+        setStatusType('error');
+        setStatusMessage('Failed to send message.');
+      }
+    }
+  };
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
@@ -96,8 +118,9 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
               <textarea name="message" value={form.message} onChange={handleChange} className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" rows={4} placeholder="Please describe your question or concern in detail..." />
             </div>
             <div className="mt-[var(--px-20)]">
-              <ButtonSleek text="Send Message" onClick={handleSubmit} />
+              <ButtonSleek text={submitting ? 'Sending...' : 'Send Message'} onClick={submitHandler} />
             </div>
+            <StatusMessage isOpen={showStatus} onClose={() => setShowStatus(false)} status={statusType} message={statusMessage} />
           </div>
         </div>
       </div>
