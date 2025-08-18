@@ -7,6 +7,7 @@ import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerStore } from "@resomix/stores";
+import { usePlaylistStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -28,6 +29,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     const effectiveId = trackId ?? 'uploaded-local';
 
     const { currentTrackId, setCurrentTrack, currentWs } = usePlayerStore();
+    const { playlistData } = usePlaylistStore();
     const isPlaying = currentTrackId === effectiveId;
 
     // Direct reference to the waveform player's wavesurfer instance
@@ -58,9 +60,33 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                 setDuration(dur);
             };
 
+            // When track finishes, move to next track if autoplay is enabled
+            const onFinish = () => {
+                if (!usePlayerStore.getState().autoplay) return;
+
+                // Build ordered list of track IDs (input + similar)
+                const order: string[] = [];
+                if (playlistData?.queried_track?.id) {
+                    order.push(playlistData.queried_track.id);
+                }
+                if (playlistData?.similar_tracks?.length) {
+                    order.push(...playlistData.similar_tracks.map(t => t.id));
+                }
+
+                const currentIdx = order.indexOf(effectiveId);
+                if (currentIdx !== -1 && currentIdx + 1 < order.length) {
+                    const nextId = order[currentIdx + 1];
+                    setCurrentTrack(nextId);
+                } else {
+                    // No next track – stop playback
+                    setCurrentTrack(null);
+                }
+            };
+
             ws.on('audioprocess', updateTime);
             ws.on('seek', updateTime);
-
+            
+            ws.on('finish', onFinish);
             // Check if already ready
             if ((ws as any).isReady) {
                 onReady();
@@ -73,6 +99,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                 ws.un && ws.un('audioprocess', updateTime);
                 ws.un && ws.un('seek', updateTime);
                 ws.un && ws.un('ready', onReady);
+                ws.un && ws.un('finish', onFinish);
             };
 
             // Store cleanup for the effect cleanup

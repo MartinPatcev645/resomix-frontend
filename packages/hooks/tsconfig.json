@@ -15,7 +15,7 @@
     "paths": {
       "@resomix/api-client": ["../api-client/src", "../api-client/dist/src"],
       "@resomix/ui": ["../ui/src", "../ui/dist"],
-      "@resomix/stores": ["../stores/src", "../stores/dist"],
+      "@resomix/stores": ["../stores/dist"],
       "@resomix/config": ["../config/src", "../config/dist"]
     }
   },

@@ -33,6 +33,7 @@
     "dist"
   ],
   "dependencies": {
+    "@resomix/stores": "workspace:*",
     "@react-three/fiber": "^9.2.0",
     "@tailwindcss/vite": "^4.1.11",
     "gsap": "^3.12.5",

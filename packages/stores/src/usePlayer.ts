@@ -14,6 +14,13 @@ interface PlayerStore {
    * overlapping audio.
    */
   setCurrentWs: (ws: any | null) => void
+
+  /**
+   * Global autoplay toggle. When true we automatically advance to the next
+   * track once the current one finishes.
+   */
+  autoplay: boolean
+  setAutoplay: (value: boolean) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set) => ({
@@ -32,6 +39,9 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
     }
     return { currentWs: ws };
   }),
+
+  autoplay: false,
+  setAutoplay: (value) => set({ autoplay: value }),
 }));
 
 export default usePlayerStore;

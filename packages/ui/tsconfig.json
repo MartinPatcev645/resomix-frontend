@@ -17,6 +17,7 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../config" }
+    { "path": "../config" },
+    { "path": "../stores" }
   ]
 }

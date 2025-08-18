@@ -5,6 +5,7 @@ import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerStore } from "@resomix/stores";
+import { usePlaylistStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -20,7 +21,8 @@ interface SimilarityPlayerProps {
 }
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying = false }) => {
-    const { currentWs } = usePlayerStore();
+    const { currentWs, setCurrentTrack } = usePlayerStore();
+    const { playlistData } = usePlaylistStore();
     
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
@@ -57,6 +59,28 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                 setDuration(newDuration);
             };
 
+            // Autoplay: advance to next track on finish when enabled
+            const onFinish = () => {
+                if (!usePlayerStore.getState().autoplay) return;
+
+                // Build ordered list of track IDs (input + similar)
+                const order: string[] = [];
+                if (playlistData?.queried_track?.id) {
+                    order.push(playlistData.queried_track.id);
+                }
+                if (playlistData?.similar_tracks?.length) {
+                    order.push(...playlistData.similar_tracks.map(t => t.id));
+                }
+
+                const idx = order.indexOf(trackId);
+                if (idx !== -1 && idx + 1 < order.length) {
+                    const nextId = order[idx + 1];
+                    setCurrentTrack(nextId);
+                } else {
+                    setCurrentTrack(null);
+                }
+            };
+
             // Check if already ready
             if ((ws as any).isReady) {
                 onReady();
@@ -65,12 +89,14 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
             ws.on('audioprocess', updateTime);
             ws.on('seek', updateTime);
             ws.on('ready', onReady);
+            ws.on('finish', onFinish);
             
             // Store cleanup function on the component instance
             const cleanup = () => {
                 ws.un && ws.un('audioprocess', updateTime);
                 ws.un && ws.un('seek', updateTime); 
                 ws.un && ws.un('ready', onReady);
+                ws.un && ws.un('finish', onFinish);
             };
             
             // Store cleanup for the effect cleanup
