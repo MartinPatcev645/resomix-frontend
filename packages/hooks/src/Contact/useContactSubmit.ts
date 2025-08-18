@@ -32,10 +32,10 @@ export const useContactSubmit = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (): Promise<boolean> => {
+  const handleSubmit = async (): Promise<{ success: boolean; message?: string }> => {
     const error = validate();
     if (error) {
-      return false;
+      return { success: false, message: error };
     }
     setSubmitting(true);
     try {
@@ -49,16 +49,15 @@ export const useContactSubmit = () => {
       if (res.success) {
         // success handled by caller
         setForm({ name: '', email: '', subject: '', phone: '', message: '' });
-        return true;
+        return { success: true };
       }
-      // error handled by caller
+      return { success: false, message: res.error || 'Failed to send message.' };
     } catch (err) {
       console.error('submitContactForm error', err);
-      // error handled by caller
+      return { success: false, message: 'Unexpected error while sending message.' };
     } finally {
       setSubmitting(false);
     }
-    return false;
   };
 
   return { form, handleChange, handleSubmit, submitting };

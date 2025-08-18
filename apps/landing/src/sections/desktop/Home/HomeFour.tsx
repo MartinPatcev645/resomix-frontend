@@ -7,7 +7,7 @@ import LineOneSvg from "@/assets/icons/line1.svg";
 import LineTwoSvg from "@/assets/icons/line2.svg";
 import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
-import { BASE_BETA_URL } from "@resomix/config";
+import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 const HomeFour: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
@@ -18,7 +18,7 @@ const HomeFour: React.FC = () => {
       <div className="mb-[var(--px-110)]">
         <div className="w-full flex justify-center items-center">
           <ButtonHeavyRight text="Our Mission" onClick={() => {
-            window.location.href = BASE_BETA_URL + "/about"
+            window.location.href = BASE_LANDING_URL + "/about"
           }} transparent={true} link_arrow={true} />
         </div>
       </div>

@@ -16,19 +16,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
         setFeedback,
         handleSubmit,
         submitting,
-    } = useFeedbackSubmit({
-        onSuccess: () => {
-            setStatusType('success');
-            setStatusMessage('Feedback submitted successfully!');
-            setShowStatus(true);
-            hideFeedbackForm();
-        },
-        onError: (msg: string) => {
-            setStatusType('error');
-            setStatusMessage(msg);
-            setShowStatus(true);
-        },
-    });
+    } = useFeedbackSubmit();
 
     const [showStatus, setShowStatus] = React.useState(false);
     const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
@@ -37,9 +25,14 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
     const submitHandler = async () => {
         setStatusType('loading');
         setShowStatus(true);
-        const ok = await handleSubmit();
-        if (!ok) {
-            // error handled in onError callback
+        const result = await handleSubmit();
+        if (result.success) {
+            setStatusType('success');
+            setStatusMessage('Feedback submitted successfully!');
+            hideFeedbackForm();
+        } else {
+            setStatusType('error');
+            setStatusMessage(result.message || 'An error occurred');
         }
     };
 

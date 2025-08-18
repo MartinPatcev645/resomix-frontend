@@ -17,16 +17,13 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
   const submitHandler = async () => {
     setStatusType('loading');
     setShowStatus(true);
-    const ok = await handleSubmit();
-    if (ok) {
+    const result = await handleSubmit();
+    if (result.success) {
       setStatusType('success');
       setStatusMessage('Message sent successfully!');
     } else {
-      // errors handled by StatusMessage
-      if (!ok) {
-        setStatusType('error');
-        setStatusMessage('Failed to send message.');
-      }
+      setStatusType('error');
+      setStatusMessage(result.message || 'An error occurred');
     }
   };
   return (

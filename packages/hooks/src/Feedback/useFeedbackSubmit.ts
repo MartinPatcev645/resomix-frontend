@@ -19,11 +19,10 @@ export const useFeedbackSubmit = ({ onSuccess, onError }: UseFeedbackSubmitOptio
     return null;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<{ success: boolean; message?: string }> => {
     const validationError = validate();
     if (validationError) {
-      onError?.(validationError);
-      return false;
+      return { success: false, message: validationError };
     }
 
     setSubmitting(true);
@@ -34,17 +33,15 @@ export const useFeedbackSubmit = ({ onSuccess, onError }: UseFeedbackSubmitOptio
         feedback: feedback.trim(),
       } as any);
       if (res.success) {
-        onSuccess?.();
-        return true;
+        return { success: true };
       }
-      onError?.(res.error || 'Failed to submit feedback.');
+      return { success: false, message: res.error || 'Failed to submit feedback.' };
     } catch (err) {
       console.error('submitFeedback error', err);
-      onError?.('Unexpected error while submitting feedback.');
+      return { success: false, message: 'Unexpected error while submitting feedback.' };
     } finally {
       setSubmitting(false);
     }
-    return false;
   };
 
   return {

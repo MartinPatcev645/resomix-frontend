@@ -4,7 +4,7 @@ import ReferenceSvg from "@/assets/icons/reference.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import { ButtonHeavyRight } from "@resomix/ui";
-import { BASE_BETA_URL } from "@resomix/config";
+import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 const HomeFour: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
@@ -13,7 +13,7 @@ const HomeFour: React.FC = () => {
       <div className="mb-[var(--px-90)]">
         <div className="w-full flex justify-center items-center">
           <ButtonHeavyRight text="Our Mission" onClick={() => {
-            window.location.href = BASE_BETA_URL + "/about"
+            window.location.href = BASE_LANDING_URL + "/about"
           }} transparent={true} link_arrow={true} />
         </div>
       </div>
