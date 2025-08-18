@@ -9,6 +9,7 @@ interface StatusMessageProps {
     isOpen: boolean
     onClose: () => void
     status: StatusType
+    title?: string
     message?: string
 }
 
@@ -16,6 +17,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     isOpen,
     onClose,
     status,
+    title,
     message
 }) => {
     // Prevent body scroll when modal is open
@@ -117,11 +119,13 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
 
                 <div className="text-center w-full">
                     <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                        Changes saved!
+                        {title}
                     </div>
-                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                        {message}
-                    </div>
+                    {message && (
+                        <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
+                            {message}
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">

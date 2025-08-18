@@ -6,7 +6,7 @@ import { usePlaylistStore } from '@resomix/stores';
 interface PlaylistRenameProps {
     isOpen: boolean
     onClose: () => void
-    onStatusChange: (status: 'loading' | 'success' | 'error', message: string) => void
+    onStatusChange: (status: 'loading' | 'success' | 'error', message: string, title?: string) => void
 }
 
 export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
@@ -77,7 +77,7 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
                         name: trimmed,
                     },
                 });
-                onStatusChange('success', 'Playlist renamed successfully!');
+                onStatusChange('success', '', 'Playlist renamed!');
             } else {
                 onStatusChange('error', response.error || 'Failed to rename playlist');
             }

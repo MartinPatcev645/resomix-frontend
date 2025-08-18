@@ -25,13 +25,15 @@ const PlaylistHero: React.FC = () => {
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
+  const [statusTitle, setStatusTitle] = React.useState('');
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { uploadedUrl } = usePlayerStore();
   
 
-  const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string) => {
+  const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
     setStatusMessage(message);
+    setStatusTitle(title || '');
     setShowStatus(true);
   };
 
@@ -213,6 +215,7 @@ const PlaylistHero: React.FC = () => {
         onClose={handleStatusClose} 
         status={statusType}
         message={statusMessage}
+        title={statusTitle}
       />
     </div>
   );

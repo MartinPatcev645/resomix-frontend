@@ -134,8 +134,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     // Show loading state while fetching peaks
     if (state.isLoading) {
         return (
-            <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded">
-                <div className="text-gray-600 dark:text-gray-400">
+            <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-[var(--color-primary-background)] rounded">
+                <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-10)] font-light">
                     Fetching the track for you...
                 </div>
             </div>
@@ -145,8 +145,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     // Show error state if peaks fetch failed
     if (state.error) {
         return (
-            <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-red-50 dark:bg-red-900/20 rounded">
-                <div className="text-red-600 dark:text-red-400 text-sm">
+            <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-[var(--color-primary-background)] rounded">
+                <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-10)] font-light">
                     {state.error}
                 </div>
             </div>
