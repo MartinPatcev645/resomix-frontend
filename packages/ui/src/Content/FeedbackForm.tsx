@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { useFeedbackStore } from "@resomix/stores";
+import { useFeedbackSubmit } from "@resomix/hooks";
 
 interface FeedbackFormProps {
     onClose?: () => void;
@@ -8,6 +9,15 @@ interface FeedbackFormProps {
 
 export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
     const { hideFeedbackForm } = useFeedbackStore();
+    const {
+        setSatisfaction,
+        setRecommendation,
+        setFeedback,
+        handleSubmit,
+    } = useFeedbackSubmit({
+        onSuccess: hideFeedbackForm,
+        onError: (msg: string) => alert(msg),
+    });
 
     // lock body scroll while modal open
     useEffect(() => {
@@ -45,11 +55,18 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                         </div>
                         {/* Display numbers from 1 to 10 with boxes */}
                         <div className="flex items-center justify-between w-full">
-                            {Array.from({ length: 10 }, (_, index) => (
-                                <div key={index} className="text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] bg-[var(--color-primary-background)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)]">
-                                    {index + 1}
-                                </div>
-                            ))}
+                            {Array.from({ length: 10 }, (_, index) => {
+                                const val = index + 1;
+                                return (
+                                    <div
+                                        key={val}
+                                        onClick={() => setSatisfaction(val)}
+                                        className="text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] bg-[var(--color-primary-background)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)]"
+                                    >
+                                        {val}
+                                    </div>
+                                );
+                            })}
                         </div>
                         <div className="text-[length:var(--px-9)] text-[var(--color-primary-hover)] font-fira flex items-center justify-between w-full mt-[var(--px-5)]">
                             <span>Not Satisfied</span>
@@ -62,11 +79,18 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                         </div>
                         {/* Display numbers from 1 to 10 with boxes */}
                         <div className="flex items-center justify-between w-full">
-                            {Array.from({ length: 10 }, (_, index) => (
-                                <div key={index} className="text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] bg-[var(--color-primary-background)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)]">
-                                    {index + 1}
-                                </div>
-                            ))}
+                            {Array.from({ length: 10 }, (_, index) => {
+                                const val = index + 1;
+                                return (
+                                    <div
+                                        key={val}
+                                        onClick={() => setRecommendation(val)}
+                                        className="text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] bg-[var(--color-primary-background)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)]"
+                                    >
+                                        {val}
+                                    </div>
+                                );
+                            })}
                         </div>
                         <div className="text-[length:var(--px-9)] text-[var(--color-primary-hover)] font-fira flex items-center justify-between w-full mt-[var(--px-5)]">
                             <span>Not Likely</span>
@@ -78,12 +102,18 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                             Additional feedback <span className="text-[var(--color-primary-hover)] font-light font-fira text-[length:var(--px-9)]">(optional)</span>
                         </div>
                         {/* Display Input area with same border and proper padding and text font */}
-                        <textarea className="w-full p-[var(--px-10)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-medium font-fira border border-dotted border-[var(--color-primary)] rounded-xs" rows={4} placeholder="Tell us more about your experience with Resomix..." />
+                        <textarea
+                            name="feedback"
+                            onChange={(e) => setFeedback(e.target.value)}
+                            className="w-full p-[var(--px-10)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-medium font-fira border border-dotted border-[var(--color-primary)] rounded-xs"
+                            rows={4}
+                            placeholder="Tell us more about your experience with Resomix..."
+                        />
                     </div>
                 </div>
 
                 <div className="flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text="Submit" onClick={handleClose} />
+                    <ButtonSleek text="Submit" onClick={handleSubmit} />
                     <ButtonSleek text="Close" transparent={true} onClick={handleClose} />
                 </div>
             </div>

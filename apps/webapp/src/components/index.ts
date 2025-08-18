@@ -18,7 +18,7 @@ import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Playlist/PlaylistRating.tsx";
 import PlaylistShare from "./Playlist/PlaylistShare.tsx";
 import PlaylistRename from "./Playlist/PlaylistRename.tsx";
-import StatusMessage from "./Playlist/StatusMessage.tsx";
+import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
 

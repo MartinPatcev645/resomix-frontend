@@ -38,7 +38,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"],
+  "include": ["src", "../../packages/ui/src/Elements/StatusMessage.tsx"],
   "references": [
     { "path": "../../packages/ui" },
     { "path": "../../packages/hooks" },

@@ -6,7 +6,7 @@ import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
 import { BASE_LANDING_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
-import { StatusMessage } from "@/components/index.ts";
+import { StatusMessage } from "@resomix/ui";
 
 export function PlaylistMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

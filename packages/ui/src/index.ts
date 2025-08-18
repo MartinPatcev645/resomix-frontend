@@ -46,6 +46,7 @@ import ContactContent from "./Content/ContactContent";
 import { FeedbackForm } from "./Content/FeedbackForm";
 import { WelcomeMessage } from "./Layout/WelcomeMessage";
 import { Tooltip } from "./Layout/Tooltip";
+import { StatusMessage } from "./Elements/StatusMessage";
 
 export {
   Navbar,
@@ -94,4 +95,5 @@ export {
   WelcomeMessage,
   Tooltip,
   FeedbackForm,
+  StatusMessage,
 };

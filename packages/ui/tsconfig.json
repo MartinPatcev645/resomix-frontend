@@ -12,12 +12,15 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
-      "@resomix/config": ["../config/src", "../config/dist"]
+      "@resomix/config": ["../config/src", "../config/dist"],
+      "@resomix/hooks": ["../hooks/src", "../hooks/dist"],
+      "@resomix/stores": ["../stores/src", "../stores/dist"]
     }
   },
   "include": ["src"],
   "references": [
     { "path": "../config" },
-    { "path": "../stores" }
+    { "path": "../stores" },
+    { "path": "../hooks" }
   ]
 }

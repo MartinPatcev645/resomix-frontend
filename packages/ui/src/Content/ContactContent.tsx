@@ -1,10 +1,12 @@
 import { ButtonSleek } from "../index";
+import { useContactSubmit } from "@resomix/hooks";
 
 interface ContactContentProps {
   baseUrl?: string;
 }
 
 export default function ContactContent({ baseUrl = "https://resomix.com" }: ContactContentProps) {
+  const { form, handleChange, handleSubmit } = useContactSubmit();
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
@@ -67,34 +69,34 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Your Name
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
+              <input name="name" value={form.name} onChange={handleChange} type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Email Address
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
+              <input name="email" value={form.email} onChange={handleChange} type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Subject <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Brief description of your inquiry" />
+              <input name="subject" value={form.subject} onChange={handleChange} type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Brief description of your inquiry" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Phone Number <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
               </div>
-              <input type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Your phone number" />
+              <input name="phone" value={form.phone} onChange={handleChange} type="text" className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" placeholder="Your phone number" />
             </div>
             <div className="flex flex-col items-start gap-[var(--px-10)]">
               <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
                 Message
               </div>
-              <textarea className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" rows={4} placeholder="Please describe your question or concern in detail..." />
+              <textarea name="message" value={form.message} onChange={handleChange} className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica" rows={4} placeholder="Please describe your question or concern in detail..." />
             </div>
             <div className="mt-[var(--px-20)]">
-              <ButtonSleek text="Send Message" onClick={() => { }} />
+              <ButtonSleek text="Send Message" onClick={handleSubmit} />
             </div>
           </div>
         </div>

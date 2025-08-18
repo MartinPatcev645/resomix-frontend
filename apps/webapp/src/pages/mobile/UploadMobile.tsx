@@ -6,7 +6,7 @@ import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
 import { BASE_LANDING_URL } from "@resomix/config";
 import { UploadLoader } from "@/components/index.ts";
-import { StatusMessage } from "@/components/index.ts";
+import { StatusMessage } from "@resomix/ui";
 import { useUploadStore } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
