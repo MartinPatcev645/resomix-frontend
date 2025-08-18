@@ -279,7 +279,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                     </div>
 
                     {/* Time Display */}
-                    <span className="text-xs text-white whitespace-nowrap min-w-[60px] text-right">
+                    <span className="text-[length:var(--px-8)] text-right font-fira font-light">
                         {formatTime(currentTime)} / {formatTime(duration)}
                     </span>
                 </div>

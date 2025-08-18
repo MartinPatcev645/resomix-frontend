@@ -1,11 +1,12 @@
 import React from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
-import { IconComp } from "@resomix/ui";
+import { IconComp, Tooltip } from "@resomix/ui";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
+import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { usePlayerStore } from "@resomix/stores";
 
 // Remove local dummy data; use global store
@@ -37,7 +38,7 @@ const PlaylistTable: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center -mt-[var(--px-30)] w-[var(--px-700)] mx-auto gap-[var(--px-10)]">
+        <div className="flex flex-col items-center justify-center -mt-[var(--px-30)] w-[var(--px-763)] ml-[var(--px-230)] gap-[var(--px-10)]">
             {/* Header */}
             <div className="flex tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center w-full uppercase px-[var(--px-12)] mb-[var(--px-10)]">
                 <div className="">#</div>
@@ -50,6 +51,7 @@ const PlaylistTable: React.FC = () => {
                 <div className="ml-[var(--px-60)]">Duration</div>
                 <div className="ml-[var(--px-20)]">Score</div>
                 <div className="ml-[var(--px-50)]">Similar?</div>
+                <div className="ml-[var(--px-30)]">Get Sonic<br />Discovery</div>
             </div>
             {/* Table */}
             {tracks.map((track) => (
@@ -61,10 +63,10 @@ const PlaylistTable: React.FC = () => {
                             </div>
                             <IconComp
                                 className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)]"
-                                svg={<img 
-                                    src={currentTrackId === track.id ? PauseSvg : PlaySvg} 
-                                    alt={currentTrackId === track.id ? "Pause" : "Play"} 
-                                    className='w-[var(--px-10)] h-[var(--px-10)]' 
+                                svg={<img
+                                    src={currentTrackId === track.id ? PauseSvg : PlaySvg}
+                                    alt={currentTrackId === track.id ? "Pause" : "Play"}
+                                    className='w-[var(--px-10)] h-[var(--px-10)]'
                                 />}
                                 padding='py-[var(--px-3)] px-[var(--px-4)]'
                                 onClick={() => handlePlayPause(track.id)}
@@ -93,29 +95,38 @@ const PlaylistTable: React.FC = () => {
                                     const upSelected = currentRating === 1;
                                     const downSelected = currentRating === 0;
                                     return (
-                                      <>
-                                        <ThumbIcon
-                                          onClick={() => {
-                                            if (upSelected) return;
-                                            handleTrackRating(track.id, 1);
-                                          }}
-                                          className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
-                                        />
-                                        <ThumbIcon
-                                          onClick={() => {
-                                            if (downSelected) return;
-                                            handleTrackRating(track.id, 0);
-                                          }}
-                                          className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
-                                        />
-                                      </>
+                                        <>
+                                            <Tooltip message="Yes Similar to Input Track!">
+                                                <ThumbIcon
+                                                    onClick={() => {
+                                                        if (upSelected) return;
+                                                        handleTrackRating(track.id, 1);
+                                                    }}
+                                                    className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                />
+                                            </Tooltip>
+                                            <Tooltip message="No, Not Similar to Input Track!">
+                                                <ThumbIcon
+                                                    onClick={() => {
+                                                        if (downSelected) return;
+                                                        handleTrackRating(track.id, 0);
+                                                    }}
+                                                    className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                />
+                                            </Tooltip>
+                                        </>
                                     );
                                 })()}
                             </div>
+                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer">
+                                <Tooltip message="Find Similarity For this Track!">
+                                    <img src={SonicDiscoverySvg} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                                </Tooltip>
+                            </div>
                         </div>
                         {currentTrackId === track.id && (
-                            <SimilarityPlayer 
-                                trackId={track.id} 
+                            <SimilarityPlayer
+                                trackId={track.id}
                                 isPlaying={currentTrackId === track.id}
                             />
                         )}
