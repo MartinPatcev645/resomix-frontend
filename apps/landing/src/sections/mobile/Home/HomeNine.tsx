@@ -2,13 +2,21 @@ import React, { useRef } from "react";
 import { useOnScreen } from "@resomix/hooks";
 import SectionNineGraphic from "@/assets/icons/composites/mobile/section_nine_graphic.svg";
 import { GoldenSpiral, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeNine: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
   return (
-    <div ref={sectionRef} className="mt-[var(--px-240)] relative z-15">
-      <div className="absolute top-[var(--px-800)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-393)] h-[var(--px-393)]">
+    <div ref={sectionRef} className="mt-[var(--px-120)] relative z-15">
+      <div className="mb-[var(--px-100)]">
+        <div className="flex justify-center w-full min-w-[var(--px-204-5)]">
+          <ButtonHeavyRight text="Upload Your Track" onClick={() => {
+            window.location.href = BASE_BETA_URL
+          }} transparent={true} link_arrow={true} />
+        </div>
+      </div>
+      <div className="absolute top-[var(--px-945)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-393)] h-[var(--px-393)]">
         {isVisible && <GoldenSpiral />}
       </div>
       {/* Content with higher z-index */}
@@ -84,9 +92,6 @@ const HomeNine: React.FC = () => {
                 text="blending &gt;&gt;"
                 delay={2100}
               />
-            </div>
-            <div className="flex justify-end mt-[var(--px-50)] min-w-[var(--px-204-5)]">
-              <ButtonHeavyRight className="w-[var(--px-204-5)]" text="Upload Your Track" onClick={() => { }} transparent={true} link_arrow={true} />
             </div>
           </div>
         </div>

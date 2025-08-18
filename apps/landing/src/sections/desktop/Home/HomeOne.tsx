@@ -6,7 +6,7 @@ const HomeOne: React.FC = () => (
   <div className='my-[var(--px-160)]'>
     <div className='flex flex-col w-full relative z-15'>
       <div className='flex justify-between items-end'>
-        <div className="justify-end text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">Resomix is the first sonic<br />analysis platform<br />of its kind</div>
+        <div className="justify-end text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">Resomix is the first sound<br />analysis platform<br />of its kind</div>
         <div className='flex items-end mb-[var(--px-32)] relative'>
           <div className="absolute top-1/3 right-0 transform text-[length:var(--px-13)] font-light font-auger text-right z-20 mr-[var(--px-60)] -mt-[var(--px-16)] leading-[var(--px-16)] opacity-70">
             Designed to delve<br />into the essence of<br />reference tracks
@@ -21,7 +21,7 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-605)] h-[var(--px-114)]" src={SectionOneGraphicLeft} alt="Section One Graphic Left" />
         </div>
-        <div className="text-right justify-start text-[var(--color-primary)] text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">bringing back results that<br />match its mood and spirit<br />in fresh, surprising ways</div>
+        <div className="text-right justify-start text-[var(--color-primary)] text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-36)]">It brings back results that<br />match the mood and spirit of<br />music in fresh, surprising ways.</div>
       </div>
     </div>
   </div>

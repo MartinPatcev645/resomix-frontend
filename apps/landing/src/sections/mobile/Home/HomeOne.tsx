@@ -12,7 +12,7 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-360)] h-[var(--px-100)]" src={SectionOneGraphicRight} alt="Section One Graphic Right" />
         </div>
-        <div className="items-start w-full text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider">Resomix is the first sonic<br />analysis platform of its kind</div>
+        <div className="items-start w-full text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider">Resomix is the first sound<br />analysis platform of its kind</div>
       </div>
       <div className='flex flex-col justify-between mt-[var(--px-48)] w-full'>
         <div className="relative">
@@ -21,7 +21,7 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-330)] h-[var(--px-100)]" src={SectionOneGraphicLeft} alt="Section One Graphic Left" />
         </div>
-        <div className="text-right w-full text-[length:var(--px-18)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider mt-[var(--px-30)]">bringing back results that<br />match its mood and spirit<br />in fresh, surprising ways</div>
+        <div className="text-right w-full text-[length:var(--px-18)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider mt-[var(--px-30)]">It brings back results that match the mood and spirit of music in fresh, surprising ways.</div>
       </div>
     </div>
   </div>

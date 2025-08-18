@@ -11,7 +11,7 @@ const HomeFive: React.FC = () => {
   const dropdownResults = React.useMemo(() => results.map((r) => ({ ...r, id: r.id })), [results]);
 
   return (
-    <div className='mt-[var(--px-150)] flex flex-col relative z-15'>
+    <div className='mt-[var(--px-120)] flex flex-col relative z-15'>
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
@@ -30,7 +30,7 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex w-full justify-start relative mt-[var(--px-80)]'>
           <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-14)] font-extralight font-auger z-20 ml-[var(--px-32)] -mt-[var(--px-2)] leading-[var(--px-16)]">
-            A human approach<br />to modern technology
+            A human approach<br />to modern technology.
           </div>
           <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-280)] h-[var(--px-100)]" />
         </div>
@@ -54,7 +54,7 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex flex-col'>
           <div className='text-[length:var(--px-21)] font-helvetica font-semibold uppercase leading-[var(--px-24)] text-left my-[var(--px-40)] font-bold'>
-            Explore a vast catalog<br />in seconds and discover<br />sonic connections where<br />no one else sees them
+            Explore a vast music<br />catalog in seconds and<br />discover connections<br />where no one else sees them
           </div>
           <div className='mt-[var(--px-60)] relative w-full'>
             {/** Search bar & dropdown */}

@@ -60,7 +60,7 @@ const HomeSeven: React.FC = () => {
         </div>
       </div>
       <div className="w-full flex justify-center items-center pt-[var(--px-60)] pb-[var(--px-140)] min-h-[var(--px-309)]">
-        <ButtonHeavyRight text="Align With Your Sound" onClick={() => {
+        <ButtonHeavyRight text="Unlock a Universe of Sounds" onClick={() => {
           window.location.href = BASE_BETA_URL
         }} transparent={true} link_arrow={true} />
       </div>

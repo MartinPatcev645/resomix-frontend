@@ -1,9 +1,18 @@
 import React from "react";
 import ArrowDownRightSvg from "@/assets/icons/arrow_down_right.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves_2.svg";
+import { ButtonHeavyRight } from "@resomix/ui";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeThree: React.FC = () => (
-  <div className='mt-[var(--px-350)] flex flex-col w-full relative z-15'>
+  <div className='mt-[var(--px-170)] flex flex-col w-full relative z-15'>
+    <div className="mb-[var(--px-150)]">
+      <div className="w-full flex justify-center items-center">
+        <ButtonHeavyRight text="Start Your Sonic Journey" onClick={() => {
+          window.location.href = BASE_BETA_URL
+        }} transparent={true} link_arrow={true} />
+      </div>
+    </div>
     <div className='flex flex-col w-full'>
       <div className='flex justify-between items-start'>
         <div className='flex gap-[var(--px-20)] justify-start items-center'>
@@ -17,7 +26,7 @@ const HomeThree: React.FC = () => (
     <div className='mt-[var(--px-350)] flex justify-between items-start'>
       <div className="justify-start text-[length:var(--px-25)] font-light font-montserrat uppercase leading-[var(--px-28)]">A safe haven for DJs escaping the<br />noise of algorithms and trends</div>
       <img src={SoundWavesSvg} alt="Sound Waves" className="mt-[var(--px-4)] w-[var(--px-59)] h-[var(--px-48)]" />
-      <div className="text-right justify-start text-[length:var(--px-25)] font-light font-montserrat uppercase leading-[var(--px-28)]">Resomix will expand your sonic<br />horizon, discover threads you never<br />knew were there.</div>
+      <div className="text-right justify-start text-[length:var(--px-25)] font-light font-montserrat uppercase leading-[var(--px-28)]">Resomix will expand your sonic<br />horizon, discovering threads you never<br />knew were there.</div>
     </div>
   </div>
 );

@@ -11,7 +11,7 @@ const HomeFive: React.FC = () => {
   const dropdownResults = React.useMemo(() => results.map((r) => ({ ...r, id: r.id })), [results]);
 
   return (
-    <div className='mt-[var(--px-250)] flex flex-col relative z-15'>
+    <div className='mt-[var(--px-150)] flex flex-col relative z-15'>
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
@@ -30,7 +30,7 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex w-full justify-start relative'>
           <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
-            A human approach<br />to modern technology
+            A human approach<br />to modern technology.
           </div>
           <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-276)] h-[var(--px-83)]" />
         </div>
@@ -54,7 +54,7 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex flex-col'>
           <div className='text-[length:var(--px-22)] font-fira font-semibold uppercase leading-7 text-right'>
-            Explore a vast catalog in seconds and discover<br />sonic connections where no one else sees them
+            Explore a vast music catalog in seconds and<br />discover connections where no one else sees them
           </div>
           <div className='text-[length:var(--px-13)] font-extralight font-auger text-right opacity-60 leading-[var(--px-16)] my-[var(--px-12)]'>
             Whether you're looking for underground gems or timeless hits,<br />

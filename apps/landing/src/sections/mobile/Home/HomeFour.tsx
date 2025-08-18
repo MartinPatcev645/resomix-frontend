@@ -3,15 +3,20 @@ import ArrowDownRightSvg from "@/assets/icons/arrow_down_right.svg";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
-// import { SineWaves, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { ButtonHeavyRight } from "@resomix/ui";
-// import { useOnScreen } from "@resomix/hooks";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeFour: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
   return (
-    <div ref={sectionRef} className='mt-[var(--px-200)] relative z-15'>
+    <div ref={sectionRef} className='mt-[var(--px-90)] relative z-15'>
+      <div className="mb-[var(--px-90)]">
+        <div className="w-full flex justify-center items-center">
+          <ButtonHeavyRight text="Our Mission" onClick={() => {
+            window.location.href = BASE_BETA_URL + "/about"
+          }} transparent={true} link_arrow={true} />
+        </div>
+      </div>
       <div className='flex flex-col gap-[var(--px-40)]'>
         <div className='flex flex-col text-[length:var(--px-43)] font-bold font-helvetica uppercase leading-[var(--px-43)]'>
           <div className='flex items-center justify-start'>
@@ -39,7 +44,7 @@ const HomeFour: React.FC = () => {
           <div className='flex items-center justify-start mb-[var(--px-16)]'>
             <img className="w-[var(--px-58)] h-[var(--px-60)] mr-[var(--px-12)] mb-[var(--px-4)]" src={AnalysisSvg} alt="Analysis" />
             <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
-              2 — Deep Sonic<br />Analysis
+              2 — Deep Sound<br />Analysis
             </div>
           </div>
           <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
@@ -57,8 +62,12 @@ const HomeFour: React.FC = () => {
             Within seconds, you'll have a carefully crafted selection of tracks that resonate with your reference's vibe, regardless of genre, release date, or popularity.
           </div>
         </div>
-        <div>
-          <ButtonHeavyRight className="w-full mx-[var(--px-2)]" text="Upload Your Track" onClick={() => { }} />
+        <div className="mt-[var(--px-90)]">
+          <div className="w-full flex justify-center items-center">
+            <ButtonHeavyRight text="Are you Ready" onClick={() => {
+              window.location.href = BASE_BETA_URL
+            }} transparent={true} link_arrow={true} />
+          </div>
         </div>
 
         {/* SVG frame with Sinewave, commented out for now */}
