@@ -1,11 +1,12 @@
 import React from "react";
 import ArrowSmallUp from "@/assets/icons/arrow_small_up.svg"
 import PlaySvg from "@/assets/icons/play.svg"
-import { GoldenSpiral } from "@resomix/ui";
+import { GoldenSpiral, ButtonHeavyRight } from "@resomix/ui";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const AboutFour: React.FC = () => {
     return (
-        <div className="flex flex-col w-full gap-[var(--px-200)] mt-[var(--px-400)] relative z-20">
+        <div className="flex flex-col w-full gap-[var(--px-90)] mt-[var(--px-400)] relative z-20">
             <div className="absolute top-[var(--px-1059)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-250)] h-[var(--px-250)]">
                 <GoldenSpiral />
             </div>
@@ -69,6 +70,13 @@ const AboutFour: React.FC = () => {
                 </div>
             </div>
 
+            {/* CTA Button */}
+            <div className="w-full flex justify-center items-center">
+                <ButtonHeavyRight text="Try it Now" onClick={() => {
+                    window.location.href = BASE_BETA_URL
+                }} transparent={true} link_arrow={true} />
+            </div>
+
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-300)] w-full z-15">
                 <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-left w-full opacity-80">
@@ -76,7 +84,7 @@ const AboutFour: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-end w-full">
                     <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-right w-full opacity-80">
-                        who want to build<br />a better way to<br />discover and enjoy<br />music across genres
+                        We want to build<br />a better way to<br />discover and enjoy<br />music across genres
                     </div>
                     <div className="text-[length:var(--px-14)] font-helvetica leading-[var(--px-16)] tracking-[var(--px-1)] underline hover:cursor-pointer text-right w-full mt-[var(--px-10)]">
                         Reach us anytime:<br />hello@resomix.com

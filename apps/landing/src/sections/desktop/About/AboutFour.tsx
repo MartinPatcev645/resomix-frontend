@@ -1,11 +1,12 @@
 import React from "react";
 import ArrowSmallUp from "@/assets/icons/arrow_small_up.svg"
 import PlaySvg from "@/assets/icons/play.svg"
-import { GoldenSpiral } from "@resomix/ui";
+import { GoldenSpiral, ButtonHeavyRight } from "@resomix/ui";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const AboutFour: React.FC = () => {
     return (
-        <div className="flex flex-col w-full gap-[var(--px-300)] mt-[var(--px-400)] relative z-20">
+        <div className="flex flex-col w-full gap-[var(--px-120)] mt-[var(--px-400)] relative z-20">
             <div className="absolute top-[var(--px-775)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-400)] h-[var(--px-400)] opacity-90">
                 <GoldenSpiral />
             </div>
@@ -69,6 +70,13 @@ const AboutFour: React.FC = () => {
                 </div>
             </div>
 
+            {/* CTA Button */}
+            <div className="w-full flex justify-center items-center">
+                <ButtonHeavyRight text="Try it Now" onClick={() => {
+                    window.location.href = BASE_BETA_URL
+                }} transparent={true} link_arrow={true} />
+            </div>
+
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-400)] w-full z-15">
                 <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-left w-full">
@@ -76,7 +84,7 @@ const AboutFour: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-end w-full">
                     <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-right">
-                        who want to build a better way<br />to discover and enjoy music across genres
+                        We want to build a better way<br />to discover and enjoy music across genres
                     </div>
                     <div className="text-[length:var(--px-17)] font-extralight font-helvetica leading-[var(--px-25)] tracking-[var(--px-1)] underline opacity-80 hover:opacity-100 transition-opacity duration-100 hover:cursor-pointer text-right w-full">
                         Reach us anytime: hello@resomix.com

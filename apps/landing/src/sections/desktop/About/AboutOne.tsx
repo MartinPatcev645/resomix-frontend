@@ -4,7 +4,8 @@ import AboutSeparatorLineSvg from "@/assets/icons/about_section_one_line.svg"
 import AboutSeparatorLineTwo from "@/assets/icons/about_section_one_line_2.svg"
 import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
 import GradientTwo from "@/assets/images/gradient 2.png"
-import { CodeTyping } from "@resomix/ui";
+import { CodeTyping, ButtonHeavyRight } from "@resomix/ui";
+import { BASE_BETA_URL } from "@resomix/config";
 
 const AboutOne: React.FC = () => {
     return (
@@ -35,7 +36,7 @@ const AboutOne: React.FC = () => {
                 </div>
                 <img src={AboutSeparatorLineSvg} alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)]" />
                 <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center">
-                    We use advanced audio analysis and deep learning technology<br />W
+                    We use advanced audio analysis and deep learning technology<br />
                     to truly understand a song: from tempo shifts to harmonic<br />
                     tension, dynamic range, and more.
                 </div>
@@ -51,6 +52,12 @@ const AboutOne: React.FC = () => {
                         multiline={true}
                         speed={100}
                     />
+                </div>
+                <img src={AboutSeparatorLineTwo} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                <div className="w-full flex justify-center items-center">
+                    <ButtonHeavyRight text="Find the Perfect Sonic Match" onClick={() => {
+                        window.location.href = BASE_BETA_URL
+                    }} transparent={true} link_arrow={true} />
                 </div>
             </div>
 
