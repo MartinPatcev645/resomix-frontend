@@ -63,7 +63,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
+            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer ml-[var(--px-5)]">
               <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-20)] h-[var(--px-20)]" />
             </div>
             <div className="flex items-center gap-[var(--px-8)]">
@@ -106,7 +106,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-250)]">
                   <div className="flex flex-col justify-between min-h-[var(--px-55)]">
-                    <div className="text-[length:var(--px-13)] font-light uppercase font-helvetica leading-[var(--px-11)]">
+                    <div className="text-[length:var(--px-13)] font-light uppercase font-helvetica leading-[var(--px-14)]">
                       <HoverFlow
                         text={playlistData?.playlist.name || ''}
                         maxChars={26}
@@ -116,7 +116,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                         maxWidth="210px"
                       />
                     </div>
-                    <div className={`text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
+                    <div className={`text-[length:var(--px-9)] lg:text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
                       <HoverFlow
                         text={playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title}
@@ -127,21 +127,21 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                         maxWidth="210px"
                       />
                     </div>
-                    <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-9)] items-center">
+                    <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] lg:text-[length:var(--px-7)] font-light font-fira leading-[var(--px-9)] items-center">
                       <img src={TimeSvg} alt="Time" className="w-[var(--px-8)] h-[var(--px-8)]" />
                       <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
                       <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
-                      <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-auto hover:cursor-pointer" />
+                      <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)] ml-auto hover:cursor-pointer" />
                     </div>
                   </div>
                 </div>
               </div>
               <div className="flex flex-col gap-[var(--px-10)]">
                 {/* Hidden Meta Info */}
-                <div className={`flex gap-[var(--px-2)] text-[length:var(--px-5-5)] my-[var(--px-5)] font-light font-fira leading-[var(--px-7)] items-center ${showMeta ? '' : 'hidden'}`}>
+                <div className={`flex gap-[var(--px-2)] text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] my-[var(--px-5)] font-light font-fira leading-[var(--px-7)] items-center ${showMeta ? '' : 'hidden'}`}>
                   <div className="truncate max-w-[var(--px-50)]">ID: {playlistData?.queried_track.id}</div>
                   <div>|</div>
                   <div>Status: {InputTrackStatus}</div>

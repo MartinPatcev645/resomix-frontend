@@ -7,7 +7,7 @@ import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 
 interface PlaylistTableProps {
-  onMoreClick?: (trackId: string) => void;
+    onMoreClick?: (trackId: string) => void;
 }
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
@@ -44,31 +44,33 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             </div>
                             <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]">
                                 <div className="w-full">
-                                    <div className="text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-11)] uppercase text-left truncate max-w-[var(--px-250)]">
+                                    <div className="text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
                                         {track.title}
                                     </div>
                                 </div>
                                 <div className="w-full">
-                                    <div className="text-[length:var(--px-8)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] uppercase text-left leading-[var(--px-8)] truncate max-w-[var(--px-250)]">
+                                    <div className="text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-left leading-[var(--px-8)] truncate max-w-[var(--px-250)]">
                                         {track.artist}
                                     </div>
                                 </div>
                                 <div className="w-full flex items-center justify-between">
-                                    <div className="text-[length:var(--px-5-5)] text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
+                                    <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]">
                                         {track.label} {track.year ? `- ${track.year}` : ''}
                                     </div>
-                                    <div className="text-[length:var(--px-5-5)] text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
-                                        {formatPercentage(track.score, 0)}
-                                    </div>
-                                    <div className="text-[length:var(--px-5-5)] text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
-                                        {formatDuration(track.duration)}
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
+                                            {formatPercentage(track.score, 0)}
+                                        </div>
+                                        <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)] ml-[var(--px-60)]">
+                                            {formatDuration(track.duration)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         {currentTrackId === track.id && (
                             <div>
-                                <WaveformPlayer trackId={track.id} isPlaying={currentTrackId===track.id} autoPlay={true} />
+                                <WaveformPlayer trackId={track.id} isPlaying={currentTrackId === track.id} autoPlay={true} />
                             </div>
                         )}
                     </div>

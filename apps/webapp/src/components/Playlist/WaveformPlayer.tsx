@@ -135,7 +135,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     if (state.isLoading) {
         return (
             <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-[var(--color-primary-background)] rounded">
-                <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-10)] font-light">
+                <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-12)] lg:text-[length:var(--px-10)] font-light">
                     Fetching the track for you...
                 </div>
             </div>
@@ -146,7 +146,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     if (state.error) {
         return (
             <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-[var(--color-primary-background)] rounded">
-                <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-10)] font-light">
+                <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-12)] lg:text-[length:var(--px-10)] font-light">
                     {state.error}
                 </div>
             </div>

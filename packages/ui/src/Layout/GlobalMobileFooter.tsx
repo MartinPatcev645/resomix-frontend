@@ -19,22 +19,22 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
           </a>
         </div>
         <div className="flex justify-between">
-          <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)]">
-            <div className="leading-[var(--px-12)] my-[var(--px-14)]">
+          <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)] leading-[var(--px-16)]">
+            <div className="my-[var(--px-14)]">
               <CodeTyping
                 speed={50}
                 text="// ──────[ resomix &gt;<br />footer_terminal ]──────"
                 multiline={true}
               />
             </div>
-            <div className="leading-[var(--px-12)]">
+            <div>
               <CodeTyping
                 speed={50}
                 text="company_name: Resomix Inc.<br />status: online [✓]"
                 multiline={true}
               />
             </div>
-            <div className="leading-[var(--px-12)] mt-[var(--px-20)]">
+            <div className="mt-[var(--px-20)]">
               <CodeTyping
                 speed={120}
                 text={`contact@email: hello@resomix.audio<br />support_line: +1 (800) 441-7765<br />HQ_coords: 40°44'54.6"N 73°59'08.9"W // New York City, USA<br />address: 808 Echo Street, Floor 12, Brooklyn, NY 11201, USA`}
