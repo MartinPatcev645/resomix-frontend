@@ -215,7 +215,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
                 isPlayingBeforeInteraction &&
                 wavesurfer.backend &&
                 wavesurfer.backend.constructor &&
-                wavesurfer.backend.constructor.name === 'WebAudio'
+                /WebAudio/i.test(wavesurfer.backend.constructor.name)
             ) {
                 // Try to resume playback shortly after seek
                 setTimeout(() => {
