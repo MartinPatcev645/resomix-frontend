@@ -44,6 +44,7 @@ import ErrorContent from "./Content/ErrorContent";
 import Error404 from "./Content/Error404";
 import ContactContent from "./Content/ContactContent";
 import { WelcomeMessage } from "./Layout/WelcomeMessage";
+import { Tooltip } from "./Layout/Tooltip";
 
 export {
   Navbar,
@@ -90,4 +91,5 @@ export {
   ContactContent,
   Error404,
   WelcomeMessage,
+  Tooltip,
 };

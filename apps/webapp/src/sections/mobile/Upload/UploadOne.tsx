@@ -3,6 +3,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } from "@/components/index.ts";
+import { Tooltip } from "@resomix/ui";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -42,14 +43,16 @@ const UploadOne: React.FC = () => {
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="100">100 tracks</option>
                         </select>
                     </div>
-                    <div className="flex items-center gap-[var(--px-6)]">
-                        <div className="text-[length:var(--px-9)] font-fira font-light">
-                            Results Count
+                    <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest.">
+                        <div className="flex items-center gap-[var(--px-6)]">
+                            <div className="text-[length:var(--px-9)] font-fira font-light">
+                                Results Count
+                            </div>
+                            <div className="hover:cursor-pointer">
+                                <img src={InfoSvg} alt="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
+                            </div>
                         </div>
-                        <div className="hover:cursor-pointer">
-                            <img src={InfoSvg} alt="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
-                        </div>
-                    </div>
+                    </Tooltip>
                 </div>
             </div>
             <div className="flex flex-col mt-[var(--px-20)]">

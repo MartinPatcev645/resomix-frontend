@@ -34,8 +34,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     trackId,
     audioUrl,
     theme = {
-        textSecondary: '#ffffff',
-        primary: '#ffffff',
+        textSecondary: '#ffffff', // unplayed waveform color
+        primary: '#ffffff', // cursor color
         cardBg: '#000000'
     },
     volume = 1,

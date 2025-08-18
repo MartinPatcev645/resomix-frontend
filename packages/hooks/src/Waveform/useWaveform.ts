@@ -153,7 +153,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
             // otherwise use MediaElement for remote streaming which supports range requests.
             backend: audioUrl && audioUrl.startsWith('blob:') ? 'WebAudio' : 'MediaElement',
             waveColor: theme.textSecondary,
-            progressColor: theme.primary,
+            progressColor: '#EE4A26', // neon orange for played portion
             cursorColor: theme.primary,
             backgroundColor: theme.cardBg || "#000000",
             barWidth: 1,

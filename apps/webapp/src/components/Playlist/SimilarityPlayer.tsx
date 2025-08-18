@@ -23,7 +23,7 @@ interface SimilarityPlayerProps {
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying = false }) => {
     const { currentWs, setCurrentTrack } = usePlayerStore();
     const { playlistData } = usePlaylistStore();
-    
+
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
 
@@ -42,18 +42,18 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
 
     // Effect to set up time tracking when component mounts or track changes
     useEffect(() => {
-        
+
         // Use a small delay to ensure WaveformPlayer has initialized
         const timeoutId = setTimeout(() => {
             const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-            
+
             if (!ws) return;
 
             const updateTime = () => {
                 const newTime = ws.getCurrentTime();
                 setCurrentTime(newTime);
             };
-            
+
             const onReady = () => {
                 const newDuration = ws.getDuration();
                 setDuration(newDuration);
@@ -90,15 +90,15 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
             ws.on('seek', updateTime);
             ws.on('ready', onReady);
             ws.on('finish', onFinish);
-            
+
             // Store cleanup function on the component instance
             const cleanup = () => {
                 ws.un && ws.un('audioprocess', updateTime);
-                ws.un && ws.un('seek', updateTime); 
+                ws.un && ws.un('seek', updateTime);
                 ws.un && ws.un('ready', onReady);
                 ws.un && ws.un('finish', onFinish);
             };
-            
+
             // Store cleanup for the effect cleanup
             return cleanup;
         }, 100);
@@ -145,7 +145,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
 
     return (
         <div className="flex flex-col w-full gap-[var(--px-5)]">
-            <WaveformPlayer 
+            <WaveformPlayer
                 ref={waveformPlayerRef}
                 trackId={trackId}
                 isPlaying={isPlaying}
@@ -170,8 +170,8 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                 {/* Volume Slider */}
                 <div className="flex items-center gap-[var(--px-8)]">
                     {/* Volume Icon */}
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={handleVolumeIconClick}
                         className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)]"
                     >
@@ -183,7 +183,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                             <img src={SoundLoudSvg} alt="High Volume" className="w-full h-full" />
                         )}
                     </button>
-                    
+
                     {/* Volume Slider */}
                     <div className="relative flex items-center w-[var(--px-80)]">
                         {/* White base line track */}
@@ -202,12 +202,12 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                             }}
                         />
                     </div>
-
-                    {/* Time Display */}
-                    <span className="text-xs text-white whitespace-nowrap min-w-[60px] text-right">
-                        {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
                 </div>
+
+                {/* Time Display */}
+                <span className="text-xs text-white whitespace-nowrap min-w-[60px] text-right">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
             </div>
         </div>
     );

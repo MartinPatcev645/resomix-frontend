@@ -3,6 +3,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponent, UploadComponent, PopularComponent } from "@/components/index.ts";
+import { Tooltip } from "@resomix/ui";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -34,12 +35,16 @@ const UploadOne: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-[var(--px-6)]">
-                    <div className="text-[length:var(--px-9)] font-fira font-light">
-                        Results Count
-                    </div>
-                    <div className="hover:cursor-pointer">
-                        <img src={InfoSvg} alt="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
-                    </div>
+                    <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest.">
+                        <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
+                            <div className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]">
+                                Results Count
+                            </div>
+                            <div>
+                                <img src={InfoSvg} alt="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
+                            </div>
+                        </div>
+                    </Tooltip>
                     {/* Dropdown menu following same style */}
                     <div className="">
                         <select className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]">
@@ -54,12 +59,12 @@ const UploadOne: React.FC = () => {
             <div className="flex w-[var(--px-880)] h-auto justify-between mt-[var(--px-20)]">
                 <div className="flex-1/2 mr-[var(--px-15)]">
                     {activeComponent === 'search' ? (
-                        <SearchComponent 
+                        <SearchComponent
                             onUploadClick={handleUploadClick}
                             onTrackSelect={onTrackSelect}
                         />
                     ) : (
-                        <UploadComponent 
+                        <UploadComponent
                             onSearchClick={handleSearchClick}
                         />
                     )}
@@ -68,7 +73,7 @@ const UploadOne: React.FC = () => {
                     <PopularComponent onTrackSelect={onTrackSelect} />
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
