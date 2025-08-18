@@ -11,7 +11,9 @@ interface FeedbackFormProps {
 export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
     const { hideFeedbackForm } = useFeedbackStore();
     const {
+        satisfaction,
         setSatisfaction,
+        recommendation,
         setRecommendation,
         setFeedback,
         handleSubmit,
@@ -29,7 +31,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
         if (result.success) {
             setStatusType('success');
             setStatusMessage('Feedback submitted successfully!');
-            hideFeedbackForm();
         } else {
             setStatusType('error');
             setStatusMessage(result.message || 'An error occurred');
@@ -78,7 +79,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                                     <div
                                         key={val}
                                         onClick={() => setSatisfaction(val)}
-                                        className="text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] bg-[var(--color-primary-background)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)]"
+                                        className={`text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)] ${val === satisfaction ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'}`}
                                     >
                                         {val}
                                     </div>
@@ -102,7 +103,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                                     <div
                                         key={val}
                                         onClick={() => setRecommendation(val)}
-                                        className="text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] bg-[var(--color-primary-background)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)]"
+                                        className={`text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)] ${val === recommendation ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'}`}
                                     >
                                         {val}
                                     </div>
@@ -136,7 +137,10 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
 
                 <StatusMessage
                     isOpen={showStatus}
-                    onClose={() => setShowStatus(false)}
+                    onClose={() => {
+                        setShowStatus(false);
+                        if (statusType === 'success') hideFeedbackForm();
+                    }}
                     status={statusType}
                     message={statusMessage}
                 />
