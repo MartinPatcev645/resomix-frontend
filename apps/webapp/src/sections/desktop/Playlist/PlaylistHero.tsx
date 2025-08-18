@@ -190,7 +190,7 @@ const PlaylistHero: React.FC = () => {
               <div className="absolute right-[var(--px-10)] top-[var(--px-10)] px-[var(--px-16)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
             </div>
           </div>
-          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
+          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
         </div>
       </div>
       

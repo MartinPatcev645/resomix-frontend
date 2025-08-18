@@ -159,7 +159,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
           </div>
         </div>
         <img src={AngleDownSvg} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
-        <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SIMILAR TRACKS FOUND</div>
+        <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
       </div>
       
       {/* Modals */}
