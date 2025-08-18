@@ -118,7 +118,7 @@ const PlaylistTable: React.FC = () => {
                                     );
                                 })()}
                             </div>
-                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer">
+                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer" onClick={() => {}}>
                                 <Tooltip message="Find Similarity For this Track!">
                                     <img src={SonicDiscoverySvg} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)]" />
                                 </Tooltip>

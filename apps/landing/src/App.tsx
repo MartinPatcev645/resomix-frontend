@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive } from "@resomix/hooks";
-import { WelcomeMessage } from "@resomix/ui";
+import { WelcomeMessage, FeedbackForm } from "@resomix/ui";
+import { useFeedbackStore } from "@resomix/stores";
 import {
   HomePage,
   HomeMobile,
@@ -36,6 +37,7 @@ function UsedAboutPage() {
 
 function App() {
   const { showWelcome, dismiss } = useFirstVisit();
+  const { showFeedback } = useFeedbackStore();
 
   return (
     <>
@@ -46,6 +48,9 @@ function App() {
           matchSvg={MatchesSvg}
           discoverSvg={AnalysisSvg}
         />}
+      
+      {showFeedback && <FeedbackForm />}
+      
       <Routes>
         <Route path="/" element={<UsedHomePage />} />
         <Route path="/about" element={<UsedAboutPage />} />

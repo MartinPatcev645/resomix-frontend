@@ -43,6 +43,7 @@ import { SideLines } from "./Layout/SideLines";
 import ErrorContent from "./Content/ErrorContent";
 import Error404 from "./Content/Error404";
 import ContactContent from "./Content/ContactContent";
+import { FeedbackForm } from "./Content/FeedbackForm";
 import { WelcomeMessage } from "./Layout/WelcomeMessage";
 import { Tooltip } from "./Layout/Tooltip";
 
@@ -92,4 +93,5 @@ export {
   Error404,
   WelcomeMessage,
   Tooltip,
+  FeedbackForm,
 };

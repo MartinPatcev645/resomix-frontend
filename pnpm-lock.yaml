@@ -42,6 +42,9 @@ importers:
       '@resomix/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
+      '@resomix/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@resomix/ui':
         specifier: workspace:*
         version: link:../../packages/ui
