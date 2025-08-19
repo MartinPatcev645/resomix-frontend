@@ -18,7 +18,9 @@ export const usePlayerManager = () => {
     autoplay,
     setAutoplay,
     volume,
-    setVolume
+    setVolume,
+    topSk,
+    setTopSk
   } = usePlayerStore()
 
   // Keep WaveSurfer instances volume in sync with global volume
@@ -234,6 +236,10 @@ export const usePlayerManager = () => {
     // Volume
     volume,
     setVolume,
+    
+    // Similarity settings
+    topSk,
+    setTopSk,
     
     // WaveSurfer instances
     inputWs,

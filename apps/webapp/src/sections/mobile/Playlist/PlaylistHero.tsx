@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton, HoverFlow } from "@resomix/ui";
+import { IconButton, ToggleButton, HoverFlow } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
@@ -7,8 +7,8 @@ import { StatusMessage } from "@resomix/ui";
 import { usePlayerStore } from "@resomix/stores";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
-import ShareSvg from "@/assets/icons/share.svg";
-import ShareBlackSvg from "@/assets/icons/share_black.svg";
+// import ShareSvg from "@/assets/icons/share.svg";
+// import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import AngleDownSvg from "@/assets/icons/AngleDown.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
@@ -35,7 +35,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
-  const { uploadedUrl } = usePlayerStore();
+  const { uploadedUrl, autoplay, setAutoplay } = usePlayerStore();
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -76,7 +76,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
               />
-              <IconButton
+              {/* <IconButton
                 text="Share"
                 transparent={true}
                 customWidth="min-w-[var(--px-70)]"
@@ -84,6 +84,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 onClick={() => setShowShare(true)}
                 icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+              /> */}
+              <ToggleButton
+                text="Autoplay"
+                customWidth="min-w-[var(--px-120)]"
+                isOn={autoplay}
+                onToggle={setAutoplay}
               />
               <IconButton
                 text="Rate Playlist"
@@ -164,7 +170,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <img src={AngleDownSvg} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
         <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
       </div>
-      
+
       {/* Modals */}
       <PlaylistRating
         isOpen={showRating}
@@ -177,11 +183,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         onClose={handleRenameClose}
         onStatusChange={handleStatusChange}
       />
-      
+
       {/* Status Message */}
-      <StatusMessage 
-        isOpen={showStatus} 
-        onClose={handleStatusClose} 
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={handleStatusClose}
         status={statusType}
         message={statusMessage}
         title={statusTitle}

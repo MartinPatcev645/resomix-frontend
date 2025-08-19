@@ -31,6 +31,12 @@ interface PlayerStore {
    */
   volume: number
   setVolume: (value: number) => void
+
+  /**
+   * Number of similar tracks to return (TOPSK parameter)
+   */
+  topSk: number
+  setTopSk: (value: number) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set) => ({
@@ -65,6 +71,9 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   volume: 0.7,
   setVolume: (value) => set({ volume: Math.min(1, Math.max(0, value)) }),
+
+  topSk: 20,
+  setTopSk: (value) => set({ topSk: value }),
 }));
 
-export default usePlayerStore;
+export default usePlayerStore

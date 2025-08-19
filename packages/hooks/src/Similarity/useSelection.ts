@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { getSimilarityForSelectedTrack } from "@resomix/api-client";
 import { useUploadStore } from "./useUpload";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import type { UploadResult } from "./useUpload";
 
 /**
@@ -21,12 +21,15 @@ export function useTrackSimilarity() {
 
   // Playlist store – we will save API response here
   const { setPlaylistResponse } = usePlaylistStore();
+  
+  // Get topSk from player store
+  const { topSk } = usePlayerStore();
 
   // Since we are not actually uploading anything we will keep progress fixed
   // at 0 → 100 instantly. This keeps UI components that rely on the progress
   // value happy without showing a fictitious bar for too long.
   const handleSelectTrack = useCallback(
-    async (trackId: string | number, topSk = 20) => {
+    async (trackId: string | number) => {
       if (!trackId) return;
       // Show overlay but keep progress at 0 (no actual upload)
       setOverlay(true);
@@ -58,7 +61,7 @@ export function useTrackSimilarity() {
         setOverlay(false);
       }
     },
-    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload],
+    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk],
   );
 
   return {

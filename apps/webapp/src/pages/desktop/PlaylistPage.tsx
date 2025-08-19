@@ -26,7 +26,7 @@ export function PlaylistPage() {
     if (!isLoading && !playlistData) {
       setExpired(true);
       timeoutId = setTimeout(() => {
-        window.location.href = BASE_BETA_URL;
+        handleExpiredClose();
       }, 3000);
     } else {
       // Data arrived or still loading – ensure expired flag reset
@@ -39,6 +39,10 @@ export function PlaylistPage() {
     };
   }, [isLoading, playlistData]);
 
+  const handleExpiredClose = () => {
+    window.location.href = BASE_BETA_URL;
+  };
+
   return (
     isLoading ? (
       <StatusMessage
@@ -50,7 +54,7 @@ export function PlaylistPage() {
     ) : expired ? (
       <StatusMessage 
         isOpen={true}
-        onClose={() => {}}
+        onClose={handleExpiredClose}
         status="error"
         message="Playlist expired. Redirecting..."
       />

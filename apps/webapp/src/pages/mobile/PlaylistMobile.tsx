@@ -4,7 +4,7 @@ import { MenuPage } from "../index.ts";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
-import { BASE_LANDING_URL } from "@resomix/config";
+import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
 import { StatusMessage } from "@resomix/ui";
 
@@ -27,10 +27,14 @@ export function PlaylistMobile() {
       setExpired(true);
       // Redirect after brief delay
       setTimeout(() => {
-        window.location.href = BASE_LANDING_URL;
+        handleExpiredClose();
       }, 3000);
     }
   }, [playlistData]);
+
+  const handleExpiredClose = () => {
+    window.location.href = BASE_BETA_URL;
+  };
 
   const handleMoreMenuOpen = (trackId: string) => {
     setSelectedTrackId(trackId);
@@ -46,7 +50,7 @@ export function PlaylistMobile() {
     expired ? (
       <StatusMessage 
         isOpen={true}
-        onClose={() => {}}
+        onClose={handleExpiredClose}
         status="error"
         message="Playlist expired. Redirecting..."
       />

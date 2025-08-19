@@ -4,6 +4,7 @@ import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } from "@/components/index.ts";
 import { Tooltip } from "@resomix/ui";
+import { usePlayerStore } from "@resomix/stores";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -16,11 +17,11 @@ const UploadOne: React.FC = () => {
         setActiveComponent('upload');
     };
 
-    // State for dropdown result count (defaults to 20)
-    const [selectedCount, setSelectedCount] = useState<number>(20);
+    // Get topSk from player store
+    const { topSk, setTopSk } = usePlayerStore();
 
     const handleCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedCount(Number(e.target.value));
+        setTopSk(Number(e.target.value));
     };
 
     const { handleSelectTrack } = useTrackSimilarity();
@@ -47,7 +48,7 @@ const UploadOne: React.FC = () => {
                     >
                         {/* Invisible native select covers full area to keep accessibility & native picker */}
                         <select
-                            value={selectedCount}
+                            value={topSk}
                             onChange={handleCountChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
                         >
@@ -58,7 +59,7 @@ const UploadOne: React.FC = () => {
                         </select>
 
                         {/* Visible label and arrow */}
-                        <span>{selectedCount} tracks</span>
+                        <span>{topSk} tracks</span>
                         {/* Inline SVG arrow */}
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

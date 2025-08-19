@@ -4,6 +4,7 @@ import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponent, UploadComponent, PopularComponent } from "@/components/index.ts";
 import { Tooltip } from "@resomix/ui";
+import { usePlayerStore } from "@resomix/stores";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -21,6 +22,13 @@ const UploadOne: React.FC = () => {
 
     const handleUploadClick = () => {
         setActiveComponent('upload');
+    };
+
+    // Get topSk from player store
+    const { topSk, setTopSk } = usePlayerStore();
+
+    const handleCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setTopSk(Number(e.target.value));
     };
 
     return (
@@ -47,9 +55,13 @@ const UploadOne: React.FC = () => {
                     </Tooltip>
                     {/* Dropdown menu following same style */}
                     <div className="">
-                        <select className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]">
+                        <select 
+                            value={topSk} 
+                            onChange={handleCountChange}
+                            className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]"
+                        >
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="10">10 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="20" selected>20 tracks</option>
+                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="20">20 tracks</option>
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="50">50 tracks</option>
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="100">100 tracks</option>
                         </select>

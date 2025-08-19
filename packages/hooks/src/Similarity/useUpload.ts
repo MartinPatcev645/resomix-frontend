@@ -56,6 +56,7 @@ export function useUpload() {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
+    const { topSk } = usePlayerStore();
 
     const inputAccept = useMemo(() => {
         // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
@@ -108,7 +109,7 @@ export function useUpload() {
         setIsFileUpload(true);
 
         try {
-            const result = await getSimilarTracks(file, 20, (p) => {
+            const result = await getSimilarTracks(file, topSk, (p) => {
                 // Ensure progress is properly bounded and rounded
                 const boundedProgress = Math.min(100, Math.max(0, p));
                 setProgress(Math.round(boundedProgress));
@@ -132,7 +133,7 @@ export function useUpload() {
             setUploading(false);
             setOverlay(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload]);
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];
