@@ -9,6 +9,9 @@ import { usePlayerStore } from "@resomix/stores";
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
 
+    // Get topSk state and setter from the store
+    const { topSk, setTopSk } = usePlayerStore();
+    
     const handleSearchClick = () => {
         setActiveComponent('search');
     };
@@ -16,9 +19,6 @@ const UploadOne: React.FC = () => {
     const handleUploadClick = () => {
         setActiveComponent('upload');
     };
-
-    // Get topSk from player store
-    const { topSk, setTopSk } = usePlayerStore();
 
     const handleCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setTopSk(Number(e.target.value));
@@ -59,7 +59,7 @@ const UploadOne: React.FC = () => {
                         </select>
 
                         {/* Visible label and arrow */}
-                        <span>{topSk} tracks</span>
+                        <span className="pointer-events-none">{topSk} tracks</span>
                         {/* Inline SVG arrow */}
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

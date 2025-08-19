@@ -9,6 +9,9 @@ import { usePlayerStore } from "@resomix/stores";
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
 
+    // Get topSk state and setter from the store
+    const { topSk, setTopSk } = usePlayerStore();
+
     const handleSearchClick = () => {
         setActiveComponent('search');
     };
@@ -23,9 +26,6 @@ const UploadOne: React.FC = () => {
     const handleUploadClick = () => {
         setActiveComponent('upload');
     };
-
-    // Get topSk from player store
-    const { topSk, setTopSk } = usePlayerStore();
 
     const handleCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setTopSk(Number(e.target.value));
@@ -56,8 +56,9 @@ const UploadOne: React.FC = () => {
                     {/* Dropdown menu following same style */}
                     <div className="">
                         <select 
-                            value={topSk} 
+                            value={topSk}
                             onChange={handleCountChange}
+                            defaultValue={20}
                             className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]"
                         >
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="10">10 tracks</option>
@@ -90,3 +91,4 @@ const UploadOne: React.FC = () => {
 };
 
 export default UploadOne;
+
