@@ -11,21 +11,32 @@ export const usePlayerManager = () => {
   const { 
     currentTrackId, 
     setCurrentTrack, 
-    currentWs, 
-    setCurrentWs,
+    inputWs, 
+    similarityWs,
+    setInputWs,
+    setSimilarityWs,
     autoplay,
     setAutoplay,
     volume,
     setVolume
   } = usePlayerStore()
 
-  // Keep WaveSurfer instance volume in sync with global volume
+  // Keep WaveSurfer instances volume in sync with global volume
   useEffect(() => {
-    if (!currentWs || typeof currentWs.setVolume !== 'function') return
-    try {
-      currentWs.setVolume(volume)
-    } catch {}
-  }, [currentWs, volume])
+    if (inputWs && typeof inputWs.setVolume === 'function') {
+      try {
+        inputWs.setVolume(volume)
+      } catch {}
+    }
+  }, [inputWs, volume])
+
+  useEffect(() => {
+    if (similarityWs && typeof similarityWs.setVolume === 'function') {
+      try {
+        similarityWs.setVolume(volume)
+      } catch {}
+    }
+  }, [similarityWs, volume])
 
   // Get all track IDs from the playlist in order (queried track first, then similar tracks)
   const allTrackIds = useMemo(() => {
@@ -48,8 +59,14 @@ export const usePlayerManager = () => {
 
   // Get current track index in the playlist
   const currentTrackIndex = useMemo(() => {
-    if (!currentTrackId || !allTrackIds.length) return -1
-    return allTrackIds.indexOf(currentTrackId)
+    if (!currentTrackId) return -1
+    
+    // If it's 'uploaded-local', it's not in the playlist (local upload)
+    if (currentTrackId === 'uploaded-local') return -1
+    
+    // Check if it's in the playlist (including queried track)
+    const index = allTrackIds.indexOf(currentTrackId)
+    return index !== -1 ? index : -1
   }, [currentTrackId, allTrackIds])
 
   // Get current playing track data
@@ -65,9 +82,31 @@ export const usePlayerManager = () => {
     return playlistData.similar_tracks?.find(track => track.id === currentTrackId) || null
   }, [currentTrackId, playlistData])
 
+  // Get the next track ID that should play
+  const getNextTrack = useCallback(() => {
+    // If no current track, start with first available track
+    if (!currentTrackId) {
+      return allTrackIds.length > 0 ? allTrackIds[0] : null
+    }
+    
+    // If playing uploaded-local, move to first playlist track if available
+    if (currentTrackId === 'uploaded-local') {
+      return allTrackIds.length > 0 ? allTrackIds[0] : null
+    }
+    
+    // If playing a playlist track, get next track in playlist
+    if (currentTrackIndex >= 0 && currentTrackIndex < allTrackIds.length - 1) {
+      return allTrackIds[currentTrackIndex + 1]
+    }
+    
+    // No next track available
+    return null
+  }, [currentTrackId, currentTrackIndex, allTrackIds])
+
   // Start playing a specific track
   const startPlaying = useCallback((trackId: string) => {
-    if (!allTrackIds.includes(trackId)) {
+    // Allow special tracks (uploaded) or tracks in playlist
+    if (trackId !== 'uploaded-local' && !allTrackIds.includes(trackId)) {
       console.warn(`Track ID ${trackId} not found in playlist`)
       return
     }
@@ -82,22 +121,36 @@ export const usePlayerManager = () => {
 
   // Play next track in playlist
   const playNext = useCallback(() => {
-    if (currentTrackIndex === -1 || currentTrackIndex >= allTrackIds.length - 1) {
+    console.log(`[usePlayerManager] playNext called - currentTrackIndex: ${currentTrackIndex}, autoplay: ${autoplay}`)
+    
+    const nextTrackId = getNextTrack()
+    
+    if (!nextTrackId) {
       // No next track available
+      // Only stop if autoplay is on (means we tried to advance but hit the end)
+      if (autoplay) {
+        setCurrentTrack(null);
+      }
       return false
     }
     
     // Only advance to next track if autoplay is enabled
     if (!autoplay) {
-      try { (currentWs && typeof currentWs.pause === 'function') && currentWs.pause() } catch {}
+      // Pause the appropriate WaveSurfer instance
+      if (currentTrackId === 'uploaded-local' && inputWs) {
+        try { inputWs.pause() } catch {}
+      } else if (currentTrackIndex === 0 && inputWs) {
+        try { inputWs.pause() } catch {}
+      } else if (similarityWs) {
+        try { similarityWs.pause() } catch {}
+      }
       setCurrentTrack(null) // Stop playback
       return false
     }
     
-    const nextTrackId = allTrackIds[currentTrackIndex + 1]
     setCurrentTrack(nextTrackId)
     return true
-  }, [currentTrackIndex, allTrackIds, setCurrentTrack, autoplay])
+  }, [currentTrackIndex, currentTrackId, getNextTrack, setCurrentTrack, autoplay, inputWs, similarityWs])
 
   // Play previous track in playlist
   const playPrevious = useCallback(() => {
@@ -182,6 +235,12 @@ export const usePlayerManager = () => {
     volume,
     setVolume,
     
+    // WaveSurfer instances
+    inputWs,
+    similarityWs,
+    setInputWs,
+    setSimilarityWs,
+    
     // Playback control
     startPlaying,
     stopPlaying,
@@ -193,13 +252,13 @@ export const usePlayerManager = () => {
     // Track utilities
     isTrackPlaying,
     getTrackRating,
+    getNextTrack,
     
     // Autoplay control
     toggleAutoplay,
     
     // Store access (for advanced usage)
-    currentWs,
-    setCurrentWs
+    setCurrentTrack
   }
 }
 

@@ -20,95 +20,62 @@ interface SimilarityPlayerProps {
 }
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying = false }) => {
-    const { currentWs, playNext } = usePlayerManager();
+    const { setSimilarityWs, playNext, volume, setVolume } = usePlayerManager();
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
 
     // Global volume via player manager
-    const { volume, setVolume } = usePlayerManager();
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
 
-    // Sync volume with wavesurfer instance whenever it changes
+    // Volume is synced globally via usePlayerManager
+
+    // Time tracking handled by ref
     useEffect(() => {
-        if (currentWs && typeof currentWs.setVolume === 'function') {
-            try {
-                currentWs.setVolume(volume);
-            } catch { /* ignore */ }
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
+        if (!ws) return;
+
+        const updateTime = () => setCurrentTime(ws.getCurrentTime());
+        const onReady = () => setDuration(ws.getDuration());
+
+        ws.on('audioprocess', updateTime);
+        ws.on('seek', updateTime);
+        ws.on('ready', onReady);
+
+        // Check if already ready
+        if ((ws as any).isReady) {
+            onReady();
         }
-    }, [volume, currentWs]);
-
-    // Effect to set up time tracking when component mounts or track changes
-    useEffect(() => {
-
-        // Use a small delay to ensure WaveformPlayer has initialized
-        const timeoutId = setTimeout(() => {
-            const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-
-            if (!ws) return;
-
-            const updateTime = () => {
-                const newTime = ws.getCurrentTime();
-                setCurrentTime(newTime);
-            };
-
-            const onReady = () => {
-                const newDuration = ws.getDuration();
-                setDuration(newDuration);
-            };
-
-            // Autoplay: advance to next track on finish when enabled
-            const onFinish = () => {
-                // Delegate next-track logic to player manager
-                playNext();
-            };
-
-            // Check if already ready
-            if ((ws as any).isReady) {
-                onReady();
-            }
-
-            ws.on('audioprocess', updateTime);
-            ws.on('seek', updateTime);
-            ws.on('ready', onReady);
-            ws.on('finish', onFinish);
-
-            // Return cleanup function for the effect
-            return () => {
-                ws.un && ws.un('audioprocess', updateTime);
-                ws.un && ws.un('seek', updateTime);
-                ws.un && ws.un('ready', onReady);
-                ws.un && ws.un('finish', onFinish);
-            };
-        }, 100);
 
         return () => {
-            clearTimeout(timeoutId);
+            ws.un && ws.un('audioprocess', updateTime);
+            ws.un && ws.un('seek', updateTime);
+            ws.un && ws.un('ready', onReady);
         };
-    }, [trackId, playNext]);
+    }, [trackId]);
 
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
-        const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
         if (ws && typeof ws.skipBackward === 'function') {
             ws.skipBackward();
         } else if (ws && typeof ws.skip === 'function') {
             ws.skip(-10);
         } else {
         }
-    }, [currentWs]);
+    }, []);
 
     const skipForward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
-        const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
         if (ws && typeof ws.skipForward === 'function') {
             ws.skipForward();
         } else if (ws && typeof ws.skip === 'function') {
             ws.skip(10);
         } else {
         }
-    }, [currentWs]);
+    }, []);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -131,6 +98,19 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                 isPlaying={isPlaying}
                 autoPlay={true}
                 volume={volume}
+                onReadyWs={(ws) => {
+                    try {
+                        setSimilarityWs(ws);
+
+                        // attach finish listener
+                        ws.un && ws.un('finish');
+                        ws.on('finish', () => {
+                            playNext();
+                        });
+                    } catch (error) {
+                        console.error('[SimilarityPlayer] Failed to setup WaveSurfer:', error);
+                    }
+                }}
             />
 
             <div className="flex items-center justify-between w-full">

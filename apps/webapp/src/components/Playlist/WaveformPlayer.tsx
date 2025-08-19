@@ -1,7 +1,7 @@
-import { useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useRef, useEffect, useMemo, forwardRef, useImperativeHandle, useState } from "react";
 import { useWaveform } from "@resomix/hooks";
 import type { WaveformTheme } from "@resomix/hooks";
-import { usePlayerStore } from "@resomix/stores";
+// Removed direct player store dependency; registration handled by parent
 
 interface WaveformPlayerProps {
     /** Track ID used to pull peaks & stream from the API. */
@@ -24,6 +24,9 @@ interface WaveformPlayerProps {
      * ready. Defaults to false to keep existing behaviour.
      */
     autoPlay?: boolean;
+
+    /** Callback fired when the internal WaveSurfer instance is ready */
+    onReadyWs?: (ws: any) => void;
 }
 
 export interface WaveformPlayerRef {
@@ -40,7 +43,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     },
     volume = 1,
     isPlaying,
-    autoPlay = false
+    autoPlay = false,
+    onReadyWs
 }, ref) => {
     const waveformRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +72,25 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         autoPlay
     });
 
-    const { setCurrentWs } = usePlayerStore();
+    // Expose wavesurfer instance once available
+    const [hasCalledReady, setHasCalledReady] = useState(false);
+    
+    useEffect(() => {
+        if (!onReadyWs || hasCalledReady) return;
+        
+        // Wait for wavesurfer to be ready
+        const checkInterval = setInterval(() => {
+            if (wavesurferRef.current && !hasCalledReady) {
+                setHasCalledReady(true);
+                onReadyWs(wavesurferRef.current);
+                clearInterval(checkInterval);
+            }
+        }, 100);
+        
+        return () => clearInterval(checkInterval);
+    }, [onReadyWs, hasCalledReady]);
+
+    // Parent component handles WaveSurfer registration in store
 
     // Synchronise playback state whenever the `isPlaying` prop changes. If the
     // WaveSurfer instance isn't ready yet we defer `play()` until the `ready`
@@ -86,9 +108,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
 
              const tryPlay = () => {
                  try {
-                     if (typeof setCurrentWs === 'function') {
-                         setCurrentWs(ws);
-                     }
+                     // registration handled by parent
                      ws.play();
                  } catch (e) {
                      /* eslint-disable no-console */

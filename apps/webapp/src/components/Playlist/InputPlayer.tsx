@@ -32,7 +32,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
         startPlaying, 
         stopPlaying, 
         playNext, 
-        currentWs
+        setInputWs,
+        volume,
+        setVolume,
+        isAutoplayEnabled
     } = usePlayerManager();
     const isPlaying = currentTrackId === effectiveId;
 
@@ -40,7 +43,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     const waveformPlayerRef = useRef<WaveformPlayerRef>(null);
 
     // Global volume via player manager
-    const { volume, setVolume } = usePlayerManager();
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
 
@@ -52,59 +54,53 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Attach event listeners for time / duration when wavesurfer instance changes
+    // Time / duration tracking based on registered WaveSurfer
     useEffect(() => {
-        // Use a timeout to ensure wavesurfer is ready after WaveformPlayer mounts
-        const timeoutId = setTimeout(() => {
-            const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
-            if (!ws) return;
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
+        if (!ws) return;
 
-            const updateTime = () => setCurrentTime(ws.getCurrentTime());
-            const onReady = () => {
-                const dur = ws.getDuration();
-                setDuration(dur);
-            };
+        const updateTime = () => setCurrentTime(ws.getCurrentTime());
+        const onReady = () => setDuration(ws.getDuration());
 
-            // When track finishes, move to next track if autoplay is enabled
-            const onFinish = () => {
-                // Use the hook's playNext function for automatic advancement
-                playNext();
-            };
-
-            ws.on('audioprocess', updateTime);
-            ws.on('seek', updateTime);
-
-            ws.on('finish', onFinish);
-            // Check if already ready
-            if ((ws as any).isReady) {
-                onReady();
-            } else {
-                ws.on('ready', onReady);
-            }
-
-            // Return cleanup function for the effect
-            return () => {
-                ws.un && ws.un('audioprocess', updateTime);
-                ws.un && ws.un('seek', updateTime);
-                ws.un && ws.un('ready', onReady);
-                ws.un && ws.un('finish', onFinish);
-                clearTimeout(timeoutId);
-            };
-        }, 100);
+        ws.on('audioprocess', updateTime);
+        ws.on('seek', updateTime);
+        ws.on('ready', onReady);
 
         return () => {
-            clearTimeout(timeoutId);
+            ws.un && ws.un('audioprocess', updateTime);
+            ws.un && ws.un('seek', updateTime);
+            ws.un && ws.un('ready', onReady);
         };
-    }, [effectiveId, playNext]); // Add playNext to dependencies
+    }, [effectiveId]);
 
-    // Separate effect for syncing volume with currentWs from store (fallback)
+    // Re-register finish handler when autoplay changes to ensure correct closure
     useEffect(() => {
-        if (currentWs && typeof currentWs.setVolume === 'function') {
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
+        if (!ws) return;
+
+        const handleFinish = () => {
+            console.log(`[InputPlayer] Track finished, calling playNext - autoplay: ${isAutoplayEnabled}`);
+            playNext();
+        };
+
+        // Remove any existing finish handlers
+        ws.un && ws.un('finish');
+        ws.on('finish', handleFinish);
+
+        return () => {
+            ws.un && ws.un('finish', handleFinish);
+        };
+    }, [isAutoplayEnabled, playNext]);
+
+    // Separate effect for syncing volume with input WaveSurfer instance
+    useEffect(() => {
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
+        if (ws && typeof ws.setVolume === 'function') {
             try {
-                currentWs.setVolume(volume);
+                ws.setVolume(volume);
             } catch { /* ignore */ }
         }
-    }, [volume, currentWs]);
+    }, [volume]);
 
     const togglePlay = () => {
         if (isPlaying) {
@@ -115,8 +111,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     };
 
     const skipBackward = useCallback(() => {
-        // Try to get wavesurfer from direct ref first, then fall back to store
-        const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
+        // Get wavesurfer from direct ref
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
 
         if (ws) {
             // Store playing state before skip
@@ -141,11 +137,11 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
             }, 50);
         } else {
         }
-    }, [currentWs]);
+    }, []);
 
     const skipForward = useCallback(() => {
-        // Try to get wavesurfer from direct ref first, then fall back to store
-        const ws = waveformPlayerRef.current?.getWaveSurfer() || currentWs;
+        // Get wavesurfer from direct ref
+        const ws = waveformPlayerRef.current?.getWaveSurfer();
 
         if (ws) {
             // Store playing state before skip
@@ -170,7 +166,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
             }, 50);
         } else {
         }
-    }, [currentWs]);
+    }, []);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -210,6 +206,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                         isPlaying={isPlaying}
                         autoPlay={autoPlay}
                         volume={volume}
+                        onReadyWs={(ws) => {
+                            try {
+                                setInputWs(ws);
+                                // Finish handler is now managed by useEffect above
+                            } catch (error) {
+                                console.error('[InputPlayer] Failed to setup WaveSurfer:', error);
+                            }
+                        }}
                     />
                 </div>
 

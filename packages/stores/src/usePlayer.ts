@@ -7,13 +7,17 @@ interface PlayerStore {
   uploadedUrl: string | null
   setUploadedUrl: (url: string | null) => void
 
-  currentWs: any | null
   /**
-   * Register the WaveSurfer instance currently playing. When a new instance
-   * is set, the previous one (if any) is automatically paused to prevent
-   * overlapping audio.
+   * Input track WaveSurfer instance (always visible)
    */
-  setCurrentWs: (ws: any | null) => void
+  inputWs: any | null
+  setInputWs: (ws: any | null) => void
+
+  /**
+   * Similarity track WaveSurfer instance (changes based on current track)
+   */
+  similarityWs: any | null
+  setSimilarityWs: (ws: any | null) => void
 
   /**
    * Global autoplay toggle. When true we automatically advance to the next
@@ -36,14 +40,24 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   uploadedUrl: null,
   setUploadedUrl: (url) => set({ uploadedUrl: url }),
 
-  currentWs: null,
-  setCurrentWs: (ws) => set((state) => {
-    if (state.currentWs && state.currentWs !== ws) {
+  inputWs: null,
+  setInputWs: (ws) => set((state) => {
+    if (state.inputWs && state.inputWs !== ws) {
       try {
-        state.currentWs.pause();
+        state.inputWs.pause();
       } catch { /* ignore */ }
     }
-    return { currentWs: ws };
+    return { inputWs: ws };
+  }),
+
+  similarityWs: null,
+  setSimilarityWs: (ws) => set((state) => {
+    if (state.similarityWs && state.similarityWs !== ws) {
+      try {
+        state.similarityWs.pause();
+      } catch { /* ignore */ }
+    }
+    return { similarityWs: ws };
   }),
 
   autoplay: false,
