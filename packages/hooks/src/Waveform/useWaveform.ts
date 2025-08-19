@@ -35,6 +35,12 @@ export interface UseWaveformProps {
      * ready. Defaults to false so existing callers keep the current behaviour.
      */
     autoPlay?: boolean;
+
+    /**
+     * Initial volume (0..1) to apply to the WaveSurfer instance once it is
+     * created. When omitted WaveSurfer defaults to full volume.
+     */
+    initialVolume?: number;
 }
 
 export interface WaveformState {
@@ -54,7 +60,7 @@ export interface WaveformState {
  *
  * The hook returns the waveform state and a ref with the underlying WaveSurfer instance.
  */
-export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay = false }: UseWaveformProps) {
+export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay = false, initialVolume }: UseWaveformProps) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
     const instanceIdRef = useRef(0);
@@ -185,6 +191,13 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
 
         wavesurferRef.current = wavesurfer;
 
+        // Apply initial volume immediately if provided
+        if (typeof initialVolume === 'number') {
+            try {
+                wavesurfer.setVolume(initialVolume);
+            } catch { /* ignore */ }
+        }
+
         // Store playing state before interactions for WebAudio backend
         let isPlayingBeforeInteraction = false;
 
@@ -244,6 +257,12 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
         // Add ready event – start playback automatically if requested
         wavesurfer.on('ready', () => {
             isCreatingRef.current = false;
+            // Ensure desired initial volume before any playback starts
+            if (typeof initialVolume === 'number') {
+                try {
+                    wavesurfer.setVolume(initialVolume);
+                } catch { /* ignore */ }
+            }
             if (autoPlay) {
                 try {
                     wavesurfer.play();
@@ -283,7 +302,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
             }
             isCreatingRef.current = false;
         };
-    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, autoPlay]);
+    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, autoPlay, initialVolume]);
 
     return { wavesurferRef, state };
 }

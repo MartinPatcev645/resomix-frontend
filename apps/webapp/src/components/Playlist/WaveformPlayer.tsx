@@ -69,7 +69,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         trackId, 
         audioUrl,
         theme: memoTheme,
-        autoPlay
+        autoPlay,
+        initialVolume: volume
     });
 
     // Expose wavesurfer instance once available
