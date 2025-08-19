@@ -116,14 +116,14 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-[var(--px-10)]">
                     {/* Skip Backward */}
-                    <button type="button" onClick={skipBackward} title="Skip back 10s" className="font-fira text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
-                        <img src={NextTrackSvg} alt="Previous Track" className="w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
+                    <button type="button" onClick={skipBackward} title="Skip back 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
+                        <img src={NextTrackSvg} alt="Previous Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
                         <span className="mt-[var(--px-3)]">10s</span>
                     </button>
                     {/* Skip Forward */}
-                    <button type="button" onClick={skipForward} title="Skip forward 10s" className="font-fira text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
+                    <button type="button" onClick={skipForward} title="Skip forward 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
                         <span className="mt-[var(--px-3)]">10s</span>
-                        <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
+                        <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
                     </button>
                 </div>
 
@@ -165,7 +165,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                 </div>
 
                 {/* Time Display */}
-                <span className="text-[length:var(--px-8)] text-right font-fira font-light">
+                <span className="hidden lg:block text-[length:var(--px-8)] text-right font-fira font-light">
                     {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
             </div>

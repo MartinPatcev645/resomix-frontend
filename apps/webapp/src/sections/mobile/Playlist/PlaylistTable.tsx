@@ -1,7 +1,8 @@
 import React from "react";
-import { WaveformPlayer } from "@/components/index.ts";
+import { SimilarityPlayer } from "@/components/index.ts";
 import { formatDuration, formatPercentage } from "@resomix/hooks";
-import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { usePlaylistStore } from "@resomix/stores";
+import { usePlayerManager } from "@resomix/hooks";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
@@ -12,14 +13,14 @@ interface PlaylistTableProps {
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
-    const { currentTrackId, setCurrentTrack } = usePlayerStore();
+    const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
     const tracks = playlistData?.similar_tracks ?? [];
 
-    const handleTrackClick = (trackId: string) => {
+    const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
-            setCurrentTrack(null);
+            stopPlaying();
         } else {
-            setCurrentTrack(trackId);
+            startPlaying(trackId);
         }
     };
 
@@ -28,7 +29,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             {tracks.map((track) => (
                 <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative">
                     <div className="flex flex-col w-full">
-                        <div onClick={() => handleTrackClick(track.id)} className="flex items-center gap-[var(--px-7)]">
+                        <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)]">
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
                                 {currentTrackId === track.id && (
@@ -70,7 +71,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         </div>
                         {currentTrackId === track.id && (
                             <div>
-                                <WaveformPlayer trackId={track.id} isPlaying={currentTrackId === track.id} autoPlay={true} />
+                                <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} />
                             </div>
                         )}
                     </div>

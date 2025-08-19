@@ -61,6 +61,11 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         theme.cardBg,
     ]);
 
+    // Capture initial volume only once to avoid re-creating WaveSurfer when the
+    // global volume slider changes later. Subsequent volume updates are
+    // applied imperatively via the separate effect further below.
+    const initialVolumeRef = useRef(volume);
+
     // Initialize wavesurfer via the shared hook. We also keep a ref to the
     // underlying WaveSurfer instance so that we can imperatively control
     // playback from the parent component via the `isPlaying` prop.
@@ -70,7 +75,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         audioUrl,
         theme: memoTheme,
         autoPlay,
-        initialVolume: volume
+        initialVolume: initialVolumeRef.current
     });
 
     // Expose wavesurfer instance once available
