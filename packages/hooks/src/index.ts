@@ -9,6 +9,7 @@ export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export * from "./Waveform/useWaveform";
 export * from './Playlist/usePlaylistLoader';
+export * from './Player/usePlayerManager';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'
 export type { WaveformTheme } from "./Waveform/useWaveform";

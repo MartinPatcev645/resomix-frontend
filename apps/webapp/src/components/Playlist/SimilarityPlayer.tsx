@@ -4,8 +4,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { usePlayerStore } from "@resomix/stores";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlayerManager } from "@resomix/hooks";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -21,13 +20,13 @@ interface SimilarityPlayerProps {
 }
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying = false }) => {
-    const { currentWs, setCurrentTrack } = usePlayerStore();
-    const { playlistData } = usePlaylistStore();
+    const { currentWs, playNext } = usePlayerManager();
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
 
-    const [volume, setVolume] = useState<number>(0.7);
+    // Global volume via player manager
+    const { volume, setVolume } = usePlayerManager();
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
 
@@ -61,24 +60,8 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
 
             // Autoplay: advance to next track on finish when enabled
             const onFinish = () => {
-                if (!usePlayerStore.getState().autoplay) return;
-
-                // Build ordered list of track IDs (input + similar)
-                const order: string[] = [];
-                if (playlistData?.queried_track?.id) {
-                    order.push(playlistData.queried_track.id);
-                }
-                if (playlistData?.similar_tracks?.length) {
-                    order.push(...playlistData.similar_tracks.map(t => t.id));
-                }
-
-                const idx = order.indexOf(trackId);
-                if (idx !== -1 && idx + 1 < order.length) {
-                    const nextId = order[idx + 1];
-                    setCurrentTrack(nextId);
-                } else {
-                    setCurrentTrack(null);
-                }
+                // Delegate next-track logic to player manager
+                playNext();
             };
 
             // Check if already ready
@@ -91,22 +74,19 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
             ws.on('ready', onReady);
             ws.on('finish', onFinish);
 
-            // Store cleanup function on the component instance
-            const cleanup = () => {
+            // Return cleanup function for the effect
+            return () => {
                 ws.un && ws.un('audioprocess', updateTime);
                 ws.un && ws.un('seek', updateTime);
                 ws.un && ws.un('ready', onReady);
                 ws.un && ws.un('finish', onFinish);
             };
-
-            // Store cleanup for the effect cleanup
-            return cleanup;
         }, 100);
 
         return () => {
             clearTimeout(timeoutId);
         };
-    }, [trackId]);
+    }, [trackId, playNext]);
 
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store

@@ -6,8 +6,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { usePlayerStore } from "@resomix/stores";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlayerManager } from "@resomix/hooks";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -28,21 +27,27 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     // Use a fallback id for local uploads so we always have a string
     const effectiveId = trackId ?? 'uploaded-local';
 
-    const { currentTrackId, setCurrentTrack, currentWs } = usePlayerStore();
-    const { playlistData } = usePlaylistStore();
+    const { 
+        currentTrackId, 
+        startPlaying, 
+        stopPlaying, 
+        playNext, 
+        currentWs
+    } = usePlayerManager();
     const isPlaying = currentTrackId === effectiveId;
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<WaveformPlayerRef>(null);
 
-    const [volume, setVolume] = useState<number>(0.7);
+    // Global volume via player manager
+    const { volume, setVolume } = usePlayerManager();
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
 
     // When autoPlay requested, register this track on mount
     useEffect(() => {
         if (autoPlay && currentTrackId == null) {
-            setCurrentTrack(effectiveId);
+            startPlaying(effectiveId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -62,25 +67,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
 
             // When track finishes, move to next track if autoplay is enabled
             const onFinish = () => {
-                if (!usePlayerStore.getState().autoplay) return;
-
-                // Build ordered list of track IDs (input + similar)
-                const order: string[] = [];
-                if (playlistData?.queried_track?.id) {
-                    order.push(playlistData.queried_track.id);
-                }
-                if (playlistData?.similar_tracks?.length) {
-                    order.push(...playlistData.similar_tracks.map(t => t.id));
-                }
-
-                const currentIdx = order.indexOf(effectiveId);
-                if (currentIdx !== -1 && currentIdx + 1 < order.length) {
-                    const nextId = order[currentIdx + 1];
-                    setCurrentTrack(nextId);
-                } else {
-                    // No next track – stop playback
-                    setCurrentTrack(null);
-                }
+                // Use the hook's playNext function for automatic advancement
+                playNext();
             };
 
             ws.on('audioprocess', updateTime);
@@ -94,22 +82,20 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                 ws.on('ready', onReady);
             }
 
-            // Store cleanup function on the component instance
-            const cleanup = () => {
+            // Return cleanup function for the effect
+            return () => {
                 ws.un && ws.un('audioprocess', updateTime);
                 ws.un && ws.un('seek', updateTime);
                 ws.un && ws.un('ready', onReady);
                 ws.un && ws.un('finish', onFinish);
+                clearTimeout(timeoutId);
             };
-
-            // Store cleanup for the effect cleanup
-            return cleanup;
         }, 100);
 
         return () => {
             clearTimeout(timeoutId);
         };
-    }, [effectiveId]); // Only depend on track ID, not duration or currentWs
+    }, [effectiveId, playNext]); // Add playNext to dependencies
 
     // Separate effect for syncing volume with currentWs from store (fallback)
     useEffect(() => {
@@ -122,9 +108,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
 
     const togglePlay = () => {
         if (isPlaying) {
-            setCurrentTrack(null);
+            stopPlaying();
         } else {
-            setCurrentTrack(effectiveId);
+            startPlaying(effectiveId);
         }
     };
 

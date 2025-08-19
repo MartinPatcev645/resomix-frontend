@@ -7,19 +7,19 @@ import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
-import { usePlayerStore } from "@resomix/stores";
+import { usePlayerManager } from "@resomix/hooks";
 
 // Remove local dummy data; use global store
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    const { currentTrackId, setCurrentTrack } = usePlayerStore();
+    const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
-            setCurrentTrack(null); // Pause
+            stopPlaying(); // Pause
         } else {
-            setCurrentTrack(trackId); // Play this track, pause others
+            startPlaying(trackId); // Play this track, pause others
         }
     };
 
@@ -118,7 +118,7 @@ const PlaylistTable: React.FC = () => {
                                     );
                                 })()}
                             </div>
-                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer" onClick={() => {}}>
+                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer" onClick={() => { }}>
                                 <Tooltip message="Find Similarity For this Track!">
                                     <img src={SonicDiscoverySvg} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)]" />
                                 </Tooltip>

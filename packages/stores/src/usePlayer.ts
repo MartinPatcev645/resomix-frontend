@@ -21,6 +21,12 @@ interface PlayerStore {
    */
   autoplay: boolean
   setAutoplay: (value: boolean) => void
+
+  /**
+   * Global volume (0..1)
+   */
+  volume: number
+  setVolume: (value: number) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set) => ({
@@ -42,6 +48,9 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   autoplay: false,
   setAutoplay: (value) => set({ autoplay: value }),
+
+  volume: 0.7,
+  setVolume: (value) => set({ volume: Math.min(1, Math.max(0, value)) }),
 }));
 
 export default usePlayerStore;
