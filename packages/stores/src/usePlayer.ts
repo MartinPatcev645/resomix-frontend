@@ -11,46 +11,14 @@ const STORAGE_KEYS = {
   topSk: 'resomix.player.topSk',
 } as const;
 
-/**
- * Cookie helpers — allow sharing settings across sub-domains.
- */
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(
-    new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/+^])/g, '\\$1') + '=([^;]*)')
-  );
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function setCookie(name: string, value: string, maxAgeSeconds = 60 * 60 * 24 * 365): void {
-  if (typeof document === 'undefined') return;
-  const domain = (() => {
-    const host = window.location.hostname;
-    // Skip domain attribute for localhost-style hosts
-    if (/^(localhost|127\.0\.0\.1)$/.test(host)) return '';
-    const parts = host.split('.');
-    const root = parts.slice(-2).join('.');
-    return `; domain=.${root}`;
-  })();
-
-  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}${domain}; SameSite=Lax`;
-}
-
+// NOTE: Settings are now stored only in browser localStorage.
 function getStoredValue<T>(key: string, defaultValue: T): T {
   if (typeof window === 'undefined') return defaultValue;
 
   try {
-    // 1) Attempt localStorage first
-    const rawLocal = window.localStorage.getItem(key);
-    if (rawLocal !== null) return JSON.parse(rawLocal) as T;
-
-    // 2) Fallback to cookie (cross-subdomain)
-    const rawCookie = getCookie(key);
-    if (rawCookie !== null) {
-      const parsed = JSON.parse(rawCookie) as T;
-      // Sync back to localStorage for current origin
-      window.localStorage.setItem(key, rawCookie);
-      return parsed;
+    const raw = window.localStorage.getItem(key);
+    if (raw !== null) {
+      return JSON.parse(raw) as T;
     }
   } catch {
     /* ignore JSON / storage errors */
@@ -67,7 +35,6 @@ function setStoredValue<T>(key: string, value: T): void {
   try {
     const serialized = JSON.stringify(value);
     window.localStorage.setItem(key, serialized);
-    setCookie(key, serialized);
   } catch {
     /* ignore storage errors */
   }
