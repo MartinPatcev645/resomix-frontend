@@ -31,12 +31,6 @@ export interface UseWaveformProps {
     theme: WaveformTheme;
 
     /**
-     * When true the audio will start playing automatically once it becomes
-     * ready. Defaults to false so existing callers keep the current behaviour.
-     */
-    autoPlay?: boolean;
-
-    /**
      * Initial volume (0..1) to apply to the WaveSurfer instance once it is
      * created. When omitted WaveSurfer defaults to full volume.
      */
@@ -60,7 +54,7 @@ export interface WaveformState {
  *
  * The hook returns the waveform state and a ref with the underlying WaveSurfer instance.
  */
-export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay = false, initialVolume }: UseWaveformProps) {
+export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume }: UseWaveformProps) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
     const instanceIdRef = useRef(0);
@@ -263,13 +257,6 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
                     wavesurfer.setVolume(initialVolume);
                 } catch { /* ignore */ }
             }
-            if (autoPlay) {
-                try {
-                    wavesurfer.play();
-                } catch (e) {
-                    // ignore
-                }
-            }
         });
 
         // Load audio with or without peaks
@@ -302,7 +289,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, autoPlay =
             }
             isCreatingRef.current = false;
         };
-    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, autoPlay, initialVolume]);
+    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, initialVolume]);
 
     return { wavesurferRef, state };
 }

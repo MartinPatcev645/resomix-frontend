@@ -6,6 +6,7 @@ import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
 import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
+import { usePlaylistLoader } from "@resomix/hooks";
 import { StatusMessage } from "@resomix/ui";
 
 export function PlaylistMobile() {
@@ -18,19 +19,31 @@ export function PlaylistMobile() {
     window.scrollTo(0, 0);
   }, []);
 
-  // Watch for playlist store data validity
-  const { playlistData } = usePlaylistStore();
+  const { playlistData, isLoading } = usePlaylistStore();
   const [expired, setExpired] = useState(false);
 
+  // Load from ?id= if store empty
+  usePlaylistLoader();
+
+  // Handle expired fallback
   useEffect(() => {
-    if (!playlistData) {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (!isLoading && !playlistData) {
       setExpired(true);
-      // Redirect after brief delay
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         handleExpiredClose();
       }, 3000);
+    } else {
+      // Data arrived or still loading – ensure expired flag reset
+      setExpired(false);
+      if (timeoutId) clearTimeout(timeoutId);
     }
-  }, [playlistData]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isLoading, playlistData]);
 
   const handleExpiredClose = () => {
     window.location.href = BASE_BETA_URL;
@@ -47,7 +60,14 @@ export function PlaylistMobile() {
   };
 
   return (
-    expired ? (
+    isLoading ? (
+      <StatusMessage
+        isOpen={true}
+        status="loading"
+        message="Loading playlist..."
+        onClose={() => {}}
+      />
+    ) : expired ? (
       <StatusMessage 
         isOpen={true}
         onClose={handleExpiredClose}

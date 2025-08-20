@@ -33,7 +33,12 @@ export function UploadMobile() {
     if (response && response.success) {
       setPlaylistResponse(response as any);
       setOverlay(false);
-      navigate('/playlist');
+      const playlistId = (response as any).data?.playlist?.id || null;
+      if (playlistId) {
+        navigate(`/playlist?id=${playlistId}`);
+      } else {
+        navigate('/playlist');
+      }
     }
   }, [response, setPlaylistResponse, navigate, setOverlay]);
 

@@ -157,7 +157,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div>Instance: Input Track</div>
                 </div>
                 {/* The actual Input player */}
-                <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : (playlistData?.queried_track.id || '')} audioUrl={uploadedUrl ?? undefined} autoPlay={true} />
+                <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : (playlistData?.queried_track.id || '')} audioUrl={uploadedUrl ?? undefined} />
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">

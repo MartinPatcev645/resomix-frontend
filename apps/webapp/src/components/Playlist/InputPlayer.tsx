@@ -204,7 +204,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                         trackId={trackId}
                         audioUrl={audioUrl}
                         isPlaying={isPlaying}
-                        autoPlay={autoPlay}
                         volume={volume}
                         onReadyWs={(ws) => {
                             try {

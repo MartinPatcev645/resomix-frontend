@@ -29,6 +29,9 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
 
+    // Debug logging for similarity player
+    console.log('[SimilarityPlayer] Render:', { trackId, isPlaying, volume });
+
     // Volume is synced globally via usePlayerManager
 
     // Time tracking handled by ref
@@ -96,15 +99,25 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                 ref={waveformPlayerRef}
                 trackId={trackId}
                 isPlaying={isPlaying}
-                autoPlay={true}
                 volume={volume}
                 onReadyWs={(ws) => {
                     try {
+                        console.log('[SimilarityPlayer] WaveSurfer ready:', { trackId, ws: !!ws });
                         setSimilarityWs(ws);
+
+                        // If this track is meant to be playing, start immediately now that ws is ready
+                        if (isPlaying) {
+                            try {
+                                ws.play();
+                            } catch (e) {
+                                console.error('[SimilarityPlayer] play() error after ready', e);
+                            }
+                        }
 
                         // attach finish listener
                         ws.un && ws.un('finish');
                         ws.on('finish', () => {
+                            console.log('[SimilarityPlayer] Track finished, calling playNext');
                             playNext();
                         });
                     } catch (error) {
