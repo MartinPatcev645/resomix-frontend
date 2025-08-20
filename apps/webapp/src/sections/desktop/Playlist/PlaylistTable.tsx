@@ -8,6 +8,7 @@ import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { usePlayerManager } from "@resomix/hooks";
+import { BASE_BETA_URL } from "@resomix/config";
 
 // Remove local dummy data; use global store
 
@@ -118,7 +119,9 @@ const PlaylistTable: React.FC = () => {
                                     );
                                 })()}
                             </div>
-                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer" onClick={() => { }}>
+                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer" onClick={() => {
+                                window.location.href = `${BASE_BETA_URL}/?id=${track.id}`;
+                            }}>
                                 <Tooltip message="Find Similarity For this Track!">
                                     <img src={SonicDiscoverySvg} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)]" />
                                 </Tooltip>

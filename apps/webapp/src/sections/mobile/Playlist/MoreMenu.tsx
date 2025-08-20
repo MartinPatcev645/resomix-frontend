@@ -4,6 +4,7 @@ import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
+import { BASE_BETA_URL } from "@resomix/config";
 
 interface MoreMenuProps {
     onClose?: () => void;
@@ -144,7 +145,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
                     <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
                         <div className="w-full">
                             {/* Add condition to not display this if the track id is of reference track */}
-                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => { }} />
+                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
+                                window.location.href = `${BASE_BETA_URL}/?id=${trackId}`;
+                            }} />
                         </div>
                         <div className="w-full">
                             <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Close" customWidth="w-full" onClick={onClose || (() => {})} />
