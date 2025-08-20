@@ -132,10 +132,6 @@ export const usePlayerManager = () => {
       currentTrackId: latestCurrentTrackId,
     } = usePlayerStore.getState();
 
-    console.log(
-      `[usePlayerManager] playNext called - currentTrackIndex: ${currentTrackIndex}, autoplay: ${latestAutoplay}`
-    );
-
     const nextTrackId = getNextTrack();
 
     if (!nextTrackId) {

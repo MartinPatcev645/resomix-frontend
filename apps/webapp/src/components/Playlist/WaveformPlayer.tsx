@@ -99,18 +99,14 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
          const ws = wavesurferRef.current;
          if (!ws) return;
 
-         console.log('[WaveformPlayer] isPlaying changed:', { isPlaying, trackId: trackId || 'no-track' });
-
          if (isPlaying) {
              // Already playing? nothing to do.
             if (ws.isPlaying && ws.isPlaying()) {
-                console.log('[WaveformPlayer] Already playing, skipping play()');
                 return;
             }
 
              const tryPlay = () => {
                  try {
-                     console.log('[WaveformPlayer] Attempting to play track:', trackId || 'no-track');
                      // registration handled by parent
                      ws.play();
                  } catch (e) {
@@ -123,12 +119,9 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
              // WaveSurfer >=7 exposes `isReady` flag once media is attached.
              // If ready, play immediately, otherwise wait for the ready event.
              if ((ws as any).isReady) {
-                 console.log('[WaveformPlayer] WaveSurfer ready, playing immediately');
                  tryPlay();
              } else {
-                 console.log('[WaveformPlayer] WaveSurfer not ready, waiting for ready event');
                  const onReady = () => {
-                     console.log('[WaveformPlayer] Ready event fired, now playing');
                      tryPlay();
                      ws.un && ws.un('ready', onReady);
                  };
@@ -143,7 +136,6 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
                  };
              }
          } else {
-             console.log('[WaveformPlayer] Pausing track:', trackId || 'no-track');
              ws.pause();
          }
      }, [isPlaying, trackId, wavesurferRef]);

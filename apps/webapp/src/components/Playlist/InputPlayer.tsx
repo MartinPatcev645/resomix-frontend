@@ -79,7 +79,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
         if (!ws) return;
 
         const handleFinish = () => {
-            console.log(`[InputPlayer] Track finished, calling playNext - autoplay: ${isAutoplayEnabled}`);
             playNext();
         };
 
