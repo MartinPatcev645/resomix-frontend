@@ -12,7 +12,7 @@ import { StatusMessage } from "@resomix/ui";
 export function PlaylistMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [selectedTrack, setSelectedTrack] = useState<{ id: string; name: string; label: string; duration: number; score?: number | null; isInput: boolean } | null>(null);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -49,14 +49,21 @@ export function PlaylistMobile() {
     window.location.href = BASE_BETA_URL;
   };
 
-  const handleMoreMenuOpen = (trackId: string) => {
-    setSelectedTrackId(trackId);
+  const handleMoreMenuOpen = (
+    trackId: string,
+    name: string,
+    label: string,
+    duration: number,
+    score: number | null,
+    isInput: boolean = false,
+  ) => {
+    setSelectedTrack({ id: trackId, name, label, duration, score, isInput });
     setShowMoreMenu(true);
   };
 
   const handleMoreMenuClose = () => {
     setShowMoreMenu(false);
-    setSelectedTrackId(null);
+    setSelectedTrack(null);
   };
 
   return (
@@ -119,7 +126,15 @@ export function PlaylistMobile() {
         {/* More Menu Overlay */}
         {showMoreMenu && (
           <div className="fixed inset-0 z-[100]">
-            <MoreMenu onClose={handleMoreMenuClose} trackId={selectedTrackId || undefined} />
+            <MoreMenu
+              onClose={handleMoreMenuClose}
+              trackId={selectedTrack?.id}
+              name={selectedTrack?.name}
+              label={selectedTrack?.label}
+              duration={selectedTrack?.duration}
+              score={selectedTrack?.score ?? undefined}
+              isInput={selectedTrack?.isInput || false}
+            />
           </div>
         )}
       </>

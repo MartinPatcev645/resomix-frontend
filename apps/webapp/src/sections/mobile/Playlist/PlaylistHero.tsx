@@ -21,7 +21,12 @@ import { BASE_BETA_URL } from "@resomix/config";
 const InputTrackStatus = "Loading..."
 
 interface PlaylistHeroProps {
-  onMoreClick?: (trackId: string) => void;
+  /**
+   * Callback when the user requests the More-menu for a track.
+   * @param trackId   The ID of the track.
+   * @param isInput   Whether the track is the input (queried) track.
+   */
+  onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number | null, isInput?: boolean) => void;
 }
 
 const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
@@ -161,7 +166,14 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
-              <div onClick={() => onMoreClick?.(playlistData?.queried_track.id || '')} className="cursor-pointer">
+              <div onClick={() => onMoreClick?.(
+                playlistData?.queried_track.id || '',
+                playlistData?.playlist.name || '',
+                playlistData?.queried_track.label || '',
+                playlistData?.queried_track.duration ?? 0,
+                null,
+                true
+              )} className="cursor-pointer">
                 <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
               </div>
             </div>

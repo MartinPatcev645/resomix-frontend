@@ -8,7 +8,7 @@ import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 
 interface PlaylistTableProps {
-    onMoreClick?: (trackId: string) => void;
+    onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
 }
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
@@ -75,7 +75,13 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             </div>
                         )}
                     </div>
-                    <div onClick={() => onMoreClick?.(track.id)} className="absolute right-[var(--px-8)] top-[var(--px-8)] select-none text-[#5C5C5C]">
+                    <div onClick={() => onMoreClick?.(
+                        track.id,
+                        `${track.artist} - ${track.title}`,
+                        track.label,
+                        track.duration,
+                        track.score,
+                        false)} className="absolute right-[var(--px-8)] top-[var(--px-8)] select-none text-[#5C5C5C]">
                         <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
                     </div>
                 </div>

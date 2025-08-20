@@ -1,17 +1,27 @@
 import React from "react";
-import { ButtonSleek } from "@resomix/ui";
+import { ButtonSleek, HoverFlow } from "@resomix/ui";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
+import { formatDuration, formatPercentage } from "@resomix/hooks";
 
 interface MoreMenuProps {
     onClose?: () => void;
     trackId?: string;
+    /**
+     * Marks this track as the original input (reference) track.  
+     * When true we hide actions that don’t make sense for the input track (e.g. “Start Sonic Discovery on this Track”).
+     */
+    isInput?: boolean;
+    name?: string;
+    label?: string;
+    duration?: number; // in seconds
+    score?: number | null;
 }
 
-const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
+const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
 
     const handleTrackRating = async (rating: number) => {
@@ -21,8 +31,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
             const playlistId = playlistData?.playlist.id || null;
             await rateTrack(trackId, rating, playlistId);
             setTrackRating(trackId, rating);
-            // You could add a success notification here if needed
-            if (onClose) onClose();
+            // Success notification could go here if needed
         } catch (error) {
             console.error('Failed to rate track:', error);
             // You could add an error notification here if needed
@@ -48,8 +57,15 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
         <div className="w-screen h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
             <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)] py-[var(--px-60)] px-[var(--px-40)] overflow-y-auto">
                 <div className="flex flex-col gap-[var(--px-30)] items-center">
-                    <div className="text-[length:var(--px-22)] font-light font-helvetica uppercase text-center w-[var(--px-270)]">
-                        Up The Line (Loz Goddard Remix)
+                    <div className="text-[length:var(--px-22)] font-light uppercase font-helvetica text-center w-[var(--px-300)] truncate">
+                      <HoverFlow
+                        text={name ?? ''}
+                        maxChars={23}
+                        delay={800}
+                        speed={80}
+                        endPause={1000}
+                        maxWidth="300px"
+                      />
                     </div>
                     <div className="">
                         <img src={MenuSeparator} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
@@ -60,7 +76,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
                                 Label:
                             </div>
                             <div className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">
-                                Break New Soil Recordings
+                                {label && label.trim() !== '' ? label : '-'}
                             </div>
                         </div>
                         <div className="flex w-full justify-between">
@@ -68,48 +84,53 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
                                 Duration:
                             </div>
                             <div className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">
-                                4:31
+                                {duration !== undefined ? formatDuration(duration) : '--:--'}
                             </div>
                         </div>
-                        <div className="flex w-full justify-between">
-                            <div className="text-left text-[length:var(--px-14)] font-light font-fira">
-                                Score:
-                            </div>
-                            <div className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">
-                                99.9
-                            </div>
-                        </div>
-                        <div className="flex w-full justify-between my-[var(--px-20)]">
-                            <div className="text-left text-[length:var(--px-14)] font-light font-fira">
-                                Similar:
-                            </div>
-                            <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-30)]">
-                                {(() => {
-                                    const currentRating = trackId ? trackRatings[trackId] : undefined;
-                                    const upSelected = currentRating === 1;
-                                    const downSelected = currentRating === 0;
-                                    return (
-                                        <>
-                                            <ThumbIcon
-                                                onClick={() => {
-                                                    if (upSelected) return;
-                                                    handleTrackRating(1);
-                                                }}
-                                                className={`w-[var(--px-26)] h-[var(--px-26)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
-                                            />
-                                            <ThumbIcon
-                                                onClick={() => {
-                                                    if (downSelected) return;
-                                                    handleTrackRating(0);
-                                                }}
-                                                className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
-                                            />
-                                        </>
-                                    );
-                                })()}
-                            </div>
-                        </div>
-                        <div className="flex w-full justify-between">
+                        {/* Hide Score and Similar rating section for the input/reference track */}
+                        {!isInput && (
+                            <>
+                                <div className="flex w-full justify-between">
+                                    <div className="text-left text-[length:var(--px-14)] font-light font-fira">
+                                        Score:
+                                    </div>
+                                    <div className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">
+                                        {score !== null && score !== undefined ? formatPercentage(score, 2) : '—'}
+                                    </div>
+                                </div>
+                                <div className="flex w-full justify-between mt-[var(--px-20)]">
+                                    <div className="text-left text-[length:var(--px-14)] font-light font-fira">
+                                        Similar:
+                                    </div>
+                                    <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-30)]">
+                                        {(() => {
+                                            const currentRating = trackId ? trackRatings[trackId] : undefined;
+                                            const upSelected = currentRating === 1;
+                                            const downSelected = currentRating === 0;
+                                            return (
+                                                <>
+                                                    <ThumbIcon
+                                                        onClick={() => {
+                                                            if (upSelected) return;
+                                                            handleTrackRating(1);
+                                                        }}
+                                                        className={`w-[var(--px-26)] h-[var(--px-26)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                    />
+                                                    <ThumbIcon
+                                                        onClick={() => {
+                                                            if (downSelected) return;
+                                                            handleTrackRating(0);
+                                                        }}
+                                                        className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                    />
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        <div className="flex w-full justify-between mt-[var(--px-20)]">
                             <div className="text-left text-[length:var(--px-14)] font-light font-fira">
                                 Status:
                             </div>
@@ -143,12 +164,14 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId }) => {
                         </div>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
+                        {/* Hide discovery button if this is the input/reference track */}
+                        {!isInput && (
                         <div className="w-full">
-                            {/* Add condition to not display this if the track id is of reference track */}
                             <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
                                 window.location.href = `${BASE_BETA_URL}/?id=${trackId}`;
                             }} />
                         </div>
+                        )}
                         <div className="w-full">
                             <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Close" customWidth="w-full" onClick={onClose || (() => {})} />
                         </div>
