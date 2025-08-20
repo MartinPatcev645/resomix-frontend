@@ -230,7 +230,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                     </div>
 
                     {/* Volume Slider */}
-                    <div className="flex items-center gap-[var(--px-8)]">
+                    <div className="hidden lg:flex items-center gap-[var(--px-8)]">
                         {/* Volume Icon */}
                         <button
                             type="button"
