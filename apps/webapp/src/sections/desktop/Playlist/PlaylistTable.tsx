@@ -131,6 +131,7 @@ const PlaylistTable: React.FC = () => {
                             <SimilarityPlayer
                                 trackId={track.id}
                                 isPlaying={currentTrackId === track.id}
+                                totalDuration={track.duration}
                             />
                         )}
                     </div>

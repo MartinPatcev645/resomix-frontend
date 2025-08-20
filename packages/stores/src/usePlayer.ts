@@ -77,6 +77,15 @@ interface PlayerStore {
    */
   topSk: number
   setTopSk: (value: number) => void
+  /** Current playback position (seconds) of the main input waveform */
+  inputCurrentTime: number
+  /** Setter for inputCurrentTime */
+  setInputCurrentTime: (time: number) => void
+
+  /** Current playback position (seconds) of the similarity waveform */
+  similarityCurrentTime: number
+  /** Setter for similarityCurrentTime */
+  setSimilarityCurrentTime: (time: number) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set) => ({
@@ -127,6 +136,14 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
       setStoredValue(STORAGE_KEYS.topSk, value);
       return { topSk: value };
     }),
+
+  // --- Real-time playback positions ---------------------------------------
+
+  inputCurrentTime: 0,
+  setInputCurrentTime: (time) => set({ inputCurrentTime: time }),
+
+  similarityCurrentTime: 0,
+  setSimilarityCurrentTime: (time) => set({ similarityCurrentTime: time }),
 }));
 
 export default usePlayerStore

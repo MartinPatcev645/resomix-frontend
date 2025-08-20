@@ -20,6 +20,13 @@ interface WaveformPlayerProps {
      */
     isPlaying?: boolean;
 
+    /**
+     * Callback invoked on every audioprocess/seek with current playback time.
+     * This is forwarded to useWaveform and is primarily used to sync the
+     * player store with the real-time cursor position.
+     */
+    onProgress?: (currentTime: number) => void;
+
     /** Callback fired when the internal WaveSurfer instance is ready */
     onReadyWs?: (ws: any) => void;
 }
@@ -38,7 +45,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     },
     volume = 1,
     isPlaying,
-    onReadyWs
+    onReadyWs,
+    onProgress
 }, ref) => {
     const waveformRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +76,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         trackId, 
         audioUrl,
         theme: memoTheme,
-        initialVolume: initialVolumeRef.current
+        initialVolume: initialVolumeRef.current,
+        onProgress,
     });
 
     // Expose wavesurfer instance once available

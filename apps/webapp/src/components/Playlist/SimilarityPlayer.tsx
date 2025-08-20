@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef } from "react";
 import WaveformPlayer from "./WaveformPlayer.tsx";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerManager } from "@resomix/hooks";
+import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -16,44 +17,19 @@ function formatTime(seconds: number): string {
 
 interface SimilarityPlayerProps {
     trackId: string;
+    totalDuration: number;
     isPlaying?: boolean;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying = false }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, isPlaying = false }) => {
     const { setSimilarityWs, playNext, volume, setVolume } = usePlayerManager();
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
 
-    // Global volume via player manager
-    const [currentTime, setCurrentTime] = useState<number>(0);
-    const [duration, setDuration] = useState<number>(0);
-
-    // Volume is synced globally via usePlayerManager
-
-    // Time tracking handled by ref
-    useEffect(() => {
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (!ws) return;
-
-        const updateTime = () => setCurrentTime(ws.getCurrentTime());
-        const onReady = () => setDuration(ws.getDuration());
-
-        ws.on('audioprocess', updateTime);
-        ws.on('seek', updateTime);
-        ws.on('ready', onReady);
-
-        // Check if already ready
-        if ((ws as any).isReady) {
-            onReady();
-        }
-
-        return () => {
-            ws.un && ws.un('audioprocess', updateTime);
-            ws.un && ws.un('seek', updateTime);
-            ws.un && ws.un('ready', onReady);
-        };
-    }, [trackId]);
+    // Playback time & duration sourced from the shared player store
+    const currentTime = usePlayerStore((s) => s.similarityCurrentTime);
+    const setSimilarityCurrentTime = usePlayerStore((s) => s.setSimilarityCurrentTime);
 
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
@@ -97,6 +73,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
                 trackId={trackId}
                 isPlaying={isPlaying}
                 volume={volume}
+                onProgress={setSimilarityCurrentTime}
                 onReadyWs={(ws) => {
                     try {
                         setSimilarityWs(ws);
@@ -174,7 +151,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, isPlaying 
 
                 {/* Time Display */}
                 <span className="hidden lg:block text-[length:var(--px-8)] text-right font-fira font-light">
-                    {formatTime(currentTime)} / {formatTime(duration)}
+                    {formatTime(currentTime)} / {formatTime(totalDuration)}
                 </span>
             </div>
         </div>

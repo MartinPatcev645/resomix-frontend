@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import WaveformPlayer, { type WaveformPlayerRef } from "./WaveformPlayer.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
@@ -7,6 +7,7 @@ import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerManager } from "@resomix/hooks";
+import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -19,11 +20,11 @@ function formatTime(seconds: number): string {
 interface InputPlayerProps {
     trackId?: string;
     audioUrl?: string;
-    /** Auto-start playback once ready */
+    totalDuration: number;
     autoPlay?: boolean;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay = false }) => {
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDuration, autoPlay = false }) => {
     // Use a fallback id for local uploads so we always have a string
     const effectiveId = trackId ?? 'uploaded-local';
 
@@ -43,35 +44,15 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
     const waveformPlayerRef = useRef<WaveformPlayerRef>(null);
 
     // Global volume via player manager
-    const [currentTime, setCurrentTime] = useState<number>(0);
-    const [duration, setDuration] = useState<number>(0);
+    const currentTime = usePlayerStore((s) => s.inputCurrentTime);
+    const setInputCurrentTime = usePlayerStore((s) => s.setInputCurrentTime);
 
     // When autoPlay requested, register this track on mount
     useEffect(() => {
         if (autoPlay && currentTrackId == null) {
             startPlaying(effectiveId);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // Time / duration tracking based on registered WaveSurfer
-    useEffect(() => {
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (!ws) return;
-
-        const updateTime = () => setCurrentTime(ws.getCurrentTime());
-        const onReady = () => setDuration(ws.getDuration());
-
-        ws.on('audioprocess', updateTime);
-        ws.on('seek', updateTime);
-        ws.on('ready', onReady);
-
-        return () => {
-            ws.un && ws.un('audioprocess', updateTime);
-            ws.un && ws.un('seek', updateTime);
-            ws.un && ws.un('ready', onReady);
-        };
-    }, [effectiveId]);
 
     // Re-register finish handler when autoplay changes to ensure correct closure
     useEffect(() => {
@@ -204,6 +185,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
                         audioUrl={audioUrl}
                         isPlaying={isPlaying}
                         volume={volume}
+                        onProgress={setInputCurrentTime}
                         onReadyWs={(ws) => {
                             try {
                                 setInputWs(ws);
@@ -268,7 +250,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, autoPlay =
 
                     {/* Time Display */}
                     <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                        {formatTime(currentTime)} / {formatTime(duration)}
+                        {formatTime(currentTime)} / {formatTime(totalDuration)}
                     </span>
                 </div>
             </div>

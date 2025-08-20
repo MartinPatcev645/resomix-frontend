@@ -71,7 +71,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         </div>
                         {currentTrackId === track.id && (
                             <div>
-                                <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} />
+                                <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
                             </div>
                         )}
                     </div>

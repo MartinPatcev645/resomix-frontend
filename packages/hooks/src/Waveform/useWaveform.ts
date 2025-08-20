@@ -35,6 +35,12 @@ export interface UseWaveformProps {
      * created. When omitted WaveSurfer defaults to full volume.
      */
     initialVolume?: number;
+    /**
+     * Optional callback that will be invoked on every audioprocess/seek event
+     * with the current playback time (seconds). Use this to sync external state
+     * like a global store.
+     */
+    onProgress?: (currentTime: number) => void;
 }
 
 export interface WaveformState {
@@ -54,7 +60,7 @@ export interface WaveformState {
  *
  * The hook returns the waveform state and a ref with the underlying WaveSurfer instance.
  */
-export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume }: UseWaveformProps) {
+export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume, onProgress }: UseWaveformProps) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
     const instanceIdRef = useRef(0);
@@ -123,6 +129,8 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         }
 
         isCreatingRef.current = true;
+        // List of event unbind callbacks to run during cleanup
+        const cleanupFns: Array<() => void> = [];
 
         // Destroy previous instance
         if (wavesurferRef.current) {
@@ -166,7 +174,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             interact: true,
             container: containerRef.current,
             partialRender: false,
-            skipLength: 5,
+            skipLength: 10,
             normalize: true,
             height: containerHeight,
         } as any);
@@ -259,6 +267,35 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             }
         });
 
+        // -----------------------------------------------------------------
+        // Progress reporting to external callback (if provided)
+        // -----------------------------------------------------------------
+
+        if (typeof onProgress === 'function') {
+            const progressHandler = () => {
+                const t = wavesurfer.getCurrentTime();
+                // DEBUG: track time progression (at most once every ~second due to throttling below)
+                if (Math.floor(t) % 5 === 0) {
+                    console.debug('[Waveform] progress', t.toFixed(2));
+                }
+                onProgress(t);
+            };
+
+            const progressEvents = ['audioprocess', 'timeupdate'];
+            progressEvents.forEach((evt) => wavesurfer.on(evt as any, progressHandler));
+            wavesurfer.on('seek', progressHandler);
+            wavesurfer.on('ready', progressHandler);
+
+            // Cleanup listeners on destroy
+            cleanupFns.push(() => {
+                progressEvents.forEach((evt) => {
+                    wavesurfer.un && wavesurfer.un(evt as any, progressHandler);
+                });
+                wavesurfer.un && wavesurfer.un('seek', progressHandler);
+                wavesurfer.un && wavesurfer.un('ready', progressHandler);
+            });
+        }
+
         // Load audio with or without peaks
         if (audioSource) {
             try {
@@ -283,13 +320,14 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
         return () => {
             resizeObserver.disconnect();
+            cleanupFns.forEach((fn) => fn());
             if (wavesurferRef.current) {
                 wavesurferRef.current.destroy();
                 wavesurferRef.current = null;
             }
             isCreatingRef.current = false;
         };
-    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, initialVolume]);
+    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, initialVolume, onProgress]);
 
     return { wavesurferRef, state };
 }

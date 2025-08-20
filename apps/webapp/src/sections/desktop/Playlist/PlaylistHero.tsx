@@ -185,7 +185,7 @@ const PlaylistHero: React.FC = () => {
                     {/* The actual Input player */}
                     {/* Render player only when we already know the track ID to avoid extra mounts */}
                     {playlistData?.queried_track.id && (
-                      <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} />
+                      <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
                     )}
                   </div>
                 </div>
