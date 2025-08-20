@@ -123,36 +123,60 @@ export const usePlayerManager = () => {
 
   // Play next track in playlist
   const playNext = useCallback(() => {
-    console.log(`[usePlayerManager] playNext called - currentTrackIndex: ${currentTrackIndex}, autoplay: ${autoplay}`)
-    
-    const nextTrackId = getNextTrack()
-    
+    // Fetch the latest state values directly from the store to avoid stale
+    // closures (e.g. when the user toggles autoplay mid-playback).
+    const {
+      autoplay: latestAutoplay,
+      inputWs: latestInputWs,
+      similarityWs: latestSimilarityWs,
+      currentTrackId: latestCurrentTrackId,
+    } = usePlayerStore.getState();
+
+    console.log(
+      `[usePlayerManager] playNext called - currentTrackIndex: ${currentTrackIndex}, autoplay: ${latestAutoplay}`
+    );
+
+    const nextTrackId = getNextTrack();
+
     if (!nextTrackId) {
       // No next track available
       // Only stop if autoplay is on (means we tried to advance but hit the end)
-      if (autoplay) {
+      if (latestAutoplay) {
         setCurrentTrack(null);
       }
-      return false
+      return false;
     }
-    
+
     // Only advance to next track if autoplay is enabled
-    if (!autoplay) {
+    if (!latestAutoplay) {
       // Pause the appropriate WaveSurfer instance
-      if (currentTrackId === 'uploaded-local' && inputWs) {
-        try { inputWs.pause() } catch {}
-      } else if (currentTrackIndex === 0 && inputWs) {
-        try { inputWs.pause() } catch {}
-      } else if (similarityWs) {
-        try { similarityWs.pause() } catch {}
+      if (latestCurrentTrackId === 'uploaded-local' && latestInputWs) {
+        try {
+          latestInputWs.pause();
+        } catch {
+          /* ignore */
+        }
+      } else if (currentTrackIndex === 0 && latestInputWs) {
+        try {
+          latestInputWs.pause();
+        } catch {
+          /* ignore */
+        }
+      } else if (latestSimilarityWs) {
+        try {
+          latestSimilarityWs.pause();
+        } catch {
+          /* ignore */
+        }
       }
-      setCurrentTrack(null) // Stop playback
-      return false
+
+      setCurrentTrack(null); // Stop playback
+      return false;
     }
-    
-    setCurrentTrack(nextTrackId)
-    return true
-  }, [currentTrackIndex, currentTrackId, getNextTrack, setCurrentTrack, autoplay, inputWs, similarityWs])
+
+    setCurrentTrack(nextTrackId);
+    return true;
+  }, [currentTrackIndex, getNextTrack, setCurrentTrack])
 
   // Play previous track in playlist
   const playPrevious = useCallback(() => {
