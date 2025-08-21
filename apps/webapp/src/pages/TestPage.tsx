@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { WaveformPlayer } from "@/components/index.ts";
+import WaveformPlayer from "@/components/Playlist/WaveformPlayer_7.tsx";
 
 const TestPage: React.FC = () => {
   const [play, setPlay] = useState(false);
