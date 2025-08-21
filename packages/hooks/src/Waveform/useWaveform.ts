@@ -35,6 +35,13 @@ export interface UseWaveformProps {
      * created. When omitted WaveSurfer defaults to full volume.
      */
     initialVolume?: number;
+
+    /**
+     * Duration of the track in seconds. If provided, we use this value instead of
+     * the duration returned by the API.
+     */
+    trackDuration?: number;
+
     /**
      * Optional callback that will be invoked on every timeupdate/seeking event
      * with the current playback time (seconds). Use this to sync external state
@@ -60,7 +67,7 @@ export interface WaveformState {
  *
  * The hook returns the waveform state and a ref with the underlying WaveSurfer instance.
  */
-export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume, onProgress }: UseWaveformProps) {
+export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume, onProgress, trackDuration }: UseWaveformProps) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
     const instanceIdRef = useRef(0);
@@ -85,7 +92,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             
             try {
                 const resp = await getTrackPeaks(trackId);
-
+                
                 // Handle different response formats from the backend
                 let peaks: number[] | undefined;
                 let duration: number | undefined | null;
@@ -157,14 +164,17 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         // Determine audio source – uploaded blobs (audioUrl) take precedence
         const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
 
+
+
         // Create WaveSurfer 7 instance
         const wavesurfer = WaveSurfer.create({
             container: containerRef.current,
             waveColor: theme.textSecondary,
             progressColor: '#EE4A26', // neon orange for played portion
             cursorColor: theme.primary,
-            barWidth: 1,
+            barWidth: 2,
             barGap: 1,
+            barHeight: 1,
             cursorWidth: 2,
             normalize: true,
             autoCenter: false,
@@ -174,7 +184,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             height: containerHeight,
             hideScrollbar: true,
             peaks: state.peaks ? [state.peaks] : undefined,
-            duration: state.duration ?? undefined,
+            duration: trackDuration || state.duration || undefined,
             url: audioSource,
         });
 

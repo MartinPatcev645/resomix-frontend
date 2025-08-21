@@ -27,6 +27,8 @@ interface WaveformPlayerProps {
      */
     onProgress?: (currentTime: number) => void;
 
+    duration?: number;
+
     /** Callback fired when the internal WaveSurfer instance is ready */
     onReadyWs?: (ws: any) => void;
 }
@@ -46,6 +48,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     volume = 1,
     isPlaying,
     onReadyWs,
+    duration,
     onProgress
 }, ref) => {
     const waveformRef = useRef<HTMLDivElement>(null);
@@ -78,6 +81,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         theme: memoTheme,
         initialVolume: initialVolumeRef.current,
         onProgress,
+        trackDuration: duration,
     });
 
     // Expose wavesurfer instance once available

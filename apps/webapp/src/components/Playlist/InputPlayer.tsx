@@ -175,6 +175,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                         audioUrl={audioUrl}
                         isPlaying={isPlaying}
                         volume={volume}
+                        duration={totalDuration}
                         onProgress={setInputCurrentTime}
                         onReadyWs={(ws) => {
                             try {

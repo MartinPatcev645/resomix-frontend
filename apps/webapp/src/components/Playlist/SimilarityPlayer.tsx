@@ -69,6 +69,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                     isPlaying={isPlaying}
                     volume={volume}
                     onProgress={setSimilarityCurrentTime}
+                    duration={totalDuration}
                     onReadyWs={(ws) => {
                         try {
                             setSimilarityWs(ws);

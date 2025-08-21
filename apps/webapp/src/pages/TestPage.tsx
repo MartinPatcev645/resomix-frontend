@@ -33,7 +33,8 @@ const TestPage: React.FC = () => {
       <div className="w-full h-full gap-[var(--px-20)] flex flex-col">
         <div className="max-w-[var(--px-250)] lg:max-w-[var(--px-500)] h-[var(--px-50)] overflow-y-hidden bg-[var(--color-secondary)]">
           <WaveformPlayer
-            trackId="67ad9cec799206f8d64acd07"
+            duration={482}
+            trackId="67ad9cec799206f8d64acdf1"
             isPlaying={play}
           />
         </div>
