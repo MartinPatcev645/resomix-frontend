@@ -36,7 +36,7 @@ export interface UseWaveformProps {
      */
     initialVolume?: number;
     /**
-     * Optional callback that will be invoked on every audioprocess/seek event
+     * Optional callback that will be invoked on every timeupdate/seeking event
      * with the current playback time (seconds). Use this to sync external state
      * like a global store.
      */
@@ -154,42 +154,29 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             return;
         }
 
-        // Create WaveSurfer instance
+        // Determine audio source – uploaded blobs (audioUrl) take precedence
+        const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
+
+        // Create WaveSurfer 7 instance
         const wavesurfer = WaveSurfer.create({
-            responsive: true,
-            // Choose backend automatically: use WebAudio for local blobs (better decoding),
-            // otherwise use MediaElement for remote streaming which supports range requests.
-            backend: audioUrl && audioUrl.startsWith('blob:') ? 'WebAudio' : 'MediaElement',
+            container: containerRef.current,
             waveColor: theme.textSecondary,
             progressColor: '#EE4A26', // neon orange for played portion
             cursorColor: theme.primary,
-            backgroundColor: theme.cardBg || "#000000",
             barWidth: 1,
-            barHeight: 1,
-            barMinHeight: 4,
             barGap: 1,
-            cursorWidth: 1,
-            pixelRatio: 1,
-            hideScrollbar: true,
-            interact: true,
-            container: containerRef.current,
-            partialRender: false,
-            skipLength: 10,
+            cursorWidth: 2,
             normalize: true,
+            autoCenter: false,
+            interact: true,
+            dragToSeek: true,
+            fillParent: true,
             height: containerHeight,
-        } as any);
-
-        // Handle container resize
-        const resizeObserver = new ResizeObserver(entries => {
-            const entry = entries[0];
-            if (wavesurfer && entry) {
-                const newHeight = entry.contentRect.height;
-                if (newHeight && newHeight !== containerHeight) {
-                    wavesurfer.setHeight(newHeight);
-                }
-            }
+            hideScrollbar: true,
+            peaks: state.peaks ? [state.peaks] : undefined,
+            duration: state.duration ?? undefined,
+            url: audioSource,
         });
-        resizeObserver.observe(containerRef.current as Element);
 
         wavesurferRef.current = wavesurfer;
 
@@ -200,16 +187,32 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             } catch { /* ignore */ }
         }
 
-        // Store playing state before interactions for WebAudio backend
-        let isPlayingBeforeInteraction = false;
+        // Handle container resize (fit full track to width; no reload)
+        const resizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[0]
+            if (!wavesurfer || !entry) return
 
-        wavesurfer.on('interaction', () => {
-            // Store playing state before user interaction (click/drag on waveform)
-            isPlayingBeforeInteraction = wavesurfer.isPlaying && wavesurfer.isPlaying();
-        });
+            const el = containerRef.current as HTMLElement | null
+            const width = el?.clientWidth ?? entry.contentRect.width ?? 0
+            const height = Math.max(1, Math.floor(entry.contentRect.height))
 
-        // Determine audio source – uploaded blobs (audioUrl) take precedence
-        const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
+            try {
+                // Update canvas height without reloading audio
+                wavesurfer.setOptions({ height })
+
+                // Recompute px/sec so the entire duration fits container width
+                const duration = wavesurfer.getDuration() || state.duration || 0
+                if (duration > 0 && width > 0) {
+                    wavesurfer.zoom(width / duration)
+                }
+            } catch {
+                // ignore resize errors
+            }
+        })
+
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current as Element)
+        }
 
         // Handle errors
         wavesurfer.on('error', (error: any) => {
@@ -222,29 +225,6 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         // Add finish event to prevent overlapping playback
         wavesurfer.on('finish', () => {
             // Audio finished playing
-        });
-
-        // Resume immediately after seek for WebAudio backend when necessary
-        wavesurfer.on('seek', (progress: number) => {
-            if (
-                isPlayingBeforeInteraction &&
-                wavesurfer.backend &&
-                wavesurfer.backend.constructor &&
-                /WebAudio/i.test(wavesurfer.backend.constructor.name)
-            ) {
-                // Try to resume playback shortly after seek
-                setTimeout(() => {
-                    if (!wavesurfer.isPlaying()) {
-                        try {
-                            wavesurfer.play();
-                        } catch (e) {
-                            // ignore
-                        }
-                    }
-                }, 30);
-            }
-
-            isPlayingBeforeInteraction = false; // reset regardless
         });
 
         // Add play/pause event logging
@@ -281,42 +261,21 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                 onProgress(t);
             };
 
-            const progressEvents = ['audioprocess', 'timeupdate'];
-            progressEvents.forEach((evt) => wavesurfer.on(evt as any, progressHandler));
-            wavesurfer.on('seek', progressHandler);
+            // Listen to timeupdate events for progress
+            wavesurfer.on('timeupdate', progressHandler);
+            wavesurfer.on('seeking', progressHandler);
             wavesurfer.on('ready', progressHandler);
 
             // Cleanup listeners on destroy
             cleanupFns.push(() => {
-                progressEvents.forEach((evt) => {
-                    wavesurfer.un && wavesurfer.un(evt as any, progressHandler);
-                });
-                wavesurfer.un && wavesurfer.un('seek', progressHandler);
-                wavesurfer.un && wavesurfer.un('ready', progressHandler);
+                wavesurfer.un('timeupdate', progressHandler);
+                wavesurfer.un('seeking', progressHandler);
+                wavesurfer.un('ready', progressHandler);
             });
         }
 
-        // Load audio with or without peaks
-        if (audioSource) {
-            try {
-                if (state.peaks && trackId) {
-                    // For MediaElement backend with peaks, pass peaks directly to load()
-                    // This should display the waveform immediately using the peaks data
-                    wavesurfer.load(audioSource, state.peaks as any);
-                } else {
-                    // For blob URLs (uploaded files), use direct URL loading with WebAudio backend
-                    wavesurfer.load(audioSource);
-                }
-            } catch (loadError) {
-                setState(prev => ({ 
-                    ...prev, 
-                    error: 'Failed to load audio source' 
-                }));
-                isCreatingRef.current = false;
-            }
-        } else {
-            isCreatingRef.current = false;
-        }
+        // WaveSurfer 7 automatically loads audio when url is provided in constructor
+        // No manual load() call needed
 
         return () => {
             resizeObserver.disconnect();

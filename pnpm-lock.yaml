@@ -207,8 +207,8 @@ importers:
         specifier: workspace:*
         version: link:../stores
       wavesurfer.js:
-        specifier: 4.2.0
-        version: 4.2.0
+        specifier: 7.10.1
+        version: 7.10.1
       zustand:
         specifier: ^5.0.7
         version: 5.0.7(@types/react@18.3.23)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1))
@@ -217,8 +217,8 @@ importers:
         specifier: ^18.0.0
         version: 18.3.23
       '@types/wavesurfer.js':
-        specifier: ^4.6.0
-        version: 4.6.0
+        specifier: ^6.0.12
+        version: 6.0.12
       react:
         specifier: ^18.0.0
         version: 18.3.1
@@ -864,6 +864,9 @@ packages:
   '@types/babel__traverse@7.20.7':
     resolution: {integrity: sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng==}
 
+  '@types/debounce@1.2.4':
+    resolution: {integrity: sha512-jBqiORIzKDOToaF63Fm//haOCHuwQuLa2202RK4MozpA6lh93eCBc+/8+wZn5OzjJt3ySdc+74SXWXB55Ewtyw==}
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
@@ -900,6 +903,9 @@ packages:
 
   '@types/wavesurfer.js@4.6.0':
     resolution: {integrity: sha512-DaIuLoWuCP3TGAO/CisoLcfaEWQnMlqCKFNyeKMrbOsDDODj+XGKpCcO9+/gmUYLz6FI2vgZjeirlW4QmzSB/w==}
+
+  '@types/wavesurfer.js@6.0.12':
+    resolution: {integrity: sha512-oM9hYlPIVms4uwwoaGs9d0qp7Xk7IjSGkdwgmhUymVUIIilRfjtSQvoOgv4dpKiW0UozWRSyXfQqTobi0qWyCw==}
 
   '@types/webxr@0.5.22':
     resolution: {integrity: sha512-Vr6Stjv5jPRqH690f5I5GLjVk8GSsoQSYJ2FVd/3jJF7KaqfwPi3ehfBS96mlQ2kPCwZaX6U0rG2+NGHBKkA/A==}
@@ -1886,8 +1892,8 @@ packages:
       yaml:
         optional: true
 
-  wavesurfer.js@4.2.0:
-    resolution: {integrity: sha512-g+d1BFAEVvKpILe/oRM/Mle8dX+Vs6y5bEDmiJdCaR15bO/xKuQyN7cGzhYE4jgnkZkAvog4ElL6JLGGUmilyQ==}
+  wavesurfer.js@7.10.1:
+    resolution: {integrity: sha512-tF1ptFCAi8SAqKbM1e7705zouLC3z4ulXCg15kSP5dQ7VDV30Q3x/xFRcuVIYTT5+jB/PdkhiBRCfsMshZG1Ug==}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -2458,6 +2464,8 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.1
 
+  '@types/debounce@1.2.4': {}
+
   '@types/estree@1.0.8': {}
 
   '@types/json-schema@7.0.15': {}
@@ -2502,6 +2510,10 @@ snapshots:
       meshoptimizer: 0.18.1
 
   '@types/wavesurfer.js@4.6.0': {}
+
+  '@types/wavesurfer.js@6.0.12':
+    dependencies:
+      '@types/debounce': 1.2.4
 
   '@types/webxr@0.5.22': {}
 
@@ -3477,7 +3489,7 @@ snapshots:
       jiti: 2.5.0
       lightningcss: 1.30.1
 
-  wavesurfer.js@4.2.0: {}
+  wavesurfer.js@7.10.1: {}
 
   which@2.0.2:
     dependencies:

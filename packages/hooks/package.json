@@ -12,12 +12,12 @@
     "dependencies": {
         "@resomix/api-client": "workspace:*",
         "@resomix/stores": "workspace:*",
-        "wavesurfer.js": "4.2.0",
+        "wavesurfer.js": "7.10.1",
         "zustand": "^5.0.7"
     },
     "devDependencies": {
         "@types/react": "^18.0.0",
-        "@types/wavesurfer.js": "^4.6.0",
+        "@types/wavesurfer.js": "^6.0.12",
         "react": "^18.0.0"
     },
     "keywords": [],

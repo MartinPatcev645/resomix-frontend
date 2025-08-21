@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { WaveformPlayer } from "@/components/index.ts";
+import WaveformPlayer from "@/components/Playlist/WaveformPlayer.tsx";
 
 const TestPage: React.FC = () => {
   const [play, setPlay] = useState(false);
@@ -31,7 +31,7 @@ const TestPage: React.FC = () => {
   return (
     <div className="w-screen h-screen overflow-hidden bg-[var(--color-primary-background)] text-[var(--color-primary)] flex flex-col gap-[var(--px-40)] justify-start items-start p-[var(--px-40)]">
       <div className="w-full h-full gap-[var(--px-20)] flex flex-col">
-        <div className="max-w-[var(--px-250)] lg:max-w-[var(--px-500)] h-[var(--px-100)] bg-[var(--color-secondary)]">
+        <div className="max-w-[var(--px-250)] lg:max-w-[var(--px-500)] h-[var(--px-50)] overflow-y-hidden bg-[var(--color-secondary)]">
           <WaveformPlayer
             trackId="67ad9cec799206f8d64acd07"
             isPlaying={play}
@@ -43,7 +43,7 @@ const TestPage: React.FC = () => {
         </button>
       </div>
       <div className="w-full h-full gap-[var(--px-20)] flex flex-col">
-        <div className="max-w-[var(--px-250)] lg:max-w-[var(--px-500)] h-[var(--px-100)] bg-[var(--color-secondary)]">
+        <div className="max-w-[var(--px-250)] lg:max-w-[var(--px-500)] h-[var(--px-50)] overflow-y-hidden bg-[var(--color-secondary)]">
           {fileUrl ? (
             <WaveformPlayer
               audioUrl={fileUrl}

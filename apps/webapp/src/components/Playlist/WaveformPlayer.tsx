@@ -110,7 +110,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
 
          if (isPlaying) {
              // Already playing? nothing to do.
-            if (ws.isPlaying && ws.isPlaying()) {
+            if (ws.isPlaying()) {
                 return;
             }
 
@@ -125,23 +125,17 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
                  }
              };
 
-             // WaveSurfer >=7 exposes `isReady` flag once media is attached.
-             // If ready, play immediately, otherwise wait for the ready event.
-             if ((ws as any).isReady) {
+             // WaveSurfer 7 has better readiness detection
+             if (ws.getDuration() > 0) {
                  tryPlay();
              } else {
                  const onReady = () => {
                      tryPlay();
-                     ws.un && ws.un('ready', onReady);
+                     ws.un('ready', onReady);
                  };
-                 // Prefer `once` but fall back to `on` + manual unbind
-                 if ((ws as any).once) {
-                     (ws as any).once('ready', onReady);
-                 } else {
-                     ws.on('ready', onReady);
-                 }
+                 ws.on('ready', onReady);
                  return () => {
-                     (ws as any).un && (ws as any).un('ready', onReady);
+                     ws.un('ready', onReady);
                  };
              }
          } else {
@@ -182,7 +176,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     }
 
     return (
-        <div className="w-full relative z-30 h-[var(--px-50)]">
+        <div className="w-full relative z-30 h-[var(--px-100)]">
             <div ref={waveformRef} className="w-full h-full" />
         </div>
     );
