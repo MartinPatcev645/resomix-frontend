@@ -162,7 +162,7 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         return (
             <div className="w-full h-[var(--px-50)] flex items-center justify-center bg-[var(--color-primary-background)] rounded">
                 <div className="text-[var(--color-primary-hover)] font-fira text-[length:var(--px-12)] lg:text-[length:var(--px-10)] font-light">
-                    Fetching the track for you...
+                    {audioUrl ? 'Generating waveform...' : 'Fetching the track for you...'}
                 </div>
             </div>
         );

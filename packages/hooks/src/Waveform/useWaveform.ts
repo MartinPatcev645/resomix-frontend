@@ -58,6 +58,66 @@ export interface WaveformState {
 }
 
 /**
+ * Generate peaks data from an audio file when no pre-computed peaks are available
+ */
+async function generatePeaksFromAudio(audioUrl: string): Promise<{ peaks: number[]; duration: number }> {
+    return new Promise((resolve, reject) => {
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        
+        audio.onloadedmetadata = () => {
+            const duration = audio.duration;
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaElementSource(audio);
+            
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+            
+            // Set analyser properties for good peak resolution
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.8;
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            // Generate peaks by analyzing frequency data
+            const peaks: number[] = [];
+            const numPeaks = 1000; // Number of peaks to generate
+            
+            const analyzeFrame = () => {
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Calculate average frequency magnitude for this frame
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / bufferLength;
+                
+                // Normalize to 0-1 range
+                peaks.push(average / 255);
+                
+                if (peaks.length < numPeaks) {
+                    requestAnimationFrame(analyzeFrame);
+                } else {
+                    audioContext.close();
+                    resolve({ peaks, duration });
+                }
+            };
+            
+            // Start analysis
+            audio.currentTime = 0;
+            audio.play();
+            analyzeFrame();
+        };
+        
+        audio.onerror = () => reject(new Error('Failed to load audio for peak generation'));
+        audio.src = audioUrl;
+    });
+}
+
+/**
  * React hook that fetches peaks data and instantiates/manages a WaveSurfer instance.
  *
  * @param containerRef - Ref pointing to the container element where the waveform will be rendered.
@@ -121,6 +181,30 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         fetchPeaks();
     }, [trackId, audioUrl]);
 
+    // Generate peaks for uploaded audio when no pre-computed peaks exist
+    useEffect(() => {
+        if (!audioUrl || state.peaks || state.error) {
+            return;
+        }
+
+        const generatePeaks = async () => {
+            setState(prev => ({ ...prev, isLoading: true, error: null }));
+            
+            try {
+                const { peaks, duration } = await generatePeaksFromAudio(audioUrl);
+                setState(prev => ({ ...prev, peaks, duration, isLoading: false }));
+            } catch (error) {
+                setState(prev => ({ 
+                    ...prev, 
+                    error: error instanceof Error ? error.message : 'Failed to generate peaks',
+                    isLoading: false 
+                }));
+            }
+        };
+
+        generatePeaks();
+    }, [audioUrl, state.peaks, state.error]);
+
     // Create WaveSurfer instance and load audio
     useEffect(() => {
         if (!containerRef.current) return;
@@ -132,6 +216,11 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
         // If we're using a backend trackId (no direct audioUrl) wait until peaks are fetched
         if (trackId && !audioUrl && !state.peaks && !state.error) {
+            return;
+        }
+
+        // If we're using audioUrl, wait until peaks are generated or we have an error
+        if (audioUrl && !state.peaks && !state.error && !state.isLoading) {
             return;
         }
 
@@ -163,8 +252,6 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
         // Determine audio source – uploaded blobs (audioUrl) take precedence
         const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
-
-
 
         // Create WaveSurfer 7 instance
         const wavesurfer = WaveSurfer.create({
@@ -294,7 +381,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             }
             isCreatingRef.current = false;
         };
-    }, [containerRef, sourceKey, state.peaks, state.error, theme.textSecondary, theme.primary, theme.cardBg, initialVolume, onProgress]);
+    }, [containerRef, sourceKey, state.peaks, state.error, state.isLoading, theme.textSecondary, theme.primary, theme.cardBg, initialVolume, onProgress, trackId, audioUrl]);
 
     return { wavesurferRef, state };
 }
