@@ -87,8 +87,17 @@ const PlaylistTable: React.FC = () => {
                             <div className="text-[length:var(--px-9)] font-fira font-light tracking-[var(--px-0-1)] text-center ml-[var(--px-5)] mr-[var(--px-5)] w-[var(--px-40)]">
                                 {formatDuration(track.duration)}
                             </div>
-                            <div className="text-[length:var(--px-9)] font-fira font-light tracking-[var(--px-0-1)] text-center text-[var(--color-primary-hover)] mx-[var(--px-10)] w-[var(--px-40)]">
-                                {formatPercentage(track.score)}
+                            <div className="flex flex-col items-center">
+                                <div className="text-[length:var(--px-9)] font-fira font-light tracking-[var(--px-0-1)] text-center text-[var(--color-primary-hover)] mx-[var(--px-10)] w-[var(--px-40)]">
+                                    {formatPercentage(track.score)}
+                                </div>
+                                {/* Create a bar here */}
+                                <div className="w-[var(--px-40)] h-[var(--px-4)] bg-transparent rounded-full overflow-hidden mt-[var(--px-3)] outline outline-white outline-dotted">
+                                    <div 
+                                        className="h-full bg-white rounded-full transition-all duration-300"
+                                        style={{ width: `${track.score * 100}%` }}
+                                    ></div>
+                                </div>
                             </div>
                             <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-20)]">
                                 {(() => {

@@ -92,7 +92,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               /> */}
               <ToggleButton
                 text="Autoplay"
-                customWidth="min-w-[var(--px-120)]"
+                customWidth="min-w-[var(--px-100)]"
                 isOn={autoplay}
                 onToggle={setAutoplay}
               />

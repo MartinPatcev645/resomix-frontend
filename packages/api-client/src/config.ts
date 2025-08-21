@@ -53,6 +53,8 @@ export const API_CONFIG: ApiConfig = {
     "audio/aac",
     "audio/flac",
     "audio/x-flac",
+    "audio/aiff",
+    "audio/x-aiff",
   ],
   ENDPOINTS: {
     SIMILARITY: "/get_similarity/",

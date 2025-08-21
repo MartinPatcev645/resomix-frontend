@@ -34,7 +34,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
                                 {currentTrackId === track.id && (
                                     <>
-                                        <div className="absolute inset-0 backdrop-blur-[3px] rounded-sm"></div>
+                                        <div className="absolute inset-0 bg-black/80 rounded-lg"></div>
                                         <img
                                             src={PauseSvg}
                                             alt="Play"
@@ -59,8 +59,17 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         {track.label} {track.year ? `- ${track.year}` : ''}
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
-                                            {formatPercentage(track.score, 0)}
+                                        <div className="flex items-center">
+                                            <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
+                                                {formatPercentage(track.score, 0)}
+                                            </div>
+                                            {/* Display the bar here */}
+                                            <div className="w-[var(--px-30)] h-[var(--px-3)] bg-transparent rounded-full overflow-hidden ml-[var(--px-5)] outline outline-white outline-dotted">
+                                                <div 
+                                                    className="h-full bg-white rounded-full transition-all duration-300"
+                                                    style={{ width: `${track.score * 100}%` }}
+                                                ></div>
+                                            </div>
                                         </div>
                                         <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)] ml-[var(--px-60)]">
                                             {formatDuration(track.duration)}
