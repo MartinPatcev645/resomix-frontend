@@ -7,8 +7,8 @@ import { StatusMessage } from "@resomix/ui";
 import { usePlayerStore } from "@resomix/stores";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
-// import ShareSvg from "@/assets/icons/share.svg";
-// import ShareBlackSvg from "@/assets/icons/share_black.svg";
+import ShareSvg from "@/assets/icons/share.svg";
+import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import AngleDownSvg from "@/assets/icons/AngleDown.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
@@ -68,42 +68,46 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer ml-[var(--px-5)]">
-              <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-20)] h-[var(--px-20)]" />
+            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex items-center hover:cursor-pointer ml-[var(--px-10)]">
+              <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-30)] h-[var(--px-30)]" />
             </div>
-            <div className="flex items-center gap-[var(--px-8)]">
-              <IconButton
-                text="Rename"
-                transparent={true}
-                customWidth="min-w-[var(--px-70)]"
-                mobile={true}
-                onClick={() => setShowRename(true)}
-                icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-              />
-              {/* <IconButton
-                text="Share"
-                transparent={true}
-                customWidth="min-w-[var(--px-70)]"
-                mobile={true}
-                onClick={() => setShowShare(true)}
-                icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-              /> */}
-              <ToggleButton
-                text="Autoplay"
-                customWidth="min-w-[var(--px-100)]"
-                isOn={autoplay}
-                onToggle={setAutoplay}
-              />
-              <IconButton
-                text="Rate Playlist"
-                transparent={true}
-                customWidth="min-w-[var(--px-80)]"
-                mobile={true}
-                onClick={() => setShowRating(true)}
-                icon={<img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-              />
+            <div className="flex flex-col items-center gap-[var(--px-15)]">
+              <div className="flex items-center gap-[var(--px-22)] mr-[var(--px-5)]">
+                <IconButton
+                  text="Rename"
+                  transparent={true}
+                  customWidth="min-w-[var(--px-70)]"
+                  mobile={true}
+                  onClick={() => setShowRename(true)}
+                  icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                />
+                <ToggleButton
+                  text="Autoplay"
+                  customWidth="min-w-[var(--px-100)]"
+                  isOn={autoplay}
+                  onToggle={setAutoplay}
+                />
+              </div>
+              <div className="flex items-center gap-[var(--px-12)] mr-[var(--px-2)]">
+                <IconButton
+                  text="Rate Playlist"
+                  transparent={true}
+                  customWidth="min-w-[var(--px-80)]"
+                  mobile={true}
+                  onClick={() => setShowRating(true)}
+                  icon={<img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                />
+                <IconButton
+                  text="Share"
+                  transparent={true}
+                  customWidth="min-w-[var(--px-70)]"
+                  mobile={true}
+                  onClick={() => setShowShare(true)}
+                  icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                />
+              </div>
             </div>
           </div>
           <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
