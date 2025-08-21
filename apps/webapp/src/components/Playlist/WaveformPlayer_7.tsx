@@ -167,7 +167,7 @@ const WaveformPlayer7 = forwardRef<WaveformPlayer7Ref, WaveformPlayer7Props>(({
     }
 
     return (
-        <div className="w-full relative z-30 h-[var(--px-50)]">
+        <div className="w-full relative z-30 h-[var(--px-100)]">
             <div ref={waveformRef} className="w-full h-full bg-black" />
         </div>
     );

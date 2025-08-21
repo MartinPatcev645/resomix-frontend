@@ -34,22 +34,16 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const skipBackward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (ws && typeof ws.skipBackward === 'function') {
-            ws.skipBackward();
-        } else if (ws && typeof ws.skip === 'function') {
+        if (ws && typeof ws.skip === 'function') {
             ws.skip(-10);
-        } else {
         }
     }, []);
 
     const skipForward = useCallback(() => {
         // Try to get wavesurfer from direct ref first, then fall back to store
         const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (ws && typeof ws.skipForward === 'function') {
-            ws.skipForward();
-        } else if (ws && typeof ws.skip === 'function') {
+        if (ws && typeof ws.skip === 'function') {
             ws.skip(10);
-        } else {
         }
     }, []);
 
@@ -68,35 +62,37 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     return (
         <div className="flex flex-col w-full gap-[var(--px-5)]">
-            <WaveformPlayer
-                ref={waveformPlayerRef}
-                trackId={trackId}
-                isPlaying={isPlaying}
-                volume={volume}
-                onProgress={setSimilarityCurrentTime}
-                onReadyWs={(ws) => {
-                    try {
-                        setSimilarityWs(ws);
+            <div className="h-[var(--px-50)] overflow-y-hidden">
+                <WaveformPlayer
+                    ref={waveformPlayerRef}
+                    trackId={trackId}
+                    isPlaying={isPlaying}
+                    volume={volume}
+                    onProgress={setSimilarityCurrentTime}
+                    onReadyWs={(ws) => {
+                        try {
+                            setSimilarityWs(ws);
 
-                        // If this track is meant to be playing, start immediately now that ws is ready
-                        if (isPlaying) {
-                            try {
-                                ws.play();
-                            } catch (e) {
-                                console.error('[SimilarityPlayer] play() error after ready', e);
+                            // If this track is meant to be playing, start immediately now that ws is ready
+                            if (isPlaying) {
+                                try {
+                                    ws.play();
+                                } catch (e) {
+                                    console.error('[SimilarityPlayer] play() error after ready', e);
+                                }
                             }
-                        }
 
-                        // attach finish listener
-                        ws.un && ws.un('finish');
-                        ws.on('finish', () => {
-                            playNext();
-                        });
-                    } catch (error) {
-                        console.error('[SimilarityPlayer] Failed to setup WaveSurfer:', error);
-                    }
-                }}
-            />
+                            // attach finish listener
+                            ws.un && ws.un('finish');
+                            ws.on('finish', () => {
+                                playNext();
+                            });
+                        } catch (error) {
+                            console.error('[SimilarityPlayer] Failed to setup WaveSurfer:', error);
+                        }
+                    }}
+                />
+            </div>
 
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-[var(--px-10)] justify-between lg:justify-start">

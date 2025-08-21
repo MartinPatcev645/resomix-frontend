@@ -97,17 +97,12 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
         if (ws) {
             // Store playing state before skip
             const isPlayingTemp = ws.isPlaying && ws.isPlaying();
-
-            if (typeof ws.skipBackward === 'function') {
-                ws.skipBackward();
-            } else if (typeof ws.skip === 'function') {
+            if (typeof ws.skip === 'function') {
                 ws.skip(-10);
             }
-
             // Check if playing state changed and restore if needed
             setTimeout(() => {
                 const isPlayingAfter = ws.isPlaying && ws.isPlaying();
-
                 if (isPlayingTemp && !isPlayingAfter) {
                     try {
                         ws.play();
@@ -126,17 +121,12 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
         if (ws) {
             // Store playing state before skip
             const isPlayingTemp = ws.isPlaying && ws.isPlaying();
-
-            if (typeof ws.skipForward === 'function') {
-                ws.skipForward();
-            } else if (typeof ws.skip === 'function') {
+            if (typeof ws.skip === 'function') {
                 ws.skip(10);
             }
-
             // Check if playing state changed and restore if needed
             setTimeout(() => {
                 const isPlayingAfter = ws.isPlaying && ws.isPlaying();
-
                 if (isPlayingTemp && !isPlayingAfter) {
                     try {
                         ws.play();
@@ -178,7 +168,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
 
             <div className="flex flex-col w-full gap-[var(--px-5)]">
                 {/* Waveform */}
-                <div className="flex-1">
+                <div className="h-[var(--px-50)] overflow-y-hidden">
                     <WaveformPlayer
                         ref={waveformPlayerRef}
                         trackId={trackId}

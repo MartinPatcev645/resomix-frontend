@@ -53,13 +53,13 @@ export interface WaveformState {
 /**
  * React hook that fetches peaks data and instantiates/manages a WaveSurfer 7 instance.
  */
-export function useWaveform7({ 
-    containerRef, 
-    trackId, 
-    audioUrl, 
-    theme, 
-    initialVolume, 
-    onProgress 
+export function useWaveform7({
+    containerRef,
+    trackId,
+    audioUrl,
+    theme,
+    initialVolume,
+    onProgress
 }: UseWaveform7Props) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
@@ -81,7 +81,7 @@ export function useWaveform7({
 
         const fetchPeaks = async () => {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
-            
+
             try {
                 const resp = await getTrackPeaks(trackId);
 
@@ -102,10 +102,10 @@ export function useWaveform7({
 
                 setState(prev => ({ ...prev, peaks, duration: duration ?? null, isLoading: false }));
             } catch (error) {
-                setState(prev => ({ 
-                    ...prev, 
+                setState(prev => ({
+                    ...prev,
                     error: error instanceof Error ? error.message : 'Failed to fetch peaks',
-                    isLoading: false 
+                    isLoading: false
                 }));
             }
         };
@@ -163,21 +163,20 @@ export function useWaveform7({
         const wavesurfer = WaveSurfer.create({
             container: containerRef.current,
             waveColor: '#999999',
-            progressColor: '#EE4A26', 
+            progressColor: '#EE4A26',
             cursorColor: '#fff',
             barWidth: 1,
-            barHeight: 1,
             barGap: 1,
-            cursorWidth: 1,
+            cursorWidth: 2,
+            normalize: true,
+            autoCenter: false,
+            interact: true,
+            dragToSeek: true,
             fillParent: true,
             height: containerHeight,
-            normalize: true,
-            autoCenter: true,
             hideScrollbar: true,
-            // Use peaks if available for faster rendering
             peaks: state.peaks ? [state.peaks] : undefined,
             duration: state.duration ?? undefined,
-            // Load the audio URL
             url: audioSource,
         });
 
@@ -192,9 +191,9 @@ export function useWaveform7({
 
         // Handle errors
         wavesurfer.on('error', (error: any) => {
-            setState(prev => ({ 
-                ...prev, 
-                error: 'Failed to load audio' 
+            setState(prev => ({
+                ...prev,
+                error: 'Failed to load audio'
             }));
         });
 
@@ -207,6 +206,15 @@ export function useWaveform7({
                     wavesurfer.setVolume(initialVolume);
                 } catch { /* ignore */ }
             }
+            try {
+                const el = containerRef.current as HTMLElement
+                const w = el?.clientWidth ?? 0
+                const d = wavesurfer.getDuration() || state.duration || 0
+                if (w > 0 && d > 0) {
+                    const pxPerSec = w / d
+                    wavesurfer.zoom(pxPerSec)   // fit entire duration to container width
+                }
+            } catch { }
         });
 
         // Progress reporting to external callback (if provided)
@@ -222,26 +230,33 @@ export function useWaveform7({
             wavesurfer.on('ready', progressHandler);
         }
 
-        // Handle container resize
-        const resizeObserver = new ResizeObserver(entries => {
-            const entry = entries[0];
-            if (wavesurfer && entry) {
-                const newHeight = entry.contentRect.height;
-                if (newHeight && newHeight !== containerHeight) {
-                    // WaveSurfer 7 automatically handles resize, but we can trigger a redraw
-                    try {
-                        wavesurfer.empty();
-                        wavesurfer.load(audioSource, state.peaks ? [state.peaks] : undefined);
-                    } catch (e) {
-                        // ignore resize errors
-                    }
+        // Handle container resize (fit full track to width; no reload)
+        const resizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[0]
+            if (!wavesurfer || !entry) return
+
+            const el = containerRef.current as HTMLElement | null
+            const width = el?.clientWidth ?? entry.contentRect.width ?? 0
+            const height = Math.max(1, Math.floor(entry.contentRect.height))
+
+            try {
+                // Update canvas height without reloading audio
+                wavesurfer.setOptions({ height })
+
+                // Recompute px/sec so the entire duration fits container width
+                const duration = wavesurfer.getDuration() || state.duration || 0
+                if (duration > 0 && width > 0) {
+                    wavesurfer.zoom(width / duration)
                 }
+            } catch {
+                // ignore resize errors
             }
-        });
-        
+        })
+
         if (containerRef.current) {
-            resizeObserver.observe(containerRef.current as Element);
+            resizeObserver.observe(containerRef.current as Element)
         }
+
 
         return () => {
             resizeObserver.disconnect();
