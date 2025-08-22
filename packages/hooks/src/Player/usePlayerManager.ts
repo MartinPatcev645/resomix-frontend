@@ -8,10 +8,10 @@ import { usePlayerStore } from '@resomix/stores'
  */
 export const usePlayerManager = () => {
   const { playlistData, trackRatings } = usePlaylistStore()
-  const { 
-    currentTrackId, 
-    setCurrentTrack, 
-    inputWs, 
+  const {
+    currentTrackId,
+    setCurrentTrack,
+    inputWs,
     similarityWs,
     setInputWs,
     setSimilarityWs,

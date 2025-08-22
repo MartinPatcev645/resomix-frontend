@@ -3,6 +3,35 @@ import WaveSurfer from "wavesurfer.js";
 import { SERVER_MEDIA } from "@resomix/config";
 import { getTrackPeaks } from "@resomix/api-client";
 
+// -------------------------------------------------------------
+// Platform helpers
+// -------------------------------------------------------------
+// Very small helper to detect iOS devices. We purposefully keep the
+// regex narrow to only match iPhone/iPad/iPod browsers. This avoids
+// erroneously matching desktop Safari where the glitch does not occur.
+// We do the check once at module load so the result is memoised.
+const IS_IOS = typeof navigator !== 'undefined' && /iP(ad|hone|od)/.test(navigator.userAgent);
+
+// -------------------------------------------------------------
+// Shared AudioContext (prevents exhausting the 6-context limit on iOS)
+// -------------------------------------------------------------
+let _sharedAudioContext: AudioContext | null = null;
+
+function getSharedAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+
+  if (!_sharedAudioContext) {
+    try {
+      _sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch {
+      // Creation failed – likely unsupported. Leave as null so Wavesurfer falls back.
+      _sharedAudioContext = null;
+    }
+  }
+
+  return _sharedAudioContext;
+}
+
 export interface WaveformTheme {
     textSecondary: string;
     primary: string;
@@ -131,6 +160,10 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
     const instanceIdRef = useRef(0);
+    const requestIdRef = useRef(0);
+    // Store the current AbortController for peaks HTTP fetch so we can cancel
+    // when the user switches tracks before completion.
+    const peaksAbortRef = useRef<AbortController | null>(null);
     const [state, setState] = useState<WaveformState>({
         isLoading: false,
         error: null,
@@ -150,18 +183,33 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         const fetchPeaks = async () => {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
             
+            const currentRequestId = ++requestIdRef.current;
+
+            // Abort any in-flight fetch tied to a previous trackId
+            if (peaksAbortRef.current) {
+                try {
+                    peaksAbortRef.current.abort();
+                } catch { /* ignore */ }
+            }
+
+            const abortController = new AbortController();
+            peaksAbortRef.current = abortController;
+
             try {
-                const resp = await getTrackPeaks(trackId);
+                const url = `${SERVER_MEDIA}/peaks/?uuid=${trackId}`;
+                const resp = await fetch(url, { signal: abortController.signal });
+                if (!resp.ok) throw new Error(`Failed to fetch peaks (${resp.status})`);
+                const data = await resp.json();
                 
                 // Handle different response formats from the backend
                 let peaks: number[] | undefined;
                 let duration: number | undefined | null;
 
-                if (Array.isArray(resp)) {
-                    peaks = resp as unknown as number[];
+                if (Array.isArray(data)) {
+                    peaks = data as unknown as number[];
                 } else {
-                    peaks = (resp as any).peaks ?? (resp as any).data?.peaks;
-                    duration = (resp as any).duration ?? (resp as any).data?.duration;
+                    peaks = (data as any).peaks ?? (data as any).data?.peaks;
+                    duration = (data as any).duration ?? (data as any).data?.duration;
                 }
 
                 if (!Array.isArray(peaks)) {
@@ -170,11 +218,13 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
                 setState(prev => ({ ...prev, peaks, duration: duration ?? null, isLoading: false }));
             } catch (error) {
-                setState(prev => ({ 
-                    ...prev, 
-                    error: error instanceof Error ? error.message : 'Failed to fetch peaks',
-                    isLoading: false 
-                }));
+                if (currentRequestId === requestIdRef.current) { // Only update state if this request is still active
+                    setState(prev => ({ 
+                        ...prev, 
+                        error: error instanceof Error ? error.message : 'Failed to fetch peaks',
+                        isLoading: false 
+                    }));
+                }
             }
         };
 
@@ -190,15 +240,19 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         const generatePeaks = async () => {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
             
+            const currentRequestId = ++requestIdRef.current;
+
             try {
                 const { peaks, duration } = await generatePeaksFromAudio(audioUrl);
                 setState(prev => ({ ...prev, peaks, duration, isLoading: false }));
             } catch (error) {
-                setState(prev => ({ 
-                    ...prev, 
-                    error: error instanceof Error ? error.message : 'Failed to generate peaks',
-                    isLoading: false 
-                }));
+                if (currentRequestId === requestIdRef.current) { // Only update state if this request is still active
+                    setState(prev => ({ 
+                        ...prev, 
+                        error: error instanceof Error ? error.message : 'Failed to generate peaks',
+                        isLoading: false 
+                    }));
+                }
             }
         };
 
@@ -271,6 +325,13 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             peaks: state.peaks ? [state.peaks] : undefined,
             duration: trackDuration || state.duration || undefined,
             url: audioSource,
+
+            // Use a singleton AudioContext to avoid exhausting the limited number
+            // of contexts on iOS (and other mobile browsers). This also improves
+            // performance when rapidly switching between multiple WaveSurfer
+            // instances.
+            // @ts-ignore – audioContext is supported in WaveSurfer 7.x but missing in the DefinitelyTyped types shipped with the package
+            audioContext: getSharedAudioContext() ?? undefined,
         });
 
         wavesurferRef.current = wavesurfer;
@@ -340,6 +401,14 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                     wavesurfer.setVolume(initialVolume);
                 } catch { /* ignore */ }
             }
+
+            // On iOS an AudioContext may start in the "suspended" state until the
+            // user performs a gesture. Ensure it is resumed so audio actually
+            // plays after a ready->play sequence initiated programmatically.
+            const ctx = getSharedAudioContext();
+            if (ctx && ctx.state === 'suspended') {
+              ctx.resume().catch(() => {/* ignore resume errors */});
+            }
         });
 
         // -----------------------------------------------------------------
@@ -367,6 +436,32 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                 wavesurfer.un('seeking', progressHandler);
                 wavesurfer.un('ready', progressHandler);
             });
+        }
+
+        // -----------------------------------------------------------------
+        // iOS specific: quick pause / play after the user seeks
+        // -----------------------------------------------------------------
+
+        if (IS_IOS) {
+            const iosSeekWorkaround = () => {
+                try {
+                    // Only apply when currently playing – avoids unnecessary
+                    // toggling when the user seeks whilst paused.
+                    if (wavesurfer.isPlaying && wavesurfer.isPlaying()) {
+                        wavesurfer.pause();
+                        // Resume as soon as possible – 0-delay timeout places
+                        // the callback at the end of the current event loop tick.
+                        setTimeout(() => {
+                            try {
+                                wavesurfer.play();
+                            } catch {/* ignore play errors */}
+                        }, 0);
+                    }
+                } catch {/* ignore errors */}
+            };
+
+            wavesurfer.on('seeking', iosSeekWorkaround);
+            cleanupFns.push(() => wavesurfer.un('seeking', iosSeekWorkaround));
         }
 
         // WaveSurfer 7 automatically loads audio when url is provided in constructor

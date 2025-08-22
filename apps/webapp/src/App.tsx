@@ -7,6 +7,7 @@ import { UploadLoader } from "@/components/index.ts";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
+import DevMobileConsole from "@/DevMobileConsole.tsx";
 
 function UploadLanding() {
   const { isDesktop } = useResponsive();
@@ -29,19 +30,20 @@ function PlaylistLanding() {
 function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
-  
+
   return (
     <>
+      <DevMobileConsole />
       {showWelcome &&
-      <WelcomeMessage
-        onClose={dismiss}
-        dropSvg={ReferenceSvg}
-        matchSvg={MatchesSvg}
-        discoverSvg={AnalysisSvg}
-      />}
-      
+        <WelcomeMessage
+          onClose={dismiss}
+          dropSvg={ReferenceSvg}
+          matchSvg={MatchesSvg}
+          discoverSvg={AnalysisSvg}
+        />}
+
       {showFeedback && <FeedbackForm />}
-      
+
       <Routes>
         <Route path="/" element={<UploadLanding />} />
         <Route path="/loader" element={<UploadLoader />} />
