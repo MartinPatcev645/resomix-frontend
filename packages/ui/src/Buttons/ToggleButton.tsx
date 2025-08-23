@@ -31,8 +31,8 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
   const trackClasses = useMemo(() => {
     const base = [
       "relative",
-      "h-[var(--px-16)] lg:h-[var(--px-24)]",
-      "w-[var(--px-30)] lg:w-[var(--px-42)]",
+      "h-[var(--px-16)] lg:h-[var(--px-17)]",
+      "w-[var(--px-30)] lg:w-[var(--px-35)]",
       "rounded-full",
       "outline",
       "outline-[var(--px-1)]",
@@ -56,8 +56,8 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
       "absolute",
       "top-1/2",
       "-translate-y-1/2",
-      "h-[var(--px-10)] lg:h-[var(--px-18)]",
-      "w-[var(--px-10)] lg:w-[var(--px-18)]",
+      "h-[var(--px-10)] lg:h-[var(--px-12)]",
+      "w-[var(--px-10)] lg:w-[var(--px-12)]",
       "rounded-full",
       "transition-all",
       "duration-200",
@@ -80,7 +80,7 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
   return (
     <div className="flex justify-center items-center cursor-pointer group" onClick={handleToggle}>
       <div
-        className={`h-[var(--px-20)] lg:h-[var(--px-36)] pl-[var(--px-5)] lg:pl-[var(--px-20)] lg:pr-[var(--px-10)] py-[var(--px-8)] rounded-3xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-12)] bg-transparent ${className ? className : ""} ${customWidth ? customWidth : "min-w-[var(--px-160)]"}`}
+        className={`h-[var(--px-20)] lg:h-[var(--px-25)] pl-[var(--px-5)] lg:pl-[var(--px-6)] py-[var(--px-8)] rounded-3xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-12)] bg-transparent ${className ? className : ""} ${customWidth ? customWidth : "min-w-[var(--px-160)]"}`}
       >
         <div className={"tracking-normal whitespace-nowrap text-[length:var(--px-10)] lg:text-[length:var(--px-10-37)] font-light font-fira text-[var(--color-text-secondary)]"}>
           {text}

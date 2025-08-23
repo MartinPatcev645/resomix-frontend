@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton, HoverFlow } from "@resomix/ui";
+import { IconButton, HoverFlow, ToggleButton } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { usePlayerStore } from "@resomix/stores";
@@ -28,8 +28,8 @@ const PlaylistHero: React.FC = () => {
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
   const { playlistData, isLoading, error } = usePlaylistStore();
-  const { uploadedUrl } = usePlayerStore();
-  
+  const { uploadedUrl, autoplay, setAutoplay } = usePlayerStore();
+
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -93,6 +93,12 @@ const PlaylistHero: React.FC = () => {
                 Generate track similarity
               </div>
               <div className="flex items-center gap-[var(--px-8)]">
+                <ToggleButton
+                  text="Autoplay"
+                  customWidth="min-w-[var(--px-120)]"
+                  isOn={autoplay}
+                  onToggle={setAutoplay}
+                />
                 <IconButton
                   text="Rename"
                   transparent={true}
@@ -129,7 +135,7 @@ const PlaylistHero: React.FC = () => {
                         Error: {error}
                       </div>
                     )}
-                    
+
                     {isLoading ? (
                       <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
                         Loading playlist...
@@ -196,7 +202,7 @@ const PlaylistHero: React.FC = () => {
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
         </div>
       </div>
-      
+
       {/* Modals */}
       <PlaylistRating
         isOpen={showRating}
@@ -209,11 +215,11 @@ const PlaylistHero: React.FC = () => {
         onClose={handleRenameClose}
         onStatusChange={handleStatusChange}
       />
-      
+
       {/* Status Message */}
-      <StatusMessage 
-        isOpen={showStatus} 
-        onClose={handleStatusClose} 
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={handleStatusClose}
         status={statusType}
         message={statusMessage}
         title={statusTitle}

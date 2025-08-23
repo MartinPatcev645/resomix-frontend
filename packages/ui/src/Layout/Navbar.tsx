@@ -2,9 +2,8 @@ import React from "react";
 import { LinkButton } from "../Buttons/LinkButton";
 import { ButtonHeavyRight } from "../Buttons/ButtonHeavyRight";
 import { ButtonHeavyLeft } from "../Buttons/ButtonHeavyLeft";
-import { ToggleButton } from "../Buttons/ToggleButton";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
-import { usePlayerStore, useFeedbackStore } from "@resomix/stores";
+import { useFeedbackStore } from "@resomix/stores";
 
 interface NavbarProps {
   logo?: React.ReactNode;
@@ -15,7 +14,6 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com" }) => {
-  const { autoplay, setAutoplay } = usePlayerStore();
   const { showFeedbackForm } = useFeedbackStore();
 
   return (
@@ -43,12 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
       )}
       {mode === 'playlist' && (
         <div className="flex justify-center items-center">
-          <ToggleButton
-            text="Autoplay"
-            customWidth="min-w-[var(--px-120)]"
-            isOn={autoplay}
-            onToggle={setAutoplay}
-          />
           <ButtonSleek text="Feedback" transparent={true} customWidth="min-w-[var(--px-120)]" onClick={showFeedbackForm} />
         </div>
       )}

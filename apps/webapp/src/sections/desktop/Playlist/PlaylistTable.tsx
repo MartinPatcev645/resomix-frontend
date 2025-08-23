@@ -132,7 +132,7 @@ const PlaylistTable: React.FC = () => {
                                 window.location.href = `${BASE_BETA_URL}/?id=${track.id}`;
                             }}>
                                 <Tooltip message="Find Similarity For this Track!">
-                                    <img src={SonicDiscoverySvg} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                                    <img src={SonicDiscoverySvg} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
                                 </Tooltip>
                             </div>
                         </div>
