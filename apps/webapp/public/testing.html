@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Peaks.js — Simple Fixed-Width Player (Resomix)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Peaks.js UMD build (includes dependencies) -->
+  <script src="https://unpkg.com/peaks.js/dist/peaks.min.js"></script>
+  <style>
+    :root {
+      /* tweak these to taste */
+      --wave-width: 980px;
+      --wave-height: 120px;
+    }
+    body {
+      font-family: system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #0b0b0c;
+      color: #eaeaea;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+    }
+    .card {
+      width: calc(var(--wave-width) + 32px);
+      max-width: 100%;
+      background: #121214;
+      border: 1px solid #232327;
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.35);
+      padding: 16px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      appearance: none;
+      border: 1px solid #2b2b31;
+      background: #1e1e22;
+      color: #eaeaea;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #27272d; }
+    #overview {
+      width: var(--wave-width);
+      height: var(--wave-height);
+      overflow: hidden; /* keep it scroll-free */
+      border-radius: 10px;
+      background: #0f1012;
+    }
+    .meta {
+      font-size: 12px; opacity: .75;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="row">
+      <button id="playPause">Play</button>
+      <span class="meta" id="status">loading…</span>
+    </div>
+
+    <!-- Fixed-width, non-zoomable overview container -->
+    <div id="overview"></div>
+
+    <!-- Hidden <audio> element (we control it with our button) -->
+    <audio id="audio" crossorigin="anonymous"></audio>
+  </div>
+
+  <script>
+  (async function () {
+    // ——— Replace only the uuid if needed ———
+    const UUID = '67ad9cec799206f8d64acdf1';
+    const PEAKS_URL  = `https://media.resomix.com/peaks/?uuid=${UUID}`;
+    const AUDIO_URL  = `https://media.resomix.com/signed-audio/?uuid=${UUID}`;
+
+    // DOM handles
+    const statusEl = document.getElementById('status');
+    const btn      = document.getElementById('playPause');
+    const audioEl  = document.getElementById('audio');
+    const overview = document.getElementById('overview');
+
+    // Assign audio src
+    audioEl.src = AUDIO_URL;
+
+    // Utility: initialize Peaks with a given dataUri.json (URL or Blob URL)
+    function initPeaksWithJson(jsonUrl) {
+      return new Promise((resolve, reject) => {
+        const options = {
+          overview: { container: overview },
+          // Only overview → fixed width + no scrollbar
+          mediaElement: audioEl,
+          dataUri: { json: jsonUrl }
+        };
+        window.peaks && window.peaks.dispose && console.warn('Existing peaks instance found; disposing.');
+        window.peaksInstance && window.peaksInstance.destroy && window.peaksInstance.destroy();
+
+        peaks.init(options, (err, instance) => {
+          if (err) return reject(err);
+          window.peaksInstance = instance;
+          resolve(instance);
+        });
+      });
+    }
+
+    // If your endpoint already returns audiowaveform JSON, this just works.
+    // Otherwise we’ll fetch, detect a flat 0–1 array, and adapt it.
+    async function prepareWaveform() {
+      try {
+        // Try the straightforward route first: let Peaks fetch the JSON itself.
+        // If it fails (non-audiowaveform format), we’ll catch & adapt below.
+        await initPeaksWithJson(PEAKS_URL);
+        return;
+      } catch (e) {
+        console.warn('Direct dataUri.json init failed. Attempting to adapt normalized peaks…', e);
+      }
+
+      // Fetch and inspect the peaks payload
+      const res = await fetch(PEAKS_URL, { mode: 'cors' });
+      const payload = await res.json();
+
+      // Try to locate the numeric array
+      let arr = null;
+      if (Array.isArray(payload)) arr = payload;
+      else if (Array.isArray(payload.data)) arr = payload.data;
+      else if (Array.isArray(payload.peaks)) arr = payload.peaks;
+
+      if (!arr) {
+        throw new Error('Unsupported peaks payload: expected audiowaveform JSON or a numeric array.');
+      }
+
+      // Heuristic: convert a flat 0–1 array into audiowaveform-style min/max pairs
+      // (8-bit signed), i.e. [-amp, +amp] for each input value.
+      const toInt8 = v => {
+        // clamp 0..1, map to 0..127 (signed amp for max), min is negated
+        const clamped = Math.max(0, Math.min(1, Number(v)));
+        return Math.round(clamped * 127);
+      };
+
+      const data = new Int8Array(arr.length * 2);
+      for (let i = 0; i < arr.length; i++) {
+        const amp = toInt8(arr[i]);
+        data[i * 2]     = -amp; // min
+        data[i * 2 + 1] =  amp; // max
+      }
+
+      // Build an audiowaveform JSON object (fields are per audiowaveform spec)
+      // See: min/max pairs per "zoom" bucket produced by audiowaveform. :contentReference[oaicite:4]{index=4}
+      const awfJson = {
+        version: 2,
+        channels: 1,
+        sample_rate: 48000,           // reasonable default; not strictly used for drawing
+        samples_per_pixel: 100,       // arbitrary; affects "length" semantics only
+        bits: 8,
+        length: data.length / 2,      // number of min/max pairs
+        data: Array.from(data)        // Peaks expects numeric array in JSON
+      };
+
+      // Hand the JSON to Peaks by creating a Blob URL
+      const blobUrl = URL.createObjectURL(new Blob([JSON.stringify(awfJson)], { type: 'application/json' }));
+      await initPeaksWithJson(blobUrl);
+    }
+
+    // Wire up Play/Pause UI
+    function bindPlayerUI() {
+      const updateButton = () => {
+        btn.textContent = audioEl.paused ? 'Play' : 'Pause';
+      };
+      btn.addEventListener('click', () => {
+        if (audioEl.paused) audioEl.play().catch(console.error);
+        else audioEl.pause();
+      });
+      audioEl.addEventListener('play',  updateButton);
+      audioEl.addEventListener('pause', updateButton);
+      audioEl.addEventListener('ended', updateButton);
+      updateButton();
+    }
+
+    try {
+      await prepareWaveform();
+      statusEl.textContent = 'ready';
+      bindPlayerUI();
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'failed to load waveform';
+    }
+  })();
+  </script>
+</body>
+</html>

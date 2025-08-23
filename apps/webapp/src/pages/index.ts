@@ -5,6 +5,7 @@ import { PlaylistMobile } from './mobile/PlaylistMobile.tsx';
 import InfoPage from './InfoPage.tsx';
 import MenuPage from './MenuPage.tsx';
 import TestPage from './TestPage.tsx';
+import TestTwo from './TestTwo.tsx';
 
 export {
     UploadPage,
@@ -14,4 +15,5 @@ export {
     InfoPage,
     MenuPage,
     TestPage,
+    TestTwo,
 };

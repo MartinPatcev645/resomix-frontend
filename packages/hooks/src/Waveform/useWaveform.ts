@@ -325,11 +325,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             peaks: state.peaks ? [state.peaks] : undefined,
             duration: trackDuration || state.duration || undefined,
             url: audioSource,
-
-            // Use a singleton AudioContext to avoid exhausting the limited number
-            // of contexts on iOS (and other mobile browsers). This also improves
-            // performance when rapidly switching between multiple WaveSurfer
-            // instances.
+            ...(IS_IOS ? { backend: 'MediaElement' as const } : {}),
             // @ts-ignore – audioContext is supported in WaveSurfer 7.x but missing in the DefinitelyTyped types shipped with the package
             audioContext: getSharedAudioContext() ?? undefined,
         });

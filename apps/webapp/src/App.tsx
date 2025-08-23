@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage } from "@/pages/index.ts";
+import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage, TestTwo } from "@/pages/index.ts";
 import { UploadLoader } from "@/components/index.ts";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
@@ -52,6 +52,7 @@ function App() {
         <Route path="/contact" element={<InfoPage mode="contact" />} />
         <Route path="/error" element={<InfoPage mode="error" />} />
         <Route path="/test" element={<TestPage />} />
+        <Route path="/test-two" element={<TestTwo />} />
         <Route path="*" element={<InfoPage mode="404" />} />
       </Routes>
     </>

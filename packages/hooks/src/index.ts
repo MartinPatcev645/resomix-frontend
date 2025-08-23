@@ -8,6 +8,7 @@ export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export { useWaveform } from "./Waveform/useWaveform";
+export { usePeaks } from "./Waveform/usePeaks";
 export * from './Playlist/usePlaylistLoader';
 export * from './Player/usePlayerManager';
 export * from './Feedback/useFeedbackSubmit'
