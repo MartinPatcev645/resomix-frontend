@@ -2,6 +2,7 @@ import { useCallback, useMemo, useEffect } from 'react'
 import { usePlaylistStore } from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
 
+
 /**
  * Hook for managing audio player functionality across the application
  * Integrates with playlist store and player store to provide centralized playback control
@@ -105,32 +106,36 @@ export const usePlayerManager = () => {
     return null
   }, [currentTrackId, currentTrackIndex, allTrackIds])
 
-  // Start playing a specific track
-  const startPlaying = useCallback((trackId: string) => {
+  // BeMusic pattern: Synchronous track cueing with async loading
+  const cueTrack = useCallback((trackId: string) => {
     // Allow special tracks (uploaded) or tracks in playlist
     if (trackId !== 'uploaded-local' && !allTrackIds.includes(trackId)) {
       console.warn(`Track ID ${trackId} not found in playlist`)
-      return
+      return false
     }
     
+    // Immediate synchronous state change (preserves gesture)
     setCurrentTrack(trackId)
+    console.log('[PlayerManager] Track cued immediately:', trackId)
+    return true
   }, [allTrackIds, setCurrentTrack])
+
+  // Start playing a specific track (synchronous)
+  const startPlaying = useCallback((trackId: string) => {
+    return cueTrack(trackId)
+  }, [cueTrack])
+
+
 
   // Stop current playback
   const stopPlaying = useCallback(() => {
     setCurrentTrack(null)
   }, [setCurrentTrack])
 
-  // Play next track in playlist
+  // Play next track in playlist (synchronous)
   const playNext = useCallback(() => {
-    // Fetch the latest state values directly from the store to avoid stale
-    // closures (e.g. when the user toggles autoplay mid-playback).
-    const {
-      autoplay: latestAutoplay,
-      inputWs: latestInputWs,
-      similarityWs: latestSimilarityWs,
-      currentTrackId: latestCurrentTrackId,
-    } = usePlayerStore.getState();
+    // Fetch the latest state values directly from the store to avoid stale closures
+    const { autoplay: latestAutoplay } = usePlayerStore.getState();
 
     const nextTrackId = getNextTrack();
 
@@ -139,40 +144,25 @@ export const usePlayerManager = () => {
       // Only stop if autoplay is on (means we tried to advance but hit the end)
       if (latestAutoplay) {
         setCurrentTrack(null);
+        console.log('[PlayerManager] Playlist ended, stopping playback');
       }
       return false;
     }
 
     // Only advance to next track if autoplay is enabled
     if (!latestAutoplay) {
-      // Pause the appropriate WaveSurfer instance
-      if (latestCurrentTrackId === 'uploaded-local' && latestInputWs) {
-        try {
-          latestInputWs.pause();
-        } catch {
-          /* ignore */
-        }
-      } else if (currentTrackIndex === 0 && latestInputWs) {
-        try {
-          latestInputWs.pause();
-        } catch {
-          /* ignore */
-        }
-      } else if (latestSimilarityWs) {
-        try {
-          latestSimilarityWs.pause();
-        } catch {
-          /* ignore */
-        }
-      }
-
       setCurrentTrack(null); // Stop playback
+      console.log('[PlayerManager] Autoplay disabled, stopping at track end');
       return false;
     }
 
-    setCurrentTrack(nextTrackId);
-    return true;
-  }, [currentTrackIndex, getNextTrack, setCurrentTrack])
+    // BeMusic pattern: Synchronous track change
+    const success = cueTrack(nextTrackId);
+    if (success) {
+      console.log('[PlayerManager] Advanced to next track:', nextTrackId);
+    }
+    return success;
+  }, [getNextTrack, setCurrentTrack, cueTrack])
 
   // Play previous track in playlist
   const playPrevious = useCallback(() => {
@@ -268,6 +258,7 @@ export const usePlayerManager = () => {
     setSimilarityWs,
     
     // Playback control
+    cueTrack,
     startPlaying,
     stopPlaying,
     playNext,

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 import WaveformPlayer from "./WaveformPlayer.tsx";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
@@ -6,6 +6,7 @@ import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerManager } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
+import { AudioProvider, useAudioProviderRef } from "@resomix/hooks";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -26,24 +27,45 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
+    
+    // AudioProvider pattern for gesture preservation
+    const { audioProviderRef, getAudioElement } = useAudioProviderRef();
 
-    // Playback time & duration sourced from the shared player store
+    // Playbook time & duration sourced from the shared player store
     const currentTime = usePlayerStore((s) => s.similarityCurrentTime);
     const setSimilarityCurrentTime = usePlayerStore((s) => s.setSimilarityCurrentTime);
+    
+    // Provider readiness state
+    const setSimilarityProviderReady = usePlayerStore((s) => s.setSimilarityProviderReady) || (() => {});
+    
+    // Reset provider readiness when track changes
+    const previousTrackRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (trackId && trackId !== previousTrackRef.current) {
+            setSimilarityProviderReady(false);
+            console.log('[SimilarityPlayer] Track changed, resetting provider readiness:', trackId);
+            previousTrackRef.current = trackId;
+        }
+    }, [trackId, setSimilarityProviderReady]);
 
     const skipBackward = useCallback(() => {
-        // Try to get wavesurfer from direct ref first, then fall back to store
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (ws && typeof ws.skip === 'function') {
-            ws.skip(-10);
+        const audioProvider = audioProviderRef.current;
+        if (audioProvider) {
+            const currentTime = audioProvider.getCurrentTime();
+            const newTime = Math.max(0, currentTime - 10);
+            console.log('[SimilarityPlayer] Skipping backward from', currentTime, 'to', newTime);
+            audioProvider.setCurrentTime(newTime);
         }
     }, []);
 
     const skipForward = useCallback(() => {
-        // Try to get wavesurfer from direct ref first, then fall back to store
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (ws && typeof ws.skip === 'function') {
-            ws.skip(10);
+        const audioProvider = audioProviderRef.current;
+        if (audioProvider) {
+            const currentTime = audioProvider.getCurrentTime();
+            const duration = audioProvider.getDuration();
+            const newTime = Math.min(duration, currentTime + 10);
+            console.log('[SimilarityPlayer] Skipping forward from', currentTime, 'to', newTime);
+            audioProvider.setCurrentTime(newTime);
         }
     }, []);
 
@@ -61,15 +83,39 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     };
 
     return (
-        <div className="flex flex-col w-full gap-[var(--px-5)]">
-            <div className="h-[var(--px-50)] overflow-y-hidden">
-                <WaveformPlayer
-                    ref={waveformPlayerRef}
-                    trackId={trackId}
-                    isPlaying={isPlaying}
-                    volume={volume}
-                    onProgress={setSimilarityCurrentTime}
-                    duration={totalDuration}
+        <>
+            {/* BeMusic pattern: Persistent AudioProvider */}
+            <AudioProvider
+                ref={audioProviderRef}
+                src={trackId ? `https://media.resomix.com/signed-audio/?uuid=${trackId}` : undefined}
+                volume={volume}
+                onPlay={() => console.log('[SimilarityPlayer] Audio started playing')}
+                onPause={() => console.log('[SimilarityPlayer] Audio paused')}
+                onTimeUpdate={setSimilarityCurrentTime}
+                onLoadedMetadata={() => {
+                    console.log('[SimilarityPlayer] Audio metadata loaded - provider ready');
+                    setSimilarityProviderReady(true);
+                }}
+                onError={(error) => {
+                    console.error('[SimilarityPlayer] Audio error:', error);
+                    setSimilarityProviderReady(false);
+                }}
+                onEnded={() => {
+                    console.log('[SimilarityPlayer] Audio ended');
+                    playNext();
+                }}
+            />
+            <div className="flex flex-col w-full gap-[var(--px-5)]">
+                <div className="h-[var(--px-50)] overflow-y-hidden">
+                    <WaveformPlayer
+                        ref={waveformPlayerRef}
+                        trackId={trackId}
+                        isPlaying={isPlaying}
+                        volume={volume}
+                        onProgress={setSimilarityCurrentTime}
+                        duration={totalDuration}
+                        persistentAudioElement={getAudioElement() || undefined}
+
                     onReadyWs={(ws) => {
                         try {
                             setSimilarityWs(ws);
@@ -152,6 +198,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                 </span>
             </div>
         </div>
+        </>
     );
 };
 

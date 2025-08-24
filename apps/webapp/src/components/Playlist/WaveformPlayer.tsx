@@ -31,6 +31,12 @@ interface WaveformPlayerProps {
 
     /** Callback fired when the internal WaveSurfer instance is ready */
     onReadyWs?: (ws: any) => void;
+
+    /** Pre-unlocked audio element for gesture preservation (BeMusic strategy) */
+    preUnlockedAudio?: HTMLAudioElement;
+
+    /** Persistent audio element from AudioProvider (BeMusic pattern) */
+    persistentAudioElement?: HTMLAudioElement;
 }
 
 export interface WaveformPlayerRef {
@@ -49,7 +55,9 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     isPlaying,
     onReadyWs,
     duration,
-    onProgress
+    onProgress,
+    preUnlockedAudio,
+    persistentAudioElement
 }, ref) => {
     const waveformRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +90,8 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         initialVolume: initialVolumeRef.current,
         onProgress,
         trackDuration: duration,
+        preUnlockedAudio,
+        persistentAudioElement,
     });
 
     // Expose wavesurfer instance once available

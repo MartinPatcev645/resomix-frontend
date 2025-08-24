@@ -18,18 +18,18 @@ const IS_IOS = typeof navigator !== 'undefined' && /iP(ad|hone|od)/.test(navigat
 let _sharedAudioContext: AudioContext | null = null;
 
 function getSharedAudioContext(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return null;
 
-  if (!_sharedAudioContext) {
-    try {
-      _sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    } catch {
-      // Creation failed – likely unsupported. Leave as null so Wavesurfer falls back.
-      _sharedAudioContext = null;
+    if (!_sharedAudioContext) {
+        try {
+            _sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        } catch {
+            // Creation failed – likely unsupported. Leave as null so Wavesurfer falls back.
+            _sharedAudioContext = null;
+        }
     }
-  }
 
-  return _sharedAudioContext;
+    return _sharedAudioContext;
 }
 
 export interface WaveformTheme {
@@ -77,6 +77,18 @@ export interface UseWaveformProps {
      * like a global store.
      */
     onProgress?: (currentTime: number) => void;
+
+    /**
+     * Pre-unlocked audio element from gesture preservation (BeMusic strategy)
+     * When provided, WaveSurfer will use this element instead of creating its own
+     */
+    preUnlockedAudio?: HTMLAudioElement;
+
+    /**
+     * Persistent audio element from AudioProvider (BeMusic pattern)
+     * When provided, WaveSurfer will use this element and we skip our own audio creation
+     */
+    persistentAudioElement?: HTMLAudioElement;
 }
 
 export interface WaveformState {
@@ -93,40 +105,40 @@ async function generatePeaksFromAudio(audioUrl: string): Promise<{ peaks: number
     return new Promise((resolve, reject) => {
         const audio = new Audio();
         audio.crossOrigin = "anonymous";
-        
+
         audio.onloadedmetadata = () => {
             const duration = audio.duration;
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             const analyser = audioContext.createAnalyser();
             const source = audioContext.createMediaElementSource(audio);
-            
+
             source.connect(analyser);
             analyser.connect(audioContext.destination);
-            
+
             // Set analyser properties for good peak resolution
             analyser.fftSize = 2048;
             analyser.smoothingTimeConstant = 0.8;
-            
+
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
-            
+
             // Generate peaks by analyzing frequency data
             const peaks: number[] = [];
             const numPeaks = 1000; // Number of peaks to generate
-            
+
             const analyzeFrame = () => {
                 analyser.getByteFrequencyData(dataArray);
-                
+
                 // Calculate average frequency magnitude for this frame
                 let sum = 0;
                 for (let i = 0; i < bufferLength; i++) {
                     sum += dataArray[i];
                 }
                 const average = sum / bufferLength;
-                
+
                 // Normalize to 0-1 range
                 peaks.push(average / 255);
-                
+
                 if (peaks.length < numPeaks) {
                     requestAnimationFrame(analyzeFrame);
                 } else {
@@ -134,13 +146,13 @@ async function generatePeaksFromAudio(audioUrl: string): Promise<{ peaks: number
                     resolve({ peaks, duration });
                 }
             };
-            
+
             // Start analysis
             audio.currentTime = 0;
             audio.play();
             analyzeFrame();
         };
-        
+
         audio.onerror = () => reject(new Error('Failed to load audio for peak generation'));
         audio.src = audioUrl;
     });
@@ -156,7 +168,7 @@ async function generatePeaksFromAudio(audioUrl: string): Promise<{ peaks: number
  *
  * The hook returns the waveform state and a ref with the underlying WaveSurfer instance.
  */
-export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume, onProgress, trackDuration }: UseWaveformProps) {
+export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVolume, onProgress, trackDuration, preUnlockedAudio, persistentAudioElement }: UseWaveformProps) {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const isCreatingRef = useRef(false);
     const instanceIdRef = useRef(0);
@@ -182,7 +194,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
         const fetchPeaks = async () => {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
-            
+
             const currentRequestId = ++requestIdRef.current;
 
             // Abort any in-flight fetch tied to a previous trackId
@@ -200,7 +212,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                 const resp = await fetch(url, { signal: abortController.signal });
                 if (!resp.ok) throw new Error(`Failed to fetch peaks (${resp.status})`);
                 const data = await resp.json();
-                
+
                 // Handle different response formats from the backend
                 let peaks: number[] | undefined;
                 let duration: number | undefined | null;
@@ -219,10 +231,10 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                 setState(prev => ({ ...prev, peaks, duration: duration ?? null, isLoading: false }));
             } catch (error) {
                 if (currentRequestId === requestIdRef.current) { // Only update state if this request is still active
-                    setState(prev => ({ 
-                        ...prev, 
+                    setState(prev => ({
+                        ...prev,
                         error: error instanceof Error ? error.message : 'Failed to fetch peaks',
-                        isLoading: false 
+                        isLoading: false
                     }));
                 }
             }
@@ -239,7 +251,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
         const generatePeaks = async () => {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
-            
+
             const currentRequestId = ++requestIdRef.current;
 
             try {
@@ -247,10 +259,10 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                 setState(prev => ({ ...prev, peaks, duration, isLoading: false }));
             } catch (error) {
                 if (currentRequestId === requestIdRef.current) { // Only update state if this request is still active
-                    setState(prev => ({ 
-                        ...prev, 
+                    setState(prev => ({
+                        ...prev,
                         error: error instanceof Error ? error.message : 'Failed to generate peaks',
-                        isLoading: false 
+                        isLoading: false
                     }));
                 }
             }
@@ -307,8 +319,8 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         // Determine audio source – uploaded blobs (audioUrl) take precedence
         const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
 
-        // Create WaveSurfer 7 instance
-        const wavesurfer = WaveSurfer.create({
+                // BeMusic strategy: Use persistent audio element from AudioProvider
+        const wavesurferConfig: any = {
             container: containerRef.current,
             waveColor: theme.textSecondary,
             progressColor: '#EE4A26', // neon orange for played portion
@@ -324,11 +336,35 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             hideScrollbar: true,
             peaks: state.peaks ? [state.peaks] : undefined,
             duration: trackDuration || state.duration || undefined,
-            url: audioSource,
             ...(IS_IOS ? { backend: 'MediaElement' as const } : {}),
             // @ts-ignore – audioContext is supported in WaveSurfer 7.x but missing in the DefinitelyTyped types shipped with the package
             audioContext: getSharedAudioContext() ?? undefined,
-        });
+        };
+
+        // Priority order: persistentAudioElement > preUnlockedAudio > create new
+        if (persistentAudioElement) {
+            // BeMusic pattern: Use persistent audio element from AudioProvider
+            // AudioProvider already handles src changes, we just connect to it
+            wavesurferConfig.media = persistentAudioElement;
+            console.log('[useWaveform] Using persistent audio element from AudioProvider');
+        } else if (preUnlockedAudio && audioSource) {
+            // Legacy gesture preservation: Use pre-unlocked audio element
+            preUnlockedAudio.src = audioSource;
+            preUnlockedAudio.load(); // Start loading metadata
+            wavesurferConfig.media = preUnlockedAudio;
+            console.log('[useWaveform] Using pre-unlocked audio element for gesture preservation');
+        } else if (audioSource) {
+            // Fallback: Let WaveSurfer create its own audio element
+            // This should be avoided when using AudioProvider pattern
+            wavesurferConfig.url = audioSource;
+            console.log('[useWaveform] Using WaveSurfer-managed audio element (fallback - AudioProvider may not be ready)');
+        } else {
+            // No audio source available
+            console.warn('[useWaveform] No audio source or persistent element provided');
+        }
+
+        // Create WaveSurfer 7 instance
+        const wavesurfer = WaveSurfer.create(wavesurferConfig);
 
         wavesurferRef.current = wavesurfer;
 
@@ -368,9 +404,9 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
 
         // Handle errors
         wavesurfer.on('error', (error: any) => {
-            setState(prev => ({ 
-                ...prev, 
-                error: 'Failed to load audio' 
+            setState(prev => ({
+                ...prev,
+                error: 'Failed to load audio'
             }));
         });
 
@@ -403,7 +439,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             // plays after a ready->play sequence initiated programmatically.
             const ctx = getSharedAudioContext();
             if (ctx && ctx.state === 'suspended') {
-              ctx.resume().catch(() => {/* ignore resume errors */});
+                ctx.resume().catch(() => {/* ignore resume errors */ });
             }
         });
 
@@ -416,7 +452,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                 const t = wavesurfer.getCurrentTime();
                 // DEBUG: track time progression (at most once every ~second due to throttling below)
                 if (Math.floor(t) % 5 === 0) {
-                    console.debug('[Waveform] progress', t.toFixed(2));
+                    // console.debug('[Waveform] progress', t.toFixed(2));
                 }
                 onProgress(t);
             };
@@ -450,10 +486,10 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
                         setTimeout(() => {
                             try {
                                 wavesurfer.play();
-                            } catch {/* ignore play errors */}
+                            } catch {/* ignore play errors */ }
                         }, 0);
                     }
-                } catch {/* ignore errors */}
+                } catch {/* ignore errors */ }
             };
 
             wavesurfer.on('seeking', iosSeekWorkaround);
@@ -472,7 +508,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             }
             isCreatingRef.current = false;
         };
-    }, [containerRef, sourceKey, state.peaks, state.error, state.isLoading, theme.textSecondary, theme.primary, theme.cardBg, initialVolume, onProgress, trackId, audioUrl]);
+            }, [containerRef, sourceKey, state.peaks, state.error, state.isLoading, theme.textSecondary, theme.primary, theme.cardBg, initialVolume, onProgress, trackId, audioUrl, preUnlockedAudio, persistentAudioElement]);
 
     return { wavesurferRef, state };
 }

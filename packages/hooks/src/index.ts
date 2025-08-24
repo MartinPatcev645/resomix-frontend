@@ -11,6 +11,8 @@ export { useWaveform } from "./Waveform/useWaveform";
 export { usePeaks } from "./Waveform/usePeaks";
 export * from './Playlist/usePlaylistLoader';
 export * from './Player/usePlayerManager';
+export * from './Player/useAudioContextUnlocker';
+export * from './Player/useAudioProvider';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'
 export type { WaveformTheme } from "./Waveform/useWaveform";

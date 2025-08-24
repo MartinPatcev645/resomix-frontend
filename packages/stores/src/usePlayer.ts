@@ -86,6 +86,13 @@ interface PlayerStore {
   similarityCurrentTime: number
   /** Setter for similarityCurrentTime */
   setSimilarityCurrentTime: (time: number) => void
+
+  /** Provider readiness states (BeMusic pattern) */
+  inputProviderReady: boolean
+  setInputProviderReady: (ready: boolean) => void
+  
+  similarityProviderReady: boolean
+  setSimilarityProviderReady: (ready: boolean) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set) => ({
@@ -144,6 +151,13 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   similarityCurrentTime: 0,
   setSimilarityCurrentTime: (time) => set({ similarityCurrentTime: time }),
+
+  // Provider readiness states (BeMusic pattern)
+  inputProviderReady: false,
+  setInputProviderReady: (ready) => set({ inputProviderReady: ready }),
+
+  similarityProviderReady: false,
+  setSimilarityProviderReady: (ready) => set({ similarityProviderReady: ready }),
 }));
 
 export default usePlayerStore

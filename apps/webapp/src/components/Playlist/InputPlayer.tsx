@@ -6,7 +6,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { usePlayerManager } from "@resomix/hooks";
+import { usePlayerManager, AudioProvider, useAudioProviderRef } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -42,10 +42,17 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<WaveformPlayerRef>(null);
+    
+    // BeMusic pattern: AudioProvider reference for persistent audio element
+    const { audioProviderRef, getAudioElement } = useAudioProviderRef();
 
     // Global volume via player manager
     const currentTime = usePlayerStore((s) => s.inputCurrentTime);
     const setInputCurrentTime = usePlayerStore((s) => s.setInputCurrentTime);
+    
+    // Provider readiness state (BeMusic pattern) - with fallback for safety
+    const inputProviderReady = usePlayerStore((s) => s.inputProviderReady ?? false);
+    const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => {});
 
     // When autoPlay requested, register this track on mount
     useEffect(() => {
@@ -53,6 +60,17 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
             startPlaying(effectiveId);
         }
     }, []);
+
+    // Reset provider readiness when track changes (BeMusic pattern)
+    const previousTrackRef = useRef<string | null>(null);
+    useEffect(() => {
+        const currentEffectiveId = trackId || audioUrl || null;
+        if (currentEffectiveId && currentEffectiveId !== previousTrackRef.current) {
+            setInputProviderReady(false);
+            console.log('[InputPlayer] Track changed, resetting provider readiness:', currentEffectiveId);
+            previousTrackRef.current = currentEffectiveId;
+        }
+    }, [trackId, audioUrl, setInputProviderReady]);
 
     // Re-register finish handler when autoplay changes to ensure correct closure
     useEffect(() => {
@@ -86,55 +104,45 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
         if (isPlaying) {
             stopPlaying();
         } else {
-            startPlaying(effectiveId);
+            // BeMusic pattern: Synchronous track cueing
+            // AudioProvider handles async loading, we just cue the track immediately
+            const success = startPlaying(effectiveId);
+            if (success) {
+                console.log('[InputPlayer] Track cued, waiting for provider ready. Current ready state:', inputProviderReady);
+            }
         }
     };
 
+
+
     const skipBackward = useCallback(() => {
-        // Get wavesurfer from direct ref
+        const audioProvider = audioProviderRef.current;
         const ws = waveformPlayerRef.current?.getWaveSurfer();
 
-        if (ws) {
-            // Store playing state before skip
-            const isPlayingTemp = ws.isPlaying && ws.isPlaying();
-            if (typeof ws.skip === 'function') {
-                ws.skip(-10);
-            }
-            // Check if playing state changed and restore if needed
-            setTimeout(() => {
-                const isPlayingAfter = ws.isPlaying && ws.isPlaying();
-                if (isPlayingTemp && !isPlayingAfter) {
-                    try {
-                        ws.play();
-                    } catch (e) {
-                    }
-                }
-            }, 50);
-        } else {
+        if (audioProvider && ws) {
+            const currentTime = audioProvider.getCurrentTime();
+            const newTime = Math.max(0, currentTime - 10);
+            
+            console.log('[InputPlayer] Skipping backward from', currentTime, 'to', newTime);
+            audioProvider.setCurrentTime(newTime);
+            
+            // Don't try to restore playback - let the AudioProvider handle it
         }
     }, []);
 
     const skipForward = useCallback(() => {
-        // Get wavesurfer from direct ref
+        const audioProvider = audioProviderRef.current;
         const ws = waveformPlayerRef.current?.getWaveSurfer();
 
-        if (ws) {
-            // Store playing state before skip
-            const isPlayingTemp = ws.isPlaying && ws.isPlaying();
-            if (typeof ws.skip === 'function') {
-                ws.skip(10);
-            }
-            // Check if playing state changed and restore if needed
-            setTimeout(() => {
-                const isPlayingAfter = ws.isPlaying && ws.isPlaying();
-                if (isPlayingTemp && !isPlayingAfter) {
-                    try {
-                        ws.play();
-                    } catch (e) {
-                    }
-                }
-            }, 50);
-        } else {
+        if (audioProvider && ws) {
+            const currentTime = audioProvider.getCurrentTime();
+            const duration = audioProvider.getDuration();
+            const newTime = Math.min(duration, currentTime + 10);
+            
+            console.log('[InputPlayer] Skipping forward from', currentTime, 'to', newTime);
+            audioProvider.setCurrentTime(newTime);
+            
+            // Don't try to restore playback - let the AudioProvider handle it
         }
     }, []);
 
@@ -152,8 +160,31 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
     };
 
     return (
-        <div className="flex items-center gap-2 w-full">
-            {/* Play / Pause */}
+        <>
+            {/* BeMusic pattern: Persistent AudioProvider */}
+            <AudioProvider
+                ref={audioProviderRef}
+                src={audioUrl || (trackId ? `https://media.resomix.com/signed-audio/?uuid=${trackId}` : undefined)}
+                volume={volume}
+                onPlay={() => console.log('[InputPlayer] Audio started playing')}
+                onPause={() => console.log('[InputPlayer] Audio paused')}
+                onTimeUpdate={setInputCurrentTime}
+                onLoadedMetadata={() => {
+                    console.log('[InputPlayer] Audio metadata loaded - provider ready');
+                    setInputProviderReady(true);
+                }}
+                onError={(error) => {
+                    console.error('[InputPlayer] Audio error:', error);
+                    setInputProviderReady(false);
+                }}
+                onEnded={() => {
+                    console.log('[InputPlayer] Audio ended');
+                    playNext();
+                }}
+            />
+
+            <div className="flex items-center gap-2 w-full">
+                {/* Play / Pause */}
             <button
                 type="button"
                 className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors mb-[var(--px-17)] cursor-pointer"
@@ -177,6 +208,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                         volume={volume}
                         duration={totalDuration}
                         onProgress={setInputCurrentTime}
+                        persistentAudioElement={getAudioElement() || undefined}
                         onReadyWs={(ws) => {
                             try {
                                 setInputWs(ws);
@@ -240,12 +272,37 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                     </div>
 
                     {/* Time Display */}
-                    <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                        {formatTime(currentTime)} / {formatTime(totalDuration)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
+                            {formatTime(currentTime)} / {formatTime(totalDuration)}
+                        </span>
+                        {/* Debug info - remove in production */}
+                        <div className="hidden lg:flex items-center gap-1 text-xs opacity-50">
+                            <span className={`w-2 h-2 rounded-full ${inputProviderReady ? 'bg-green-500' : 'bg-red-500'}`} title="Provider Ready"></span>
+                            <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-blue-500' : 'bg-gray-500'}`} title="Playing"></span>
+                            <button 
+                                onClick={async () => {
+                                    const provider = audioProviderRef.current;
+                                    if (provider) {
+                                        try {
+                                            const success = await provider.testGesturePreservation();
+                                            console.log('[Debug] Gesture test:', success ? 'PASS' : 'FAIL');
+                                        } catch (e) {
+                                            console.log('[Debug] Gesture test: ERROR', e);
+                                        }
+                                    }
+                                }}
+                                className="text-xs px-1 py-0.5 bg-gray-700 text-white rounded"
+                                title="Test Gesture"
+                            >
+                                🎯
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
