@@ -290,28 +290,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                         <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
                             {formatTime(currentTime)} / {formatTime(totalDuration)}
                         </span>
-                        {/* Debug info - remove in production */}
-                        <div className="hidden lg:flex items-center gap-1 text-xs opacity-50">
-                            <span className={`w-2 h-2 rounded-full ${inputProviderReady ? 'bg-green-500' : 'bg-red-500'}`} title="Provider Ready"></span>
-                            <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-blue-500' : 'bg-gray-500'}`} title="Playing"></span>
-                            <button 
-                                onClick={async () => {
-                                    const provider = audioProviderRef.current;
-                                    if (provider) {
-                                        try {
-                                            const success = await provider.testGesturePreservation();
-                                            console.log('[Debug] Gesture test:', success ? 'PASS' : 'FAIL');
-                                        } catch (e) {
-                                            console.log('[Debug] Gesture test: ERROR', e);
-                                        }
-                                    }
-                                }}
-                                className="text-xs px-1 py-0.5 bg-gray-700 text-white rounded"
-                                title="Test Gesture"
-                            >
-                                🎯
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

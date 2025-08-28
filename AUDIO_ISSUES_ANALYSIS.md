@@ -1,3 +1,177 @@
+# iOS Audio Interruption Recovery - Latest Research & Solutions (2024-2025)
+
+Based on recent WebKit bug reports and community findings, here are the proven solutions for iOS audio interruption issues:
+
+## 🎵 **Core iOS 17+ Interruption Issues**
+
+### **Root Cause:**
+When interrupted (calls, timers, focus loss), iOS moves AudioContext to "interrupted" state and HTMLMediaElement.play() becomes a no-op until page returns to foreground. Sometimes the media route/session needs re-initialization.
+
+### **Proven Solutions:**
+
+#### **1. Set Audio Session Type (iOS 17+)**
+```typescript
+// Put audio on media channel, avoid ringer/mute issues
+try {
+  // @ts-expect-error - WebKit extension since iOS 17
+  if (navigator.audioSession?.type !== 'playback') {
+    // @ts-expect-error - nonstandard
+    navigator.audioSession.type = 'playback';
+  }
+} catch {}
+```
+Reference: [WebKit Bug 237322](https://bugs.webkit.org/show_bug.cgi?id=237322)
+
+#### **2. Resume on Interruption End & Foreground Return**
+```typescript
+const ensureResumed = async () => {
+  const ctx = audioContextRef.current;
+  if (ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) {
+    try { await ctx.resume(); } catch {}
+  }
+};
+
+const tryPlay = async () => {
+  await ensureResumed();
+  try {
+    await audioEl.play();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+useEffect(() => {
+  const onStateChange = async () => {
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+    if (ctx.state === 'interrupted') {
+      // Defer until visible, then resume
+      const resumeOnVisible = async () => {
+        if (document.visibilityState === 'visible') {
+          await tryPlay();
+          document.removeEventListener('visibilitychange', resumeOnVisible);
+        }
+      };
+      document.addEventListener('visibilitychange', resumeOnVisible);
+    }
+  };
+  audioContextRef.current?.addEventListener('statechange', onStateChange);
+  return () => audioContextRef.current?.removeEventListener('statechange', onStateChange);
+}, []);
+
+useEffect(() => {
+  const handleVisibility = async () => {
+    if (document.visibilityState === 'visible') {
+      await tryPlay();
+    }
+  };
+  const handlePageShow = async () => {
+    await tryPlay();
+  };
+  document.addEventListener('visibilitychange', handleVisibility);
+  window.addEventListener('pageshow', handlePageShow);
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibility);
+    window.removeEventListener('pageshow', handlePageShow);
+  };
+}, []);
+```
+
+#### **3. Harden MediaSession Action Handlers**
+```typescript
+if ('mediaSession' in navigator) {
+  const playHandler = async () => { await tryPlay(); };
+  navigator.mediaSession.setActionHandler('play', playHandler);
+  navigator.mediaSession.setActionHandler('pause', () => audioEl.pause());
+}
+```
+
+#### **4. Auto-Retry on "Stuck" play() with Recovery**
+```typescript
+const playWithRecovery = async () => {
+  const maxAttempts = 3;
+  for (let i = 0; i < maxAttempts; i++) {
+    if (await tryPlay()) return;
+    await new Promise(r => setTimeout(r, 300 * (i + 1)));
+  }
+  // Hard reset the element if still stuck
+  const { src, currentTime, muted, volume, crossOrigin } = audioEl;
+  const parent = audioEl.parentElement;
+  const replacement = new Audio();
+  replacement.src = src;
+  replacement.currentTime = currentTime;
+  replacement.muted = muted;
+  replacement.volume = volume;
+  if (crossOrigin) replacement.crossOrigin = crossOrigin;
+  // reattach events you rely on (play/pause/timeupdate/ended/etc.)
+  parent?.replaceChild(replacement, audioEl);
+  audioRef.current = replacement;
+  await ensureResumed();
+  try { await replacement.play(); } catch {}
+};
+```
+
+#### **5. Keep Single, Long-Lived HTMLAudioElement**
+- Do NOT recreate the element per track
+- Change `src` and call `load()`+`play()` to preserve system association
+- Reduces iOS losing the route/controls
+
+#### **6. Optional: "Wake" Media Path**
+```typescript
+const warmUp = () => {
+  const ctx = audioContextRef.current;
+  if (!ctx) return;
+  const src = ctx.createBufferSource();
+  src.buffer = ctx.createBuffer(1, 1, 22050);
+  src.connect(ctx.destination);
+  try { src.start(0); } catch {}
+};
+// call warmUp() before playWithRecovery()
+```
+
+#### **7. Defensive Event Coverage**
+```typescript
+audioEl.addEventListener('stalled', playWithRecovery);
+audioEl.addEventListener('waiting', ensureResumed);
+audioEl.addEventListener('suspend', ensureResumed);
+audioEl.addEventListener('emptied', playWithRecovery);
+audioEl.addEventListener('error', playWithRecovery);
+audioEl.addEventListener('ended', async () => {
+  // In background on iOS 17.2.1+, schedule next track for foreground
+  if (document.visibilityState !== 'visible') {
+    navigator.mediaSession.playbackState = 'paused';
+    return;
+  }
+  await playWithRecovery();
+});
+```
+
+## 📱 **PWA-Specific Notes**
+
+- iOS 18.4+: Screen Wake Lock API now works in Home Screen web apps
+- Lockscreen controls can stop working after 30s idle until foregrounded
+- Add visibility-driven resume and sometimes "warmUp" before play
+
+## 🔧 **Implementation Checklist**
+
+- [ ] Set `navigator.audioSession.type = 'playback'` on mount
+- [ ] Attach AudioContext `statechange` to detect `interrupted`
+- [ ] Wrap all `play()` calls in `tryPlay()` that resumes AudioContext first
+- [ ] Add `playWithRecovery()` with retries and element replacement
+- [ ] Keep one long-lived `<audio>` element
+- [ ] Re-register MediaSession handlers after interruptions
+
+## 📚 **References**
+
+- Background/ended and play() regressions: [WebKit 173332](https://bugs.webkit.org/show_bug.cgi?id=173332), [Apple Support 255418017](https://discussions.apple.com/thread/255418017)
+- AudioContext interruption model: [MDN BaseAudioContext.state](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state)
+- Force media channel: [WebKit 237322](https://bugs.webkit.org/show_bug.cgi?id=237322)
+- Wake Lock/PWA: [WebKit 254545](https://bugs.webkit.org/show_bug.cgi?id=254545)
+- Silent activation reference: [swevans/unmute](https://github.com/swevans/unmute)
+
+---
+
 # Audio Issues Analysis & Solutions
 
 Based on my analysis of your code, here are the root causes and solutions for each issue:

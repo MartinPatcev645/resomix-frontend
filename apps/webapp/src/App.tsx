@@ -7,7 +7,7 @@ import { UploadLoader } from "@/components/index.ts";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
-import DevMobileConsole from "@/DevMobileConsole.tsx";
+// import DevMobileConsole from "@/DevMobileConsole.tsx";
 
 function UploadLanding() {
   const { isDesktop } = useResponsive();
@@ -33,7 +33,7 @@ function App() {
 
   return (
     <>
-      <DevMobileConsole />
+      {/* <DevMobileConsole /> */}
       {showWelcome &&
         <WelcomeMessage
           onClose={dismiss}
