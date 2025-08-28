@@ -20,12 +20,7 @@ interface WaveformPlayerProps {
      */
     isPlaying?: boolean;
 
-    /**
-     * Callback invoked on every audioprocess/seek with current playback time.
-     * This is forwarded to useWaveform and is primarily used to sync the
-     * player store with the real-time cursor position.
-     */
-    onProgress?: (currentTime: number) => void;
+
 
     duration?: number;
 
@@ -55,7 +50,6 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
     isPlaying,
     onReadyWs,
     duration,
-    onProgress,
     preUnlockedAudio,
     persistentAudioElement
 }, ref) => {
@@ -88,7 +82,6 @@ const WaveformPlayer = forwardRef<WaveformPlayerRef, WaveformPlayerProps>(({
         audioUrl,
         theme: memoTheme,
         initialVolume: initialVolumeRef.current,
-        onProgress,
         trackDuration: duration,
         preUnlockedAudio,
         persistentAudioElement,

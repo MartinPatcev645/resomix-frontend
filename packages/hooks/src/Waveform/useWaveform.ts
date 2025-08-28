@@ -319,7 +319,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         // Determine audio source – uploaded blobs (audioUrl) take precedence
         const audioSource = audioUrl ?? (trackId ? `${SERVER_MEDIA}/signed-audio/?uuid=${trackId}` : undefined);
 
-                // BeMusic strategy: Use persistent audio element from AudioProvider
+        // BeMusic strategy: Use persistent audio element from AudioProvider
         const wavesurferConfig: any = {
             container: containerRef.current,
             waveColor: theme.textSecondary,

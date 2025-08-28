@@ -207,7 +207,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                         isPlaying={isPlaying}
                         volume={volume}
                         duration={totalDuration}
-                        onProgress={setInputCurrentTime}
                         persistentAudioElement={getAudioElement() || undefined}
                         onReadyWs={(ws) => {
                             try {

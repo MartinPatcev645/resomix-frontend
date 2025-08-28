@@ -112,7 +112,6 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                         trackId={trackId}
                         isPlaying={isPlaying}
                         volume={volume}
-                        onProgress={setSimilarityCurrentTime}
                         duration={totalDuration}
                         persistentAudioElement={getAudioElement() || undefined}
 
