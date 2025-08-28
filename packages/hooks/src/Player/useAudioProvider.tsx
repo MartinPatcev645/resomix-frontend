@@ -59,6 +59,59 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
   const unlockGestureRef = useRef<(() => Promise<void>) | null>(null);
   const [wasPlayingBeforeInterruption, setWasPlayingBeforeInterruption] = useState(false);
 
+  // MediaSession API support for better iOS integration
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Configure MediaSession for music playback
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Resomix',
+        artist: 'Music Discovery',
+        album: 'Similarity Playlist',
+        artwork: [
+          { src: '/logo.png', sizes: '96x96', type: 'image/png' },
+          { src: '/logo.png', sizes: '128x128', type: 'image/png' },
+          { src: '/logo.png', sizes: '192x192', type: 'image/png' },
+        ]
+      });
+
+      // Handle media session actions
+      navigator.mediaSession.setActionHandler('play', () => audio.play());
+      navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+      navigator.mediaSession.setActionHandler('seekbackward', () => {
+        audio.currentTime = Math.max(0, audio.currentTime - 10);
+      });
+      navigator.mediaSession.setActionHandler('seekforward', () => {
+        audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        // Trigger previous track logic - will be handled by player manager
+        window.dispatchEvent(new CustomEvent('mediaSessionPreviousTrack'));
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        // Trigger next track logic - will be handled by player manager
+        window.dispatchEvent(new CustomEvent('mediaSessionNextTrack'));
+      });
+    }
+
+    // Update media session state
+    const updateMediaSession = () => {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
+      }
+    };
+
+    audio.addEventListener('play', updateMediaSession);
+    audio.addEventListener('pause', updateMediaSession);
+    
+    return () => {
+      audio.removeEventListener('play', updateMediaSession);
+      audio.removeEventListener('pause', updateMediaSession);
+    };
+  }, []);
+
   // BeMusic pattern: Create audio element immediately when component mounts
   useEffect(() => {
     const audio = audioRef.current;
@@ -152,7 +205,7 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('canplay', handleCanPlay);
 
-    // Enhanced interruption handling for iOS
+    // Enhanced interruption handling for iOS with MediaSession integration
     const handleInterruption = () => {
       // Preserve audio session during interruptions
       if (audio && !audio.paused) {
@@ -166,11 +219,21 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
           // Interruption started (call, Siri, etc.)
           setWasPlayingBeforeInterruption(!audio.paused);
           audio.pause();
+          
+          // Update MediaSession state
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+          }
         } else if (event.interruptionType === 'ended') {
           // Interruption ended - resume if we were playing
           if (wasPlayingBeforeInterruption) {
             audio.play().catch(() => {});
             setWasPlayingBeforeInterruption(false);
+            
+            // Update MediaSession state
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.playbackState = 'playing';
+            }
           }
         }
       }

@@ -106,6 +106,33 @@ export const usePlayerManager = () => {
     return null
   }, [currentTrackId, currentTrackIndex, allTrackIds])
 
+  // Update MediaSession metadata when track changes
+  const updateMediaSessionMetadata = useCallback((trackId: string) => {
+    if ('mediaSession' in navigator && playlistData) {
+      let trackInfo = null;
+      
+      // Find track info from playlist data
+      if (trackId === 'uploaded-local' && playlistData.queried_track) {
+        trackInfo = playlistData.queried_track;
+      } else {
+        trackInfo = playlistData.similar_tracks?.find(track => track.id === trackId);
+      }
+      
+      if (trackInfo) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: trackInfo.title || 'Resomix Track',
+          artist: trackInfo.artist || 'Music Discovery',
+          album: 'Similarity Playlist',
+          artwork: [
+            { src: '/logo.png', sizes: '96x96', type: 'image/png' },
+            { src: '/logo.png', sizes: '128x128', type: 'image/png' },
+            { src: '/logo.png', sizes: '192x192', type: 'image/png' },
+          ]
+        });
+      }
+    }
+  }, [playlistData]);
+
   // BeMusic pattern: Synchronous track cueing with async loading
   const cueTrack = useCallback((trackId: string) => {
     // Allow special tracks (uploaded) or tracks in playlist
@@ -116,9 +143,13 @@ export const usePlayerManager = () => {
     
     // Immediate synchronous state change (preserves gesture)
     setCurrentTrack(trackId)
+    
+    // Update MediaSession metadata
+    updateMediaSessionMetadata(trackId);
+    
     console.log('[PlayerManager] Track cued immediately:', trackId)
     return true
-  }, [allTrackIds, setCurrentTrack])
+  }, [allTrackIds, setCurrentTrack, updateMediaSessionMetadata])
 
   // Start playing a specific track (synchronous)
   const startPlaying = useCallback((trackId: string) => {
@@ -213,6 +244,26 @@ export const usePlayerManager = () => {
   const toggleAutoplay = useCallback(() => {
     setAutoplay(!autoplay)
   }, [autoplay, setAutoplay])
+
+  // MediaSession API integration for notification controls
+  useEffect(() => {
+    const handleMediaSessionPreviousTrack = () => {
+      playPrevious();
+    };
+
+    const handleMediaSessionNextTrack = () => {
+      playNext();
+    };
+
+    // Listen for MediaSession events from AudioProvider
+    window.addEventListener('mediaSessionPreviousTrack', handleMediaSessionPreviousTrack);
+    window.addEventListener('mediaSessionNextTrack', handleMediaSessionNextTrack);
+
+    return () => {
+      window.removeEventListener('mediaSessionPreviousTrack', handleMediaSessionPreviousTrack);
+      window.removeEventListener('mediaSessionNextTrack', handleMediaSessionNextTrack);
+    };
+  }, [playPrevious, playNext]);
 
   // Get playlist statistics
   const playlistStats = useMemo(() => {
