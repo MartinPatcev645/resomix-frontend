@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import WaveformPlayer, { type WaveformPlayerRef } from "./WaveformPlayer.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
@@ -39,6 +39,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
         isAutoplayEnabled
     } = usePlayerManager();
     const isPlaying = currentTrackId === effectiveId;
+    const [isSeeking, setIsSeeking] = useState(false);
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<WaveformPlayerRef>(null);
@@ -78,17 +79,31 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
         if (!ws) return;
 
         const handleFinish = () => {
-            playNext();
+            // Only advance to next track if not currently seeking
+            if (!isSeeking) {
+                playNext();
+            } else {
+                console.log('[InputPlayer] Ignoring finish event during seek operation');
+            }
         };
 
         // Remove any existing finish handlers
         ws.un && ws.un('finish');
         ws.on('finish', handleFinish);
+        
+        // Track seeking state to prevent accidental track advancement
+        ws.un && ws.un('seeking');
+        ws.on('seeking', () => {
+            setIsSeeking(true);
+            // Reset seeking state after a delay
+            setTimeout(() => setIsSeeking(false), 200);
+        });
 
         return () => {
             ws.un && ws.un('finish', handleFinish);
+            ws.un && ws.un('seeking');
         };
-    }, [isAutoplayEnabled, playNext]);
+    }, [isAutoplayEnabled, playNext, isSeeking]);
 
     // Separate effect for syncing volume with input WaveSurfer instance
     useEffect(() => {

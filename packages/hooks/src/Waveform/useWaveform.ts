@@ -330,7 +330,6 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             cursorWidth: 2,
             normalize: false,
             interact: true,
-            dragToSeek: true,
             fillParent: true,
             height: containerHeight,
             hideScrollbar: true,
@@ -475,19 +474,23 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
         // -----------------------------------------------------------------
 
         if (IS_IOS) {
+            let isSeeking = false;
             const iosSeekWorkaround = () => {
                 try {
-                    // Only apply when currently playing – avoids unnecessary
-                    // toggling when the user seeks whilst paused.
-                    if (wavesurfer.isPlaying && wavesurfer.isPlaying()) {
+                    // Only apply when currently playing and not already seeking
+                    if (wavesurfer.isPlaying && wavesurfer.isPlaying() && !isSeeking) {
+                        isSeeking = true;
                         wavesurfer.pause();
-                        // Resume as soon as possible – 0-delay timeout places
-                        // the callback at the end of the current event loop tick.
+                        // Resume with slightly longer delay to prevent finish event triggers
                         setTimeout(() => {
                             try {
                                 wavesurfer.play();
+                                // Reset seeking flag after a short delay to ensure finish events are properly handled
+                                setTimeout(() => {
+                                    isSeeking = false;
+                                }, 100);
                             } catch {/* ignore play errors */ }
-                        }, 0);
+                        }, 50); // Increased from 0ms to 50ms
                     }
                 } catch {/* ignore errors */ }
             };

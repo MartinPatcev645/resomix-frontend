@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef, useEffect, useState } from "react";
 import WaveformPlayer from "./WaveformPlayer.tsx";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
@@ -24,6 +24,7 @@ interface SimilarityPlayerProps {
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, isPlaying = false }) => {
     const { setSimilarityWs, playNext, volume, setVolume } = usePlayerManager();
+    const [isSeeking, setIsSeeking] = useState(false);
 
     // Direct reference to the waveform player's wavesurfer instance
     const waveformPlayerRef = useRef<{ getWaveSurfer: () => any } | null>(null);
@@ -131,7 +132,20 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                             // attach finish listener
                             ws.un && ws.un('finish');
                             ws.on('finish', () => {
-                                playNext();
+                                // Only advance to next track if not currently seeking
+                                if (!isSeeking) {
+                                    playNext();
+                                } else {
+                                    console.log('[SimilarityPlayer] Ignoring finish event during seek operation');
+                                }
+                            });
+                            
+                            // Track seeking state to prevent accidental track advancement
+                            ws.un && ws.un('seeking');
+                            ws.on('seeking', () => {
+                                setIsSeeking(true);
+                                // Reset seeking state after a delay
+                                setTimeout(() => setIsSeeking(false), 200);
                             });
                         } catch (error) {
                             console.error('[SimilarityPlayer] Failed to setup WaveSurfer:', error);
