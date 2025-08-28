@@ -57,6 +57,7 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
   const [isProviderReady, setIsProviderReady] = useState(false);
   const [isGestureUnlocked, setIsGestureUnlocked] = useState(false);
   const unlockGestureRef = useRef<(() => Promise<void>) | null>(null);
+  const [wasPlayingBeforeInterruption, setWasPlayingBeforeInterruption] = useState(false);
 
   // BeMusic pattern: Create audio element immediately when component mounts
   useEffect(() => {
@@ -67,8 +68,13 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
     audio.setAttribute('webkit-playsinline', 'true');
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('x-webkit-airplay', 'allow');
+    audio.setAttribute('x-webkit-airplay-allow', 'true');
     audio.preload = 'metadata';
     audio.crossOrigin = 'anonymous';
+    
+    // Signal this is a music app for better iOS recognition
+    audio.setAttribute('data-audio-type', 'music');
+    audio.setAttribute('data-app-name', 'resomix');
 
     // Unlock gesture immediately with silent audio (iOS requirement)
     const unlockGesture = async () => {
@@ -146,6 +152,41 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('canplay', handleCanPlay);
 
+    // Enhanced interruption handling for iOS
+    const handleInterruption = () => {
+      // Preserve audio session during interruptions
+      if (audio && !audio.paused) {
+        audio.play().catch(() => {});
+      }
+    };
+
+    const handleAudioInterruption = (event: any) => {
+      if (event.type === 'interruption') {
+        if (event.interruptionType === 'began') {
+          // Interruption started (call, Siri, etc.)
+          setWasPlayingBeforeInterruption(!audio.paused);
+          audio.pause();
+        } else if (event.interruptionType === 'ended') {
+          // Interruption ended - resume if we were playing
+          if (wasPlayingBeforeInterruption) {
+            audio.play().catch(() => {});
+            setWasPlayingBeforeInterruption(false);
+          }
+        }
+      }
+    };
+
+    // Track pause events to detect interruptions
+    const handlePauseEvent = () => {
+      // Track if we were playing before interruption
+      setWasPlayingBeforeInterruption(true);
+    };
+
+    // iOS interruption events
+    document.addEventListener('visibilitychange', handleInterruption);
+    window.addEventListener('focus', handleInterruption);
+    audio.addEventListener('pause', handlePauseEvent);
+
     return () => {
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
@@ -154,6 +195,9 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('pause', handlePauseEvent);
+      document.removeEventListener('visibilitychange', handleInterruption);
+      window.removeEventListener('focus', handleInterruption);
     };
   }, [onPlay, onPause, onEnded, onTimeUpdate, onLoadedMetadata, onError]);
 
@@ -275,6 +319,12 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
       style={{ display: 'none' }}
       playsInline
       webkit-playsinline="true"
+      preload="metadata"
+      crossOrigin="anonymous"
+      x-webkit-airplay="allow"
+      x-webkit-airplay-allow="true"
+      data-audio-type="music"
+      data-app-name="resomix"
     />
   );
 });
