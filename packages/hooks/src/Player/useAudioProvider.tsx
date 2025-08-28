@@ -122,7 +122,7 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('x-webkit-airplay', 'allow');
     audio.setAttribute('x-webkit-airplay-allow', 'true');
-    audio.preload = 'metadata';
+    audio.preload = 'auto'; // Load full audio for better seeking
     audio.crossOrigin = 'anonymous';
     
     // Signal this is a music app for better iOS recognition
@@ -382,7 +382,7 @@ export const AudioProvider = forwardRef<AudioProviderRef, AudioProviderProps>(({
       style={{ display: 'none' }}
       playsInline
       webkit-playsinline="true"
-      preload="metadata"
+      preload="auto"
       crossOrigin="anonymous"
       x-webkit-airplay="allow"
       x-webkit-airplay-allow="true"
