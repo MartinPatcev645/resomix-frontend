@@ -28,7 +28,8 @@ const PlaylistHero: React.FC = () => {
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
   const { playlistData, isLoading, error } = usePlaylistStore();
-  const { uploadedUrl, autoplay, setAutoplay } = usePlayerStore();
+  // const { uploadedUrl } = usePlayerStore();
+  const { autoplay, setAutoplay } = usePlayerStore();
 
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
@@ -191,7 +192,11 @@ const PlaylistHero: React.FC = () => {
                     {/* The actual Input player */}
                     {/* Render player only when we already know the track ID to avoid extra mounts */}
                     {playlistData?.queried_track.id && (
-                      <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
+                      // Commented out the part to use the Uploaded Audio Blob for now
+                      // <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
+                      
+                      // Using the API response same as selected track
+                      <InputPlayer trackId={playlistData.queried_track.id} audioUrl={undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
                     )}
                   </div>
                 </div>

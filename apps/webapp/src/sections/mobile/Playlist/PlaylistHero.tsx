@@ -40,7 +40,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
-  const { uploadedUrl, autoplay, setAutoplay } = usePlayerStore();
+  // const { uploadedUrl } = usePlayerStore();
+  const { autoplay, setAutoplay } = usePlayerStore();
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -166,7 +167,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div>Instance: Input Track</div>
                 </div>
                 {/* The actual Input player */}
+                {/* Commented out the part to use the Uploaded Audio Blob for now
                 <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : (playlistData?.queried_track.id || '')} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData?.queried_track.duration ?? 0} />
+                
+                Using the API response same as selected track
+                */}
+                <InputPlayer trackId={playlistData?.queried_track.id || ''} audioUrl={undefined} totalDuration={playlistData?.queried_track.duration ?? 0} />
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
