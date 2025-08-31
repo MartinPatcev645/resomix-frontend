@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { create } from "zustand";
+import { extractCoverArt } from "../meta/useMetatags";
 
 export interface UploadResult<T = any> {
     success: boolean;
@@ -56,7 +57,7 @@ export function useUpload() {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
-    const { topSk } = usePlayerStore();
+    const { topSk, setUploadedCoverArt } = usePlayerStore();
 
     const inputAccept = useMemo(() => {
         // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
@@ -94,12 +95,23 @@ export function useUpload() {
         }
 
         setFile(file);
+        
+        // Extract cover art from uploaded file
+        try {
+            const coverArt = await extractCoverArt(file, { debug: false });
+            setUploadedCoverArt(coverArt);
+        } catch (error) {
+            console.warn('Failed to extract cover art:', error);
+            setUploadedCoverArt(null);
+        }
+        
         // Save uploaded file URL globally for playback previews
         try {
             const objectUrl = URL.createObjectURL(file);
             const { setUploadedUrl } = usePlayerStore.getState();
             setUploadedUrl(objectUrl);
         } catch {/* no-op */}
+        
         setProgress(0);
         setError(null);
         setResponse(null);
@@ -133,7 +145,7 @@ export function useUpload() {
             setUploading(false);
             setOverlay(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk]);
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];

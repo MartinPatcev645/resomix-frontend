@@ -41,7 +41,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
 
   const { playlistData } = usePlaylistStore();
   // const { uploadedUrl } = usePlayerStore();
-  const { autoplay, setAutoplay } = usePlayerStore();
+  const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -116,7 +116,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <div className="flex items-start gap-[var(--px-10)]">
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
-                    <img src={TrackSvg} alt="Track" className="w-[var(--px-50)] h-[var(--px-50)]" />
+                    {uploadedCoverArt ? (
+                      <img src={uploadedCoverArt} alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                    ) : (
+                      <img src={TrackSvg} alt="Track" className="w-[var(--px-50)] h-[var(--px-50)]" />
+                    )}
                   </div>
                   <div className={`py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C] ${showMeta ? 'inline-flex' : 'hidden'}`}>Input Track</div>
                 </div>

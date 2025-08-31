@@ -29,7 +29,7 @@ const PlaylistHero: React.FC = () => {
   const [statusTitle, setStatusTitle] = React.useState('');
   const { playlistData, isLoading, error } = usePlaylistStore();
   // const { uploadedUrl } = usePlayerStore();
-  const { autoplay, setAutoplay } = usePlayerStore();
+  const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
 
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
@@ -122,7 +122,11 @@ const PlaylistHero: React.FC = () => {
               <div className="flex items-start gap-[var(--px-30)]">
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 p-[var(--px-20)]">
-                    <img src={TrackSvg} alt="Track" className="w-[var(--px-90)] h-[var(--px-90)]" />
+                    {uploadedCoverArt ? (
+                      <img src={uploadedCoverArt} alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
+                    ) : (
+                      <img src={TrackSvg} alt="Track" className="w-[var(--px-90)] h-[var(--px-90)]" />
+                    )}
                   </div>
                   <div onClick={() => setShowRating(true)} className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end hover:cursor-pointer">
                     <img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />

@@ -47,6 +47,9 @@ interface PlayerStore {
   uploadedUrl: string | null
   setUploadedUrl: (url: string | null) => void
 
+  uploadedCoverArt: string | null
+  setUploadedCoverArt: (coverUrl: string | null) => void
+
   /**
    * Input track WaveSurfer instance (always visible)
    */
@@ -101,6 +104,9 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   uploadedUrl: null,
   setUploadedUrl: (url) => set({ uploadedUrl: url }),
+
+  uploadedCoverArt: null,
+  setUploadedCoverArt: (coverUrl) => set({ uploadedCoverArt: coverUrl }),
 
   inputWs: null,
   setInputWs: (ws) => set((state) => {

@@ -16,7 +16,8 @@
         "peaks.js": "^3.4.2",
         "waveform-data": "^4.5.2",
         "wavesurfer.js": "7.10.1",
-        "zustand": "^5.0.7"
+        "zustand": "^5.0.7",
+        "jsmediatags": "^3.9.7"
     },
     "devDependencies": {
         "@types/react": "^18.0.0",
