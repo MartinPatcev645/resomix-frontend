@@ -326,7 +326,7 @@ export function useWaveform({ containerRef, trackId, audioUrl, theme, initialVol
             progressColor: '#EE4A26', // neon orange for played portion
             cursorColor: theme.primary,
             barWidth: 2,
-            barMinHeight: 2,
+            barMinHeight: 10,
             cursorWidth: 2,
             normalize: false,
             interact: true,
