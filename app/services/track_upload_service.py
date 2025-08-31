@@ -20,13 +20,19 @@ import re
 import html  
 import logging
 import secrets
-from typing import Dict, Tuple, List, Optional, BinaryIO
+from typing import Dict, Tuple, List, Optional, BinaryIO, Any
 from fastapi import UploadFile
 
 from sqlalchemy import text
 from database.connection import engine
 from app.models.constants import TrackType
 from app.services.metadata_service import MetadataService
+from app.utils.sanitization import (
+    sanitize_artist_name,
+    sanitize_label_name,
+    sanitize_genre_name,
+    sanitize_album_title
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,9 +66,18 @@ def extract_first_genre(genre_string: str) -> str:
 
 
 def parse_artist_names(raw: str) -> List[str]:
-    """Split the artist field into individual names."""
+    """
+    Parse artist names from a comma/separator-delimited string.
+    
+    Args:
+        raw: Raw artist string from metadata
+        
+    Returns:
+        List of individual artist names
+    """
     if not raw:
         return []
+    
     raw = html.unescape(raw)
     parts = DELIM_PATTERN.split(raw)
     return [p.strip() for p in parts if p.strip()]
@@ -100,23 +115,45 @@ class Cache:
     def _get_or_create(
         self, conn, table: str, cache: Dict[str, int], name: str
     ) -> int:
-        key = name.lower()
+        # Sanitize the name for database insertion based on table type
+        original_name = name
+        
+        if table == "artists":
+            sanitized_name = sanitize_artist_name(name)
+        elif table == "labels":
+            sanitized_name = sanitize_label_name(name)
+        elif table == "genres":
+            sanitized_name = sanitize_genre_name(name)
+        else:
+            sanitized_name = sanitize_artist_name(name)  # Default to artist sanitization
+        
+        # Log if sanitization changed the name
+        if original_name != sanitized_name:
+            logger.warning(f"Sanitized {table} name: '{original_name}' -> '{sanitized_name}'")
+        
+        key = sanitized_name.lower()
         if key in cache:
             return cache[key]
-        insert_sql = text(f"INSERT IGNORE INTO {table} (name) VALUES (:name)")
-        result = conn.execute(insert_sql, {"name": name})
         
-        # Get the ID - handle potential duplicates
-        select_result = conn.execute(
-            text(f"SELECT id FROM {table} WHERE name = :name"), {"name": name}
-        )
-        row = select_result.first()
-        if row is None:
-            raise Exception(f"Failed to insert or find {table} record for name: {name}")
-        
-        id_ = row[0]
-        cache[key] = id_
-        return id_
+        try:
+            insert_sql = text(f"INSERT IGNORE INTO {table} (name) VALUES (:name)")
+            result = conn.execute(insert_sql, {"name": sanitized_name})
+            
+            # Get the ID - handle potential duplicates
+            select_result = conn.execute(
+                text(f"SELECT id FROM {table} WHERE name = :name"), {"name": sanitized_name}
+            )
+            row = select_result.first()
+            if row is None:
+                raise Exception(f"Failed to insert or find {table} record for name: '{sanitized_name}' (original: '{original_name}')")
+            
+            id_ = row[0]
+            cache[key] = id_
+            return id_
+            
+        except Exception as e:
+            logger.error(f"Error in _get_or_create for {table} '{sanitized_name}': {e}")
+            raise
 
     def artist(self, conn, name: str) -> int:
         return self._get_or_create(conn, "artists", self.artists, name)
@@ -128,31 +165,45 @@ class Cache:
         return self._get_or_create(conn, "genres", self.genres, name)
 
     def album(self, conn, title: str, primary_artist_id: int) -> int:
-        key = (title.lower(), primary_artist_id)
+        # Sanitize the album title
+        original_title = title
+        sanitized_title = sanitize_album_title(title)
+        
+        # Log if sanitization changed the title
+        if original_title != sanitized_title:
+            logger.warning(f"Sanitized album title: '{original_title}' -> '{sanitized_title}'")
+        
+        key = (sanitized_title.lower(), primary_artist_id)
         if key in self.albums:
             return self.albums[key]
-        insert_sql = text(
-            """INSERT IGNORE INTO albums (artist_id, title) 
-                   VALUES (:artist_id, :title) """
-        )
-        result = conn.execute(
-            insert_sql, {"artist_id": primary_artist_id, "title": title}
-        )
         
-        # Get the ID - handle potential duplicates
-        select_result = conn.execute(
-            text(
-                "SELECT id FROM albums WHERE artist_id = :artist_id AND title = :title"
-            ),
-            {"artist_id": primary_artist_id, "title": title},
-        )
-        row = select_result.first()
-        if row is None:
-            raise Exception(f"Failed to insert or find album record for: {title} by artist_id {primary_artist_id}")
-        
-        id_ = row[0]
-        self.albums[key] = id_
-        return id_
+        try:
+            insert_sql = text(
+                """INSERT IGNORE INTO albums (artist_id, title) 
+                       VALUES (:artist_id, :title) """
+            )
+            result = conn.execute(
+                insert_sql, {"artist_id": primary_artist_id, "title": sanitized_title}
+            )
+            
+            # Get the ID - handle potential duplicates
+            select_result = conn.execute(
+                text(
+                    "SELECT id FROM albums WHERE artist_id = :artist_id AND title = :title"
+                ),
+                {"artist_id": primary_artist_id, "title": sanitized_title},
+            )
+            row = select_result.first()
+            if row is None:
+                raise Exception(f"Failed to insert or find album record for: '{sanitized_title}' by artist_id {primary_artist_id} (original: '{original_title}')")
+            
+            id_ = row[0]
+            self.albums[key] = id_
+            return id_
+            
+        except Exception as e:
+            logger.error(f"Error in album creation for '{sanitized_title}': {e}")
+            raise
 
 
 class TrackUploadService:
