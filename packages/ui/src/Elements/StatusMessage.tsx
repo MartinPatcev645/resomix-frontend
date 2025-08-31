@@ -70,7 +70,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Loading state
     if (status === 'loading') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-primary-background)]">
                 {/* Backdrop with blur effect */}
                 <div
                     className="absolute inset-0 bg-black/20 backdrop-blur-sm"
@@ -88,7 +88,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Error state
     if (status === 'error') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-primary-background)]">
                 {/* Backdrop with blur effect */}
                 <div
                     className="absolute inset-0 bg-black/20 backdrop-blur-sm"
@@ -119,7 +119,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
 
     // Success state (default)
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-primary-background)]">
             {/* Backdrop with blur effect */}
             <div
                 className="absolute inset-0 bg-black/20 backdrop-blur-sm"
