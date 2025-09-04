@@ -7,6 +7,7 @@ import { UploadLoader } from "@/components/index.ts";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
+import PlayerPage from "@/pages/PlayerPage.tsx";
 // import DevMobileConsole from "@/DevMobileConsole.tsx";
 
 function UploadLanding() {
@@ -53,6 +54,7 @@ function App() {
         <Route path="/error" element={<InfoPage mode="error" />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/test-two" element={<TestTwo />} />
+        <Route path="/player" element={<PlayerPage id="1a9983daf38caac5a8e8adaf" />} />
         <Route path="*" element={<InfoPage mode="404" />} />
       </Routes>
     </>

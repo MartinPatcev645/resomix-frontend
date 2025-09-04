@@ -9,12 +9,17 @@ export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export { useWaveform } from "./Waveform/useWaveform";
 export { usePeaks } from "./Waveform/usePeaks";
+export { usePeaksWaveform } from "./Waveform/usePeaksWaveform";
 export * from './Playlist/usePlaylistLoader';
 export * from './Player/usePlayerManager';
 export * from './Player/useAudioContextUnlocker';
 export * from './Player/useAudioProvider';
+export * from './Player/useHowlerController';
+export * from './Player/playerActions';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'
 export type { WaveformTheme } from "./Waveform/useWaveform";
 export * from './meta/useMetatags'
+export * from './howler_peaks/useHowler2';
+export * from './howler_peaks/usePeaks2';
 

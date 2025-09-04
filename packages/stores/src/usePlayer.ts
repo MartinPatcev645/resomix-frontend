@@ -51,16 +51,16 @@ interface PlayerStore {
   setUploadedCoverArt: (coverUrl: string | null) => void
 
   /**
-   * Input track WaveSurfer instance (always visible)
+   * Howler controller instance for managing audio playback
    */
-  inputWs: any | null
-  setInputWs: (ws: any | null) => void
+  howlerController: any | null
+  setHowlerController: (controller: any | null) => void
 
   /**
-   * Similarity track WaveSurfer instance (changes based on current track)
+   * HTML audio element from Howler for Peaks.js integration
    */
-  similarityWs: any | null
-  setSimilarityWs: (ws: any | null) => void
+  audioNode: HTMLAudioElement | null
+  setAudioNode: (node: HTMLAudioElement | null) => void
 
   /**
    * Global autoplay toggle. When true we automatically advance to the next
@@ -93,7 +93,7 @@ interface PlayerStore {
   /** Provider readiness states (BeMusic pattern) */
   inputProviderReady: boolean
   setInputProviderReady: (ready: boolean) => void
-  
+
   similarityProviderReady: boolean
   setSimilarityProviderReady: (ready: boolean) => void
 }
@@ -108,25 +108,11 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   uploadedCoverArt: null,
   setUploadedCoverArt: (coverUrl) => set({ uploadedCoverArt: coverUrl }),
 
-  inputWs: null,
-  setInputWs: (ws) => set((state) => {
-    if (state.inputWs && state.inputWs !== ws) {
-      try {
-        state.inputWs.pause();
-      } catch { /* ignore */ }
-    }
-    return { inputWs: ws };
-  }),
+  howlerController: null,
+  setHowlerController: (controller) => set({ howlerController: controller }),
 
-  similarityWs: null,
-  setSimilarityWs: (ws) => set((state) => {
-    if (state.similarityWs && state.similarityWs !== ws) {
-      try {
-        state.similarityWs.pause();
-      } catch { /* ignore */ }
-    }
-    return { similarityWs: ws };
-  }),
+  audioNode: null,
+  setAudioNode: (node) => set({ audioNode: node }),
 
   autoplay: getStoredValue<boolean>(STORAGE_KEYS.autoplay, false),
   setAutoplay: (value) =>
