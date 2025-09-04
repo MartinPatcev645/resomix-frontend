@@ -176,7 +176,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 
                 Using the API response same as selected track
                 */}
-                <InputPlayer trackId={playlistData?.queried_track.id || ''} audioUrl={undefined} totalDuration={playlistData?.queried_track.duration ?? 0} />
+                <InputPlayer trackId={playlistData?.queried_track.id || ''} totalDuration={playlistData?.queried_track.duration ?? 0} />
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
