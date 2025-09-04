@@ -54,7 +54,7 @@ function App() {
         <Route path="/error" element={<InfoPage mode="error" />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/test-two" element={<TestTwo />} />
-        <Route path="/player" element={<PlayerPage id="1a9983daf38caac5a8e8adaf" />} />
+        <Route path="/player" element={<PlayerPage />} />
         <Route path="*" element={<InfoPage mode="404" />} />
       </Routes>
     </>
