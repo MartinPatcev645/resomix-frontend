@@ -39,22 +39,6 @@ export function useHowler2(uuid?: string): UseHowlerResult {
   useEffect(() => {
     if (!url) return;
 
-    // React 18 StrictMode runs this effect twice in dev.
-    // Prevent double creation that exhausts the HTML5 audio pool.
-    const createdFlag = { value: false };
-    if ((useHowler2 as any)._devCreated?.has(url)) {
-      // already created once for this URL in this session (dev)
-      return;
-    }
-    (useHowler2 as any)._devCreated = (useHowler2 as any)._devCreated || new Set<string>();
-    (useHowler2 as any)._devCreated.add(url);
-    createdFlag.value = true;
-
-    if (howlRef.current) {
-      try { howlRef.current.unload(); } catch { }
-      howlRef.current = null;
-    }
-
     const h = new Howl({
       src: [url],
       format: ['mp3'],
@@ -75,15 +59,8 @@ export function useHowler2(uuid?: string): UseHowlerResult {
     howlRef.current = h;
 
     return () => {
-      // Real unmount/URL change: clean up.
-      try { h.unload(); } catch { }
-      howlRef.current = null;
-      // allow a later fresh mount (different page) to create again
-      if (createdFlag.value) {
-        (useHowler2 as any)._devCreated.delete(url);
-      }
+      h.unload();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
 
@@ -119,7 +96,14 @@ export function useHowler2(uuid?: string): UseHowlerResult {
 
   const play = useCallback(() => { howlRef.current?.play(); }, []);
   const pause = useCallback(() => { howlRef.current?.pause(); }, []);
-  const seek = useCallback((t: number) => { howlRef.current?.seek(Math.max(0, t)); }, []);
+  const seek = useCallback((t: number) => {
+    setCurrentTime(t);
+    howlRef.current?.seek(Math.max(0, t));
+    const seekPos =  howlRef.current?.seek();
+    if (seekPos == 0 && t > 0) {
+      setTimeout(() => seek(t), 100);
+    }
+  }, []);
   const getHtmlAudioNode = useCallback(() => {
     const anyHowl = howlRef.current as any;
     return anyHowl?._sounds?.[0]?._node ?? null;

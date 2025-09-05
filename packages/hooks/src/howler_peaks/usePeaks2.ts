@@ -1,146 +1,131 @@
 // usePeaks2.ts
 import { useEffect, useRef, useState, useCallback } from 'react';
-import Peaks, { type PeaksInstance } from 'peaks.js';
-import WaveformData from 'waveform-data';
 
 export type UsePeaksReturn = {
   loading: boolean;
   error: string | null;
-  destroy: () => void;
-  /** Bind the real <audio> (e.g., from Howler) so the playhead follows playback */
-  attachMediaElement: (el: HTMLAudioElement | null) => void;
+  setTime: (timeSec: number) => void;
 };
 
-/**
- * Minimal Peaks v3 hook.
- * - Renders an overview-only waveform from your 0..1 JSON
- * - Starts with a dummy <audio> so UI appears instantly
- * - Later you can attach the real <audio> so playhead & seeking sync
- */
 export function usePeaks2(
   overviewRef: React.RefObject<HTMLElement | null>,
   uuid: string
 ): UsePeaksReturn {
-  const peaksRef = useRef<PeaksInstance | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animationRef = useRef<number>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [normalizedData, setNormalizedData] = useState<number[]>([]);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
+  const barWidth = 3;
+  const gapWidth = 1;
+  const playedColor = '#ff5500';
+  const unplayedColor = '#ffffff';
+  const cursorColor = '#ffffff';
 
-  const destroy = useCallback(() => {
-    try { peaksRef.current?.destroy(); } catch {}
-    peaksRef.current = null;
-  }, []);
+  const drawWaveform = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !normalizedData.length) return;
 
-  const attachMediaElement = useCallback((el: HTMLAudioElement | null) => {
-    setMediaElement(el);
-  }, []);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const barCount = Math.floor(width / (barWidth + gapWidth));
+    const timePercent = duration > 0 ? currentTime / duration : 0;
+    const cursorPosition = width * timePercent;
+
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < barCount; i++) {
+      const position = (i / barCount) * (normalizedData.length - 1);
+      const index = Math.floor(position);
+      const value = normalizedData[index] || 0;
+      const barHeight = Math.max(1, value * height);
+
+      const x = i * (barWidth + gapWidth);
+      const isPlayed = x < cursorPosition;
+
+      ctx.fillStyle = isPlayed ? playedColor : unplayedColor;
+      ctx.fillRect(
+        x,
+        height - barHeight,
+        barWidth,
+        barHeight
+      );
+    }
+
+    ctx.fillStyle = cursorColor;
+    ctx.fillRect(cursorPosition, 0, 1, height);
+  }, [normalizedData, currentTime, duration]);
 
   useEffect(() => {
     const el = overviewRef.current;
-    if (!el || !uuid || !mediaElement) return;
+    if (!el || !uuid) return;
 
-    let cancelled = false;
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvasRef.current = canvas;
+    el.appendChild(canvas);
 
-    async function init() {
-      if (!mediaElement || !el) return;
-
-      setLoading(true);
-      setError(null);
-
-      // Clean any previous instance
-      destroy();
-
-      // 1) Fetch your 0..1 normalized peaks
-      const res = await fetch(`https://media.resomix.com/peaks/?uuid=${uuid}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`Peaks fetch failed (${res.status})`);
-      const norm: number[] = await res.json();
-
-      const audioDuration = norm.length;
-      const containerWidth = el.clientWidth;
-
-      const barWidth = 3;
-      const gapWidth = 2;
-
-      const barCount = Math.floor(containerWidth / (barWidth + gapWidth));
-
-      const data = new Int8Array(containerWidth * 2).fill(0);
-
-      for (let i = 0; i < barCount; i++) {
-        const position = (i / barCount) * (norm.length - 1);
-        const index = Math.floor(position);
-        const fraction = position - index;
-
-        let value;
-        if (index < norm.length - 1) {
-          value = norm[index] + fraction * (norm[index + 1] - norm[index]);
-        } else {
-          value = norm[index];
-        }
-
-        const v = Math.max(0, Math.min(1, value || 0)) * 250;
-        const p = Math.round(v) | 0;
-
-        const barPosition = i * (barWidth + gapWidth);
-
-        for (let j = 0; j < barWidth; j++) {
-          if (barPosition + j < containerWidth) {
-            data[(barPosition + j) * 2] = 0;     // min
-            data[(barPosition + j) * 2 + 1] = p;  // max
-          }
-        }
+    const resizeObserver = new ResizeObserver(() => {
+      if (canvas) {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        drawWaveform();
       }
+    });
 
-      const json = {
-        version: 2 as const,
-        channels: 1,
-        sample_rate: 44100,
-        samples_per_pixel: audioDuration * 44100 / containerWidth,
-        bits: 8,
-        length: containerWidth,
-        data: Array.from(data),
-      };
+    resizeObserver.observe(canvas);
 
-      const wf = WaveformData.create(json);
-      const wfJson = (wf as any).toJSON ? (wf as any).toJSON() : json;
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`https://media.resomix.com/peaks/?uuid=${uuid}`, {
+          cache: 'no-store'
+        });
 
-      // 3) Init Peaks v3 (overview only)
-      await new Promise<void>((resolve, reject) => {
-        Peaks.init(
-          {
-            overview: {
-              container: el,
-              showAxisLabels: false,
-              axisGridlineColor: '#222',
-              showPlayheadTime: false,
-              playheadColor: '#fff',
-              playheadTextColor: '#fff',
-              waveformColor: '#ffffff',
-              playedWaveformColor: '#ff5500',
-            },
-            mediaElement: mediaElement,
-            waveformData: { json: wfJson },
-          },
-          (err, instance) => {
-            if (err) return reject(err);
-            peaksRef.current = instance!;
-            resolve();
-          }
-        );
-      });
+        if (!res.ok) console.error(`Peaks fetch failed (${res.status})`);
 
-      if (cancelled) destroy();
-    }
+        const data = await res.json();
+        setNormalizedData(data);
+        setDuration(data.length);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    init()
-      .catch((e: any) => setError(e?.message ?? String(e)))
-      .finally(() => setLoading(false));
+    loadData();
 
     return () => {
-      cancelled = true;
-      destroy();
+      resizeObserver.disconnect();
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (canvasRef.current) {
+        el.removeChild(canvas);
+      }
     };
-  }, [overviewRef, uuid, destroy, mediaElement]);
+  }, [overviewRef, uuid]);
 
-  return { loading, error, destroy, attachMediaElement };
+  useEffect(() => {
+    animationRef.current = requestAnimationFrame(drawWaveform);
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [drawWaveform]);
+
+  const setTime = useCallback((timeSec: number) => {
+    setCurrentTime(timeSec);
+  }, []);
+
+  return { loading, error, setTime };
 }

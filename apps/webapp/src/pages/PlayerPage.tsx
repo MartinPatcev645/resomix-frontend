@@ -9,6 +9,7 @@ const THIRD_ID = '67adbb7b799206f8d652cf37';
 
 // Track order for autoplay
 const TRACK_ORDER = [INPUT_ID, SIM_ID, THIRD_ID];
+// const TRACK_ORDER = [INPUT_ID];
 
 function fmt(t: number) {
   const m = Math.floor(t / 60);
@@ -33,7 +34,7 @@ function PlayerUnit({
 }) {
   // 1) Peaks — draw immediately
   const overviewRef = useRef<HTMLDivElement | null>(null);
-  const { loading: wfLoading, error: wfError, attachMediaElement } = usePeaks2(overviewRef, id);
+  const { loading: wfLoading, error: wfError, setTime } = usePeaks2(overviewRef, id);
 
   // 2) Howler — preload; user clicks Play to start
   const {
@@ -45,6 +46,31 @@ function PlayerUnit({
     seek,
     getHtmlAudioNode,
   } = useHowler2(id);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    setTime(currentTime);
+  }, [isLoaded, currentTime, setTime]);
+
+  // Load saved position from localStorage on mount
+  useEffect(() => {
+    if (isLoaded) {
+      const savedPosition = localStorage.getItem(`track-position-${id}`);
+      if (savedPosition) {
+        const position = parseFloat(savedPosition);
+        if (position < duration) {
+          seek(position);
+        }
+      }
+    }
+  }, [isLoaded, duration, id, seek]);
+
+  // Save position to localStorage when it changes
+  useEffect(() => {
+    if (isLoaded && currentTime > 0) {
+      localStorage.setItem(`track-position-${id}`, currentTime.toString());
+    }
+  }, [currentTime, isLoaded, id]);
 
   // Handle play/pause from parent
   useEffect(() => {
@@ -61,18 +87,14 @@ function PlayerUnit({
     if (!audioNode) return;
 
     const handleEnded = () => {
+      // Reset position to 0 when track ends
+      localStorage.setItem(`track-position-${id}`, '0');
       onEnded();
     };
 
     audioNode.addEventListener('ended', handleEnded);
     return () => audioNode.removeEventListener('ended', handleEnded);
-  }, [getHtmlAudioNode, onEnded]);
-
-  // bind Peaks to the REAL <audio> from Howler so the playhead moves
-  const audioNode = getHtmlAudioNode();
-  useEffect(() => {
-    if (audioNode) attachMediaElement(audioNode);
-  }, [audioNode, attachMediaElement]);
+  }, [getHtmlAudioNode, onEnded, id]);
 
   // click-to-seek on the waveform
   useEffect(() => {
@@ -81,11 +103,22 @@ function PlayerUnit({
     const onClick = (ev: MouseEvent) => {
       const r = el.getBoundingClientRect();
       const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-      if (duration > 0) seek(x * duration);
+      if (duration > 0) {
+        const newPosition = x * duration;
+        seek(newPosition);
+        localStorage.setItem(`track-position-${id}`, newPosition.toString());
+      }
     };
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [isLoaded, duration, seek]);
+  }, [isLoaded, duration, seek, id]);
+
+  // Handle seek buttons
+  const handleSeek = (timeChange: number) => {
+    const newTime = Math.max(0, Math.min(duration, currentTime + timeChange));
+    seek(newTime);
+    localStorage.setItem(`track-position-${id}`, newTime.toString());
+  };
 
   return (
     <div className="w-full max-w-xl rounded-xl border border-gray-700 bg-[#111] p-4 text-white">
@@ -94,15 +127,13 @@ function PlayerUnit({
       {/* Waveform container */}
       <div
         ref={overviewRef}
-        className="relative h-20 w-full overflow-hidden rounded-md border border-gray-700 bg-[#222] peaks-container"
+        className="relative h-20 w-full overflow-hidden  peaks-container"
       >
         {/* SoundCloud-ish progress tint overlay */}
         <div
           className="pointer-events-none absolute inset-0 mix-blend-screen"
           style={{
             width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%',
-            background:
-              'linear-gradient(to right, rgba(255,107,107,0.6), rgba(255,107,107,0.0))',
           }}
         />
       </div>
@@ -114,7 +145,7 @@ function PlayerUnit({
       {/* Controls */}
       <div className="mt-3 flex items-center gap-3">
         <button
-          onClick={() => seek(Math.max(0, currentTime - 10))}
+          onClick={() => handleSeek(-10)}
           className="px-3 py-1 bg-gray-600 rounded"
         >
           -10s
@@ -136,7 +167,7 @@ function PlayerUnit({
           </button>
         )}
         <button
-          onClick={() => seek(Math.min(duration, currentTime + 10))}
+          onClick={() => handleSeek(10)}
           className="px-3 py-1 bg-gray-600 rounded"
         >
           +10s
@@ -191,6 +222,7 @@ export default function PlayerPage() {
       <h2 className="mb-6 text-2xl font-bold">Simple Player (Peaks + Howler)</h2>
 
       <div className="flex flex-col gap-6">
+        {/* Three players with autoplay functionality */}
         <PlayerUnit
           label="Input Track"
           id={INPUT_ID}
@@ -207,6 +239,7 @@ export default function PlayerPage() {
           onPause={() => handlePause(SIM_ID)}
           onEnded={() => handleEnded(SIM_ID)}
         />
+
         <PlayerUnit
           label="Third Track"
           id={THIRD_ID}
