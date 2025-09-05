@@ -1,11 +1,14 @@
 // PlayerPage.tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useHowler2 } from '@resomix/hooks';
 import { usePeaks2 } from '@resomix/hooks';
 
-// --- Put your test IDs here (no props) ---
 const INPUT_ID = '67adb0d5799206f8d65102a8';
 const SIM_ID   = '67ad9cec799206f8d64acdf1';
+const THIRD_ID = '67adbb7b799206f8d652cf37';
+
+// Track order for autoplay
+const TRACK_ORDER = [INPUT_ID, SIM_ID, THIRD_ID];
 
 function fmt(t: number) {
   const m = Math.floor(t / 60);
@@ -13,7 +16,21 @@ function fmt(t: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function PlayerUnit({ label, id }: { label: string; id: string }) {
+function PlayerUnit({
+                      label,
+                      id,
+                      isPlaying,
+                      onPlay,
+                      onPause,
+                      onEnded
+                    }: {
+  label: string;
+  id: string;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onPause: () => void;
+  onEnded: () => void;
+}) {
   // 1) Peaks — draw immediately
   const overviewRef = useRef<HTMLDivElement | null>(null);
   const { loading: wfLoading, error: wfError, attachMediaElement } = usePeaks2(overviewRef, id);
@@ -21,7 +38,6 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
   // 2) Howler — preload; user clicks Play to start
   const {
     isLoaded,
-    isPlaying,
     duration,
     currentTime,
     play,
@@ -29,6 +45,28 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
     seek,
     getHtmlAudioNode,
   } = useHowler2(id);
+
+  // Handle play/pause from parent
+  useEffect(() => {
+    if (isPlaying) {
+      play();
+    } else {
+      pause();
+    }
+  }, [isPlaying, play, pause]);
+
+  // Listen for ended event
+  useEffect(() => {
+    const audioNode = getHtmlAudioNode();
+    if (!audioNode) return;
+
+    const handleEnded = () => {
+      onEnded();
+    };
+
+    audioNode.addEventListener('ended', handleEnded);
+    return () => audioNode.removeEventListener('ended', handleEnded);
+  }, [getHtmlAudioNode, onEnded]);
 
   // bind Peaks to the REAL <audio> from Howler so the playhead moves
   const audioNode = getHtmlAudioNode();
@@ -84,7 +122,7 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
         {!isPlaying ? (
           <button
             className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={play}
+            onClick={onPlay}
             disabled={!isLoaded}
           >
             Play
@@ -92,7 +130,7 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
         ) : (
           <button
             className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black"
-            onClick={pause}
+            onClick={onPause}
           >
             Pause
           </button>
@@ -113,6 +151,26 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
 }
 
 export default function PlayerPage() {
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+
+  const handlePlay = (id: string) => {
+    setCurrentlyPlaying(id);
+  };
+
+  const handlePause = (id: string) => {
+    if (currentlyPlaying === id) {
+      setCurrentlyPlaying(null);
+    }
+  };
+
+  const handleEnded = (id: string) => {
+    if (currentlyPlaying === id) {
+      const currentIndex = TRACK_ORDER.indexOf(id);
+      const nextIndex = (currentIndex + 1) % TRACK_ORDER.length;
+      setCurrentlyPlaying(TRACK_ORDER[nextIndex]);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#0b0b0b] p-6 text-white">
       {/* Hide Peaks rulers/axes; make base waveform slightly dimmer */}
@@ -133,9 +191,30 @@ export default function PlayerPage() {
       <h2 className="mb-6 text-2xl font-bold">Simple Player (Peaks + Howler)</h2>
 
       <div className="flex flex-col gap-6">
-        {/* Two independent players sharing the same page */}
-        <PlayerUnit label="Input Track" id={INPUT_ID} />
-        <PlayerUnit label="Similarity Track" id={SIM_ID} />
+        <PlayerUnit
+          label="Input Track"
+          id={INPUT_ID}
+          isPlaying={currentlyPlaying === INPUT_ID}
+          onPlay={() => handlePlay(INPUT_ID)}
+          onPause={() => handlePause(INPUT_ID)}
+          onEnded={() => handleEnded(INPUT_ID)}
+        />
+        <PlayerUnit
+          label="Similarity Track"
+          id={SIM_ID}
+          isPlaying={currentlyPlaying === SIM_ID}
+          onPlay={() => handlePlay(SIM_ID)}
+          onPause={() => handlePause(SIM_ID)}
+          onEnded={() => handleEnded(SIM_ID)}
+        />
+        <PlayerUnit
+          label="Third Track"
+          id={THIRD_ID}
+          isPlaying={currentlyPlaying === THIRD_ID}
+          onPlay={() => handlePlay(THIRD_ID)}
+          onPause={() => handlePause(THIRD_ID)}
+          onEnded={() => handleEnded(THIRD_ID)}
+        />
       </div>
     </div>
   );
