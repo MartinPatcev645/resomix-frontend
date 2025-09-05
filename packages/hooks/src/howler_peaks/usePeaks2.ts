@@ -56,60 +56,77 @@ export function usePeaks2(
       if (!res.ok) throw new Error(`Peaks fetch failed (${res.status})`);
       const norm: number[] = await res.json();
 
-
       const audioDuration = norm.length;
       const containerWidth = el.clientWidth;
-      const totalSamples = audioDuration * 44100;
-      const samplesPerPixel = totalSamples / containerWidth;
 
-      const interpolatedNorm = new Array(containerWidth);
-      for (let i = 0; i < containerWidth; i++) {
-        const position = (i / containerWidth) * (norm.length - 1);
+      const barWidth = 3;
+      const gapWidth = 2;
+
+      const barCount = Math.floor(containerWidth / (barWidth + gapWidth));
+
+      const data = new Int8Array(containerWidth * 2).fill(0);
+
+      for (let i = 0; i < barCount; i++) {
+        const position = (i / barCount) * (norm.length - 1);
         const index = Math.floor(position);
         const fraction = position - index;
 
+        let value;
         if (index < norm.length - 1) {
-          interpolatedNorm[i] = norm[index] + fraction * (norm[index + 1] - norm[index]);
+          value = norm[index] + fraction * (norm[index + 1] - norm[index]);
         } else {
-          interpolatedNorm[i] = norm[index];
+          value = norm[index];
         }
-      }
 
-      // 2) Convert interpolation to audiowaveform v2 JSON (min/max 8-bit symmetric)
-      const data = new Int8Array(interpolatedNorm.length * 2);
-      for (let i = 0; i < interpolatedNorm.length; i++) {
-        const v = Math.max(0, Math.min(1, interpolatedNorm[i] || 0)) * 127; // 0 .. 127
+        const v = Math.max(0, Math.min(1, value || 0)) * 127;
         const p = Math.round(v) | 0;
-        data[i * 2] = -p; // min
-        data[i * 2 + 1] = p; // max
+
+        const barPosition = i * (barWidth + gapWidth);
+
+        for (let j = 0; j < barWidth; j++) {
+          if (barPosition + j < containerWidth) {
+            data[(barPosition + j) * 2] = -p;     // min
+            data[(barPosition + j) * 2 + 1] = p;  // max
+          }
+        }
       }
 
       const json = {
         version: 2 as const,
         channels: 1,
         sample_rate: 44100,
-        samples_per_pixel: samplesPerPixel,
+        samples_per_pixel: audioDuration * 44100 / containerWidth,
         bits: 8,
-        length: interpolatedNorm.length,
+        length: containerWidth,
         data: Array.from(data),
       };
 
       const wf = WaveformData.create(json);
       const wfJson = (wf as any).toJSON ? (wf as any).toJSON() : json;
 
+      const formatPlayheadTime = (time: number) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      };
+
       // 3) Init Peaks v3 (overview only)
       await new Promise<void>((resolve, reject) => {
         Peaks.init(
           {
-            overview: { container: el },
-            mediaElement: mediaElement,              // bind dummy now…
+            overview: {
+              container: el,
+              showAxisLabels: false,
+              showPlayheadTime: true,
+              playheadColor: '#ff5500',
+              playheadTextColor: '#fff',
+              waveformColor: '#ffffff',
+              playedWaveformColor: '#ff5500',
+              formatPlayheadTime: formatPlayheadTime,
+            },
+            mediaElement: mediaElement,
             waveformData: { json: wfJson },   // …and swap later to real <audio>
             // height: el?.clientHeight || 80,
-
-            // Colors
-            waveformColor: '#ffffff',
-            playheadColor: '#ff6b6b',
-            playheadTextColor: '#ffffff',
           },
           (err, instance) => {
             if (err) return reject(err);

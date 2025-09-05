@@ -75,6 +75,12 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
 
       {/* Controls */}
       <div className="mt-3 flex items-center gap-3">
+        <button
+          onClick={() => seek(Math.max(0, currentTime - 10))}
+          className="px-3 py-1 bg-gray-600 rounded"
+        >
+          -10s
+        </button>
         {!isPlaying ? (
           <button
             className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
@@ -91,6 +97,12 @@ function PlayerUnit({ label, id }: { label: string; id: string }) {
             Pause
           </button>
         )}
+        <button
+          onClick={() => seek(Math.min(duration, currentTime + 10))}
+          className="px-3 py-1 bg-gray-600 rounded"
+        >
+          +10s
+        </button>
 
         <div className="text-sm tabular-nums text-white/90">
           {fmt(currentTime)} / {fmt(duration)}

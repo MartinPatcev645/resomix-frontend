@@ -96,14 +96,26 @@ export function useHowler2(uuid?: string): UseHowlerResult {
 
   // lightweight ticker for currentTime
   useEffect(() => {
-    const id = window.setInterval(() => {
+    let animationFrameId: number;
+
+    const updateCurrentTime = () => {
       const h = howlRef.current;
       if (h && h.playing()) {
         setCurrentTime((h.seek() as number) || 0);
       }
-    }, 200);
-    return () => window.clearInterval(id);
-  }, []);
+      animationFrameId = requestAnimationFrame(updateCurrentTime);
+    };
+
+    if (isPlaying) {
+      animationFrameId = requestAnimationFrame(updateCurrentTime);
+    }
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isPlaying]);
 
   const play = useCallback(() => { howlRef.current?.play(); }, []);
   const pause = useCallback(() => { howlRef.current?.pause(); }, []);
