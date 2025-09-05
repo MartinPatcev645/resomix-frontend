@@ -22,38 +22,29 @@ export function usePeaks2(
   uuid: string
 ): UsePeaksReturn {
   const peaksRef = useRef<PeaksInstance | null>(null);
-  const dummyAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
 
   const destroy = useCallback(() => {
     try { peaksRef.current?.destroy(); } catch {}
     peaksRef.current = null;
-    // drop dummy
-    if (dummyAudioRef.current?.parentElement) {
-      dummyAudioRef.current.parentElement.removeChild(dummyAudioRef.current);
-    }
-    dummyAudioRef.current = null;
   }, []);
 
   const attachMediaElement = useCallback((el: HTMLAudioElement | null) => {
-    if (!peaksRef.current || !el) return;
-    // v3: use the player API to swap the media element
-    // @ts-expect-error: player typings vary across builds
-    if (peaksRef.current.player?.setMediaElement) {
-      // @ts-ignore
-      peaksRef.current.player.setMediaElement(el);
-    }
+    setMediaElement(el);
   }, []);
 
   useEffect(() => {
     const el = overviewRef.current;
-    if (!el || !uuid) return;
+    if (!el || !uuid || !mediaElement) return;
 
     let cancelled = false;
 
     async function init() {
+      if (!mediaElement || !el) return;
+
       setLoading(true);
       setError(null);
 
@@ -65,41 +56,53 @@ export function usePeaks2(
       if (!res.ok) throw new Error(`Peaks fetch failed (${res.status})`);
       const norm: number[] = await res.json();
 
-      // 2) Convert to audiowaveform v2 JSON (min/max 8-bit symmetric)
-      const data = new Int8Array(norm.length * 2);
-      for (let i = 0; i < norm.length; i++) {
-        const v = Math.max(0, Math.min(1, norm[i] || 0)) * 127; // 0..127
+
+      const audioDuration = norm.length;
+      const containerWidth = el.clientWidth;
+      const totalSamples = audioDuration * 44100;
+      const samplesPerPixel = totalSamples / containerWidth;
+
+      const interpolatedNorm = new Array(containerWidth);
+      for (let i = 0; i < containerWidth; i++) {
+        const position = (i / containerWidth) * (norm.length - 1);
+        const index = Math.floor(position);
+        const fraction = position - index;
+
+        if (index < norm.length - 1) {
+          interpolatedNorm[i] = norm[index] + fraction * (norm[index + 1] - norm[index]);
+        } else {
+          interpolatedNorm[i] = norm[index];
+        }
+      }
+
+      // 2) Convert interpolation to audiowaveform v2 JSON (min/max 8-bit symmetric)
+      const data = new Int8Array(interpolatedNorm.length * 2);
+      for (let i = 0; i < interpolatedNorm.length; i++) {
+        const v = Math.max(0, Math.min(1, interpolatedNorm[i] || 0)) * 127; // 0 .. 127
         const p = Math.round(v) | 0;
-        data[i * 2]     = -p;  // min
-        data[i * 2 + 1] =  p;  // max
+        data[i * 2] = -p; // min
+        data[i * 2 + 1] = p; // max
       }
 
       const json = {
         version: 2 as const,
         channels: 1,
         sample_rate: 44100,
-        samples_per_pixel: 44100, // 1 "pixel" = 1s (good enough for fixed bars)
+        samples_per_pixel: samplesPerPixel,
         bits: 8,
-        length: norm.length,
+        length: interpolatedNorm.length,
         data: Array.from(data),
       };
 
       const wf = WaveformData.create(json);
       const wfJson = (wf as any).toJSON ? (wf as any).toJSON() : json;
 
-      // 3) Create a dummy <audio> so Peaks can initialize immediately
-      const dummy = document.createElement('audio');
-      dummy.preload = 'none';
-      dummy.setAttribute('playsinline', '');
-      dummy.setAttribute('webkit-playsinline', '');
-      dummyAudioRef.current = dummy;
-
-      // 4) Init Peaks v3 (overview only)
+      // 3) Init Peaks v3 (overview only)
       await new Promise<void>((resolve, reject) => {
         Peaks.init(
           {
             overview: { container: el },
-            mediaElement: dummy,              // bind dummy now…
+            mediaElement: mediaElement,              // bind dummy now…
             waveformData: { json: wfJson },   // …and swap later to real <audio>
             // height: el?.clientHeight || 80,
 
@@ -127,7 +130,7 @@ export function usePeaks2(
       cancelled = true;
       destroy();
     };
-  }, [overviewRef, uuid, destroy]);
+  }, [overviewRef, uuid, destroy, mediaElement]);
 
   return { loading, error, destroy, attachMediaElement };
 }
