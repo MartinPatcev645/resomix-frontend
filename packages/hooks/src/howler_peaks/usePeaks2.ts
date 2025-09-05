@@ -78,14 +78,14 @@ export function usePeaks2(
           value = norm[index];
         }
 
-        const v = Math.max(0, Math.min(1, value || 0)) * 127;
+        const v = Math.max(0, Math.min(1, value || 0)) * 250;
         const p = Math.round(v) | 0;
 
         const barPosition = i * (barWidth + gapWidth);
 
         for (let j = 0; j < barWidth; j++) {
           if (barPosition + j < containerWidth) {
-            data[(barPosition + j) * 2] = -p;     // min
+            data[(barPosition + j) * 2] = 0;     // min
             data[(barPosition + j) * 2 + 1] = p;  // max
           }
         }
@@ -104,12 +104,6 @@ export function usePeaks2(
       const wf = WaveformData.create(json);
       const wfJson = (wf as any).toJSON ? (wf as any).toJSON() : json;
 
-      const formatPlayheadTime = (time: number) => {
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      };
-
       // 3) Init Peaks v3 (overview only)
       await new Promise<void>((resolve, reject) => {
         Peaks.init(
@@ -117,16 +111,15 @@ export function usePeaks2(
             overview: {
               container: el,
               showAxisLabels: false,
-              showPlayheadTime: true,
-              playheadColor: '#ff5500',
+              axisGridlineColor: '#222',
+              showPlayheadTime: false,
+              playheadColor: '#fff',
               playheadTextColor: '#fff',
               waveformColor: '#ffffff',
               playedWaveformColor: '#ff5500',
-              formatPlayheadTime: formatPlayheadTime,
             },
             mediaElement: mediaElement,
-            waveformData: { json: wfJson },   // …and swap later to real <audio>
-            // height: el?.clientHeight || 80,
+            waveformData: { json: wfJson },
           },
           (err, instance) => {
             if (err) return reject(err);

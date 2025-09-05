@@ -123,7 +123,11 @@ export default function PlayerPage() {
         .peaks-overview-container .peaks-axis {
           display: none !important;
         }
-        .peaks-overview-container canvas { opacity: 0.85; }
+        .peaks-overview-container canvas { opacity: 1; }
+        .konvajs-content {
+            position: absolute !important;
+            top: 20px;
+        }
       `}</style>
 
       <h2 className="mb-6 text-2xl font-bold">Simple Player (Peaks + Howler)</h2>
