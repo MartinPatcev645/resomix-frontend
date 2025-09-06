@@ -66,4 +66,4 @@ async def search_tracks_endpoint(
     
     - **query**: Search term to find matching tracks across titles, artists, albums, and other metadata
     """
-    return await search_controller.search_tracks(db, query) 
+    return await search_controller.search_tracks(db, query)
