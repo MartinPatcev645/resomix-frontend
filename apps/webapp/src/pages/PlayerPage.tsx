@@ -34,7 +34,7 @@ function PlayerUnit({
 }) {
   // 1) Peaks — draw immediately
   const overviewRef = useRef<HTMLDivElement | null>(null);
-  const { loading: wfLoading, error: wfError, setTime } = usePeaks2(overviewRef, id);
+  const { loading: wfLoading, error: wfError, setTime, attachMediaElement } = usePeaks2(overviewRef, id);
 
   // 2) Howler — preload; user clicks Play to start
   const {
@@ -95,6 +95,11 @@ function PlayerUnit({
     audioNode.addEventListener('ended', handleEnded);
     return () => audioNode.removeEventListener('ended', handleEnded);
   }, [getHtmlAudioNode, onEnded, id]);
+
+  const audioNode = getHtmlAudioNode();
+  useEffect(() => {
+    if (audioNode) attachMediaElement(audioNode);
+  }, [audioNode, attachMediaElement]);
 
   // click-to-seek on the waveform
   useEffect(() => {

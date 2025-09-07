@@ -5,6 +5,7 @@ export type UsePeaksReturn = {
   loading: boolean;
   error: string | null;
   setTime: (timeSec: number) => void;
+  attachMediaElement: (mediaElement: HTMLMediaElement)=>void;
 };
 
 export function usePeaks2(
@@ -12,10 +13,10 @@ export function usePeaks2(
   uuid: string
 ): UsePeaksReturn {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationRef = useRef<number>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [normalizedData, setNormalizedData] = useState<number[]>([]);
+  const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
@@ -34,8 +35,10 @@ export function usePeaks2(
 
     const width = canvas.width;
     const height = canvas.height;
+    if (width === 0 || height === 0) return;
+
     const barCount = Math.floor(width / (barWidth + gapWidth));
-    const timePercent = duration > 0 ? currentTime / duration : 0;
+    const timePercent = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
     const cursorPosition = width * timePercent;
 
     ctx.clearRect(0, 0, width, height);
@@ -59,12 +62,16 @@ export function usePeaks2(
     }
 
     ctx.fillStyle = cursorColor;
-    ctx.fillRect(cursorPosition, 0, 1, height);
+    ctx.fillRect(cursorPosition, 0.4 * height, barWidth, height);
   }, [normalizedData, currentTime, duration]);
+
+  const attachMediaElement = useCallback((el: HTMLAudioElement | null) => {
+    setMediaElement(el);
+  }, []);
 
   useEffect(() => {
     const el = overviewRef.current;
-    if (!el || !uuid) return;
+    if (!el || !uuid || !mediaElement) return;
 
     const canvas = document.createElement('canvas');
     canvas.style.width = '100%';
@@ -72,15 +79,9 @@ export function usePeaks2(
     canvasRef.current = canvas;
     el.appendChild(canvas);
 
-    const resizeObserver = new ResizeObserver(() => {
-      if (canvas) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-        drawWaveform();
-      }
-    });
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
 
-    resizeObserver.observe(canvas);
 
     const loadData = async () => {
       try {
@@ -104,28 +105,19 @@ export function usePeaks2(
     loadData();
 
     return () => {
-      resizeObserver.disconnect();
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
       if (canvasRef.current) {
         el.removeChild(canvas);
       }
     };
-  }, [overviewRef, uuid]);
+  }, [overviewRef, uuid, mediaElement]);
 
-  useEffect(() => {
-    animationRef.current = requestAnimationFrame(drawWaveform);
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [drawWaveform]);
 
   const setTime = useCallback((timeSec: number) => {
     setCurrentTime(timeSec);
-  }, []);
+    if (canvasRef.current) {
+      drawWaveform();
+    }
+  }, [drawWaveform]);
 
-  return { loading, error, setTime };
+  return { loading, error, setTime, attachMediaElement };
 }
