@@ -145,15 +145,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
         if (!howlerController || !isPlaying) return;
-        const t = howlerController.getCurrentTime();
-        howlerController.seek(Math.max(0, t - 10));
+        seek(Math.max(0, currentTime - 10));
     }, [howlerController, isPlaying]);
 
     const skipForward = useCallback(() => {
         if (!howlerController || !isPlaying) return;
-        const t = howlerController.getCurrentTime();
         const d = howlerController.getDuration();
-        howlerController.seek(Math.min(d, t + 10));
+        seek(Math.min(d, currentTime + 10));
     }, [howlerController, isPlaying]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
