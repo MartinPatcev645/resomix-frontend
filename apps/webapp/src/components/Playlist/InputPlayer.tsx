@@ -214,7 +214,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
 
                 <div className="flex flex-col w-full gap-[var(--px-5)]">
                     {/* Waveform */}
-                    <div className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]">
+                    <div className="h-[var(--px-50)] overflow-y-hidden w-full">
                         <WaveformPlayer
                             ref={waveformPlayerRef}
                             trackId={trackId}
