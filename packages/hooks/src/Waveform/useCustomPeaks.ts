@@ -1,0 +1,129 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+
+export type UsePeaksReturn = {
+  loading: boolean;
+  error: string | null;
+  setTime: (timeSec: number) => void;
+  attachMediaElement: (mediaElement: HTMLMediaElement)=>void;
+  attachOverviewElement: (overviewElement: HTMLDivElement)=>void;
+};
+
+export function useCustomPeaks(
+  uuid: string
+): UsePeaksReturn {
+  const [overviewElement, setOverviewElement] = useState<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [normalizedData, setNormalizedData] = useState<number[]>([]);
+  const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const barWidth = 3;
+  const gapWidth = 1;
+  const playedColor = '#ff5500';
+  const unplayedColor = '#ffffff';
+  const cursorColor = '#ffffff';
+
+  const drawWaveform = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !normalizedData.length) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    if (width === 0 || height === 0) return;
+
+    const barCount = Math.floor(width / (barWidth + gapWidth));
+    const timePercent = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+    const cursorPosition = width * timePercent;
+
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < barCount; i++) {
+      const position = (i / barCount) * (normalizedData.length - 1);
+      const index = Math.floor(position);
+      const value = normalizedData[index] || 0;
+      const barHeight = Math.max(1, value * height);
+
+      const x = i * (barWidth + gapWidth);
+      const isPlayed = x < cursorPosition;
+
+      ctx.fillStyle = isPlayed ? playedColor : unplayedColor;
+      ctx.fillRect(
+        x,
+        height - barHeight,
+        barWidth,
+        barHeight
+      );
+    }
+
+    ctx.fillStyle = cursorColor;
+    ctx.fillRect(cursorPosition, 0.4 * height, barWidth, height);
+  }, [normalizedData, currentTime, duration]);
+
+  const attachMediaElement = useCallback((el: HTMLAudioElement | null) => {
+    setMediaElement(el);
+  }, []);
+
+  const attachOverviewElement = useCallback((el: HTMLDivElement | null) => {
+    setOverviewElement(el);
+  }, []);
+
+  useEffect(() => {
+    const el = overviewElement;
+    if (!el || !uuid) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvasRef.current = canvas;
+    el.appendChild(canvas);
+
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`https://media.resomix.com/peaks/?uuid=${uuid}`, {
+          cache: 'no-store'
+        });
+
+        if (!res.ok) console.error(`Peaks fetch failed (${res.status})`);
+
+        const data = await res.json();
+        setNormalizedData(data);
+        setDuration(data.length);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!normalizedData.length && !loading) {
+      loadData();
+    }
+
+    return () => {
+      if (canvasRef.current) {
+        el.removeChild(canvas);
+      }
+    };
+  }, [overviewElement, uuid]);
+
+
+  const setTime = useCallback((timeSec: number) => {
+    setCurrentTime(timeSec);
+    if (canvasRef.current) {
+      drawWaveform();
+    }
+  }, [drawWaveform]);
+
+  return { loading, error, setTime, attachMediaElement, attachOverviewElement };
+}

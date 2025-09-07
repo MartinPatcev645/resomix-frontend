@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react';
+import {useCallback, useRef, useEffect, useState} from 'react';
 import { Howl } from 'howler';
 import { usePlayerStore } from '@resomix/stores';
 
@@ -9,6 +9,7 @@ export interface HowlerController {
   stop: () => void;
   seek: (timeSeconds: number) => void;
   getCurrentTime: () => number;
+  currentTime: number;
   getDuration: () => number;
   unload: () => void;
   getHtmlAudioNode: () => HTMLAudioElement | null;
@@ -22,6 +23,8 @@ export function useHowlerController(): HowlerController {
   const nextHowlRef = useRef<Howl | null>(null);
   const currentTrackIdRef = useRef<string | null>(null);
   const progressTimerRef = useRef<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
   const {
     setCurrentTrack,
@@ -70,6 +73,7 @@ export function useHowlerController(): HowlerController {
         }
       },
       onplay: () => {
+        setIsPlaying(true);
         setCurrentTrack(trackId);
         // Update MediaSession playback state
         if ('mediaSession' in navigator) {
@@ -85,6 +89,7 @@ export function useHowlerController(): HowlerController {
         }
       },
       onpause: () => {
+        setIsPlaying(false);
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'paused';
         }
@@ -94,6 +99,7 @@ export function useHowlerController(): HowlerController {
         }
       },
       onstop: () => {
+        setIsPlaying(false);
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'none';
         }
@@ -103,6 +109,7 @@ export function useHowlerController(): HowlerController {
         }
       },
       onend: () => {
+        setIsPlaying(false);
         if (progressTimerRef.current != null) {
           clearInterval(progressTimerRef.current);
           progressTimerRef.current = null;
@@ -117,10 +124,6 @@ export function useHowlerController(): HowlerController {
             navigator.mediaSession.playbackState = 'none';
           }
         }
-      },
-      onseek: () => {
-        const t = (howl.seek() as number) || 0;
-        setInputCurrentTime(t);
       },
       onloaderror: (_id, error) => {
         console.error('[HowlerController] Load error:', error);
@@ -141,12 +144,41 @@ export function useHowlerController(): HowlerController {
   const play = useCallback(() => currentHowlRef.current?.play(), []);
   const pause = useCallback(() => currentHowlRef.current?.pause(), []);
   const stop  = useCallback(() => currentHowlRef.current?.stop(),  []);
-  const seek  = useCallback((time: number) => {
-    currentHowlRef.current?.seek(Math.max(0, time));
+  const seek = useCallback((t: number) => {
+    setInputCurrentTime(t);
+    setCurrentTime(t);
+    currentHowlRef.current?.seek(Math.max(0, t));
+    const seekPos =  currentHowlRef.current?.seek();
+    if (seekPos == 0 && t > 0) {
+      setTimeout(() => seek(t), 100);
+    }
   }, []);
 
+  // lightweight ticker for currentTime
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const updateCurrentTime = () => {
+      const h = currentHowlRef.current;
+      if (h && h.playing()) {
+        setCurrentTime((h.seek() as number) || 0);
+      }
+      animationFrameId = requestAnimationFrame(updateCurrentTime);
+    };
+
+    if (isPlaying) {
+      animationFrameId = requestAnimationFrame(updateCurrentTime);
+    }
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isPlaying]);
+
   const getCurrentTime = useCallback(() => {
-    return currentHowlRef.current ? (currentHowlRef.current.seek() as number) : 0;
+    return currentTime
   }, []);
 
   const getDuration = useCallback(() => {
@@ -233,13 +265,15 @@ export function useHowlerController(): HowlerController {
     }
   }, [volume]);
 
+
   return { 
     load, 
     play, 
     pause, 
     stop, 
-    seek, 
-    getCurrentTime, 
+    seek,
+    getCurrentTime,
+    currentTime,
     getDuration, 
     unload, 
     getHtmlAudioNode,

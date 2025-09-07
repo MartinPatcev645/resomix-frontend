@@ -1,11 +1,11 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { usePlayerManager, usePeaksWaveform } from "@resomix/hooks";
+import {useHowlerController, usePlayerManager, useCustomPeaks} from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -32,36 +32,88 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         setVolume,
     } = usePlayerManager();
 
-    const isPlaying = currentTrackId === effectiveId;
+    const [isPlaying, setIsPlaying] = useState<boolean>(currentTrackId === effectiveId);
+
+    const waveformContainerRef = useRef<HTMLDivElement>(null);
+
+    const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId || '');
 
     // Get the GLOBAL controller from store (don't create new instance)
-    const howlerController = usePlayerStore((s) => s.howlerController);
+    function useHowlerControllerWithFallback() {
+        const storeController = usePlayerStore((s) => s.howlerController);
+        const defaultController = useHowlerController();
 
-    // Peaks waveform container
-    const waveformContainerRef = useRef<HTMLDivElement>(null);
+        return storeController || defaultController;
+    }
+
+    const howlerController = useHowlerControllerWithFallback();
+    const {
+        isLoaded,
+        seek,
+        currentTime,
+    } = howlerController;
 
     // Build audioUrl here
     const audioUrl = trackId
         ? `https://media.resomix.com/signed-audio/?uuid=${trackId}`
         : undefined;
 
-    // Bind Peaks to the current track (always show waveform, even when not playing)
-    const { isLoading, error } = usePeaksWaveform({
-        containerRef: waveformContainerRef,
-        trackId: effectiveId,
-        height: 50,
-        onReady: () => console.log('[InputPlayer] Peaks ready'),
-    });
-
-    const currentTime = usePlayerStore((s) => s.inputCurrentTime);
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
+
+    useEffect(() => {
+        if (!isLoaded) return;
+        setTime(currentTime);
+    }, [isLoaded, currentTime, setTime]);
 
     // Autoplay: register this track on mount if requested
     useEffect(() => {
+        howlerController.load(audioUrl, effectiveId);
         if (autoPlay && currentTrackId == null) {
             startPlaying(effectiveId);
         }
-    }, []); // eslint-disable-line
+    }, []);
+
+    const audioNode = howlerController.getHtmlAudioNode();
+    useEffect(() => {
+        if (audioNode) attachMediaElement(audioNode);
+        setTime(0);
+    }, [audioNode, attachMediaElement]);
+
+    // Load saved position from localStorage on mount
+    useEffect(() => {
+        if (isLoaded) {
+            const savedPosition = localStorage.getItem(`track-position-${trackId}`);
+            if (savedPosition) {
+                const position = parseFloat(savedPosition);
+                if (position < totalDuration) {
+                    seek(position);
+                }
+            }
+        }
+    }, [isLoaded, totalDuration, trackId, seek]);
+
+    // Save position to localStorage when it changes
+    useEffect(() => {
+        const el = waveformContainerRef.current;
+        if (!el || !isLoaded) return;
+        const onClick = (ev: MouseEvent) => {
+            const r = el.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+            if (totalDuration > 0) {
+                const newPosition = x * totalDuration;
+                seek(newPosition);
+                localStorage.setItem(`track-position-${trackId}`, newPosition.toString());
+            }
+        };
+        el.addEventListener('click', onClick);
+        return () => el.removeEventListener('click', onClick);
+    }, [isLoaded, totalDuration, seek, trackId, waveformContainerRef.current]);
+
+    useEffect(() => {
+        if (waveformContainerRef.current) {
+            attachOverviewElement(waveformContainerRef.current);
+        }
+    }, [waveformContainerRef.current]);
 
     // Reset readiness when the effective track identity changes
     const prevIdRef = useRef<string | null>(null);
@@ -80,13 +132,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         } else {
             if (audioUrl) {
                 // Load and play through the global controller
-                howlerController.load(audioUrl, effectiveId);
+                // howlerController.load(audioUrl, effectiveId);
                 howlerController.play();
                 setInputProviderReady(true);
             }
             // Set this as the current track
             startPlaying(effectiveId);
         }
+        setIsPlaying(prev=>!prev);
     };
 
     // skip +/- 10s (only works if this is the current track)
@@ -133,13 +186,12 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
                 </button>
 
                 <div className="flex flex-col w-full gap-[var(--px-5)]">
-                    {/* Waveform */}
                     <div
                         ref={waveformContainerRef}
                         className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
                     >
-                        {isLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
-                        {error && <div className="text-center text-sm text-red-500">Error: {error}</div>}
+                        {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
+                        {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
                     </div>
 
                     <div className="flex items-center justify-between w-full">

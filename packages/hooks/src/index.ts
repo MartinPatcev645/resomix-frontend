@@ -10,6 +10,7 @@ export * from './useFirstVisit';
 export { useWaveform } from "./Waveform/useWaveform";
 export { usePeaks } from "./Waveform/usePeaks";
 export { usePeaksWaveform } from "./Waveform/usePeaksWaveform";
+export {useCustomPeaks} from "./Waveform/useCustomPeaks";
 export * from './Playlist/usePlaylistLoader';
 export * from './Player/usePlayerManager';
 export * from './Player/useAudioContextUnlocker';
