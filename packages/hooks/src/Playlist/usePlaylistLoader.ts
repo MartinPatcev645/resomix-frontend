@@ -6,9 +6,11 @@ import { getPlaylistSimilarity } from '@resomix/api-client';
  * Fetches playlist similarity data when the store is empty but an `?id=`
  * parameter exists in the URL. The data is placed into the global playlist
  * store so any page can consume it.
+ * 
+ * First checks localStorage cache before making API call.
  */
 export function usePlaylistLoader() {
-  const { playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData } = usePlaylistStore();
+  const { playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData, loadCachedResponse } = usePlaylistStore();
 
   useEffect(() => {
     if (playlistData) return; // already have data
@@ -19,6 +21,15 @@ export function usePlaylistLoader() {
 
     (async () => {
       try {
+        // First check cache before API call
+        const cachedResponse = loadCachedResponse(id);
+        if (cachedResponse) {
+          // Found in cache, use cached data
+          setPlaylistResponse(cachedResponse);
+          return;
+        }
+
+        // Not in cache, fetch from API
         setLoading(true);
         const resp = await getPlaylistSimilarity(id);
         setLoading(false);
@@ -38,5 +49,5 @@ export function usePlaylistLoader() {
         setError('Failed to load playlist');
       }
     })();
-  }, [playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData]);
+  }, [playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData, loadCachedResponse]);
 }

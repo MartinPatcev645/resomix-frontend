@@ -12,7 +12,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 
 export function UploadPage() {
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
-  const { setPlaylistResponse } = usePlaylistStore();
+  const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
 
   const { handleSelectTrack } = useTrackSimilarity();
@@ -22,9 +22,23 @@ export function UploadPage() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (id) {
-      handleSelectTrack(id);
+      // First check cache before making API call
+      const cachedResponse = loadCachedResponse(id);
+      if (cachedResponse) {
+        // Found in cache, use cached data and navigate directly
+        setPlaylistResponse(cachedResponse);
+        const playlistId = cachedResponse.data?.playlist?.id || null;
+        if (playlistId) {
+          navigate(`/playlist?id=${playlistId}`);
+        } else {
+          navigate('/playlist');
+        }
+      } else {
+        // Not in cache, make API call
+        handleSelectTrack(id);
+      }
     }
-  }, [handleSelectTrack]);
+  }, [handleSelectTrack, loadCachedResponse, setPlaylistResponse, navigate]);
 
   // Watch for API completion and route to playlist
   React.useEffect(() => {

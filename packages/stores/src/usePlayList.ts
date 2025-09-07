@@ -28,6 +28,59 @@ export interface PlaylistResponse {
   data: PlaylistData
 }
 
+// Cache helper functions
+const saveResponseToCache = (response: PlaylistResponse): void => {
+  try {
+    const playlistId = response.data.playlist.id
+    const lastAccessedId = localStorage.getItem('lastAccessedPlaylist')
+    const cachedPlaylistsStr = localStorage.getItem('playlistsBackup')
+    
+    let cachedPlaylists: PlaylistResponse[] = []
+    if (cachedPlaylistsStr) {
+      try {
+        cachedPlaylists = JSON.parse(cachedPlaylistsStr)
+      } catch {
+        cachedPlaylists = []
+      }
+    }
+    
+    // Remove existing response with same ID if it exists
+    cachedPlaylists = cachedPlaylists.filter(p => p.data.playlist.id !== playlistId)
+    
+    // Add new response
+    cachedPlaylists.push(response)
+    
+    // Keep only last 2 responses
+    if (cachedPlaylists.length > 2) {
+      cachedPlaylists = cachedPlaylists.slice(-2)
+    }
+    
+    // Update localStorage
+    localStorage.setItem('lastAccessedPlaylist', playlistId)
+    localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists))
+  } catch (error) {
+    console.warn('Failed to save playlist to cache:', error)
+  }
+}
+
+const loadCachedResponse = (id?: string): PlaylistResponse | null => {
+  try {
+    const targetId = id || localStorage.getItem('lastAccessedPlaylist')
+    if (!targetId) return null
+    
+    const cachedPlaylistsStr = localStorage.getItem('playlistsBackup')
+    if (!cachedPlaylistsStr) return null
+    
+    const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
+    const foundResponse = cachedPlaylists.find(p => p.data.playlist.id === targetId)
+    
+    return foundResponse || null
+  } catch (error) {
+    console.warn('Failed to load playlist from cache:', error)
+    return null
+  }
+}
+
 // Zustand store interface
 interface PlaylistStore {
   // State
@@ -44,10 +97,13 @@ interface PlaylistStore {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   reset: () => void
+  // Cache actions
+  saveResponseToCache: (response: PlaylistResponse) => void
+  loadCachedResponse: (id?: string) => PlaylistResponse | null
 }
 
 // Create the Zustand store
-export const usePlaylistStore = create<PlaylistStore>((set) => ({
+export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   // Initial state with default data
   playlistData: null,
   isLoading: false,
@@ -60,6 +116,8 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
   setPlaylistResponse: (response) => {
     if (response.success) {
       set({ playlistData: response.data, error: null })
+      // Auto-save to cache when response is set
+      get().saveResponseToCache(response)
     } else {
       set({ error: 'Failed to load playlist data', playlistData: null })
     }
@@ -73,8 +131,18 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
   
   setError: (error) => set({ error }),
   
-  reset: () => set({ playlistData: null, isLoading: false, error: null, trackRatings: {} })
+  reset: () => set({ playlistData: null, isLoading: false, error: null, trackRatings: {} }),
+  
+  // Cache actions
+  saveResponseToCache,
+  loadCachedResponse
 }))
+
+// Pre-hydrate store with cached data on creation
+const cachedResponse = loadCachedResponse()
+if (cachedResponse) {
+  usePlaylistStore.getState().setPlaylistData(cachedResponse.data)
+}
 
 // Export default store for convenience
 export default usePlaylistStore
