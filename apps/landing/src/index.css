@@ -87,7 +87,7 @@ svg { vector-effect: non-scaling-stroke; }
   /* scale the REM unit for mobile */
   html {
     /* 16px at 393px viewport, ~10px at 250px, ~26px at 1023px */
-    font-size: clamp(10px, 4.07vw, 26px);
+    font-size: clamp(10px, 4.07vw, 41.6px);
     /* 4.07vw ≈ 16px at a 393px viewport (393 × 0.0407 ≈ 16) */
   }
 }

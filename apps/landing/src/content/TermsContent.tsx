@@ -1,134 +1,116 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { BASE_LANDING_URL } from "@resomix/config";
 
 export default function TermsContent() {
+  const { t } = useTranslation('common');
+  
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
 
         <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica hidden lg:block">TERMS OF SERVICE</h1>
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica block lg:hidden">TERMS<br />OF SERVICE</h1>
+          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica hidden lg:block">{t('terms.title')}</h1>
+          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica block lg:hidden" dangerouslySetInnerHTML={{ __html: t('terms.title_mobile') }}></h1>
           <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-            Please read these terms carefully before using our audio intelligence platform.
+            {t('terms.subheading')}
           </p>
           <p className="mt-[var(--px-8)] text-[length:var(--px-10)] font-extralight opacity-80 font-helvetica tracking-[var(--px-1)]">
-            Last updated: August 15, 2025
+            {t('terms.last_updated')}
           </p>
         </header>
 
         <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
-            <Link to={BASE_LANDING_URL} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</Link>
+            <Link to={BASE_LANDING_URL} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← {t('general.back_to_home')}</Link>
           </div>
 
           <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-            Please read these Terms of Service carefully before using the Resomix service. By accessing or
-            using our service, you agree to be bound by these Terms.
+            {t('terms.description')}
           </p>
 
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">1. Acceptance of Terms</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.acceptance_of_terms')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              By accessing or using the Resomix service, you affirm that you have read, understood, and agree to
-              be bound by these Terms of Service. If you do not agree to these Terms, you may not access or use
-              the service.
+              {t('terms.acceptance_of_terms_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">2. Description of Service</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.description_of_service')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              Resomix is a music analysis and recommendation service designed for DJs to find similar tracks
-              based on musical characteristics. The service analyzes uploaded audio files to provide music
-              recommendations.
+              {t('terms.description_of_service_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">3. User Accounts</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.user_accounts')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              You may be required to create an account to use certain features of the service. You are responsible
-              for maintaining the confidentiality of your account credentials and for all activities that occur under your account.
+              {t('terms.user_accounts_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">4. Content and Licensing</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.content_and_licensing')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              By uploading audio files to our service, you grant Resomix a non-exclusive, worldwide, royalty-free
-              license to use, process, and analyze the audio files for the purpose of providing recommendations
-              and improving our service.
+              {t('terms.content_and_licensing_1')}
             </p>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              You represent and warrant that you own or have the necessary rights, licenses, and permissions to
-              upload the content to our service, and that the content does not infringe on the intellectual property
-              rights of any third party.
+              {t('terms.content_and_licensing_2')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">5. Prohibited Uses</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.prohibited_uses')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              You agree not to use the service for any of the following:
+              {t('terms.prohibited_uses_1')}
             </p>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-              Uploading content that infringes on the intellectual property rights of others
+              {t('terms.prohibited_uses_2')}
             </p>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-              Uploading content that is illegal, harmful, threatening, or otherwise objectionable
+              {t('terms.prohibited_uses_3')}
             </p>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-              Attempting to gain unauthorized access to the service or its related systems
+              {t('terms.prohibited_uses_4')}
             </p>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-              Using the service to distribute malware or other harmful code
+              {t('terms.prohibited_uses_5')}
             </p>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-              Using the service in any way that could damage, disable, or impair the service
+              {t('terms.prohibited_uses_6')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">6. Disclaimer of Warranties</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.disclaimer_of_warranties')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY
-              KIND, EITHER EXPRESS OR IMPLIED. TO THE FULLEST EXTENT PERMISSIBLE UNDER
-              APPLICABLE LAW, RESOMIX DISCLAIMS ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO
-              IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-              NON-INFRINGEMENT.
+              {t('terms.disclaimer_of_warranties_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">7. Limitation of Liability</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.limitation_of_liability')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              RESOMIX SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
-              CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR USE OF
-              THE SERVICE, WHETHER BASED ON WARRANTY, CONTRACT, TORT, OR ANY OTHER LEGAL
-              THEORY.
+              {t('terms.limitation_of_liability_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">8. Modifications to Terms</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.modifications_to_terms')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              Resomix reserves the right to modify these Terms at any time. We will provide notice of significant
-              changes by posting the updated Terms on our website. Your continued use of the service after such
-              changes constitutes your acceptance of the new Terms.
+              {t('terms.modifications_to_terms_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">9. Termination</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.termination')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              Resomix may terminate or suspend your access to the service at any time, without prior notice, for
-              conduct that we believe violates these Terms or is harmful to the service, other users, or third parties.
+              {t('terms.termination_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">10. Governing Law</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.governing_law')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in
-              which Resomix operates, without regard to its conflict of law provisions.
+              {t('terms.governing_law_1')}
             </p>
           </section>
           <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Contact Us</h2>
+            <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('terms.contact_us')}</h2>
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-              If you have any questions about these Terms, please contact us at
+              {t('terms.contact_us_1')}
               <a href="mailto:legal@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary-hover-hover)] transition-colors"> legal@resomix.com</a>.
             </p>
           </section>
