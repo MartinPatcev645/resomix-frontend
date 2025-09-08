@@ -5,6 +5,7 @@ import CrossSvg from "@/assets/icons/cross.svg";
 import RIconsFooter from "@/assets/icons/r_icon_footer.svg";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
+import { useTranslation } from "react-i18next";
 
 interface MenuPageProps {
   onClose?: () => void;
@@ -12,6 +13,7 @@ interface MenuPageProps {
 
 const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
   const { showFeedbackForm } = useFeedbackStore();
+  const { t } = useTranslation('common');
 
   return (
     <div className="w-screen h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
@@ -37,28 +39,26 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/about`
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
-            [About Us]
+            [{t('general.menu.about_us')}]
           </div>
           <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
-            [Feedback]
+            [{t('general.menu.feedback')}]
           </div>
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/contact`
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
-            [Contact]
+            [{t('general.menu.contact')}]
           </div>
           <div className="">
             <img src={MenuSeparator} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
           <div className="w-full">
-            <ButtonHeavyRight className="w-[var(--px-276)]" text="Upload Your Track" onClick={() => {
+            <ButtonHeavyRight className="w-[var(--px-276)]" text={t('general.menu.upload_your_track')} onClick={() => {
               window.location.href = BASE_BETA_URL
             }} />
           </div>
         </div>
-        <div className="text-[length:var(--px-30)] font-normal font-benzin uppercase text-start">
-          Join the Resomix<br />
-          Universe
+        <div className="text-[length:var(--px-30)] font-normal font-benzin uppercase text-start" dangerouslySetInnerHTML={{ __html: t('general.menu.join_the_resomix_universe') }}>
         </div>
       </div>
     </div>

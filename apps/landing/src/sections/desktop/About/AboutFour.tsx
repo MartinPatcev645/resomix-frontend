@@ -3,8 +3,10 @@ import ArrowSmallUp from "@/assets/icons/arrow_small_up.svg"
 import PlaySvg from "@/assets/icons/play.svg"
 import { GoldenSpiral, ButtonHeavyRight } from "@resomix/ui";
 import { BASE_BETA_URL } from "@resomix/config";
+import { useTranslation } from 'react-i18next';
 
 const AboutFour: React.FC = () => {
+    const { t } = useTranslation('common');
     return (
         <div className="flex flex-col w-full gap-[var(--px-120)] mt-[var(--px-400)] relative z-20">
             <div className="absolute top-[var(--px-775)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-400)] h-[var(--px-400)] opacity-90">
@@ -14,22 +16,22 @@ const AboutFour: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 <div className="flex justify-between items-start">
                     <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-50)]">
-                        <span className="ml-[var(--px-100)]">Who<br /></span>
+                        <span className="ml-[var(--px-100)]">{t('about.about_four.headline_who')}<br /></span>
                         <div className="flex items-center gap-[var(--px-10)]">
                             <img src={ArrowSmallUp} alt="arrow_small_up" className="w-[var(--px-43)] h-[var(--px-43)]" />
-                            Resomix<br />
+                            {t('about.about_four.headline_resomix')}<br />
                         </div>
-                        <span className="ml-[var(--px-53)]">is for</span>
+                        <span className="ml-[var(--px-53)]">{t('about.about_four.headline_is_for')}</span>
                     </div>
                     <div className="flex flex-col items-start mr-[var(--px-100)] gap-[var(--px-20)]">
                         <div className="flex gap-[var(--px-20)] z-15">
                             <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                    DJs
+                                    {t('about.about_four.audience_djs_title')}
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — who need the perfect tracks to make their sets unforgettable.
+                                    {t('about.about_four.audience_djs_desc')}
                                 </div>
                             </div>
                         </div>
@@ -37,10 +39,10 @@ const AboutFour: React.FC = () => {
                             <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                    Producers
+                                    {t('about.about_four.audience_producers_title')}
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — looking for new inspiration to reflect a song's vibe.
+                                    {t('about.about_four.audience_producers_desc')}
                                 </div>
                             </div>
                         </div>
@@ -48,10 +50,10 @@ const AboutFour: React.FC = () => {
                             <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                    Curators
+                                    {t('about.about_four.audience_curators_title')}
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — who create cohesive playlists with their unique taste.
+                                    {t('about.about_four.audience_curators_desc')}
                                 </div>
                             </div>
                         </div>
@@ -59,10 +61,10 @@ const AboutFour: React.FC = () => {
                             <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                    Music Enthusiasts
+                                    {t('about.about_four.audience_music_enthusiasts_title')}
                                 </div>
                                 <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                    — exploring the boundaries of music, beyond charts or trends.
+                                    {t('about.about_four.audience_music_enthusiasts_desc')}
                                 </div>
                             </div>
                         </div>
@@ -72,22 +74,20 @@ const AboutFour: React.FC = () => {
 
             {/* CTA Button */}
             <div className="w-full flex justify-center items-center">
-                <ButtonHeavyRight text="Try it Now" onClick={() => {
+                <ButtonHeavyRight text={t('about.about_four.cta_try_it_now')} onClick={() => {
                     window.location.href = BASE_BETA_URL
                 }} transparent={true} link_arrow={true} />
             </div>
 
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-400)] w-full z-15">
-                <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-left w-full">
-                    Resomix is run by DJs, engineers,<br />and music professionals
+                <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-left w-full" dangerouslySetInnerHTML={{ __html: t('about.about_four.run_by') }}>
                 </div>
                 <div className="flex flex-col items-end w-full">
-                    <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-right">
-                        We want to build a better way<br />to discover and enjoy music across genres
+                    <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-right" dangerouslySetInnerHTML={{ __html: t('about.about_four.mission') }}>
                     </div>
                     <div className="text-[length:var(--px-17)] font-extralight font-helvetica leading-[var(--px-25)] tracking-[var(--px-1)] underline opacity-80 hover:opacity-100 transition-opacity duration-100 hover:cursor-pointer text-right w-full">
-                        Reach us anytime: hello@resomix.com
+                        {t('about.about_four.contact_reach_us')} hello@resomix.com
                     </div>
                 </div>
             </div>

@@ -8,8 +8,10 @@ import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
 import LayersSvg from "@/assets/icons/layers.svg"
 import GradientFive from "@/assets/images/gradient 5.png"
 import GradientSix from "@/assets/images/gradient 6.png"
+import { useTranslation } from 'react-i18next';
 
 const AboutThree: React.FC = () => {
+    const { t } = useTranslation('common');
     return (
         <div className="flex flex-col w-full gap-[var(--px-500)] mt-[var(--px-450)] relative z-20">
             {/* About 2 A */}
@@ -25,32 +27,28 @@ const AboutThree: React.FC = () => {
                 {/* Content */}
                 <div className="flex w-full z-15 items-end justify-between">
                     <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)]">
-                        Resomix searches across catalogs and archives using carefully developed similarity patterns.
+                        {t('about.about_three.intro')}
                         <br />
-                        <span className="font-extralight">
-                            Popularity metrics are not taken into account in the research, which is why our platform makes it easier to<br />uncover hidden gems, unknown albums, and artists flying under the radar.
+                        <span className="font-extralight" dangerouslySetInnerHTML={{ __html: t('about.about_three.intro_span') }}>
                         </span>
                     </div>
-                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)] text-right">
-                        Beyond<br />Trends
+                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)] text-right" dangerouslySetInnerHTML={{ __html: t('about.about_three.heading_beyond') }}>
                     </div>
                 </div>
             </div>
 
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-100)] w-full z-15 items-center">
-                <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]">
-                    Values &<br />Benefits
+                <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.heading_values_benefits') }}>
                 </div>
                 <div className="flex flex-col gap-[var(--px-100)] items-start ml-[var(--px-120)]">
                     <div className="flex gap-[var(--px-20)] z-15">
                         <img src={AnalysisSvg} alt="analysis" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                Discovery Based on Sound
+                                {t('about.about_three.card_discovery_title')}
                             </div>
-                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                Resomix starts off by reading the spectral flow of the audio provided. It compares<br />rhythm, tone, and spectral fingerprints of music online until it finds the right fits.
+                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.card_discovery_desc') }}>
                             </div>
                         </div>
                     </div>
@@ -58,10 +56,10 @@ const AboutThree: React.FC = () => {
                         <img src={CraftSvg} alt="craft" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                Simplicity and Efficiency
+                                {t('about.about_three.card_simplicity_title')}
                             </div>
                             <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                Resomix's interface is fast, focused, and intuitive: simply drag, drop, and dig.
+                                {t('about.about_three.card_simplicity_desc')}
                             </div>
                         </div>
                     </div>
@@ -69,10 +67,9 @@ const AboutThree: React.FC = () => {
                         <img src={ReferenceSvg} alt="reference" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                Real Inclusion
+                                {t('about.about_three.card_inclusion_title')}
                             </div>
-                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                Here, underrepresented artists and genres can find their audience and thrive,<br />with a discovery engine that prioritizes sonic similarities above all else.
+                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.card_inclusion_desc') }}>
                             </div>
                         </div>
                     </div>
@@ -80,10 +77,10 @@ const AboutThree: React.FC = () => {
                         <img src={SpeedSvg} alt="speed" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                Built For Speed
+                                {t('about.about_three.card_speed_title')}
                             </div>
                             <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                By sampling micro-transients in real time, Resomix delivers fast, latency-tested results.
+                                {t('about.about_three.card_speed_desc')}
                             </div>
                         </div>
                     </div>
@@ -91,10 +88,9 @@ const AboutThree: React.FC = () => {
                         <img src={SoundWavesTwo} alt="sound waves" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                Open by Nature
+                                {t('about.about_three.card_open_title')}
                             </div>
-                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                Transparent data, open APIs, and clear licensing. Resomix makes it easy for partners,<br />labels, platforms,and developers to collaborate and create a more open music ecosystem.
+                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.card_open_desc') }}>
                             </div>
                         </div>
                     </div>
@@ -102,10 +98,9 @@ const AboutThree: React.FC = () => {
                         <img src={LayersSvg} alt="layers" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                Quality over Quantity
+                                {t('about.about_three.card_quality_title')}
                             </div>
-                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                Resomix filters results with care, and lets you control how many recommendations you <br />see every time.
+                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.card_quality_desc') }}>
                             </div>
                         </div>
                     </div>
@@ -113,10 +108,9 @@ const AboutThree: React.FC = () => {
                         <img src={MatchesSvg} alt="matches" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
-                                The Art of Crate Digging
+                                {t('about.about_three.card_crate_title')}
                             </div>
-                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]">
-                                You still make the call; we only help you get there quicker. Resomix is a platform that'll<br />broaden your sonic horizon by exposing you to songs that might never appear through<br />standard search or streaming algorithms.
+                            <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] font-extralight text-left w-full leading-[var(--px-20)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.card_crate_desc') }}>
                             </div>
                         </div>
                     </div>
