@@ -87,7 +87,7 @@ const AboutFour: React.FC = () => {
                     <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-right" dangerouslySetInnerHTML={{ __html: t('about.about_four.mission') }}>
                     </div>
                     <div className="text-[length:var(--px-17)] font-extralight font-helvetica leading-[var(--px-25)] tracking-[var(--px-1)] underline opacity-80 hover:opacity-100 transition-opacity duration-100 hover:cursor-pointer text-right w-full">
-                        {t('about.about_four.contact_reach_us')} hello@resomix.com
+                        {t('about.about_four.contact_reach_us')} support@resomix.com
                     </div>
                 </div>
             </div>
