@@ -129,6 +129,14 @@ from .spotify_transfer import (
     SpotifyTransferErrorResponse,
 )
 
+# Waitlist schemas
+from .waitlist import (
+    WaitlistRequest,
+    WaitlistResponse,
+    WaitlistSuccessResponse,
+    WaitlistErrorResponse,
+)
+
 # Make all schemas available at package level
 __all__ = [
     # Common
@@ -224,4 +232,10 @@ __all__ = [
     "SpotifyTransferRequest",
     "SpotifyTransferResponse",
     "SpotifyTransferErrorResponse",
+
+    # Waitlist
+    "WaitlistRequest",
+    "WaitlistResponse",
+    "WaitlistSuccessResponse",
+    "WaitlistErrorResponse",
 ]

@@ -17,6 +17,7 @@ from .feedback import Feedback
 from .contact import Contact
 from .user import Role, Permission, RolePermission, UserRole
 from .log import Log
+from .waitlist import Waitlist
 
 # Make models available at package level
 __all__ = [
@@ -29,5 +30,5 @@ __all__ = [
     "Purchase", "UserSubscription",
     "Feedback", "Contact",
     "Role", "Permission", "RolePermission", "UserRole",
-    "Log"
+    "Log", "Waitlist"
 ]
