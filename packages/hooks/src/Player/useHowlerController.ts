@@ -14,7 +14,7 @@ export interface HowlerController {
   unload: () => void;
   getHtmlAudioNode: () => HTMLAudioElement | null;
   preloadNext: (url: string, trackId: string) => void;
-  isLoaded: () => boolean;
+  isLoaded: boolean;
   getLoadingProgress: () => number;
 }
 
@@ -25,6 +25,7 @@ export function useHowlerController(): HowlerController {
   const progressTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const {
     setCurrentTrack,
@@ -65,12 +66,15 @@ export function useHowlerController(): HowlerController {
       preload: true,  // start loading immediately
       volume,
       onload: () => {
+        setIsLoaded(true);
+        /*
         const node = (howl as any)?._sounds?.[0]?._node ?? null;
         if (node) {
           setAudioNode(node);
           // Setup MediaSession for iOS/Android lock screen
           setupMediaSession(node);
         }
+         */
       },
       onplay: () => {
         setIsPlaying(true);
@@ -233,10 +237,6 @@ export function useHowlerController(): HowlerController {
     (nextHowl as any)._trackId = trackId;
     nextHowlRef.current = nextHowl;
   }, [volume]);
-
-  const isLoaded = useCallback(() => {
-    return currentHowlRef.current?.state() === 'loaded';
-  }, []);
 
   const getLoadingProgress = useCallback(() => {
     const howl = currentHowlRef.current;

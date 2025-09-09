@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 export type UsePeaksReturn = {
   loading: boolean;
   error: string | null;
-  setTime: (timeSec: number) => void;
+  setTime: (timeSec: number, isImmediatelly?: boolean) => void;
   attachMediaElement: (mediaElement: HTMLMediaElement)=>void;
   attachOverviewElement: (overviewElement: HTMLDivElement)=>void;
 };
@@ -19,6 +19,7 @@ export function useCustomPeaks(
   const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const debounceRef = useRef<any | null>(null);
 
   const barWidth = 3;
   const gapWidth = 1;
@@ -26,7 +27,7 @@ export function useCustomPeaks(
   const unplayedColor = '#ffffff';
   const cursorColor = '#ffffff';
 
-  const drawWaveform = useCallback(() => {
+  const drawWaveform = useCallback((time: number = 0) => {
     const canvas = canvasRef.current;
     if (!canvas || !normalizedData.length) return;
 
@@ -38,7 +39,7 @@ export function useCustomPeaks(
     if (width === 0 || height === 0) return;
 
     const barCount = Math.floor(width / (barWidth + gapWidth));
-    const timePercent = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+    const timePercent = duration > 0 ? Math.min(time / duration, 1) : 0;
     const cursorPosition = width * timePercent;
 
     ctx.clearRect(0, 0, width, height);
@@ -63,7 +64,7 @@ export function useCustomPeaks(
 
     ctx.fillStyle = cursorColor;
     ctx.fillRect(cursorPosition, 0.4 * height, barWidth, height);
-  }, [normalizedData, currentTime, duration]);
+  }, [normalizedData, duration]);
 
   const attachMediaElement = useCallback((el: HTMLAudioElement | null) => {
     setMediaElement(el);
@@ -117,12 +118,27 @@ export function useCustomPeaks(
     };
   }, [overviewElement, uuid]);
 
+  useEffect(()=>{
+    drawWaveform(currentTime);
+  }, [normalizedData, duration, canvasRef]);
 
-  const setTime = useCallback((timeSec: number) => {
+
+  const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
     setCurrentTime(timeSec);
-    if (canvasRef.current) {
-      drawWaveform();
+    if (isImmediatelly) {
+      drawWaveform(timeSec);
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+      return;
     }
+    if (debounceRef.current) {
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      drawWaveform(timeSec);
+      debounceRef.current = null;
+    }, 100);
+
   }, [drawWaveform]);
 
   return { loading, error, setTime, attachMediaElement, attachOverviewElement };

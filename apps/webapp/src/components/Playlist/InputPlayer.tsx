@@ -56,7 +56,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     // Build audioUrl here
     const audioUrl = trackId
         ? `https://media.resomix.com/signed-audio/?uuid=${trackId}`
-        : undefined;
+        : '';
 
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
 
@@ -76,7 +76,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     const audioNode = howlerController.getHtmlAudioNode();
     useEffect(() => {
         if (audioNode) attachMediaElement(audioNode);
-        setTime(0);
     }, [audioNode, attachMediaElement]);
 
     // Load saved position from localStorage on mount
@@ -87,10 +86,22 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
                 const position = parseFloat(savedPosition);
                 if (position < totalDuration) {
                     seek(position);
+                    setTime(position,  true);
                 }
             }
         }
     }, [isLoaded, totalDuration, trackId, seek]);
+
+    useEffect(()=>{
+        const tmp: boolean = currentTrackId === effectiveId;
+        if (tmp !== isPlaying) {
+            setIsPlaying(tmp);
+            if (!tmp) {
+                howlerController.pause();
+            }
+        }
+    }, [currentTrackId]);
+
 
     // Save position to localStorage when it changes
     useEffect(() => {
@@ -102,6 +113,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
                 seek(newPosition);
+                setTime(newPosition,  true);
                 localStorage.setItem(`track-position-${trackId}`, newPosition.toString());
             }
         };
@@ -139,20 +151,19 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
             // Set this as the current track
             startPlaying(effectiveId);
         }
-        setIsPlaying(prev=>!prev);
     };
 
     // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
-        if (!howlerController || !isPlaying) return;
+        if (!howlerController) return;
         seek(Math.max(0, currentTime - 10));
-    }, [howlerController, isPlaying]);
+    }, [howlerController]);
 
     const skipForward = useCallback(() => {
-        if (!howlerController || !isPlaying) return;
+        if (!howlerController) return;
         const d = howlerController.getDuration();
         seek(Math.min(d, currentTime + 10));
-    }, [howlerController, isPlaying]);
+    }, [howlerController]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
