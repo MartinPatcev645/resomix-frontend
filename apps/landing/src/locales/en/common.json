@@ -143,6 +143,20 @@
             "contact_reach_us": "Reach us anytime:"
         }
     },
+    "waitlist": {
+        "title": "JOIN THE WAITLIST",
+        "subheading": "Be the first to experience the future of music discovery for DJs.",
+        "description": "We're putting the finishing touches on Resomix. Join our waitlist to get early access and enjoy exclusive early bird advantages when we launch.",
+        "email_label": "Email Address",
+        "email_placeholder": "your.email@example.com",
+        "email_required": "Email address is required.",
+        "invalid_email": "Please enter a valid email address.",
+        "join_button": "Join Waitlist",
+        "submitting": "Joining...",
+        "success_message": "Successfully joined the waitlist! We'll notify you when we're ready to launch.",
+        "error_message": "Something went wrong. Please try again.",
+        "footer_note": "We respect your privacy and will only use your email to notify you about our launch."
+    },
     "general": {
         "back_to_home": "Back to Home",
         "menu": {

@@ -76,7 +76,7 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
                     inquiries:
                   </div>
                   <div className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica  leading-[var(--px-17)]">
-                    Email: <a href="mailto:business@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">business@resomix.com</a>
+                    Email: <a href="mailto:support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">support@resomix.com</a>
                   </div>
                   <div className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica  leading-[var(--px-17)]">
                     Phone: <a href="tel:+15551234567" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">+1 (555) 123-4567</a>

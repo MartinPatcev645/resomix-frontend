@@ -111,7 +111,7 @@ export default function PrivacyContent() {
                         <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.contact_us')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
                             {t('privacy.contact_us_1')}
-                            <a href="mailto:privacy@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary-hover-hover)] transition-colors"> privacy@resomix.com</a>.
+                            <a href="mailto:support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary-hover-hover)] transition-colors"> support@resomix.com</a>.
                         </p>
                     </section>
                 </div>
