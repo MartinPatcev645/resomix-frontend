@@ -7,4 +7,5 @@ export * from "./audio";
 export * from "./playlists";
 export * from "./tidal";
 export * from "./peaks";
+export * from "./waitlist";
 export { default as apiAxiosInstance } from "./utils";

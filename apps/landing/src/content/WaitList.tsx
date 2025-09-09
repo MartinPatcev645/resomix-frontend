@@ -1,6 +1,7 @@
 import { ButtonSleek } from "@resomix/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useWaitlist } from "@resomix/hooks";
 
 interface WaitListContentProps {
   baseUrl?: string;
@@ -9,10 +10,17 @@ interface WaitListContentProps {
 export default function WaitListContent({ baseUrl = "https://resomix.com" }: WaitListContentProps) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
-  const [statusType, setStatusType] = useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = useState('');
+  
+  const { 
+    isLoading, 
+    error, 
+    success, 
+    joinWaitlist: joinWaitlistAPI,
+    clearError,
+    clearSuccess
+  } = useWaitlist();
 
   const validateEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -20,39 +28,47 @@ export default function WaitListContent({ baseUrl = "https://resomix.com" }: Wai
 
   const handleSubmit = async () => {
     if (!email.trim()) {
-      setStatusType('error');
       setStatusMessage(t('waitlist.email_required'));
       setShowStatus(true);
       return;
     }
 
     if (!validateEmail(email)) {
-      setStatusType('error');
       setStatusMessage(t('waitlist.invalid_email'));
       setShowStatus(true);
       return;
     }
 
-    setStatusType('loading');
+    // Clear previous states
+    clearError();
+    clearSuccess();
     setShowStatus(true);
-    setSubmitting(true);
 
     try {
-      // TODO: Replace with actual waitlist API call
-      // const result = await submitWaitlistForm({ email: email.trim() });
+      const result = await joinWaitlistAPI(email.trim());
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStatusType('success');
-      setStatusMessage(t('waitlist.success_message'));
-      setEmail('');
+      if (result.success) {
+        setStatusMessage(t('waitlist.success_message'));
+        setEmail('');
+      } else {
+        setStatusMessage(result.error || t('waitlist.error_message'));
+      }
     } catch (error) {
-      setStatusType('error');
       setStatusMessage(t('waitlist.error_message'));
-    } finally {
-      setSubmitting(false);
     }
+  };
+
+  const getStatusType = (): 'loading' | 'success' | 'error' => {
+    if (isLoading) return 'loading';
+    if (success) return 'success';
+    if (error || statusMessage.includes('required') || statusMessage.includes('invalid')) return 'error';
+    return 'loading';
+  };
+
+  const getDisplayMessage = (): string => {
+    if (isLoading) return t('waitlist.submitting');
+    if (error) return error;
+    return statusMessage;
   };
 
   return (
@@ -92,23 +108,25 @@ export default function WaitListContent({ baseUrl = "https://resomix.com" }: Wai
                 type="email" 
                 className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica" 
                 placeholder={t('waitlist.email_placeholder')}
+                disabled={isLoading}
               />
             </div>
             
             <div className="mt-[var(--px-20)]">
               <ButtonSleek 
-                text={submitting ? t('waitlist.submitting') : t('waitlist.join_button')} 
-                onClick={handleSubmit} 
+                text={isLoading ? t('waitlist.submitting') : t('waitlist.join_button')} 
+                onClick={handleSubmit}
+                disabled={isLoading}
               />
             </div>
             
             {showStatus && (
               <div className={`mt-[var(--px-10)] p-[var(--px-10)] rounded-[var(--px-5)] text-[length:var(--px-12)] font-light font-helvetica ${
-                statusType === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
-                statusType === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                getStatusType() === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                getStatusType() === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
                 'bg-blue-100 text-blue-800 border border-blue-200'
               }`}>
-                {statusMessage}
+                {getDisplayMessage()}
               </div>
             )}
           </div>

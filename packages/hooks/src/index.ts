@@ -18,3 +18,4 @@ export * from './Contact/useContactSubmit'
 export type { WaveformTheme } from "./Waveform/useWaveform";
 export * from './meta/useMetatags'
 export * from './Playlist/usePlaylistExport';
+export * from './useWaitlist';
