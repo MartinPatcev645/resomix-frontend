@@ -26,6 +26,7 @@ from .monthly_pipeline import router as monthly_pipeline_router
 from .ratings import router as ratings_router
 from .spotify_transfer import router as spotify_transfer_router
 from .tidal_transfer import router as tidal_transfer_router
+from .waitlist import router as waitlist_router
 
 # List of all routers for easy inclusion
 all_routers = [
@@ -41,4 +42,5 @@ all_routers = [
     ratings_router,
     spotify_transfer_router,
     tidal_transfer_router,
+    waitlist_router,
 ]
