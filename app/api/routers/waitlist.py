@@ -72,7 +72,6 @@ async def join_waitlist_endpoint(
     
     - **email**: The email address to add to the waitlist
     """
-    print(request_data)
     return await waitlist_controller.add_to_waitlist(db, request_data.dict())
 
 
