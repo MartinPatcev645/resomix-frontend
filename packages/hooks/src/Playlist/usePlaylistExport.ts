@@ -105,8 +105,45 @@ export function usePlaylistExport() {
     }
   }, []);
 
+  const exportAndDownloadPlaylist = useCallback(async () => {
+    if (!playlistData) {
+      throw new Error('No playlist data available to export');
+    }
+
+    setIsExporting(true);
+
+    try {
+      // Add a small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Format the playlist content
+      const content = formatPlaylistForExport(playlistData);
+      
+      // Generate filename
+      const filename = generateFilename(playlistData);
+      
+      // Download the file immediately
+      downloadFile(content, filename);
+      
+      return { 
+        success: true, 
+        filename,
+        content
+      };
+    } catch (error) {
+      console.error('Export and download failed:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    } finally {
+      setIsExporting(false);
+    }
+  }, [playlistData, formatPlaylistForExport, generateFilename, downloadFile]);
+
   return {
     exportPlaylist,
+    exportAndDownloadPlaylist,
     downloadFile,
     canExport: !!playlistData,
     isExporting,
