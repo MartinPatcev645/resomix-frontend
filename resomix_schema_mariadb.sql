@@ -261,6 +261,18 @@ CREATE TABLE IF NOT EXISTS contact (
     KEY idx_fb_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/* ---------- 8. Waitlist ---------------------------- */
+
+CREATE TABLE IF NOT EXISTS waitlist (
+    id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email     VARCHAR(255) NOT NULL UNIQUE,
+    status    ENUM('pending','approved','rejected') DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_waitlist_email (email),
+    KEY idx_waitlist_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 /* ==========================================================
    Indexing & performance notes
    ----------------------------------------------------------
