@@ -12,14 +12,14 @@ export const SideLines: React.FC<SideLinesProps> = ({ children, navbar, hero, mo
     <>
         <div className="hidden lg:block">
             {/* Four lines around hero section to maintain design consistency */}
-            {/* <div className="absolute left-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+            <div className="absolute left-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
             </div>
             <div className="absolute right-0 top-[var(--px-65)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
             </div>
             <div className="absolute left-0 top-[var(--px-691)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
             </div>
             <div className="absolute right-0 top-[var(--px-691)] w-[var(--px-63)] border-t border-slate-200 border-dotted pointer-events-none z-1">
-            </div> */}
+            </div>
 
             {/* Content */}
             <div className={`${className ?? "mx-[var(--px-20)] md:mx-[var(--px-63)] relative"}`}>
