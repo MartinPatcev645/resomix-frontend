@@ -250,6 +250,68 @@ export const usePlayerManager = () => {
     return () => clearInterval(interval);
   }, [howlerController, currentTrackId, autoplay, getNextTrack]);
 
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    const hasPrev = currentTrackIndex > 0;
+    const hasNext = !!getNextTrack();
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      howler.play();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      howler.pause();
+    });
+
+    navigator.mediaSession.setActionHandler(
+      'previoustrack',
+      hasPrev ? () => { console.log('[MS] prev'); playPrevious(); } : null
+    );
+    navigator.mediaSession.setActionHandler(
+      'nexttrack',
+      hasNext ? () => { console.log('[MS] next'); playNext(); } : null
+    );
+
+    navigator.mediaSession.setActionHandler('seekbackward', (e: any) => {
+      const offset = e?.seekOffset ?? 10;
+      howler.seek(howler.getCurrentTime() - offset);
+    });
+    navigator.mediaSession.setActionHandler('seekforward', (e: any) => {
+      const offset = e?.seekOffset ?? 10;
+      howler.seek(howler.getCurrentTime() + offset);
+    });
+
+    navigator.mediaSession.setActionHandler('seekto', (details: any) => {
+      if (details?.seekTime != null) howler.seek(details.seekTime);
+    });
+
+    return () => {
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+      navigator.mediaSession.setActionHandler('seekbackward', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
+    };
+  }, [howler, playNext, playPrevious, currentTrackIndex, getNextTrack]);
+
+  function updatePositionState() {
+    if (!('mediaSession' in navigator)) return;
+    const duration = howler.getDuration();
+    const position = howler.getCurrentTime();
+    if (!duration || !isFinite(duration)) return;
+    navigator.mediaSession.setPositionState({
+      duration,
+      position,
+      playbackRate: 1
+    });
+  }
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const id = setInterval(updatePositionState, 500);
+    return () => clearInterval(id);
+  }, [howler, currentTrackId]);
+
   // Play first track in playlist
   const playFirst = useCallback(() => {
     if (allTrackIds.length === 0) return false

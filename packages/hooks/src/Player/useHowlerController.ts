@@ -59,23 +59,6 @@ export function getGlobalHowlerController(): HowlerController {
     }
   }
 
-  function setupMediaSession(audioElement: HTMLAudioElement) {
-    if (!('mediaSession' in navigator)) return;
-    audioElement.setAttribute('playsinline', '');
-    audioElement.setAttribute('webkit-playsinline', '');
-    navigator.mediaSession.setActionHandler('play', () => play());
-    navigator.mediaSession.setActionHandler('pause', () => pause());
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-      window.dispatchEvent(new CustomEvent('resomix:previous-track'));
-    });
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-      window.dispatchEvent(new CustomEvent('resomix:next-track'));
-    });
-    navigator.mediaSession.setActionHandler('seekto', (details: any) => {
-      if (details.seekTime && currentHowl) currentHowl.seek(details.seekTime);
-    });
-  }
-
   function load(trackId: string, isPlayAfter:boolean = false) {
 
     if (!trackId) {
@@ -102,7 +85,6 @@ export function getGlobalHowlerController(): HowlerController {
       const node = (currentHowl as any)?._sounds?.[0]?._node ?? null;
       if (node) {
         setAudioNode(node);
-        setupMediaSession(node);
       }
 
       const saved = getTrackTime(trackId);
@@ -173,7 +155,6 @@ export function getGlobalHowlerController(): HowlerController {
     const node = (howl as any)?._sounds?.[0]?._node ?? null;
     if (node) {
       setAudioNode(node);
-      setupMediaSession(node);
     }
   }
 
