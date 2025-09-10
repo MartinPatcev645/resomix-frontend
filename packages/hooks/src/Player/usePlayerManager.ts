@@ -95,7 +95,7 @@ export const usePlayerManager = () => {
       let trackInfo = null;
 
       // Find track info from playlist data
-      if (trackId === 'uploaded-local' && playlistData.queried_track) {
+      if (trackId === playlistData.queried_track?.id) {
         trackInfo = playlistData.queried_track;
       } else {
         trackInfo = playlistData.similar_tracks?.find(track => track.id === trackId);
