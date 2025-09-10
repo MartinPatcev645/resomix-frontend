@@ -43,7 +43,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
     const isLoaded = usePlayerStore(s => s.isLoaded);
-    const autoplay = usePlayerStore(s => s.autoplay);
 
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
@@ -55,10 +54,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
     // Autoplay: register this track on mount if requested
     useEffect(() => {
-        if (autoplay) {
-            startPlaying(effectiveId);
-        }
-        howlerController.load(effectiveId, autoplay);
+        howlerController.load(effectiveId);
     }, []);
 
     const audioNode = howlerController.getHtmlAudioNode();
