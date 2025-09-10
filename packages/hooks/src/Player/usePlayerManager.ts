@@ -267,11 +267,9 @@ export const usePlayerManager = () => {
     });
      */
 
-    /*
     navigator.mediaSession.setActionHandler('seekto', (details: any) => {
       if (details?.seekTime != null) howlerController.seek(details.seekTime);
     });
-     */
 
     return () => {
       navigator.mediaSession.setActionHandler('play', null);
@@ -280,7 +278,7 @@ export const usePlayerManager = () => {
       navigator.mediaSession.setActionHandler('nexttrack', null);
       // navigator.mediaSession.setActionHandler('seekbackward', null);
       // navigator.mediaSession.setActionHandler('seekforward', null);
-      // navigator.mediaSession.setActionHandler('seekto', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
     };
   }, [howlerController, playNext, playPrevious, currentTrackIndex, getNextTrack]);
 
