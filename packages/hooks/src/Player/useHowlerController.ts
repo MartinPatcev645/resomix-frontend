@@ -78,6 +78,9 @@ export function getGlobalHowlerController(): HowlerController {
 
   function load(trackId: string, isPlayAfter:boolean = false) {
 
+    if (!trackId) {
+      return;
+    }
     isPlayAfterLoad = isPlayAfter;
 
     const url :string = `https://media.resomix.com/signed-audio/?uuid=${trackId}`

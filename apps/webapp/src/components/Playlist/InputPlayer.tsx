@@ -19,10 +19,9 @@ function formatTime(seconds: number): string {
 interface InputPlayerProps {
     trackId?: string;
     totalDuration: number;
-    autoPlay?: boolean;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoPlay = false }) => {
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     const effectiveId = trackId ?? 'uploaded-local';
 
     const {
@@ -44,6 +43,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
     const isLoaded = usePlayerStore(s => s.isLoaded);
+    const autoplay = usePlayerStore(s => s.autoplay);
 
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
@@ -55,11 +55,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
     // Autoplay: register this track on mount if requested
     useEffect(() => {
-        howlerController.load(effectiveId);
-        if (autoPlay && currentTrackId == null) {
+        if (autoplay) {
             startPlaying(effectiveId);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        howlerController.load(effectiveId, autoplay);
     }, []);
 
     const audioNode = howlerController.getHtmlAudioNode();
@@ -68,9 +67,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     }, [audioNode, attachMediaElement]);
 
     useEffect(()=>{
-        const tmp: boolean = currentTrackId === effectiveId;
-        if (tmp !== isPlaying) {
-            setIsPlaying(tmp);
+        const isPlay: boolean = currentTrackId === effectiveId;
+        if (isPlay !== isPlaying) {
+            setIsPlaying(isPlay);
         }
     }, [currentTrackId, effectiveId, isPlaying]);
 
