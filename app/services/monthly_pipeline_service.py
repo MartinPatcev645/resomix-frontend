@@ -164,7 +164,7 @@ class MonthlyPipelineService:
         try:
             print(f"[UPDATE_EMBEDDINGS] Sending file path to similarity server...")
             request_data = {"file_path": remote_path}
-            response = await self._call_similarity_server("/update_embeddings", data=request_data)
+            response = await self._call_similarity_server("/monthly-pipeline/update_embeddings", data=request_data)
         except Exception as e:
             print(f"Error sending file path to similarity server: {e}")
             return {"success": False, "error": f"Failed to send file path to similarity server: {e}"}
