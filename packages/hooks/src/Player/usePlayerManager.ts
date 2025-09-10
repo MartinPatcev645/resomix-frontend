@@ -13,6 +13,7 @@ export const usePlayerManager = () => {
   const {
     currentTrackId,
     setCurrentTrack,
+    setTrackTime,
     autoplay,
     setAutoplay,
     volume,
@@ -268,7 +269,10 @@ export const usePlayerManager = () => {
      */
 
     navigator.mediaSession.setActionHandler('seekto', (details: any) => {
-      if (details?.seekTime != null) howlerController.seek(details.seekTime);
+      if (details?.seekTime != null) {
+        howlerController.seek(details.seekTime);
+        setTrackTime(currentTrackId || '', details.seekTime);
+      }
     });
 
     return () => {
@@ -283,12 +287,17 @@ export const usePlayerManager = () => {
   }, [howlerController, playNext, playPrevious, currentTrackIndex, getNextTrack]);
 
   function updatePositionState() {
-    if (!('mediaSession' in navigator)) return;
+    if (!('mediaSession' in navigator)) {
+      return;
+    }
     const duration = howlerController.getDuration();
-    if (!duration || !isFinite(duration)) return;
+    if (!duration || !isFinite(duration)){
+      return;
+    }
+    const position = howlerController.getCurrentTime();
     navigator.mediaSession.setPositionState({
       duration,
-      position: currentTime,
+      position,
       playbackRate: 1
     });
   }
