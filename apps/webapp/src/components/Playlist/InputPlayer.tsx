@@ -39,16 +39,19 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
     const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId || '');
 
-    // Get the GLOBAL controller from store (don't create new instance)
+    // GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
 
-    const currentTime = usePlayerStore(s => s.inputCurrentTime);
+    const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
     const isLoaded = usePlayerStore(s => s.isLoaded);
+
+    const setTrackTime = usePlayerStore(s => s.setTrackTime);
+
 
     // Build audioUrl here
     const audioUrl = trackId
-        ? `https://media.resomix.com/signed-audio/?uuid=${trackId}`
-        : '';
+      ? `https://media.resomix.com/signed-audio/?uuid=${trackId}`
+      : '';
 
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
 
@@ -63,24 +66,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         if (autoPlay && currentTrackId == null) {
             startPlaying(effectiveId);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const audioNode = howlerController.getHtmlAudioNode();
     useEffect(() => {
         if (audioNode) attachMediaElement(audioNode);
     }, [audioNode, attachMediaElement]);
-
-    // Load saved position from localStorage on mount
-    useEffect(() => {
-        const savedPosition = localStorage.getItem(`track-position-${trackId}`);
-        if (savedPosition) {
-            const position = parseFloat(savedPosition);
-            if (position < totalDuration) {
-                howlerController.seek(position);
-                setTime(position,  true);
-            }
-        }
-    }, [isLoaded, totalDuration, trackId, howlerController.seek]);
 
     useEffect(()=>{
         const tmp: boolean = currentTrackId === effectiveId;
@@ -92,8 +84,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         }
     }, [currentTrackId]);
 
-
-    // Save position to localStorage when it changes
     useEffect(() => {
         const el = waveformContainerRef.current;
         if (!el) return;
@@ -103,13 +93,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
                 howlerController.seek(newPosition);
-                setTime(newPosition,  true);
-                localStorage.setItem(`track-position-${trackId}`, newPosition.toString());
+                setTime(newPosition, true);
+                setTrackTime(effectiveId, newPosition);
             }
         };
         el.addEventListener('click', onClick);
         return () => el.removeEventListener('click', onClick);
-    }, [isLoaded, totalDuration, howlerController.seek, trackId, waveformContainerRef.current]);
+    }, [isLoaded, totalDuration, effectiveId, setTime, howlerController, setTrackTime]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
@@ -137,7 +127,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
                 howlerController.play();
                 setInputProviderReady(true);
             }
-            // Set this as the current track
             startPlaying(effectiveId);
         }
     };
@@ -146,13 +135,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
         howlerController.seek(Math.max(0, currentTime - 10));
-    }, [howlerController]);
+    }, [howlerController, currentTime]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
         howlerController.seek(Math.min(d, currentTime + 10));
-    }, [howlerController]);
+    }, [howlerController, currentTime]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -168,91 +157,91 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     };
 
     return (
-        <>
-            <div className="flex items-center gap-2 w-full">
-                {/* Play / Pause */}
-                <button
-                    type="button"
-                    className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0"
-                    onClick={togglePlay}
-                >
-                    <img
-                        src={isPlaying ? PauseSvg : PlaySvg}
-                        alt={isPlaying ? 'Pause' : 'Play'}
-                        className='w-[var(--px-16)] h-[var(--px-16)]'
-                    />
-                </button>
+      <>
+          <div className="flex items-center gap-2 w-full">
+              {/* Play / Pause */}
+              <button
+                type="button"
+                className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0"
+                onClick={togglePlay}
+              >
+                  <img
+                    src={isPlaying ? PauseSvg : PlaySvg}
+                    alt={isPlaying ? 'Pause' : 'Play'}
+                    className='w-[var(--px-16)] h-[var(--px-16)]'
+                  />
+              </button>
 
-                <div className="flex flex-col w-full gap-[var(--px-5)]">
-                    <div
-                        ref={waveformContainerRef}
-                        className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
-                    >
-                        {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
-                        {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
-                    </div>
+              <div className="flex flex-col w-full gap-[var(--px-5)]">
+                  <div
+                    ref={waveformContainerRef}
+                    className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
+                  >
+                      {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
+                      {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
+                  </div>
 
-                    <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-[var(--px-10)]">
-                            {/* Skip Backward */}
-                            <button type="button" onClick={skipBackward} title="Skip back 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
-                                <img src={NextTrackSvg} alt="Previous Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
-                                <span className="mt-[var(--px-3)]">10s</span>
-                            </button>
-                            {/* Skip Forward */}
-                            <button type="button" onClick={skipForward} title="Skip forward 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
-                                <span className="mt-[var(--px-3)]">10s</span>
-                                <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-10)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
-                            </button>
-                        </div>
+                  <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-[var(--px-10)]">
+                          {/* Skip Backward */}
+                          <button type="button" onClick={skipBackward} title="Skip back 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
+                              <img src={NextTrackSvg} alt="Previous Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
+                              <span className="mt-[var(--px-3)]">10s</span>
+                          </button>
+                          {/* Skip Forward */}
+                          <button type="button" onClick={skipForward} title="Skip forward 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
+                              <span className="mt-[var(--px-3)]">10s</span>
+                              <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-10)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
+                          </button>
+                      </div>
 
-                        {/* Volume Slider */}
-                        <div className="hidden lg:flex items-center gap-[var(--px-8)]">
-                            {/* Volume Icon */}
-                            <button
-                                type="button"
-                                onClick={handleVolumeIconClick}
-                                className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)]"
-                            >
-                                {volume === 0 ? (
-                                    <img src={SoundMuteSvg} alt="Muted" className="w-full h-full" />
-                                ) : volume < 0.5 ? (
-                                    <img src={SoundLowSvg} alt="Low Volume" className="w-full h-full" />
-                                ) : (
-                                    <img src={SoundLoudSvg} alt="High Volume" className="w-full h-full" />
-                                )}
-                            </button>
+                      {/* Volume Slider */}
+                      <div className="hidden lg:flex items-center gap-[var(--px-8)]">
+                          {/* Volume Icon */}
+                          <button
+                            type="button"
+                            onClick={handleVolumeIconClick}
+                            className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)]"
+                          >
+                              {volume === 0 ? (
+                                <img src={SoundMuteSvg} alt="Muted" className="w-full h-full" />
+                              ) : volume < 0.5 ? (
+                                <img src={SoundLowSvg} alt="Low Volume" className="w-full h-full" />
+                              ) : (
+                                <img src={SoundLoudSvg} alt="High Volume" className="w-full h-full" />
+                              )}
+                          </button>
 
-                            {/* Volume Slider */}
-                            <div className="relative flex items-center w-[var(--px-80)]">
-                                {/* White base line track */}
-                                <div className="absolute w-[var(--px-80)] h-[var(--px-1)] bg-white"></div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.01"
-                                    value={volume}
-                                    onChange={handleVolumeChange}
-                                    className="relative w-full h-[var(--px-2)] appearance-none cursor-pointer bg-transparent z-10 [&::-webkit-slider-track]:bg-transparent [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:cursor-pointer"
-                                    style={{
-                                        background: 'transparent',
-                                        outline: 'none'
-                                    }}
-                                />
-                            </div>
-                        </div>
+                          {/* Volume Slider */}
+                          <div className="relative flex items-center w-[var(--px-80)]">
+                              {/* White base line track */}
+                              <div className="absolute w-[var(--px-80)] h-[var(--px-1)] bg-white"></div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={volume}
+                                onChange={handleVolumeChange}
+                                className="relative w-full h-[var(--px-2)] appearance-none cursor-pointer bg-transparent z-10 [&::-webkit-slider-track]:bg-transparent [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:cursor-pointer"
+                                style={{
+                                    background: 'transparent',
+                                    outline: 'none'
+                                }}
+                              />
+                          </div>
+                      </div>
 
-                        {/* Time Display */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                                {formatTime(currentTime)} / {formatTime(totalDuration)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
+                      {/* Time Display */}
+                      <div className="flex items-center gap-2">
+              <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
+                {formatTime(currentTime)} / {formatTime(totalDuration)}
+              </span>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </>
     );
 };
 

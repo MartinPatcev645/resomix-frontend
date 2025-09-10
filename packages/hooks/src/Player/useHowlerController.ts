@@ -36,11 +36,18 @@ export function getGlobalHowlerController(): HowlerController {
   const setInputTime = (t: number) =>
     usePlayerStore.setState({ inputCurrentTime: t });
 
+  const setTrackTime = (id: string, t: number) =>
+    usePlayerStore.getState().setTrackTime(id, t);
+  const getTrackTime = (id: string) =>
+    usePlayerStore.getState().getTrackTime(id);
+
   function startTicker(h: Howl) {
     if (progressTimer != null) return;
     progressTimer = window.setInterval(() => {
       const t = (h.seek() as number) || 0;
       setInputTime(t);
+      const id = (h as any)._trackId as string | undefined;
+      if (id) setTrackTime(id, t);
     }, 200);
   }
 
@@ -69,6 +76,8 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function load(url: string, trackId: string) {
+    isLoadedStatus = false;
+
     if (currentHowl) {
       stopTicker();
       currentHowl.unload();
@@ -79,10 +88,17 @@ export function getGlobalHowlerController(): HowlerController {
     if (nextHowl && trackId === (nextHowl as any)._trackId) {
       currentHowl = nextHowl;
       nextHowl = null;
+
       const node = (currentHowl as any)?._sounds?.[0]?._node ?? null;
       if (node) {
         setAudioNode(node);
         setupMediaSession(node);
+      }
+
+      const saved = getTrackTime(trackId);
+      if (saved > 0) {
+        currentHowl.seek(saved);
+        setInputTime(saved);
       }
       return;
     }
@@ -102,10 +118,16 @@ export function getGlobalHowlerController(): HowlerController {
       },
       onpause: () => {
         stopTicker();
+        const id = (howl as any)._trackId as string | undefined;
+        if (id) setTrackTime(id, (howl.seek() as number) || 0);
+
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
       },
       onstop: () => {
         stopTicker();
+        const id = (howl as any)._trackId as string | undefined;
+        if (id) setTrackTime(id, (howl.seek() as number) || 0);
+
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
       },
       onend: () => {
@@ -121,6 +143,12 @@ export function getGlobalHowlerController(): HowlerController {
       onload: () => {
         isLoadedStatus = true;
         usePlayerStore.setState({ isLoaded: true });
+
+        const saved = getTrackTime(trackId);
+        if (saved > 0) {
+          howl.seek(saved);
+          setInputTime(saved);
+        }
       },
       onloaderror: (_id, err) => console.error('[Howler] load error', err),
       onplayerror: (_id, err) => {
@@ -128,6 +156,8 @@ export function getGlobalHowlerController(): HowlerController {
         howl.once('unlock', () => howl.play());
       },
     });
+
+    (howl as any)._trackId = trackId;
 
     currentHowl = howl;
 
@@ -141,11 +171,15 @@ export function getGlobalHowlerController(): HowlerController {
   function play() { currentHowl?.play(); }
   function pause() { currentHowl?.pause(); }
   function stop() { currentHowl?.stop(); }
+
   function seek(t: number) {
     const nt = Math.max(0, t);
     currentHowl?.seek(nt);
     setInputTime(nt);
+    const id = (currentHowl as any)?._trackId as string | undefined;
+    if (id) setTrackTime(id, nt);
   }
+
   function getCurrentTime() {
     return (currentHowl?.seek() as number) || 0;
   }
@@ -154,7 +188,12 @@ export function getGlobalHowlerController(): HowlerController {
   }
   function unload() {
     stopTicker();
-    if (currentHowl) { currentHowl.unload(); currentHowl = null; }
+    if (currentHowl) {
+      const id = (currentHowl as any)._trackId as string | undefined;
+      // if (id) setTrackTime(id, (currentHowl.seek() as number) || 0);
+      currentHowl.unload();
+      currentHowl = null;
+    }
     if (nextHowl) { nextHowl.unload(); nextHowl = null; }
     setAudioNode(null);
   }
@@ -176,7 +215,6 @@ export function getGlobalHowlerController(): HowlerController {
     nextHowl = h;
   }
   function isLoaded() {
-    // return currentHowl?.state() === 'loaded';
     return isLoadedStatus;
   }
   function getLoadingProgress() {
@@ -187,17 +225,6 @@ export function getGlobalHowlerController(): HowlerController {
     if (b.length && d > 0) return b.end(b.length - 1) / d;
     return 0;
   }
-
-  // Volume change
-  /*
-  usePlayerStore.subscribe(
-    (s) => s.volume,
-    (v) => {
-      currentHowl?.volume(v);
-      nextHowl?.volume(v);
-    }
-  );
-   */
 
   singleton = {
     load,
