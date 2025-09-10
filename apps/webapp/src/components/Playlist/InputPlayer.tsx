@@ -5,7 +5,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import {useHowlerController, usePlayerManager, useCustomPeaks} from "@resomix/hooks";
+import {usePlayerManager, useCustomPeaks, useGlobalHowlerController} from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -28,6 +28,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     const {
         currentTrackId,
         startPlaying,
+        stopPlaying,
         volume,
         setVolume,
     } = usePlayerManager();
@@ -39,19 +40,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId || '');
 
     // Get the GLOBAL controller from store (don't create new instance)
-    function useHowlerControllerWithFallback() {
-        const storeController = usePlayerStore((s) => s.howlerController);
-        const defaultController = useHowlerController();
+    const howlerController = useGlobalHowlerController();
 
-        return storeController || defaultController;
-    }
-
-    const howlerController = useHowlerControllerWithFallback();
-    const {
-        isLoaded,
-        seek,
-        currentTime,
-    } = howlerController;
+    const currentTime = usePlayerStore(s => s.inputCurrentTime);
+    const isLoaded = usePlayerStore(s => s.isLoaded);
 
     // Build audioUrl here
     const audioUrl = trackId
@@ -80,24 +72,22 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
     // Load saved position from localStorage on mount
     useEffect(() => {
-        if (isLoaded) {
-            const savedPosition = localStorage.getItem(`track-position-${trackId}`);
-            if (savedPosition) {
-                const position = parseFloat(savedPosition);
-                if (position < totalDuration) {
-                    seek(position);
-                    setTime(position,  true);
-                }
+        const savedPosition = localStorage.getItem(`track-position-${trackId}`);
+        if (savedPosition) {
+            const position = parseFloat(savedPosition);
+            if (position < totalDuration) {
+                howlerController.seek(position);
+                setTime(position,  true);
             }
         }
-    }, [isLoaded, totalDuration, trackId, seek]);
+    }, [isLoaded, totalDuration, trackId, howlerController.seek]);
 
     useEffect(()=>{
         const tmp: boolean = currentTrackId === effectiveId;
         if (tmp !== isPlaying) {
             setIsPlaying(tmp);
             if (!tmp) {
-                howlerController.pause();
+                howlerController?.pause();
             }
         }
     }, [currentTrackId]);
@@ -106,20 +96,20 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     // Save position to localStorage when it changes
     useEffect(() => {
         const el = waveformContainerRef.current;
-        if (!el || !isLoaded) return;
+        if (!el) return;
         const onClick = (ev: MouseEvent) => {
             const r = el.getBoundingClientRect();
             const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
-                seek(newPosition);
+                howlerController.seek(newPosition);
                 setTime(newPosition,  true);
                 localStorage.setItem(`track-position-${trackId}`, newPosition.toString());
             }
         };
         el.addEventListener('click', onClick);
         return () => el.removeEventListener('click', onClick);
-    }, [isLoaded, totalDuration, seek, trackId, waveformContainerRef.current]);
+    }, [isLoaded, totalDuration, howlerController.seek, trackId, waveformContainerRef.current]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
@@ -141,10 +131,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
         if (isPlaying) {
             howlerController.pause();
+            stopPlaying();
         } else {
             if (audioUrl) {
-                // Load and play through the global controller
-                // howlerController.load(audioUrl, effectiveId);
                 howlerController.play();
                 setInputProviderReady(true);
             }
@@ -156,13 +145,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
-        seek(Math.max(0, currentTime - 10));
+        howlerController.seek(Math.max(0, currentTime - 10));
     }, [howlerController]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
-        seek(Math.min(d, currentTime + 10));
+        howlerController.seek(Math.min(d, currentTime + 10));
     }, [howlerController]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

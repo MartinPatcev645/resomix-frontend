@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   autoplay: 'resomix.player.autoplay',
   volume: 'resomix.player.volume',
   topSk: 'resomix.player.topSk',
+  trackTimes: 'resomix.player.trackTimes'
 } as const;
 
 // NOTE: Settings are now stored only in browser localStorage.
@@ -85,6 +86,10 @@ interface PlayerStore {
   /** Setter for inputCurrentTime */
   setInputCurrentTime: (time: number) => void
 
+
+  isLoaded: boolean
+  setIsLoaded: (loaded: boolean) => void
+
   /** Current playback position (seconds) of the similarity waveform */
   similarityCurrentTime: number
   /** Setter for similarityCurrentTime */
@@ -96,9 +101,15 @@ interface PlayerStore {
 
   similarityProviderReady: boolean
   setSimilarityProviderReady: (ready: boolean) => void
+
+  trackTimes: Record<string, number>
+  setTrackTime: (trackId: string, time: number) => void
+  getTrackTime: (trackId: string) => number
+  removeTrackTime: (trackId: string) => void
+  clearTrackTimes: () => void
 }
 
-export const usePlayerStore = create<PlayerStore>((set) => ({
+export const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTrackId: null,
   setCurrentTrack: (id) => set({ currentTrackId: id }),
 
@@ -109,7 +120,8 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   setUploadedCoverArt: (coverUrl) => set({ uploadedCoverArt: coverUrl }),
 
   howlerController: null,
-  setHowlerController: (controller) => set({ howlerController: controller }),
+  setHowlerController: (controller) =>
+    set((state) => state.howlerController ? state : { howlerController: controller }),
 
   audioNode: null,
   setAudioNode: (node) => set({ audioNode: node }),
@@ -141,6 +153,9 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   inputCurrentTime: 0,
   setInputCurrentTime: (time) => set({ inputCurrentTime: time }),
 
+  isLoaded: false,
+  setIsLoaded: (loaded: boolean) => set({ isLoaded:  loaded }),
+
   similarityCurrentTime: 0,
   setSimilarityCurrentTime: (time) => set({ similarityCurrentTime: time }),
 
@@ -150,6 +165,34 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   similarityProviderReady: false,
   setSimilarityProviderReady: (ready) => set({ similarityProviderReady: ready }),
+
+  trackTimes: getStoredValue<Record<string, number>>(STORAGE_KEYS.trackTimes, {}),
+
+  setTrackTime: (trackId, time) =>
+    set((state) => {
+      const next = { ...state.trackTimes, [trackId]: time }
+      setStoredValue(STORAGE_KEYS.trackTimes, next)
+      return { trackTimes: next }
+    }),
+
+  getTrackTime: (trackId) => {
+    const t = get().trackTimes[trackId]
+    return typeof t === 'number' ? t : 0
+  },
+
+  removeTrackTime: (trackId) =>
+    set((state) => {
+      const next = { ...state.trackTimes }
+      delete next[trackId]
+      setStoredValue(STORAGE_KEYS.trackTimes, next)
+      return { trackTimes: next }
+    }),
+
+  clearTrackTimes: () =>
+    set(() => {
+      setStoredValue(STORAGE_KEYS.trackTimes, {})
+      return { trackTimes: {} }
+    }),
 }));
 
 export default usePlayerStore

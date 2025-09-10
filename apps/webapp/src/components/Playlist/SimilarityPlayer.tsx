@@ -5,8 +5,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { useHowlerController, usePlayerManager, useCustomPeaks } from "@resomix/hooks";
-import { usePlayerStore } from "@resomix/stores";
+import { usePlayerManager, useCustomPeaks, useGlobalHowlerController } from "@resomix/hooks";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -29,24 +28,28 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         setVolume,
     } = usePlayerManager();
 
-    const [isPlaying, setIsPlaying] = useState<boolean>(currentTrackId === trackId);
+    // const [isPlaying, setIsPlaying] = useState<boolean>(currentTrackId === trackId);
+    const [isPlaying, setIsPlaying] = useState<boolean>(true);
     const waveformContainerRef = useRef<HTMLDivElement>(null);
 
     const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId);
 
     // Get the GLOBAL controller from store
+    /*
     function useHowlerControllerWithFallback() {
         const storeController = usePlayerStore((s) => s.howlerController);
         const defaultController = useHowlerController();
         return storeController || defaultController;
     }
+     */
 
-    const howlerController = useHowlerControllerWithFallback();
+    const howlerController = useRef(useGlobalHowlerController());
     const {
         isLoaded,
         seek,
         currentTime,
-    } = howlerController;
+        getHtmlAudioNode,
+    } = howlerController.current;
 
     const audioUrl = `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
 
@@ -55,7 +58,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         setTime(currentTime);
     }, [isLoaded, currentTime, setTime]);
 
-    const audioNode = howlerController.getHtmlAudioNode();
+    const audioNode = getHtmlAudioNode();
     useEffect(() => {
         if (audioNode) attachMediaElement(audioNode);
     }, [audioNode, attachMediaElement]);
@@ -66,31 +69,55 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         }
     }, [waveformContainerRef.current]);
 
+    useEffect(()=>{
+        const tmp: boolean = currentTrackId === trackId;
+        if (tmp !== isPlaying) {
+            setIsPlaying(tmp);
+            if (tmp) {
+                howlerController.current.pause();
+            }
+        }
+    }, [currentTrackId]);
+
+    useEffect(() => {
+        play();
+        return ()=>pause();
+    }, []);
+
+    const play = () => {
+        if (!howlerController) return;
+        if (audioUrl) {
+            howlerController.current.load(audioUrl, trackId);
+            howlerController.current.play();
+        }
+        startPlaying(trackId);
+    }
+
+    const pause = ()=>{
+        howlerController.current?.pause();
+        // stopPlaying();
+    }
+
     const togglePlay = () => {
         if (!howlerController) return;
 
         if (isPlaying) {
-            howlerController.pause();
+            pause();
         } else {
-            if (audioUrl) {
-                howlerController.load(audioUrl, trackId);
-                howlerController.play();
-            }
-            startPlaying(trackId);
+            play();
         }
-        setIsPlaying(prev => !prev);
     };
 
     const skipBackward = useCallback(() => {
-        if (!howlerController) return;
+        if (!howlerController.current) return;
         seek(Math.max(0, currentTime - 10));
     }, [howlerController, currentTime, seek]);
 
     const skipForward = useCallback(() => {
-        if (!howlerController) return;
-        const d = howlerController.getDuration();
+        if (!howlerController.current) return;
+        const d = howlerController.current.getDuration();
         seek(Math.min(d, currentTime + 10));
-    }, [howlerController, currentTime, seek]);
+    }, [howlerController.current, currentTime, seek]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import InputPlayer from "@/components/Playlist/InputPlayer.tsx";
-import { useHowlerController } from "@resomix/hooks";
+import {useGlobalHowlerController} from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 const TestPage: React.FC = () => {
   const [play, setPlay] = useState(false);
-  const howlerController = useHowlerController();
+  const howlerController = useGlobalHowlerController();
   const setHowlerController = usePlayerStore((s) => s.setHowlerController);
 
   // Initialize global controller

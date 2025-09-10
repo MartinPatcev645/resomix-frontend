@@ -16,6 +16,7 @@ export * from './Player/usePlayerManager';
 export * from './Player/useAudioContextUnlocker';
 export * from './Player/useAudioProvider';
 export * from './Player/useHowlerController';
+export * from './Player/useGlobalHowlerController';
 export * from './Player/playerActions';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'
