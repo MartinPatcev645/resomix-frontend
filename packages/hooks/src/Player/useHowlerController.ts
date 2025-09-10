@@ -4,7 +4,7 @@ import { Howl } from 'howler';
 import { usePlayerStore } from '@resomix/stores';
 
 export interface HowlerController {
-  load: (url: string, trackId: string) => void;
+  load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
   pause: () => void;
   stop: () => void;
@@ -28,6 +28,7 @@ export function getGlobalHowlerController(): HowlerController {
   let nextHowl: Howl | null = null;
   let progressTimer: number | null = null;
   let isLoadedStatus: boolean = false;
+  let isPlayAfterLoad: boolean = false;
 
   const setAudioNode = (node: HTMLAudioElement | null) =>
     usePlayerStore.getState().setAudioNode(node);
@@ -75,11 +76,17 @@ export function getGlobalHowlerController(): HowlerController {
     });
   }
 
-  function load(url: string, trackId: string) {
+  function load(trackId: string, isPlayAfter:boolean = false) {
+
+    isPlayAfterLoad = isPlayAfter;
+
+    const url :string = `https://media.resomix.com/signed-audio/?uuid=${trackId}`
+
     isLoadedStatus = false;
 
     if (currentHowl) {
       stopTicker();
+      currentHowl.pause();
       currentHowl.unload();
       currentHowl = null;
       setAudioNode(null);
@@ -112,21 +119,21 @@ export function getGlobalHowlerController(): HowlerController {
       preload: true,
       volume,
       onplay: () => {
-        setCurrentTrack(trackId);
+        // setCurrentTrack(trackId);
         startTicker(howl);
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
       },
       onpause: () => {
         stopTicker();
         const id = (howl as any)._trackId as string | undefined;
-        if (id) setTrackTime(id, (howl.seek() as number) || 0);
+        // if (id) setTrackTime(id, (howl.seek() as number) || 0);
 
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
       },
       onstop: () => {
         stopTicker();
         const id = (howl as any)._trackId as string | undefined;
-        if (id) setTrackTime(id, (howl.seek() as number) || 0);
+        // if (id) setTrackTime(id, (howl.seek() as number) || 0);
 
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
       },
@@ -149,6 +156,10 @@ export function getGlobalHowlerController(): HowlerController {
           howl.seek(saved);
           setInputTime(saved);
         }
+
+        if (isPlayAfterLoad) {
+          play();
+        }
       },
       onloaderror: (_id, err) => console.error('[Howler] load error', err),
       onplayerror: (_id, err) => {
@@ -168,9 +179,14 @@ export function getGlobalHowlerController(): HowlerController {
     }
   }
 
-  function play() { currentHowl?.play(); }
-  function pause() { currentHowl?.pause(); }
-  function stop() { currentHowl?.stop(); }
+  function play() {
+    currentHowl?.play();
+  }
+  function pause() {
+    currentHowl?.pause(); }
+  function stop() {
+    currentHowl?.stop();
+  }
 
   function seek(t: number) {
     const nt = Math.max(0, t);
@@ -244,3 +260,14 @@ export function getGlobalHowlerController(): HowlerController {
 
   return singleton;
 }
+
+// Volume change
+/*
+usePlayerStore.subscribe(
+  (s) => s.volume,
+  (v) => {
+    currentHowl?.volume(v);
+    nextHowl?.volume(v);
+  }
+);
+ */

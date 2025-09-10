@@ -1,6 +1,6 @@
 import React from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
-import { formatDuration, formatPercentage } from "@resomix/hooks";
+import {formatDuration, formatPercentage, useGlobalHowlerController} from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { usePlayerManager } from "@resomix/hooks";
 import PauseSvg from "@/assets/icons/pause_white.svg";
@@ -15,6 +15,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
     const tracks = playlistData?.similar_tracks ?? [];
+    const howlerController = useGlobalHowlerController();
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
@@ -25,6 +26,8 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             const success = startPlaying(trackId);
             if (success) {
                 console.log('[PlaylistTable] Track cued:', trackId);
+                howlerController.load(trackId);
+                howlerController.play();
             }
         }
     };

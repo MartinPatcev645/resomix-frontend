@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
+import React, { useEffect, useCallback, useRef} from "react";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
@@ -6,6 +6,7 @@ import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { usePlayerManager, useCustomPeaks, useGlobalHowlerController } from "@resomix/hooks";
+import {usePlayerStore} from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -18,40 +19,31 @@ function formatTime(seconds: number): string {
 interface SimilarityPlayerProps {
     trackId: string;
     totalDuration: number;
+    isPlaying: boolean;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, isPlaying }) => {
     const {
         currentTrackId,
-        startPlaying,
         volume,
         setVolume,
     } = usePlayerManager();
 
-    // const [isPlaying, setIsPlaying] = useState<boolean>(currentTrackId === trackId);
-    const [isPlaying, setIsPlaying] = useState<boolean>(true);
     const waveformContainerRef = useRef<HTMLDivElement>(null);
 
     const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId);
 
-    // Get the GLOBAL controller from store
-    /*
-    function useHowlerControllerWithFallback() {
-        const storeController = usePlayerStore((s) => s.howlerController);
-        const defaultController = useHowlerController();
-        return storeController || defaultController;
-    }
-     */
-
+    // Get the GLOBAL controller (singleton)
     const howlerController = useRef(useGlobalHowlerController());
     const {
-        isLoaded,
+        // isLoaded,
         seek,
-        currentTime,
+        // currentTime,
         getHtmlAudioNode,
     } = howlerController.current;
 
-    const audioUrl = `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
+    const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
+    const isLoaded = usePlayerStore(s => s.isLoaded);;
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -72,25 +64,16 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     useEffect(()=>{
         const tmp: boolean = currentTrackId === trackId;
         if (tmp !== isPlaying) {
-            setIsPlaying(tmp);
             if (tmp) {
                 howlerController.current.pause();
             }
         }
     }, [currentTrackId]);
 
-    useEffect(() => {
-        play();
-        return ()=>pause();
-    }, []);
-
     const play = () => {
         if (!howlerController) return;
-        if (audioUrl) {
-            howlerController.current.load(audioUrl, trackId);
-            howlerController.current.play();
-        }
-        startPlaying(trackId);
+        howlerController.current.load(trackId);
+        howlerController.current.play();
     }
 
     const pause = ()=>{

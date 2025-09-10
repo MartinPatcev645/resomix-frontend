@@ -47,12 +47,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
 
-
-    // Build audioUrl here
-    const audioUrl = trackId
-      ? `https://media.resomix.com/signed-audio/?uuid=${trackId}`
-      : '';
-
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
 
     useEffect(() => {
@@ -62,7 +56,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
 
     // Autoplay: register this track on mount if requested
     useEffect(() => {
-        howlerController.load(audioUrl, effectiveId);
+        howlerController.load(effectiveId);
         if (autoPlay && currentTrackId == null) {
             startPlaying(effectiveId);
         }
@@ -78,9 +72,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         const tmp: boolean = currentTrackId === effectiveId;
         if (tmp !== isPlaying) {
             setIsPlaying(tmp);
-            if (!tmp) {
-                howlerController?.pause();
-            }
         }
     }, [currentTrackId]);
 
@@ -123,11 +114,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
             howlerController.pause();
             stopPlaying();
         } else {
-            if (audioUrl) {
-                howlerController.play();
-                setInputProviderReady(true);
-            }
             startPlaying(effectiveId);
+            if (currentTrackId !== effectiveId) {
+                howlerController.load(effectiveId, true);
+            }
+            else {
+                howlerController.play();
+            }
+            setInputProviderReady(true);
         }
     };
 
