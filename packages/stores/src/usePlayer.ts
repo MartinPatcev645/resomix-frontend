@@ -111,7 +111,10 @@ interface PlayerStore {
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTrackId: null,
-  setCurrentTrack: (id) => set({ currentTrackId: id }),
+  setCurrentTrack: (id) => {
+    console.log('[usePlayerStore] currentTrackId', id);
+    set({ currentTrackId: id });
+  },
 
   uploadedUrl: null,
   setUploadedUrl: (url) => set({ uploadedUrl: url }),
@@ -167,7 +170,6 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   setSimilarityProviderReady: (ready) => set({ similarityProviderReady: ready }),
 
   trackTimes: getStoredValue<Record<string, number>>(STORAGE_KEYS.trackTimes, {}),
-
   setTrackTime: (trackId, time) =>
     set((state) => {
       const next = { ...state.trackTimes, [trackId]: time }
@@ -176,6 +178,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     }),
 
   getTrackTime: (trackId) => {
+    if (!trackId) return 0;
     const t = get().trackTimes[trackId]
     return typeof t === 'number' ? t : 0
   },

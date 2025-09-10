@@ -200,6 +200,7 @@ const PlaylistHero: React.FC = () => {
                       // <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
                       
                       // Using the API response same as selected track
+
                       <InputPlayer trackId={playlistData.queried_track.id} totalDuration={playlistData.queried_track.duration ?? 0} />
                     )}
                   </div>
