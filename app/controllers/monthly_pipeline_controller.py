@@ -40,6 +40,15 @@ class MonthlyPipelineController:
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
 
+    async def update_embeddings(self, db: AsyncSession) -> JSONResponse:
+        """Trigger bulk update of embeddings by sending UUID→path map to similarity server."""
+        service_resp = await self.monthly_pipeline_service.update_embeddings(db)
+
+        if service_resp.get("success"):
+            return JSONResponse(status_code=status.HTTP_200_OK, content=format_response(True, data=service_resp.get("data")))
+
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=format_response(False, error=service_resp.get("error", "Unknown error")))
+
     async def process_monthly_pipeline_track(
         self, 
         db: AsyncSession, 

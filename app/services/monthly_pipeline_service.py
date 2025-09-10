@@ -20,6 +20,7 @@ import httpx
 from typing import Dict, Any, Optional
 
 from app.core.config import settings
+from sqlalchemy import text
 
 
 class MonthlyPipelineService:
@@ -76,6 +77,63 @@ class MonthlyPipelineService:
             print(f"Error generating embedding preview: {e}")
             return {"success": False, "error": f"An unexpected error occurred while generating embedding preview: {e}"}
 
+    # -------------------------------------------------------------------------
+    #  Update Embeddings (bulk)
+    # -------------------------------------------------------------------------
+
+    async def update_embeddings(self, db) -> Dict[str, Any]:
+        """Generate a UUID↔path NDJSON mapping for every track and send to the
+        similarity server's /update_embeddings endpoint.
+
+        Args:
+            db: Async SQLAlchemy session
+
+        Returns:
+            JSON response from the similarity server or structured error dict.
+        """
+        import json
+        import tempfile
+        from sqlalchemy import text
+
+        # Step 1: Fetch uuid and file_path for all tracks
+        try:
+            result = await db.execute(text("SELECT uuid, file_path FROM tracks"))
+            rows = result.fetchall()
+        except Exception as e:
+            print(f"Error querying tracks for update_embeddings: {e}")
+            return {"success": False, "error": f"Database query failed: {e}"}
+
+        # Short-circuit if nothing returned
+        if not rows:
+            return {"success": False, "error": "No tracks found in database."}
+
+        # Step 2: Write NDJSON mapping to a temporary file
+        abs_prefix = "/home/usman/data/"
+        try:
+            with tempfile.NamedTemporaryFile(mode="w+", suffix=".ndjson", delete=False) as tmp_file:
+                for uuid_val, rel_path in rows:
+                    abs_path = abs_prefix + rel_path.lstrip("/") if rel_path else ""
+                    record = {"uuid": uuid_val, "path": abs_path}
+                    tmp_file.write(json.dumps(record) + "\n")
+                tmp_file_path = tmp_file.name
+        except Exception as e:
+            print(f"Error writing NDJSON file for update_embeddings: {e}")
+            return {"success": False, "error": f"Failed to write NDJSON file: {e}"}
+
+        # Step 3: Send the file to similarity server
+        try:
+            with open(tmp_file_path, "rb") as f:
+                files = {"file": ("tracks_map.ndjson", f, "application/x-ndjson")}
+                response = await self._call_similarity_server("/update_embeddings", files=files)
+        except Exception as e:
+            print(f"Error posting NDJSON to similarity server: {e}")
+            return {"success": False, "error": f"Failed to send NDJSON to similarity server: {e}"}
+
+        # Pass through raw response but mark success boolean for consistency
+        if response.get("status") == "success":
+            return {"success": True, "data": response}
+        return {"success": False, "error": response.get("message", "Unknown error from similarity server")}
+
     async def _call_similarity_server(self, endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Helper function to call the similarity server for monthly pipeline operations.
@@ -115,4 +173,4 @@ class MonthlyPipelineService:
                 return {"status": "error", "message": f"Could not connect to similarity service: {e}", "results": []}
             except Exception as e:
                 print(f"Generic error calling similarity server {target_url}: {e}")
-                return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []} 
+                return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []}

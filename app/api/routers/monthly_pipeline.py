@@ -26,6 +26,14 @@ from app.schemas.monthly_pipeline import (
     MonthlyPipelineTrackSuccessResponse,
     MonthlyPipelineTrackErrorResponse
 )
+from app.schemas.update_embeddings import (
+    UpdateEmbeddingsSuccessResponse,
+    UpdateEmbeddingsErrorResponse
+)
+from app.schemas.monthly_pipeline import (
+    MonthlyPipelineUpdateEmbeddingsSuccessResponse,
+    MonthlyPipelineUpdateEmbeddingsErrorResponse
+)
 
 router = APIRouter(
     prefix="/monthly_pipeline",
@@ -40,6 +48,29 @@ router = APIRouter(
 
 # Initialize controller
 monthly_pipeline_controller = MonthlyPipelineController()
+
+# ---------------------------------------------------------------------------
+#  Update Embeddings Endpoint
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/update_embeddings/",
+    response_model=MonthlyPipelineUpdateEmbeddingsSuccessResponse,
+    summary="Bulk Update Embeddings",
+    description="Generate UUID→path mapping for all tracks and trigger bulk embedding generation on the similarity server.",
+    responses={
+        200: {"model": MonthlyPipelineUpdateEmbeddingsSuccessResponse, "description": "Embeddings update request sent successfully."},
+        500: {"model": MonthlyPipelineUpdateEmbeddingsErrorResponse, "description": "Internal error while processing update."},
+        503: {"model": MonthlyPipelineUpdateEmbeddingsErrorResponse, "description": "Similarity service unavailable"},
+    },
+)
+async def monthly_pipeline_update_embeddings_endpoint(
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+) -> JSONResponse:
+    """Trigger bulk embeddings update on similarity server."""
+    return await monthly_pipeline_controller.update_embeddings(db)
 
 
 @router.post(
@@ -87,4 +118,4 @@ async def monthly_pipeline_track_endpoint(
     - **file**: The audio file to process
     - **path**: The file path for the track
     """
-    return await monthly_pipeline_controller.process_monthly_pipeline_track(db, file, path) 
+    return await monthly_pipeline_controller.process_monthly_pipeline_track(db, file, path)
