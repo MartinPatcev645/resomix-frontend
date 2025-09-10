@@ -27,6 +27,8 @@ export function useCustomPeaks(
   const unplayedColor = '#ffffff';
   const cursorColor = '#ffffff';
 
+  let nextDebaunceTime: number = 0;
+
   const drawWaveform = useCallback((time: number = 0) => {
     const canvas = canvasRef.current;
     if (!canvas || !normalizedData.length) return;
@@ -125,6 +127,7 @@ export function useCustomPeaks(
 
   const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
     setCurrentTime(timeSec);
+    nextDebaunceTime = timeSec;
     if (isImmediatelly) {
       drawWaveform(timeSec);
       clearTimeout(debounceRef.current);
@@ -135,7 +138,7 @@ export function useCustomPeaks(
       return;
     }
     debounceRef.current = setTimeout(() => {
-      drawWaveform(timeSec);
+      drawWaveform(nextDebaunceTime);
       debounceRef.current = null;
     }, 100);
 

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useEffect } from 'react'
 import { usePlaylistStore } from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
+import {useGlobalHowlerController} from "./useGlobalHowlerController";
 
 
 /**
@@ -20,6 +21,7 @@ export const usePlayerManager = () => {
     topSk,
     setTopSk
   } = usePlayerStore()
+  const howler = useGlobalHowlerController();
 
   // Get all track IDs from the playlist in order (queried track first, then similar tracks)
   const allTrackIds = useMemo(() => {
@@ -180,6 +182,7 @@ export const usePlayerManager = () => {
     const success = cueTrack(nextTrackId);
     if (success) {
       console.log('[PlayerManager] Advanced to next track:', nextTrackId);
+      howler.load(nextTrackId, true);
     }
     return success;
   }, [getNextTrack, setCurrentTrack, cueTrack, howlerController])

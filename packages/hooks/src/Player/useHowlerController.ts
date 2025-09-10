@@ -125,20 +125,15 @@ export function getGlobalHowlerController(): HowlerController {
       },
       onpause: () => {
         stopTicker();
-        const id = (howl as any)._trackId as string | undefined;
-        // if (id) setTrackTime(id, (howl.seek() as number) || 0);
-
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
       },
       onstop: () => {
         stopTicker();
-        const id = (howl as any)._trackId as string | undefined;
-        // if (id) setTrackTime(id, (howl.seek() as number) || 0);
-
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
       },
       onend: () => {
         stopTicker();
+        setTrackTime(trackId, 0);
         const { autoplay } = usePlayerStore.getState();
         if (autoplay) {
           window.dispatchEvent(new CustomEvent('resomix:track-ended'));
@@ -205,8 +200,6 @@ export function getGlobalHowlerController(): HowlerController {
   function unload() {
     stopTicker();
     if (currentHowl) {
-      const id = (currentHowl as any)._trackId as string | undefined;
-      // if (id) setTrackTime(id, (currentHowl.seek() as number) || 0);
       currentHowl.unload();
       currentHowl = null;
     }

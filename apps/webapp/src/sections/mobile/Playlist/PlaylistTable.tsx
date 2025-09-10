@@ -1,4 +1,3 @@
-import React from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
 import {formatDuration, formatPercentage, useGlobalHowlerController} from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
