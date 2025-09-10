@@ -298,7 +298,7 @@ export const usePlayerManager = () => {
     if (!duration || !isFinite(duration)){
       return;
     }
-    const position = currentTimeRef.current ?? 0;
+    const position = howlerController.getCurrentTime();
     navigator.mediaSession.setPositionState({
       duration,
       position,
