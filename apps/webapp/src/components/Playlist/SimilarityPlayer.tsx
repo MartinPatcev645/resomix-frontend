@@ -1,6 +1,4 @@
 import React, { useEffect, useCallback, useRef} from "react";
-import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
@@ -34,16 +32,17 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId);
 
     // Get the GLOBAL controller (singleton)
-    const howlerController = useRef(useGlobalHowlerController());
+    const howlerController = useGlobalHowlerController();
     const {
         // isLoaded,
         seek,
         // currentTime,
         getHtmlAudioNode,
-    } = howlerController.current;
+    } = howlerController;
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
-    const isLoaded = usePlayerStore(s => s.isLoaded);;
+    const isLoaded = usePlayerStore(s => s.isLoaded);
+    const setTrackTime = usePlayerStore(s => s.setTrackTime);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -65,42 +64,38 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         const tmp: boolean = currentTrackId === trackId;
         if (tmp !== isPlaying) {
             if (tmp) {
-                howlerController.current.pause();
+                howlerController.pause();
             }
         }
     }, [currentTrackId]);
 
-    const play = () => {
-        if (!howlerController) return;
-        howlerController.current.load(trackId);
-        howlerController.current.play();
-    }
-
-    const pause = ()=>{
-        howlerController.current?.pause();
-        // stopPlaying();
-    }
-
-    const togglePlay = () => {
-        if (!howlerController) return;
-
-        if (isPlaying) {
-            pause();
-        } else {
-            play();
-        }
-    };
+    useEffect(() => {
+        const el = waveformContainerRef.current;
+        if (!el) return;
+        const onClick = (ev: MouseEvent) => {
+            const r = el.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+            if (totalDuration > 0) {
+                const newPosition = x * totalDuration;
+                howlerController.seek(newPosition);
+                setTime(newPosition, true);
+                setTrackTime(trackId, newPosition);
+            }
+        };
+        el.addEventListener('click', onClick);
+        return () => el.removeEventListener('click', onClick);
+    }, [isLoaded, totalDuration, trackId, setTime, howlerController, setTrackTime]);
 
     const skipBackward = useCallback(() => {
-        if (!howlerController.current) return;
+        if (!howlerController) return;
         seek(Math.max(0, currentTime - 10));
     }, [howlerController, currentTime, seek]);
 
     const skipForward = useCallback(() => {
-        if (!howlerController.current) return;
-        const d = howlerController.current.getDuration();
+        if (!howlerController) return;
+        const d = howlerController.getDuration();
         seek(Math.min(d, currentTime + 10));
-    }, [howlerController.current, currentTime, seek]);
+    }, [howlerController, currentTime, seek]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -129,17 +124,6 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
           <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-[var(--px-10)] justify-between lg:justify-start">
-                  <button
-                    type="button"
-                    onClick={togglePlay}
-                    className="w-[var(--px-25)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0"
-                  >
-                      <img
-                        src={isPlaying ? PauseSvg : PlaySvg}
-                        alt={isPlaying ? 'Pause' : 'Play'}
-                        className='w-[var(--px-12)] h-[var(--px-12)]'
-                      />
-                  </button>
 
                   <button
                     type="button"

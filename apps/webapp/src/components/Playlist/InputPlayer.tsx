@@ -46,7 +46,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
     const isLoaded = usePlayerStore(s => s.isLoaded);
 
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
-
     const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
 
     useEffect(() => {
@@ -73,7 +72,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         if (tmp !== isPlaying) {
             setIsPlaying(tmp);
         }
-    }, [currentTrackId]);
+    }, [currentTrackId, effectiveId, isPlaying]);
 
     useEffect(() => {
         const el = waveformContainerRef.current;
@@ -96,7 +95,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, autoP
         if (waveformContainerRef.current) {
             attachOverviewElement(waveformContainerRef.current);
         }
-    }, [waveformContainerRef.current]);
+    }, [waveformContainerRef.current, attachOverviewElement]);
 
     // Reset readiness when the effective track identity changes
     const prevIdRef = useRef<string | null>(null);

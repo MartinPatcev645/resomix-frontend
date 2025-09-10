@@ -20,15 +20,12 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
             stopPlaying();
+            howlerController.pause();
         } else {
             // BeMusic pattern: Synchronous track cueing
             // AudioProvider in SimilarityPlayer handles async loading
-            const success = startPlaying(trackId);
-            if (success) {
-                console.log('[PlaylistTable] Track cued:', trackId);
-                howlerController.load(trackId);
-                howlerController.play();
-            }
+            startPlaying(trackId);
+            howlerController.load(trackId, true);
         }
     };
 
