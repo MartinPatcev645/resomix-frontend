@@ -196,7 +196,12 @@ export const usePlayerManager = () => {
 
     const previousTrackId = allTrackIds[currentTrackIndex - 1]
     setCurrentTrack(previousTrackId)
-    return true
+    const success = cueTrack(previousTrackId);
+    if (success) {
+      console.log('[PlayerManager] Advanced to previous track:', previousTrackId);
+      howler.load(previousTrackId, true);
+    }
+    return success;
   }, [currentTrackIndex, allTrackIds, setCurrentTrack])
 
   // Listen for track ended events from Howler controller

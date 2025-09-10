@@ -63,8 +63,8 @@ export function getGlobalHowlerController(): HowlerController {
     if (!('mediaSession' in navigator)) return;
     audioElement.setAttribute('playsinline', '');
     audioElement.setAttribute('webkit-playsinline', '');
-    navigator.mediaSession.setActionHandler('play', () => audioElement.play());
-    navigator.mediaSession.setActionHandler('pause', () => audioElement.pause());
+    navigator.mediaSession.setActionHandler('play', () => play());
+    navigator.mediaSession.setActionHandler('pause', () => pause());
     navigator.mediaSession.setActionHandler('previoustrack', () => {
       window.dispatchEvent(new CustomEvent('resomix:previous-track'));
     });
