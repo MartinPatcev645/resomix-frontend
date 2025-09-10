@@ -95,6 +95,7 @@ export function getGlobalHowlerController(): HowlerController {
       if (isPlayAfterLoad) {
         currentHowl.play();
       }
+      isLoadedStatus = true;
       return;
     }
 

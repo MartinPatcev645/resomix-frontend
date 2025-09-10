@@ -220,7 +220,7 @@ export const usePlayerManager = () => {
 
   // Smart preloading: preload next track when current is fully loaded
   useEffect(() => {
-    if (!howlerController || !currentTrackId || !autoplay) return;
+    if (!howlerController || !currentTrackId) return;
 
     const checkAndPreload = () => {
       if (howlerController.isLoaded) {
@@ -230,13 +230,16 @@ export const usePlayerManager = () => {
           howlerController.preloadNext(nextUrl, nextTrackId);
           console.log('[PlayerManager] Preloading next track:', nextTrackId);
         }
+        clearInterval(interval);
       }
     };
 
     // Check periodically if current track is loaded
     const interval = setInterval(checkAndPreload, 1000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    }
   }, [howlerController, currentTrackId, autoplay, getNextTrack]);
 
   useEffect(() => {
