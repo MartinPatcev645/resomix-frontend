@@ -28,7 +28,7 @@ export function getGlobalHowlerController(): HowlerController {
   let nextHowl: Howl | null = null;
   let progressTimer: number | null = null;
   let isLoadedStatus: boolean = false;
-  let isPlayAfterLoad: boolean = false;
+  let isPlayAfterLoad: boolean = usePlayerStore.getState().autoplay;
 
   const setAudioNode = (node: HTMLAudioElement | null) =>
     usePlayerStore.getState().setAudioNode(node);
