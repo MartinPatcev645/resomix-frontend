@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from 'react'
+import { useCallback, useMemo, useEffect, useRef } from 'react'
 import { usePlaylistStore } from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
 import {useGlobalHowlerController} from "./useGlobalHowlerController";
@@ -24,6 +24,10 @@ export const usePlayerManager = () => {
   const howlerController = useGlobalHowlerController();
 
   const currentTime = usePlayerStore(s => s.trackTimes?.[currentTrackId || ''] ?? 0);
+  const currentTimeRef = useRef<number>(currentTime);
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
 
   // Get all track IDs from the playlist in order (queried track first, then similar tracks)
   const allTrackIds = useMemo(() => {
@@ -294,7 +298,7 @@ export const usePlayerManager = () => {
     if (!duration || !isFinite(duration)){
       return;
     }
-    const position = howlerController.getCurrentTime();
+    const position = currentTimeRef.current ?? 0;
     navigator.mediaSession.setPositionState({
       duration,
       position,
