@@ -24,13 +24,7 @@ from app.api.dependencies.auth import get_api_key
 from app.api.dependencies.database import get_database_session
 from app.schemas.monthly_pipeline import (
     MonthlyPipelineTrackSuccessResponse,
-    MonthlyPipelineTrackErrorResponse
-)
-from app.schemas.update_embeddings import (
-    UpdateEmbeddingsSuccessResponse,
-    UpdateEmbeddingsErrorResponse
-)
-from app.schemas.monthly_pipeline import (
+    MonthlyPipelineTrackErrorResponse,
     MonthlyPipelineUpdateEmbeddingsSuccessResponse,
     MonthlyPipelineUpdateEmbeddingsErrorResponse
 )

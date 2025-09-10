@@ -78,18 +78,6 @@ class MonthlyPipelineTrackErrorResponse(BaseModel):
             }
         }
 
-# New schemas for update_embeddings endpoint
-class UpdateEmbeddingsSuccessResponse(BaseModel):
-    """Success response wrapper for update_embeddings."""
-    success: bool = Field(True, description="Always true for successful responses")
-    data: dict = Field(..., description="Arbitrary data returned from similarity server")
-
-
-class UpdateEmbeddingsErrorResponse(BaseModel):
-    """Error response schema for update_embeddings operations."""
-    success: bool = Field(False, description="Always false for error responses")
-    error: str = Field(..., description="Error message")
-
 
 class MonthlyPipelineUpdateEmbeddingsSuccessResponse(BaseModel):
     """Success response for update_embeddings operation."""
