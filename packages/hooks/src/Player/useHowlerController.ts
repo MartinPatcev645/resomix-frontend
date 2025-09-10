@@ -92,6 +92,9 @@ export function getGlobalHowlerController(): HowlerController {
         currentHowl.seek(saved);
         setInputTime(saved);
       }
+      if (isPlayAfterLoad) {
+        currentHowl.play();
+      }
       return;
     }
 

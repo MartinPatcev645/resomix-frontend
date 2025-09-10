@@ -13,7 +13,6 @@ export const usePlayerManager = () => {
   const {
     currentTrackId,
     setCurrentTrack,
-    howlerController,
     autoplay,
     setAutoplay,
     volume,
@@ -21,7 +20,9 @@ export const usePlayerManager = () => {
     topSk,
     setTopSk
   } = usePlayerStore()
-  const howler = useGlobalHowlerController();
+  const howlerController = useGlobalHowlerController();
+
+  const currentTime = usePlayerStore(s => s.trackTimes?.[currentTrackId || ''] ?? 0);
 
   // Get all track IDs from the playlist in order (queried track first, then similar tracks)
   const allTrackIds = useMemo(() => {
@@ -150,31 +151,14 @@ export const usePlayerManager = () => {
 
   // Play next track in playlist (synchronous)
   const playNext = useCallback(() => {
-    // Fetch the latest state values directly from the store to avoid stale closures
-    const { autoplay: latestAutoplay } = usePlayerStore.getState();
 
     const nextTrackId = getNextTrack();
 
     if (!nextTrackId) {
       // No next track available
-      // Only stop if autoplay is on (means we tried to advance but hit the end)
-      if (latestAutoplay) {
-        if (howlerController) {
-          howlerController.pause();
-        }
-        setCurrentTrack(null);
-        console.log('[PlayerManager] Playlist ended, stopping playback');
-      }
-      return false;
-    }
-
-    // Only advance to next track if autoplay is enabled
-    if (!latestAutoplay) {
-      if (howlerController) {
-        howlerController.pause();
-      }
-      setCurrentTrack(null); // Stop playback
-      console.log('[PlayerManager] Autoplay disabled, stopping at track end');
+      howlerController.pause();
+      setCurrentTrack(null);
+      console.log('[PlayerManager] Playlist ended, stopping playback');
       return false;
     }
 
@@ -182,7 +166,7 @@ export const usePlayerManager = () => {
     const success = cueTrack(nextTrackId);
     if (success) {
       console.log('[PlayerManager] Advanced to next track:', nextTrackId);
-      howler.load(nextTrackId, true);
+      howlerController.load(nextTrackId, true);
     }
     return success;
   }, [getNextTrack, setCurrentTrack, cueTrack, howlerController])
@@ -199,7 +183,7 @@ export const usePlayerManager = () => {
     const success = cueTrack(previousTrackId);
     if (success) {
       console.log('[PlayerManager] Advanced to previous track:', previousTrackId);
-      howler.load(previousTrackId, true);
+      howlerController.load(previousTrackId, true);
     }
     return success;
   }, [currentTrackIndex, allTrackIds, setCurrentTrack])
@@ -234,7 +218,7 @@ export const usePlayerManager = () => {
     if (!howlerController || !currentTrackId || !autoplay) return;
 
     const checkAndPreload = () => {
-      if (howlerController.isLoaded()) {
+      if (howlerController.isLoaded) {
         const nextTrackId = getNextTrack();
         if (nextTrackId && nextTrackId !== 'uploaded-local') {
           const nextUrl = `https://media.resomix.com/signed-audio/?uuid=${nextTrackId}`;
@@ -257,10 +241,10 @@ export const usePlayerManager = () => {
     const hasNext = !!getNextTrack();
 
     navigator.mediaSession.setActionHandler('play', () => {
-      howler.play();
+      howlerController.play();
     });
     navigator.mediaSession.setActionHandler('pause', () => {
-      howler.pause();
+      howlerController.pause();
     });
 
     navigator.mediaSession.setActionHandler(
@@ -272,36 +256,41 @@ export const usePlayerManager = () => {
       hasNext ? () => { console.log('[MS] next'); playNext(); } : null
     );
 
+    /*
     navigator.mediaSession.setActionHandler('seekbackward', (e: any) => {
       const offset = e?.seekOffset ?? 10;
-      howler.seek(howler.getCurrentTime() - offset);
+      howlerController.seek(howlerController.getCurrentTime() - offset);
     });
     navigator.mediaSession.setActionHandler('seekforward', (e: any) => {
       const offset = e?.seekOffset ?? 10;
-      howler.seek(howler.getCurrentTime() + offset);
+      howlerController.seek(howlerController.getCurrentTime() + offset);
     });
+     */
 
+    /*
     navigator.mediaSession.setActionHandler('seekto', (details: any) => {
-      if (details?.seekTime != null) howler.seek(details.seekTime);
+      if (details?.seekTime != null) howlerController.seek(details.seekTime);
     });
+     */
 
     return () => {
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
       navigator.mediaSession.setActionHandler('previoustrack', null);
       navigator.mediaSession.setActionHandler('nexttrack', null);
-      navigator.mediaSession.setActionHandler('seekbackward', null);
-      navigator.mediaSession.setActionHandler('seekforward', null);
-      navigator.mediaSession.setActionHandler('seekto', null);
+      // navigator.mediaSession.setActionHandler('seekbackward', null);
+      // navigator.mediaSession.setActionHandler('seekforward', null);
+      // navigator.mediaSession.setActionHandler('seekto', null);
     };
-  }, [howler, playNext, playPrevious, currentTrackIndex, getNextTrack]);
+  }, [howlerController, playNext, playPrevious, currentTrackIndex, getNextTrack]);
 
   function updatePositionState() {
     if (!('mediaSession' in navigator)) return;
-    const duration = howler.getDuration();
-    const position = howler.getCurrentTime();
+    const duration = howlerController.getDuration();
     if (!duration || !isFinite(duration)) return;
     navigator.mediaSession.setPositionState({
       duration,
-      position,
+      position: currentTime,
       playbackRate: 1
     });
   }
@@ -310,7 +299,7 @@ export const usePlayerManager = () => {
     if (!('mediaSession' in navigator)) return;
     const id = setInterval(updatePositionState, 500);
     return () => clearInterval(id);
-  }, [howler, currentTrackId]);
+  }, [howlerController, currentTrackId]);
 
   // Play first track in playlist
   const playFirst = useCallback(() => {
