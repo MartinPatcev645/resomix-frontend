@@ -93,6 +93,8 @@ class MonthlyPipelineService:
         """
         import json
         import tempfile
+        import subprocess
+        import os
         from sqlalchemy import text
 
         # Step 1: Fetch uuid and file_path for all tracks
@@ -125,7 +127,6 @@ class MonthlyPipelineService:
 
         # Step 3: Log file size before sending
         try:
-            import os
             file_size = os.path.getsize(tmp_file_path)
             print(f"[UPDATE_EMBEDDINGS] NDJSON file created: {tmp_file_path}")
             print(f"[UPDATE_EMBEDDINGS] File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
@@ -133,15 +134,47 @@ class MonthlyPipelineService:
         except Exception as e:
             print(f"Error getting file size: {e}")
 
-        # Step 4: Send the file to similarity server
+        # Step 4: Transfer file via SCP
+        filename = os.path.basename(tmp_file_path)
+        remote_path = f"/home/ubuntu/usman/resomix-similarity/data/all_tracks/{filename}"
+        
         try:
-            with open(tmp_file_path, "rb") as f:
-                files = {"file": ("tracks_map.ndjson", f, "application/x-ndjson")}
-                print(f"[UPDATE_EMBEDDINGS] Sending file to similarity server...")
-                response = await self._call_similarity_server("/update_embeddings", files=files)
+            print(f"[UPDATE_EMBEDDINGS] Transferring file via SCP...")
+            scp_command = [
+                "scp", "-i", "/etc/pem/resomix22tbserver-key.pem", "-P", "8522",
+                tmp_file_path, f"ubuntu@65.21.116.184:{remote_path}"
+            ]
+            
+            result = subprocess.run(scp_command, capture_output=True, text=True, timeout=300)
+            
+            if result.returncode != 0:
+                print(f"SCP transfer failed: {result.stderr}")
+                return {"success": False, "error": f"SCP transfer failed: {result.stderr}"}
+            
+            print(f"[UPDATE_EMBEDDINGS] File transferred successfully to: {remote_path}")
+            
+        except subprocess.TimeoutExpired:
+            print("SCP transfer timed out")
+            return {"success": False, "error": "SCP transfer timed out"}
         except Exception as e:
-            print(f"Error posting NDJSON to similarity server: {e}")
-            return {"success": False, "error": f"Failed to send NDJSON to similarity server: {e}"}
+            print(f"Error during SCP transfer: {e}")
+            return {"success": False, "error": f"SCP transfer failed: {e}"}
+
+        # Step 5: Send request to similarity server with file path
+        try:
+            print(f"[UPDATE_EMBEDDINGS] Sending file path to similarity server...")
+            request_data = {"file_path": remote_path}
+            response = await self._call_similarity_server("/update_embeddings", data=request_data)
+        except Exception as e:
+            print(f"Error sending file path to similarity server: {e}")
+            return {"success": False, "error": f"Failed to send file path to similarity server: {e}"}
+
+        # Clean up local temp file
+        try:
+            os.unlink(tmp_file_path)
+            print(f"[UPDATE_EMBEDDINGS] Cleaned up local temp file: {tmp_file_path}")
+        except Exception as e:
+            print(f"Warning: Could not clean up temp file {tmp_file_path}: {e}")
 
         # Pass through raw response but mark success boolean for consistency
         if response.get("status") == "success":
