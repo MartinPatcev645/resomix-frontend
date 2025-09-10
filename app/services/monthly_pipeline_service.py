@@ -107,6 +107,9 @@ class MonthlyPipelineService:
         if not rows:
             return {"success": False, "error": "No tracks found in database."}
 
+        # Log the number of tracks found
+        print(f"[UPDATE_EMBEDDINGS] Found {len(rows)} tracks in database")
+
         # Step 2: Write NDJSON mapping to a temporary file
         abs_prefix = "/home/usman/data/"
         try:
@@ -120,10 +123,21 @@ class MonthlyPipelineService:
             print(f"Error writing NDJSON file for update_embeddings: {e}")
             return {"success": False, "error": f"Failed to write NDJSON file: {e}"}
 
-        # Step 3: Send the file to similarity server
+        # Step 3: Log file size before sending
+        try:
+            import os
+            file_size = os.path.getsize(tmp_file_path)
+            print(f"[UPDATE_EMBEDDINGS] NDJSON file created: {tmp_file_path}")
+            print(f"[UPDATE_EMBEDDINGS] File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
+            print(f"[UPDATE_EMBEDDINGS] Number of entries: {len(rows)}")
+        except Exception as e:
+            print(f"Error getting file size: {e}")
+
+        # Step 4: Send the file to similarity server
         try:
             with open(tmp_file_path, "rb") as f:
                 files = {"file": ("tracks_map.ndjson", f, "application/x-ndjson")}
+                print(f"[UPDATE_EMBEDDINGS] Sending file to similarity server...")
                 response = await self._call_similarity_server("/update_embeddings", files=files)
         except Exception as e:
             print(f"Error posting NDJSON to similarity server: {e}")
