@@ -3,6 +3,11 @@
 import { Howl } from 'howler';
 import { usePlayerStore } from '@resomix/stores';
 
+const log = (...args: any[]) => {
+  // console.log(...args);
+};
+
+
 export interface HowlerController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
@@ -115,36 +120,35 @@ export function getGlobalHowlerController(): HowlerController {
         howl.pause();
         return;
       }
-      console.log('onplay: ', trackId);
+      log('onplay: ', trackId);
       isPlaying = true;
       startTicker(howl);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     };
     const onpause = () => {
       if (!isCurrent(trackId)) return;
-      console.log('onpause: ', trackId);
+      log('onpause: ', trackId);
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     };
     const onstop = () => {
       if (!isCurrent(trackId)) return;
-      console.log('onstop: ', trackId);
+      log('onstop: ', trackId);
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
     };
     const onend = () => {
       if (!isCurrent(trackId)) return;
-      console.log('onend: ', trackId);
+      log('onend: ', trackId);
       isPlaying = false;
       stopTicker();
       setTrackTime(trackId, 0);
       const { autoplay } = usePlayerStore.getState();
       if (autoplay) {
-        // window.dispatchEvent(new CustomEvent('resomix:track-ended'));
         const idx = getNextTrackIdx();
-        console.log('next idx: '+idx);
+        log('next idx: '+idx);
         if (idx) {
           setCurrentTrack(idx);
           load(idx, true);
@@ -243,7 +247,7 @@ export function getGlobalHowlerController(): HowlerController {
     if (!trackId) return;
 
     isPlayAfterLoad = playAfter;
-    console.log('load', trackId);
+    log('load', trackId);
     isPlaying = false;
 
     const url = getTrackUrl(trackId);
@@ -263,23 +267,23 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function play() {
-    console.log('play');
+    log('play');
     const h = getCurrentHowl();
     if (!h) return;
     if (!h.playing()) {
-      console.log('real play call');
+      log('real play call');
       h.play();
     }
   }
 
   function pause(trackId: string = '') {
-    console.log('pause');
+    log('pause');
     const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
     if (!h) return;
     h.pause();
     const id = (h as any)?._trackId as string | undefined;
     if (id && isCurrent(id)) {
-      console.log('-pause', trackId);
+      log('-pause', trackId);
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
@@ -287,11 +291,11 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function stop() {
-    console.log('stop');
+    log('stop');
     const h = getCurrentHowl();
     if (!h) return;
     h.stop();
-    console.log('-stop current');
+    log('-stop current');
     isPlaying = false;
     stopTicker();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
