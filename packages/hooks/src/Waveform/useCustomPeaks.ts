@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { loadPeaksData } from './peaksCache';
 
 export type UsePeaksReturn = {
   loading: boolean;
@@ -93,13 +94,7 @@ export function useCustomPeaks(
     const loadData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`https://media.resomix.com/peaks/?uuid=${uuid}`, {
-          cache: 'no-store'
-        });
-
-        if (!res.ok) console.error(`Peaks fetch failed (${res.status})`);
-
-        const data = await res.json();
+        const data = await loadPeaksData(uuid);
         setNormalizedData(data);
         setDuration(data.length);
       } catch (err) {

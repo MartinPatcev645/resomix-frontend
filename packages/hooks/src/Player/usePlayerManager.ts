@@ -2,6 +2,7 @@ import { useCallback, useMemo, useEffect, useRef } from 'react'
 import { usePlaylistStore } from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
 import {useGlobalHowlerController} from "./useGlobalHowlerController";
+import {loadPeaksData} from "../Waveform/peaksCache";
 
 
 /**
@@ -228,6 +229,7 @@ export const usePlayerManager = () => {
         if (nextTrackId && nextTrackId !== 'uploaded-local') {
           const nextUrl = `https://media.resomix.com/signed-audio/?uuid=${nextTrackId}`;
           howlerController.preloadNext(nextUrl, nextTrackId);
+          loadPeaksData(nextTrackId);
           console.log('[PlayerManager] Preloading next track:', nextTrackId);
         }
         clearInterval(interval);
