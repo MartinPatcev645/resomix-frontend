@@ -161,6 +161,14 @@ class Settings(BaseModel):
         description="FastAPI application description"
     )
     app_version: str = Field(default="1.0.1", description="FastAPI application version")
+    
+    # Elasticsearch Configuration
+    es_url: str = Field(default="http://localhost:9200", description="Elasticsearch base URL")
+    es_username: Optional[str] = Field(default=None, description="Elasticsearch username")
+    es_password: Optional[str] = Field(default=None, description="Elasticsearch password")
+    es_verify_certs: bool = Field(default=False, description="Verify TLS certificates for ES")
+    es_ca_certs: Optional[str] = Field(default=None, description="Path to CA certificates for ES TLS")
+    es_request_timeout: int = Field(default=20, description="Timeout in seconds for ES requests")
 
     def __init__(self, **data):
         # Override with environment variables if they exist
@@ -182,13 +190,20 @@ class Settings(BaseModel):
             "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
             "TIDAL_CLIENT_ID": "tidal_client_id",
             "TIDAL_CLIENT_SECRET": "tidal_client_secret",
+            # Elasticsearch
+            "ES_URL": "es_url",
+            "ES_USERNAME": "es_username",
+            "ES_PASSWORD": "es_password",
+            "ES_VERIFY_CERTS": "es_verify_certs",
+            "ES_CA_CERTS": "es_ca_certs",
+            "ES_REQUEST_TIMEOUT": "es_request_timeout",
         }
         
         for env_key, config_key in direct_env_vars.items():
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle integer conversion
-                if config_key in ["preview_audio_url_expires_seconds"]:
+                if config_key in ["preview_audio_url_expires_seconds", "es_request_timeout"]:
                     try:
                         env_overrides[config_key] = int(env_value)
                     except ValueError:

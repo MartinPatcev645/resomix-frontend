@@ -404,6 +404,25 @@ class TrackRepository(BaseRepository[Track]):
         
         return {uuid: track_id for uuid, track_id in tracks}
     
+    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str]) -> List[Track]:
+        """Bulk fetch tracks by a list of UUIDs (async).
+        Args:
+            db: AsyncSession
+            uuids: list of track UUID strings
+        Returns:
+            List[Track] objects corresponding to given UUIDs.
+        """
+        if not uuids:
+            return []
+
+        stmt = (
+            select(self.model)
+            .options(joinedload(self.model.track_artists).joinedload(TrackArtist.artist))
+            .where(self.model.uuid.in_(uuids))
+        )
+        result = await db.execute(stmt)
+        return result.scalars().unique().all()
+    
     # --- TrackArtist relationship methods ---
     
     def add_artist_to_track(self, db: Session, track_id: int, artist_id: int) -> TrackArtist:
