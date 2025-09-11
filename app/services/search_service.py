@@ -42,62 +42,95 @@ class SearchService:
         if not query or not query.strip():
             return {"tracks": []}
 
-        query_clean = query.strip()
+        # Pre-process query: replace punctuation with space, collapse multiple spaces
+        raw_q = query.strip()
+        # replace any character that is not letter, number or whitespace with space
+        cleaned = re.sub(r"[^0-9A-Za-z]+", " ", raw_q)
+        # collapse multiple spaces
+        query_clean = re.sub(r"\s+", " ", cleaned).strip()
+        if not query_clean:
+            return {"tracks": []}
+
         es_client = get_es_client()
         overall_start = time.perf_counter()
 
         # Build ES body (simplified to mirror previous logic)
         tokens_list = query_clean.split()
 
+        tokens_lower = [t.lower() for t in tokens_list if t]
+
         if len(tokens_list) <= 2:
             es_body = {
                 "collapse": {"field": "dedupe"},
                 "query": {
                     "function_score": {
-                    "query": {
-                        "bool": {
-                        "should": [
-                            { "multi_match": {
-                                "query": query_clean,
-                                "fields": ["artists^2","title^1.5"],
-                                "type": "best_fields",
-                                "operator": "and",
-                                "fuzziness": "AUTO"
-                            }},
-                            { "match": {
-                                "all_text": {
-                                "query": query_clean, "operator": "and",
-                                "fuzziness": "AUTO", "boost": 0.5
-                            }}},
-                            { "match_phrase_prefix": { "title":    {"query": query_clean, "slop": 2, "boost": 0.7} }},
-                            { "match_phrase_prefix": { "all_text": {"query": query_clean, "slop": 2, "boost": 0.5} }}
+                        "query": {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "terms_set": {
+                                            "artists": {
+                                                "terms": tokens_lower,
+                                                "minimum_should_match_script": {"source": "Math.min(params.num_terms, 1)"}
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "multi_match": {
+                                            "query": query_clean,
+                                            "fields": ["title^1.5"],
+                                            "type": "best_fields",
+                                            "operator": "and",
+                                            "fuzziness": "AUTO"
+                                        }
+                                    },
+                                    {
+                                        "match": {
+                                            "all_text": {
+                                                "query": query_clean,
+                                                "operator": "and",
+                                                "fuzziness": "AUTO",
+                                                "boost": 0.5
+                                            }
+                                        }
+                                    }
+                                ],
+                                "minimum_should_match": 1
+                            }
+                        },
+                        "functions": [
+                            {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
                         ],
-                        "minimum_should_match": 1
-                        }
-                    },
-                    "functions": [
-                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
-                    ],
-                    "score_mode": "sum", "boost_mode": "sum"
+                        "score_mode": "sum",
+                        "boost_mode": "sum"
                     }
                 },
+                "_source": ["uuid", "type", "artists", "title"],
                 "size": limit
             }
         else:
             es_body = {
                 "collapse": {"field": "dedupe"},
                 "query": {
-                    "bool": {
-                    "must": [
-                        { "match": { "all_text": {
-                            "query": query_clean, "operator": "and", "fuzziness": "AUTO"
-                    }}} ],
-                    "should": [
-                        { "match_phrase_prefix": { "all_text": {"query": query_clean, "slop": 2, "boost": 0.5} }},
-                        { "term": { "type": "electrobuzz" } }
-                    ]
+                    "function_score": {
+                        "query": {
+                            "bool": {
+                                "must": [
+                                    {"match": {"all_text": {"query": query_clean, "operator": "and", "fuzziness": "AUTO"}}}
+                                ],
+                                "should": [
+                                    {"match_phrase": {"title": {"query": query_clean, "slop": 2, "boost": 2.0}}}
+                                ]
+                            }
+                        },
+                        "functions": [
+                            {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
+                        ],
+                        "score_mode": "sum",
+                        "boost_mode": "sum"
                     }
                 },
+                "_source": ["uuid", "type", "artists", "title"],
                 "size": limit
             }
 
