@@ -45,18 +45,48 @@ class SearchService:
         es_client = get_es_client()
 
         # Build ES body (simplified to mirror previous logic)
-        tokens = re.findall(r"[0-9a-z]+", query_clean.lower())
+        tokens_list = query_clean.split()
+
         es_body = {
             "collapse": {"field": "dedupe"},
             "query": {
                 "function_score": {
                     "query": {
                         "bool": {
+                            "must": [
+                                {
+                                    "match": {
+                                        "all_text": {
+                                            "query": query_clean,
+                                            "operator": "and",
+                                            "fuzziness": "AUTO"
+                                        }
+                                    }
+                                }
+                            ],
                             "should": [
-                                {"terms": {"artists": tokens, "boost": 3.0}} if tokens else {"match_none": {}},
-                                {"match": {"title": {"query": query_clean, "operator": "and", "fuzziness": "AUTO", "boost": 2.0}}},
-                                {"match": {"all_text": {"query": query_clean, "operator": "and", "fuzziness": "AUTO", "boost": 1.0}}},
-                                {"match_phrase": {"all_text": {"query": query_clean, "slop": 2, "boost": 1.5}}}
+                                {
+                                    "terms_set": {
+                                        "artists": {
+                                            "terms": tokens_list,
+                                            "minimum_should_match_script": {"source": "params.num_terms >= 2 ? 2 : 1"}
+                                        }
+                                    }
+                                },
+                                {
+                                    "match_phrase": {
+                                        "title": {"query": query_clean, "slop": 2, "boost": 2.0}
+                                    }
+                                },
+                                {
+                                    "multi_match": {
+                                        "query": query_clean,
+                                        "type": "best_fields",
+                                        "fields": ["title^2", "all_text"],
+                                        "fuzziness": "AUTO",
+                                        "tie_breaker": 0.1
+                                    }
+                                }
                             ],
                             "minimum_should_match": 1
                         }
