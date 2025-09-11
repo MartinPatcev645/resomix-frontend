@@ -185,7 +185,6 @@ export function getGlobalHowlerController(): HowlerController {
     const prev = getCurrentHowl();
     if (prev && prev !== howl) {
       stopTicker();
-      console.log('--select current pause', trackId);
       prev.pause();
     }
 
@@ -205,7 +204,6 @@ export function getGlobalHowlerController(): HowlerController {
 
   function load(trackId: string, isPlayAfter: boolean = false) {
     if (!trackId) return;
-    console.log('*** load', trackId);
 
     isPlayAfterLoad = isPlayAfter;
     isPlaying = false;
@@ -219,6 +217,7 @@ export function getGlobalHowlerController(): HowlerController {
       usePlayerStore.setState({ isLoaded: false });
       howl.load();
     } else {
+      usePlayerStore.setState({ isLoaded: true });
       if (isPlayAfterLoad) {
         play();
       }
@@ -227,7 +226,6 @@ export function getGlobalHowlerController(): HowlerController {
 
   function play() {
     const h = getCurrentHowl();
-    console.log('***** play', currentTrackId);
     if (!isPlaying) {
       h?.play();
     }
@@ -235,13 +233,11 @@ export function getGlobalHowlerController(): HowlerController {
 
   function pause() {
     const h = getCurrentHowl();
-    console.log('***** pause', currentTrackId);
     h?.pause();
   }
 
   function stop() {
     const h = getCurrentHowl();
-    console.log('***** stop', currentTrackId);
     h?.stop();
   }
 

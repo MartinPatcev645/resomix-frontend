@@ -42,15 +42,12 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     const howlerController = useGlobalHowlerController();
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
-    const isLoaded = usePlayerStore(s => s.isLoaded);
 
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
-    const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
 
     useEffect(() => {
-        if (!isLoaded) return;
         setTime(currentTime);
-    }, [isLoaded, currentTime, setTime]);
+    }, [currentTime, setTime]);
 
     // Autoplay: register this track on mount if requested
     useEffect(() => {
@@ -84,22 +81,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
         };
         el.addEventListener('click', onClick);
         return () => el.removeEventListener('click', onClick);
-    }, [isLoaded, totalDuration, effectiveId, setTime, howlerController, setTrackTime]);
+    }, [totalDuration, effectiveId, setTime, howlerController, setTrackTime]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
             attachOverviewElement(waveformContainerRef.current);
         }
     }, [waveformContainerRef.current, attachOverviewElement]);
-
-    // Reset readiness when the effective track identity changes
-    const prevIdRef = useRef<string | null>(null);
-    useEffect(() => {
-        if (effectiveId !== prevIdRef.current) {
-            setInputProviderReady(false);
-            prevIdRef.current = effectiveId;
-        }
-    }, [effectiveId, setInputProviderReady]);
 
     const togglePlay = () => {
         if (!howlerController) return;
@@ -115,7 +103,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
             else {
                 howlerController.play();
             }
-            setInputProviderReady(true);
         }
     };
 

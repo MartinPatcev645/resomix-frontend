@@ -20,9 +20,8 @@ interface SimilarityPlayerProps {
     isPlaying: boolean;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, isPlaying }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration}) => {
     const {
-        currentTrackId,
         volume,
         setVolume,
     } = usePlayerManager();
@@ -34,20 +33,18 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     // Get the GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
     const {
-        // isLoaded,
         seek,
-        // currentTime,
         getHtmlAudioNode,
     } = howlerController;
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
-    const isLoaded = usePlayerStore(s => s.isLoaded);
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
 
+    // console.log('---similarity currentTime', currentTime);
+
     useEffect(() => {
-        if (!isLoaded) return;
         setTime(currentTime);
-    }, [isLoaded, currentTime, setTime]);
+    }, [currentTime, setTime]);
 
     const audioNode = getHtmlAudioNode();
     useEffect(() => {
@@ -58,16 +55,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         if (waveformContainerRef.current) {
             attachOverviewElement(waveformContainerRef.current);
         }
-    }, [waveformContainerRef.current]);
-
-    useEffect(()=>{
-        const tmp: boolean = currentTrackId === trackId;
-        if (tmp !== isPlaying) {
-            if (tmp) {
-                howlerController.pause();
-            }
-        }
-    }, [currentTrackId]);
+    }, [attachOverviewElement]);
 
     useEffect(() => {
         const el = waveformContainerRef.current;
@@ -84,7 +72,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         };
         el.addEventListener('click', onClick);
         return () => el.removeEventListener('click', onClick);
-    }, [isLoaded, totalDuration, trackId, setTime, howlerController, setTrackTime]);
+    }, [totalDuration, trackId, setTime, howlerController, setTrackTime]);
 
     const skipBackward = useCallback(() => {
         if (!howlerController) return;

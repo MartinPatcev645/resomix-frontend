@@ -9,7 +9,7 @@ import {useGlobalHowlerController} from "./useGlobalHowlerController";
  * Integrates with playlist store and player store to provide centralized playback control
  */
 export const usePlayerManager = () => {
-  const { playlistData, trackRatings } = usePlaylistStore()
+  const { playlistData, trackRatings } = usePlaylistStore();
   const {
     currentTrackId,
     setCurrentTrack,
