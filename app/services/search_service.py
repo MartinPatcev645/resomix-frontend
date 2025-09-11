@@ -49,60 +49,51 @@ class SearchService:
         # Build ES body (simplified to mirror previous logic)
         tokens_list = query_clean.split()
 
-        es_body = {
-            "collapse": {"field": "dedupe"},
-            "query": {
-                "function_score": {
-                    "query": {
-                        "bool": {
-                            "must": [
-                                {
-                                    "match": {
-                                        "all_text": {
-                                            "query": query_clean,
-                                            "operator": "and",
-                                            "fuzziness": "AUTO"
-                                        }
-                                    }
+        if len(tokens_list) <= 2:
+            es_body = {
+                "collapse": {"field": "dedupe"},
+                "query": {
+                    "bool": {
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": query_clean,
+                                    "fields": ["artists^2", "title^1.5"],
+                                    "type": "best_fields",
+                                    "operator": "and",
+                                    "fuzziness": "AUTO"
                                 }
-                            ],
-                            "should": [
-                                {
-                                    "terms_set": {
-                                        "artists": {
-                                            "terms": tokens_list,
-                                            "minimum_should_match_script": {"source": "params.num_terms >= 2 ? 2 : 1"}
-                                        }
-                                    }
-                                },
-                                {
-                                    "match_phrase": {
-                                        "title": {"query": query_clean, "slop": 2, "boost": 2.0}
-                                    }
-                                },
-                                {
-                                    "multi_match": {
+                            },
+                            {
+                                "match": {
+                                    "all_text": {
                                         "query": query_clean,
-                                        "type": "best_fields",
-                                        "fields": ["title^2", "all_text"],
+                                        "operator": "and",
                                         "fuzziness": "AUTO",
-                                        "tie_breaker": 0.1
+                                        "boost": 0.5
                                     }
                                 }
-                            ],
-                            "minimum_should_match": 1
+                            }
+                        ],
+                        "minimum_should_match": 1
+                    }
+                },
+                "size": limit
+            }
+        else:
+            es_body = {
+                "collapse": {"field": "dedupe"},
+                "query": {
+                    "match": {
+                        "all_text": {
+                            "query": query_clean,
+                            "operator": "and",
+                            "fuzziness": "AUTO"
                         }
-                    },
-                    "functions": [
-                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
-                    ],
-                    "score_mode": "sum",
-                    "boost_mode": "sum"
-                }
-            },
-            "_source": ["uuid", "title", "artists", "type"],
-            "size": limit
-        }
+                    }
+                },
+                "size": limit
+            }
 
         es_failed = False
         try:
