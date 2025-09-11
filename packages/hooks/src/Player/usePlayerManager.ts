@@ -265,17 +265,6 @@ export const usePlayerManager = () => {
       hasNext ? () => { console.log('[MS] next'); playNext(); } : null
     );
 
-    /*
-    navigator.mediaSession.setActionHandler('seekbackward', (e: any) => {
-      const offset = e?.seekOffset ?? 10;
-      howlerController.seek(howlerController.getCurrentTime() - offset);
-    });
-    navigator.mediaSession.setActionHandler('seekforward', (e: any) => {
-      const offset = e?.seekOffset ?? 10;
-      howlerController.seek(howlerController.getCurrentTime() + offset);
-    });
-     */
-
     navigator.mediaSession.setActionHandler('seekto', (details: any) => {
       if (details?.seekTime != null) {
         howlerController.seek(details.seekTime);

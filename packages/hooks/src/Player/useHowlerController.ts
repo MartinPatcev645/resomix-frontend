@@ -13,10 +13,8 @@ export interface HowlerController {
   readonly currentTime: number;
   getDuration: () => number;
   unload: () => void;
-  getHtmlAudioNode: () => HTMLAudioElement | null;
   preloadNext: (trackId: string) => void;
   readonly isLoaded: boolean;
-  getLoadingProgress: () => number;
 }
 
 let singleton: HowlerController | null = null;
@@ -32,8 +30,6 @@ export function getGlobalHowlerController(): HowlerController {
   let isPlayAfterLoad: boolean = false;
   let isPlaying: boolean = false;
 
-  const setAudioNode = (node: HTMLAudioElement | null) =>
-    usePlayerStore.getState().setAudioNode(node);
   const setCurrentTrack = (id: string | null) =>
     usePlayerStore.getState().setCurrentTrack(id);
   const setInputTime = (t: number) =>
@@ -72,11 +68,6 @@ export function getGlobalHowlerController(): HowlerController {
     }
   }
 
-  function getHtmlAudioNodeFromHowl(h: Howl | null): HTMLAudioElement | null {
-    const anyHowl = h as any;
-    return anyHowl?._sounds?.[0]?._node ?? null;
-  }
-
   function touch(trackId: string) {
     const h = howls.get(trackId);
     if (!h) return;
@@ -104,24 +95,28 @@ export function getGlobalHowlerController(): HowlerController {
         howl.pause();
         return;
       }
+      console.log('onplay: ', trackId);
       isPlaying = true;
       startTicker(howl);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     };
     const onpause = () => {
       if (!isCurrent(trackId)) return;
+      console.log('onpause: ', trackId);
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     };
     const onstop = () => {
       if (!isCurrent(trackId)) return;
+      console.log('onstop: ', trackId);
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
     };
     const onend = () => {
       if (!isCurrent(trackId)) return;
+      console.log('onend: ', trackId);
       isPlaying = false;
       stopTicker();
       setTrackTime(trackId, 0);
@@ -200,7 +195,6 @@ export function getGlobalHowlerController(): HowlerController {
     const prev = getCurrentHowl();
     if (prev && prev !== howl) {
       stopTicker();
-      prev.pause();
     }
 
     for (const [id, h] of howls) {
@@ -210,10 +204,6 @@ export function getGlobalHowlerController(): HowlerController {
     }
 
     currentTrackId = trackId;
-
-    const node = getHtmlAudioNodeFromHowl(howl);
-    setAudioNode(node);
-
     usePlayerStore.setState({ isLoaded: howl.state() === 'loaded' });
 
     const saved = getTrackTime(trackId);
@@ -227,6 +217,7 @@ export function getGlobalHowlerController(): HowlerController {
     if (!trackId) return;
 
     isPlayAfterLoad = playAfter;
+    console.log('load', trackId);
     isPlaying = false;
 
     const url = getTrackUrl(trackId);
@@ -257,6 +248,7 @@ export function getGlobalHowlerController(): HowlerController {
     h.pause();
     const id = (h as any)?._trackId as string | undefined;
     if (id && isCurrent(id)) {
+      console.log('-pause', trackId);
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
@@ -267,6 +259,7 @@ export function getGlobalHowlerController(): HowlerController {
     const h = getCurrentHowl();
     if (!h) return;
     h.stop();
+    console.log('-stop current');
     isPlaying = false;
     stopTicker();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
@@ -299,13 +292,8 @@ export function getGlobalHowlerController(): HowlerController {
     howls.clear();
     currentTrackId = null;
     isPlaying = false;
-    setAudioNode(null);
     usePlayerStore.setState({ isLoaded: false });
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
-  }
-
-  function getHtmlAudioNode() {
-    return getHtmlAudioNodeFromHowl(getCurrentHowl());
   }
 
   function preloadNext(trackId: string) {
@@ -325,15 +313,6 @@ export function getGlobalHowlerController(): HowlerController {
     return h?.state() === 'loaded';
   }
 
-  function getLoadingProgress() {
-    const node = getHtmlAudioNode();
-    if (!node) return 0;
-    const b = node.buffered;
-    const d = node.duration;
-    if (b.length && d > 0) return b.end(b.length - 1) / d;
-    return 0;
-  }
-
   singleton = {
     load,
     play,
@@ -344,10 +323,8 @@ export function getGlobalHowlerController(): HowlerController {
     get currentTime() { return getCurrentTime(); },
     getDuration,
     unload,
-    getHtmlAudioNode,
     preloadNext,
     get isLoaded() { return isLoaded(); },
-    getLoadingProgress,
   };
 
   return singleton;
