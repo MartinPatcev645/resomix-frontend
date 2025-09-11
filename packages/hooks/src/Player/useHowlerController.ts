@@ -4,7 +4,7 @@ import { Howl } from 'howler';
 import { usePlayerStore } from '@resomix/stores';
 
 const log = (...args: any[]) => {
-  // console.log(...args);
+   // console.log(...args);
 };
 
 
@@ -115,24 +115,25 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function attachHowlEvents(howl: Howl, trackId: string) {
+    log('onplay: ', trackId);
     const onplay = () => {
       if (!isCurrent(trackId)) {
         howl.pause();
         return;
       }
-      log('onplay: ', trackId);
       isPlaying = true;
       startTicker(howl);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     };
     const onpause = () => {
-      if (!isCurrent(trackId)) return;
       log('onpause: ', trackId);
+      if (!isCurrent(trackId)) return;
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     };
     const onstop = () => {
+      log('onstop: ', trackId);
       if (!isCurrent(trackId)) return;
       log('onstop: ', trackId);
       isPlaying = false;
@@ -140,6 +141,7 @@ export function getGlobalHowlerController(): HowlerController {
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
     };
     const onend = () => {
+      log('onend: ', trackId);
       if (!isCurrent(trackId)) return;
       log('onend: ', trackId);
       isPlaying = false;
@@ -159,6 +161,7 @@ export function getGlobalHowlerController(): HowlerController {
       }
     };
     const onload = () => {
+      log('onload: ', trackId);
       if (!isCurrent(trackId)) return;
       usePlayerStore.setState({ isLoaded: true });
       const saved = getTrackTime(trackId);
@@ -168,6 +171,7 @@ export function getGlobalHowlerController(): HowlerController {
       }
       if (isPlayAfterLoad && currentTrackId === trackId) {
         play();
+        isPlayAfterLoad = false;
       }
     };
     const onloaderror = (_id: number, err: any) => console.error('[Howler] load error', err);
