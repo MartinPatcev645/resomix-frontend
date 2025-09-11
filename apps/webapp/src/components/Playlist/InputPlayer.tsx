@@ -36,7 +36,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
     const waveformContainerRef = useRef<HTMLDivElement>(null);
 
-    const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId || '');
+    const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId || '');
 
     // GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
@@ -53,11 +53,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     useEffect(() => {
         howlerController.load(effectiveId);
     }, []);
-
-    const audioNode = howlerController.getHtmlAudioNode();
-    useEffect(() => {
-        if (audioNode) attachMediaElement(audioNode);
-    }, [audioNode, attachMediaElement]);
 
     useEffect(()=>{
         const isPlay: boolean = currentTrackId === effectiveId;

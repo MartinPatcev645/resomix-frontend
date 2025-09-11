@@ -5,7 +5,6 @@ export type UsePeaksReturn = {
   loading: boolean;
   error: string | null;
   setTime: (timeSec: number, isImmediatelly?: boolean) => void;
-  attachMediaElement: (mediaElement: HTMLMediaElement)=>void;
   attachOverviewElement: (overviewElement: HTMLDivElement)=>void;
 };
 
@@ -17,7 +16,6 @@ export function useCustomPeaks(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [normalizedData, setNormalizedData] = useState<number[]>([]);
-  const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const debounceRef = useRef<any | null>(null);
@@ -68,10 +66,6 @@ export function useCustomPeaks(
     ctx.fillStyle = cursorColor;
     ctx.fillRect(cursorPosition, 0.4 * height, barWidth, height);
   }, [normalizedData, duration]);
-
-  const attachMediaElement = useCallback((el: HTMLAudioElement | null) => {
-    setMediaElement(el);
-  }, []);
 
   const attachOverviewElement = useCallback((el: HTMLDivElement | null) => {
     setOverviewElement(el);
@@ -139,5 +133,5 @@ export function useCustomPeaks(
 
   }, [drawWaveform]);
 
-  return { loading, error, setTime, attachMediaElement, attachOverviewElement };
+  return { loading, error, setTime, attachOverviewElement };
 }

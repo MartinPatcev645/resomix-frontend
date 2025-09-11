@@ -28,13 +28,12 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     const waveformContainerRef = useRef<HTMLDivElement>(null);
 
-    const { loading: wfLoading, error: wfError, setTime, attachMediaElement, attachOverviewElement } = useCustomPeaks(trackId);
+    const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId);
 
     // Get the GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
     const {
         seek,
-        getHtmlAudioNode,
     } = howlerController;
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
@@ -45,11 +44,6 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     useEffect(() => {
         setTime(currentTime);
     }, [currentTime, setTime]);
-
-    const audioNode = getHtmlAudioNode();
-    useEffect(() => {
-        if (audioNode) attachMediaElement(audioNode);
-    }, [audioNode, attachMediaElement]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
