@@ -104,6 +104,7 @@ class SearchService:
             "size": limit
         }
 
+        es_failed = False
         try:
             es_start = time.perf_counter()
             es_resp = es_client.search(index="tracks-*", body=es_body)
@@ -115,7 +116,8 @@ class SearchService:
                 print(hit)
             uuids = [h["_source"].get("uuid") for h in hits if h.get("_source")]
         except Exception as e:
-            print(f"Elasticsearch query failed: {e}. Falling back to DB-only search.")
+            print(f"Elasticsearch query failed: {e}. Will fallback to DB-only search.")
+            es_failed = True
             uuids = []
 
         formatted_results: List[Dict[str, Any]] = []
@@ -143,8 +145,8 @@ class SearchService:
                     "duration": track_obj.duration_sec or 0,
                     "title": track_obj.title
                 })
-        else:
-            # Fallback to database text search if ES yields nothing
+        elif es_failed:
+            # Fallback only when ES errored out
             db_fallback_start = time.perf_counter()
             db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
             print(f"[Timing] Fallback DB text search took {(time.perf_counter()-db_fallback_start):.3f}s and returned {len(db_results)} tracks")
@@ -155,6 +157,9 @@ class SearchService:
                     "duration": track_data.get("duration", 0),
                     "title": track_data.get("title", "N/A")
                 })
+        else:
+            # No ES hits and ES succeeded: return empty results
+            print("[Timing] Elasticsearch returned 0 hits; not falling back to DB.")
 
         print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
         return {"tracks": formatted_results}
