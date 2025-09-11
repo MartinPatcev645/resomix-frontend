@@ -45,9 +45,10 @@ export const usePlayerManager = () => {
     if (playlistData.similar_tracks?.length) {
       trackIds.push(...playlistData.similar_tracks.map(track => track.id))
     }
+    howlerController.initPlaylist(trackIds);
 
     return trackIds
-  }, [playlistData])
+  }, [playlistData, howlerController])
 
   // Get current track index in the playlist
   const currentTrackIndex = useMemo(() => {

@@ -15,6 +15,7 @@ export interface HowlerController {
   unload: () => void;
   preloadNext: (trackId: string) => void;
   readonly isLoaded: boolean;
+  initPlaylist: (ids: string[]) => void;
 }
 
 let singleton: HowlerController | null = null;
@@ -29,6 +30,25 @@ export function getGlobalHowlerController(): HowlerController {
   let progressTimer: number | null = null;
   let isPlayAfterLoad: boolean = false;
   let isPlaying: boolean = false;
+
+  let playlistIds: string[] = [];
+  function initPlaylist(ids: string[]) {
+    playlistIds = [...ids];
+  }
+  function getNextTrackIdx(): string {
+    if (!playlistIds.length) {
+      return '';
+    }
+    let idx = playlistIds.indexOf(currentTrackId || '');
+    if (idx < 0) {
+      return '';
+    }
+    idx ++;
+    if (idx >= playlistIds.length) {
+      idx = 0;
+    }
+    return playlistIds[idx];
+  }
 
   const setCurrentTrack = (id: string | null) =>
     usePlayerStore.getState().setCurrentTrack(id);
@@ -122,7 +142,13 @@ export function getGlobalHowlerController(): HowlerController {
       setTrackTime(trackId, 0);
       const { autoplay } = usePlayerStore.getState();
       if (autoplay) {
-        window.dispatchEvent(new CustomEvent('resomix:track-ended'));
+        // window.dispatchEvent(new CustomEvent('resomix:track-ended'));
+        const idx = getNextTrackIdx();
+        console.log('next idx: '+idx);
+        if (idx) {
+          setCurrentTrack(idx);
+          load(idx, true);
+        }
       } else {
         setCurrentTrack(null);
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
@@ -237,12 +263,17 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function play() {
+    console.log('play');
     const h = getCurrentHowl();
     if (!h) return;
-    h.play();
+    if (!h.playing()) {
+      console.log('real play call');
+      h.play();
+    }
   }
 
   function pause(trackId: string = '') {
+    console.log('pause');
     const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
     if (!h) return;
     h.pause();
@@ -256,6 +287,7 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function stop() {
+    console.log('stop');
     const h = getCurrentHowl();
     if (!h) return;
     h.stop();
@@ -325,6 +357,7 @@ export function getGlobalHowlerController(): HowlerController {
     unload,
     preloadNext,
     get isLoaded() { return isLoaded(); },
+    initPlaylist,
   };
 
   return singleton;
