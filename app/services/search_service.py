@@ -75,6 +75,10 @@ class SearchService:
         try:
             es_resp = es_client.search(index="tracks-*", body=es_body)
             hits = es_resp.get("hits", {}).get("hits", [])
+            # Display all provided details for first two hits
+            for i, hit in enumerate(hits[:2]):
+                print(f"Hit {i+1}:")
+                print(hit)
             uuids = [h["_source"].get("uuid") for h in hits if h.get("_source")]
         except Exception as e:
             print(f"Elasticsearch query failed: {e}. Falling back to DB-only search.")
