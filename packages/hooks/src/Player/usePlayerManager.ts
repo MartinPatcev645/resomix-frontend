@@ -227,8 +227,7 @@ export const usePlayerManager = () => {
       if (howlerController.isLoaded) {
         const nextTrackId = getNextTrack();
         if (nextTrackId && nextTrackId !== 'uploaded-local') {
-          const nextUrl = `https://media.resomix.com/signed-audio/?uuid=${nextTrackId}`;
-          howlerController.preloadNext(nextUrl, nextTrackId);
+          howlerController.preloadNext(nextTrackId);
           loadPeaksData(nextTrackId);
           console.log('[PlayerManager] Preloading next track:', nextTrackId);
         }

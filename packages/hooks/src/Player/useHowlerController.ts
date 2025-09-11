@@ -6,7 +6,7 @@ import { usePlayerStore } from '@resomix/stores';
 export interface HowlerController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
-  pause: () => void;
+  pause: (trackId?: string) => void;
   stop: () => void;
   seek: (timeSeconds: number) => void;
   getCurrentTime: () => number;
@@ -14,7 +14,7 @@ export interface HowlerController {
   getDuration: () => number;
   unload: () => void;
   getHtmlAudioNode: () => HTMLAudioElement | null;
-  preloadNext: (url: string, trackId: string) => void;
+  preloadNext: (trackId: string) => void;
   readonly isLoaded: boolean;
   getLoadingProgress: () => number;
 }
@@ -23,7 +23,6 @@ let singleton: HowlerController | null = null;
 
 export function getGlobalHowlerController(): HowlerController {
   if (singleton) return singleton;
-
 
   const howls = new Map<string, Howl>();
   const MAX_CACHE = 10;
@@ -45,9 +44,15 @@ export function getGlobalHowlerController(): HowlerController {
   const getTrackTime = (id: string) =>
     usePlayerStore.getState().getTrackTime(id);
 
+  const isCurrent = (id: string) => currentTrackId === id;
+
   function getCurrentHowl(): Howl | null {
     if (!currentTrackId) return null;
     return howls.get(currentTrackId) ?? null;
+  }
+
+  function getTrackUrl(trackId: string): string {
+    return `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
   }
 
   function startTicker(h: Howl) {
@@ -95,21 +100,28 @@ export function getGlobalHowlerController(): HowlerController {
 
   function attachHowlEvents(howl: Howl, trackId: string) {
     const onplay = () => {
+      if (!isCurrent(trackId)) {
+        howl.pause();
+        return;
+      }
       isPlaying = true;
       startTicker(howl);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     };
     const onpause = () => {
+      if (!isCurrent(trackId)) return;
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     };
     const onstop = () => {
+      if (!isCurrent(trackId)) return;
       isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
     };
     const onend = () => {
+      if (!isCurrent(trackId)) return;
       isPlaying = false;
       stopTicker();
       setTrackTime(trackId, 0);
@@ -122,6 +134,7 @@ export function getGlobalHowlerController(): HowlerController {
       }
     };
     const onload = () => {
+      if (!isCurrent(trackId)) return;
       usePlayerStore.setState({ isLoaded: true });
       const saved = getTrackTime(trackId);
       if (saved > 0) {
@@ -135,7 +148,9 @@ export function getGlobalHowlerController(): HowlerController {
     const onloaderror = (_id: number, err: any) => console.error('[Howler] load error', err);
     const onplayerror = (_id: number, err: any) => {
       console.error('[Howler] play error', err);
-      howl.once('unlock', () => howl.play());
+      howl.once('unlock', () => {
+        if (isCurrent(trackId)) howl.play();
+      });
     };
 
     howl.on('play', onplay);
@@ -172,7 +187,7 @@ export function getGlobalHowlerController(): HowlerController {
     let howl = howls.get(trackId);
     if (!howl) {
       if (!url) {
-        url = `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
+        url = getTrackUrl(trackId);
       }
       howl = createHowl(trackId, url);
     } else {
@@ -186,6 +201,12 @@ export function getGlobalHowlerController(): HowlerController {
     if (prev && prev !== howl) {
       stopTicker();
       prev.pause();
+    }
+
+    for (const [id, h] of howls) {
+      if (id !== trackId && h.playing()) {
+        h.pause();
+      }
     }
 
     currentTrackId = trackId;
@@ -202,13 +223,13 @@ export function getGlobalHowlerController(): HowlerController {
     }
   }
 
-  function load(trackId: string, isPlayAfter: boolean = false) {
+  function load(trackId: string, playAfter: boolean = false) {
     if (!trackId) return;
 
-    isPlayAfterLoad = isPlayAfter;
+    isPlayAfterLoad = playAfter;
     isPlaying = false;
-    const url = `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
 
+    const url = getTrackUrl(trackId);
     const howl = ensureHowl(trackId, url);
 
     selectCurrent(trackId, howl);
@@ -226,19 +247,29 @@ export function getGlobalHowlerController(): HowlerController {
 
   function play() {
     const h = getCurrentHowl();
-    if (!isPlaying) {
-      h?.play();
-    }
+    if (!h) return;
+    h.play();
   }
 
-  function pause() {
-    const h = getCurrentHowl();
-    h?.pause();
+  function pause(trackId: string = '') {
+    const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
+    if (!h) return;
+    h.pause();
+    const id = (h as any)?._trackId as string | undefined;
+    if (id && isCurrent(id)) {
+      isPlaying = false;
+      stopTicker();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+    }
   }
 
   function stop() {
     const h = getCurrentHowl();
-    h?.stop();
+    if (!h) return;
+    h.stop();
+    isPlaying = false;
+    stopTicker();
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
   function seek(t: number) {
@@ -267,19 +298,22 @@ export function getGlobalHowlerController(): HowlerController {
     }
     howls.clear();
     currentTrackId = null;
+    isPlaying = false;
     setAudioNode(null);
     usePlayerStore.setState({ isLoaded: false });
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
   function getHtmlAudioNode() {
     return getHtmlAudioNodeFromHowl(getCurrentHowl());
   }
 
-  function preloadNext(url: string, trackId: string) {
+  function preloadNext(trackId: string) {
     if (howls.get(trackId)) {
       touch(trackId);
       return;
     }
+    const url = getTrackUrl(trackId);
     const h = createHowl(trackId, url);
     h.load();
     touch(trackId);
