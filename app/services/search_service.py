@@ -16,6 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 import re
+import time
 from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,6 +44,7 @@ class SearchService:
 
         query_clean = query.strip()
         es_client = get_es_client()
+        overall_start = time.perf_counter()
 
         # Build ES body (simplified to mirror previous logic)
         tokens_list = query_clean.split()
@@ -103,8 +105,10 @@ class SearchService:
         }
 
         try:
+            es_start = time.perf_counter()
             es_resp = es_client.search(index="tracks-*", body=es_body)
             hits = es_resp.get("hits", {}).get("hits", [])
+            print(f"[Timing] Elasticsearch query took {(time.perf_counter()-es_start):.3f}s and returned {len(hits)} hits")
             # Display all provided details for first two hits
             for i, hit in enumerate(hits[:2]):
                 print(f"Hit {i+1}:")
@@ -117,7 +121,9 @@ class SearchService:
         formatted_results: List[Dict[str, Any]] = []
 
         if uuids:
+            db_start = time.perf_counter()
             tracks = await self.track_repository.async_get_tracks_by_uuids(db, uuids)
+            print(f"[Timing] DB enrichment for {len(uuids)} uuids took {(time.perf_counter()-db_start):.3f}s")
 
             # Map uuid -> track object for quick lookup to retain ES order
             track_map = {t.uuid: t for t in tracks}
@@ -139,7 +145,9 @@ class SearchService:
                 })
         else:
             # Fallback to database text search if ES yields nothing
+            db_fallback_start = time.perf_counter()
             db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
+            print(f"[Timing] Fallback DB text search took {(time.perf_counter()-db_fallback_start):.3f}s and returned {len(db_results)} tracks")
             for track_data in db_results:
                 formatted_results.append({
                     "id": track_data.get("id"),
@@ -148,6 +156,7 @@ class SearchService:
                     "title": track_data.get("title", "N/A")
                 })
 
+        print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
         return {"tracks": formatted_results}
 
     async def get_track_path_by_id(self, db: AsyncSession, track_id: str) -> Optional[str]:
