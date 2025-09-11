@@ -4,7 +4,7 @@ import { Howl } from 'howler';
 import { usePlayerStore } from '@resomix/stores';
 
 const log = (...args: any[]) => {
-   // console.log(...args);
+  // console.log(...args);
 };
 
 
@@ -33,8 +33,7 @@ export function getGlobalHowlerController(): HowlerController {
 
   let currentTrackId: string | null = null;
   let progressTimer: number | null = null;
-  let isPlayAfterLoad: boolean = false;
-  let isPlaying: boolean = false;
+  let trackPlayAfterLoad: string = '';
 
   let playlistIds: string[] = [];
   function initPlaylist(ids: string[]) {
@@ -121,14 +120,12 @@ export function getGlobalHowlerController(): HowlerController {
         howl.pause();
         return;
       }
-      isPlaying = true;
       startTicker(howl);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     };
     const onpause = () => {
       log('onpause: ', trackId);
       if (!isCurrent(trackId)) return;
-      isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     };
@@ -136,7 +133,6 @@ export function getGlobalHowlerController(): HowlerController {
       log('onstop: ', trackId);
       if (!isCurrent(trackId)) return;
       log('onstop: ', trackId);
-      isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
     };
@@ -144,7 +140,6 @@ export function getGlobalHowlerController(): HowlerController {
       log('onend: ', trackId);
       if (!isCurrent(trackId)) return;
       log('onend: ', trackId);
-      isPlaying = false;
       stopTicker();
       setTrackTime(trackId, 0);
       const { autoplay } = usePlayerStore.getState();
@@ -169,9 +164,9 @@ export function getGlobalHowlerController(): HowlerController {
         howl.seek(saved);
         setInputTime(saved);
       }
-      if (isPlayAfterLoad && currentTrackId === trackId) {
+      if (trackPlayAfterLoad === trackId && currentTrackId === trackId) {
         play();
-        isPlayAfterLoad = false;
+        trackPlayAfterLoad = '';
       }
     };
     const onloaderror = (_id: number, err: any) => console.error('[Howler] load error', err);
@@ -191,8 +186,9 @@ export function getGlobalHowlerController(): HowlerController {
     howl.on('playerror', onplayerror);
   }
 
-  function createHowl(trackId: string, url: string): Howl {
+  function createHowl(trackId: string): Howl {
     const volume = usePlayerStore.getState().volume;
+    const url = getTrackUrl(trackId);
 
     const howl = new Howl({
       src: [url],
@@ -212,13 +208,10 @@ export function getGlobalHowlerController(): HowlerController {
     return howl;
   }
 
-  function ensureHowl(trackId: string, url?: string): Howl {
+  function ensureHowl(trackId: string): Howl {
     let howl = howls.get(trackId);
     if (!howl) {
-      if (!url) {
-        url = getTrackUrl(trackId);
-      }
-      howl = createHowl(trackId, url);
+      howl = createHowl(trackId);
     } else {
       touch(trackId);
     }
@@ -250,30 +243,21 @@ export function getGlobalHowlerController(): HowlerController {
   function load(trackId: string, playAfter: boolean = false) {
     if (!trackId) return;
 
-    isPlayAfterLoad = playAfter;
+    trackPlayAfterLoad = playAfter ? trackId : '';
     log('load', trackId);
-    /*
-    if (howls.get(trackId)) {
-      log('load has track', trackId);
+    if (howls.has(trackId)) {
+      log('load queue has track', trackId);
+      const howl = ensureHowl(trackId);
+      selectCurrent(trackId, howl);
+      if (trackPlayAfterLoad && howl?.state() === 'loaded') {
+        play();
+        trackPlayAfterLoad = '';
+      }
       return;
     }
-     */
-    isPlaying = false;
-
-    const url = getTrackUrl(trackId);
-    const howl = ensureHowl(trackId, url);
-
+    const howl = ensureHowl(trackId);
     selectCurrent(trackId, howl);
-
-    if (howl.state() !== 'loaded') {
-      usePlayerStore.setState({ isLoaded: false });
-      howl.load();
-    } else {
-      usePlayerStore.setState({ isLoaded: true });
-      if (isPlayAfterLoad) {
-        play();
-      }
-    }
+    howl.load();
   }
 
   function play() {
@@ -294,7 +278,6 @@ export function getGlobalHowlerController(): HowlerController {
     const id = (h as any)?._trackId as string | undefined;
     if (id && isCurrent(id)) {
       log('-pause', trackId);
-      isPlaying = false;
       stopTicker();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     }
@@ -306,7 +289,6 @@ export function getGlobalHowlerController(): HowlerController {
     if (!h) return;
     h.stop();
     log('-stop current');
-    isPlaying = false;
     stopTicker();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
@@ -337,7 +319,6 @@ export function getGlobalHowlerController(): HowlerController {
     }
     howls.clear();
     currentTrackId = null;
-    isPlaying = false;
     usePlayerStore.setState({ isLoaded: false });
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
@@ -347,8 +328,7 @@ export function getGlobalHowlerController(): HowlerController {
       touch(trackId);
       return;
     }
-    const url = getTrackUrl(trackId);
-    const h = createHowl(trackId, url);
+    const h = createHowl(trackId);
     h.load();
     touch(trackId);
     evictIfNeeded();
