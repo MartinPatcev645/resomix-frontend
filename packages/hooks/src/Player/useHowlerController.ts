@@ -252,6 +252,10 @@ export function getGlobalHowlerController(): HowlerController {
 
     isPlayAfterLoad = playAfter;
     log('load', trackId);
+    if (howls.get(trackId)) {
+      log('load has track', trackId);
+      return;
+    }
     isPlaying = false;
 
     const url = getTrackUrl(trackId);
