@@ -53,29 +53,32 @@ class SearchService:
             es_body = {
                 "collapse": {"field": "dedupe"},
                 "query": {
-                    "bool": {
+                    "function_score": {
+                    "query": {
+                        "bool": {
                         "should": [
-                            {
-                                "multi_match": {
-                                    "query": query_clean,
-                                    "fields": ["artists^2", "title^1.5"],
-                                    "type": "best_fields",
-                                    "operator": "and",
-                                    "fuzziness": "AUTO"
-                                }
-                            },
-                            {
-                                "match": {
-                                    "all_text": {
-                                        "query": query_clean,
-                                        "operator": "and",
-                                        "fuzziness": "AUTO",
-                                        "boost": 0.5
-                                    }
-                                }
-                            }
+                            { "multi_match": {
+                                "query": query_clean,
+                                "fields": ["artists^2","title^1.5"],
+                                "type": "best_fields",
+                                "operator": "and",
+                                "fuzziness": "AUTO"
+                            }},
+                            { "match": {
+                                "all_text": {
+                                "query": query_clean, "operator": "and",
+                                "fuzziness": "AUTO", "boost": 0.5
+                            }}},
+                            { "match_phrase_prefix": { "title":    {"query": query_clean, "slop": 2, "boost": 0.7} }},
+                            { "match_phrase_prefix": { "all_text": {"query": query_clean, "slop": 2, "boost": 0.5} }}
                         ],
                         "minimum_should_match": 1
+                        }
+                    },
+                    "functions": [
+                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
+                    ],
+                    "score_mode": "sum", "boost_mode": "sum"
                     }
                 },
                 "size": limit
@@ -84,12 +87,15 @@ class SearchService:
             es_body = {
                 "collapse": {"field": "dedupe"},
                 "query": {
-                    "match": {
-                        "all_text": {
-                            "query": query_clean,
-                            "operator": "and",
-                            "fuzziness": "AUTO"
-                        }
+                    "bool": {
+                    "must": [
+                        { "match": { "all_text": {
+                            "query": query_clean, "operator": "and", "fuzziness": "AUTO"
+                    }}} ],
+                    "should": [
+                        { "match_phrase_prefix": { "all_text": {"query": query_clean, "slop": 2, "boost": 0.5} }},
+                        { "term": { "type": "electrobuzz" } }
+                    ]
                     }
                 },
                 "size": limit
