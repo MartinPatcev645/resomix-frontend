@@ -45,8 +45,8 @@ class SearchService:
 
         # Pre-process query
         raw_q = query.strip()
-        query_clean = clean_for_text(raw_q)   # for multi_match / match
-        tokens_lower = normalize_for_keyword(raw_q)  # for terms_set
+        query_clean = self.clean_for_text(raw_q)   # for multi_match / match
+        tokens_lower = self.normalize_for_keyword(raw_q)  # for terms_set
 
         if not query_clean:
             return {"tracks": []}
@@ -327,7 +327,7 @@ class SearchService:
         
         return True 
 
-    def normalize_for_keyword(q: str) -> list[str]:
+    def normalize_for_keyword(self, q: str) -> list[str]:
         """
         Mimics ES keyword normalizer: lowercase + asciifolding + strip punctuation.
         Returns token list for terms_set queries.
@@ -346,7 +346,7 @@ class SearchService:
         return cleaned.split() if cleaned else []
 
 
-    def clean_for_text(q: str) -> str:
+    def clean_for_text(self, q: str) -> str:
         """
         Light clean for ES text fields: just trim and collapse spaces.
         ES analyzer handles lowercase, asciifolding, punctuation.
