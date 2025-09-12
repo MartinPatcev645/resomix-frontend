@@ -395,6 +395,7 @@ class SearchService:
         output_items: List[dict] = []
 
         for idx, it in enumerate(items):
+            print(f"item: {it}")
             uuid = it.get("uuid")
             if not uuid:
                 continue  # skip malformed
