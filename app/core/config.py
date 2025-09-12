@@ -169,6 +169,7 @@ class Settings(BaseModel):
     es_verify_certs: bool = Field(default=False, description="Verify TLS certificates for ES")
     es_ca_certs: Optional[str] = Field(default=None, description="Path to CA certificates for ES TLS")
     es_request_timeout: int = Field(default=20, description="Timeout in seconds for ES requests")
+    es_search_limit: int = Field(default=20, description="Default limit for ES search")
 
     def __init__(self, **data):
         # Override with environment variables if they exist
@@ -197,13 +198,14 @@ class Settings(BaseModel):
             "ES_VERIFY_CERTS": "es_verify_certs",
             "ES_CA_CERTS": "es_ca_certs",
             "ES_REQUEST_TIMEOUT": "es_request_timeout",
+            "ES_SEARCH_LIMIT": "es_search_limit",
         }
         
         for env_key, config_key in direct_env_vars.items():
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle integer conversion
-                if config_key in ["preview_audio_url_expires_seconds", "es_request_timeout"]:
+                if config_key in ["preview_audio_url_expires_seconds", "es_request_timeout", "es_search_limit"]:
                     try:
                         env_overrides[config_key] = int(env_value)
                     except ValueError:

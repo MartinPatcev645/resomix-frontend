@@ -19,6 +19,7 @@ import re
 import unicodedata
 import time
 from typing import Dict, Any, Optional, List
+from app.core.config import settings
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,10 +37,13 @@ class SearchService:
         """Initialize search service."""
         self.track_repository = TrackRepository()
     
-    async def search_tracks(self, db: AsyncSession, query: str, limit: int = 20) -> Dict[str, Any]:
+    async def search_tracks(self, db: AsyncSession, query: str) -> Dict[str, Any]:
         """
         Search for tracks via Elasticsearch first, then fetch full details from MariaDB.
         """
+        # Set default limits
+        limit = settings.es_search_limit
+
         if not query or not query.strip():
             return {"tracks": []}
 
