@@ -78,16 +78,16 @@ class SearchService:
             for i, hit in enumerate(hits[:2]):
                 print(f"Hit {i+1}:")
                 print(hit)
-            # Collect uuid, all_text, and score for deduplication
+            # Collect uuid, dedupe, and score for deduplication
             hit_items = [
                 {
                     "uuid": h.get("_source", {}).get("uuid"),
-                    "all_text": h.get("_source", {}).get("all_text", ""),
+                    "dedupe": h.get("fields", {}).get("dedupe", ""),
                     "score": h.get("_score", 0.0),
                 }
                 for h in hits if h.get("_source")
             ]
-            # Deduplicate based on punctuation-stripped all_text
+            # Deduplicate based on punctuation-stripped dedupe
             uuids = self.deduplicate_results_punctuation(hit_items)
         except Exception as e:
             print(f"Elasticsearch query failed: {e}. Will fallback to DB-only search.")
@@ -372,14 +372,14 @@ class SearchService:
     # ---------------------------------------------------------------------
 
     def deduplicate_results_punctuation(self, items: List[dict]) -> List[str]:
-        """Deduplicate ES hit list by stripping punctuation from *all_text*.
+        """Deduplicate ES hit list by stripping punctuation from *dedupe*.
 
         Args:
-            items: A list of dicts with keys ``uuid``, ``all_text`` and ``score``.
+            items: A list of dicts with keys ``uuid``, ``dedupe`` and ``score``.
 
         Returns:
             Ordered list of UUIDs after deduplication. If two or more items
-            normalise to the same *all_text*, keep the one with the highest
+            normalise to the same *dedupe*, keep the one with the highest
             ``score``. If scores tie, keep whichever appears first.  The
             original ordering of non-duplicate items is preserved.
         """
@@ -399,12 +399,12 @@ class SearchService:
             uuid = it.get("uuid")
             if not uuid:
                 continue  # skip malformed
-            print(f"all_text: {it.get('all_text', '')}")
-            key = strip_punct(it.get("all_text", "")).lower().strip()
+            print(f"dedupe: {it.get('dedupe', '')}")
+            key = strip_punct(it.get("dedupe", "")).lower().strip()
             print(f"after strip: {key}")
             score = it.get("score", 0.0)
 
-            # If key becomes empty (e.g. all_text missing) fall back to uuid so it is unique
+            # If key becomes empty (e.g. dedupe missing) fall back to uuid so it is unique
             if not key:
                 key = uuid  # guarantees uniqueness across hits
 
