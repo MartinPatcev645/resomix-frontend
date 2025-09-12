@@ -82,7 +82,7 @@ class SearchService:
             hit_items = [
                 {
                     "uuid": h.get("_source", {}).get("uuid"),
-                    "dedupe": h.get("fields", {}).get("dedupe", ""),
+                    "dedupe": h.get("fields", {}).get("dedupe", "")[0],
                     "score": h.get("_score", 0.0),
                 }
                 for h in hits if h.get("_source")
