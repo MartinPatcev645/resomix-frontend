@@ -1,4 +1,3 @@
-// mediaSession.ts
 export type MediaArtwork = { src: string; sizes?: string; type?: string };
 export type MediaMeta = {
   title?: string;
@@ -72,10 +71,12 @@ export function msUpdatePositionState(input: {
   position: number;
   duration: number;
   playbackRate?: number;
-}) {
+}, isUrgent: boolean) {
   if (!supports) return;
   const now = Date.now();
-  if (now - lastPosUpdate < 500) return; // троттлинг
+  if (now - lastPosUpdate < 250 || !isUrgent) {
+    return;
+  }
   lastPosUpdate = now;
 
   const position = Math.max(0, input.position || 0);

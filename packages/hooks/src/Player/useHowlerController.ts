@@ -113,7 +113,7 @@ export function getGlobalHowlerController(): HowlerController {
     return `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
   }
 
-  function msSyncPosition(trackId: string) {
+  function msSyncPosition(trackId: string, isUrgent = false) {
     if (!trackId || trackId !== currentTrackId || !howls.has(trackId)) {
       return;
     }
@@ -122,8 +122,8 @@ export function getGlobalHowlerController(): HowlerController {
     msUpdatePositionState({
       position: pos,
       duration: h?.duration() || 0,
-      playbackRate: h?.playing() ? 1 : 1
-    });
+      playbackRate: usePlayerStore.getState().isPlaying ? 1 : 0,
+    }, isUrgent);
   }
 
   function msSyncMetadata(trackId?: string) {
@@ -192,23 +192,17 @@ export function getGlobalHowlerController(): HowlerController {
         return;
       }
       startTicker(howl);
-      msSetPlaybackState('playing');
-      msSyncPosition(trackId);
     };
     const onpause = () => {
       log('onpause: ', trackId);
       if (!isCurrent(trackId)) return;
       stopTicker();
-      msSetPlaybackState('paused');
-      msSyncPosition(trackId);
     };
     const onstop = () => {
       log('onstop: ', trackId);
       if (!isCurrent(trackId)) return;
       log('onstop: ', trackId);
       stopTicker();
-      msSetPlaybackState('none');
-      msSyncPosition(trackId);
     };
     const onend = () => {
       log('onend: ', trackId);
@@ -227,7 +221,7 @@ export function getGlobalHowlerController(): HowlerController {
       } else {
         setCurrentTrack(null);
         msSetPlaybackState('none');
-        msSyncPosition(trackId);
+        msSyncPosition(trackId, true);
       }
     };
     const onload = () => {
@@ -241,7 +235,7 @@ export function getGlobalHowlerController(): HowlerController {
       }
 
       msSyncMetadata(trackId)
-      msSyncPosition(trackId);
+      msSyncPosition(trackId, true);
 
       if (trackPlayAfterLoad === trackId && currentTrackId === trackId) {
         play();
@@ -360,8 +354,7 @@ export function getGlobalHowlerController(): HowlerController {
     });
 
     msSyncMetadata(trackId);
-    msSetPlaybackState(howl.playing() ? 'playing' : (usePlayerStore.getState().isLoaded ? 'paused' : 'none'));
-    msSyncPosition(trackId);
+    msSyncPosition(trackId, true);
   }
 
   function load(trackId: string, playAfter: boolean = false) {
@@ -387,6 +380,8 @@ export function getGlobalHowlerController(): HowlerController {
   function play() {
     log('play');
     setIsPlaying(true);
+    msSyncPosition(currentTrackId || '', true);
+    msSetPlaybackState('playing');
     const h = getCurrentHowl();
     if (!h) return;
     if (!h.playing()) {
@@ -398,6 +393,8 @@ export function getGlobalHowlerController(): HowlerController {
   function pause(trackId: string = '') {
     log('pause');
     setIsPlaying(false);
+    msSyncPosition(trackId || currentTrackId || '', true);
+    msSetPlaybackState('paused');
     const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
     if (!h) return;
     h.pause();
@@ -405,19 +402,19 @@ export function getGlobalHowlerController(): HowlerController {
     if (id && isCurrent(id)) {
       log('-pause', trackId);
       stopTicker();
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     }
   }
 
   function stop() {
     log('stop');
     setIsPlaying(false);
+    msSyncPosition(currentTrackId || '', true);
+    msSetPlaybackState('none');
     const h = getCurrentHowl();
     if (!h) return;
     h.stop();
     log('-stop current');
     stopTicker();
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
   function seek(t: number, trackId: string = '') {
@@ -440,7 +437,7 @@ export function getGlobalHowlerController(): HowlerController {
     }
 
     setTrackTime(id, nt);
-    msSyncPosition(trackId);
+    msSyncPosition(trackId, true);
     if (!trackId) {
       setInputTime(nt);
     }
