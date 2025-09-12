@@ -86,9 +86,11 @@ interface PlayerStore {
   /** Setter for inputCurrentTime */
   setInputCurrentTime: (time: number) => void
 
-
   isLoaded: boolean
   setIsLoaded: (loaded: boolean) => void
+
+  isPlaying: boolean
+  setIsPlaying: (isPlaying: boolean) => void
 
   /** Current playback position (seconds) of the similarity waveform */
   similarityCurrentTime: number
@@ -151,6 +153,9 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
   isLoaded: false,
   setIsLoaded: (loaded: boolean) => set({ isLoaded:  loaded }),
+
+  isPlaying: false,
+  setIsPlaying: (val: boolean) => set({ isPlaying:  val}),
 
   similarityCurrentTime: 0,
   setSimilarityCurrentTime: (time) => set({ similarityCurrentTime: time }),

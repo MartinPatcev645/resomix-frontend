@@ -55,8 +55,8 @@ export function getGlobalHowlerController(): HowlerController {
       const nextId = getNextTrackIdx();
       const prevId = getPrevTrackIdx();
       msSetTrackControls({
-        onNext: nextId ? () => { setCurrentTrack(nextId); load(nextId, true); } : null,
-        onPrev: prevId ? () => { setCurrentTrack(prevId); load(prevId, true); } : null,
+        onNext: nextId ? () => { load(nextId, true); } : null,
+        onPrev: prevId ? () => { load(prevId, true); } : null,
       });
     }
   }
@@ -94,6 +94,8 @@ export function getGlobalHowlerController(): HowlerController {
     usePlayerStore.getState().setCurrentTrack(id);
   const setInputTime = (t: number) =>
     usePlayerStore.setState({ inputCurrentTime: t });
+  const setIsPlaying = (val: boolean) =>
+    usePlayerStore.getState().setIsPlaying(val);
 
   const setTrackTime = (id: string, t: number) =>
     usePlayerStore.getState().setTrackTime(id, t);
@@ -251,7 +253,10 @@ export function getGlobalHowlerController(): HowlerController {
     const onplayerror = (_id: number, err: any) => {
       console.error('[Howler] play error', err);
       howl.once('unlock', () => {
-        if (isCurrent(trackId)) howl.play();
+        if (isCurrent(trackId)) {
+          setIsPlaying(true);
+          howl.play();
+        }
       });
     };
 
@@ -338,6 +343,7 @@ export function getGlobalHowlerController(): HowlerController {
     }
 
     currentTrackId = trackId;
+    setCurrentTrack(trackId)
     usePlayerStore.setState({ isLoaded: howl.state() === 'loaded' });
 
     const saved = getTrackTime(trackId);
@@ -349,8 +355,8 @@ export function getGlobalHowlerController(): HowlerController {
     const nextId = getNextTrackIdx();
     const prevId = getPrevTrackIdx();
     msSetTrackControls({
-      onNext: nextId ? () => { setCurrentTrack(nextId); load(nextId, true); } : null,
-      onPrev: prevId ? () => { setCurrentTrack(prevId); load(prevId, true); } : null,
+      onNext: nextId ? () => { load(nextId, true); } : null,
+      onPrev: prevId ? () => { load(prevId, true); } : null,
     });
 
     msSyncMetadata(trackId);
@@ -380,6 +386,7 @@ export function getGlobalHowlerController(): HowlerController {
 
   function play() {
     log('play');
+    setIsPlaying(true);
     const h = getCurrentHowl();
     if (!h) return;
     if (!h.playing()) {
@@ -390,6 +397,7 @@ export function getGlobalHowlerController(): HowlerController {
 
   function pause(trackId: string = '') {
     log('pause');
+    setIsPlaying(false);
     const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
     if (!h) return;
     h.pause();
@@ -403,6 +411,7 @@ export function getGlobalHowlerController(): HowlerController {
 
   function stop() {
     log('stop');
+    setIsPlaying(false);
     const h = getCurrentHowl();
     if (!h) return;
     h.stop();

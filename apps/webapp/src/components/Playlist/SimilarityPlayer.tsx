@@ -3,7 +3,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { usePlayerManager, useCustomPeaks, useGlobalHowlerController } from "@resomix/hooks";
+import {useCustomPeaks, useGlobalHowlerController } from "@resomix/hooks";
 import {usePlayerStore} from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -21,10 +21,7 @@ interface SimilarityPlayerProps {
 }
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration}) => {
-    const {
-        volume,
-        setVolume,
-    } = usePlayerManager();
+
 
     const waveformContainerRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +31,8 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const howlerController = useGlobalHowlerController();
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
+    const volume:number = usePlayerStore(s => s.volume);
+    const setVolume = usePlayerStore(s => s.setVolume);
 
     const seekRef = useRef<number | null>(null);
     const requestSeek = useCallback((time: number) => {

@@ -5,7 +5,7 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import {usePlayerManager, useCustomPeaks, useGlobalHowlerController} from "@resomix/hooks";
+import {useCustomPeaks, useGlobalHowlerController} from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -24,15 +24,15 @@ interface InputPlayerProps {
 const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     const effectiveId = trackId ?? 'uploaded-local';
 
-    const {
-        currentTrackId,
-        startPlaying,
-        stopPlaying,
-        volume,
-        setVolume,
-    } = usePlayerManager();
+    const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
+    const setTrackTime = usePlayerStore(s => s.setTrackTime);
+    const currentTrackId = usePlayerStore(s => s.currentTrackId);
+    const isCommonPlay:boolean = usePlayerStore(s => s.isPlaying);
+    const volume:number = usePlayerStore(s => s.volume);
+    const setVolume = usePlayerStore(s => s.setVolume);
 
-    const [isPlaying, setIsPlaying] = useState<boolean>(currentTrackId === effectiveId);
+
+    const [isPlaying, setIsPlaying] = useState<boolean>(isCommonPlay && currentTrackId === effectiveId);
 
     const waveformContainerRef = useRef<HTMLDivElement>(null);
 
@@ -41,9 +41,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     // GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
 
-    const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
-
-    const setTrackTime = usePlayerStore(s => s.setTrackTime);
 
     useEffect(() => {
         setTime(currentTime);
@@ -55,11 +52,11 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     }, []);
 
     useEffect(()=>{
-        const isPlay: boolean = currentTrackId === effectiveId;
+        const isPlay: boolean = isCommonPlay && currentTrackId === effectiveId;
         if (isPlay !== isPlaying) {
             setIsPlaying(isPlay);
         }
-    }, [currentTrackId, effectiveId, isPlaying]);
+    }, [currentTrackId, effectiveId, isPlaying, isCommonPlay]);
 
     useEffect(() => {
         const el = waveformContainerRef.current;
@@ -89,9 +86,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
         if (isPlaying) {
             howlerController.pause();
-            stopPlaying();
         } else {
-            startPlaying(effectiveId);
             if (currentTrackId !== effectiveId) {
                 howlerController.load(effectiveId, true);
             }
