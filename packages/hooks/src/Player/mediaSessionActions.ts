@@ -74,13 +74,18 @@ export function msUpdatePositionState(input: {
 }, isUrgent: boolean) {
   if (!supports) return;
   const now = Date.now();
+  /*
   if (now - lastPosUpdate < 250 || !isUrgent) {
     return;
   }
+   */
   lastPosUpdate = now;
 
-  const position = Math.max(0, input.position || 0);
-  const duration = Math.max(0, input.duration || 0);
+  const duration = Math.floor(Math.max(0, input.duration || 0));
+  let position = Math.floor(Math.max(0, input.position || 0));
+  if (position > duration) {
+    position = duration
+  }
   const playbackRate = input.playbackRate ?? 1;
 
   try {

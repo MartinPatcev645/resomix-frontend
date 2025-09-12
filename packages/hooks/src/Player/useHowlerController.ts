@@ -152,7 +152,7 @@ export function getGlobalHowlerController(): HowlerController {
         setTrackTime(id, t);
         msSyncPosition(id);
       }
-    }, 200);
+    }, 250);
   }
 
   function stopTicker() {
@@ -207,7 +207,6 @@ export function getGlobalHowlerController(): HowlerController {
     const onend = () => {
       log('onend: ', trackId);
       if (!isCurrent(trackId)) return;
-      log('onend: ', trackId);
       stopTicker();
       setTrackTime(trackId, 0);
       const { autoplay } = usePlayerStore.getState();
@@ -234,8 +233,11 @@ export function getGlobalHowlerController(): HowlerController {
         setInputTime(saved);
       }
 
-      msSyncMetadata(trackId)
-      msSyncPosition(trackId, true);
+      if (trackId == currentTrackId) {
+        msSyncMetadata(trackId)
+        msSetPlaybackState('playing')
+        msSyncPosition(trackId, true);
+      }
 
       if (trackPlayAfterLoad === trackId && currentTrackId === trackId) {
         play();
@@ -380,8 +382,8 @@ export function getGlobalHowlerController(): HowlerController {
   function play() {
     log('play');
     setIsPlaying(true);
-    msSyncPosition(currentTrackId || '', true);
     msSetPlaybackState('playing');
+    msSyncPosition(currentTrackId || '', true);
     const h = getCurrentHowl();
     if (!h) return;
     if (!h.playing()) {
@@ -393,8 +395,8 @@ export function getGlobalHowlerController(): HowlerController {
   function pause(trackId: string = '') {
     log('pause');
     setIsPlaying(false);
-    msSyncPosition(trackId || currentTrackId || '', true);
     msSetPlaybackState('paused');
+    msSyncPosition(trackId || currentTrackId || '', true);
     const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
     if (!h) return;
     h.pause();
@@ -408,8 +410,8 @@ export function getGlobalHowlerController(): HowlerController {
   function stop() {
     log('stop');
     setIsPlaying(false);
-    msSyncPosition(currentTrackId || '', true);
     msSetPlaybackState('none');
+    msSyncPosition(currentTrackId || '', true);
     const h = getCurrentHowl();
     if (!h) return;
     h.stop();
