@@ -78,7 +78,17 @@ class SearchService:
             for i, hit in enumerate(hits[:2]):
                 print(f"Hit {i+1}:")
                 print(hit)
-            uuids = [h["_source"].get("uuid") for h in hits if h.get("_source")]
+            # Collect uuid, all_text, and score for deduplication
+            hit_items = [
+                {
+                    "uuid": h.get("_source", {}).get("uuid"),
+                    "all_text": h.get("_source", {}).get("all_text", ""),
+                    "score": h.get("_score", 0.0),
+                }
+                for h in hits if h.get("_source")
+            ]
+            # Deduplicate based on punctuation-stripped all_text
+            uuids = self.deduplicate_results_punctuation(hit_items)
         except Exception as e:
             print(f"Elasticsearch query failed: {e}. Will fallback to DB-only search.")
             es_failed = True
@@ -356,3 +366,52 @@ class SearchService:
         ES analyzer handles lowercase, asciifolding, punctuation.
         """
         return re.sub(r"\s+", " ", q.strip())
+
+    # ---------------------------------------------------------------------
+    # Helper utilities
+    # ---------------------------------------------------------------------
+
+    def deduplicate_results_punctuation(self, items: List[dict]) -> List[str]:
+        """Deduplicate ES hit list by stripping punctuation from *all_text*.
+
+        Args:
+            items: A list of dicts with keys ``uuid``, ``all_text`` and ``score``.
+
+        Returns:
+            Ordered list of UUIDs after deduplication. If two or more items
+            normalise to the same *all_text*, keep the one with the highest
+            ``score``. If scores tie, keep whichever appears first.  The
+            original ordering of non-duplicate items is preserved.
+        """
+        import unicodedata
+
+        def strip_punct(text: str) -> str:
+            # Remove any char whose Unicode *category* starts with 'P' (punctuation)
+            # while leaving letters (including accents), numbers, symbols, & spaces.
+            return "".join(ch for ch in text if not unicodedata.category(ch).startswith("P"))
+
+        best_index_for_key: dict[str, int] = {}
+        cleaned_keys: List[str] = []  # same length as output list for quick access
+        output_items: List[dict] = []
+
+        for idx, it in enumerate(items):
+            uuid = it.get("uuid")
+            if not uuid:
+                continue  # skip malformed
+            key = strip_punct(it.get("all_text", "")).lower().strip()
+            score = it.get("score", 0.0)
+
+            prev_idx = best_index_for_key.get(key)
+            if prev_idx is None:
+                # first time we see this key
+                best_index_for_key[key] = len(output_items)
+                cleaned_keys.append(key)
+                output_items.append({"uuid": uuid, "score": score})
+            else:
+                # duplicate – keep the one with higher score (or existing if tie)
+                if score > output_items[prev_idx]["score"]:
+                    output_items[prev_idx] = {"uuid": uuid, "score": score}
+                # else: keep existing (ties resolved in favour of first)
+
+        # Preserve the order in which unique keys first appeared
+        return [item["uuid"] for item in output_items]
