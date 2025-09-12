@@ -38,8 +38,8 @@ export function getGlobalHowlerController(): HowlerController {
 
   const howls = new Map<string, Howl>();
   const MAX_CACHE = 10;
-  const pendingSeekById = new Map<string, number | null>();
-  const seekingById = new Map<string, boolean>();
+  const pendingSeekById = new Map<string, number>();
+  const seekingById = new Set<string>();
   const cleanupById = new Map<string, () => void>();
 
   let currentTrackId: string | null = null;
@@ -60,32 +60,32 @@ export function getGlobalHowlerController(): HowlerController {
       });
     }
   }
-  function getNextTrackIdx(): string {
+  function getNextTrackIdx(): string | null {
     if (!playlistIds.length) {
-      return '';
+      return null;
     }
     let idx = playlistIds.indexOf(currentTrackId || '');
     if (idx < 0) {
-      return '';
+      return null;
     }
     idx ++;
     if (idx >= playlistIds.length) {
-      idx = 0;
+      return null;
     }
     return playlistIds[idx];
   }
 
-  function getPrevTrackIdx(): string {
+  function getPrevTrackIdx(): string | null {
     if (!playlistIds.length) {
-      return '';
+      return null;
     }
     let idx = playlistIds.indexOf(currentTrackId || '');
     if (idx < 0) {
-      return '';
+      return null;
     }
     idx--;
     if (idx < 0) {
-      idx = playlistIds.length - 1;
+      return null;
     }
     return playlistIds[idx];
   }
@@ -148,7 +148,7 @@ export function getGlobalHowlerController(): HowlerController {
       const t = (h.seek() as number) || 0;
       setInputTime(t);
       const id = (h as any)._trackId as string | undefined;
-      if (id){
+      if (id && !seekingById.has(id)) {
         setTrackTime(id, t);
         msSyncPosition(id);
       }
@@ -265,15 +265,15 @@ export function getGlobalHowlerController(): HowlerController {
       if (!node || cleanupById.has(trackId)) return;
 
       const onSeeking = () => {
-        seekingById.set(trackId, true);
+        seekingById.add(trackId);
       };
       const onSeeked = () => {
-        const pending = pendingSeekById.get(trackId);
-        if (pending != null) {
-          pendingSeekById.set(trackId, null);
+        if (pendingSeekById.has(trackId)) {
+          const pending = pendingSeekById.get(trackId);
+          pendingSeekById.delete(trackId);
           howl.seek(pending);
         } else {
-          seekingById.set(trackId, false);
+          seekingById.delete(trackId);
         }
       };
 
@@ -431,10 +431,9 @@ export function getGlobalHowlerController(): HowlerController {
     if (!h || !id) {
       return;
     }
-    const loaded = h.state() === 'loaded';
-    const busy = seekingById.get(id) === true;
 
-    if (loaded && !busy) {
+    const loaded = h.state() === 'loaded';
+    if (loaded && !seekingById.has(id)) {
       h.seek(nt);
     } else {
       pendingSeekById.set(id, nt);

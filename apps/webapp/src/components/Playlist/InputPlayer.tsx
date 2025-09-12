@@ -41,6 +41,18 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     // GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
 
+    const seekRef = useRef<number | null>(null);
+    const requestSeek = useCallback((time: number) => {
+        if (seekRef.current){
+            cancelAnimationFrame(seekRef.current);
+        }
+        seekRef.current = requestAnimationFrame(() => {
+            howlerController.seek(time, effectiveId);
+            setTime(time, true);
+            setTrackTime(effectiveId, time);
+        });
+    }, [howlerController, effectiveId, setTime, setTrackTime]);
+
 
     useEffect(() => {
         setTime(currentTime);
@@ -66,14 +78,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
             const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
-                howlerController.seek(newPosition, effectiveId);
+                requestSeek(newPosition);
                 setTime(newPosition, true);
                 setTrackTime(effectiveId, newPosition);
             }
         };
         el.addEventListener('click', onClick);
         return () => el.removeEventListener('click', onClick);
-    }, [totalDuration, effectiveId, setTime, howlerController, setTrackTime]);
+    }, [totalDuration, effectiveId, setTime, howlerController, setTrackTime, requestSeek]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
@@ -99,13 +111,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
-        howlerController.seek(Math.max(0, currentTime - 10), effectiveId);
+        requestSeek(Math.max(0, currentTime - 10));
     }, [howlerController, currentTime, effectiveId]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
-        howlerController.seek(Math.min(d, currentTime + 10), effectiveId);
+        requestSeek(Math.min(d, currentTime + 10));
     }, [howlerController, currentTime, effectiveId]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
