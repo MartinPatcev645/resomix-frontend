@@ -398,8 +398,14 @@ class SearchService:
             uuid = it.get("uuid")
             if not uuid:
                 continue  # skip malformed
+            print(f"all_text: {it.get('all_text', '')}")
             key = strip_punct(it.get("all_text", "")).lower().strip()
+            print(f"after strip: {key}")
             score = it.get("score", 0.0)
+
+            # If key becomes empty (e.g. all_text missing) fall back to uuid so it is unique
+            if not key:
+                key = uuid  # guarantees uniqueness across hits
 
             prev_idx = best_index_for_key.get(key)
             if prev_idx is None:
