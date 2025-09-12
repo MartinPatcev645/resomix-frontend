@@ -85,7 +85,6 @@ export function msUpdatePositionState(input: {
   try {
     navigator.mediaSession.setPositionState({ position, duration, playbackRate });
   } catch {
-    // Safari/iOS может бросать в некоторых состояниях — игнорируем
   }
 }
 

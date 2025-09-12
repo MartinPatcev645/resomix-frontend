@@ -111,11 +111,12 @@ export function getGlobalHowlerController(): HowlerController {
     return `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
   }
 
-  function msSyncPosition(trackId?: string) {
-    const id = trackId || currentTrackId;
-    if (!id || !howls.has(id)) return;
-    const h = howls.get(id);
-    const pos = getTrackTime(id) || 0;
+  function msSyncPosition(trackId: string) {
+    if (!trackId || trackId !== currentTrackId || !howls.has(trackId)) {
+      return;
+    }
+    const h = getCurrentHowl();
+    const pos = getTrackTime(trackId) || 0;
     msUpdatePositionState({
       position: pos,
       duration: h?.duration() || 0,
@@ -145,9 +146,10 @@ export function getGlobalHowlerController(): HowlerController {
       const t = (h.seek() as number) || 0;
       setInputTime(t);
       const id = (h as any)._trackId as string | undefined;
-      if (id) setTrackTime(id, t);
-
-      msSyncPosition(id);
+      if (id){
+        setTrackTime(id, t);
+        msSyncPosition(id);
+      }
     }, 200);
   }
 
@@ -430,9 +432,9 @@ export function getGlobalHowlerController(): HowlerController {
     }
 
     setTrackTime(id, nt);
+    msSyncPosition(trackId);
     if (!trackId) {
       setInputTime(nt);
-      msSyncPosition(trackId);
     }
   }
 
