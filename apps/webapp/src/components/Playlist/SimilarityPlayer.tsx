@@ -59,7 +59,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
             const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
-                howlerController.seek(newPosition);
+                howlerController.seek(newPosition, trackId);
                 setTime(newPosition, true);
                 setTrackTime(trackId, newPosition);
             }
@@ -70,14 +70,14 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
-        seek(Math.max(0, currentTime - 10));
-    }, [howlerController, currentTime, seek]);
+        seek(Math.max(0, currentTime - 10), trackId);
+    }, [howlerController, currentTime, seek, trackId]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
-        seek(Math.min(d, currentTime + 10));
-    }, [howlerController, currentTime, seek]);
+        seek(Math.min(d, currentTime + 10), trackId);
+    }, [howlerController, currentTime, seek, trackId]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);

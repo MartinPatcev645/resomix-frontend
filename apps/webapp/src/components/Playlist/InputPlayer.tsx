@@ -69,7 +69,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
             const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
-                howlerController.seek(newPosition);
+                howlerController.seek(newPosition, effectiveId);
                 setTime(newPosition, true);
                 setTrackTime(effectiveId, newPosition);
             }
@@ -104,14 +104,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
-        howlerController.seek(Math.max(0, currentTime - 10));
-    }, [howlerController, currentTime]);
+        howlerController.seek(Math.max(0, currentTime - 10), effectiveId);
+    }, [howlerController, currentTime, effectiveId]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
-        howlerController.seek(Math.min(d, currentTime + 10));
-    }, [howlerController, currentTime]);
+        howlerController.seek(Math.min(d, currentTime + 10), effectiveId);
+    }, [howlerController, currentTime, effectiveId]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -184,7 +184,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
                           {/* Volume Slider */}
                           <div className="relative flex items-center w-[var(--px-80)]">
-                              {/* White base line track */}
+                              {/* White baseline track */}
                               <div className="absolute w-[var(--px-80)] h-[var(--px-1)] bg-white"></div>
                               <input
                                 type="range"

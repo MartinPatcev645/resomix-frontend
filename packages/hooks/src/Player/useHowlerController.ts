@@ -13,7 +13,7 @@ export interface HowlerController {
   play: () => void;
   pause: (trackId?: string) => void;
   stop: () => void;
-  seek: (timeSeconds: number) => void;
+  seek: (timeSeconds: number, trackId: string) => void;
   getCurrentTime: () => number;
   readonly currentTime: number;
   getDuration: () => number;
@@ -293,13 +293,22 @@ export function getGlobalHowlerController(): HowlerController {
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
-  function seek(t: number) {
+  function seek(t: number, trackId: string = '') {
     const nt = Math.max(0, t);
-    const h = getCurrentHowl();
-    h?.seek(nt);
-    setInputTime(nt);
-    const id = (h as any)?._trackId as string | undefined;
-    if (id) setTrackTime(id, nt);
+    let h = getCurrentHowl();
+    if (trackId) {
+      if (!howls.has(trackId)) {
+        return;
+      }
+      h = howls.get(trackId) || null;
+      h?.seek(nt);
+      setTrackTime(trackId, nt);
+    }
+    else {
+      h?.seek(nt);
+      setInputTime(nt);
+      setTrackTime(trackId, nt);
+    }
   }
 
   function getCurrentTime() {
