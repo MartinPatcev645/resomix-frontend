@@ -59,7 +59,7 @@ const HomeFive: React.FC = () => {
           <div className='mt-[var(--px-60)] relative w-full'>
             {/** Search bar & dropdown */}
             <SearchInput value={query} onChange={handleQueryChange} width="w-[var(--px-310)]" />
-            <SearchDropdown show={query.length > 0} results={dropdownResults} width="w-[var(--px-310)]" isLoading={isLoading} truncateLength={24} onSelect={(result) => {
+            <SearchDropdown show={query.length > 0} results={dropdownResults} width="w-[var(--px-310)]" isLoading={isLoading} truncateLength={20} onSelect={(result) => {
               window.location.href = `${BASE_BETA_URL}/?id=${result.id}`;
             }} />
           </div>

@@ -64,7 +64,7 @@ const HomeFive: React.FC = () => {
           <div className='mt-[var(--px-16)] relative w-[var(--px-588)] self-end'>
             {/** Search bar & dropdown */}
             <SearchInput value={query} onChange={handleQueryChange} />
-            <SearchDropdown show={query.length > 0} results={dropdownResults} isLoading={isLoading} onSelect={(result) => {
+            <SearchDropdown show={query.length > 0} results={dropdownResults} truncateLength={22} isLoading={isLoading} onSelect={(result) => {
               window.location.href = `${BASE_BETA_URL}/?id=${result.id}`;
             }} />
           </div>

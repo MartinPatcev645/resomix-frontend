@@ -1,4 +1,5 @@
 import React from "react";
+import Tooltip from "../Layout/Tooltip";
 
 const truncateText = (text: string | undefined, max: number) =>
   text && text.length > max ? `${text.slice(0, max)}…` : text;
@@ -46,11 +47,15 @@ export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, i
                 </svg>
                 <div className="flex flex-col ml-[var(--px-20)]">
                   <span className="uppercase font-auger text-[length:var(--px-11-7)] font-light leading-wide">
-                    {truncateText(item.title, truncateLength)}
+                    <Tooltip message={item.title}>
+                      {truncateText(item.title, truncateLength)}
+                    </Tooltip>
                   </span>
                   {item.artist && (
                     <span className="font-fira text-[length:var(--px-9-6)] font-light leading-normal">
-                      {truncateText(item.artist, truncateLength)}
+                      <Tooltip message={item.artist}>
+                        {truncateText(item.artist, truncateLength)}
+                      </Tooltip>
                     </span>
                   )}
                 </div>

@@ -70,7 +70,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                         show={query.length > 0}
                                         results={results}
                                         width="w-[var(--px-310)]"
-                                        truncateLength={24}
+                                        truncateLength={22}
                                         isLoading={isLoading}
                                         onSelect={onTrackSelect}
                                     />
