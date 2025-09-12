@@ -32,10 +32,6 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     // Get the GLOBAL controller (singleton)
     const howlerController = useGlobalHowlerController();
-    const {
-        seek,
-    } = howlerController;
-
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
 
@@ -76,18 +72,18 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         };
         el.addEventListener('click', onClick);
         return () => el.removeEventListener('click', onClick);
-    }, [totalDuration, trackId, setTime, howlerController, setTrackTime]);
+    }, [totalDuration, trackId, setTime, howlerController, setTrackTime, requestSeek]);
 
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
         requestSeek(Math.max(0, currentTime - 10));
-    }, [howlerController, currentTime, seek, trackId]);
+    }, [howlerController, requestSeek, currentTime]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
         requestSeek(Math.min(d, currentTime + 10));
-    }, [howlerController, currentTime, seek, trackId]);
+    }, [howlerController, currentTime, trackId]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);

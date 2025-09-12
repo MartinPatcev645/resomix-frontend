@@ -1,7 +1,15 @@
 'use client';
 
 import { Howl } from 'howler';
-import { usePlayerStore } from '@resomix/stores';
+import {Track, usePlayerStore} from '@resomix/stores';
+import {
+  msInit,
+  msSetTrackControls,
+  msSetMetadata,
+  msSetPlaybackState,
+  msUpdatePositionState,
+  msReset,
+} from './mediaSessionActions'
 
 const log = (...args: any[]) => {
   // console.log(...args);
@@ -20,7 +28,7 @@ export interface HowlerController {
   unload: () => void;
   preloadNext: (trackId: string) => void;
   readonly isLoaded: boolean;
-  initPlaylist: (ids: string[]) => void;
+  initPlaylist: (list: Track[]) => void;
 }
 
 let singleton: HowlerController | null = null;
@@ -39,8 +47,18 @@ export function getGlobalHowlerController(): HowlerController {
   let trackPlayAfterLoad: string = '';
 
   let playlistIds: string[] = [];
-  function initPlaylist(ids: string[]) {
-    playlistIds = [...ids];
+  let tracks: Track[] = [];
+  function initPlaylist(tracksList: Track[]) {
+    tracks = [...tracksList];
+    playlistIds = tracksList.map(el=>el.id);
+    if (currentTrackId) {
+      const nextId = getNextTrackIdx();
+      const prevId = getPrevTrackIdx();
+      msSetTrackControls({
+        onNext: nextId ? () => { setCurrentTrack(nextId); load(nextId, true); } : null,
+        onPrev: prevId ? () => { setCurrentTrack(prevId); load(prevId, true); } : null,
+      });
+    }
   }
   function getNextTrackIdx(): string {
     if (!playlistIds.length) {
@@ -53,6 +71,21 @@ export function getGlobalHowlerController(): HowlerController {
     idx ++;
     if (idx >= playlistIds.length) {
       idx = 0;
+    }
+    return playlistIds[idx];
+  }
+
+  function getPrevTrackIdx(): string {
+    if (!playlistIds.length) {
+      return '';
+    }
+    let idx = playlistIds.indexOf(currentTrackId || '');
+    if (idx < 0) {
+      return '';
+    }
+    idx--;
+    if (idx < 0) {
+      idx = playlistIds.length - 1;
     }
     return playlistIds[idx];
   }
@@ -78,6 +111,34 @@ export function getGlobalHowlerController(): HowlerController {
     return `https://media.resomix.com/signed-audio/?uuid=${trackId}`;
   }
 
+  function msSyncPosition(trackId?: string) {
+    const id = trackId || currentTrackId;
+    if (!id || !howls.has(id)) return;
+    const h = howls.get(id);
+    const pos = getTrackTime(id) || 0;
+    msUpdatePositionState({
+      position: pos,
+      duration: h?.duration() || 0,
+      playbackRate: h?.playing() ? 1 : 1
+    });
+  }
+
+  function msSyncMetadata(trackId?: string) {
+    const id = trackId || currentTrackId;
+    const trackInfo: Track | undefined = tracks.find(el=>el.id === id);
+    if (!trackInfo) return;
+    msSetMetadata({
+      title: trackInfo.title || 'Resomix Track',
+      artist: trackInfo.artist || 'Music Discovery',
+      album: 'Similarity Playlist',
+      artwork: [
+        { src: '/logo.png', sizes: '96x96', type: 'image/png' },
+        { src: '/logo.png', sizes: '128x128', type: 'image/png' },
+        { src: '/logo.png', sizes: '192x192', type: 'image/png' },
+      ]
+    })
+  }
+
   function startTicker(h: Howl) {
     if (progressTimer != null) return;
     progressTimer = window.setInterval(() => {
@@ -85,6 +146,8 @@ export function getGlobalHowlerController(): HowlerController {
       setInputTime(t);
       const id = (h as any)._trackId as string | undefined;
       if (id) setTrackTime(id, t);
+
+      msSyncPosition(id);
     }, 200);
   }
 
@@ -125,20 +188,23 @@ export function getGlobalHowlerController(): HowlerController {
         return;
       }
       startTicker(howl);
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+      msSetPlaybackState('playing');
+      msSyncPosition(trackId);
     };
     const onpause = () => {
       log('onpause: ', trackId);
       if (!isCurrent(trackId)) return;
       stopTicker();
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+      msSetPlaybackState('paused');
+      msSyncPosition(trackId);
     };
     const onstop = () => {
       log('onstop: ', trackId);
       if (!isCurrent(trackId)) return;
       log('onstop: ', trackId);
       stopTicker();
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+      msSetPlaybackState('none');
+      msSyncPosition(trackId);
     };
     const onend = () => {
       log('onend: ', trackId);
@@ -156,7 +222,8 @@ export function getGlobalHowlerController(): HowlerController {
         }
       } else {
         setCurrentTrack(null);
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+        msSetPlaybackState('none');
+        msSyncPosition(trackId);
       }
     };
     const onload = () => {
@@ -168,6 +235,10 @@ export function getGlobalHowlerController(): HowlerController {
         howl.seek(saved);
         setInputTime(saved);
       }
+
+      msSyncMetadata(trackId)
+      msSyncPosition(trackId);
+
       if (trackPlayAfterLoad === trackId && currentTrackId === trackId) {
         play();
         trackPlayAfterLoad = '';
@@ -272,6 +343,17 @@ export function getGlobalHowlerController(): HowlerController {
       howl.seek(saved);
       setInputTime(saved);
     }
+
+    const nextId = getNextTrackIdx();
+    const prevId = getPrevTrackIdx();
+    msSetTrackControls({
+      onNext: nextId ? () => { setCurrentTrack(nextId); load(nextId, true); } : null,
+      onPrev: prevId ? () => { setCurrentTrack(prevId); load(prevId, true); } : null,
+    });
+
+    msSyncMetadata(trackId);
+    msSetPlaybackState(howl.playing() ? 'playing' : (usePlayerStore.getState().isLoaded ? 'paused' : 'none'));
+    msSyncPosition(trackId);
   }
 
   function load(trackId: string, playAfter: boolean = false) {
@@ -350,6 +432,7 @@ export function getGlobalHowlerController(): HowlerController {
     setTrackTime(id, nt);
     if (!trackId) {
       setInputTime(nt);
+      msSyncPosition(trackId);
     }
   }
 
@@ -373,7 +456,7 @@ export function getGlobalHowlerController(): HowlerController {
     howls.clear();
     currentTrackId = null;
     usePlayerStore.setState({ isLoaded: false });
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+    msReset();
   }
 
   function preloadNext(trackId: string) {
@@ -391,6 +474,14 @@ export function getGlobalHowlerController(): HowlerController {
     const h = getCurrentHowl();
     return h?.state() === 'loaded';
   }
+
+  msInit({
+    onPlay: () => play(),
+    onPause: () => pause(),
+    onStop: () => stop(),
+    onSeekTo: (t: number) => seek(t),
+    onSeekBy: (delta: number) => seek(getCurrentTime() + delta),
+  });
 
   singleton = {
     load,

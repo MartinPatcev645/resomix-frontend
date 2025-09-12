@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useEffect, useRef } from 'react'
-import { usePlaylistStore } from '@resomix/stores'
+import {Track, usePlaylistStore} from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
 import {useGlobalHowlerController} from "./useGlobalHowlerController";
 import {loadPeaksData} from "../Waveform/peaksCache";
@@ -34,20 +34,20 @@ export const usePlayerManager = () => {
   const allTrackIds = useMemo(() => {
     if (!playlistData) return []
 
-    const trackIds: string[] = []
+    let tracks: Track[]  = [];
 
     // Add queried track first if it exists
     if (playlistData.queried_track?.id) {
-      trackIds.push(playlistData.queried_track.id)
+      tracks.push(playlistData.queried_track);
     }
 
     // Add similar tracks
     if (playlistData.similar_tracks?.length) {
-      trackIds.push(...playlistData.similar_tracks.map(track => track.id))
+      tracks = [...tracks, ...playlistData.similar_tracks];
     }
-    howlerController.initPlaylist(trackIds);
+    howlerController.initPlaylist(tracks);
 
-    return trackIds
+    return tracks.map(el=>el.id);
   }, [playlistData, howlerController])
 
   // Get current track index in the playlist
@@ -96,33 +96,6 @@ export const usePlayerManager = () => {
     return null
   }, [currentTrackId, currentTrackIndex, allTrackIds])
 
-  // Update MediaSession metadata when track changes
-  const updateMediaSessionMetadata = useCallback((trackId: string) => {
-    if ('mediaSession' in navigator && playlistData) {
-      let trackInfo = null;
-
-      // Find track info from playlist data
-      if (trackId === playlistData.queried_track?.id) {
-        trackInfo = playlistData.queried_track;
-      } else {
-        trackInfo = playlistData.similar_tracks?.find(track => track.id === trackId);
-      }
-
-      if (trackInfo) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: trackInfo.title || 'Resomix Track',
-          artist: trackInfo.artist || 'Music Discovery',
-          album: 'Similarity Playlist',
-          artwork: [
-            { src: '/logo.png', sizes: '96x96', type: 'image/png' },
-            { src: '/logo.png', sizes: '128x128', type: 'image/png' },
-            { src: '/logo.png', sizes: '192x192', type: 'image/png' },
-          ]
-        });
-      }
-    }
-  }, [playlistData]);
-
   // BeMusic pattern: Synchronous track cueing with async loading
   const cueTrack = useCallback((trackId: string) => {
     // Allow special tracks (uploaded) or tracks in playlist
@@ -134,12 +107,9 @@ export const usePlayerManager = () => {
     // Immediate synchronous state change (preserves gesture)
     setCurrentTrack(trackId)
 
-    // Update MediaSession metadata
-    updateMediaSessionMetadata(trackId);
-
     console.log('[PlayerManager] Track cued immediately:', trackId)
     return true
-  }, [allTrackIds, setCurrentTrack, updateMediaSessionMetadata])
+  }, [allTrackIds, setCurrentTrack])
 
   // Start playing a specific track (synchronous)
   const startPlaying = useCallback((trackId: string) => {
@@ -243,68 +213,6 @@ export const usePlayerManager = () => {
       clearInterval(interval);
     }
   }, [howlerController, currentTrackId, autoplay, getNextTrack]);
-
-  useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
-
-    const hasPrev = currentTrackIndex > 0;
-    const hasNext = !!getNextTrack();
-
-    navigator.mediaSession.setActionHandler('play', () => {
-      howlerController.play();
-    });
-    navigator.mediaSession.setActionHandler('pause', () => {
-      howlerController.pause();
-    });
-
-    navigator.mediaSession.setActionHandler(
-      'previoustrack',
-      hasPrev ? () => { console.log('[MS] prev'); playPrevious(); } : null
-    );
-    navigator.mediaSession.setActionHandler(
-      'nexttrack',
-      hasNext ? () => { console.log('[MS] next'); playNext(); } : null
-    );
-
-    navigator.mediaSession.setActionHandler('seekto', (details: any) => {
-      if (details?.seekTime != null) {
-        howlerController.seek(details.seekTime);
-        setTrackTime(currentTrackId || '', details.seekTime);
-      }
-    });
-
-    return () => {
-      navigator.mediaSession.setActionHandler('play', null);
-      navigator.mediaSession.setActionHandler('pause', null);
-      navigator.mediaSession.setActionHandler('previoustrack', null);
-      navigator.mediaSession.setActionHandler('nexttrack', null);
-      // navigator.mediaSession.setActionHandler('seekbackward', null);
-      // navigator.mediaSession.setActionHandler('seekforward', null);
-      navigator.mediaSession.setActionHandler('seekto', null);
-    };
-  }, [howlerController, playNext, playPrevious, currentTrackIndex, getNextTrack]);
-
-  function updatePositionState() {
-    if (!('mediaSession' in navigator)) {
-      return;
-    }
-    const duration = howlerController.getDuration();
-    if (!duration || !isFinite(duration)){
-      return;
-    }
-    const position = howlerController.getCurrentTime();
-    navigator.mediaSession.setPositionState({
-      duration,
-      position,
-      playbackRate: 1
-    });
-  }
-
-  useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
-    const id = setInterval(updatePositionState, 500);
-    return () => clearInterval(id);
-  }, [howlerController, currentTrackId]);
 
   // Play first track in playlist
   const playFirst = useCallback(() => {
