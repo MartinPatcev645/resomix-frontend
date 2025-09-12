@@ -70,14 +70,8 @@ class SearchService:
 
         es_failed = False
         try:
-            es_start = time.perf_counter()
             es_resp = es_client.search(index="tracks-*", body=es_body)
             hits = es_resp.get("hits", {}).get("hits", [])
-            print(f"[Timing] Elasticsearch query took {(time.perf_counter()-es_start):.3f}s and returned {len(hits)} hits")
-            # Display all provided details for first two hits
-            for i, hit in enumerate(hits[:2]):
-                print(f"Hit {i+1}:")
-                print(hit)
             # Collect uuid, dedupe, and score for deduplication
             hit_items = [
                 {
@@ -97,10 +91,7 @@ class SearchService:
         formatted_results: List[Dict[str, Any]] = []
 
         if uuids:
-            db_start = time.perf_counter()
             tracks = await self.track_repository.async_get_tracks_by_uuids(db, uuids)
-            print(f"[Timing] DB enrichment for {len(uuids)} uuids took {(time.perf_counter()-db_start):.3f}s")
-
             # Map uuid -> track object for quick lookup to retain ES order
             track_map = {t.uuid: t for t in tracks}
 
@@ -306,7 +297,6 @@ class SearchService:
         try:
             file_path = await self.track_repository.async_get_track_path_by_uuid(db, track_id.strip())
             if file_path:
-                print(f"Path found for track_id {track_id}: {file_path}")
                 return file_path
             else:
                 print(f"Track with ID '{track_id}' not found.")
@@ -395,13 +385,10 @@ class SearchService:
         output_items: List[dict] = []
 
         for idx, it in enumerate(items):
-            print(f"item: {it}")
             uuid = it.get("uuid")
             if not uuid:
                 continue  # skip malformed
-            print(f"dedupe: {it.get('dedupe', '')}")
             key = strip_punct(it.get("dedupe", "")).lower().strip()
-            print(f"after strip: {key}")
             score = it.get("score", 0.0)
 
             # If key becomes empty (e.g. dedupe missing) fall back to uuid so it is unique
