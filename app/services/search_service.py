@@ -16,6 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 import re
+import unicodedata
 import time
 from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
@@ -42,12 +43,11 @@ class SearchService:
         if not query or not query.strip():
             return {"tracks": []}
 
-        # Pre-process query: replace punctuation with space, collapse multiple spaces
+        # Pre-process query
         raw_q = query.strip()
-        # replace any character that is not letter, number or whitespace with space
-        cleaned = re.sub(r"[^0-9A-Za-z]+", " ", raw_q)
-        # collapse multiple spaces
-        query_clean = re.sub(r"\s+", " ", cleaned).strip()
+        query_clean = clean_for_text(raw_q)   # for multi_match / match
+        tokens_lower = normalize_for_keyword(raw_q)  # for terms_set
+
         if not query_clean:
             return {"tracks": []}
 
@@ -60,79 +60,9 @@ class SearchService:
         tokens_lower = [t.lower() for t in tokens_list if t]
 
         if len(tokens_list) <= 2:
-            es_body = {
-                "collapse": {"field": "dedupe"},
-                "query": {
-                    "function_score": {
-                        "query": {
-                            "bool": {
-                                "should": [
-                                    {
-                                        "terms_set": {
-                                            "artists": {
-                                                "terms": tokens_lower,
-                                                "minimum_should_match_script": {"source": "Math.min(params.num_terms, 1)"}
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "multi_match": {
-                                            "query": query_clean,
-                                            "fields": ["title^1.5"],
-                                            "type": "best_fields",
-                                            "operator": "and",
-                                            "fuzziness": "AUTO"
-                                        }
-                                    },
-                                    {
-                                        "match": {
-                                            "all_text": {
-                                                "query": query_clean,
-                                                "operator": "and",
-                                                "fuzziness": "AUTO",
-                                                "boost": 0.5
-                                            }
-                                        }
-                                    }
-                                ],
-                                "minimum_should_match": 1
-                            }
-                        },
-                        "functions": [
-                            {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
-                        ],
-                        "score_mode": "sum",
-                        "boost_mode": "sum"
-                    }
-                },
-                "_source": ["uuid", "type", "artists", "title"],
-                "size": limit
-            }
+            es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
         else:
-            es_body = {
-                "collapse": {"field": "dedupe"},
-                "query": {
-                    "function_score": {
-                        "query": {
-                            "bool": {
-                                "must": [
-                                    {"match": {"all_text": {"query": query_clean, "operator": "and", "fuzziness": "AUTO"}}}
-                                ],
-                                "should": [
-                                    {"match_phrase": {"title": {"query": query_clean, "slop": 2, "boost": 2.0}}}
-                                ]
-                            }
-                        },
-                        "functions": [
-                            {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
-                        ],
-                        "score_mode": "sum",
-                        "boost_mode": "sum"
-                    }
-                },
-                "_source": ["uuid", "type", "artists", "title"],
-                "size": limit
-            }
+            es_body = self.build_long_query_es_body(query_clean, tokens_lower, limit)
 
         es_failed = False
         try:
@@ -193,6 +123,154 @@ class SearchService:
 
         print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
         return {"tracks": formatted_results}
+    
+    def build_short_query_es_body(self, query_text: str, tokens_kw: list[str], limit: int = 20):
+        # Require 1 token if 1 given, else require both tokens when 2 are given
+        msm_script = {"source": "params.num_terms <= 1 ? 1 : 2"}
+
+        # Per-token artist boosts via function_score filters (works on keyword field)
+        artist_token_functions = [
+            {"filter": {"term": {"artists": tok}}, "weight": 2.0}  # gentle per-token bump
+            for tok in tokens_kw
+        ]
+
+        es_body = {
+            "collapse": {"field": "dedupe"},
+            "query": {
+                "function_score": {
+                    "query": {
+                        "bool": {
+                            "should": [
+                                # 1) Artist presence gate (non-scoring query, but ensures recall)
+                                {
+                                    "terms_set": {
+                                        "artists": {
+                                            "terms": tokens_kw,
+                                            "minimum_should_match_script": msm_script,
+                                        }
+                                    }
+                                },
+                                # 2) Title match (slightly stronger than all_text)
+                                {
+                                    "multi_match": {
+                                        "query": query_text,
+                                        "fields": ["title^2.2"],
+                                        "type": "best_fields",
+                                        "operator": "and",
+                                        "fuzziness": "AUTO"
+                                    }
+                                },
+                                # 3) Phrase on title (nice precision when two tokens given)
+                                {
+                                    "match_phrase": {
+                                        "title": {"query": query_text, "slop": 2, "boost": 3.0}
+                                    }
+                                },
+                                # 4) All text (broad safety net; lower weight)
+                                {
+                                    "match": {
+                                        "all_text": {
+                                            "query": query_text,
+                                            "operator": "and",
+                                            "fuzziness": "AUTO",
+                                            "boost": 0.6
+                                        }
+                                    }
+                                }
+                            ],
+                            "minimum_should_match": 1
+                        }
+                    },
+                    "functions": [
+                        # Stronger boost when ALL artist tokens are present
+                        {
+                            "filter": {
+                                "terms_set": {
+                                    "artists": {
+                                        "terms": tokens_kw,
+                                        "minimum_should_match_script": msm_script
+                                    }
+                                }
+                            },
+                            "weight": 6.0
+                        },
+                        # Gentle bumps for any single-token artist hits
+                        *artist_token_functions,
+                        # Keep your existing source boost
+                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
+                    ],
+                    "score_mode": "sum",
+                    "boost_mode": "sum"
+                }
+            },
+            "_source": ["uuid", "type", "artists", "title"],
+            "size": limit
+        }
+        return es_body
+
+    
+    def build_long_query_es_body(self, query_text: str, tokens_kw: list[str], limit: int = 20):
+        """
+        Long query (>= 3 tokens): emphasize precise title matches while still allowing recall via all_text,
+        and gently prioritize artist presence when full/partial artist tokens appear.
+        Expects:
+        - query_text from clean_for_text(raw_q)
+        - tokens_kw  from normalize_for_keyword(raw_q)
+        """
+        # Require 1 token if 1 given, else require both when 2+ are given
+        msm_script = {"source": "params.num_terms <= 1 ? 1 : 2"}
+
+        artist_token_functions = [
+            {"filter": {"term": {"artists": tok}}, "weight": 1.5}  # gentle per-token bump
+            for tok in tokens_kw
+        ]
+
+        es_body = {
+            "collapse": {"field": "dedupe"},
+            "query": {
+                "function_score": {
+                    "query": {
+                        # Use dis_max so the best field dominates, with a small tie-break
+                        "dis_max": {
+                            "tie_breaker": 0.2,
+                            "queries": [
+                                # Strong precision when phrase is in the title
+                                {"match_phrase": {"title": {"query": query_text, "slop": 2, "boost": 3.2}}},
+                                # Solid exact-ish title match with fuzziness
+                                {"match": {"title": {"query": query_text, "operator": "and", "fuzziness": "AUTO", "boost": 2.2}}},
+                                # Broad recall safety net
+                                {"match": {"all_text": {"query": query_text, "operator": "and", "fuzziness": "AUTO", "boost": 0.9}}}
+                            ]
+                        }
+                    },
+                    "functions": [
+                        # Prefer docs where all artist tokens are present (for queries like "vinicius honorio locust")
+                        {
+                            "filter": {
+                                "terms_set": {
+                                    "artists": {
+                                        "terms": tokens_kw,
+                                        "minimum_should_match_script": msm_script
+                                    }
+                                }
+                            },
+                            "weight": 4.5
+                        },
+                        # Small bumps for any single-token artist hits
+                        *artist_token_functions,
+                        # Keep your source/type boost
+                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
+                    ],
+                    "score_mode": "sum",
+                    "boost_mode": "sum"
+                }
+            },
+            "_source": ["uuid", "type", "artists", "title"],
+            "size": limit
+        }
+        return es_body
+
+
 
     async def get_track_path_by_id(self, db: AsyncSession, track_id: str) -> Optional[str]:
         """
@@ -248,3 +326,29 @@ class SearchService:
             return False
         
         return True 
+
+    def normalize_for_keyword(q: str) -> list[str]:
+        """
+        Mimics ES keyword normalizer: lowercase + asciifolding + strip punctuation.
+        Returns token list for terms_set queries.
+        """
+        # Step 1: lowercase + ascii folding (remove accents)
+        nfkd = unicodedata.normalize("NFKD", q)
+        folded = "".join(ch for ch in nfkd if not unicodedata.combining(ch))
+        lowered = folded.lower()
+
+        # Step 2: remove punctuation (replace with spaces)
+        no_punct = re.sub(r"[^0-9a-z]+", " ", lowered)
+
+        # Step 3: collapse multiple spaces
+        cleaned = re.sub(r"\s+", " ", no_punct).strip()
+
+        return cleaned.split() if cleaned else []
+
+
+    def clean_for_text(q: str) -> str:
+        """
+        Light clean for ES text fields: just trim and collapse spaces.
+        ES analyzer handles lowercase, asciifolding, punctuation.
+        """
+        return re.sub(r"\s+", " ", q.strip())
