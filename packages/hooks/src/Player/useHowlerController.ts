@@ -30,6 +30,9 @@ export function getGlobalHowlerController(): HowlerController {
 
   const howls = new Map<string, Howl>();
   const MAX_CACHE = 10;
+  const pendingSeekById = new Map<string, number | null>();
+  const seekingById = new Map<string, boolean>();
+  const cleanupById = new Map<string, () => void>();
 
   let currentTrackId: string | null = null;
   let progressTimer: number | null = null;
@@ -108,14 +111,15 @@ export function getGlobalHowlerController(): HowlerController {
         howls.set(oldestId, oldestHowl);
         continue;
       }
+      cleanupById.get(oldestId)?.();
       oldestHowl.unload();
       howls.delete(oldestId);
     }
   }
 
   function attachHowlEvents(howl: Howl, trackId: string) {
-    log('onplay: ', trackId);
     const onplay = () => {
+      log('onplay: ', trackId);
       if (!isCurrent(trackId)) {
         howl.pause();
         return;
@@ -168,12 +172,42 @@ export function getGlobalHowlerController(): HowlerController {
         play();
         trackPlayAfterLoad = '';
       }
+      wireNode();
     };
     const onloaderror = (_id: number, err: any) => console.error('[Howler] load error', err);
     const onplayerror = (_id: number, err: any) => {
       console.error('[Howler] play error', err);
       howl.once('unlock', () => {
         if (isCurrent(trackId)) howl.play();
+      });
+    };
+
+    const wireNode = () => {
+      const node = (howl as any)?._sounds?.[0]?._node as HTMLAudioElement | undefined;
+      if (!node || cleanupById.has(trackId)) return;
+
+      const onSeeking = () => {
+        seekingById.set(trackId, true);
+      };
+      const onSeeked = () => {
+        const pending = pendingSeekById.get(trackId);
+        if (pending != null) {
+          pendingSeekById.set(trackId, null);
+          howl.seek(pending);
+        } else {
+          seekingById.set(trackId, false);
+        }
+      };
+
+      node.addEventListener('seeking', onSeeking);
+      node.addEventListener('seeked', onSeeked);
+
+      cleanupById.set(trackId, () => {
+        node.removeEventListener('seeking', onSeeking);
+        node.removeEventListener('seeked', onSeeked);
+        cleanupById.delete(trackId);
+        seekingById.delete(trackId);
+        pendingSeekById.delete(trackId);
       });
     };
 
@@ -295,19 +329,27 @@ export function getGlobalHowlerController(): HowlerController {
 
   function seek(t: number, trackId: string = '') {
     const nt = Math.max(0, t);
-    let h = getCurrentHowl();
-    if (trackId) {
-      if (!howls.has(trackId)) {
-        return;
-      }
-      h = howls.get(trackId) || null;
-      h?.seek(nt);
-      setTrackTime(trackId, nt);
+
+    let id = trackId;
+    let h: Howl | null = trackId ? (howls.get(trackId) ?? null) : getCurrentHowl();
+    if (!id && h){
+      id = currentTrackId || '';
     }
-    else {
-      h?.seek(nt);
+    if (!h || !id) {
+      return;
+    }
+    const loaded = h.state() === 'loaded';
+    const busy = seekingById.get(id) === true;
+
+    if (loaded && !busy) {
+      h.seek(nt);
+    } else {
+      pendingSeekById.set(id, nt);
+    }
+
+    setTrackTime(id, nt);
+    if (!trackId) {
       setInputTime(nt);
-      setTrackTime(trackId, nt);
     }
   }
 
@@ -322,8 +364,10 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function unload() {
+    log('unload');
     stopTicker();
-    for (const [, h] of howls) {
+    for (const [id, h] of howls) {
+      cleanupById.get(id)?.();
       h.unload();
     }
     howls.clear();

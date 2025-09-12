@@ -39,7 +39,17 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
 
-    // console.log('---similarity currentTime', currentTime);
+    const seekRef = useRef<number | null>(null);
+    const requestSeek = useCallback((time: number) => {
+        if (seekRef.current){
+            cancelAnimationFrame(seekRef.current);
+        }
+        seekRef.current = requestAnimationFrame(() => {
+            howlerController.seek(time, trackId);
+            setTime(time, true);
+            setTrackTime(trackId, time);
+        });
+    }, [howlerController, trackId, setTime, setTrackTime]);
 
     useEffect(() => {
         setTime(currentTime);
@@ -59,7 +69,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
             const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
             if (totalDuration > 0) {
                 const newPosition = x * totalDuration;
-                howlerController.seek(newPosition, trackId);
+                requestSeek(newPosition);
                 setTime(newPosition, true);
                 setTrackTime(trackId, newPosition);
             }
@@ -70,13 +80,13 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
-        seek(Math.max(0, currentTime - 10), trackId);
+        requestSeek(Math.max(0, currentTime - 10));
     }, [howlerController, currentTime, seek, trackId]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
-        seek(Math.min(d, currentTime + 10), trackId);
+        requestSeek(Math.min(d, currentTime + 10));
     }, [howlerController, currentTime, seek, trackId]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
