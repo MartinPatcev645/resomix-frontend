@@ -389,6 +389,7 @@ class SearchService:
             if not uuid:
                 continue  # skip malformed
             key = strip_punct(it.get("dedupe", "")).lower().strip()
+            print(f"key: {key}")
             score = it.get("score", 0.0)
 
             # If key becomes empty (e.g. dedupe missing) fall back to uuid so it is unique
@@ -406,6 +407,8 @@ class SearchService:
                 if score > output_items[prev_idx]["score"]:
                     output_items[prev_idx] = {"uuid": uuid, "score": score}
                 # else: keep existing (ties resolved in favour of first)
+        
+        print(f"output_items: {output_items}")
 
         # Preserve the order in which unique keys first appeared
         return [item["uuid"] for item in output_items]
