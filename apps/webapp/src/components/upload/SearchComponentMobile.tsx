@@ -69,6 +69,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                         width="w-[var(--px-300)] -mr-[var(--px-30)]"
                                         truncateLength={20}
                                         isLoading={isLoading}
+                                        multiline={true}
                                         onSelect={onTrackSelect}
                                     />
                                 </div>
