@@ -100,13 +100,13 @@ class SearchService:
                 if not track_obj:
                     continue
 
-                artist_name = (
-                    track_obj.track_artists[0].artist.name if track_obj.track_artists else "N/A"
-                )
-
+                # Get all artist names
+                artist_names = [ta.artist.name for ta in track_obj.track_artists]
+                artist_display = ", ".join(artist_names) if artist_names else "N/A"
+                
                 formatted_results.append({
                     "id": uuid,
-                    "artist": artist_name,
+                    "artist": artist_display,
                     "duration": track_obj.duration_sec or 0,
                     "title": track_obj.title
                 })
