@@ -1,7 +1,6 @@
 import { SimilarityPlayer } from "@/components/index.ts";
 import {formatDuration, formatPercentage, useGlobalHowlerController} from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
-import { usePlayerManager } from "@resomix/hooks";
+import {usePlayerStore, usePlaylistStore} from "@resomix/stores";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
@@ -12,18 +11,14 @@ interface PlaylistTableProps {
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
-    const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
     const tracks = playlistData?.similar_tracks ?? [];
     const howlerController = useGlobalHowlerController();
+    const currentTrackId = usePlayerStore(s => s.currentTrackId);
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
-            stopPlaying();
-            howlerController.pause();
+            howlerController.stop();
         } else {
-            // BeMusic pattern: Synchronous track cueing
-            // AudioProvider in SimilarityPlayer handles async loading
-            startPlaying(trackId);
             howlerController.load(trackId, true);
         }
     };

@@ -1,26 +1,27 @@
 import React from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
+import { formatDuration, formatPercentage, useGlobalHowlerController } from "@resomix/hooks";
+import {usePlayerStore, usePlaylistStore} from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
-import { usePlayerManager } from "@resomix/hooks";
 import { BASE_BETA_URL } from "@resomix/config";
 
 // Remove local dummy data; use global store
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
+    const howlerController = useGlobalHowlerController();
+    const currentTrackId = usePlayerStore(s => s.currentTrackId);
+
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
-            stopPlaying(); // Pause
+            howlerController.stop();
         } else {
-            startPlaying(trackId); // Play this track, pause others
+            howlerController.load(trackId, true);
         }
     };
 

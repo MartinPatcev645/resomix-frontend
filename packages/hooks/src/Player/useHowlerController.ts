@@ -330,7 +330,7 @@ export function getGlobalHowlerController(): HowlerController {
     return howl;
   }
 
-  function selectCurrent(trackId: string, howl: Howl) {
+  function selectCurrent(trackId: string | null, howl: Howl | null = null) {
     const prev = getCurrentHowl();
     if (prev && prev !== howl) {
       stopTicker();
@@ -343,7 +343,10 @@ export function getGlobalHowlerController(): HowlerController {
     }
 
     currentTrackId = trackId;
-    setCurrentTrack(trackId)
+    setCurrentTrack(trackId);
+    if (!trackId || !howl) {
+      return;
+    }
     usePlayerStore.setState({ isLoaded: howl.state() === 'loaded' });
 
     const saved = getTrackTime(trackId);
@@ -425,6 +428,7 @@ export function getGlobalHowlerController(): HowlerController {
     setIsPlaying(false);
     msSetPlaybackState('none');
     msSyncPosition(currentTrackId || '', true);
+    selectCurrent(null);
     const h = getCurrentHowl();
     if (!h){
       return;
