@@ -14,6 +14,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const tracks = playlistData?.similar_tracks ?? [];
     const howlerController = useGlobalHowlerController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
+    const isPlaying :boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId) {
@@ -31,7 +32,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)]">
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
-                                {currentTrackId === track.id && (
+                                {currentTrackId === track.id && isPlaying && (
                                     <>
                                         <div className="absolute inset-0 bg-black/80 rounded-lg"></div>
                                         <img
@@ -77,7 +78,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </div>
                             </div>
                         </div>
-                        {currentTrackId === track.id && (
+                        {currentTrackId === track.id &&  isPlaying && (
                             <div>
                                 <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
                             </div>
