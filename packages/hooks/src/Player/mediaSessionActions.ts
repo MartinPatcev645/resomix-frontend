@@ -27,25 +27,22 @@ export function msInit(handlers: BaseHandlers) {
   navigator.mediaSession.setActionHandler('seekto', (e: any) => {
     if (e?.seekTime != null) handlers.onSeekTo(Number(e.seekTime) || 0);
   });
-
-  navigator.mediaSession.setActionHandler('seekforward', (e: any) => {
-    const delta = Number(e?.seekOffset ?? 10);
-    handlers.onSeekBy(+delta);
-  });
-
-  navigator.mediaSession.setActionHandler('seekbackward', (e: any) => {
-    const delta = Number(e?.seekOffset ?? 10);
-    handlers.onSeekBy(-delta);
-  });
 }
 
 export function msSetTrackControls(opts: {
   onNext: (() => void) | null;
   onPrev: (() => void) | null;
 }) {
-  if (!supports) return;
+  if (!supports) {
+    return;
+  }
   navigator.mediaSession.setActionHandler('nexttrack', opts.onNext);
   navigator.mediaSession.setActionHandler('previoustrack', opts.onPrev);
+
+  try {
+    navigator.mediaSession.setActionHandler('seekforward', null);
+    navigator.mediaSession.setActionHandler('seekbackward', null);
+  } catch {}
 }
 
 export function msSetMetadata(meta: MediaMeta) {
@@ -102,4 +99,8 @@ export function msReset() {
   navigator.mediaSession.playbackState = 'none';
   navigator.mediaSession.setActionHandler('nexttrack', null);
   navigator.mediaSession.setActionHandler('previoustrack', null);
+  try {
+    navigator.mediaSession.setActionHandler('seekforward', null);
+    navigator.mediaSession.setActionHandler('seekbackward', null);
+  } catch {}
 }
