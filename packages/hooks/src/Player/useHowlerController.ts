@@ -48,6 +48,7 @@ export function getGlobalHowlerController(): HowlerController {
   let playlistIds: string[] = [];
   let tracks: Track[] = [];
   let playlistName = '';
+  let lastVolume = usePlayerStore.getState().volume;
 
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
@@ -320,7 +321,6 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function createHowl(trackId: string): Howl {
-    const volume = usePlayerStore.getState().volume;
     const url = getTrackUrl(trackId);
 
     const howl = new Howl({
@@ -328,7 +328,7 @@ export function getGlobalHowlerController(): HowlerController {
       format: ['mp3'],
       html5: true,
       preload: true,
-      volume,
+      volume: lastVolume,
     });
 
     (howl as any)._trackId = trackId;
@@ -535,6 +535,21 @@ export function getGlobalHowlerController(): HowlerController {
     onPause: () => pause(),
     onStop: () => stop(),
     onSeekTo: (t: number) => mobileSeek(t),
+  });
+
+
+  const updateVolume = (volume: number) => {
+    if (lastVolume !== volume) {
+      lastVolume = volume;
+      for (const howl of howls.values()) {
+        howl.volume(volume);
+      }
+    }
+  };
+
+  usePlayerStore.subscribe(() => {
+    const volume = usePlayerStore.getState().volume;
+    updateVolume(volume);
   });
 
   singleton = {
