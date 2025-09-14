@@ -14,19 +14,32 @@ type BaseHandlers = {
   onPause: () => void;
   onStop: () => void;
   onSeekTo: (t: number) => void;
-  onSeekBy: (delta: number) => void;
 };
 
 export function msInit(handlers: BaseHandlers) {
   if (!supports) return;
 
-  navigator.mediaSession.setActionHandler('play', handlers.onPlay);
-  navigator.mediaSession.setActionHandler('pause', handlers.onPause);
-  navigator.mediaSession.setActionHandler('stop', handlers.onStop);
+  try{
+    navigator.mediaSession.setActionHandler('seekto', (e: any) => {
+      if (e?.seekTime != null){
+        handlers.onSeekTo(Number(e.seekTime) || 0);
+      }
+      else {
+        handlers.onSeekTo(20);
+      }
+    });
+  }catch{}
 
-  navigator.mediaSession.setActionHandler('seekto', (e: any) => {
-    if (e?.seekTime != null) handlers.onSeekTo(Number(e.seekTime) || 0);
-  });
+  try {
+    navigator.mediaSession.setActionHandler('play', handlers.onPlay);
+  }catch{}
+  try {
+    navigator.mediaSession.setActionHandler('pause', handlers.onPause);
+  }catch{}
+  try {
+    navigator.mediaSession.setActionHandler('stop', handlers.onStop);
+  }catch{}
+
 }
 
 export function msSetTrackControls(opts: {

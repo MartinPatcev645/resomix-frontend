@@ -47,7 +47,7 @@ export function getGlobalHowlerController(): HowlerController {
 
   let playlistIds: string[] = [];
   let tracks: Track[] = [];
-  let playlistName = ''
+  let playlistName = '';
 
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
@@ -152,11 +152,10 @@ export function getGlobalHowlerController(): HowlerController {
         { src: '/logo.png', sizes: '192x192', type: 'image/png' },
       ]
     })
-    msSyncControls(trackId);
+    msSyncControls();
   }
 
-  function msSyncControls(trackId?: string) {
-    const id = trackId || currentTrackId;
+  function msSyncControls() {
     const nextId = getNextTrackIdx();
     const prevId = getPrevTrackIdx();
     msSetTrackControls({
@@ -377,13 +376,6 @@ export function getGlobalHowlerController(): HowlerController {
       setInputTime(saved);
     }
 
-    const nextId = getNextTrackIdx();
-    const prevId = getPrevTrackIdx();
-    msSetTrackControls({
-      onNext: nextId ? () => { load(nextId, true); } : null,
-      onPrev: prevId ? () => { load(prevId, true); } : null,
-    });
-
     msSetPlaybackState('none');
     msUpdatePositionState({ position: 0, duration: 0, playbackRate: 0 }, true);
 
@@ -468,6 +460,11 @@ export function getGlobalHowlerController(): HowlerController {
     stopTicker();
   }
 
+  function mobileSeek(t: number) {
+    const h = getCurrentHowl();
+    h?.seek(t)
+  }
+
   function seek(t: number, trackId: string = '') {
     const nt = Math.max(0, t);
 
@@ -537,8 +534,7 @@ export function getGlobalHowlerController(): HowlerController {
     onPlay: () => play(),
     onPause: () => pause(),
     onStop: () => stop(),
-    onSeekTo: (t: number) => seek(t),
-    onSeekBy: (delta: number) => seek(getCurrentTime() + delta),
+    onSeekTo: (t: number) => mobileSeek(t),
   });
 
   singleton = {
