@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef} from "react";
+import React, {useEffect, useCallback, useRef, useState} from "react";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
@@ -23,7 +23,9 @@ interface SimilarityPlayerProps {
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration}) => {
 
 
+    const [isDragging, setIsDragging] = useState(false);
     const waveformContainerRef = useRef<HTMLDivElement>(null);
+    const pendingSeekPosition = useRef<number | null>(null);
 
     const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId);
 
@@ -46,9 +48,62 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         });
     }, [howlerController, trackId, setTime, setTrackTime]);
 
+    const handleSeek = useCallback((clientX: number) => {
+        const el = waveformContainerRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+        if (totalDuration > 0) {
+            const newPosition = x * totalDuration;
+            setTime(newPosition, true);
+            pendingSeekPosition.current = newPosition;
+        }
+    }, [totalDuration, trackId, setTime, setTrackTime]);
+
+    const applyPendingSeek = useCallback(() => {
+        if (pendingSeekPosition.current !== null) {
+            requestSeek(pendingSeekPosition.current);
+            pendingSeekPosition.current = null;
+        }
+    }, [requestSeek]);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        setIsDragging(true);
+        handleSeek(e.clientX);
+    }, [handleSeek]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (isDragging) {
+            handleSeek(e.clientX);
+        }
+    }, [isDragging, handleSeek]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        applyPendingSeek();
+    }, [applyPendingSeek]);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        setIsDragging(true);
+        handleSeek(e.touches[0].clientX);
+    }, [handleSeek]);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (isDragging) {
+            handleSeek(e.touches[0].clientX);
+        }
+    }, [isDragging, handleSeek]);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsDragging(false);
+        applyPendingSeek();
+    }, [applyPendingSeek]);
+
     useEffect(() => {
-        setTime(currentTime);
-    }, [currentTime, setTime]);
+        if (!isDragging) {
+            setTime(currentTime);
+        }
+    }, [currentTime, setTime, isDragging]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
@@ -59,19 +114,24 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     useEffect(() => {
         const el = waveformContainerRef.current;
         if (!el) return;
-        const onClick = (ev: MouseEvent) => {
-            const r = el.getBoundingClientRect();
-            const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-            if (totalDuration > 0) {
-                const newPosition = x * totalDuration;
-                requestSeek(newPosition);
-                setTime(newPosition, true);
-                setTrackTime(trackId, newPosition);
-            }
+
+        el.addEventListener('mousedown', handleMouseDown as never);
+        el.addEventListener('mousemove', handleMouseMove as never);
+        el.addEventListener('touchstart', handleTouchStart as never);
+        el.addEventListener('touchmove', handleTouchMove as never);
+
+        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            el.removeEventListener('mousedown', handleMouseDown as never);
+            el.removeEventListener('mousemove', handleMouseMove as never);
+            el.removeEventListener('touchstart', handleTouchStart as never);
+            el.removeEventListener('touchmove', handleTouchMove as never);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchend', handleTouchEnd);
         };
-        el.addEventListener('click', onClick);
-        return () => el.removeEventListener('click', onClick);
-    }, [totalDuration, trackId, setTime, howlerController, setTrackTime, requestSeek]);
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
@@ -82,7 +142,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         if (!howlerController) return;
         const d = howlerController.getDuration();
         requestSeek(Math.min(d, currentTime + 10));
-    }, [howlerController, currentTime, trackId]);
+    }, [howlerController, requestSeek, currentTime]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);

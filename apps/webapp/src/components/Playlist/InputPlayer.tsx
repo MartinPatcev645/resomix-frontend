@@ -34,7 +34,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
     const [isPlaying, setIsPlaying] = useState<boolean>(isCommonPlay && currentTrackId === effectiveId);
 
+    const [isDragging, setIsDragging] = useState(false);
     const waveformContainerRef = useRef<HTMLDivElement>(null);
+    const pendingSeekPosition = useRef<number | null>(null);
 
     const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId || '');
 
@@ -53,10 +55,64 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
         });
     }, [howlerController, effectiveId, setTime, setTrackTime]);
 
+    const handleSeek = useCallback((clientX: number) => {
+        const el = waveformContainerRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+        if (totalDuration > 0) {
+            const newPosition = x * totalDuration;
+            setTime(newPosition, true);
+            pendingSeekPosition.current = newPosition;
+        }
+    }, [totalDuration, effectiveId, setTime, setTrackTime]);
+
+    const applyPendingSeek = useCallback(() => {
+        if (pendingSeekPosition.current !== null) {
+            requestSeek(pendingSeekPosition.current);
+            pendingSeekPosition.current = null;
+        }
+    }, [requestSeek]);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        setIsDragging(true);
+        handleSeek(e.clientX);
+    }, [handleSeek]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (isDragging) {
+            handleSeek(e.clientX);
+        }
+    }, [isDragging, handleSeek]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        applyPendingSeek();
+    }, [applyPendingSeek]);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        setIsDragging(true);
+        handleSeek(e.touches[0].clientX);
+    }, [handleSeek]);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (isDragging) {
+            handleSeek(e.touches[0].clientX);
+        }
+    }, [isDragging, handleSeek]);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsDragging(false);
+        applyPendingSeek();
+    }, [applyPendingSeek]);
+
+
 
     useEffect(() => {
-        setTime(currentTime);
-    }, [currentTime, setTime]);
+        if (!isDragging) {
+            setTime(currentTime);
+        }
+    }, [currentTime, setTime, isDragging]);
 
     // Autoplay: register this track on mount if requested
     useEffect(() => {
@@ -73,19 +129,24 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     useEffect(() => {
         const el = waveformContainerRef.current;
         if (!el) return;
-        const onClick = (ev: MouseEvent) => {
-            const r = el.getBoundingClientRect();
-            const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-            if (totalDuration > 0) {
-                const newPosition = x * totalDuration;
-                requestSeek(newPosition);
-                setTime(newPosition, true);
-                setTrackTime(effectiveId, newPosition);
-            }
+
+        el.addEventListener('mousedown', handleMouseDown as never);
+        el.addEventListener('mousemove', handleMouseMove as never);
+        el.addEventListener('touchstart', handleTouchStart as never);
+        el.addEventListener('touchmove', handleTouchMove as never);
+
+        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            el.removeEventListener('mousedown', handleMouseDown as never);
+            el.removeEventListener('mousemove', handleMouseMove as never);
+            el.removeEventListener('touchstart', handleTouchStart as never);
+            el.removeEventListener('touchmove', handleTouchMove as never);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchend', handleTouchEnd);
         };
-        el.addEventListener('click', onClick);
-        return () => el.removeEventListener('click', onClick);
-    }, [totalDuration, effectiveId, setTime, howlerController, setTrackTime, requestSeek]);
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
     useEffect(() => {
         if (waveformContainerRef.current) {
@@ -112,13 +173,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     const skipBackward = useCallback(() => {
         if (!howlerController) return;
         requestSeek(Math.max(0, currentTime - 10));
-    }, [howlerController, currentTime, effectiveId]);
+    }, [howlerController, requestSeek, currentTime]);
 
     const skipForward = useCallback(() => {
         if (!howlerController) return;
         const d = howlerController.getDuration();
         requestSeek(Math.min(d, currentTime + 10));
-    }, [howlerController, currentTime, effectiveId]);
+    }, [howlerController, requestSeek, currentTime]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -153,6 +214,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
                   <div
                     ref={waveformContainerRef}
                     className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
+                    style={{ cursor: isDragging ? 'grabbing' : 'pointer' }}
                   >
                       {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
                       {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
@@ -212,14 +274,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
                       {/* Time Display */}
                       <div className="flex items-center gap-2">
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                {formatTime(currentTime)} / {formatTime(totalDuration)}
+                {formatTime(isDragging ? pendingSeekPosition.current || currentTime : currentTime)} / {formatTime(totalDuration)}
               </span>
                       </div>
                   </div>
               </div>
           </div>
           <div className="text-sm text-gray-500 text-right -my-2">
-              Version: alpha-0.0.4
+              Version: alpha-0.0.5
           </div>
       </>
     );
