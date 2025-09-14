@@ -46,7 +46,9 @@ export function msSetTrackControls(opts: {
 }
 
 export function msSetMetadata(meta: MediaMeta) {
-  if (!supports) return;
+  if (!supports) {
+    return;
+  }
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: meta.title ?? '',

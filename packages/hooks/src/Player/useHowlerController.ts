@@ -1,7 +1,7 @@
 'use client';
 
 import { Howl } from 'howler';
-import {Track, usePlayerStore} from '@resomix/stores';
+import {Track, usePlayerStore, usePlaylistStore} from '@resomix/stores';
 import {
   msInit,
   msSetTrackControls,
@@ -28,7 +28,6 @@ export interface HowlerController {
   unload: () => void;
   preloadNext: (trackId: string) => void;
   readonly isLoaded: boolean;
-  initPlaylist: (list: Track[]) => void;
 }
 
 let singleton: HowlerController | null = null;
@@ -48,18 +47,30 @@ export function getGlobalHowlerController(): HowlerController {
 
   let playlistIds: string[] = [];
   let tracks: Track[] = [];
-  function initPlaylist(tracksList: Track[]) {
-    tracks = [...tracksList];
-    playlistIds = tracksList.map(el=>el.id);
-    if (currentTrackId) {
-      const nextId = getNextTrackIdx();
-      const prevId = getPrevTrackIdx();
-      msSetTrackControls({
-        onNext: nextId ? () => { load(nextId, true); } : null,
-        onPrev: prevId ? () => { load(prevId, true); } : null,
-      });
+  let playlistName = ''
+
+  function initPlaylist() {
+    const playlistData = usePlaylistStore.getState().playlistData;
+    if (!playlistData) {
+      return;
     }
+
+    tracks = [];
+
+    if (playlistData.queried_track?.id) {
+      tracks.push(playlistData.queried_track);
+    }
+
+    if (playlistData.similar_tracks?.length) {
+      tracks = [...tracks, ...playlistData.similar_tracks];
+    }
+
+    playlistName = playlistData.playlist?.name || '';
+    playlistIds = tracks.map(el=>el.id);
   }
+
+
+
   function getNextTrackIdx(): string | null {
     if (!playlistIds.length) {
       return null;
@@ -134,13 +145,24 @@ export function getGlobalHowlerController(): HowlerController {
     msSetMetadata({
       title: trackInfo.title || 'Resomix Track',
       artist: trackInfo.artist || 'Music Discovery',
-      album: 'Similarity Playlist',
+      album: playlistName || 'Similarity Playlist',
       artwork: [
         { src: '/logo.png', sizes: '96x96', type: 'image/png' },
         { src: '/logo.png', sizes: '128x128', type: 'image/png' },
         { src: '/logo.png', sizes: '192x192', type: 'image/png' },
       ]
     })
+    msSyncControls(trackId);
+  }
+
+  function msSyncControls(trackId?: string) {
+    const id = trackId || currentTrackId;
+    const nextId = getNextTrackIdx();
+    const prevId = getPrevTrackIdx();
+    msSetTrackControls({
+      onNext: nextId ? () => { load(nextId, true); } : null,
+      onPrev: prevId ? () => { load(prevId, true); } : null,
+    });
   }
 
   function startTicker(h: Howl) {
@@ -369,7 +391,12 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function load(trackId: string, playAfter: boolean = false) {
-    if (!trackId) return;
+    if (!tracks?.length) {
+      initPlaylist();
+    }
+    if (!trackId) {
+      return;
+    }
 
     trackPlayAfterLoad = playAfter ? trackId : '';
     log('load', trackId);
@@ -526,7 +553,6 @@ export function getGlobalHowlerController(): HowlerController {
     unload,
     preloadNext,
     get isLoaded() { return isLoaded(); },
-    initPlaylist,
   };
 
   return singleton;

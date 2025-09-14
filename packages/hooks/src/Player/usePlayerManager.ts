@@ -45,7 +45,6 @@ export const usePlayerManager = () => {
     if (playlistData.similar_tracks?.length) {
       tracks = [...tracks, ...playlistData.similar_tracks];
     }
-    howlerController.initPlaylist(tracks);
 
     return tracks.map(el=>el.id);
   }, [playlistData, howlerController])
