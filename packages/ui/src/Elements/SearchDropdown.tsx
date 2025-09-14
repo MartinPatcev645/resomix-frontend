@@ -6,11 +6,11 @@ const truncateText = (text: string | undefined, max: number) =>
 
 const wrapText = (text: string | undefined, maxLength: number) => {
   if (!text) return text;
-  
+
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
-  
+
   for (const word of words) {
     if ((currentLine + word).length <= maxLength) {
       currentLine += (currentLine ? ' ' : '') + word;
@@ -24,11 +24,11 @@ const wrapText = (text: string | undefined, maxLength: number) => {
       }
     }
   }
-  
+
   if (currentLine) {
     lines.push(currentLine);
   }
-  
+
   return lines.join('\n');
 };
 
@@ -46,14 +46,14 @@ interface SearchDropdownProps {
   onSelect?: (result: SearchResult) => void;
   width?: string;
   truncateLength?: number;
-  multiline?: boolean;
+  isMobile?: boolean;
 }
 
-export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, isLoading = false, onSelect, width = "w-[var(--px-550)]", truncateLength = 50, multiline = false }) => {
+export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, isLoading = false, onSelect, width = "w-[var(--px-550)]", truncateLength = 50, isMobile = false }) => {
   if (!show) return null;
 
   const formatText = (text: string | undefined) => {
-    if (multiline) {
+    if (isMobile) {
       return wrapText(text, truncateLength);
     }
     return truncateText(text, truncateLength);
@@ -83,15 +83,23 @@ export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, i
                 </svg>
                 <div className="flex flex-col ml-[var(--px-20)]">
                   <span className="uppercase font-auger text-[length:var(--px-11-7)] font-light leading-wide whitespace-pre-line">
-                    <Tooltip message={item.title}>
-                      {formatText(item.title)}
-                    </Tooltip>
+                    {isMobile ? (
+                      formatText(item.title)
+                    ) : (
+                      <Tooltip message={item.title}>
+                        {formatText(item.title)}
+                      </Tooltip>
+                    )}
                   </span>
                   {item.artist && (
                     <span className="font-fira text-[length:var(--px-9-6)] font-light leading-normal whitespace-pre-line">
-                      <Tooltip message={item.artist}>
-                        {formatText(item.artist)}
-                      </Tooltip>
+                      {isMobile ? (
+                        formatText(item.artist)
+                      ) : (
+                        <Tooltip message={item.artist}>
+                          {formatText(item.artist)}
+                        </Tooltip>
+                      )}
                     </span>
                   )}
                 </div>
