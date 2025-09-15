@@ -202,6 +202,7 @@ export function getGlobalHowlerController(): HowlerController {
         continue;
       }
       cleanupById.get(oldestId)?.();
+      oldestHowl.stop();
       oldestHowl.unload();
       howls.delete(oldestId);
     }
@@ -357,11 +358,7 @@ export function getGlobalHowlerController(): HowlerController {
       stopTicker();
     }
 
-    for (const [id, h] of howls) {
-      if (id !== trackId && h.playing()) {
-        h.pause();
-      }
-    }
+    pauseAllTRacks();
 
     currentTrackId = trackId;
     setCurrentTrack(trackId);
@@ -383,6 +380,7 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function load(trackId: string, playAfter: boolean = false) {
+    stop();
     if (!tracks?.length) {
       initPlaylist();
     }
@@ -429,16 +427,18 @@ export function getGlobalHowlerController(): HowlerController {
     if (!h){
       return;
     }
-    h.pause();
-    for (const [, h] of howls) {
-      if (h.playing()) {
-        h.pause();
-      }
-    }
+    pauseAllTRacks();
+
     const id = (h as any)?._trackId as string | undefined;
     if (id && isCurrent(id)) {
       log('-pause', trackId);
       stopTicker();
+    }
+  }
+
+  function pauseAllTRacks() {
+    for (const [id, h] of howls) {
+      h.pause();
     }
   }
 
@@ -452,9 +452,8 @@ export function getGlobalHowlerController(): HowlerController {
     if (!h){
       return;
     }
-    h.stop();
     for (const [, h] of howls) {
-      if (h.playing()) h.stop();
+      h.stop();
     }
     log('-stop current');
     stopTicker();
