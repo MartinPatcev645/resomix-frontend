@@ -50,6 +50,7 @@ export function getGlobalHowlerController(): HowlerController {
   let currentTrackId: string | null = null;
   let progressTimer: number | null = null;
   let trackPlayAfterLoad: string = '';
+  let currentLoadRequest: string | null = null;
 
   let playlistIds: string[] = [];
   let tracks: Track[] = [];
@@ -288,10 +289,21 @@ export function getGlobalHowlerController(): HowlerController {
 
       ensurePreloadNext();
 
+      // Clear load request when successfully loaded
+      if (currentLoadRequest === trackId) {
+        currentLoadRequest = null;
+      }
+
       wireNode();
     };
 
-    const onloaderror = (_id: number, err: any) => console.error('[Howler] load error', err);
+    const onloaderror = (_id: number, err: any) => {
+      console.error('[Howler] load error', err);
+      // Clear load request on error
+      if (currentLoadRequest === trackId) {
+        currentLoadRequest = null;
+      }
+    };
     const onplayerror = (_id: number, err: any) => {
       console.error('[Howler] play error', err);
       howl.once('unlock', () => {
@@ -405,11 +417,24 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function load(trackId: string, playAfter: boolean = false) {
+    // Cancel any existing load request to prevent race conditions
+    if (currentLoadRequest && currentLoadRequest !== trackId) {
+      log('cancelling previous load request', currentLoadRequest);
+      const previousHowl = howls.get(currentLoadRequest);
+      if (previousHowl && previousHowl.state() === 'loading') {
+        previousHowl.stop();
+        previousHowl.unload();
+        howls.delete(currentLoadRequest);
+      }
+    }
+    
+    currentLoadRequest = trackId;
     stop();
     if (!tracks?.length) {
       initPlaylist();
     }
     if (!trackId) {
+      currentLoadRequest = null;
       return;
     }
 
@@ -424,6 +449,7 @@ export function getGlobalHowlerController(): HowlerController {
         trackPlayAfterLoad = '';
       }
       ensurePreloadNext();
+      currentLoadRequest = null;
       return;
     }
     const howl = ensureHowl(trackId);
