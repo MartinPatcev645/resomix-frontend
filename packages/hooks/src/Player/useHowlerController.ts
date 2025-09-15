@@ -15,7 +15,6 @@ const log = (...args: any[]) => {
   // console.log(...args);
 };
 
-
 export interface HowlerController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
@@ -44,6 +43,7 @@ export function getGlobalHowlerController(): HowlerController {
   let currentTrackId: string | null = null;
   let progressTimer: number | null = null;
   let trackPlayAfterLoad: string = '';
+  let endedHandled = false;
 
   let playlistIds: string[] = [];
   let tracks: Track[] = [];
@@ -69,8 +69,6 @@ export function getGlobalHowlerController(): HowlerController {
     playlistName = playlistData.playlist?.name || '';
     playlistIds = tracks.map(el=>el.id);
   }
-
-
 
   function getNextTrackIdx(): string | null {
     if (!playlistIds.length) {
@@ -165,15 +163,27 @@ export function getGlobalHowlerController(): HowlerController {
     });
   }
 
-  function startTicker(h: Howl) {
+  function startTicker() {
     if (progressTimer != null) return;
     progressTimer = window.setInterval(() => {
+      const h = getCurrentHowl();
+      if (!h) {
+        stopTicker();
+        return;
+      }
       const t = (h.seek() as number) || 0;
       setInputTime(t);
       const id = (h as any)._trackId as string | undefined;
       if (id && !seekingById.has(id)) {
         setTrackTime(id, t);
         msSyncPosition(id);
+      }
+
+      if (h.playing()) {
+        const duration = h.duration();
+        if (duration > 0 && t >= duration - 0.1) {
+          handleTrackEnd();
+        }
       }
     }, 250);
   }
@@ -182,6 +192,32 @@ export function getGlobalHowlerController(): HowlerController {
     if (progressTimer != null) {
       clearInterval(progressTimer);
       progressTimer = null;
+    }
+  }
+
+  function handleTrackEnd() {
+    if (endedHandled) return;
+    endedHandled = true;
+
+    stopTicker();
+    const h = getCurrentHowl();
+    if (h) {
+      h.stop();
+    }
+
+    setTrackTime(currentTrackId!, 0);
+    const { autoplay } = usePlayerStore.getState();
+    if (autoplay) {
+      const idx = getNextTrackIdx();
+      log('next idx: '+idx);
+      if (idx) {
+        setCurrentTrack(idx);
+        load(idx, true);
+      }
+    } else {
+      setCurrentTrack(null);
+      msSetPlaybackState('none');
+      msSyncPosition(currentTrackId!, true);
     }
   }
 
@@ -216,7 +252,7 @@ export function getGlobalHowlerController(): HowlerController {
         return;
       }
       msSetPlaybackState('playing');
-      startTicker(howl);
+      startTicker();
     };
     const onpause = () => {
       log('onpause: ', trackId);
@@ -233,21 +269,7 @@ export function getGlobalHowlerController(): HowlerController {
     const onend = () => {
       log('onend: ', trackId);
       if (!isCurrent(trackId)) return;
-      stopTicker();
-      setTrackTime(trackId, 0);
-      const { autoplay } = usePlayerStore.getState();
-      if (autoplay) {
-        const idx = getNextTrackIdx();
-        log('next idx: '+idx);
-        if (idx) {
-          setCurrentTrack(idx);
-          load(idx, true);
-        }
-      } else {
-        setCurrentTrack(null);
-        msSetPlaybackState('none');
-        msSyncPosition(trackId, true);
-      }
+      handleTrackEnd();
     };
     const onload = () => {
       log('onload: ', trackId);
@@ -261,7 +283,6 @@ export function getGlobalHowlerController(): HowlerController {
 
       if (trackId == currentTrackId) {
         msSyncMetadata(trackId);
-        // msSetPlaybackState('playing');
         msSyncPosition(trackId, true);
       }
 
@@ -388,6 +409,7 @@ export function getGlobalHowlerController(): HowlerController {
       return;
     }
 
+    endedHandled = false;
     trackPlayAfterLoad = playAfter ? trackId : '';
     log('load', trackId);
     if (howls.has(trackId)) {
@@ -408,7 +430,6 @@ export function getGlobalHowlerController(): HowlerController {
   function play() {
     log('play');
     setIsPlaying(true);
-    // msSetPlaybackState('playing');
     msSyncPosition(currentTrackId || '', true);
     const h = getCurrentHowl();
     if (!h) return;
@@ -437,7 +458,7 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function pauseAllTRacks() {
-    for (const [id, h] of howls) {
+    for (const [, h] of howls) {
       h.pause();
     }
   }
