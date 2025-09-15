@@ -15,6 +15,13 @@ const log = (...args: any[]) => {
   // console.log(...args);
 };
 
+const isIOS =
+  typeof navigator !== 'undefined' &&
+  (
+    /iP(hone|od|ad)/.test(navigator.platform) ||
+    (navigator.userAgent.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document)
+  );
+
 export interface HowlerController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
@@ -43,12 +50,13 @@ export function getGlobalHowlerController(): HowlerController {
   let currentTrackId: string | null = null;
   let progressTimer: number | null = null;
   let trackPlayAfterLoad: string = '';
-  let endedHandled = false;
 
   let playlistIds: string[] = [];
   let tracks: Track[] = [];
   let playlistName = '';
   let lastVolume = usePlayerStore.getState().volume;
+
+  let deferredNextToPlay: string | null = null;
 
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
@@ -70,34 +78,22 @@ export function getGlobalHowlerController(): HowlerController {
     playlistIds = tracks.map(el=>el.id);
   }
 
-  function getNextTrackIdx(): string | null {
-    if (!playlistIds.length) {
-      return null;
-    }
-    let idx = playlistIds.indexOf(currentTrackId || '');
-    if (idx < 0) {
-      return null;
-    }
-    idx ++;
-    if (idx >= playlistIds.length) {
-      return null;
-    }
-    return playlistIds[idx];
+  function getNextTrackId(): string | null {
+    if (!playlistIds.length) return null;
+    const idx = playlistIds.indexOf(currentTrackId || '');
+    if (idx < 0) return null;
+    const nextIdx = idx + 1;
+    if (nextIdx >= playlistIds.length) return null;
+    return playlistIds[nextIdx];
   }
 
-  function getPrevTrackIdx(): string | null {
-    if (!playlistIds.length) {
-      return null;
-    }
-    let idx = playlistIds.indexOf(currentTrackId || '');
-    if (idx < 0) {
-      return null;
-    }
-    idx--;
-    if (idx < 0) {
-      return null;
-    }
-    return playlistIds[idx];
+  function getPrevTrackId(): string | null {
+    if (!playlistIds.length) return null;
+    const idx = playlistIds.indexOf(currentTrackId || '');
+    if (idx < 0) return null;
+    const prevIdx = idx - 1;
+    if (prevIdx < 0) return null;
+    return playlistIds[prevIdx];
   }
 
   const setCurrentTrack = (id: string | null) =>
@@ -155,35 +151,23 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function msSyncControls() {
-    const nextId = getNextTrackIdx();
-    const prevId = getPrevTrackIdx();
+    const nextId = getNextTrackId();
+    const prevId = getPrevTrackId();
     msSetTrackControls({
-      onNext: nextId ? () => { load(nextId, true); } : null,
-      onPrev: prevId ? () => { load(prevId, true); } : null,
+      onNext: nextId ? () => { goToTrack(nextId, true); } : null,
+      onPrev: prevId ? () => { goToTrack(prevId, true); } : null,
     });
   }
 
-  function startTicker() {
+  function startTicker(h: Howl) {
     if (progressTimer != null) return;
     progressTimer = window.setInterval(() => {
-      const h = getCurrentHowl();
-      if (!h) {
-        stopTicker();
-        return;
-      }
       const t = (h.seek() as number) || 0;
       setInputTime(t);
       const id = (h as any)._trackId as string | undefined;
       if (id && !seekingById.has(id)) {
         setTrackTime(id, t);
         msSyncPosition(id);
-      }
-
-      if (h.playing()) {
-        const duration = h.duration();
-        if (duration > 0 && t >= duration - 0.1) {
-          handleTrackEnd();
-        }
       }
     }, 250);
   }
@@ -192,32 +176,6 @@ export function getGlobalHowlerController(): HowlerController {
     if (progressTimer != null) {
       clearInterval(progressTimer);
       progressTimer = null;
-    }
-  }
-
-  function handleTrackEnd() {
-    if (endedHandled) return;
-    endedHandled = true;
-
-    stopTicker();
-    const h = getCurrentHowl();
-    if (h) {
-      h.stop();
-    }
-
-    setTrackTime(currentTrackId!, 0);
-    const { autoplay } = usePlayerStore.getState();
-    if (autoplay) {
-      const idx = getNextTrackIdx();
-      log('next idx: '+idx);
-      if (idx) {
-        setCurrentTrack(idx);
-        load(idx, true);
-      }
-    } else {
-      setCurrentTrack(null);
-      msSetPlaybackState('none');
-      msSyncPosition(currentTrackId!, true);
     }
   }
 
@@ -252,7 +210,8 @@ export function getGlobalHowlerController(): HowlerController {
         return;
       }
       msSetPlaybackState('playing');
-      startTicker();
+      startTicker(howl);
+      ensurePreloadNext();
     };
     const onpause = () => {
       log('onpause: ', trackId);
@@ -269,7 +228,43 @@ export function getGlobalHowlerController(): HowlerController {
     const onend = () => {
       log('onend: ', trackId);
       if (!isCurrent(trackId)) return;
-      handleTrackEnd();
+      stopTicker();
+      setTrackTime(trackId, 0);
+      const { autoplay } = usePlayerStore.getState();
+      if (autoplay) {
+        const nextId = getNextTrackId();
+        log('next id: '+nextId);
+        if (nextId) {
+          const preloaded = howls.get(nextId);
+          if (preloaded) {
+            selectCurrent(nextId, preloaded);
+            const saved = getTrackTime(nextId);
+            if (saved > 0 && preloaded.state() === 'loaded') {
+              preloaded.seek(saved);
+              setInputTime(saved);
+            }
+            setIsPlaying(true);
+            preloaded.play();
+            ensurePreloadNext();
+          } else {
+            if (isIOS) {
+              deferredNextToPlay = nextId;
+              msSetPlaybackState('none');
+            } else {
+              setCurrentTrack(nextId);
+              load(nextId, true);
+            }
+          }
+        } else {
+          setCurrentTrack(null);
+          msSetPlaybackState('none');
+          msSyncPosition(trackId, true);
+        }
+      } else {
+        setCurrentTrack(null);
+        msSetPlaybackState('none');
+        msSyncPosition(trackId, true);
+      }
     };
     const onload = () => {
       log('onload: ', trackId);
@@ -290,6 +285,9 @@ export function getGlobalHowlerController(): HowlerController {
         play();
         trackPlayAfterLoad = '';
       }
+
+      ensurePreloadNext();
+
       wireNode();
     };
 
@@ -373,6 +371,12 @@ export function getGlobalHowlerController(): HowlerController {
     return howl;
   }
 
+  function pauseAllTRacks() {
+    for (const [, h] of howls) {
+      h.pause();
+    }
+  }
+
   function selectCurrent(trackId: string | null, howl: Howl | null = null) {
     const prev = getCurrentHowl();
     if (prev && prev !== howl) {
@@ -409,7 +413,6 @@ export function getGlobalHowlerController(): HowlerController {
       return;
     }
 
-    endedHandled = false;
     trackPlayAfterLoad = playAfter ? trackId : '';
     log('load', trackId);
     if (howls.has(trackId)) {
@@ -420,11 +423,49 @@ export function getGlobalHowlerController(): HowlerController {
         play();
         trackPlayAfterLoad = '';
       }
+      ensurePreloadNext();
       return;
     }
     const howl = ensureHowl(trackId);
     selectCurrent(trackId, howl);
     howl.load();
+  }
+
+  function goToTrack(trackId: string, autoplay = false) {
+    if (!tracks?.length) {
+      initPlaylist();
+    }
+    if (!trackId) return;
+
+    const existing = howls.get(trackId);
+    if (isIOS && existing) {
+      selectCurrent(trackId, existing);
+      if (autoplay) {
+        setIsPlaying(true);
+        if (existing.state() === 'loaded') {
+          const saved = getTrackTime(trackId);
+          if (saved > 0) {
+            existing.seek(saved);
+            setInputTime(saved);
+          }
+          existing.play();
+        } else {
+          existing.once('load', () => {
+            const saved = getTrackTime(trackId);
+            if (saved > 0) {
+              existing.seek(saved);
+              setInputTime(saved);
+            }
+            existing.play();
+          });
+          existing.load();
+        }
+      }
+      ensurePreloadNext();
+      return;
+    }
+
+    load(trackId, autoplay);
   }
 
   function play() {
@@ -457,26 +498,15 @@ export function getGlobalHowlerController(): HowlerController {
     }
   }
 
-  function pauseAllTRacks() {
-    for (const [, h] of howls) {
-      h.pause();
-    }
-  }
-
   function stop() {
     log('stop');
     setIsPlaying(false);
     msSetPlaybackState('none');
     msSyncPosition(currentTrackId || '', true);
     selectCurrent(null);
-    const h = getCurrentHowl();
-    if (!h){
-      return;
-    }
     for (const [, h] of howls) {
       h.stop();
     }
-    log('-stop current');
     stopTicker();
   }
 
@@ -545,13 +575,41 @@ export function getGlobalHowlerController(): HowlerController {
     evictIfNeeded();
   }
 
+  function ensurePreloadNext() {
+    const nextId = getNextTrackId();
+    if (!nextId) return;
+    if (!howls.has(nextId)) {
+      preloadNext(nextId);
+    } else {
+      touch(nextId);
+    }
+  }
+
   function isLoaded() {
     const h = getCurrentHowl();
     return h?.state() === 'loaded';
   }
 
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && deferredNextToPlay) {
+        const nextId = deferredNextToPlay;
+        deferredNextToPlay = null;
+        goToTrack(nextId, true);
+      }
+    });
+  }
+
   msInit({
-    onPlay: () => play(),
+    onPlay: () => {
+      if (deferredNextToPlay) {
+        const nextId = deferredNextToPlay;
+        deferredNextToPlay = null;
+        goToTrack(nextId, true);
+      } else {
+        play();
+      }
+    },
     onPause: () => pause(),
     onStop: () => stop(),
     onSeekTo: (t: number) => mobileSeek(t),
