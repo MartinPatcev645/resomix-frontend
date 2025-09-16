@@ -21,7 +21,7 @@ export function msInit(handlers: BaseHandlers) {
 
   try{
     navigator.mediaSession.setActionHandler('seekto', (e: any) => {
-      if (e?.seekTime != null){
+      if (e?.seekTime != null) {
         handlers.onSeekTo(Number(e.seekTime) || 0);
       }
       else {
@@ -93,15 +93,20 @@ export function msUpdatePositionState(input: {
    */
   lastPosUpdate = now;
 
-  const duration = Math.floor(Math.max(0, input.duration || 0));
-  let position = Math.floor(Math.max(0, input.position || 0));
-  if (position > duration) {
-    position = duration
+  // Never send duration <= 0 to iOS - it grays out the scrubber
+  const dur = Number.isFinite(input.duration) ? input.duration : 0;
+  if (dur <= 0) {
+    return;
   }
+
+  let pos = Number.isFinite(input.position) ? input.position : 0;
+  if (pos < 0) pos = 0;
+  if (pos > dur) pos = dur;
+
   const playbackRate = input.playbackRate ?? 1;
 
   try {
-    navigator.mediaSession.setPositionState({ position, duration, playbackRate });
+    navigator.mediaSession.setPositionState({ position: Math.floor(pos), duration: Math.floor(dur), playbackRate });
   } catch {
   }
 }

@@ -250,7 +250,7 @@ export function getGlobalHowlerController(): HowlerController {
           } else {
             if (isIOS) {
               deferredNextToPlay = nextId;
-              msSetPlaybackState('none');
+              msSetPlaybackState('paused');
             } else {
               setCurrentTrack(nextId);
               load(nextId, true);
@@ -329,14 +329,53 @@ export function getGlobalHowlerController(): HowlerController {
         } else {
           seekingById.delete(trackId);
         }
+        // Update position state after seek is complete
+        pushFromNode(true);
       };
+
+      // Enhanced: Proper duration resolution to avoid sending duration <= 0
+      const resolveDuration = () =>
+        Number.isFinite(node.duration) && node.duration > 0
+          ? node.duration
+          : (howl.duration() || 0);
+
+      const pushFromNode = (force = false) => {
+        if (trackId !== currentTrackId) return;
+        const d = resolveDuration();
+        if (d > 0) {
+          msUpdatePositionState({
+            position: node.currentTime || 0,
+            duration: d,
+            playbackRate: node.paused ? 0 : 1,
+          }, force);
+        }
+      };
+
+      const onLoadedMetadata = () => pushFromNode(true);
+      const onTimeUpdate = () => {
+        if (trackId === currentTrackId) {
+          // Keep Howler/store in sync
+          const t = node.currentTime || 0;
+          setTrackTime(trackId, t);
+          setInputTime(t);
+          pushFromNode(false);
+        }
+      };
+
+      const onDurationChange = () => pushFromNode(true);
 
       node.addEventListener('seeking', onSeeking);
       node.addEventListener('seeked', onSeeked);
+      node.addEventListener('loadedmetadata', onLoadedMetadata);
+      node.addEventListener('timeupdate', onTimeUpdate);
+      node.addEventListener('durationchange', onDurationChange);
 
       cleanupById.set(trackId, () => {
         node.removeEventListener('seeking', onSeeking);
         node.removeEventListener('seeked', onSeeked);
+        node.removeEventListener('loadedmetadata', onLoadedMetadata);
+        node.removeEventListener('timeupdate', onTimeUpdate);
+        node.removeEventListener('durationchange', onDurationChange);
         cleanupById.delete(trackId);
         seekingById.delete(trackId);
         pendingSeekById.delete(trackId);
@@ -410,10 +449,28 @@ export function getGlobalHowlerController(): HowlerController {
       setInputTime(saved);
     }
 
-    msSetPlaybackState('none');
-    msUpdatePositionState({ position: 0, duration: 0, playbackRate: 0 }, true);
-
+    // Use 'paused' instead of 'none' during track transitions to keep scrubber enabled
+    msSetPlaybackState('paused');
     msSyncMetadata(trackId);
+
+    // Only send position state when we have a valid duration (avoid graying out scrubber)
+    const d = howl.duration() || 0;
+    const p = (howl.seek() as number) || 0;
+    if (d > 0) {
+      msUpdatePositionState({
+        position: p,
+        duration: d,
+        playbackRate: 0,
+      }, true);
+    }
+  }
+
+  // Enhanced: Helper for native element seeking (iOS fastSeek support)
+  function elementSeek(node: HTMLAudioElement, t: number) {
+    if (Number.isFinite(t) && t >= 0) {
+      // Prefer fastSeek on iOS if present, fallback to currentTime
+      (node as any).fastSeek ? (node as any).fastSeek(t) : (node.currentTime = t);
+    }
   }
 
   function load(trackId: string, playAfter: boolean = false) {
@@ -537,8 +594,15 @@ export function getGlobalHowlerController(): HowlerController {
   }
 
   function mobileSeek(t: number) {
+    const nt = Math.max(0, t);
     const h = getCurrentHowl();
-    h?.seek(t)
+    if (!h) return;
+    h.seek(nt);
+    if (currentTrackId) {
+      setTrackTime(currentTrackId, nt);
+      setInputTime(nt);
+      msSyncPosition(currentTrackId, true);
+    }
   }
 
   function seek(t: number, trackId: string = '') {
@@ -638,7 +702,42 @@ export function getGlobalHowlerController(): HowlerController {
     },
     onPause: () => pause(),
     onStop: () => stop(),
-    onSeekTo: (t: number) => mobileSeek(t),
+    onSeekTo: (t: number) => {
+      // Enhanced: Use native element seeking for better iOS responsiveness
+      const h = getCurrentHowl();
+      const node = (h as any)?._sounds?.[0]?._node as HTMLAudioElement | undefined;
+      if (node && h && Number.isFinite(t) && t >= 0) {
+        elementSeek(node, t);
+        // Update our state immediately
+        if (currentTrackId) {
+          const d = Number.isFinite(node.duration) && node.duration > 0 ? node.duration : (h.duration() || 0);
+          if (d > 0) {
+            setTrackTime(currentTrackId, t);
+            setInputTime(t);
+            msUpdatePositionState({
+              position: t,
+              duration: d,
+              playbackRate: node.paused ? 0 : 1,
+            }, true);
+            
+            // Extra push next frame for iOS (fastSeek can be async)
+            requestAnimationFrame(() => {
+              const d2 = Number.isFinite(node.duration) && node.duration > 0 ? node.duration : (h.duration() || 0);
+              if (d2 > 0) {
+                msUpdatePositionState({
+                  position: node.currentTime || t,
+                  duration: d2,
+                  playbackRate: node.paused ? 0 : 1,
+                }, true);
+              }
+            });
+          }
+        }
+      } else {
+        // Fallback to previous behavior
+        mobileSeek(t);
+      }
+    },
   });
 
 
