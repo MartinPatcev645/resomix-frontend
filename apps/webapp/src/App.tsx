@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { useFirstVisit, useResponsive } from "@resomix/hooks";
+import {useFirstVisit, useResponsive} from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage, TestTwo } from "@/pages/index.ts";
@@ -8,6 +8,8 @@ import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
 import PlayerPage from "@/pages/PlayerPage.tsx";
+import {AudioProvider} from "@resomix/hooks/Player/AudioProvider.js";
+
 // import DevMobileConsole from "@/DevMobileConsole.tsx";
 
 function UploadLanding() {
@@ -22,9 +24,9 @@ function UploadLanding() {
 function PlaylistLanding() {
   const { isDesktop } = useResponsive();
   return (
-    <>
-      {isDesktop ? <PlaylistPage /> : <PlaylistMobile />}
-    </>
+    <AudioProvider>
+      {isDesktop ? <PlaylistPage /> : <PlaylistMobile />}\
+    </AudioProvider>
   );
 }
 
