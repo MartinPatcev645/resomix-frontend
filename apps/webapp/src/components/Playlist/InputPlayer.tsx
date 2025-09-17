@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
@@ -5,7 +7,8 @@ import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import {useCustomPeaks, useGlobalHowlerController} from "@resomix/hooks";
+import { useCustomPeaks } from "@resomix/hooks";
+import { useGlobalAudioController} from "@resomix/hooks/Player/AudioProvider.js";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -21,16 +24,15 @@ interface InputPlayerProps {
     totalDuration: number;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => {
     const effectiveId = trackId ?? 'uploaded-local';
 
     const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
-    const isCommonPlay:boolean = usePlayerStore(s => s.isPlaying);
-    const volume:number = usePlayerStore(s => s.volume);
+    const isCommonPlay: boolean = usePlayerStore(s => s.isPlaying);
+    const volume: number = usePlayerStore(s => s.volume);
     const setVolume = usePlayerStore(s => s.setVolume);
-
 
     const [isPlaying, setIsPlaying] = useState<boolean>(isCommonPlay && currentTrackId === effectiveId);
 
@@ -40,20 +42,22 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
 
     const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId || '');
 
-    // GLOBAL controller (singleton)
-    const howlerController = useGlobalHowlerController();
+    const hlsController = useGlobalAudioController();
 
     const seekRef = useRef<number | null>(null);
     const requestSeek = useCallback((time: number) => {
-        if (seekRef.current){
+        if (seekRef.current) {
             cancelAnimationFrame(seekRef.current);
         }
         seekRef.current = requestAnimationFrame(() => {
-            howlerController.seek(time, effectiveId);
+            console.log('seek', currentTrackId, effectiveId);
+            if (currentTrackId === effectiveId) {
+                hlsController.seek(time, effectiveId);
+            }
             setTime(time, true);
             setTrackTime(effectiveId, time);
         });
-    }, [howlerController, effectiveId, setTime, setTrackTime]);
+    }, [hlsController, effectiveId, setTime, setTrackTime, currentTrackId]);
 
     const handleSeek = useCallback((clientX: number) => {
         const el = waveformContainerRef.current;
@@ -65,7 +69,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
             setTime(newPosition, true);
             pendingSeekPosition.current = newPosition;
         }
-    }, [totalDuration, effectiveId, setTime, setTrackTime]);
+    }, [totalDuration, setTime]);
 
     const applyPendingSeek = useCallback(() => {
         if (pendingSeekPosition.current !== null) {
@@ -106,20 +110,17 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
         applyPendingSeek();
     }, [applyPendingSeek]);
 
-
-
     useEffect(() => {
         if (!isDragging) {
             setTime(currentTime);
         }
     }, [currentTime, setTime, isDragging]);
 
-    // Autoplay: register this track on mount if requested
     useEffect(() => {
-        howlerController.load(effectiveId);
-    }, []);
+        hlsController.load(effectiveId);
+    }, [hlsController, effectiveId]);
 
-    useEffect(()=>{
+    useEffect(() => {
         const isPlay: boolean = isCommonPlay && currentTrackId === effectiveId;
         if (isPlay !== isPlaying) {
             setIsPlaying(isPlay);
@@ -155,31 +156,30 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
     }, [waveformContainerRef.current, attachOverviewElement]);
 
     const togglePlay = () => {
-        if (!howlerController) return;
+        if (!hlsController) return;
 
         if (isPlaying) {
-            howlerController.pause();
+            hlsController.pause();
         } else {
             if (currentTrackId !== effectiveId) {
-                howlerController.load(effectiveId, true);
-            }
-            else {
-                howlerController.play();
+                hlsController.load(effectiveId, true);
+            } else {
+                hlsController.play();
             }
         }
     };
 
     // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
-        if (!howlerController) return;
+        if (!hlsController) return;
         requestSeek(Math.max(0, currentTime - 10));
-    }, [howlerController, requestSeek, currentTime]);
+    }, [hlsController, requestSeek, currentTime]);
 
     const skipForward = useCallback(() => {
-        if (!howlerController) return;
-        const d = howlerController.getDuration();
+        if (!hlsController) return;
+        const d = hlsController.getDuration();
         requestSeek(Math.min(d, currentTime + 10));
-    }, [howlerController, requestSeek, currentTime]);
+    }, [hlsController, requestSeek, currentTime]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -281,7 +281,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration}) => {
               </div>
           </div>
           <div className="text-sm text-gray-500 text-right -my-2">
-              Version: alpha-0.0.10
+              Version: alpha-0.0.12-hls
           </div>
       </>
     );

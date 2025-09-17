@@ -1,5 +1,6 @@
 import { SimilarityPlayer } from "@/components/index.ts";
-import {formatDuration, formatPercentage, useGlobalHowlerController} from "@resomix/hooks";
+import {formatDuration, formatPercentage} from "@resomix/hooks";
+import { useGlobalAudioController } from "@resomix/hooks/Player/AudioProvider.js";
 import {usePlayerStore, usePlaylistStore} from "@resomix/stores";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -12,15 +13,15 @@ interface PlaylistTableProps {
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
-    const howlerController = useGlobalHowlerController();
+    const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying :boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
-        if (currentTrackId === trackId) {
-            howlerController.stop();
+        if (currentTrackId === trackId && isPlaying) {
+            hlsController.stop();
         } else {
-            howlerController.load(trackId, true);
+            hlsController.load(trackId, true);
         }
     };
 

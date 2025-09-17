@@ -1,10 +1,13 @@
-import React, {useEffect, useCallback, useRef, useState} from "react";
+'use client';
+
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import {useCustomPeaks, useGlobalHowlerController } from "@resomix/hooks";
-import {usePlayerStore} from "@resomix/stores";
+import { useCustomPeaks } from "@resomix/hooks";
+import { useGlobalAudioController} from "@resomix/hooks/Player/AudioProvider.js";
+import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -17,36 +20,34 @@ function formatTime(seconds: number): string {
 interface SimilarityPlayerProps {
     trackId: string;
     totalDuration: number;
-    isPlaying: boolean;
+    isPlaying?: boolean;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration}) => {
-
-
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration }) => {
     const [isDragging, setIsDragging] = useState(false);
     const waveformContainerRef = useRef<HTMLDivElement>(null);
     const pendingSeekPosition = useRef<number | null>(null);
 
     const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId);
 
-    // Get the GLOBAL controller (singleton)
-    const howlerController = useGlobalHowlerController();
+    const hlsController = useGlobalAudioController();
+
     const currentTime = usePlayerStore(s => s.trackTimes?.[trackId] ?? 0);
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
-    const volume:number = usePlayerStore(s => s.volume);
+    const volume: number = usePlayerStore(s => s.volume);
     const setVolume = usePlayerStore(s => s.setVolume);
 
     const seekRef = useRef<number | null>(null);
     const requestSeek = useCallback((time: number) => {
-        if (seekRef.current){
+        if (seekRef.current) {
             cancelAnimationFrame(seekRef.current);
         }
         seekRef.current = requestAnimationFrame(() => {
-            howlerController.seek(time, trackId);
+            hlsController.seek(time, trackId);
             setTime(time, true);
             setTrackTime(trackId, time);
         });
-    }, [howlerController, trackId, setTime, setTrackTime]);
+    }, [hlsController, trackId, setTime, setTrackTime]);
 
     const handleSeek = useCallback((clientX: number) => {
         const el = waveformContainerRef.current;
@@ -58,7 +59,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
             setTime(newPosition, true);
             pendingSeekPosition.current = newPosition;
         }
-    }, [totalDuration, trackId, setTime, setTrackTime]);
+    }, [totalDuration, setTime]);
 
     const applyPendingSeek = useCallback(() => {
         if (pendingSeekPosition.current !== null) {
@@ -134,15 +135,15 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     }, [handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
     const skipBackward = useCallback(() => {
-        if (!howlerController) return;
+        if (!hlsController) return;
         requestSeek(Math.max(0, currentTime - 10));
-    }, [howlerController, requestSeek, currentTime]);
+    }, [hlsController, requestSeek, currentTime]);
 
     const skipForward = useCallback(() => {
-        if (!howlerController) return;
-        const d = howlerController.getDuration();
+        if (!hlsController) return;
+        const d = hlsController.getDuration();
         requestSeek(Math.min(d, currentTime + 10));
-    }, [howlerController, requestSeek, currentTime]);
+    }, [hlsController, requestSeek, currentTime]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -160,10 +161,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     return (
       <div className="flex flex-col w-full gap-[var(--px-5)]">
           <div className="h-[var(--px-50)] overflow-y-hidden">
-              <div
-                ref={waveformContainerRef}
-                className="w-full h-full"
-              >
+              <div ref={waveformContainerRef} className="w-full h-full">
                   {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
                   {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
               </div>
@@ -171,7 +169,6 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
           <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-[var(--px-10)] justify-between lg:justify-start">
-
                   <button
                     type="button"
                     onClick={skipBackward}
@@ -221,8 +218,8 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
               </div>
 
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                    {formatTime(currentTime)} / {formatTime(totalDuration)}
-                </span>
+          {formatTime(currentTime)} / {formatTime(totalDuration)}
+        </span>
           </div>
       </div>
     );

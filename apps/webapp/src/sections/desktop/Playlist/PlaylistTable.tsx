@@ -1,7 +1,8 @@
 import React from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage, useGlobalHowlerController } from "@resomix/hooks";
+import { formatDuration, formatPercentage} from "@resomix/hooks";
+import { useGlobalAudioController } from "@resomix/hooks/Player/AudioProvider.js";
 import {usePlayerStore, usePlaylistStore} from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
@@ -13,15 +14,15 @@ import { BASE_BETA_URL } from "@resomix/config";
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    const howlerController = useGlobalHowlerController();
+    const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
-
+    const isPlaying :boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
-        if (currentTrackId === trackId) {
-            howlerController.stop();
+        if (currentTrackId === trackId && isPlaying) {
+            hlsController.stop();
         } else {
-            howlerController.load(trackId, true);
+            hlsController.load(trackId, true);
         }
     };
 
@@ -66,8 +67,8 @@ const PlaylistTable: React.FC = () => {
                             <IconComp
                                 className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)]"
                                 svg={<img
-                                    src={currentTrackId === track.id ? PauseSvg : PlaySvg}
-                                    alt={currentTrackId === track.id ? "Pause" : "Play"}
+                                    src={currentTrackId === track.id && isPlaying ? PauseSvg : PlaySvg}
+                                    alt={currentTrackId === track.id && isPlaying ? "Pause" : "Play"}
                                     className='w-[var(--px-10)] h-[var(--px-10)]'
                                 />}
                                 padding='py-[var(--px-3)] px-[var(--px-4)]'
@@ -137,10 +138,10 @@ const PlaylistTable: React.FC = () => {
                                 </Tooltip>
                             </div>
                         </div>
-                        {currentTrackId === track.id && (
+                        {currentTrackId === track.id && isPlaying && (
                             <SimilarityPlayer
                                 trackId={track.id}
-                                isPlaying={currentTrackId === track.id}
+                                isPlaying={currentTrackId === track.id && isPlaying}
                                 totalDuration={track.duration}
                             />
                         )}
