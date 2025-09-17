@@ -174,7 +174,7 @@ class PlaylistService:
     async def get_playlist_hls_data(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
         """
         Get playlist as HLS M3U8 format.
-        Only returns data for public playlists.
+        Works with both public and private playlists.
         
         Args:
             db: Database session
@@ -191,12 +191,6 @@ class PlaylistService:
                 return {
                     "success": False,
                     "error": "Playlist not found"
-                }
-            
-            if not playlist.is_public:
-                return {
-                    "success": False,
-                    "error": "Playlist is not public. Only public playlists can be accessed."
                 }
             
             # Get playlist tracks with full metadata
