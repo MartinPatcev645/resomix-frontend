@@ -57,6 +57,9 @@ interface PlayerStore {
   howlerController: any | null
   setHowlerController: (controller: any | null) => void
 
+  audioController: any | null
+  setAudioController: (controller: any | null) => void
+
   /**
    * HTML audio element from Howler for Peaks.js integration
    */
@@ -120,6 +123,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   howlerController: null,
   setHowlerController: (controller) =>
     set((state) => state.howlerController ? state : { howlerController: controller }),
+
+  audioController: null,
+  setAudioController: (controller) =>
+    set((state) => state.audioController ? state : { audioController: controller }),
 
   audioNode: null,
   setAudioNode: (node) => set({ audioNode: node }),
