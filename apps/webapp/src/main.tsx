@@ -6,12 +6,20 @@ import { BrowserRouter } from 'react-router-dom'
 
 // Touch config early to validate env at startup
 import { CONFIG } from '@resomix/config'
-void CONFIG
+void CONFIG;
+
+// PostHog
+import { PostHogProvider } from 'posthog-js/react'
+const options = {
+  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={options}>
+        <App />
+      </PostHogProvider>
     </BrowserRouter>
   </StrictMode>,
 )

@@ -20,6 +20,7 @@
     "@types/three": "^0.178.1",
     "i18next": "^25.5.2",
     "i18next-browser-languagedetector": "^8.2.0",
+    "posthog-js": "^1.266.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^15.7.3",
