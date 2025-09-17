@@ -31,6 +31,7 @@ from app.core.config import settings
 
 # Import middleware setup
 from app.api.middlewares.cors import setup_cors
+from app.observability import TimingMiddleware
 
 # Import all routers
 from app.api.routers import all_routers
@@ -157,6 +158,8 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 # Setup CORS middleware
 setup_cors(app)
+# Add timing middleware *after* CORS so we measure downstream handlers too
+app.add_middleware(TimingMiddleware)
 
 # Include all routers
 for router in all_routers:
