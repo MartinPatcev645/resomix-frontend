@@ -219,6 +219,5 @@ async def get_playlist_hls_endpoint(
     
     - **playlist_id**: The UUID of the playlist to convert to M3U8
     """
-    print(f"playlist_id: {playlist_id}")
     return await playlist_controller.get_playlist_hls_data(db, playlist_id)
 
