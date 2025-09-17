@@ -1,7 +1,7 @@
 'use client';
 
 import { Howl } from 'howler';
-import {Track, usePlayerStore, usePlaylistStore} from '@resomix/stores';
+import { Track, usePlayerStore, usePlaylistStore } from '@resomix/stores';
 import {
   msInit,
   msSetTrackControls,
@@ -10,6 +10,16 @@ import {
   msUpdatePositionState,
   msReset,
 } from './mediaSessionActions'
+
+/*
+
+import { getSimilarityPlaylistHls } from "@resomix/api-client";
+getSimilarityPlaylistHls(playlist_id)
+  .then((res) => {
+    // Do something
+  });
+
+*/
 
 const log = (...args: any[]) => {
   // console.log(...args);
@@ -76,7 +86,7 @@ export function getGlobalHowlerController(): HowlerController {
     }
 
     playlistName = playlistData.playlist?.name || '';
-    playlistIds = tracks.map(el=>el.id);
+    playlistIds = tracks.map(el => el.id);
   }
 
   function getNextTrackId(): string | null {
@@ -136,7 +146,7 @@ export function getGlobalHowlerController(): HowlerController {
 
   function msSyncMetadata(trackId?: string) {
     const id = trackId || currentTrackId;
-    const trackInfo: Track | undefined = tracks.find(el=>el.id === id);
+    const trackInfo: Track | undefined = tracks.find(el => el.id === id);
     if (!trackInfo) return;
     msSetMetadata({
       title: trackInfo.title || 'Resomix Track',
@@ -234,7 +244,7 @@ export function getGlobalHowlerController(): HowlerController {
       const { autoplay } = usePlayerStore.getState();
       if (autoplay) {
         const nextId = getNextTrackId();
-        log('next id: '+nextId);
+        log('next id: ' + nextId);
         if (nextId) {
           const preloaded = howls.get(nextId);
           if (preloaded) {
@@ -484,7 +494,7 @@ export function getGlobalHowlerController(): HowlerController {
         howls.delete(currentLoadRequest);
       }
     }
-    
+
     currentLoadRequest = trackId;
     stop();
     if (!tracks?.length) {
@@ -569,7 +579,7 @@ export function getGlobalHowlerController(): HowlerController {
     msSetPlaybackState('paused');
     msSyncPosition(trackId || currentTrackId || '', true);
     const h = trackId && howls.has(trackId) ? howls.get(trackId)! : getCurrentHowl();
-    if (!h){
+    if (!h) {
       return;
     }
     pauseAllTRacks();
@@ -610,7 +620,7 @@ export function getGlobalHowlerController(): HowlerController {
 
     let id = trackId;
     let h: Howl | null = trackId ? (howls.get(trackId) ?? null) : getCurrentHowl();
-    if (!id && h){
+    if (!id && h) {
       id = currentTrackId || '';
     }
     if (!h || !id) {
@@ -719,7 +729,7 @@ export function getGlobalHowlerController(): HowlerController {
               duration: d,
               playbackRate: node.paused ? 0 : 1,
             }, true);
-            
+
             // Extra push next frame for iOS (fastSeek can be async)
             requestAnimationFrame(() => {
               const d2 = Number.isFinite(node.duration) && node.duration > 0 ? node.duration : (h.duration() || 0);
