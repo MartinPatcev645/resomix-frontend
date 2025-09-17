@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         <LinkButton text="Contact" path={`${baseUrl}/contact`} />
         <div className="p-[var(--px-8)] w-[var(--px-10)]"></div>
       </div>
-      <div>
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
         {logo}
       </div>
       {(mode === 'home' || mode === 'contact' || mode === 'error' || mode === '404') && (
