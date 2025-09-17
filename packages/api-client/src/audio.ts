@@ -1,4 +1,4 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "./utils";
+import axiosInstance, { axiosWrapper, handleApiError, getUrl } from "./utils";
 import { API_CONFIG } from "./config";
 
 export const getAudioUrl = async (trackId: string) => {
@@ -32,3 +32,12 @@ export const getSimilarityPlaylistHls = async (playlistUuid: string) => {
     return handleApiError(error as any);
   }
 };
+
+export const getSimilarityPlaylistHlsUrl = (
+  playlistUuid: string,
+  extraParams: Record<string, unknown> = {},
+): string => {
+  const endpoint = `${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY_HLS}${playlistUuid}.m3u8`;
+  return getUrl(endpoint, extraParams);
+};
+

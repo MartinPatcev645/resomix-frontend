@@ -281,7 +281,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
               </div>
           </div>
           <div className="text-sm text-gray-500 text-right -my-2">
-              Version: alpha-0.0.12-hls
+              Version: alpha-0.0.13-hls
           </div>
       </>
     );

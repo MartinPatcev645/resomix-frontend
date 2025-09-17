@@ -3,6 +3,7 @@
 import Hls from 'hls.js';
 import { Track, usePlayerStore, usePlaylistStore } from '@resomix/stores';
 import { msInit, msSetMetadata, msSetPlaybackState, msSetTrackControls, msUpdatePositionState, msReset } from './mediaSessionActions';
+import {getSimilarityPlaylistHls, getSimilarityPlaylistHlsUrl} from "@resomix/api-client";
 
 export interface AudioController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
@@ -27,6 +28,7 @@ export function createHlsPlaylistController(): AudioController {
   let tracks: Track[] = [];
   let maxTrackLength: number = 0;
   let playlistName = '';
+  let playlistId = '';
 
   let offsets: Map<string, number> = new Map(); // trackId -> start time in the global stream
   let durations: Map<string, number> = new Map();
@@ -47,6 +49,7 @@ export function createHlsPlaylistController(): AudioController {
     if (playlistData.similar_tracks?.length) tracks = [...tracks, ...playlistData.similar_tracks];
 
     playlistName = playlistData.playlist?.name || '';
+    playlistId = playlistData.playlist?.id || '';
 
     tracksIds = tracks.map(t => {
       if (t.duration > maxTrackLength) maxTrackLength = t.duration;
@@ -75,13 +78,20 @@ export function createHlsPlaylistController(): AudioController {
     return content;
   }
 
+  function buildM3U8Url() {
+    return `http://localhost:5173/playlists/similarity-hls/${playlistId}.m3u8`;
+  }
+
   function ensureHlsLoaded() {
     if (isPlaylistLoaded) return;
     if (!tracks.length) initPlaylist();
     if (!tracksIds.length) return;
 
+    /*
     const blob = new Blob([buildM3U8()], { type: 'application/vnd.apple.mpegurl' });
     const url = URL.createObjectURL(blob);
+     */
+    const url = getSimilarityPlaylistHlsUrl(playlistId)
 
     if (Hls.isSupported()) {
       hls = new Hls({ enableWorker: true, lowLatencyMode: false });
