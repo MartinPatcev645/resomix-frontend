@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 from fastapi import status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.playlist_service import PlaylistService
@@ -186,5 +186,70 @@ class PlaylistController:
                 content=format_response(
                     success=False,
                     error="An internal server error occurred while retrieving playlist data"
+                )
+            )
+    
+    async def get_playlist_hls_data(self, db: AsyncSession, playlist_id: str) -> Response:
+        """
+        Get playlist as HLS M3U8 format.
+        Only returns data for public playlists.
+        
+        Args:
+            db: Database session
+            playlist_id: Playlist UUID
+            
+        Returns:
+            Response with M3U8 content or error
+        """
+        log_request("get_playlist_hls_data", "GET", {"playlist_id": playlist_id})
+        
+        # Validate inputs
+        if not playlist_id or not playlist_id.strip():
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(
+                    success=False,
+                    error="playlist_id cannot be empty"
+                )
+            )
+        
+        try:
+            result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
+            
+            if result.get("success"):
+                # Return M3U8 content with proper MIME type and CORS headers
+                response = Response(
+                    content=result["m3u8_content"],
+                    media_type="application/vnd.apple.mpegurl",
+                    status_code=status.HTTP_200_OK
+                )
+                # Add CORS headers
+                response.headers["Access-Control-Allow-Origin"] = "*"
+                response.headers["Cache-Control"] = "no-store"
+                return response
+            elif "not public" in result.get("error", "").lower():
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content=format_response(
+                        success=False,
+                        error=result.get("error")
+                    )
+                )
+            else:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(
+                        success=False,
+                        error=result.get("error")
+                    )
+                )
+                
+        except Exception as e:
+            print(f"Error in playlist controller get HLS data: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error="An internal server error occurred while generating HLS playlist"
                 )
             )

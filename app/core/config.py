@@ -101,6 +101,20 @@ class Settings(BaseModel):
         description="Tidal client secret for API access"
     )
     
+    # HLS Configuration
+    hls_media_base_url: str = Field(
+        default="https://media.resomix.com/signed-audio/",
+        description="Base URL for HLS media segments"
+    )
+    hls_signing_secret: str = Field(
+        default="dev-secret-hls-signing",
+        description="Secret key for signing HLS media URLs"
+    )
+    hls_url_expires_seconds: int = Field(
+        default=3600,
+        description="HLS media URL expiration time in seconds (default: 1 hour)"
+    )
+    
     # Preview Service Configuration
     # Note: Only URL generation is handled, no actual downloading
     
@@ -191,6 +205,10 @@ class Settings(BaseModel):
             "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
             "TIDAL_CLIENT_ID": "tidal_client_id",
             "TIDAL_CLIENT_SECRET": "tidal_client_secret",
+            # HLS
+            "HLS_MEDIA_BASE_URL": "hls_media_base_url",
+            "HLS_SIGNING_SECRET": "hls_signing_secret",
+            "HLS_URL_EXPIRES_SECONDS": "hls_url_expires_seconds",
             # Elasticsearch
             "ES_URL": "es_url",
             "ES_USERNAME": "es_username",
@@ -205,7 +223,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle integer conversion
-                if config_key in ["preview_audio_url_expires_seconds", "es_request_timeout", "es_search_limit"]:
+                if config_key in ["preview_audio_url_expires_seconds", "hls_url_expires_seconds", "es_request_timeout", "es_search_limit"]:
                     try:
                         env_overrides[config_key] = int(env_value)
                     except ValueError:

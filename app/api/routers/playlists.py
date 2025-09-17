@@ -162,3 +162,62 @@ async def get_playlist_similarity_endpoint(
     - **playlist_id**: The UUID of the playlist to retrieve
     """
     return await playlist_controller.get_playlist_similarity_data(db, playlist_id)
+
+
+@router.get(
+    "/similarity-hls/{playlist_id}.m3u8",
+    summary="Get Playlist as HLS M3U8",
+    description="Get playlist as HLS M3U8 format for audio streaming. Only public playlists can be accessed.",
+    responses={
+        200: {
+            "description": "M3U8 playlist generated successfully",
+            "content": {
+                "application/vnd.apple.mpegurl": {
+                    "example": "#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-TARGETDURATION:556\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:420.000,Artist - Track Title\nhttps://media.resomix.com/signed-audio/?uuid=track-uuid&exp=1234567890&sig=signature\n#EXT-X-DISCONTINUITY\n..."
+                }
+            }
+        },
+        403: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist is not public"
+        },
+        404: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist not found"
+        },
+        422: {
+            "model": PlaylistErrorResponse,
+            "description": "Invalid playlist ID"
+        },
+        500: {
+            "model": PlaylistErrorResponse,
+            "description": "Internal server error"
+        }
+    }
+)
+async def get_playlist_hls_endpoint(
+    playlist_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+):
+    """
+    Get playlist as HLS M3U8 format for audio streaming.
+    
+    Returns an M3U8 playlist file with signed URLs for each track in the playlist.
+    Each track is treated as a single segment with EXT-X-DISCONTINUITY between tracks.
+    
+    **Features:**
+    - EXT-X-TARGETDURATION set to ceiling of longest track duration
+    - Signed URLs with expiration for secure access
+    - CORS headers for web player compatibility
+    - Track metadata in EXTINF tags
+    
+    **Security:**
+    - Only public playlists can be accessed
+    - All media URLs are signed with expiration
+    - API key authentication required
+    
+    - **playlist_id**: The UUID of the playlist to convert to M3U8
+    """
+    return await playlist_controller.get_playlist_hls_data(db, playlist_id)
+

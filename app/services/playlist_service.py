@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.playlist_repository import PlaylistRepository
 from app.services.metadata_service import MetadataService
+from app.utils.hls_utils import generate_m3u8_playlist
 
 
 class PlaylistService:
@@ -168,4 +169,58 @@ class PlaylistService:
             return {
                 "success": False,
                 "error": "An error occurred while retrieving playlist data"
+            }
+    
+    async def get_playlist_hls_data(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
+        """
+        Get playlist as HLS M3U8 format.
+        Only returns data for public playlists.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            Dictionary with M3U8 content or error
+        """
+        try:
+            # First check if playlist exists and is public
+            playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
+            
+            if not playlist:
+                return {
+                    "success": False,
+                    "error": "Playlist not found"
+                }
+            
+            if not playlist.is_public:
+                return {
+                    "success": False,
+                    "error": "Playlist is not public. Only public playlists can be accessed."
+                }
+            
+            # Get playlist tracks with full metadata
+            hls_data = await self.playlist_repository.async_get_playlist_hls_data(db, playlist_uuid)
+            
+            if not hls_data or not hls_data.get("tracks"):
+                return {
+                    "success": False,
+                    "error": "Playlist has no tracks"
+                }
+            
+            # Generate M3U8 playlist
+            m3u8_content = generate_m3u8_playlist(hls_data["tracks"])
+            
+            return {
+                "success": True,
+                "m3u8_content": m3u8_content,
+                "playlist_name": hls_data.get("playlist_name", "Unknown Playlist"),
+                "track_count": len(hls_data["tracks"])
+            }
+            
+        except Exception as e:
+            print(f"Error in playlist service get HLS data: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while generating HLS playlist"
             }

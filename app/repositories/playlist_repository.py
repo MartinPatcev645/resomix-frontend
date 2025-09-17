@@ -464,3 +464,96 @@ class PlaylistRepository(BaseRepository[Playlist]):
         except Exception as e:
             print(f"Error getting playlist similarity data: {e}")
             raise e
+    
+    async def async_get_playlist_hls_data(self, db: AsyncSession, playlist_uuid: str) -> Optional[Dict[str, Any]]:
+        """
+        Get playlist tracks with metadata formatted for HLS playlist generation.
+        Includes queried track first, followed by all similar tracks in order.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            Dictionary with tracks data for HLS or None if not found
+        """
+        try:
+            from sqlalchemy import text
+            
+            # Get playlist basic info
+            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
+            if not playlist:
+                return None
+            
+            tracks = []
+            
+            # First, get the queried track (seed track) if it exists
+            if playlist.seed_track_id:
+                seed_query = text("""
+                    SELECT 
+                        t.uuid,
+                        t.title,
+                        t.duration_sec,
+                        COALESCE(
+                            GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                            'Unknown Artist'
+                        ) as artist
+                    FROM tracks t
+                    LEFT JOIN track_artists ta ON t.id = ta.track_id
+                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    WHERE t.id = :track_id
+                    GROUP BY t.id, t.uuid, t.title, t.duration_sec
+                    LIMIT 1
+                """)
+                
+                seed_result = await db.execute(seed_query, {"track_id": playlist.seed_track_id})
+                seed_row = seed_result.first()
+                
+                if seed_row:
+                    tracks.append({
+                        "uuid": seed_row.uuid,
+                        "title": seed_row.title or "Unknown",
+                        "duration_sec": float(seed_row.duration_sec) if seed_row.duration_sec else 0.0,
+                        "artist": seed_row.artist or "Unknown Artist"
+                    })
+            
+            # Then, get all similar tracks in the playlist ordered by position
+            similar_tracks_query = text("""
+                SELECT 
+                    t.uuid,
+                    t.title,
+                    t.duration_sec,
+                    COALESCE(
+                        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                        'Unknown Artist'
+                    ) as artist,
+                    pt.position
+                FROM playlist_tracks pt
+                JOIN tracks t ON pt.track_id = t.id
+                LEFT JOIN track_artists ta ON t.id = ta.track_id
+                LEFT JOIN artists a ON ta.artist_id = a.id
+                WHERE pt.playlist_id = :playlist_id
+                GROUP BY t.id, t.uuid, t.title, t.duration_sec, pt.position
+                ORDER BY pt.position
+            """)
+            
+            similar_tracks_result = await db.execute(similar_tracks_query, {"playlist_id": playlist.id})
+            similar_track_rows = similar_tracks_result.fetchall()
+            
+            # Add all similar tracks after the queried track
+            for row in similar_track_rows:
+                tracks.append({
+                    "uuid": row.uuid,
+                    "title": row.title or "Unknown",
+                    "duration_sec": float(row.duration_sec) if row.duration_sec else 0.0,
+                    "artist": row.artist or "Unknown Artist"
+                })
+            
+            return {
+                "playlist_name": playlist.name,
+                "tracks": tracks
+            }
+            
+        except Exception as e:
+            print(f"Error getting playlist HLS data: {e}")
+            raise e
