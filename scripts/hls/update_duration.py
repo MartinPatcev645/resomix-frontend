@@ -58,20 +58,27 @@ def extract_tracks(payload: Dict[str, any]) -> List[Dict[str, any]]:
 
 def update_durations(db: create_engine, track_updates: List[Dict[str, any]]):
     """Run UPDATE statements to set duration_sec for each track."""
-    sql = "UPDATE tracks SET duration_sec = %s WHERE uuid = %s"
+    fetch_sql = text("SELECT duration_sec FROM tracks WHERE uuid = :uuid")
+    update_sql = text("UPDATE tracks SET duration_sec = :duration WHERE uuid = :uuid")
 
+    updated = 0
     with db.connect() as conn:
         with conn.begin():
             for item in track_updates:
                 try:
-                    # Round to 3 decimal places as defined in schema
-                    conn.execute(text(sql), (round(item["duration"], 3), item["uuid"]))
-                    if conn.execute(text("SELECT COUNT(*) FROM tracks WHERE uuid = :uuid"), {"uuid": item["uuid"]}).scalar() == 0:
-                        print(f"[WARN] No track found with uuid {item['uuid']}")
+                    uuid = item["uuid"]
+                    new_dur = round(item["duration"], 3)
+                    prev = conn.execute(fetch_sql, {"uuid": uuid}).scalar()
+                    if prev is None:
+                        print(f"[WARN] uuid {uuid} not found")
+                        continue
+                    conn.execute(update_sql, {"duration": new_dur, "uuid": uuid})
+                    print(f"[OK] {uuid} | {prev} -> {new_dur}")
+                    updated += 1
                 except SQLAlchemyError as e:
                     print(f"[ERROR] Failed to update {item['uuid']}: {e}")
 
-    print(f"[INFO] Updated {len(track_updates)} track(s).")
+    print(f"[INFO] Updated {updated} track(s).")
 
 # -----------------------------------------------------------------------------
 # Entry point
