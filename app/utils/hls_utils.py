@@ -51,9 +51,9 @@ def sign_track_url(track_uuid: str, expires_in_sec: int = None) -> str:
     return f"{settings.hls_media_base_url}?uuid={track_uuid}"
 
 
-def create_track_segments(track_uuid: str, duration_sec: float, segment_duration: float = 10.0) -> List[Dict[str, Any]]:
+def create_track_segments(track_uuid: str, duration_sec: float, segment_duration: float = 6.0) -> List[Dict[str, Any]]:
     """
-    Create HLS segments for a track, splitting it into chunks of specified duration.
+    Create HLS segments for a track, splitting it into 6-second chunks by default.
     
     Args:
         track_uuid: The UUID of the track
@@ -89,7 +89,7 @@ def create_track_segments(track_uuid: str, duration_sec: float, segment_duration
 
 def generate_m3u8_playlist(tracks: List[Dict[str, Any]]) -> str:
     """
-    Generate an M3U8 playlist from a list of tracks with 10-second segments.
+    Generate an M3U8 playlist from a list of tracks with 6-second segments.
     
     Args:
         tracks: List of track dictionaries with keys:
@@ -102,8 +102,8 @@ def generate_m3u8_playlist(tracks: List[Dict[str, Any]]) -> str:
     if not tracks:
         raise ValueError("No tracks provided for playlist")
     
-    # Use 10-second segments as target duration (plus 1 for safety margin)
-    target_duration = 11
+    # Use 6-second segments as target duration (plus 1 for safety margin)
+    target_duration = 7
     
     lines = []
     lines.append("#EXTM3U")
@@ -111,6 +111,7 @@ def generate_m3u8_playlist(tracks: List[Dict[str, Any]]) -> str:
     lines.append("#EXT-X-INDEPENDENT-SEGMENTS")
     lines.append(f"#EXT-X-TARGETDURATION:{target_duration}")
     lines.append("#EXT-X-MEDIA-SEQUENCE:0")
+    lines.append("#EXT-X-ALLOW-CACHE:YES")
     lines.append("#EXT-X-PLAYLIST-TYPE:VOD")
     
     for i, track in enumerate(tracks):
