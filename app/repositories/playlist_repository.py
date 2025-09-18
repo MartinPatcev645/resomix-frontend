@@ -399,7 +399,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         "id": seed_row.id,
                         "title": seed_row.title or "Unknown",
                         "year": seed_row.year,
-                        "duration": seed_row.duration,
+                        "duration": float(seed_row.duration) if seed_row.duration is not None else 0.0,
                         "label": seed_row.label,
                         "artist": seed_row.artist or "Unknown"
                     }
@@ -441,7 +441,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             "id": track_data.id,
                             "title": track_data.title or "Unknown",
                             "year": track_data.year,
-                            "duration": track_data.duration,
+                            "duration": float(track_data.duration) if track_data.duration is not None else 0.0,
                             "label": track_data.label,
                             "artist": track_data.artist or "Unknown"
                         }

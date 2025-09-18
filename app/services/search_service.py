@@ -107,7 +107,7 @@ class SearchService:
                 formatted_results.append({
                     "id": uuid,
                     "artist": artist_display,
-                    "duration": track_obj.duration_sec or 0,
+                    "duration": float(track_obj.duration_sec) if track_obj.duration_sec is not None else 0.0,
                     "title": track_obj.title
                 })
         elif es_failed:
@@ -119,7 +119,7 @@ class SearchService:
                 formatted_results.append({
                     "id": track_data.get("id"),
                     "artist": track_data.get("artist", "N/A"),
-                    "duration": track_data.get("duration", 0),
+                    "duration": track_data.get("duration", 0.0),
                     "title": track_data.get("title", "N/A")
                 })
         else:

@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Track, TrackArtist models 
-from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Text, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base
@@ -71,7 +71,7 @@ class Track(Base):
     # Fields
     title = Column(String(255), nullable=False, index=True)
     year = Column(SmallInteger, nullable=True)  # YEAR type maps to SmallInteger
-    duration_sec = Column(Integer, nullable=True)
+    duration_sec = Column(Numeric(8, 3), nullable=True)
     bpm = Column(SmallInteger, nullable=True, index=True)
     musical_key = Column(String(5), nullable=True, index=True)
     file_path = Column(String(500), nullable=False)

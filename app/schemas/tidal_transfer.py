@@ -199,7 +199,7 @@ class TidalTrackInfo(BaseModel):
     title: str = Field(..., description="Track title")
     artist: str = Field(..., description="Artist name")
     album: Optional[str] = Field(None, description="Album name")
-    duration: Optional[int] = Field(None, description="Track duration in seconds")
+    duration: Optional[float] = Field(None, description="Track duration in seconds with decimal precision")
     url: str = Field(..., description="Tidal track URL")
 
     class Config:
@@ -212,4 +212,4 @@ class TidalTrackInfo(BaseModel):
                 "duration": 240,
                 "url": "https://listen.tidal.com/track/123456789"
             }
-        } 
+        }

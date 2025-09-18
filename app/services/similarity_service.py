@@ -526,7 +526,7 @@ class SimilarityService:
                     "id": track.uuid,  # Use UUID for compatibility with existing API
                     "track_id": track.id,  # Add database ID for playlist creation
                     "label": label_name,
-                    "duration": track.duration_sec or 0,
+                    "duration": float(track.duration_sec) if track.duration_sec is not None else 0.0,
                     "artist": artist_name,  # Primary artist for display
                     "all_artists": all_artists,  # All artists for deduplication
                     "title": track.title or "N/A",

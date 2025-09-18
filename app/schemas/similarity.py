@@ -51,7 +51,7 @@ class SimilarTrackResult(BaseModel):
     score: float = Field(..., description="Similarity score (0.0 to 1.0)")
     id: str = Field(..., description="Track UUID")
     label: Optional[str] = Field(None, description="Record label")
-    duration: Optional[int] = Field(None, description="Track duration in seconds")
+    duration: Optional[float] = Field(None, description="Track duration in seconds with decimal precision")
     artist: str = Field(..., description="Artist name")
     title: str = Field(..., description="Track title")
     year: Optional[int] = Field(None, description="Release year")
@@ -77,7 +77,7 @@ class QueriedTrackInfo(BaseModel):
     album: Optional[str] = Field(None, description="Album name")
     label: Optional[str] = Field(None, description="Label name")
     genre: Optional[str] = Field(None, description="Genre name")
-    duration: Optional[int] = Field(None, description="Track duration in seconds")
+    duration: Optional[float] = Field(None, description="Track duration in seconds with decimal precision")
     artist: Optional[str] = Field(None, description="Artist name")
 
     class Config:

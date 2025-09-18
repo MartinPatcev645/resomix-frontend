@@ -374,7 +374,7 @@ class TrackUploadService:
         file_content: bytes,
         track_uuid: str,
         track_type: str = TrackType.UPLOAD,
-        duration_sec: Optional[int] = None,
+        duration_sec: Optional[float] = None,
         full_path: Optional[str] = None
     ) -> Dict[str, any]:
         """
@@ -385,7 +385,7 @@ class TrackUploadService:
             file_content: The file content as bytes
             track_uuid: Pre-generated UUID for the track
             track_type: The type of track (e.g., "upload", "electrobuzz")
-            duration_sec: Track duration in seconds (optional)
+            duration_sec: Track duration in seconds with decimal precision (optional)
             full_path: Full file path for monthly pipeline (optional, defaults to filename)
             
         Returns:

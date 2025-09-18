@@ -139,7 +139,8 @@ class FileInfo(BaseModel):
     filename: str = Field(..., description="Original filename")
     size: Optional[int] = Field(None, description="File size in bytes")
     content_type: Optional[str] = Field(None, description="MIME content type")
-    duration: Optional[int] = Field(None, description="Duration in seconds (for audio files)")
+    duration: Optional[float] = Field(None, description="Duration in seconds with decimal precision (for audio files)")
+    timestamp: Optional[str] = Field(None, description="Timestamp for the interaction")
 
 
 class TopSkRequest(BaseModel):

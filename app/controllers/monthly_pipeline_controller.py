@@ -242,8 +242,8 @@ class MonthlyPipelineController:
             # STEP 6: If similarity server was successful, now store in database
             await file.seek(0)  # Reset file pointer for database upload
             
-            # Convert duration to integer seconds for database (if available)
-            duration_sec = int(round(duration)) if duration is not None else None
+            # Keep duration as float for database precision (now supports DECIMAL(8,3))
+            duration_sec = duration
             
             # PRODUCTION MODE: Actually save to database
             upload_result = await asyncio.to_thread(

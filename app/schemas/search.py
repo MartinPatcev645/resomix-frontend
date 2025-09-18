@@ -35,7 +35,7 @@ class SearchTrackResult(BaseModel):
     """Schema for individual track search result."""
     id: str = Field(..., description="Track database ID (MongoDB ObjectId)")
     artist: str = Field(..., description="Artist name")
-    duration: int = Field(..., description="Track duration in seconds")
+    duration: float = Field(..., description="Track duration in seconds with decimal precision")
     title: str = Field(..., description="Track title")
 
     class Config:
@@ -116,8 +116,8 @@ class AdvancedSearchRequest(BaseModel):
     """Advanced search request with filters."""
     query: str = Field(..., description="Search term", min_length=1, max_length=200)
     artist_filter: Optional[str] = Field(None, description="Filter by artist name", max_length=100)
-    duration_min: Optional[int] = Field(None, description="Minimum duration in seconds", ge=0)
-    duration_max: Optional[int] = Field(None, description="Maximum duration in seconds", ge=0)
+    duration_min: Optional[float] = Field(None, description="Minimum duration in seconds", ge=0)
+    duration_max: Optional[float] = Field(None, description="Maximum duration in seconds", ge=0)
     limit: Optional[int] = Field(20, description="Maximum number of results", ge=1, le=100)
 
     class Config:
@@ -138,8 +138,8 @@ class SearchFilters(BaseModel):
     genre: Optional[str] = Field(None, description="Genre filter")
     year_min: Optional[int] = Field(None, description="Minimum year filter", ge=1900, le=2030)
     year_max: Optional[int] = Field(None, description="Maximum year filter", ge=1900, le=2030)
-    duration_min: Optional[int] = Field(None, description="Minimum duration in seconds", ge=0)
-    duration_max: Optional[int] = Field(None, description="Maximum duration in seconds", ge=0)
+    duration_min: Optional[float] = Field(None, description="Minimum duration in seconds", ge=0)
+    duration_max: Optional[float] = Field(None, description="Maximum duration in seconds", ge=0)
 
 
 class SearchOptions(BaseModel):
