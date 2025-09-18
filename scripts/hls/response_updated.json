@@ -1,0 +1,521 @@
+{
+    "success": true,
+    "data": {
+        "queried_track": {
+            "rank": 0,
+            "score": 1.0,
+            "id": "67ada10e799206f8d64dae5f",
+            "title": "D.J.'s Delight (Mark Knight & Michael Gray Extended)",
+            "year": 2021,
+            "duration": 354.038,
+            "label": "Unidisc Music",
+            "artist": "Ingram, Mark Knight, Michael Gray"
+        },
+        "similar_tracks": [
+            {
+                "rank": 1,
+                "score": 0.99208069,
+                "id": "67b01139c0f27a0796ef57c1",
+                "title": "D.J.'s Delight (Mark Knight & Michael Gray Remix)",
+                "year": 2021,
+                "duration": 192.993,
+                "label": "Unidisc Music",
+                "artist": "Ingram, Mark Knight, Michael Gray"
+            },
+            {
+                "rank": 2,
+                "score": 0.93808275,
+                "id": "67b00d20c0f27a0796eeda87",
+                "title": "Share the Night (Michael Gray Dub Mix)",
+                "year": 2021,
+                "duration": 345.287,
+                "label": "Easy Street Records",
+                "artist": "World Premiere"
+            },
+            {
+                "rank": 3,
+                "score": 0.92213285,
+                "id": "67afb6f8c0f27a0796e4ca4f",
+                "title": "Share The Night (Michael Gray Remix)",
+                "year": 2020,
+                "duration": 427.912,
+                "label": "Easy Street",
+                "artist": "Michael Gray, World Premiere"
+            },
+            {
+                "rank": 4,
+                "score": 0.91816831,
+                "id": "67add2c89387d00fbdc0e3c2",
+                "title": "The Melody (Slow And Salted Mix)",
+                "year": 2015,
+                "duration": 317.048,
+                "label": "Salted Music",
+                "artist": "Miguel Migs"
+            },
+            {
+                "rank": 5,
+                "score": 0.91758657,
+                "id": "67ade01d9387d00fbdc557f2",
+                "title": "Up & Down (Extended Mix)",
+                "year": 2019,
+                "duration": 410.018,
+                "label": "Club Sweat",
+                "artist": "Lorenz Rhode, Purple Disco Machine"
+            },
+            {
+                "rank": 6,
+                "score": 0.91729939,
+                "id": "67b014f1c0f27a0796efc5d1",
+                "title": "Up & Down",
+                "year": 2019,
+                "duration": 410.932,
+                "label": "Club Sweat",
+                "artist": "Lorenz Rhode, Purple Disco Machine"
+            },
+            {
+                "rank": 7,
+                "score": 0.91685933,
+                "id": "67adc0ef799206f8d6543059",
+                "title": "Showbiz (feat. Villa) (Purple Disco Machine Edit)",
+                "year": 2019,
+                "duration": 431.752,
+                "label": "Glitterbox Recordings",
+                "artist": "Villa, Yuksek"
+            },
+            {
+                "rank": 8,
+                "score": 0.91616958,
+                "id": "67afb899c0f27a0796e4fccc",
+                "title": "Showbiz Feat. Villa (Purple Disco Machine Edit)",
+                "year": 2018,
+                "duration": 431.02,
+                "label": "Club Sweat",
+                "artist": "Yuksek"
+            },
+            {
+                "rank": 9,
+                "score": 0.91297328,
+                "id": "67aff687c0f27a0796ec8067",
+                "title": "So Fine",
+                "year": 2023,
+                "duration": 367.282,
+                "label": "Soulstar Records",
+                "artist": "Housellers"
+            },
+            {
+                "rank": 10,
+                "score": 0.90775865,
+                "id": "67b00165c0f27a0796eda60c",
+                "title": "A Dream Away (Jay J's Shiftech dub)",
+                "year": 2017,
+                "duration": 394.057,
+                "label": "Shifted Music",
+                "artist": "Alex Hook, Rene"
+            },
+            {
+                "rank": 11,
+                "score": 0.90540767,
+                "id": "67b1b99bf4110a1ed6747859",
+                "title": "Saturday Night",
+                "year": 2022,
+                "duration": 297.509,
+                "label": "King Street Sounds",
+                "artist": "Rafael Yapudjian"
+            },
+            {
+                "rank": 12,
+                "score": 0.90335858,
+                "id": "67afb6ddc0f27a0796e4c6f3",
+                "title": "My Girl",
+                "year": 2020,
+                "duration": 276.584,
+                "label": "Prison Entertainment",
+                "artist": "Nytron, Softmal"
+            },
+            {
+                "rank": 13,
+                "score": 0.90284312,
+                "id": "67add5f99387d00fbdc29c93",
+                "title": "tania (purple disco machine remix)",
+                "year": 2022,
+                "duration": 393.953,
+                "label": "Deepalma",
+                "artist": "Harry Romero"
+            },
+            {
+                "rank": 14,
+                "score": 0.90209806,
+                "id": "67adc16d799206f8d6549738",
+                "title": "Crazy Cow Bell (Vidis Edit)",
+                "year": 2013,
+                "duration": 384.026,
+                "label": "Get Physical Music",
+                "artist": "Downtown Party Network"
+            },
+            {
+                "rank": 15,
+                "score": 0.90130734,
+                "id": "67ada234799206f8d64e5d8f",
+                "title": "Come Get It",
+                "year": 2019,
+                "duration": 316.029,
+                "label": "Tropical Disco Records",
+                "artist": "Moodena, Sartorial"
+            },
+            {
+                "rank": 16,
+                "score": 0.8994844,
+                "id": "67adc158799206f8d65479ee",
+                "title": "Westside Connection",
+                "year": 2013,
+                "duration": 304.588,
+                "label": "SLEAZYG002",
+                "artist": "Shiba San"
+            },
+            {
+                "rank": 17,
+                "score": 0.89834589,
+                "id": "67b1be57f4110a1ed674f59c",
+                "title": "King of Bass (Extended Mix)",
+                "year": 2022,
+                "duration": 366.08,
+                "label": "Groove Culture",
+                "artist": "Roberto Telli"
+            },
+            {
+                "rank": 18,
+                "score": 0.89831316,
+                "id": "67ade0019387d00fbdc53e14",
+                "title": "My Man (Extended Mix)",
+                "year": 2019,
+                "duration": 337.476,
+                "label": "Another Rhythm",
+                "artist": "Crush Club, Nicki B The Vagabond"
+            },
+            {
+                "rank": 19,
+                "score": 0.89734149,
+                "id": "67add2a09387d00fbdc0ba99",
+                "title": "2Sexy",
+                "year": 2014,
+                "duration": 348.447,
+                "label": "LouLou Records",
+                "artist": "Kolombo, LouLou Players"
+            },
+            {
+                "rank": 20,
+                "score": 0.89661157,
+                "id": "67afea53c0f27a0796eb097f",
+                "title": "You Can't Have Your Cake And Eat It Too (Michael Gray & Dr Packer Remix)",
+                "year": 2022,
+                "duration": 423.758,
+                "label": "Essential Soul / Funk / Disco",
+                "artist": "Brenda Taylor, Dr Packer, Michael Gray"
+            },
+            {
+                "rank": 21,
+                "score": 0.89462423,
+                "id": "67addea19387d00fbdc4aa97",
+                "title": "Ba:sen (Pool Party Dub Mix)",
+                "year": 2012,
+                "duration": 349.048,
+                "label": "In Deep Records",
+                "artist": "In Deep We Trust"
+            },
+            {
+                "rank": 22,
+                "score": 0.89455122,
+                "id": "67aff07ec0f27a0796ebc86a",
+                "title": "Thunder Dub",
+                "year": 2020,
+                "duration": 314.018,
+                "label": "Lazy Days Music",
+                "artist": "Art of Tones"
+            },
+            {
+                "rank": 23,
+                "score": 0.89419299,
+                "id": "67addd089387d00fbdc41321",
+                "title": "Never Give You Up (Michael Gray Dub Mix)",
+                "year": 2023,
+                "duration": 340.062,
+                "label": "CLASSICS BY KOOKOO",
+                "artist": "Michael Gray, Sharon Redd"
+            },
+            {
+                "rank": 24,
+                "score": 0.8933264,
+                "id": "67afb124c0f27a0796e414f0",
+                "title": "Take You There (DJ Mark Brickman Extended Club Mix)",
+                "year": 2024,
+                "duration": 414.041,
+                "label": "Midnight Riot",
+                "artist": "Jaegerossa, Suki Soul, Yam Who"
+            },
+            {
+                "rank": 25,
+                "score": 0.89285427,
+                "id": "67ada36e799206f8d64f219d",
+                "title": "You Must Be the Girl",
+                "year": 2020,
+                "duration": 353.959,
+                "label": "Midnight Riot",
+                "artist": "Risk Assessment"
+            },
+            {
+                "rank": 26,
+                "score": 0.89083791,
+                "id": "67adce9e799206f8d6566158",
+                "title": "You",
+                "year": 2013,
+                "duration": 542.276,
+                "label": "Heulsuse",
+                "artist": "Blah (Original Mix)"
+            },
+            {
+                "rank": 27,
+                "score": 0.89056933,
+                "id": "67ada007799206f8d64ced83",
+                "title": "One For The Money (Michael Gray Dub Mix)",
+                "year": 2021,
+                "duration": 341.342,
+                "label": "Easy Street",
+                "artist": "Michael Gray, Sleeque"
+            },
+            {
+                "rank": 28,
+                "score": 0.88898861,
+                "id": "67adcf78799206f8d656cb69",
+                "title": "Make Me Feel",
+                "year": 2014,
+                "duration": 384.888,
+                "label": "Seaburn Records",
+                "artist": "Deso"
+            },
+            {
+                "rank": 29,
+                "score": 0.88861716,
+                "id": "67addcd59387d00fbdc3da0f",
+                "title": "Coconana",
+                "year": 2022,
+                "duration": 416.601,
+                "label": "Bar 25 Music",
+                "artist": "DIBIDABO, Fake Mood"
+            },
+            {
+                "rank": 30,
+                "score": 0.88794732,
+                "id": "67afb98ec0f27a0796e51ab0",
+                "title": "Thunder",
+                "year": 2020,
+                "duration": 440.033,
+                "label": "Lazy Days Music",
+                "artist": "Art of Tones"
+            },
+            {
+                "rank": 31,
+                "score": 0.88753742,
+                "id": "67addefd9387d00fbdc4da12",
+                "title": "One For the Money (Michael Gray Remix)",
+                "year": 2021,
+                "duration": 389.016,
+                "label": "Easy Street Records",
+                "artist": "Sleeque"
+            },
+            {
+                "rank": 32,
+                "score": 0.887357,
+                "id": "67b1ae42f4110a1ed67348bc",
+                "title": "Share the Night (Michael Gray Radio Edit)",
+                "year": 2020,
+                "duration": 249.757,
+                "label": "Easy Street Records",
+                "artist": "World Premiere"
+            },
+            {
+                "rank": 33,
+                "score": 0.88668275,
+                "id": "67ada682799206f8d64f61ed",
+                "title": "Got That Feeling",
+                "year": 2020,
+                "duration": 368.039,
+                "label": "Tropical Disco Records",
+                "artist": "Moodena, Sartorial"
+            },
+            {
+                "rank": 34,
+                "score": 0.88661081,
+                "id": "67ada37d799206f8d64f2f7d",
+                "title": "I Believe the Word (Extended Mix)",
+                "year": 2020,
+                "duration": 374.021,
+                "label": "In It Together Records",
+                "artist": "Marque Aurel, Music P"
+            },
+            {
+                "rank": 35,
+                "score": 0.88578755,
+                "id": "67adc133799206f8d6546173",
+                "title": "So What",
+                "year": 2013,
+                "duration": 425.691,
+                "label": "SEL005",
+                "artist": "Piemont"
+            },
+            {
+                "rank": 36,
+                "score": 0.88430899,
+                "id": "67ad9f34799206f8d64c6072",
+                "title": "Get It On (Saison Remix)",
+                "year": 2018,
+                "duration": 370.469,
+                "label": "Deepalma",
+                "artist": "Saison, Vanilla Ace"
+            },
+            {
+                "rank": 37,
+                "score": 0.88427663,
+                "id": "67add3569387d00fbdc126cf",
+                "title": "Luv Me More",
+                "year": 2020,
+                "duration": 453.433,
+                "label": "Exploited",
+                "artist": "Enduro Disco"
+            },
+            {
+                "rank": 38,
+                "score": 0.8842622,
+                "id": "67b0117fc0f27a0796ef6028",
+                "title": "Deep In My Soul (Funkatron Remix)",
+                "year": 2019,
+                "duration": 352.104,
+                "label": "Re-Tide Music",
+                "artist": "Karin, Re-Tide"
+            },
+            {
+                "rank": 39,
+                "score": 0.88409901,
+                "id": "67adc0f6799206f8d6543987",
+                "title": "Freaks In D-Pressure",
+                "year": 2019,
+                "duration": 351.451,
+                "label": "Bunny Tiger",
+                "artist": "Natema"
+            },
+            {
+                "rank": 40,
+                "score": 0.8840965,
+                "id": "67adbb45799206f8d65298bf",
+                "title": "Run",
+                "year": 2017,
+                "duration": 392.124,
+                "label": "Mood Funk Records",
+                "artist": "Mattei, Omich, Re-Tide"
+            },
+            {
+                "rank": 41,
+                "score": 0.88255763,
+                "id": "67b1aedff4110a1ed6735936",
+                "title": "Every Word (Radio Edit)",
+                "year": 2020,
+                "duration": 246.309,
+                "label": "Cruise Music",
+                "artist": "Chic_Ago, Darryl Jordan, Giman"
+            },
+            {
+                "rank": 42,
+                "score": 0.88166678,
+                "id": "67ada70f799206f8d64fdd49",
+                "title": "Every Word",
+                "year": 2020,
+                "duration": 396.565,
+                "label": "Cruise Music",
+                "artist": "Chic_Ago, Darryl Jordan, Giman"
+            },
+            {
+                "rank": 43,
+                "score": 0.88122219,
+                "id": "67afffa1c0f27a0796ed75dc",
+                "title": "Let's Pee On It",
+                "year": 2018,
+                "duration": 404.062,
+                "label": "MONOSIDE",
+                "artist": "JedX"
+            },
+            {
+                "rank": 44,
+                "score": 0.88049269,
+                "id": "67afb898c0f27a0796e4fccb",
+                "title": "Deep In My Soul Feat. Karin (Funkatron Remix)",
+                "year": 2019,
+                "duration": 357.12,
+                "label": "Re-Tide Music",
+                "artist": "Funkatron, Re-Tide"
+            },
+            {
+                "rank": 45,
+                "score": 0.88010073,
+                "id": "67adced4799206f8d6568e6b",
+                "title": "Swaggin",
+                "year": 2014,
+                "duration": 398.968,
+                "label": "SC 055",
+                "artist": "Beatamines, David Jach"
+            },
+            {
+                "rank": 46,
+                "score": 0.87992972,
+                "id": "67ada0a0799206f8d64d52ce",
+                "title": "You Don't Know (Michael Gray Remix)",
+                "year": 2020,
+                "duration": 378.044,
+                "label": "Easy Street Records",
+                "artist": "Serious Intention"
+            },
+            {
+                "rank": 47,
+                "score": 0.87890458,
+                "id": "67adcfb3799206f8d656d85a",
+                "title": "Lift You Up",
+                "year": 2014,
+                "duration": 402.887,
+                "label": "BEEFCD007",
+                "artist": "Shades Of Gray"
+            },
+            {
+                "rank": 48,
+                "score": 0.87767625,
+                "id": "67afb597c0f27a0796e49f60",
+                "title": "The Fire",
+                "year": 2020,
+                "duration": 322.273,
+                "label": "Kuudos",
+                "artist": "Dj Dharma 900, DJ OMC"
+            },
+            {
+                "rank": 49,
+                "score": 0.87680125,
+                "id": "67add2e09387d00fbdc0e996",
+                "title": "When My Baby Calls",
+                "year": 2015,
+                "duration": 338.051,
+                "label": "Moulton Music",
+                "artist": "Ovidio"
+            },
+            {
+                "rank": 50,
+                "score": 0.87634236,
+                "id": "67b1bf26f4110a1ed6750ad0",
+                "title": "Thinking About You",
+                "year": 2022,
+                "duration": 464.013,
+                "label": "Spiritualized",
+                "artist": "Strainhouse"
+            }
+        ],
+        "playlist": {
+            "id": "ce0223d0-94c0-4b8a-8f26-c1b7db17a0a6",
+            "name": "Ingram, Mark Knight, Michael Gray - D.J.'s Delight (Mark Knight & Michael Gray Extended)"
+        }
+    }
+}

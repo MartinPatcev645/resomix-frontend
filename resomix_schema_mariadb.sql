@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     genre_id      INT UNSIGNED,                -- Single genre per track
     title         VARCHAR(255) NOT NULL,
     year          YEAR,
-    duration_sec  INT UNSIGNED,
+    duration_sec  DECIMAL(8,3),
     bpm           SMALLINT UNSIGNED,
     musical_key   VARCHAR(5),                  -- e.g. "C#m"
     file_path     VARCHAR(500) NOT NULL,       -- original / full file
