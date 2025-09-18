@@ -14,7 +14,7 @@ except ImportError:
     # Fallback env vars if script executed outside project root
     DB_URL = os.getenv(
         "DB_URL",
-        "mariadb+mariadbconnector://root:@127.0.0.1:3306/resomix_db",
+        "mariadb+mariadbconnector://resomixAdmin:@127.0.0.1:3306/resomix_db",
     )
 
 # -----------------------------------------------------------------------------
