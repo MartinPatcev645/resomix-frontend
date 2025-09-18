@@ -3,7 +3,7 @@
 import Hls from 'hls.js';
 import { Track, usePlayerStore, usePlaylistStore } from '@resomix/stores';
 import { msInit, msSetMetadata, msSetPlaybackState, msSetTrackControls, msUpdatePositionState, msReset } from './mediaSessionActions';
-import {getSimilarityPlaylistHls, getSimilarityPlaylistHlsUrl} from "@resomix/api-client";
+import {getSimilarityPlaylistHlsUrl} from "@resomix/api-client";
 
 export interface AudioController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
@@ -94,7 +94,10 @@ export function createHlsPlaylistController(): AudioController {
     const url = getSimilarityPlaylistHlsUrl(playlistId)
 
     if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      hls = hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+      });
       hls.loadSource(url);
       hls.attachMedia(audio);
     } else {
@@ -137,8 +140,15 @@ export function createHlsPlaylistController(): AudioController {
       const newId = findTrackByGlobalTime(globalT);
       if (newId && newId !== currentTrackId) {
         usePlayerStore.getState().setTrackTime(currentTrackId, 0);
-        const shouldAutoplay = !audio.paused;
-        goToTrack(newId, shouldAutoplay);
+        const { autoplay } = usePlayerStore.getState();
+        if (autoplay) {
+          const shouldAutoplay = !audio.paused;
+          goToTrack(newId, shouldAutoplay);
+        }
+        else {
+          pause();
+          seek(0, currentTrackId)
+        }
       }
     });
 
@@ -150,6 +160,7 @@ export function createHlsPlaylistController(): AudioController {
   }
 
   function findTrackByGlobalTime(t: number): string | null {
+    t += 0.7;
     let lastId: string | null = null;
     for (const id of tracksIds) {
       const start = offsets.get(id) || 0;

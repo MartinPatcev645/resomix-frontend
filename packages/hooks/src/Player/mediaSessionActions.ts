@@ -24,9 +24,6 @@ export function msInit(handlers: BaseHandlers) {
       if (e?.seekTime != null) {
         handlers.onSeekTo(Number(e.seekTime) || 0);
       }
-      else {
-        handlers.onSeekTo(20);
-      }
     });
   }catch{}
 
