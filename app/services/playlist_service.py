@@ -155,7 +155,7 @@ class PlaylistService:
         url_parts[4] = urllib.parse.urlencode(query)
         signed_url = urllib.parse.urlunparse(url_parts)
         
-        print(f"Calling media server: {signed_url} with data: {data}")
+        print(f"Calling media server: {signed_url}")
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
