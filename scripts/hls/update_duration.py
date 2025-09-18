@@ -4,29 +4,32 @@ import argparse
 import sys
 from typing import Dict, List
 
-import mysql.connector
-from mysql.connector import Error, MySQLConnection
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
+
+# Reuse existing application DB URL so config is centralised
+try:
+    from database.connection import DB_URL  # type: ignore
+except ImportError:
+    # Fallback env vars if script executed outside project root
+    DB_URL = os.getenv(
+        "DB_URL",
+        "mariadb+mariadbconnector://root:@127.0.0.1:3306/resomix_db",
+    )
 
 # -----------------------------------------------------------------------------
 # Configuration helpers
 # -----------------------------------------------------------------------------
 
-def get_db_connection() -> MySQLConnection:
+def get_db_connection() -> create_engine:
     """Create and return a MySQL/MariaDB connection using env vars.
 
     Expected environment variables:
         DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
     """
     try:
-        return mysql.connector.connect(
-            host=os.getenv("MARIA_DB_HOST", "localhost"),
-            port=int(os.getenv("MARIA_DB_PORT", 3306)),
-            user=os.getenv("MARIA_DB_USER", "root"),
-            password=os.getenv("MARIA_DB_PASS", ""),
-            database=os.getenv("MARIA_DB_NAME", "resomix"),
-            autocommit=True,
-        )
-    except Error as e:
+        return create_engine(DB_URL)
+    except SQLAlchemyError as e:
         print(f"[ERROR] Could not connect to database: {e}")
         sys.exit(1)
 
@@ -54,19 +57,20 @@ def extract_tracks(payload: Dict[str, any]) -> List[Dict[str, any]]:
 # Main updating logic
 # -----------------------------------------------------------------------------
 
-def update_durations(db: MySQLConnection, track_updates: List[Dict[str, any]]):
+def update_durations(db: create_engine, track_updates: List[Dict[str, any]]):
     """Run UPDATE statements to set duration_sec for each track."""
     sql = "UPDATE tracks SET duration_sec = %s WHERE uuid = %s"
 
-    with db.cursor() as cur:
-        for item in track_updates:
-            try:
-                # Round to 3 decimal places as defined in schema
-                cur.execute(sql, (round(item["duration"], 3), item["uuid"]))
-                if cur.rowcount == 0:
-                    print(f"[WARN] No track found with uuid {item['uuid']}")
-            except Error as e:
-                print(f"[ERROR] Failed to update {item['uuid']}: {e}")
+    with db.connect() as conn:
+        with conn.begin():
+            for item in track_updates:
+                try:
+                    # Round to 3 decimal places as defined in schema
+                    conn.execute(text(sql), (round(item["duration"], 3), item["uuid"]))
+                    if conn.execute(text("SELECT COUNT(*) FROM tracks WHERE uuid = :uuid"), {"uuid": item["uuid"]}).scalar() == 0:
+                        print(f"[WARN] No track found with uuid {item['uuid']}")
+                except SQLAlchemyError as e:
+                    print(f"[ERROR] Failed to update {item['uuid']}: {e}")
 
     print(f"[INFO] Updated {len(track_updates)} track(s).")
 
@@ -105,7 +109,7 @@ def main():
     try:
         update_durations(db, track_updates)
     finally:
-        db.close()
+        pass # No explicit close needed for create_engine
 
 
 if __name__ == "__main__":
