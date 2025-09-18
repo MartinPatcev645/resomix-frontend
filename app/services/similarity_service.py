@@ -709,6 +709,9 @@ class SimilarityService:
                     reference_normalized_key = (ref_normalized_artists_tuple, ref_title)
         
         for track in filename_deduplicated_list:
+            # Exclude the reference/queried track itself based on UUID equality before any further checks
+            if reference_track and track.get("id") and reference_track.get("id") and track.get("id") == reference_track.get("id"):
+                continue
             # Title is already filtered, just need to normalize case and trim
             title = track.get("title", "").strip().lower()
             
