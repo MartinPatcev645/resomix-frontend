@@ -3,9 +3,13 @@ import os
 import argparse
 import sys
 from typing import Dict, List
+from dotenv import load_dotenv
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+
+# Load environment variables from .env file in current directory
+load_dotenv()
 
 db_user = os.getenv("MARIA_DB_USER", "resomixAdmin")
 db_pass = os.getenv("MARIA_DB_PASS", "")
