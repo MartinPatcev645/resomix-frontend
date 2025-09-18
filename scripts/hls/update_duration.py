@@ -7,23 +7,14 @@ from typing import Dict, List
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-# Reuse existing application DB URL so config is centralised
-try:
-    from database.connection import DB_URL  # type: ignore
-except ImportError:
-    # Fallback env vars if script executed outside project root
-    # Build DB_URL from individual env vars if not provided explicitly
-    if os.getenv("DB_URL"):
-        DB_URL = os.getenv("DB_URL")
-    else:
-        db_user = os.getenv("MARIA_DB_USER", "resomixAdmin")
-        db_pass = os.getenv("MARIA_DB_PASS", "")
-        db_host = os.getenv("MARIA_DB_HOST", "127.0.0.1")
-        db_port = os.getenv("MARIA_DB_PORT", "3306")
-        db_name = os.getenv("MARIA_DB_NAME", "resomix_db")
-        DB_URL = (
-            f"mariadb+mariadbconnector://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
-        )
+db_user = os.getenv("MARIA_DB_USER", "resomixAdmin")
+db_pass = os.getenv("MARIA_DB_PASS", "")
+db_host = os.getenv("MARIA_DB_HOST", "127.0.0.1")
+db_port = os.getenv("MARIA_DB_PORT", "3306")
+db_name = os.getenv("MARIA_DB_NAME", "resomix_db")
+DB_URL = (
+    f"mariadb+mariadbconnector://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+)
 
 # -----------------------------------------------------------------------------
 # Configuration helpers
