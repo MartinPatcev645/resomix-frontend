@@ -445,7 +445,7 @@ class SimilarityService:
                 "id": row.id,
                 "title": row.title or "Unknown",
                 "year": row.year,
-                "duration": row.duration,
+                "duration": float(row.duration) if row.duration is not None else 0.0,
                 "label": row.label,
                 "artist": row.artist or "Unknown"
             }
@@ -490,7 +490,7 @@ class SimilarityService:
                 "id": row.id,
                 "title": row.title or "Unknown",
                 "year": row.year,
-                "duration": row.duration,
+                "duration": float(row.duration) if row.duration is not None else 0.0,
                 "label": row.label,
                 "artist": row.artist or "Unknown"
             }
