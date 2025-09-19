@@ -33,7 +33,7 @@ BATCH_SIZE = 50
 DB_UPDATE_BATCH_SIZE = 10
 
 # Test mode configuration
-TEST_MODE = True  # Set to False for normal operation
+TEST_MODE = False  # Set to False for normal operation
 
 def get_db_connection():
     """Create and return a database engine."""
