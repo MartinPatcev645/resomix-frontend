@@ -94,8 +94,8 @@ export function createHlsPlaylistController(): AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         // REMOVE AFTER TESTING
-        maxBufferLength: 1,
-        maxMaxBufferLength: 1,
+        // maxBufferLength: 1,
+        // maxMaxBufferLength: 1,
       });
       hls.attachMedia(audio);
       hls.loadSource(playlistUrl);
@@ -194,13 +194,9 @@ export function createHlsPlaylistController(): AudioController {
 
   function wireEvents() {
     audio.addEventListener('play', () => {
-      wantPlaying = true;
-      clearRetry();
       msSetPlaybackState('playing');
     });
     audio.addEventListener('pause', () => {
-      wantPlaying = false;
-      clearRetry();
       msSetPlaybackState('paused');
     });
     audio.addEventListener('ended', () => {

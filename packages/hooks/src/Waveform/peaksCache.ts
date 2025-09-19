@@ -21,7 +21,7 @@ export const loadPeaksData = async (
     return activeLoads.get(uuid)!;
   }
 
-  const maxRetries = options?.maxRetries ?? 5;
+  const maxRetries = options?.maxRetries ?? 20;
   const retryIntervalMs = options?.retryIntervalMs ?? 2000;
 
   const loadPromise = (async (): Promise<number[]> => {
