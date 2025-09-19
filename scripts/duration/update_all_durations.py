@@ -85,27 +85,24 @@ def append_to_file(filepath: str, content: str):
 
 async def call_similarity_api(uuids: List[str]) -> Dict:
     """Call the similarity API probe-durations endpoint."""
-    url = f"{SIMILARITY_SERVER_URL.rstrip('/')}/probe-durations/"
+    # Build URL with API key as query parameter
+    base_url = f"{SIMILARITY_SERVER_URL.rstrip('/')}/probe-durations/"
+    api_key = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
+    url = f"{base_url}?api_key={api_key}"
+    
     payload = {"uuids": uuids}
     
+    print(f"[DEBUG] Calling URL: {url}")
+    print(f"[DEBUG] Payload: {len(uuids)} UUIDs")
+    
     async with httpx.AsyncClient(timeout=300.0) as client:
-        try:
-            response = await client.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json=payload
-            )
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPStatusError as e:
-            print(f"[ERROR] HTTP error calling similarity API: {e.response.status_code} - {e.response.text}")
-            return {"status": "error", "message": f"HTTP {e.response.status_code}"}
-        except httpx.RequestError as e:
-            print(f"[ERROR] Request error calling similarity API: {e}")
-            return {"status": "error", "message": f"Connection error: {e}"}
-        except Exception as e:
-            print(f"[ERROR] Unexpected error calling similarity API: {e}")
-            return {"status": "error", "message": f"Unexpected error: {e}"}
+        response = await client.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload
+        )
+        response.raise_for_status()
+        return response.json()
 
 def update_durations_in_db(db_engine, duration_updates: List[Dict]) -> int:
     """Update durations in database in smaller batches."""
