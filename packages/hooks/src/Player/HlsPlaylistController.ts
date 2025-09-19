@@ -197,7 +197,7 @@ export function createHlsPlaylistController(): AudioController {
       msSetPlaybackState('playing');
     });
     audio.addEventListener('pause', () => {
-      msSetPlaybackState('paused');
+      // msSetPlaybackState('paused');
     });
     audio.addEventListener('ended', () => {
       wantPlaying = false;
