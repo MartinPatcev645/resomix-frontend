@@ -15,6 +15,8 @@ Email: usman.naeem2212@gmail.com
 import os
 import httpx
 import re
+import asyncio
+import json
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 import asyncio
@@ -195,8 +197,8 @@ class SimilarityService:
                         )
                         
                         # Send playlist peaks request (fire and forget)
-                        if playlist_info:
-                            await self._send_playlist_peaks_request(track_uuid, deduplicated_enriched_tracks)
+                        # if playlist_info:
+                        #     await self._send_playlist_peaks_request(track_uuid, deduplicated_enriched_tracks)
                 except Exception as e:
                     print(f"Error creating playlist for upload similarity: {e}")
             
@@ -216,6 +218,17 @@ class SimilarityService:
                 if filtered_queried_tracks:
                     response_data["queried_track"] = filtered_queried_tracks[0]
             
+            # TEMPORARY FEATURE: Handle segment preview workflow (after step 8)
+            if playlist_info and len(deduplicated_enriched_tracks) > 0:
+                # Collect all UUIDs: queried track first, then similar tracks
+                all_uuids = [uploaded_track_details.get("id")]  # Reference track first
+                all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
+                all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
+                
+                if all_uuids:
+                    # Wait for segment preview response before returning
+                    await self._handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
+             
             return response_data
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
@@ -346,8 +359,8 @@ class SimilarityService:
                             )
                             
                             # Send playlist peaks request (fire and forget)
-                            if playlist_info:
-                                await self._send_playlist_peaks_request(queried_track_uuid, deduplicated_enriched_tracks)
+                            # if playlist_info:
+                            #     await self._send_playlist_peaks_request(queried_track_uuid, deduplicated_enriched_tracks)
                                 
                 except Exception as e:
                     print(f"Error creating playlist for path similarity: {e}")
@@ -367,6 +380,17 @@ class SimilarityService:
                 filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
                 if filtered_queried_tracks:
                     response_data["queried_track"] = filtered_queried_tracks[0]
+            
+            # TEMPORARY FEATURE: Handle segment preview workflow (after step 8)
+            if playlist_info and len(deduplicated_enriched_tracks) > 0:
+                # Collect all UUIDs: queried track first, then similar tracks
+                all_uuids = [queried_track_data.get("id")]  # Reference track first
+                all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
+                all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
+                
+                if all_uuids:
+                    # Wait for segment preview response before returning
+                    await self._handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
             
             return response_data
         elif similarity_response.get("status") == "not_found":
@@ -802,6 +826,96 @@ class SimilarityService:
             except Exception as e:
                 print(f"Generic error calling similarity server {target_url}: {e}")
                 return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []}
+
+    async def _call_segment_preview_endpoint(self, uuids: List[str], playlist_id: str) -> None:
+        """
+        Call the segment preview endpoint and save the response to a log file.
+        This runs in the background and doesn't affect the main similarity response.
+        """
+        if not self.similarity_server_url:
+            print("ERROR: SIMILARITY_SERVER_URL is not set, skipping segment preview request")
+            return
+        
+        # Ensure log directory exists first
+        log_dir = settings.segment_requests_log_dir
+        os.makedirs(log_dir, exist_ok=True)
+        
+        target_url = f"{self.similarity_server_url.rstrip('/')}/previews-segment/"
+        payload = {"uuids": uuids}
+        
+        print(f"[SEGMENT] Calling segment preview endpoint for playlist {playlist_id} with {len(uuids)} UUIDs")
+        
+        try:
+            async with httpx.AsyncClient(timeout=settings.segment_requests_timeout) as client:
+                response = await client.post(target_url, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                # Save response to log file
+                await self._save_segment_response(playlist_id, response_data)
+                
+                # Log summary
+                summary = response_data.get("summary", {})
+                print(f"[SEGMENT] Playlist {playlist_id}: Processed={summary.get('total_processed', 0)}, "
+                      f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}")
+                
+        except Exception as e:
+            print(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
+            # Save error log
+            error_data = {
+                "status": "error",
+                "error": str(e),
+                "playlist_id": playlist_id,
+                "uuids_count": len(uuids)
+            }
+            await self._save_segment_response(playlist_id, error_data)
+    
+    async def _save_segment_response(self, playlist_id: str, response_data: Dict[str, Any]) -> None:
+        """Save segment response data to a log file."""
+        try:
+            # Ensure log directory exists
+            log_dir = settings.segment_requests_log_dir
+            os.makedirs(log_dir, exist_ok=True)
+            
+            # Create log file path
+            log_file = os.path.join(log_dir, f"{playlist_id}.json")
+            
+            # Save response
+            with open(log_file, 'w') as f:
+                json.dump(response_data, f, indent=2)
+                
+            print(f"[SEGMENT] Response saved to {log_file}")
+            
+        except Exception as e:
+            print(f"[SEGMENT] Error saving response for playlist {playlist_id}: {e}")
+
+    async def _handle_segment_preview_workflow(self, uuids: List[str], playlist_id: str, deduplicated_enriched_tracks: List[Dict]) -> None:
+        """
+        TEMPORARY FEATURE: Handle segment preview workflow.
+        This method orchestrates steps 9,10,11 in background and waits for segment response.
+        Remove this entire method and its calls to disable the feature.
+        """
+        if not settings.segment_requests_enabled:
+            return
+            
+        try:
+            # Start steps 9,10,11 in background (playlist peaks request)
+            peaks_task = None
+            if deduplicated_enriched_tracks:
+                # This would be the peaks request that normally runs at the end
+                peaks_task = asyncio.create_task(
+                    self._send_playlist_peaks_request(uuids[0] if uuids else "", deduplicated_enriched_tracks)
+                )
+            
+            # Wait for segment preview response (main blocking operation)
+            await self._call_segment_preview_endpoint(uuids, playlist_id)
+            
+            # Ensure peaks task completes if it was started
+            if peaks_task:
+                await peaks_task
+                
+        except Exception as e:
+            print(f"[SEGMENT] Error in segment preview workflow: {e}")
 
     # Convenience methods for different use cases
     async def find_similar_tracks_by_upload(

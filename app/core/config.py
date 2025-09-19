@@ -149,10 +149,24 @@ class Settings(BaseModel):
         default=["https:", "www.", "_www."],
         description="Strings that stop meta field processing - keep only the part before these (case-insensitive)"
     )
-    meta_stopper_regex: str = Field(
-        default=r"^(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:/[^\s]*)?)$",
-        description="Regex pattern to match URLs and domains in meta fields - if matched, the entire meta field is removed"
+    
+    # Segment requests configuration
+    segment_requests_log_dir: str = Field(
+        default="logs/segment_requests",
+        description="Directory to store segment request logs"
     )
+    segment_requests_timeout: int = Field(
+        default=300,
+        description="Timeout for segment requests in seconds (5 minutes)"
+    )
+    segment_requests_enabled: bool = Field(
+        default=True,
+        description="Enable segment preview requests (temporary feature)"
+    )
+    
+    # ElasticSearch Configuration
+    elasticsearch_host: str = Field(default="http://localhost:9200", description="Elasticsearch host URL")
+    elasticsearch_enabled: bool = Field(default=False, description="Whether to use Elasticsearch for search")
     
     # CORS Configuration
     allowed_origin_regex_production: str = Field(
