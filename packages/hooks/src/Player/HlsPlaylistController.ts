@@ -24,6 +24,11 @@ export function createHlsPlaylistController(): AudioController {
 
   let hls: Hls | null = null;
 
+  let playlistUrl = '';
+  let retryTimer: number | null = null;
+  const RETRY_EVERY = 2000;
+  let wantPlaying = false;
+
   let tracksIds: string[] = [];
   let tracks: Track[] = [];
   let maxTrackLength: number = 0;
@@ -68,18 +73,97 @@ export function createHlsPlaylistController(): AudioController {
     totalDuration = acc;
   }
 
-  function buildM3U8() {
-    const target = Math.ceil(maxTrackLength || 1);
-    let content: string = `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:${target}\n#EXT-X-MEDIA-SEQUENCE:0`
-    tracks.forEach(track => {
-      content += `\n#EXTINF:${track.duration},${track.title}\nhttps://media.resomix.com/signed-audio/?uuid=${track.id}`;
-    });
-    content += '\n#EXT-X-ENDLIST'
-    return content;
+  function clearRetry() {
+    if (retryTimer !== null) {
+      clearInterval(retryTimer);
+      retryTimer = null;
+    }
   }
 
-  function buildM3U8Url() {
-    return `http://localhost:5173/playlists/similarity-hls/${playlistId}.m3u8`;
+  function restartHls() {
+    if (!playlistUrl) return;
+    if (hls) {
+      try { hls.destroy(); } catch {}
+      hls = null;
+    }
+    if (Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        manifestLoadingMaxRetry: 0,
+        levelLoadingMaxRetry: 0,
+        fragLoadingMaxRetry: 0,
+        // REMOVE AFTER TESTING
+        maxBufferLength: 1,
+        maxMaxBufferLength: 1,
+      });
+      hls.attachMedia(audio);
+      hls.loadSource(playlistUrl);
+      wireHlsErrorHandlers();
+    }
+  }
+
+  function attemptResume(immediate = false) {
+    if (!wantPlaying) return;
+    if (!navigator.onLine) return;
+
+    if (Hls.isSupported()) {
+      if (!hls) {
+        restartHls();
+      } else {
+        try {
+          hls.startLoad(audio.currentTime || -1);
+        } catch {
+          restartHls();
+        }
+      }
+      if (immediate) {
+        audio.play().catch(() => {});
+      }
+    } else {
+      const t = audio.currentTime || 0;
+      const wasPlaying = wantPlaying;
+      audio.src = playlistUrl;
+      audio.load();
+      audio.currentTime = t;
+      if (wasPlaying) audio.play().catch(() => {});
+    }
+  }
+
+  function scheduleRetry() {
+    if (!wantPlaying) return;
+    if (retryTimer !== null) return;
+    attemptResume(true);
+    retryTimer = window.setInterval(() => {
+      attemptResume(false);
+    }, RETRY_EVERY);
+  }
+
+  function wireHlsErrorHandlers() {
+    if (!hls) return;
+    hls.on(Hls.Events.ERROR, (_e, data) => {
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        scheduleRetry();
+      }
+      if (data.fatal) {
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            scheduleRetry();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            try { hls?.recoverMediaError(); } catch {}
+            break;
+          default:
+            restartHls();
+            scheduleRetry();
+            break;
+        }
+      }
+    });
+
+    hls.on(Hls.Events.MANIFEST_PARSED, clearRetry);
+    hls.on(Hls.Events.LEVEL_LOADED, clearRetry);
+    hls.on(Hls.Events.FRAG_LOADED, clearRetry);
   }
 
   function ensureHlsLoaded() {
@@ -87,22 +171,21 @@ export function createHlsPlaylistController(): AudioController {
     if (!tracks.length) initPlaylist();
     if (!tracksIds.length) return;
 
-    /*
-    const blob = new Blob([buildM3U8()], { type: 'application/vnd.apple.mpegurl' });
-    const url = URL.createObjectURL(blob);
-     */
-    const url = getSimilarityPlaylistHlsUrl(playlistId)
+    playlistUrl = getSimilarityPlaylistHlsUrl(playlistId);
 
     if (Hls.isSupported()) {
-      hls = hls = new Hls({
+      hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
+        manifestLoadingMaxRetry: 0,
+        levelLoadingMaxRetry: 0,
+        fragLoadingMaxRetry: 0,
       });
-      hls.loadSource(url);
+      hls.loadSource(playlistUrl);
       hls.attachMedia(audio);
+      wireHlsErrorHandlers();
     } else {
-      // iOS / Safari
-      audio.src = url;
+      audio.src = playlistUrl;
     }
 
     wireEvents();
@@ -111,52 +194,56 @@ export function createHlsPlaylistController(): AudioController {
 
   function wireEvents() {
     audio.addEventListener('play', () => {
+      wantPlaying = true;
+      clearRetry();
       msSetPlaybackState('playing');
     });
     audio.addEventListener('pause', () => {
+      wantPlaying = false;
+      clearRetry();
       msSetPlaybackState('paused');
     });
     audio.addEventListener('ended', () => {
+      wantPlaying = false;
+      clearRetry();
       msSetPlaybackState('none');
       usePlayerStore.getState().setIsPlaying(false);
       usePlayerStore.getState().setCurrentTrack(null);
       msUpdatePositionState({ position: totalDuration, duration: totalDuration, playbackRate: 0 }, true);
     });
-    audio.addEventListener('timeupdate', () => {
-      if (!currentTrackId || isSeeking) return;
 
-      const globalT = audio.currentTime || 0;
-      const start = offsets.get(currentTrackId) || 0;
-      const localT = Math.max(0, globalT - start);
+    window.addEventListener('online', () => attemptResume(true));
+    window.addEventListener('offline', () => scheduleRetry());
 
-      usePlayerStore.setState({ inputCurrentTime: localT });
-      usePlayerStore.getState().setTrackTime(currentTrackId, localT);
-      msUpdatePositionState({
-        position: localT,
-        duration: durations.get(currentTrackId) || 0,
-        playbackRate: audio.paused ? 0 : 1
-      }, false);
+     audio.addEventListener('timeupdate', () => {
+       if (!currentTrackId || isSeeking) return;
 
-      const newId = findTrackByGlobalTime(globalT);
-      if (newId && newId !== currentTrackId) {
-        usePlayerStore.getState().setTrackTime(currentTrackId, 0);
-        const { autoplay } = usePlayerStore.getState();
-        if (autoplay) {
-          const shouldAutoplay = !audio.paused;
-          goToTrack(newId, shouldAutoplay);
-        }
-        else {
-          pause();
-          seek(0, currentTrackId)
-        }
-      }
-    });
+       const globalT = audio.currentTime || 0;
+       const start = offsets.get(currentTrackId) || 0;
+       const localT = Math.max(0, globalT - start);
 
-    if (hls) {
-      hls.on(Hls.Events.ERROR, (_e, data) => {
-        console.error('[HLS] error', data);
-      });
-    }
+       usePlayerStore.setState({inputCurrentTime: localT});
+       usePlayerStore.getState().setTrackTime(currentTrackId, localT);
+       msUpdatePositionState({
+         position: localT,
+         duration: durations.get(currentTrackId) || 0,
+         playbackRate: audio.paused ? 0 : 1
+       }, false);
+
+       const newId = findTrackByGlobalTime(globalT);
+       if (newId && newId !== currentTrackId) {
+         usePlayerStore.getState().setTrackTime(currentTrackId, 0);
+         const {autoplay} = usePlayerStore.getState();
+         if (autoplay) {
+           const shouldAutoplay = !audio.paused;
+           goToTrack(newId, shouldAutoplay);
+           wantPlaying = true;
+         } else {
+           pause();
+           seek(0, currentTrackId)
+         }
+       }
+     });
   }
 
   function findTrackByGlobalTime(t: number): string | null {
@@ -274,25 +361,34 @@ export function createHlsPlaylistController(): AudioController {
 
   function play() {
     if (!currentTrackId && tracksIds.length) {
+      wantPlaying = true;
       load(tracksIds[0], true);
       return;
     }
+    wantPlaying = true;
     usePlayerStore.getState().setIsPlaying(true);
     msSetPlaybackState('playing');
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      scheduleRetry();
+    });
   }
 
   function pause() {
+    wantPlaying = false;
+    clearRetry();
     usePlayerStore.getState().setIsPlaying(false);
     msSetPlaybackState('paused');
     audio.pause();
   }
 
   function stop() {
+    wantPlaying = false;
+    clearRetry();
     usePlayerStore.getState().setIsPlaying(false);
     msSetPlaybackState('none');
     audio.pause();
   }
+
 
   function seek(seconds: number, trackId?: string) {
     const id = trackId || currentTrackId;
@@ -307,21 +403,12 @@ export function createHlsPlaylistController(): AudioController {
     usePlayerStore.setState({ inputCurrentTime: local });
   }
 
-  function getCurrentTime() {
-    if (!currentTrackId) return 0;
-    const start = offsets.get(currentTrackId) || 0;
-    return Math.max(0, (audio.currentTime || 0) - start);
-  }
-
-  function getDuration() {
-    if (!currentTrackId) return 0;
-    return durations.get(currentTrackId) || 0;
-  }
-
   function unload() {
+    wantPlaying = false;
+    clearRetry();
     audio.pause();
     if (hls) {
-      hls.destroy();
+      try { hls.destroy(); } catch {}
       hls = null;
     }
     audio.removeAttribute('src');
@@ -331,6 +418,17 @@ export function createHlsPlaylistController(): AudioController {
     currentTrackId = null;
     msReset();
     usePlayerStore.setState({ isLoaded: false });
+  }
+
+  function getCurrentTime() {
+    if (!currentTrackId) return 0;
+    const start = offsets.get(currentTrackId) || 0;
+    return Math.max(0, (audio.currentTime || 0) - start);
+  }
+
+  function getDuration() {
+    if (!currentTrackId) return 0;
+    return durations.get(currentTrackId) || 0;
   }
 
   // volume sync
