@@ -9,6 +9,8 @@ const UploadLoader: React.FC = () => {
     const { progress, isFileUpload } = useUploadStore();
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
     const [usedMessages, setUsedMessages] = useState<Set<number>>(new Set([0])); // Start with first message used
+    const [hideProgressBar, setHideProgressBar] = useState(false);
+    
 
     const messages = [
         "The system is reading the shape, structure, and spectral flow...",
@@ -57,6 +59,20 @@ const UploadLoader: React.FC = () => {
 
         return () => clearInterval(interval);
     }, [usedMessages, messages.length]);
+
+    // Timer to hide progress bar after upload completion
+    useEffect(() => {
+        if (isFileUpload && progress >= 99) {
+            const timer = setTimeout(() => {
+                setHideProgressBar(true);
+            }, 3000); // Hide after 3 seconds
+
+            return () => clearTimeout(timer);
+        } else {
+            // Reset hide state if we're not at 100% or not a file upload
+            setHideProgressBar(false);
+        }
+    }, [isFileUpload, progress]);
 
     // Use real upload progress from store
     const loaderProgress = progress;
@@ -131,7 +147,7 @@ const UploadLoader: React.FC = () => {
                     </div>
                 </div>
                 {/* Desktop Loader - Only show for file uploads */}
-                {isFileUpload && (
+                {isFileUpload && !hideProgressBar && (
                 <div className="hidden lg:flex flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-900)]">
                     <div className="text-[length:var(--px-11)] font-light font-fira tracking-[var(--px-2)] w-[var(--px-900)] relative">
                         <div
@@ -156,7 +172,7 @@ const UploadLoader: React.FC = () => {
                 </div>
                 )}
                 {/* Mobile Loader - Only show for file uploads */}
-                {isFileUpload && (
+                {isFileUpload && !hideProgressBar && (
                 <div className="flex lg:hidden flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-393)]">
                     <div className="text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2-2)] w-[var(--px-393)] relative">
                         <div
