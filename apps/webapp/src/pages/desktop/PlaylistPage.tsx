@@ -78,7 +78,7 @@ export function PlaylistPage() {
             <SideLines>
               {/* Navbar */}
               <Navbar
-                logo={<a href={BASE_BETA_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+                logo={<a href={BASE_LANDING_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
                 mode="playlist"
                 baseUrl={BASE_LANDING_URL}
                 baseBetaUrl={BASE_BETA_URL}
