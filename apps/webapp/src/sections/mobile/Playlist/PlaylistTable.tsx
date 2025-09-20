@@ -50,7 +50,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     </div>
                                 </div>
                                 <div className="w-full">
-                                    <div className="text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
+                                    <div className="text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
                                         {track.artist}
                                     </div>
                                 </div>

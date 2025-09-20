@@ -71,7 +71,7 @@ const PlaylistTable: React.FC = () => {
                                 padding='py-[var(--px-3)] px-[var(--px-4)]'
                                 onClick={() => handlePlayPause(track.id)}
                             />
-                            <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-120)]">
+                            <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]">
                                 {track.artist}
                             </div>
                             <div className="text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]">
