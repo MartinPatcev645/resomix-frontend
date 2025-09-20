@@ -159,10 +159,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   setInputCurrentTime: (time) => set({ inputCurrentTime: time }),
 
   isLoaded: false,
-  setIsLoaded: (loaded: boolean) => set({ isLoaded:  loaded }),
+  setIsLoaded: (loaded: boolean) => set({ isLoaded: loaded }),
 
   isPlaying: false,
-  setIsPlaying: (val: boolean) => set({ isPlaying:  val}),
+  setIsPlaying: (val: boolean) => set({ isPlaying: val }),
 
   similarityCurrentTime: 0,
   setSimilarityCurrentTime: (time) => set({ similarityCurrentTime: time }),

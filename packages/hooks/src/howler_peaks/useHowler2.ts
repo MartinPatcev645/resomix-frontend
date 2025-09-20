@@ -99,7 +99,7 @@ export function useHowler2(uuid?: string): UseHowlerResult {
   const seek = useCallback((t: number) => {
     setCurrentTime(t);
     howlRef.current?.seek(Math.max(0, t));
-    const seekPos =  howlRef.current?.seek();
+    const seekPos = howlRef.current?.seek();
     if (seekPos == 0 && t > 0) {
       setTimeout(() => seek(t), 100);
     }

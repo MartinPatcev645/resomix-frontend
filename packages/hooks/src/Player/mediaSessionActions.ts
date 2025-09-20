@@ -19,23 +19,23 @@ type BaseHandlers = {
 export function msInit(handlers: BaseHandlers) {
   if (!supports) return;
 
-  try{
+  try {
     navigator.mediaSession.setActionHandler('seekto', (e: any) => {
       if (e?.seekTime != null) {
         handlers.onSeekTo(Number(e.seekTime) || 0);
       }
     });
-  }catch{}
+  } catch { }
 
   try {
     navigator.mediaSession.setActionHandler('play', handlers.onPlay);
-  }catch{}
+  } catch { }
   try {
     navigator.mediaSession.setActionHandler('pause', handlers.onPause);
-  }catch{}
+  } catch { }
   try {
     navigator.mediaSession.setActionHandler('stop', handlers.onStop);
-  }catch{}
+  } catch { }
 
 }
 
@@ -52,7 +52,7 @@ export function msSetTrackControls(opts: {
   try {
     navigator.mediaSession.setActionHandler('seekforward', null);
     navigator.mediaSession.setActionHandler('seekbackward', null);
-  } catch {}
+  } catch { }
 }
 
 export function msSetMetadata(meta: MediaMeta) {
@@ -112,12 +112,12 @@ export function msReset() {
   if (!supports) return;
   try {
     navigator.mediaSession.metadata = null;
-  } catch {}
+  } catch { }
   navigator.mediaSession.playbackState = 'none';
   navigator.mediaSession.setActionHandler('nexttrack', null);
   navigator.mediaSession.setActionHandler('previoustrack', null);
   try {
     navigator.mediaSession.setActionHandler('seekforward', null);
     navigator.mediaSession.setActionHandler('seekbackward', null);
-  } catch {}
+  } catch { }
 }

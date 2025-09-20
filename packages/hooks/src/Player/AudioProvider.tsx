@@ -1,6 +1,5 @@
-'use client';
 import React, { createContext, useContext, useMemo } from 'react';
-import { getOrCreateAudioController, AudioController} from "./HlsPlaylistController";
+import { getOrCreateAudioController, AudioController } from "./HlsPlaylistController";
 
 const AudioCtx = createContext<AudioController | null>(null);
 

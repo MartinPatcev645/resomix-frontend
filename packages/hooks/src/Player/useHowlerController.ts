@@ -1,5 +1,3 @@
-'use client';
-
 import { Howl } from 'howler';
 import { Track, usePlayerStore, usePlaylistStore } from '@resomix/stores';
 import {

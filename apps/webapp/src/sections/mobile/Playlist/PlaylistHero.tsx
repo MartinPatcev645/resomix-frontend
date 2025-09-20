@@ -1,10 +1,8 @@
 import React from "react";
-import { IconButton, ToggleButton, HoverFlow } from "@resomix/ui";
+import { IconButton, ToggleButton, HoverFlow, StatusMessage } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
-import { StatusMessage } from "@resomix/ui";
-import { usePlayerStore } from "@resomix/stores";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -171,11 +169,6 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div>Instance: Input Track</div>
                 </div>
                 {/* The actual Input player */}
-                {/* Commented out the part to use the Uploaded Audio Blob for now
-                <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : (playlistData?.queried_track.id || '')} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData?.queried_track.duration ?? 0} />
-                
-                Using the API response same as selected track
-                */}
                 <InputPlayer trackId={playlistData?.queried_track.id || ''} totalDuration={playlistData?.queried_track.duration ?? 0} />
               </div>
             </div>

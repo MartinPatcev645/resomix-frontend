@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useEffect, useRef } from 'react'
-import {Track, usePlaylistStore} from '@resomix/stores'
+import { Track, usePlaylistStore } from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
-import {useGlobalHowlerController} from "./useGlobalHowlerController";
-import {loadPeaksData} from "../Waveform/peaksCache";
+import { useGlobalHowlerController } from "./useGlobalHowlerController";
+import { loadPeaksData } from "../index";
 
 
 /**
@@ -34,7 +34,7 @@ export const usePlayerManager = () => {
   const allTrackIds = useMemo(() => {
     if (!playlistData) return []
 
-    let tracks: Track[]  = [];
+    let tracks: Track[] = [];
 
     // Add queried track first if it exists
     if (playlistData.queried_track?.id) {
@@ -46,7 +46,7 @@ export const usePlayerManager = () => {
       tracks = [...tracks, ...playlistData.similar_tracks];
     }
 
-    return tracks.map(el=>el.id);
+    return tracks.map(el => el.id);
   }, [playlistData, howlerController])
 
   // Get current track index in the playlist
@@ -115,8 +115,6 @@ export const usePlayerManager = () => {
     return cueTrack(trackId)
   }, [cueTrack])
 
-
-
   // Stop current playback
   const stopPlaying = useCallback(() => {
     if (howlerController) {
@@ -169,19 +167,19 @@ export const usePlayerManager = () => {
     const onEnded = () => {
       playNext(); // obeys autoplay flag inside playNext already
     };
-    
+
     const onPrevious = () => {
       playPrevious();
     };
-    
+
     const onNext = () => {
       playNext();
     };
-    
+
     window.addEventListener('resomix:track-ended', onEnded);
     window.addEventListener('resomix:previous-track', onPrevious);
     window.addEventListener('resomix:next-track', onNext);
-    
+
     return () => {
       window.removeEventListener('resomix:track-ended', onEnded);
       window.removeEventListener('resomix:previous-track', onPrevious);
@@ -207,7 +205,7 @@ export const usePlayerManager = () => {
 
     // Check periodically if current track is loaded
     const interval = setInterval(checkAndPreload, 1000);
-    
+
     return () => {
       clearInterval(interval);
     }

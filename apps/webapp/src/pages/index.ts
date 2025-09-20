@@ -6,6 +6,7 @@ import InfoPage from './InfoPage.tsx';
 import MenuPage from './MenuPage.tsx';
 import TestPage from './TestPage.tsx';
 import TestTwo from './TestTwo.tsx';
+import PlayerPage from './PlayerPage.tsx';
 
 export {
     UploadPage,
@@ -16,4 +17,5 @@ export {
     MenuPage,
     TestPage,
     TestTwo,
+    PlayerPage,
 };

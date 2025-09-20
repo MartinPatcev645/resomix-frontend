@@ -5,7 +5,7 @@ export type UsePeaksReturn = {
   loading: boolean;
   error: string | null;
   setTime: (timeSec: number) => void;
-  attachMediaElement: (mediaElement: HTMLMediaElement)=>void;
+  attachMediaElement: (mediaElement: HTMLMediaElement) => void;
 };
 
 export function usePeaks2(
@@ -16,7 +16,7 @@ export function usePeaks2(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [normalizedData, setNormalizedData] = useState<number[]>([]);
-  const [mediaElement, setMediaElement ] = useState<HTMLMediaElement | null>(null);
+  const [mediaElement, setMediaElement] = useState<HTMLMediaElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 

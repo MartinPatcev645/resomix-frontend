@@ -50,7 +50,7 @@ export function usePeaksWaveform({
 
       // clean previous
       if (peaksRef.current) {
-        try { peaksRef.current.destroy(); } catch {}
+        try { peaksRef.current.destroy(); } catch { }
         peaksRef.current = null;
       }
       if (fetchAbortRef.current) {
@@ -115,7 +115,7 @@ export function usePeaksWaveform({
         fetchAbortRef.current = null;
       }
       if (peaksRef.current) {
-        try { peaksRef.current.destroy(); } catch {}
+        try { peaksRef.current.destroy(); } catch { }
         peaksRef.current = null;
       }
     };

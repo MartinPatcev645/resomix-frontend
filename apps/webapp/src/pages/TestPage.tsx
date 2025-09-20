@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // import InputPlayer from "@/components/Playlist/InputPlayer.tsx";
-import {useGlobalHowlerController} from "@resomix/hooks";
+import { useGlobalHowlerController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 // List of UUIDs to request
@@ -74,7 +74,7 @@ const TestPage: React.FC = () => {
       // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
       const url = new URL('https://bserver.resomix.com/playlists/similarity-hls/ce0223d0-94c0-4b8a-8f26-c1b7db17a0a6.m3u8');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
-      
+
       const response = await fetch(url.toString(), {
         headers: {
           'Accept': 'application/vnd.apple.mpegurl'
@@ -91,7 +91,7 @@ const TestPage: React.FC = () => {
     try {
       const url = new URL('https://media.resomix.com/signed-audio/hls-m3u8/');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
-      
+
       const response = await fetch(url.toString(), {
         method: 'POST',
         headers: {
@@ -113,7 +113,7 @@ const TestPage: React.FC = () => {
       // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
       const url = new URL('https://media.resomix.com/signed-audio/segment/?uuid=67ada10e799206f8d64dae5f&seg=0');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
-      
+
       const response = await fetch(url.toString(), {
         headers: {
           'Accept': 'application/vnd.apple.mpegurl'
@@ -140,20 +140,20 @@ const TestPage: React.FC = () => {
           {play ? "Pause" : "Play"}
         </button>
         {/* Button to make HLS request */}
-        <button 
-          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer" 
+        <button
+          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
           onClick={handleHlsRequest}
         >
           Fetch HLS
         </button>
-        <button 
-          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer" 
+        <button
+          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
           onClick={handleHlsRequestTwo}
         >
           Fetch HLS MEDIA
         </button>
-        <button 
-          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer" 
+        <button
+          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
           onClick={handleHlsRequestThree}
         >
           Fetch Segment

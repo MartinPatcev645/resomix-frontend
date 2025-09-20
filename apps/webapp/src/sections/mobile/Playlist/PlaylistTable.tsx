@@ -1,7 +1,6 @@
 import { SimilarityPlayer } from "@/components/index.ts";
-import {formatDuration, formatPercentage} from "@resomix/hooks";
-import { useGlobalAudioController } from "@resomix/hooks/Player/AudioProvider.js";
-import {usePlayerStore, usePlaylistStore} from "@resomix/stores";
+import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
@@ -15,7 +14,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const tracks = playlistData?.similar_tracks ?? [];
     const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
-    const isPlaying :boolean = usePlayerStore(s => s.isPlaying);
+    const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId && isPlaying) {
@@ -66,7 +65,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             </div>
                                             {/* Display the bar here */}
                                             <div className="w-[var(--px-30)] h-[var(--px-3)] bg-transparent rounded-full overflow-hidden ml-[var(--px-5)] outline outline-white outline-dotted">
-                                                <div 
+                                                <div
                                                     className="h-full bg-white rounded-full transition-all duration-300"
                                                     style={{ width: `${track.score * 100}%` }}
                                                 ></div>
@@ -79,7 +78,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </div>
                             </div>
                         </div>
-                        {currentTrackId === track.id &&  isPlaying && (
+                        {currentTrackId === track.id && isPlaying && (
                             <div>
                                 <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
                             </div>

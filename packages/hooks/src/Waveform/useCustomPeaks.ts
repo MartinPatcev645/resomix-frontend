@@ -5,7 +5,7 @@ export type UsePeaksReturn = {
   loading: boolean;
   error: string | null;
   setTime: (timeSec: number, isImmediatelly?: boolean) => void;
-  attachOverviewElement: (overviewElement: HTMLDivElement)=>void;
+  attachOverviewElement: (overviewElement: HTMLDivElement) => void;
 };
 
 export function useCustomPeaks(
@@ -109,7 +109,7 @@ export function useCustomPeaks(
     };
   }, [overviewElement, uuid]);
 
-  useEffect(()=>{
+  useEffect(() => {
     drawWaveform(currentTime);
   }, [normalizedData, duration, canvasRef]);
 

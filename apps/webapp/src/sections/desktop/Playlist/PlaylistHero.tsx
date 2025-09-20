@@ -1,10 +1,8 @@
 import React from "react";
-import { IconButton, HoverFlow, ToggleButton } from "@resomix/ui";
+import { IconButton, HoverFlow, ToggleButton, StatusMessage } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
-import { usePlayerStore } from "@resomix/stores";
+import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
-import { StatusMessage } from "@resomix/ui";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -194,13 +192,7 @@ const PlaylistHero: React.FC = () => {
                     </div>
                     <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
                     {/* The actual Input player */}
-                    {/* Render player only when we already know the track ID to avoid extra mounts */}
                     {playlistData?.queried_track.id && (
-                      // Commented out the part to use the Uploaded Audio Blob for now
-                      // <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
-                      
-                      // Using the API response same as selected track
-
                       <InputPlayer trackId={playlistData.queried_track.id} totalDuration={playlistData.queried_track.duration ?? 0} />
                     )}
                   </div>

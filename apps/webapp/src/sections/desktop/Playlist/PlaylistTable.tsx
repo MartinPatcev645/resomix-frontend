@@ -1,22 +1,19 @@
 import React from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage} from "@resomix/hooks";
-import { useGlobalAudioController } from "@resomix/hooks/Player/AudioProvider.js";
-import {usePlayerStore, usePlaylistStore} from "@resomix/stores";
+import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL } from "@resomix/config";
 
-// Remove local dummy data; use global store
-
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
-    const isPlaying :boolean = usePlayerStore(s => s.isPlaying);
+    const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
         if (currentTrackId === trackId && isPlaying) {
@@ -95,7 +92,7 @@ const PlaylistTable: React.FC = () => {
                                 </div>
                                 {/* Create a bar here */}
                                 <div className="w-[var(--px-40)] h-[var(--px-4)] bg-transparent rounded-full overflow-hidden mt-[var(--px-3)] outline outline-white outline-dotted">
-                                    <div 
+                                    <div
                                         className="h-full bg-white rounded-full transition-all duration-300"
                                         style={{ width: `${track.score * 100}%` }}
                                     ></div>

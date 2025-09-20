@@ -3,12 +3,13 @@ import React from "react";
 // function to Convert seconds to hours, minutes and seconds
 export function formatDuration(seconds: number): string {
   if (seconds < 0) return "0:00";
-  
+
+  // Convert to int because we're getting float from the API now
   const totalSeconds = Math.floor(seconds);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const remainingSeconds = totalSeconds % 60;
-  
+
   if (hours > 0) {
     // Format: "H:MM:SS"
     return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
