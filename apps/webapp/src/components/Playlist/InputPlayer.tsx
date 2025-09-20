@@ -1,12 +1,11 @@
 import React, { useEffect, useCallback, useRef, useState } from "react";
-import WaveformPlayer, { type WaveformPlayerRef } from "./WaveformPlayer.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { usePlayerManager, AudioProvider, useAudioProviderRef } from "@resomix/hooks";
+import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
 // Simple time formatter mm:ss
@@ -19,147 +18,165 @@ function formatTime(seconds: number): string {
 
 interface InputPlayerProps {
     trackId?: string;
-    audioUrl?: string;
     totalDuration: number;
-    autoPlay?: boolean;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDuration, autoPlay = false }) => {
-    // Use a fallback id for local uploads so we always have a string
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => {
     const effectiveId = trackId ?? 'uploaded-local';
 
-    const {
-        currentTrackId,
-        startPlaying,
-        stopPlaying,
-        playNext,
-        setInputWs,
-        volume,
-        setVolume,
-        isAutoplayEnabled
-    } = usePlayerManager();
-    const isPlaying = currentTrackId === effectiveId;
-    const [isSeeking, setIsSeeking] = useState(false);
+    const currentTime = usePlayerStore(s => s.trackTimes?.[effectiveId] ?? 0);
+    const setTrackTime = usePlayerStore(s => s.setTrackTime);
+    const currentTrackId = usePlayerStore(s => s.currentTrackId);
+    const isCommonPlay: boolean = usePlayerStore(s => s.isPlaying);
+    const volume: number = usePlayerStore(s => s.volume);
+    const setVolume = usePlayerStore(s => s.setVolume);
 
-    // Direct reference to the waveform player's wavesurfer instance
-    const waveformPlayerRef = useRef<WaveformPlayerRef>(null);
+    const [isPlaying, setIsPlaying] = useState<boolean>(isCommonPlay && currentTrackId === effectiveId);
 
-    // BeMusic pattern: AudioProvider reference for persistent audio element
-    const { audioProviderRef, getAudioElement } = useAudioProviderRef();
+    const [isDragging, setIsDragging] = useState(false);
+    const waveformContainerRef = useRef<HTMLDivElement>(null);
+    const pendingSeekPosition = useRef<number | null>(null);
 
-    // Global volume via player manager
-    const currentTime = usePlayerStore((s) => s.inputCurrentTime);
-    const setInputCurrentTime = usePlayerStore((s) => s.setInputCurrentTime);
+    const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId || '');
 
-    // Provider readiness state (BeMusic pattern) - with fallback for safety
-    const inputProviderReady = usePlayerStore((s) => s.inputProviderReady ?? false);
-    const setInputProviderReady = usePlayerStore((s) => s.setInputProviderReady) || (() => { });
+    const hlsController = useGlobalAudioController();
 
-    // When autoPlay requested, register this track on mount
-    useEffect(() => {
-        if (autoPlay && currentTrackId == null) {
-            startPlaying(effectiveId);
+    const seekRef = useRef<number | null>(null);
+    const requestSeek = useCallback((time: number) => {
+        if (seekRef.current) {
+            cancelAnimationFrame(seekRef.current);
         }
-    }, []);
-
-    // Reset provider readiness when track changes (BeMusic pattern)
-    const previousTrackRef = useRef<string | null>(null);
-    useEffect(() => {
-        const currentEffectiveId = trackId || audioUrl || null;
-        if (currentEffectiveId && currentEffectiveId !== previousTrackRef.current) {
-            setInputProviderReady(false);
-            console.log('[InputPlayer] Track changed, resetting provider readiness:', currentEffectiveId);
-            previousTrackRef.current = currentEffectiveId;
-        }
-    }, [trackId, audioUrl, setInputProviderReady]);
-
-    // Re-register finish handler when autoplay changes to ensure correct closure
-    useEffect(() => {
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (!ws) return;
-
-        const handleFinish = () => {
-            // Only advance to next track if not currently seeking
-            if (!isSeeking) {
-                playNext();
-            } else {
-                console.log('[InputPlayer] Ignoring finish event during seek operation');
+        seekRef.current = requestAnimationFrame(() => {
+            console.log('seek', currentTrackId, effectiveId);
+            if (currentTrackId === effectiveId) {
+                hlsController.seek(time, effectiveId);
             }
-        };
-
-        // Remove any existing finish handlers
-        ws.un && ws.un('finish');
-        ws.on('finish', handleFinish);
-
-        // Track seeking state to prevent accidental track advancement
-        ws.un && ws.un('seeking');
-        ws.on('seeking', () => {
-            setIsSeeking(true);
-            // Reset seeking state after a delay
-            setTimeout(() => setIsSeeking(false), 200);
+            setTime(time, true);
+            setTrackTime(effectiveId, time);
         });
+    }, [hlsController, effectiveId, setTime, setTrackTime, currentTrackId]);
+
+    const handleSeek = useCallback((clientX: number) => {
+        const el = waveformContainerRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+        if (totalDuration > 0) {
+            const newPosition = x * totalDuration;
+            setTime(newPosition, true);
+            pendingSeekPosition.current = newPosition;
+        }
+    }, [totalDuration, setTime]);
+
+    const applyPendingSeek = useCallback(() => {
+        if (pendingSeekPosition.current !== null) {
+            requestSeek(pendingSeekPosition.current);
+            pendingSeekPosition.current = null;
+        }
+    }, [requestSeek]);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        setIsDragging(true);
+        handleSeek(e.clientX);
+    }, [handleSeek]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (isDragging) {
+            handleSeek(e.clientX);
+        }
+    }, [isDragging, handleSeek]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        applyPendingSeek();
+    }, [applyPendingSeek]);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        setIsDragging(true);
+        handleSeek(e.touches[0].clientX);
+    }, [handleSeek]);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (isDragging) {
+            handleSeek(e.touches[0].clientX);
+        }
+    }, [isDragging, handleSeek]);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsDragging(false);
+        applyPendingSeek();
+    }, [applyPendingSeek]);
+
+    useEffect(() => {
+        if (!isDragging) {
+            setTime(currentTime);
+        }
+    }, [currentTime, setTime, isDragging]);
+
+    useEffect(() => {
+        hlsController.load(effectiveId);
+    }, [hlsController, effectiveId]);
+
+    useEffect(() => {
+        const isPlay: boolean = isCommonPlay && currentTrackId === effectiveId;
+        if (isPlay !== isPlaying) {
+            setIsPlaying(isPlay);
+        }
+    }, [currentTrackId, effectiveId, isPlaying, isCommonPlay]);
+
+    useEffect(() => {
+        const el = waveformContainerRef.current;
+        if (!el) return;
+
+        el.addEventListener('mousedown', handleMouseDown as never);
+        el.addEventListener('mousemove', handleMouseMove as never);
+        el.addEventListener('touchstart', handleTouchStart as never);
+        el.addEventListener('touchmove', handleTouchMove as never);
+
+        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('touchend', handleTouchEnd);
 
         return () => {
-            ws.un && ws.un('finish', handleFinish);
-            ws.un && ws.un('seeking');
+            el.removeEventListener('mousedown', handleMouseDown as never);
+            el.removeEventListener('mousemove', handleMouseMove as never);
+            el.removeEventListener('touchstart', handleTouchStart as never);
+            el.removeEventListener('touchmove', handleTouchMove as never);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [isAutoplayEnabled, playNext, isSeeking]);
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-    // Separate effect for syncing volume with input WaveSurfer instance
     useEffect(() => {
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-        if (ws && typeof ws.setVolume === 'function') {
-            try {
-                ws.setVolume(volume);
-            } catch { /* ignore */ }
+        if (waveformContainerRef.current) {
+            attachOverviewElement(waveformContainerRef.current);
         }
-    }, [volume]);
+    }, [waveformContainerRef.current, attachOverviewElement]);
 
     const togglePlay = () => {
+        if (!hlsController) return;
+
         if (isPlaying) {
-            stopPlaying();
+            hlsController.pause();
         } else {
-            // BeMusic pattern: Synchronous track cueing
-            // AudioProvider handles async loading, we just cue the track immediately
-            const success = startPlaying(effectiveId);
-            if (success) {
-                console.log('[InputPlayer] Track cued, waiting for provider ready. Current ready state:', inputProviderReady);
+            if (currentTrackId !== effectiveId) {
+                hlsController.load(effectiveId, true);
+            } else {
+                hlsController.play();
             }
         }
     };
 
-
-
+    // skip +/- 10s (only works if this is the current track)
     const skipBackward = useCallback(() => {
-        const audioProvider = audioProviderRef.current;
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-
-        if (audioProvider && ws) {
-            const currentTime = audioProvider.getCurrentTime();
-            const newTime = Math.max(0, currentTime - 10);
-
-            console.log('[InputPlayer] Skipping backward from', currentTime, 'to', newTime);
-            audioProvider.setCurrentTime(newTime);
-
-            // Don't try to restore playback - let the AudioProvider handle it
-        }
-    }, []);
+        if (!hlsController) return;
+        requestSeek(Math.max(0, currentTime - 10));
+    }, [hlsController, requestSeek, currentTime]);
 
     const skipForward = useCallback(() => {
-        const audioProvider = audioProviderRef.current;
-        const ws = waveformPlayerRef.current?.getWaveSurfer();
-
-        if (audioProvider && ws) {
-            const currentTime = audioProvider.getCurrentTime();
-            const duration = audioProvider.getDuration();
-            const newTime = Math.min(duration, currentTime + 10);
-
-            console.log('[InputPlayer] Skipping forward from', currentTime, 'to', newTime);
-            audioProvider.setCurrentTime(newTime);
-
-            // Don't try to restore playback - let the AudioProvider handle it
-        }
-    }, []);
+        if (!hlsController) return;
+        const d = hlsController.getDuration();
+        requestSeek(Math.min(d, currentTime + 10));
+    }, [hlsController, requestSeek, currentTime]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -176,28 +193,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
 
     return (
         <>
-            {/* BeMusic pattern: Persistent AudioProvider */}
-            <AudioProvider
-                ref={audioProviderRef}
-                src={audioUrl || (trackId ? `https://media.resomix.com/signed-audio/?uuid=${trackId}` : undefined)}
-                volume={volume}
-                onPlay={() => console.log('[InputPlayer] Audio started playing')}
-                onPause={() => console.log('[InputPlayer] Audio paused')}
-                onTimeUpdate={setInputCurrentTime}
-                onLoadedMetadata={() => {
-                    console.log('[InputPlayer] Audio metadata loaded - provider ready');
-                    setInputProviderReady(true);
-                }}
-                onError={(error) => {
-                    console.error('[InputPlayer] Audio error:', error);
-                    setInputProviderReady(false);
-                }}
-                onEnded={() => {
-                    console.log('[InputPlayer] Audio ended');
-                    playNext();
-                }}
-            />
-
             <div className="flex items-center gap-2 w-full">
                 {/* Play / Pause */}
                 <button
@@ -213,25 +208,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                 </button>
 
                 <div className="flex flex-col w-full gap-[var(--px-5)]">
-                    {/* Waveform */}
-                    <div className="h-[var(--px-50)] overflow-y-hidden w-full">
-                        <WaveformPlayer
-                            ref={waveformPlayerRef}
-                            trackId={trackId}
-                            audioUrl={audioUrl}
-                            isPlaying={isPlaying}
-                            volume={volume}
-                            duration={totalDuration}
-                            persistentAudioElement={getAudioElement() || undefined}
-                            onReadyWs={(ws) => {
-                                try {
-                                    setInputWs(ws);
-                                    // Finish handler is now managed by useEffect above
-                                } catch (error) {
-                                    console.error('[InputPlayer] Failed to setup WaveSurfer:', error);
-                                }
-                            }}
-                        />
+                    <div
+                        ref={waveformContainerRef}
+                        className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
+                        style={{ cursor: isDragging ? 'grabbing' : 'pointer' }}
+                    >
+                        {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
+                        {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
                     </div>
 
                     <div className="flex items-center justify-between w-full">
@@ -244,7 +227,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                             {/* Skip Forward */}
                             <button type="button" onClick={skipForward} title="Skip forward 10s" className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]">
                                 <span className="mt-[var(--px-3)]">10s</span>
-                                <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
+                                <img src={NextTrackSvg} alt="Next Track" className="w-[var(--px-10)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
                             </button>
                         </div>
 
@@ -267,7 +250,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
 
                             {/* Volume Slider */}
                             <div className="relative flex items-center w-[var(--px-80)]">
-                                {/* White base line track */}
+                                {/* White baseline track */}
                                 <div className="absolute w-[var(--px-80)] h-[var(--px-1)] bg-white"></div>
                                 <input
                                     type="range"
@@ -288,11 +271,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, audioUrl, totalDurat
                         {/* Time Display */}
                         <div className="flex items-center gap-2">
                             <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                                {formatTime(currentTime)} / {formatTime(totalDuration)}
+                                {formatTime(isDragging ? pendingSeekPosition.current || currentTime : currentTime)} / {formatTime(totalDuration)}
                             </span>
                         </div>
                     </div>
                 </div>
+            </div>
+            <div className="text-sm text-gray-500 text-right -my-2">
+                Version: alpha-0.6.1
             </div>
         </>
     );

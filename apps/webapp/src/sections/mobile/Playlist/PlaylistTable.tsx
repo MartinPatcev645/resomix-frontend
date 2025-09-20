@@ -1,8 +1,6 @@
-import React from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
-import { formatDuration, formatPercentage } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
-import { usePlayerManager } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
@@ -13,19 +11,16 @@ interface PlaylistTableProps {
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
-    const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
     const tracks = playlistData?.similar_tracks ?? [];
+    const hlsController = useGlobalAudioController();
+    const currentTrackId = usePlayerStore(s => s.currentTrackId);
+    const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
-        if (currentTrackId === trackId) {
-            stopPlaying();
+        if (currentTrackId === trackId && isPlaying) {
+            hlsController.stop();
         } else {
-            // BeMusic pattern: Synchronous track cueing
-            // AudioProvider in SimilarityPlayer handles async loading
-            const success = startPlaying(trackId);
-            if (success) {
-                console.log('[PlaylistTable] Track cued:', trackId);
-            }
+            hlsController.load(trackId, true);
         }
     };
 
@@ -37,7 +32,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)]">
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
-                                {currentTrackId === track.id && (
+                                {currentTrackId === track.id && isPlaying && (
                                     <>
                                         <div className="absolute inset-0 bg-black/80 rounded-lg"></div>
                                         <img
@@ -70,7 +65,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             </div>
                                             {/* Display the bar here */}
                                             <div className="w-[var(--px-30)] h-[var(--px-3)] bg-transparent rounded-full overflow-hidden ml-[var(--px-5)] outline outline-white outline-dotted">
-                                                <div 
+                                                <div
                                                     className="h-full bg-white rounded-full transition-all duration-300"
                                                     style={{ width: `${track.score * 100}%` }}
                                                 ></div>
@@ -83,7 +78,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </div>
                             </div>
                         </div>
-                        {currentTrackId === track.id && (
+                        {currentTrackId === track.id && isPlaying && (
                             <div>
                                 <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
                             </div>

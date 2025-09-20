@@ -226,13 +226,8 @@ const PlaylistHero: React.FC = () => {
                     </div>
                     <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
                     {/* The actual Input player */}
-                    {/* Render player only when we already know the track ID to avoid extra mounts */}
                     {playlistData?.queried_track.id && (
-                      // Commented out the part to use the Uploaded Audio Blob for now
-                      // <InputPlayer trackId={uploadedUrl ? 'uploaded-local' : playlistData.queried_track.id} audioUrl={uploadedUrl ?? undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
-
-                      // Using the API response same as selected track
-                      <InputPlayer trackId={playlistData.queried_track.id} audioUrl={undefined} totalDuration={playlistData.queried_track.duration ?? 0} />
+                      <InputPlayer trackId={playlistData.queried_track.id} totalDuration={playlistData.queried_track.duration ?? 0} />
                     )}
                   </div>
                 </div>

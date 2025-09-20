@@ -1,3 +1,46 @@
+# TL;DR of what's broken (and why playback "doesn't work")
+
+Two Howler controllers are being created (one in InputPlayer, one in SimilarityPlayer) → they fight each other. You need one global audio engine (one Howl at a time).
+
+Peaks never receives a stable HTMLAudioElement. getHtmlAudioNode() returns null until the Howl is created; you're passing the value (not a reactive ref), so the Peaks hook doesn't re-init when the node appears.
+
+Autoplay-next isn't wired. onend in useHowlerController sets currentTrack to null, but nothing calls playNext().
+
+InputPlayer never loads audio if audioUrl prop isn't provided (your TestPage doesn't pass it). SimilarityPlayer does build audioUrl, InputPlayer doesn't.
+
+Peaks + Howler sync is fragile: click-to-seek sets audioElement.currentTime, but Peaks init depends on a node that often isn't ready; and there's no robust rebind on track change.
+
+The rest is minor (wrong volume assignment in usePlayerManager, duplicated timers, etc.).
+
+## The migration plan (high level)
+
+One global Howler (singleton). Create/manage it in one place and expose its controls via a hook or store.
+
+Expose the HTMLAudioElement from the Howler instance into the store (so any component can read it and Peaks can bind reliably).
+
+Re-initialize Peaks per track whenever audioNode or trackId changes.
+
+Autoplay-next: trigger playNext() right from onend (only when autoplay is enabled).
+
+Build audioUrl in the player from trackId (don't rely on the parent passing it).
+
+Prefetch next track (optional but recommended) once current track is fully loaded/buffered.
+
+Everything below implements that.
+
+---
+
+
+
+
+
+
+
+########################### OLD ####################
+
+
+
+
 ### Howler.js + Peaks.js Integration Guide (Resomix Web Monorepo)
 
 This guide provides step-by-step instructions to replace the dual-player (HTMLAudio + WaveSurfer) with Howler.js for playback and Peaks.js for waveform rendering, plus best practices and migration/testing checklists.
@@ -645,6 +688,7 @@ const skipForward = useCallback(() => {
   }
 }
 ```
+
 
 ---
 

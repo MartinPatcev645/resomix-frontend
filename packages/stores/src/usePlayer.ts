@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   autoplay: 'resomix.player.autoplay',
   volume: 'resomix.player.volume',
   topSk: 'resomix.player.topSk',
+  trackTimes: 'resomix.player.trackTimes'
 } as const;
 
 // NOTE: Settings are now stored only in browser localStorage.
@@ -51,16 +52,19 @@ interface PlayerStore {
   setUploadedCoverArt: (coverUrl: string | null) => void
 
   /**
-   * Input track WaveSurfer instance (always visible)
+   * Howler controller instance for managing audio playback
    */
-  inputWs: any | null
-  setInputWs: (ws: any | null) => void
+  howlerController: any | null
+  setHowlerController: (controller: any | null) => void
+
+  audioController: any | null
+  setAudioController: (controller: any | null) => void
 
   /**
-   * Similarity track WaveSurfer instance (changes based on current track)
+   * HTML audio element from Howler for Peaks.js integration
    */
-  similarityWs: any | null
-  setSimilarityWs: (ws: any | null) => void
+  audioNode: HTMLAudioElement | null
+  setAudioNode: (node: HTMLAudioElement | null) => void
 
   /**
    * Global autoplay toggle. When true we automatically advance to the next
@@ -85,22 +89,30 @@ interface PlayerStore {
   /** Setter for inputCurrentTime */
   setInputCurrentTime: (time: number) => void
 
+  isLoaded: boolean
+  setIsLoaded: (loaded: boolean) => void
+
+  isPlaying: boolean
+  setIsPlaying: (isPlaying: boolean) => void
+
   /** Current playback position (seconds) of the similarity waveform */
   similarityCurrentTime: number
   /** Setter for similarityCurrentTime */
   setSimilarityCurrentTime: (time: number) => void
 
-  /** Provider readiness states (BeMusic pattern) */
-  inputProviderReady: boolean
-  setInputProviderReady: (ready: boolean) => void
-  
-  similarityProviderReady: boolean
-  setSimilarityProviderReady: (ready: boolean) => void
+  trackTimes: Record<string, number>
+  setTrackTime: (trackId: string, time: number) => void
+  getTrackTime: (trackId: string) => number
+  removeTrackTime: (trackId: string) => void
+  clearTrackTimes: () => void
 }
 
-export const usePlayerStore = create<PlayerStore>((set) => ({
+export const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTrackId: null,
-  setCurrentTrack: (id) => set({ currentTrackId: id }),
+  setCurrentTrack: (id) => {
+    console.log('[usePlayerStore] currentTrackId', id);
+    set({ currentTrackId: id });
+  },
 
   uploadedUrl: null,
   setUploadedUrl: (url) => set({ uploadedUrl: url }),
@@ -108,25 +120,16 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   uploadedCoverArt: null,
   setUploadedCoverArt: (coverUrl) => set({ uploadedCoverArt: coverUrl }),
 
-  inputWs: null,
-  setInputWs: (ws) => set((state) => {
-    if (state.inputWs && state.inputWs !== ws) {
-      try {
-        state.inputWs.pause();
-      } catch { /* ignore */ }
-    }
-    return { inputWs: ws };
-  }),
+  howlerController: null,
+  setHowlerController: (controller) =>
+    set((state) => state.howlerController ? state : { howlerController: controller }),
 
-  similarityWs: null,
-  setSimilarityWs: (ws) => set((state) => {
-    if (state.similarityWs && state.similarityWs !== ws) {
-      try {
-        state.similarityWs.pause();
-      } catch { /* ignore */ }
-    }
-    return { similarityWs: ws };
-  }),
+  audioController: null,
+  setAudioController: (controller) =>
+    set((state) => state.audioController ? state : { audioController: controller }),
+
+  audioNode: null,
+  setAudioNode: (node) => set({ audioNode: node }),
 
   autoplay: getStoredValue<boolean>(STORAGE_KEYS.autoplay, false),
   setAutoplay: (value) =>
@@ -155,15 +158,42 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   inputCurrentTime: 0,
   setInputCurrentTime: (time) => set({ inputCurrentTime: time }),
 
+  isLoaded: false,
+  setIsLoaded: (loaded: boolean) => set({ isLoaded: loaded }),
+
+  isPlaying: false,
+  setIsPlaying: (val: boolean) => set({ isPlaying: val }),
+
   similarityCurrentTime: 0,
   setSimilarityCurrentTime: (time) => set({ similarityCurrentTime: time }),
 
-  // Provider readiness states (BeMusic pattern)
-  inputProviderReady: false,
-  setInputProviderReady: (ready) => set({ inputProviderReady: ready }),
+  trackTimes: getStoredValue<Record<string, number>>(STORAGE_KEYS.trackTimes, {}),
+  setTrackTime: (trackId, time) =>
+    set((state) => {
+      const next = { ...state.trackTimes, [trackId]: time }
+      setStoredValue(STORAGE_KEYS.trackTimes, next)
+      return { trackTimes: next }
+    }),
 
-  similarityProviderReady: false,
-  setSimilarityProviderReady: (ready) => set({ similarityProviderReady: ready }),
+  getTrackTime: (trackId) => {
+    if (!trackId) return 0;
+    const t = get().trackTimes[trackId]
+    return typeof t === 'number' ? t : 0
+  },
+
+  removeTrackTime: (trackId) =>
+    set((state) => {
+      const next = { ...state.trackTimes }
+      delete next[trackId]
+      setStoredValue(STORAGE_KEYS.trackTimes, next)
+      return { trackTimes: next }
+    }),
+
+  clearTrackTimes: () =>
+    set(() => {
+      setStoredValue(STORAGE_KEYS.trackTimes, {})
+      return { trackTimes: {} }
+    }),
 }));
 
 export default usePlayerStore

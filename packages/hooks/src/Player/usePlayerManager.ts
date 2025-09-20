@@ -1,6 +1,8 @@
-import { useCallback, useMemo, useEffect } from 'react'
-import { usePlaylistStore } from '@resomix/stores'
+import { useCallback, useMemo, useEffect, useRef } from 'react'
+import { Track, usePlaylistStore } from '@resomix/stores'
 import { usePlayerStore } from '@resomix/stores'
+import { useGlobalHowlerController } from "./useGlobalHowlerController";
+import { loadPeaksData } from "../index";
 
 
 /**
@@ -8,14 +10,11 @@ import { usePlayerStore } from '@resomix/stores'
  * Integrates with playlist store and player store to provide centralized playback control
  */
 export const usePlayerManager = () => {
-  const { playlistData, trackRatings } = usePlaylistStore()
+  const { playlistData, trackRatings } = usePlaylistStore();
   const {
     currentTrackId,
     setCurrentTrack,
-    inputWs,
-    similarityWs,
-    setInputWs,
-    setSimilarityWs,
+    setTrackTime,
     autoplay,
     setAutoplay,
     volume,
@@ -23,50 +22,40 @@ export const usePlayerManager = () => {
     topSk,
     setTopSk
   } = usePlayerStore()
+  const howlerController = useGlobalHowlerController();
 
-  // Keep WaveSurfer instances volume in sync with global volume
+  const currentTime = usePlayerStore(s => s.trackTimes?.[currentTrackId || ''] ?? 0);
+  const currentTimeRef = useRef<number>(currentTime);
   useEffect(() => {
-    if (inputWs && typeof inputWs.setVolume === 'function') {
-      try {
-        inputWs.setVolume(volume)
-      } catch {}
-    }
-  }, [inputWs, volume])
-
-  useEffect(() => {
-    if (similarityWs && typeof similarityWs.setVolume === 'function') {
-      try {
-        similarityWs.setVolume(volume)
-      } catch {}
-    }
-  }, [similarityWs, volume])
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
 
   // Get all track IDs from the playlist in order (queried track first, then similar tracks)
   const allTrackIds = useMemo(() => {
     if (!playlistData) return []
-    
-    const trackIds: string[] = []
-    
+
+    let tracks: Track[] = [];
+
     // Add queried track first if it exists
     if (playlistData.queried_track?.id) {
-      trackIds.push(playlistData.queried_track.id)
+      tracks.push(playlistData.queried_track);
     }
-    
+
     // Add similar tracks
     if (playlistData.similar_tracks?.length) {
-      trackIds.push(...playlistData.similar_tracks.map(track => track.id))
+      tracks = [...tracks, ...playlistData.similar_tracks];
     }
-    
-    return trackIds
-  }, [playlistData])
+
+    return tracks.map(el => el.id);
+  }, [playlistData, howlerController])
 
   // Get current track index in the playlist
   const currentTrackIndex = useMemo(() => {
     if (!currentTrackId) return -1
-    
+
     // If it's 'uploaded-local', it's not in the playlist (local upload)
     if (currentTrackId === 'uploaded-local') return -1
-    
+
     // Check if it's in the playlist (including queried track)
     const index = allTrackIds.indexOf(currentTrackId)
     return index !== -1 ? index : -1
@@ -75,12 +64,12 @@ export const usePlayerManager = () => {
   // Get current playing track data
   const currentPlayingTrack = useMemo(() => {
     if (!currentTrackId || !playlistData) return null
-    
+
     // Check if it's the queried track
     if (playlistData.queried_track?.id === currentTrackId) {
       return playlistData.queried_track
     }
-    
+
     // Check if it's a similar track
     return playlistData.similar_tracks?.find(track => track.id === currentTrackId) || null
   }, [currentTrackId, playlistData])
@@ -91,47 +80,20 @@ export const usePlayerManager = () => {
     if (!currentTrackId) {
       return allTrackIds.length > 0 ? allTrackIds[0] : null
     }
-    
+
     // If playing uploaded-local, move to first playlist track if available
     if (currentTrackId === 'uploaded-local') {
       return allTrackIds.length > 0 ? allTrackIds[0] : null
     }
-    
+
     // If playing a playlist track, get next track in playlist
     if (currentTrackIndex >= 0 && currentTrackIndex < allTrackIds.length - 1) {
       return allTrackIds[currentTrackIndex + 1]
     }
-    
+
     // No next track available
     return null
   }, [currentTrackId, currentTrackIndex, allTrackIds])
-
-  // Update MediaSession metadata when track changes
-  const updateMediaSessionMetadata = useCallback((trackId: string) => {
-    if ('mediaSession' in navigator && playlistData) {
-      let trackInfo = null;
-      
-      // Find track info from playlist data
-      if (trackId === 'uploaded-local' && playlistData.queried_track) {
-        trackInfo = playlistData.queried_track;
-      } else {
-        trackInfo = playlistData.similar_tracks?.find(track => track.id === trackId);
-      }
-      
-      if (trackInfo) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: trackInfo.title || 'Resomix Track',
-          artist: trackInfo.artist || 'Music Discovery',
-          album: 'Similarity Playlist',
-          artwork: [
-            { src: '/logo.png', sizes: '96x96', type: 'image/png' },
-            { src: '/logo.png', sizes: '128x128', type: 'image/png' },
-            { src: '/logo.png', sizes: '192x192', type: 'image/png' },
-          ]
-        });
-      }
-    }
-  }, [playlistData]);
 
   // BeMusic pattern: Synchronous track cueing with async loading
   const cueTrack = useCallback((trackId: string) => {
@@ -140,50 +102,37 @@ export const usePlayerManager = () => {
       console.warn(`Track ID ${trackId} not found in playlist`)
       return false
     }
-    
+
     // Immediate synchronous state change (preserves gesture)
     setCurrentTrack(trackId)
-    
-    // Update MediaSession metadata
-    updateMediaSessionMetadata(trackId);
-    
+
     console.log('[PlayerManager] Track cued immediately:', trackId)
     return true
-  }, [allTrackIds, setCurrentTrack, updateMediaSessionMetadata])
+  }, [allTrackIds, setCurrentTrack])
 
   // Start playing a specific track (synchronous)
   const startPlaying = useCallback((trackId: string) => {
     return cueTrack(trackId)
   }, [cueTrack])
 
-
-
   // Stop current playback
   const stopPlaying = useCallback(() => {
+    if (howlerController) {
+      howlerController.pause();
+    }
     setCurrentTrack(null)
-  }, [setCurrentTrack])
+  }, [setCurrentTrack, howlerController])
 
   // Play next track in playlist (synchronous)
   const playNext = useCallback(() => {
-    // Fetch the latest state values directly from the store to avoid stale closures
-    const { autoplay: latestAutoplay } = usePlayerStore.getState();
 
     const nextTrackId = getNextTrack();
 
     if (!nextTrackId) {
       // No next track available
-      // Only stop if autoplay is on (means we tried to advance but hit the end)
-      if (latestAutoplay) {
-        setCurrentTrack(null);
-        console.log('[PlayerManager] Playlist ended, stopping playback');
-      }
-      return false;
-    }
-
-    // Only advance to next track if autoplay is enabled
-    if (!latestAutoplay) {
-      setCurrentTrack(null); // Stop playback
-      console.log('[PlayerManager] Autoplay disabled, stopping at track end');
+      howlerController.pause();
+      setCurrentTrack(null);
+      console.log('[PlayerManager] Playlist ended, stopping playback');
       return false;
     }
 
@@ -191,9 +140,10 @@ export const usePlayerManager = () => {
     const success = cueTrack(nextTrackId);
     if (success) {
       console.log('[PlayerManager] Advanced to next track:', nextTrackId);
+      howlerController.load(nextTrackId, true);
     }
     return success;
-  }, [getNextTrack, setCurrentTrack, cueTrack])
+  }, [getNextTrack, setCurrentTrack, cueTrack, howlerController])
 
   // Play previous track in playlist
   const playPrevious = useCallback(() => {
@@ -201,16 +151,70 @@ export const usePlayerManager = () => {
       // No previous track available
       return false
     }
-    
+
     const previousTrackId = allTrackIds[currentTrackIndex - 1]
     setCurrentTrack(previousTrackId)
-    return true
+    const success = cueTrack(previousTrackId);
+    if (success) {
+      console.log('[PlayerManager] Advanced to previous track:', previousTrackId);
+      howlerController.load(previousTrackId, true);
+    }
+    return success;
   }, [currentTrackIndex, allTrackIds, setCurrentTrack])
+
+  // Listen for track ended events from Howler controller
+  useEffect(() => {
+    const onEnded = () => {
+      playNext(); // obeys autoplay flag inside playNext already
+    };
+
+    const onPrevious = () => {
+      playPrevious();
+    };
+
+    const onNext = () => {
+      playNext();
+    };
+
+    window.addEventListener('resomix:track-ended', onEnded);
+    window.addEventListener('resomix:previous-track', onPrevious);
+    window.addEventListener('resomix:next-track', onNext);
+
+    return () => {
+      window.removeEventListener('resomix:track-ended', onEnded);
+      window.removeEventListener('resomix:previous-track', onPrevious);
+      window.removeEventListener('resomix:next-track', onNext);
+    };
+  }, [playNext, playPrevious]);
+
+  // Smart preloading: preload next track when current is fully loaded
+  useEffect(() => {
+    if (!howlerController || !currentTrackId) return;
+
+    const checkAndPreload = () => {
+      if (howlerController.isLoaded) {
+        const nextTrackId = getNextTrack();
+        if (nextTrackId && nextTrackId !== 'uploaded-local') {
+          howlerController.preloadNext(nextTrackId);
+          loadPeaksData(nextTrackId);
+          console.log('[PlayerManager] Preloading next track:', nextTrackId);
+        }
+        clearInterval(interval);
+      }
+    };
+
+    // Check periodically if current track is loaded
+    const interval = setInterval(checkAndPreload, 1000);
+
+    return () => {
+      clearInterval(interval);
+    }
+  }, [howlerController, currentTrackId, autoplay, getNextTrack]);
 
   // Play first track in playlist
   const playFirst = useCallback(() => {
     if (allTrackIds.length === 0) return false
-    
+
     const firstTrackId = allTrackIds[0]
     setCurrentTrack(firstTrackId)
     return true
@@ -219,7 +223,7 @@ export const usePlayerManager = () => {
   // Play last track in playlist
   const playLast = useCallback(() => {
     if (allTrackIds.length === 0) return false
-    
+
     const lastTrackId = allTrackIds[allTrackIds.length - 1]
     setCurrentTrack(lastTrackId)
     return true
@@ -248,11 +252,17 @@ export const usePlayerManager = () => {
   // MediaSession API integration for notification controls
   useEffect(() => {
     const handleMediaSessionPreviousTrack = () => {
-      playPrevious();
+      if (howlerController) {
+        howlerController.pause();
+        playPrevious();
+      }
     };
 
     const handleMediaSessionNextTrack = () => {
-      playNext();
+      if (howlerController) {
+        howlerController.pause();
+        playNext();
+      }
     };
 
     // Listen for MediaSession events from AudioProvider
@@ -263,18 +273,18 @@ export const usePlayerManager = () => {
       window.removeEventListener('mediaSessionPreviousTrack', handleMediaSessionPreviousTrack);
       window.removeEventListener('mediaSessionNextTrack', handleMediaSessionNextTrack);
     };
-  }, [playPrevious, playNext]);
+  }, [playPrevious, playNext, howlerController]);
 
   // Get playlist statistics
   const playlistStats = useMemo(() => {
     if (!playlistData) return null
-    
+
     const totalTracks = allTrackIds.length
     const ratedTracks = Object.keys(trackRatings).length
-    const averageRating = ratedTracks > 0 
+    const averageRating = ratedTracks > 0
       ? Object.values(trackRatings).reduce((sum, rating) => sum + rating, 0) / ratedTracks
       : 0
-    
+
     return {
       totalTracks,
       ratedTracks,
@@ -297,17 +307,13 @@ export const usePlayerManager = () => {
     // Volume
     volume,
     setVolume,
-    
+
     // Similarity settings
     topSk,
     setTopSk,
-    
-    // WaveSurfer instances
-    inputWs,
-    similarityWs,
-    setInputWs,
-    setSimilarityWs,
-    
+
+    // Note: howlerController should be used directly via useHowlerController() in components
+
     // Playback control
     cueTrack,
     startPlaying,
@@ -316,15 +322,15 @@ export const usePlayerManager = () => {
     playPrevious,
     playFirst,
     playLast,
-    
+
     // Track utilities
     isTrackPlaying,
     getTrackRating,
     getNextTrack,
-    
+
     // Autoplay control
     toggleAutoplay,
-    
+
     // Store access (for advanced usage)
     setCurrentTrack
   }

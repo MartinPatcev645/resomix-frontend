@@ -2,11 +2,12 @@ import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage, TestTwo } from "@/pages/index.ts";
+import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage, TestTwo, PlayerPage } from "@/pages/index.ts";
 import { UploadLoader } from "@/components/index.ts";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
+
 // import DevMobileConsole from "@/DevMobileConsole.tsx";
 
 function UploadLanding() {
@@ -53,6 +54,7 @@ function App() {
         <Route path="/error" element={<InfoPage mode="error" />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/test-two" element={<TestTwo />} />
+        <Route path="/player" element={<PlayerPage />} />
         <Route path="*" element={<InfoPage mode="404" />} />
       </Routes>
     </>

@@ -1,26 +1,25 @@
 import React from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage } from "@resomix/hooks";
-import { usePlaylistStore } from "@resomix/stores";
+import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
-import { usePlayerManager } from "@resomix/hooks";
 import { BASE_BETA_URL } from "@resomix/config";
-
-// Remove local dummy data; use global store
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    const { currentTrackId, startPlaying, stopPlaying } = usePlayerManager();
+    const hlsController = useGlobalAudioController();
+    const currentTrackId = usePlayerStore(s => s.currentTrackId);
+    const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
     const handlePlayPause = (trackId: string) => {
-        if (currentTrackId === trackId) {
-            stopPlaying(); // Pause
+        if (currentTrackId === trackId && isPlaying) {
+            hlsController.stop();
         } else {
-            startPlaying(trackId); // Play this track, pause others
+            hlsController.load(trackId, true);
         }
     };
 
@@ -65,8 +64,8 @@ const PlaylistTable: React.FC = () => {
                             <IconComp
                                 className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)]"
                                 svg={<img
-                                    src={currentTrackId === track.id ? PauseSvg : PlaySvg}
-                                    alt={currentTrackId === track.id ? "Pause" : "Play"}
+                                    src={currentTrackId === track.id && isPlaying ? PauseSvg : PlaySvg}
+                                    alt={currentTrackId === track.id && isPlaying ? "Pause" : "Play"}
                                     className='w-[var(--px-10)] h-[var(--px-10)]'
                                 />}
                                 padding='py-[var(--px-3)] px-[var(--px-4)]'
@@ -93,7 +92,7 @@ const PlaylistTable: React.FC = () => {
                                 </div>
                                 {/* Create a bar here */}
                                 <div className="w-[var(--px-40)] h-[var(--px-4)] bg-transparent rounded-full overflow-hidden mt-[var(--px-3)] outline outline-white outline-dotted">
-                                    <div 
+                                    <div
                                         className="h-full bg-white rounded-full transition-all duration-300"
                                         style={{ width: `${track.score * 100}%` }}
                                     ></div>
@@ -136,10 +135,10 @@ const PlaylistTable: React.FC = () => {
                                 </Tooltip>
                             </div>
                         </div>
-                        {currentTrackId === track.id && (
+                        {currentTrackId === track.id && isPlaying && (
                             <SimilarityPlayer
                                 trackId={track.id}
-                                isPlaying={currentTrackId === track.id}
+                                isPlaying={currentTrackId === track.id && isPlaying}
                                 totalDuration={track.duration}
                             />
                         )}
