@@ -1,115 +1,117 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { BASE_LANDING_URL } from "@resomix/config";
 
 export default function PrivacyContent() {
+    const { t } = useTranslation('common');
     return (
         <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0">
             <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
 
                 <header className="mb-[var(--px-28)] text-center">
-                    <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica">PRIVACY POLICY</h1>
+                    <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica">{t('privacy.title')}</h1>
                     <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                        Your privacy matters to us. Learn how we handle your data with care.
+                        {t('privacy.subheading')}
                     </p>
                     <p className="mt-[var(--px-8)] text-[length:var(--px-10)] font-extralight opacity-80 font-helvetica tracking-[var(--px-1)]">
-                        Last updated: August 15, 2025
+                        {t('privacy.last_updated')}
                     </p>
                 </header>
 
                 <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
                     <div className="mb-[var(--px-24)]">
-                        <Link to={BASE_LANDING_URL} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</Link>
+                        <Link to={BASE_LANDING_URL} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica tracking-[var(--px-1)] hover:text-[var(--color-primary-hover)] transition-colors">← {t('general.back_to_home')}</Link>
                     </div>
 
                     <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                        At Resomix, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your personal information when you use our service.
+                        {t('privacy.description')}
                     </p>
 
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Information We Collect</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">
+                            {t('privacy.information_we_collect')}
+                        </h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            We collect the following types of information:
+                            {t('privacy.information_we_collect_1')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Audio files that you upload to our service
+                            {t('privacy.information_we_collect_2')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Feedback and survey responses you provide
+                            {t('privacy.information_we_collect_3')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Usage data and analytics about how you interact with our service
+                            {t('privacy.information_we_collect_4')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Technical information such as your IP address, browser type, and device information
+                            {t('privacy.information_we_collect_5')}
                         </p>
                     </section>
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">How We Use Your Information</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.how_we_use')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            We use your information to:
+                            {t('privacy.how_we_use_1')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Provide and improve our music recommendation services
+                            {t('privacy.how_we_use_2')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Analyze musical patterns and features in uploaded tracks
+                            {t('privacy.how_we_use_3')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Improve our recommendation algorithms
+                            {t('privacy.how_we_use_4')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Communicate with you about our services
+                            {t('privacy.how_we_use_5')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Monitor and analyze usage patterns and trends
+                            {t('privacy.how_we_use_6')}
                         </p>
                     </section>
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Data Retention</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.data_retention')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            We retain your uploaded audio files and associated data for as long as necessary to provide our services. You can request deletion of your data at any time by contacting us.
+                            {t('privacy.data_retention_1')}
                         </p>
                     </section>
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Data Security</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.data_security')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            We implement appropriate technical and organizational measures to protect your personal
-                            information from unauthorized access, disclosure, alteration, and destruction.
+                            {t('privacy.data_security_1')}
                         </p>
                     </section>
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Your Rights</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.your_rights')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            Depending on your location, you may have rights regarding your personal information, including:
+                            {t('privacy.your_rights_1')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Access to your personal information
+                            {t('privacy.your_rights_2')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Correction of inaccurate information
+                            {t('privacy.your_rights_3')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Deletion of your personal information
+                            {t('privacy.your_rights_4')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Object to or restrict processing of your information
+                            {t('privacy.your_rights_5')}
                         </p>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)] ml-[var(--px-20)]">
-                            Data portability
+                            {t('privacy.your_rights_6')}
                         </p>
                     </section>
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Changes to This Policy</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.changes_to_policy')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the
-                            new Privacy Policy on this page and updating the "Last updated" date.
+                            {t('privacy.changes_to_policy_1')}
                         </p>
                     </section>
                     <section className="flex flex-col gap-[var(--px-10)] mt-[var(--px-20)]">
-                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">Contact Us</h2>
+                        <h2 className="text-[length:var(--px-16)] font-semibold font-helvetica">{t('privacy.contact_us')}</h2>
                         <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica tracking-[var(--px-1)]">
-                            If you have any questions about this Privacy Policy, please contact us at
-                            <a href="mailto:privacy@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary-hover-hover)] transition-colors"> privacy@resomix.com</a>.
+                            {t('privacy.contact_us_1')}
+                            <a href="mailto:support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary-hover-hover)] transition-colors"> support@resomix.com</a>.
                         </p>
                     </section>
                 </div>

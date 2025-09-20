@@ -1,12 +1,14 @@
 import React from "react";
-import { IconButton, HoverFlow, ToggleButton, StatusMessage } from "@resomix/ui";
-import { formatDuration } from "@resomix/hooks";
+import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
+import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
 import ShareBlackSvg from "@/assets/icons/share_black.svg";
+import ExportSvg from "@/assets/icons/export.svg";
+import ExportBlackSvg from "@/assets/icons/export_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -21,6 +23,7 @@ const PlaylistHero: React.FC = () => {
   const [showRating, setShowRating] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
+  const [showExport, setShowExport] = React.useState(false);
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
@@ -28,7 +31,7 @@ const PlaylistHero: React.FC = () => {
   const { playlistData, isLoading, error } = usePlaylistStore();
   // const { uploadedUrl } = usePlayerStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
-
+  const { canExport, isExporting } = usePlaylistExport();
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -45,8 +48,20 @@ const PlaylistHero: React.FC = () => {
     setShowRating(false);
   };
 
+  const handleExportClose = () => {
+    setShowExport(false);
+  };
+
   const handleStatusClose = () => {
     setShowStatus(false);
+  };
+
+  const handleExportClick = () => {
+    if (!canExport) {
+      handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
+      return;
+    }
+    setShowExport(true);
   };
 
   return (
@@ -92,28 +107,45 @@ const PlaylistHero: React.FC = () => {
                 Generate track similarity
               </div>
               <div className="flex items-center gap-[var(--px-8)]">
-                <ToggleButton
-                  text="Autoplay"
-                  customWidth="min-w-[var(--px-120)]"
-                  isOn={autoplay}
-                  onToggle={setAutoplay}
-                />
-                <IconButton
-                  text="Rename"
-                  transparent={true}
-                  customWidth="min-w-[var(--px-100)]"
-                  onClick={() => setShowRename(true)}
-                  icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                  hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                />
-                <IconButton
-                  text="Share"
-                  transparent={true}
-                  customWidth="min-w-[var(--px-100)]"
-                  onClick={() => setShowShare(true)}
-                  icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                  hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                />
+                <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
+                  <ToggleButton
+                    text="Autoplay"
+                    customWidth="min-w-[var(--px-120)]"
+                    isOn={autoplay}
+                    onToggle={setAutoplay}
+                  />
+                </Tooltip>
+                <Tooltip message="Rename your Playlist">
+                  <IconButton
+                    text="Rename"
+                    transparent={true}
+                    customWidth="min-w-[var(--px-100)]"
+                    onClick={() => setShowRename(true)}
+                    icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                  />
+                </Tooltip>
+                <Tooltip message="Make Public and Generate Shareable Link">
+                  <IconButton
+                    text="Share"
+                    transparent={true}
+                    customWidth="min-w-[var(--px-100)]"
+                    onClick={() => setShowShare(true)}
+                    icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                  />
+                </Tooltip>
+                <Tooltip message="Export Playlist to TXT file">
+                  <IconButton
+                    text={isExporting ? "Exporting..." : "Export"}
+                    transparent={true}
+                    customWidth="min-w-[var(--px-100)]"
+                    onClick={handleExportClick}
+                    disabled={isExporting}
+                    icon={<img src={ExportSvg} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ExportBlackSvg} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                  />
+                </Tooltip>
               </div>
             </div>
             <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
@@ -174,7 +206,9 @@ const PlaylistHero: React.FC = () => {
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.label}</div>
-                      <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
+                      <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
+                        <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
+                      </Tooltip>
                     </div>
                   </div>
                   <div className="flex flex-col gap-[var(--px-10)]">
@@ -215,6 +249,11 @@ const PlaylistHero: React.FC = () => {
       <PlaylistRename
         isOpen={showRename}
         onClose={handleRenameClose}
+        onStatusChange={handleStatusChange}
+      />
+      <PlaylistExport
+        isOpen={showExport}
+        onClose={handleExportClose}
         onStatusChange={handleStatusChange}
       />
 

@@ -67,8 +67,9 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                         show={query.length > 0}
                                         results={results}
                                         width="w-[var(--px-300)] -mr-[var(--px-30)]"
-                                        truncateLength={24}
+                                        truncateLength={20}
                                         isLoading={isLoading}
+                                        isMobile={true}
                                         onSelect={onTrackSelect}
                                     />
                                 </div>

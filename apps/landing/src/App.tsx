@@ -57,6 +57,7 @@ function App() {
         <Route path="/terms" element={<InfoPage mode="terms" />} />
         <Route path="/privacy" element={<InfoPage mode="privacy" />} />
         <Route path="/contact" element={<InfoPage mode="contact" />} />
+        <Route path="/waitlist" element={<InfoPage mode="waitlist" />} />
         <Route path="/error" element={<InfoPage mode="error" />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="*" element={<InfoPage mode="404" />} />

@@ -87,7 +87,7 @@ const AboutFour: React.FC = () => {
                         We want to build<br />a better way to<br />discover and enjoy<br />music across genres
                     </div>
                     <div className="text-[length:var(--px-14)] font-helvetica leading-[var(--px-16)] tracking-[var(--px-1)] underline hover:cursor-pointer text-right w-full mt-[var(--px-10)]">
-                        Reach us anytime:<br />hello@resomix.com
+                        Reach us anytime:<br />support@resomix.com
                     </div>
                 </div>
             </div>

@@ -16,7 +16,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
-  const { setPlaylistResponse } = usePlaylistStore();
+  const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
 
   const { handleSelectTrack } = useTrackSimilarity();
@@ -25,9 +25,23 @@ export function UploadMobile() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (id) {
-      handleSelectTrack(id);
+      // First check cache before making API call
+      const cachedResponse = loadCachedResponse(id);
+      if (cachedResponse) {
+        // Found in cache, use cached data and navigate directly
+        setPlaylistResponse(cachedResponse);
+        const playlistId = cachedResponse.data?.playlist?.id || null;
+        if (playlistId) {
+          navigate(`/playlist?id=${playlistId}`);
+        } else {
+          navigate('/playlist');
+        }
+      } else {
+        // Not in cache, make API call
+        handleSelectTrack(id);
+      }
     }
-  }, [handleSelectTrack]);
+  }, [handleSelectTrack, loadCachedResponse, setPlaylistResponse, navigate]);
 
   React.useEffect(() => {
     if (response && response.success) {

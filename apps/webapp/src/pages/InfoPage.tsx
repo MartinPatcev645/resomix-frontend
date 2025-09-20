@@ -13,7 +13,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
 
   const navbar = (
     <>
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Navbar
           logo={<a href={BASE_BETA_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
           mode={mode}
@@ -22,7 +22,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
           customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
         />
       </div>
-      <div className="block md:hidden">
+      <div className="block lg:hidden">
         <MobileNavbar
           logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
           menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}

@@ -32,11 +32,11 @@ export const SideLines: React.FC<SideLinesProps> = ({ children, navbar, hero, mo
         </div>
         <div className="block lg:hidden">
             {/* Four lines around hero section to maintain design consistency */}
-            <div className="absolute left-0 top-[var(--px-24)] w-[var(--px-393)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+            <div className="absolute left-0 top-[var(--px-24)] w-full border-t border-slate-200 border-dotted pointer-events-none z-1">
             </div>
             {/* Display bottom line only on About and Upload pages */}
             {(mode === "about" || mode === "upload") && (
-                <div className="absolute left-0 top-[var(--px-716)] w-[var(--px-393)] border-t border-slate-200 border-dotted pointer-events-none z-1">
+                <div className="absolute left-0 top-[var(--px-716)] w-full border-t border-slate-200 border-dotted pointer-events-none z-1">
                 </div>
             )}
 

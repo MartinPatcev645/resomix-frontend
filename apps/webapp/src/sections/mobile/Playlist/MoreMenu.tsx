@@ -5,14 +5,14 @@ import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
-import { formatDuration, formatPercentage } from "@resomix/hooks";
+import { formatDuration, formatPercentage, usePlaylistExport } from "@resomix/hooks";
 
 interface MoreMenuProps {
     onClose?: () => void;
     trackId?: string;
     /**
      * Marks this track as the original input (reference) track.  
-     * When true we hide actions that don’t make sense for the input track (e.g. “Start Sonic Discovery on this Track”).
+     * When true we hide actions that don't make sense for the input track (e.g. "Start Sonic Discovery on this Track").
      */
     isInput?: boolean;
     name?: string;
@@ -23,6 +23,8 @@ interface MoreMenuProps {
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
+    const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
+    const [exportButtonText, setExportButtonText] = React.useState("Export Playlist");
 
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
@@ -35,6 +37,24 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
         } catch (error) {
             console.error('Failed to rate track:', error);
             // You could add an error notification here if needed
+        }
+    };
+
+    const handleExportPlaylist = async () => {
+        if (!canExport) return;
+
+        try {
+            const result = await exportAndDownloadPlaylist();
+            
+            if (result.success) {
+                // Change button text and revert after 2 seconds
+                setExportButtonText("Downloaded!");
+                setTimeout(() => {
+                    setExportButtonText("Export Playlist");
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Failed to export playlist:', error);
         }
     };
 
@@ -170,6 +190,12 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
                                 window.location.href = `${BASE_BETA_URL}/?id=${trackId}`;
                             }} />
+                        </div>
+                        )}
+                        {/* Hide Export button if this is not the input/reference track */}
+                        {isInput && (
+                        <div className="w-full">
+                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} />
                         </div>
                         )}
                         <div className="w-full">

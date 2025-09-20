@@ -20,6 +20,7 @@ export interface ApiConfig {
     TIDAL_AUTH_TOKEN: string;
     TIDAL_TRANSFER: string;
     PLAYLIST_SIMILARITY_HLS: string;
+    WAITLIST: string;
   };
 }
 
@@ -73,6 +74,7 @@ export const API_CONFIG: ApiConfig = {
     TIDAL_AUTH_TOKEN: "/tidal/auth/token", // no trailing slash
     TIDAL_TRANSFER: "/tidal/transfer-playlist/",
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
+    WAITLIST: "/waitlist/",
   },
 };
 

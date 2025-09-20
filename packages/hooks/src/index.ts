@@ -25,4 +25,5 @@ export type { WaveformTheme } from "./Waveform/useWaveform";
 export * from './meta/useMetatags'
 export * from './howler_peaks/useHowler2';
 export * from './howler_peaks/usePeaks2';
-
+export * from './Playlist/usePlaylistExport';
+export * from './useWaitlist';
