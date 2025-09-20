@@ -6,7 +6,7 @@ import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
 import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
-import { usePlaylistLoader } from "@resomix/hooks";
+import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
 import { StatusMessage } from "@resomix/ui";
 
 export function PlaylistMobile() {
@@ -67,77 +67,79 @@ export function PlaylistMobile() {
   };
 
   return (
-    isLoading ? (
-      <StatusMessage
-        isOpen={true}
-        status="loading"
-        message="Loading playlist..."
-        onClose={() => {}}
-      />
-    ) : expired ? (
-      <StatusMessage 
-        isOpen={true}
-        onClose={handleExpiredClose}
-        status="error"
-        message="Playlist expired. Redirecting..."
-      />
-    ) : (
-      <>
-        {/* Content layer */}
-        <div
-          style={{
-            margin: "0 auto",
-            color: "var(--color-text-secondary)",
-            position: "relative",
-            zIndex: 30,
-            maxWidth: "1023px",
-            backgroundColor: 'var(--color-primary-background)',
-            overflowX: "hidden"
-          }}
-        >
-
-          <SideLines
-            navbar={
-              <MobileNavbar
-                logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-                menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
-                customClass="flex justify-between items-center align-center z-50 relative"
-              />
-            }
-            hero={<PlaylistHero onMoreClick={handleMoreMenuOpen} />}
-            mode="playlist"
+    <AudioProvider>
+      {isLoading ? (
+        <StatusMessage
+          isOpen={true}
+          status="loading"
+          message="Loading playlist..."
+          onClose={() => { }}
+        />
+      ) : expired ? (
+        <StatusMessage
+          isOpen={true}
+          onClose={handleExpiredClose}
+          status="error"
+          message="Playlist expired. Redirecting..."
+        />
+      ) : (
+        <>
+          {/* Content layer */}
+          <div
+            style={{
+              margin: "0 auto",
+              color: "var(--color-text-secondary)",
+              position: "relative",
+              zIndex: 30,
+              maxWidth: "1023px",
+              backgroundColor: 'var(--color-primary-background)',
+              overflowX: "hidden"
+            }}
           >
-            {/* Content Table */}
-            <div className="relative z-20">
-              <PlaylistTable onMoreClick={handleMoreMenuOpen} />
-              <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
+
+            <SideLines
+              navbar={
+                <MobileNavbar
+                  logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+                  menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
+                  customClass="flex justify-between items-center align-center z-50 relative"
+                />
+              }
+              hero={<PlaylistHero onMoreClick={handleMoreMenuOpen} />}
+              mode="playlist"
+            >
+              {/* Content Table */}
+              <div className="relative z-20">
+                <PlaylistTable onMoreClick={handleMoreMenuOpen} />
+                <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
+              </div>
+            </SideLines>
+
+          </div>
+
+          {/* Menu Overlay */}
+          {isMenuOpen && (
+            <div className="fixed inset-0 z-[100]">
+              <MenuPage onClose={() => setIsMenuOpen(false)} />
             </div>
-          </SideLines>
+          )}
 
-        </div>
-
-        {/* Menu Overlay */}
-        {isMenuOpen && (
-          <div className="fixed inset-0 z-[100]">
-            <MenuPage onClose={() => setIsMenuOpen(false)} />
-          </div>
-        )}
-
-        {/* More Menu Overlay */}
-        {showMoreMenu && (
-          <div className="fixed inset-0 z-[100]">
-            <MoreMenu
-              onClose={handleMoreMenuClose}
-              trackId={selectedTrack?.id}
-              name={selectedTrack?.name}
-              label={selectedTrack?.label}
-              duration={selectedTrack?.duration}
-              score={selectedTrack?.score ?? undefined}
-              isInput={selectedTrack?.isInput || false}
-            />
-          </div>
-        )}
-      </>
-    )
+          {/* More Menu Overlay */}
+          {showMoreMenu && (
+            <div className="fixed inset-0 z-[100]">
+              <MoreMenu
+                onClose={handleMoreMenuClose}
+                trackId={selectedTrack?.id}
+                name={selectedTrack?.name}
+                label={selectedTrack?.label}
+                duration={selectedTrack?.duration}
+                score={selectedTrack?.score ?? undefined}
+                isInput={selectedTrack?.isInput || false}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </AudioProvider>
   );
 }

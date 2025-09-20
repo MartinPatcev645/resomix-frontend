@@ -1,6 +1,6 @@
 // PlayerPage.tsx
 import { useEffect, useRef, useState } from 'react';
-import { useHowler2, AudioProvider, usePeaks2 } from '@resomix/hooks';
+import { useHowler2, usePeaks2 } from '@resomix/hooks';
 
 const INPUT_ID = '67adb0d5799206f8d65102a8';
 const SIM_ID = '67ad9cec799206f8d64acdf1';
@@ -125,65 +125,64 @@ function PlayerUnit({
   };
 
   return (
-    <AudioProvider>
-      <div className="w-full max-w-xl rounded-xl border border-gray-700 bg-[#111] p-4 text-white">
-        <h3 className="mb-3 text-lg font-semibold">{label}</h3>
 
-        {/* Waveform container */}
+    <div className="w-full max-w-xl rounded-xl border border-gray-700 bg-[#111] p-4 text-white">
+      <h3 className="mb-3 text-lg font-semibold">{label}</h3>
+
+      {/* Waveform container */}
+      <div
+        ref={overviewRef}
+        className="relative h-20 w-full overflow-hidden  peaks-container"
+      >
+        {/* SoundCloud-ish progress tint overlay */}
         <div
-          ref={overviewRef}
-          className="relative h-20 w-full overflow-hidden  peaks-container"
+          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          style={{
+            width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%',
+          }}
+        />
+      </div>
+
+      {/* Loading & errors for waveform */}
+      {wfLoading && <div className="mt-2 text-sm/relaxed text-white/70">Loading waveform…</div>}
+      {wfError && <div className="mt-2 text-sm/relaxed text-red-400">Waveform error: {wfError}</div>}
+
+      {/* Controls */}
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          onClick={() => handleSeek(-10)}
+          className="px-3 py-1 bg-gray-600 rounded"
         >
-          {/* SoundCloud-ish progress tint overlay */}
-          <div
-            className="pointer-events-none absolute inset-0 mix-blend-screen"
-            style={{
-              width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%',
-            }}
-          />
-        </div>
-
-        {/* Loading & errors for waveform */}
-        {wfLoading && <div className="mt-2 text-sm/relaxed text-white/70">Loading waveform…</div>}
-        {wfError && <div className="mt-2 text-sm/relaxed text-red-400">Waveform error: {wfError}</div>}
-
-        {/* Controls */}
-        <div className="mt-3 flex items-center gap-3">
+          -10s
+        </button>
+        {!isPlaying ? (
           <button
-            onClick={() => handleSeek(-10)}
-            className="px-3 py-1 bg-gray-600 rounded"
+            className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={onPlay}
+            disabled={!isLoaded}
           >
-            -10s
+            Play
           </button>
-          {!isPlaying ? (
-            <button
-              className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={onPlay}
-              disabled={!isLoaded}
-            >
-              Play
-            </button>
-          ) : (
-            <button
-              className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black"
-              onClick={onPause}
-            >
-              Pause
-            </button>
-          )}
+        ) : (
           <button
-            onClick={() => handleSeek(10)}
-            className="px-3 py-1 bg-gray-600 rounded"
+            className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black"
+            onClick={onPause}
           >
-            +10s
+            Pause
           </button>
+        )}
+        <button
+          onClick={() => handleSeek(10)}
+          className="px-3 py-1 bg-gray-600 rounded"
+        >
+          +10s
+        </button>
 
-          <div className="text-sm tabular-nums text-white/90">
-            {fmt(currentTime)} / {fmt(duration)}
-          </div>
+        <div className="text-sm tabular-nums text-white/90">
+          {fmt(currentTime)} / {fmt(duration)}
         </div>
       </div>
-    </AudioProvider>
+    </div>
   );
 }
 
