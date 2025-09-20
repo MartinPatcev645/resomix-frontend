@@ -10,7 +10,9 @@ const UploadLoader: React.FC = () => {
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
     const [usedMessages, setUsedMessages] = useState<Set<number>>(new Set([0])); // Start with first message used
     const [hideProgressBar, setHideProgressBar] = useState(false);
-    
+
+    // Speed multiplier for all CodeTyping animations (1 = normal speed, 0.6 = slower, 1.5 = faster)
+    const animationSpeed = 0.6;
 
     const messages = [
         "The system is reading the shape, structure, and spectral flow...",
@@ -91,15 +93,15 @@ const UploadLoader: React.FC = () => {
                     <div className="text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)]">
                         <CodeTyping
                             text="[SCAN_01] → Analyzing rhythm and tone…<br />[SCAN_02] → Tracing harmonic intent…<br />[SCAN_03] → Reading the spectral flow…<br />[SCAN_04] → Listening... Matching in progress..."
-                            speed={100}
-                            delay={1000}
+                            speed={Math.round(100 * animationSpeed)}
+                            delay={Math.round(1000 / animationSpeed)}
                             multiline={true}
                         />
                     </div>
                     <div className="text-right text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)]">
                         <CodeTyping
                             text=">> WAVE: Parsed<br />>>"
-                            speed={100}
+                            speed={Math.round(100 * animationSpeed)}
                             multiline={true}
                         />
                     </div>
@@ -109,14 +111,14 @@ const UploadLoader: React.FC = () => {
                     <div className="text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)]">
                         <CodeTyping
                             text=">> CLSTR_ID: #e24x7"
-                            speed={100}
-                            delay={800}
+                            speed={Math.round(100 * animationSpeed)}
+                            delay={Math.round(800 / animationSpeed)}
                         />
                     </div>
                     <div className="text-right text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)]">
                         <CodeTyping
                             text=">> WAVE: Parsed<br />>>"
-                            speed={100}
+                            speed={Math.round(100 * animationSpeed)}
                             multiline={true}
                         />
                     </div>
@@ -126,23 +128,23 @@ const UploadLoader: React.FC = () => {
                         <img src={LoadingBubblesSvg} alt="Loading Bubbles" className="w-[var(--px-90)] h-[var(--px-9)]" />
                         <CodeTyping
                             text="[SCAN_05] → Mapping sonic DNA…<br />[SCAN_06] → Decoding musical patterns…<br />[SCAN_07] → Scanning frequency fingerprints…<br />[FINAL] → Finalizing playlist blueprint…"
-                            speed={100}
-                            delay={5000}
+                            speed={Math.round(100 * animationSpeed)}
+                            delay={Math.round(5000 / animationSpeed)}
                             multiline={true}
                         />
                     </div>
                     <div className="text-center mx-auto lg:mx-0 max-w-[var(--px-280)] lg:max-w-none text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-1)] mt-[var(--px-40)]">
                         <CodeTyping
                             text={messages[currentMessageIndex]}
-                            speed={100}
+                            speed={Math.round(100 * animationSpeed)}
                             key={currentMessageIndex}
                         />
                     </div>
                     <div className="hidden lg:block text-right text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)] min-w-[var(--px-88)] mt-[var(--px-40)]">
                         <CodeTyping
                             text=">> CLSTR_ID: #e24x7"
-                            speed={100}
-                            delay={800}
+                            speed={Math.round(100 * animationSpeed)}
+                            delay={Math.round(800 / animationSpeed)}
                         />
                     </div>
                 </div>
