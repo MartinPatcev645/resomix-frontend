@@ -19,7 +19,7 @@ from fastapi import status, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-
+import time
 from app.services.playlist_service import PlaylistService
 from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
@@ -46,7 +46,6 @@ class PlaylistController:
         Returns:
             JSON response with operation result
         """
-        import time
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
@@ -183,7 +182,6 @@ class PlaylistController:
         Returns:
             JSON response with operation result
         """
-        import time
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
@@ -263,7 +261,6 @@ class PlaylistController:
         Returns:
             JSON response with similarity data
         """
-        import time
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
@@ -343,7 +340,6 @@ class PlaylistController:
         Get playlist as HLS M3U8 format.
         Only returns data for public playlists.
         """
-        import time
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         

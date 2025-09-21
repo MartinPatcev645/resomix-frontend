@@ -20,7 +20,7 @@ from typing import Optional
 from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import time
 from app.core.config import settings
 from app.models.constants import TrackType
 from app.services.monthly_pipeline_service import MonthlyPipelineService
@@ -28,8 +28,8 @@ from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
-from app.services.logging_service import LoggingService
-from app.utils.mix_filter import validate_track_for_mixes
+from app.services.logging_service import Loggi
+from app.utils.mix_filter import validate_track_for_mixesfor_mixes
 
 
 class MonthlyPipelineController:
@@ -69,12 +69,16 @@ class MonthlyPipelineController:
         Returns:
             JSON response with processing status
         """
+        start_tme = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+        
         # Log start of monthly pipeline processing
+        duration_ms = (time.time() - start_time) * 1000
         self.logging_service.log_upload_operation(
             db=db,
             operation="monthly_pipeline_start",
             filename=file.filename,
+            duration_ms=duration_ms,
             file_size=file.size,
             correlation_id=correlation_id,
             metadata={"path": path}
@@ -95,10 +99,12 @@ class MonthlyPipelineController:
                 
                 if count > 0:
                     # Log duplicate track detection
+                    duration_ms = (time.time() - start_time) * 1000
                     self.logging_service.log_system_event(
                         db=db,
                         event="monthly_pipeline_duplicate",
                         level="INFO",
+                        duration_ms=duration_ms,
                         message=f"Track already exists with path: {path}",
                         metadata={"existing_tracks": count}
                     )
@@ -123,10 +129,12 @@ class MonthlyPipelineController:
         # File Size Check using settings
         if file.size > settings.max_file_size:
             # Log file size validation failure
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_upload_operation(
                 db=db,
                 operation="monthly_pipeline_failed",
                 filename=file.filename,
+                duration_ms=duration_ms,
                 status="error",
                 error_message="File too large",
                 correlation_id=correlation_id
@@ -142,10 +150,12 @@ class MonthlyPipelineController:
         # Check if the file is empty
         if file.size == 0:
             # Log empty file failure
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_upload_operation(
                 db=db,
                 operation="monthly_pipeline_failed",
                 filename=file.filename,
+                duration_ms=duration_ms,
                 status="error",
                 error_message="Empty file provided",
                 correlation_id=correlation_id
@@ -172,9 +182,11 @@ class MonthlyPipelineController:
                 is_valid_audio = self.audio_service.validate_audio_format(audio_bytes, original_filename)
                 if not is_valid_audio:
                     # Log invalid audio
+                    duration_ms = (time.time() - start_time) * 1000
                     self.logging_service.log_upload_operation(
                         db=db,
                         operation="monthly_pipeline_failed",
+                        duration_ms=duration_ms,
                         filename=file.filename,
                         status="error",
                         error_message="Invalid audio format",
@@ -200,9 +212,11 @@ class MonthlyPipelineController:
                 
                 if not mix_filter_result.is_valid:
                     # Log mix filter rejection
+                    duration_ms = (time.time() - start_time) * 1000
                     self.logging_service.log_upload_operation(
                         db=db,
                         operation="monthly_pipeline_failed",
+                        duration_ms=duration_ms,
                         filename=file.filename,
                         status="error",
                         error_message=f"Mix filter rejection: {mix_filter_result.reason}",
@@ -254,10 +268,12 @@ class MonthlyPipelineController:
                 )
                 if "error" in metadata:
                     # Log metadata extraction failure
+                    duration_ms = (time.time() - start_time) * 1000
                     self.logging_service.log_upload_operation(
                         db=db,
                         operation="monthly_pipeline_failed",
                         filename=file.filename,
+                        duration_ms=duration_ms,
                         status="error",
                         error_message=f"Metadata extraction failed: {metadata['error']}",
                         correlation_id=correlation_id
@@ -293,10 +309,12 @@ class MonthlyPipelineController:
             
             if not embedding_result.get("success", False):
                 # Log embedding failure
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_upload_operation(
                     db=db,
                     operation="monthly_pipeline_failed",
                     filename=file.filename,
+                    duration_ms=duration_ms,
                     status="error",
                     error_message=embedding_result.get("error", "embedding preview failed"),
                     correlation_id=correlation_id
@@ -328,9 +346,11 @@ class MonthlyPipelineController:
             
             if not upload_result.get("success", False):
                 # Log DB storage failure
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_upload_operation(
                     db=db,
                     operation="monthly_pipeline_failed",
+                    duration_ms=duration_ms,
                     filename=file.filename,
                     status="error",
                     error_message=f"DB store failed: {upload_result.get('error')}",
@@ -345,10 +365,12 @@ class MonthlyPipelineController:
                 )
             
             # Log successful completion
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_upload_operation(
                 db=db,
                 operation="monthly_pipeline_success",
                 filename=file.filename,
+                duration_ms=duration_ms,
                 file_size=file.size,
                 status="success",
                 correlation_id=correlation_id,

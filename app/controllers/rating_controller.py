@@ -19,7 +19,7 @@ from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
-
+import time
 from app.services.rating_service import RatingService
 from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
@@ -38,6 +38,7 @@ class RatingController:
     # Track Rating Endpoints
     async def rate_track(self, db: AsyncSession, request: Request, request_data: TrackRatingRequest) -> JSONResponse:
         """Rate a track endpoint handler."""
+        start_time = time.time()
         try:
             correlation_id = self.logging_service.generate_correlation_id()
             
@@ -51,10 +52,12 @@ class RatingController:
             
             if result["success"]:
                 # log success
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_user_action(
                     db=db,
                     action="rate_track_success",
                     message="Track rated",
+                    duration_ms=duration_ms,
                     correlation_id=correlation_id,
                     track_id=request_data.track_id,
                     playlist_id=request_data.playlist_id,
@@ -65,10 +68,12 @@ class RatingController:
                     content=result
                 )
             else:
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_user_action(
                     db=db,
                     action="rate_track_failed",
                     message=result.get("error"),
+                    duration_ms=duration_ms,
                     correlation_id=correlation_id,
                     track_id=request_data.track_id,
                     playlist_id=request_data.playlist_id,
@@ -82,9 +87,11 @@ class RatingController:
                 
         except ValueError as e:
             # Handle Pydantic validation errors
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_user_action(
                 db=db,
                 action="rate_track_validation_error",
+                duration_ms=duration_ms,
                 message=str(e),
                 metadata={},
                 correlation_id=self.logging_service.generate_correlation_id()
@@ -98,8 +105,10 @@ class RatingController:
                 content=error_response
             )
         except ValidationError as e:
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_user_action(
                 db=db,
+                duration_ms=duration_ms,
                 action="rate_track_validation_error",
                 message=str(e),
                 metadata={},
@@ -114,7 +123,8 @@ class RatingController:
                 content=error_response
             )
         except Exception as e:
-            self.logging_service.log_error(db=db, error=e, context="rate_track_controller")
+            duration_ms = (time.time() - start_time) * 1000
+            self.logging_service.log_error(db=db, error=e, context="rate_track_controller", duration_ms=duration_ms)
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while processing the rating"
@@ -126,24 +136,50 @@ class RatingController:
     
     async def get_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str) -> JSONResponse:
         """Get track rating endpoint handler."""
+        start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             
             result = await self.rating_service.get_track_rating(db, track_id, playlist_id, user_id)
             
             if result["success"]:
+                duration_ms = (time.time() - start_time) * 1000
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_track_rating_success",
+                    message="Track rating retrieved",
+                    duration_ms=duration_ms,
+                    status_code=200,
+                    correlation_id=correlation_id,
+                    track_id=track_id,
+                    playlist_id=playlist_id,
+                    metadata={"rating": result.get("rating")}
+                )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
                 )
             else:
+                duration_ms = (time.time() - start_time) * 1000
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_track_rating_failed",
+                    message=result.get("error"),
+                    duration_ms=duration_ms,
+                    status_code=404,
+                    correlation_id=correlation_id,
+                    track_id=track_id,
+                    playlist_id=playlist_id,
+                    metadata={"rating": result.get("rating")}
+                )
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=result
                 )
                 
         except Exception as e:
-            self.logging_service.log_error(db=db, error=e, context="get_track_rating", correlation_id=correlation_id)
+            duration_ms = (time.time() - start_time) * 1000
+            self.logging_service.log_error(db=db, error=e, context="get_track_rating", correlation_id=correlation_id, duration_ms=duration_ms)
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while retrieving the rating"
@@ -155,17 +191,42 @@ class RatingController:
     
     async def delete_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str) -> JSONResponse:
         """Delete track rating endpoint handler."""
+        start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             
             result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, user_id)
             
             if result["success"]:
+                duration_ms = (time.time() - start_time) * 1000
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="delete_track_rating_success",
+                    message="Track rating deleted",
+                    duration_ms=duration_ms,
+                    status_code=200,
+                    correlation_id=correlation_id,
+                    track_id=track_id,
+                    playlist_id=playlist_id,
+                    metadata={"rating": result.get("rating")}
+                )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
                 )
             else:
+                duration_ms = (time.time() - start_time) * 1000
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="delete_track_rating_failed",
+                    message=result.get("error"),
+                    duration_ms=duration_ms,
+                    status_code=404,
+                    correlation_id=correlation_id,
+                    track_id=track_id,
+                    playlist_id=playlist_id,
+                    metadata={"rating": result.get("rating")}
+                )
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=result

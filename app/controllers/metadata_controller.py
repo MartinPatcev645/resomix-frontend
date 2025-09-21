@@ -20,7 +20,7 @@ from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import time
 from app.services.metadata_service import MetadataService
 from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
@@ -36,7 +36,7 @@ class MetadataController:
         """
         Extracts and returns metadata from an uploaded audio file using Mutagen.
         """
-        # Generate correlation ID for request tracking
+        start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
@@ -44,10 +44,12 @@ class MetadataController:
             content = await file.read()
             if len(content) == 0:
                 # Log validation error
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_upload_operation(
                     db=db,
                     operation="validation_failed",
                     filename=file.filename,
+                    duration_ms=duration_ms,
                     status="error",
                     error_message="Empty file provided",
                     correlation_id=correlation_id
@@ -67,9 +69,11 @@ class MetadataController:
                 file_ext = file.filename.lower().split('.')[-1] if '.' in file.filename else ''
                 if file_ext and f'.{file_ext}' not in valid_extensions:
                     # Log unsupported format error
+                    duration_ms = (time.time() - start_time) * 1000
                     self.logging_service.log_upload_operation(
                         db=db,
                         operation="validation_failed",
+                        duration_ms=duration_ms,
                         filename=file.filename,
                         status="error",
                         error_message=f"Unsupported file format: .{file_ext}",
@@ -87,10 +91,12 @@ class MetadataController:
             # Check if metadata extraction failed or found no valid audio
             if "error" in extracted_meta:
                 # Log metadata extraction error
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_upload_operation(
                     db=db,
                     operation="metadata_extract_failed",
                     filename=file.filename,
+                    duration_ms=duration_ms,
                     status="error",
                     error_message=extracted_meta["error"],
                     correlation_id=correlation_id
@@ -104,10 +110,12 @@ class MetadataController:
             # Check if the file was processed but no valid audio metadata was found
             if "info" in extracted_meta and extracted_meta.get("info") == "No tags found or unsupported format.":
                 # Log invalid audio file error
+                duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log_upload_operation(
                     db=db,
                     operation="invalid_audio_file",
                     filename=file.filename,
+                    duration_ms=duration_ms,
                     status="error",
                     error_message="File does not appear to be a valid audio file",
                     correlation_id=correlation_id
@@ -119,9 +127,11 @@ class MetadataController:
                 )
             
             # Log successful metadata extraction (ONLY the result)
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_upload_operation(
                 db=db,
                 operation="metadata_extract_success",
+                duration_ms=duration_ms,
                 filename=file.filename,
                 file_size=len(content),
                 status="success",
@@ -139,11 +149,13 @@ class MetadataController:
 
         except Exception as e:
             # Log the error with full context
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_error(
                 db=db,
                 error=e,
                 context="metadata extraction",
                 correlation_id=correlation_id,
+                duration_ms=duration_ms,
                 request=request,
                 metadata={
                     "filename": file.filename,

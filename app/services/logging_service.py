@@ -42,383 +42,240 @@ class LoggingService:
         """Generate a unique correlation ID for request tracking"""
         return str(uuid.uuid4())
     
-    # --- Request Logging ---
-    
-    def log_request(
+    def log(
         self,
-        db: Session,
-        request: Request,
-        response_status: int,
-        duration_ms: float,
-        response_size: int = None,
-        correlation_id: str = None,
-        metadata: Dict[str, Any] = None
-    ) -> SystemLog:
-        """
-        Log an HTTP request with comprehensive details
-        
-        Args:
-            db: Database session
-            request: FastAPI Request object
-            response_status: HTTP response status code
-            duration_ms: Request processing time in milliseconds
-            response_size: Response size in bytes
-            correlation_id: Optional correlation ID for request tracking
-            metadata: Additional metadata to store
-            
-        Returns:
-            Created SystemLog instance
-        """
-        try:
-            # Get system metrics
-            metrics = snapshot()
-            
-            # Extract request details
-            client_ip = self._get_client_ip(request)
-            user_agent = request.headers.get("user-agent", "")
-            referer = request.headers.get("referer", "")
-            
-            # Parse query parameters
-            query_params = dict(request.query_params) if request.query_params else None
-            
-            log_data = {
-                'correlation_id': correlation_id,
-                'method': request.method,
-                'endpoint': str(request.url.path),
-                'path': str(request.url),
-                'query_params': query_params,
-                'status_code': response_status,
-                'response_size': response_size,
-                'duration_ms': duration_ms,
-                'level': self._get_log_level_from_status(response_status),
-                'category': 'REQUEST',
-                'action': f"{request.method}_{request.url.path.replace('/', '_').strip('_')}",
-                'message': f"{request.method} {request.url.path} - {response_status} ({duration_ms:.1f}ms)",
-                'client_ip': client_ip,
-                'user_agent': user_agent,
-                'referer': referer,
-                'cpu_percent': metrics.get('cpu_percent'),
-                'memory_percent': metrics.get('mem_percent'),
-                'log_metadata': {
-                    **(metadata or {}),
-                    'process_cpu': metrics.get('proc_cpu_percent'),
-                    'process_rss': metrics.get('proc_rss'),
-                    'net_sent': metrics.get('net_bytes_sent'),
-                    'net_recv': metrics.get('net_bytes_recv')
-                }
-            }
-            
-            return self.log_repository.create_log(db, **log_data)
-            
-        except Exception as e:
-            logger.error(f"Failed to log request: {e}")
-            # Don't re-raise to avoid breaking the request flow
-            return None
-    
-    # --- Error Logging ---
-    
-    def log_error(
-        self,
-        db: AsyncSession,
-        error: Exception,
-        context: str = None,
-        level: str = "ERROR",
-        correlation_id: str = None,
-        request: Request = None,
-        track_id: int = None,
-        playlist_id: int = None,
-        album_id: int = None,
-        artist_id: int = None,
-        metadata: Dict[str, Any] = None
-    ) -> None:
-        """
-        Log an error with full context and stack trace
-        
-        Args:
-            db: Database session (async)
-            error: Exception that occurred
-            context: Additional context about where the error occurred
-            level: Log level (ERROR or CRITICAL)
-            correlation_id: Request correlation ID
-            request: FastAPI Request object if available
-            track_id: Related track ID
-            playlist_id: Related playlist ID
-            album_id: Related album ID
-            artist_id: Related artist ID
-            metadata: Additional metadata
-        """
-        try:
-            error_message = str(error)
-            stack_trace = traceback.format_exc()
-            
-            # Build context message
-            full_message = error_message
-            if context:
-                full_message = f"{context}: {error_message}"
-            
-            log_data = {
-                'correlation_id': correlation_id,
-                'level': level,
-                'category': 'ERROR',
-                'action': 'EXCEPTION',
-                'message': full_message,
-                'stack_trace': stack_trace,
-                'track_id': track_id,
-                'playlist_id': playlist_id,
-                'album_id': album_id,
-                'artist_id': artist_id,
-                'log_metadata': {
-                    'error_type': type(error).__name__,
-                    'context': context,
-                    **(metadata or {})
-                }
-            }
-            
-            # Add request details if available
-            if request:
-                log_data.update({
-                    'method': request.method,
-                    'endpoint': str(request.url.path),
-                    'path': str(request.url),
-                    'client_ip': self._get_client_ip(request),
-                    'user_agent': request.headers.get("user-agent", "")
-                })
-            
-            # Create async task for logging
-            import asyncio
-            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
-            
-        except Exception as e:
-            logger.error(f"Failed to log error: {e}")
-    
-    # --- User Action Logging ---
-    
-    def log_user_action(
-        self,
-        db: AsyncSession,
-        action: str,
+        db: Session = None,
+        async_db: AsyncSession = None,
+        # Core logging fields
+        level: str = "INFO",
+        category: str = "GENERAL",
+        action: str = None,
         message: str = None,
         correlation_id: str = None,
+        # Request fields
         request: Request = None,
+        method: str = None,
+        endpoint: str = None,
+        path: str = None,
+        query_params: Dict = None,
+        client_ip: str = None,
+        user_agent: str = None,
+        referer: str = None,
+        # Response fields
         status_code: int = None,
+        response_size: int = None,
+        duration_ms: float = None,
+        # Resource IDs
         track_id: int = None,
         playlist_id: int = None,
         album_id: int = None,
         artist_id: int = None,
-        duration_ms: float = None,
-        metadata: Dict[str, Any] = None
-    ) -> None:
+        # Error fields
+        error: Exception = None,
+        stack_trace: str = None,
+        context: str = None,
+        # System metrics (will be auto-collected if request is provided)
+        cpu_percent: float = None,
+        memory_percent: float = None,
+        # Custom metadata
+        metadata: Dict[str, Any] = None,
+        # File/Upload fields
+        filename: str = None,
+        file_size: int = None,
+        # Transfer fields
+        platform: str = None,
+        operation: str = None,
+        transfer_status: str = None,
+        transfer_details: Dict[str, Any] = None
+    ) -> SystemLog:
         """
-        Log a user action for audit trail
+        Universal logging function that handles all types of logging scenarios.
         
         Args:
-            db: Database session (async)
-            action: Action performed (e.g., 'upload_track', 'create_playlist')
-            message: Descriptive message
-            correlation_id: Request correlation ID
-            request: FastAPI Request object for context
+            db: Sync database session (use either db or async_db, not both)
+            async_db: Async database session (use either db or async_db, not both)
+            level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            category: Log category (REQUEST, ERROR, USER_ACTION, SYSTEM, TRANSFER, UPLOAD, etc.)
+            action: Specific action being logged
+            message: Log message (will be auto-generated if not provided)
+            correlation_id: Request correlation ID for tracking
+            request: FastAPI Request object (auto-extracts client info and metrics)
+            method: HTTP method (auto-extracted from request if not provided)
+            endpoint: API endpoint path (auto-extracted from request if not provided)
+            path: Full request path (auto-extracted from request if not provided)
+            query_params: Query parameters (auto-extracted from request if not provided)
+            client_ip: Client IP address (auto-extracted from request if not provided)
+            user_agent: User agent (auto-extracted from request if not provided)
+            referer: Referer header (auto-extracted from request if not provided)
             status_code: HTTP response status code
+            response_size: Response size in bytes
+            duration_ms: Operation duration in milliseconds
             track_id: Related track ID
             playlist_id: Related playlist ID
             album_id: Related album ID
             artist_id: Related artist ID
-            duration_ms: Operation duration in milliseconds
-            metadata: Additional metadata
+            error: Exception object (auto-extracts stack trace)
+            stack_trace: Stack trace string (auto-generated if error provided)
+            context: Additional context for errors
+            cpu_percent: CPU usage percentage (auto-collected if request provided)
+            memory_percent: Memory usage percentage (auto-collected if request provided)
+            metadata: Additional custom metadata
+            filename: File name for upload operations
+            file_size: File size for upload operations
+            platform: Platform name for transfer operations (spotify, tidal, etc.)
+            operation: Operation type for transfers
+            transfer_status: Status of transfer operation
+            transfer_details: Additional transfer details
+            
+        Returns:
+            SystemLog instance if successful, None if failed
         """
         try:
-            # Get system metrics if available
-            metrics = snapshot() if request else {}
-            
-            log_data = {
-                'correlation_id': correlation_id,
-                'level': 'INFO',
-                'category': 'USER_ACTION',
-                'action': action,
-                'message': message or f"User performed action: {action}",
-                'status_code': status_code,
-                'track_id': track_id,
-                'playlist_id': playlist_id,
-                'album_id': album_id,
-                'artist_id': artist_id,
-                'duration_ms': duration_ms,
-                'log_metadata': metadata
-            }
-            
-            # Add request details if available
+            # Auto-extract request information if request object is provided
             if request:
-                log_data.update({
-                    'method': request.method,
-                    'endpoint': str(request.url.path),
-                    'path': str(request.url),
-                    'query_params': dict(request.query_params) if request.query_params else None,
-                    'client_ip': self._get_client_ip(request),
-                    'user_agent': request.headers.get("user-agent", ""),
-                    'referer': request.headers.get("referer", ""),
-                    'cpu_percent': metrics.get('cpu_percent'),
-                    'memory_percent': metrics.get('mem_percent'),
-                    'log_metadata': {
-                        **(metadata or {}),
+                method = method or request.method
+                endpoint = endpoint or str(request.url.path)
+                path = path or str(request.url)
+                query_params = query_params or (dict(request.query_params) if request.query_params else None)
+                client_ip = client_ip or self._get_client_ip(request)
+                user_agent = user_agent or request.headers.get("user-agent", "")
+                referer = referer or request.headers.get("referer", "")
+                
+                # Auto-collect system metrics if request is provided
+                if cpu_percent is None or memory_percent is None:
+                    metrics = snapshot()
+                    cpu_percent = cpu_percent or metrics.get('cpu_percent')
+                    memory_percent = memory_percent or metrics.get('mem_percent')
+                    
+                    # Add process metrics to metadata
+                    if metadata is None:
+                        metadata = {}
+                    metadata.update({
                         'process_cpu': metrics.get('proc_cpu_percent'),
                         'process_rss': metrics.get('proc_rss'),
                         'net_sent': metrics.get('net_bytes_sent'),
                         'net_recv': metrics.get('net_bytes_recv')
-                    }
+                    })
+            
+            # Auto-extract error information
+            if error:
+                stack_trace = stack_trace or traceback.format_exc()
+                level = level or "ERROR"
+                category = category or "ERROR"
+                action = action or "EXCEPTION"
+                
+                if metadata is None:
+                    metadata = {}
+                metadata.update({
+                    'error_type': type(error).__name__,
+                    'context': context
                 })
+                
+                # Build error message
+                error_message = str(error)
+                if context:
+                    error_message = f"{context}: {error_message}"
+                message = message or error_message
             
-            # Create async task for logging with new session
-            import asyncio
-            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
+            # Auto-generate action for requests
+            if category == "REQUEST" and method and endpoint and not action:
+                action = f"{method}_{endpoint.replace('/', '_').strip('_')}"
             
-        except Exception as e:
-            logger.error(f"Failed to log user action: {e}")
-    
-    # --- System Event Logging ---
-    
-    def log_system_event(
-        self,
-        db: AsyncSession,
-        event: str,
-        message: str = None,
-        level: str = "INFO",
-        metadata: Dict[str, Any] = None
-    ) -> None:
-        """
-        Log a system event
-        
-        Args:
-            db: Database session (async)
-            event: System event (e.g., 'service_start', 'database_backup')
-            message: Event description
-            level: Log level
-            metadata: Additional metadata
-        """
-        try:
+            # Auto-generate message if not provided
+            if not message:
+                if category == "REQUEST" and method and endpoint and status_code:
+                    message = f"{method} {endpoint} - {status_code}"
+                    if duration_ms:
+                        message += f" ({duration_ms:.1f}ms)"
+                elif category == "USER_ACTION" and action:
+                    message = f"User performed action: {action}"
+                elif category == "SYSTEM" and action:
+                    message = f"System event: {action}"
+                elif category == "TRANSFER" and platform and operation:
+                    message = f"{platform.title()} {operation}: {transfer_status or 'executed'}"
+                elif category == "UPLOAD" and operation:
+                    message = f"Upload {operation}: {transfer_status or 'executed'}"
+                    if filename:
+                        message += f" - {filename}"
+                elif action:
+                    message = f"Action: {action}"
+                else:
+                    message = f"{category} log entry"
+            
+            # Auto-determine log level from status code if not provided
+            if status_code and level == "INFO":
+                level = self._get_log_level_from_status(status_code)
+            
+            # Build transfer metadata if transfer fields provided
+            if platform or operation or transfer_status or transfer_details:
+                if metadata is None:
+                    metadata = {}
+                if platform:
+                    metadata['platform'] = platform
+                if operation:
+                    metadata['operation'] = operation
+                if transfer_status:
+                    metadata['status'] = transfer_status
+                if transfer_details:
+                    metadata.update(transfer_details)
+            
+            # Build upload metadata if upload fields provided
+            if filename or file_size:
+                if metadata is None:
+                    metadata = {}
+                if filename:
+                    metadata['filename'] = filename
+                if file_size:
+                    metadata['file_size'] = file_size
+            
+            # Prepare log data
             log_data = {
-                'correlation_id': None,
+                'correlation_id': correlation_id,
                 'level': level,
-                'category': 'SYSTEM',
-                'action': event,
-                'message': message or f"System event: {event}",
+                'category': category,
+                'action': action,
+                'message': message,
+                'method': method,
+                'endpoint': endpoint,
+                'path': path,
+                'query_params': query_params,
+                'status_code': status_code,
+                'response_size': response_size,
+                'duration_ms': duration_ms,
+                'client_ip': client_ip,
+                'user_agent': user_agent,
+                'referer': referer,
+                'track_id': track_id,
+                'playlist_id': playlist_id,
+                'album_id': album_id,
+                'artist_id': artist_id,
+                'stack_trace': stack_trace,
+                'cpu_percent': cpu_percent,
+                'memory_percent': memory_percent,
                 'log_metadata': metadata
             }
             
-            # Create async task for logging with new session
-            import asyncio
-            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
+            # Remove None values to avoid unnecessary database fields
+            log_data = {k: v for k, v in log_data.items() if v is not None}
             
+            # Use appropriate repository method based on session type
+            if async_db:
+                # Create async task for logging with new session to avoid conflicts
+                import asyncio
+                asyncio.create_task(self._async_create_log_with_new_session(**log_data))
+                return None  # Async operations don't return the log object immediately
+            elif db:
+                return self.log_repository.create_log(db, **log_data)
+            else:
+                # No session provided, create async task with new session
+                import asyncio
+                asyncio.create_task(self._async_create_log_with_new_session(**log_data))
+                return None
+                
         except Exception as e:
-            logger.error(f"Failed to log system event: {e}")
-    
-    # --- Transfer Logging ---
-    
-    def log_transfer_operation(
-        self,
-        db: AsyncSession,
-        platform: str,
-        operation: str,
-        playlist_id: int,
-        status: str,
-        details: Dict[str, Any],
-        correlation_id: str = None,
-        duration_ms: float = None
-    ) -> None:
-        """
-        Log playlist transfer operations (Spotify, Tidal, etc.)
-        
-        Args:
-            db: Database session (async)
-            platform: Platform name (spotify, tidal, etc.)
-            operation: Operation type (transfer_playlist, search_track, etc.)
-            playlist_id: Playlist being transferred
-            status: Operation status (success, failure, partial)
-            details: Operation details (tracks found, errors, etc.)
-            correlation_id: Request correlation ID
-            duration_ms: Operation duration
-        """
-        try:
-            log_data = {
-                'correlation_id': correlation_id,
-                'level': 'INFO' if status == 'success' else 'WARNING',
-                'category': 'TRANSFER',
-                'action': f"{platform}_{operation}",
-                'message': f"{platform.title()} {operation}: {status}",
-                'playlist_id': playlist_id,
-                'duration_ms': duration_ms,
-                'log_metadata': {
-                    'platform': platform,
-                    'operation': operation,
-                    'status': status,
-                    **details
-                }
-            }
-            
-            # Create async task for logging with new session
-            import asyncio
-            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
-            
-        except Exception as e:
-            logger.error(f"Failed to log transfer operation: {e}")
-    
-    # --- Upload Logging ---
-    
-    def log_upload_operation(
-        self,
-        db: AsyncSession,
-        operation: str,
-        track_id: int = None,
-        filename: str = None,
-        file_size: int = None,
-        status: str = "success",
-        error_message: str = None,
-        correlation_id: str = None,
-        duration_ms: float = None
-    ) -> None:
-        """
-        Log track upload operations
-        
-        Args:
-            db: Database session (async)
-            operation: Upload operation (upload_start, metadata_extract, file_process, etc.)
-            track_id: Track ID if available
-            filename: Original filename
-            file_size: File size in bytes
-            status: Operation status
-            error_message: Error message if failed
-            correlation_id: Request correlation ID
-            duration_ms: Operation duration
-        """
-        try:
-            level = 'INFO' if status == 'success' else 'ERROR'
-            message = f"Upload {operation}: {status}"
-            if filename:
-                message += f" - {filename}"
-            if error_message:
-                message += f" - {error_message}"
-            
-            log_data = {
-                'correlation_id': correlation_id,
-                'level': level,
-                'category': 'UPLOAD',
-                'action': f"upload_{operation}",
-                'message': message,
-                'track_id': track_id,
-                'duration_ms': duration_ms,
-                'log_metadata': {
-                    'operation': operation,
-                    'filename': filename,
-                    'file_size': file_size,
-                    'status': status,
-                    'error_message': error_message
-                }
-            }
-            
-            # Create async task for logging with new session
-            import asyncio
-            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
-            
-        except Exception as e:
-            logger.error(f"Failed to log upload operation: {e}")
-    
+            logger.error(f"Failed to create log entry: {e}")
+            return None
+
     # --- Admin Dashboard Methods ---
     
     def get_dashboard_logs(
@@ -486,81 +343,7 @@ class LoggingService:
         except Exception as e:
             logger.error(f"Failed to get log statistics: {e}")
             return {}
-    
-    # --- Async Methods ---
-    
-    async def async_log_request(
-        self,
-        db: AsyncSession,
-        request: Request,
-        response_status: int,
-        duration_ms: float,
-        response_size: int = None,
-        correlation_id: str = None,
-        metadata: Dict[str, Any] = None
-    ) -> SystemLog:
-        """Async version of log_request for high-performance scenarios"""
-        try:
-            metrics = snapshot()
-            client_ip = self._get_client_ip(request)
-            
-            log_data = {
-                'correlation_id': correlation_id,
-                'method': request.method,
-                'endpoint': str(request.url.path),
-                'path': str(request.url),
-                'query_params': dict(request.query_params) if request.query_params else None,
-                'status_code': response_status,
-                'response_size': response_size,
-                'duration_ms': duration_ms,
-                'level': self._get_log_level_from_status(response_status),
-                'category': 'REQUEST',
-                'action': f"{request.method}_{request.url.path.replace('/', '_').strip('_')}",
-                'message': f"{request.method} {request.url.path} - {response_status} ({duration_ms:.1f}ms)",
-                'client_ip': client_ip,
-                'user_agent': request.headers.get("user-agent", ""),
-                'cpu_percent': metrics.get('cpu_percent'),
-                'memory_percent': metrics.get('mem_percent'),
-                'log_metadata': metadata
-            }
-            
-            return await self.log_repository.async_create_log(db, **log_data)
-            
-        except Exception as e:
-            logger.error(f"Failed to async log request: {e}")
-            return None
-    
-    async def async_log_error(
-        self,
-        db: AsyncSession,
-        error: Exception,
-        context: str = None,
-        correlation_id: str = None,
-        **kwargs
-    ) -> None:
-        """Async version of log_error"""
-        try:
-            log_data = {
-                'correlation_id': correlation_id,
-                'level': 'ERROR',
-                'category': 'ERROR',
-                'action': 'EXCEPTION',
-                'message': f"{context}: {str(error)}" if context else str(error),
-                'stack_trace': traceback.format_exc(),
-                'log_metadata': {
-                    'error_type': type(error).__name__,
-                    'context': context
-                },
-                **kwargs
-            }
-            
-            # Create async task for logging with new session
-            import asyncio
-            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
-            
-        except Exception as e:
-            logger.error(f"Failed to async log error: {e}")
-    
+
     # --- Helper Methods ---
     
     def _get_client_ip(self, request: Request) -> str:
