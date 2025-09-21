@@ -45,19 +45,33 @@ class MetadataController:
             if len(content) == 0:
                 # Log validation error
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_upload_operation(
-                    db=db,
-                    operation="validation_failed",
-                    filename=file.filename,
+                response_data = format_response(success=False, error="Empty file provided")
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="UPLOAD",
+                    action="metadata_extraction_validation_failed",
+                    message="Metadata extraction failed: Empty file provided",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=422,
                     duration_ms=duration_ms,
-                    status="error",
-                    error_message="Empty file provided",
-                    correlation_id=correlation_id
+                    filename=file.filename,
+                    file_size=0,
+                    operation="metadata_extraction",
+                    transfer_status="failed",
+                    metadata={
+                        "error": "Empty file provided",
+                        "validation_step": "file_size_check",
+                        "content_type": file.content_type,
+                        "response": response_data,
+                        "operation": "metadata_extraction"
+                    }
                 )
                 
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content=format_response(success=False, error="Empty file provided")
+                    content=response_data
                 )
             
             # Reset file pointer for metadata extraction
@@ -70,19 +84,35 @@ class MetadataController:
                 if file_ext and f'.{file_ext}' not in valid_extensions:
                     # Log unsupported format error
                     duration_ms = (time.time() - start_time) * 1000
-                    self.logging_service.log_upload_operation(
-                        db=db,
-                        operation="validation_failed",
+                    response_data = format_response(success=False, error=f"Unsupported file format: .{file_ext}")
+                    self.logging_service.log(
+                        async_db=db,
+                        level="WARNING",
+                        category="UPLOAD",
+                        action="metadata_extraction_unsupported_format",
+                        message=f"Metadata extraction failed: Unsupported file format .{file_ext}",
+                        correlation_id=correlation_id,
+                        request=request,
+                        status_code=415,
                         duration_ms=duration_ms,
                         filename=file.filename,
-                        status="error",
-                        error_message=f"Unsupported file format: .{file_ext}",
-                        correlation_id=correlation_id
+                        file_size=len(content),
+                        operation="metadata_extraction",
+                        transfer_status="failed",
+                        metadata={
+                            "error": f"Unsupported file format: .{file_ext}",
+                            "validation_step": "file_extension_check",
+                            "file_extension": file_ext,
+                            "valid_extensions": list(valid_extensions),
+                            "content_type": file.content_type,
+                            "response": response_data,
+                            "operation": "metadata_extraction"
+                        }
                     )
                     
                     return JSONResponse(
                         status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                        content=format_response(success=False, error=f"Unsupported file format: .{file_ext}")
+                        content=response_data
                     )
             
             # Use asyncio.to_thread for the blocking Mutagen operation
@@ -92,81 +122,146 @@ class MetadataController:
             if "error" in extracted_meta:
                 # Log metadata extraction error
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_upload_operation(
-                    db=db,
-                    operation="metadata_extract_failed",
-                    filename=file.filename,
+                response_data = format_response(success=False, error=extracted_meta["error"])
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="UPLOAD",
+                    action="metadata_extraction_failed",
+                    message=f"Metadata extraction failed: {extracted_meta['error']}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=415,
                     duration_ms=duration_ms,
-                    status="error",
-                    error_message=extracted_meta["error"],
-                    correlation_id=correlation_id
+                    filename=file.filename,
+                    file_size=len(content),
+                    operation="metadata_extraction",
+                    transfer_status="failed",
+                    metadata={
+                        "error": extracted_meta["error"],
+                        "extraction_step": "mutagen_processing",
+                        "content_type": file.content_type,
+                        "extracted_metadata": extracted_meta,
+                        "response": response_data,
+                        "operation": "metadata_extraction"
+                    }
                 )
                 
                 return JSONResponse(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    content=format_response(success=False, error=extracted_meta["error"])
+                    content=response_data
                 )
             
             # Check if the file was processed but no valid audio metadata was found
             if "info" in extracted_meta and extracted_meta.get("info") == "No tags found or unsupported format.":
                 # Log invalid audio file error
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_upload_operation(
-                    db=db,
-                    operation="invalid_audio_file",
-                    filename=file.filename,
+                response_data = format_response(success=False, error="File does not appear to be a valid audio file")
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="UPLOAD",
+                    action="metadata_extraction_invalid_audio",
+                    message="Metadata extraction failed: File does not appear to be a valid audio file",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=415,
                     duration_ms=duration_ms,
-                    status="error",
-                    error_message="File does not appear to be a valid audio file",
-                    correlation_id=correlation_id
+                    filename=file.filename,
+                    file_size=len(content),
+                    operation="metadata_extraction",
+                    transfer_status="failed",
+                    metadata={
+                        "error": "File does not appear to be a valid audio file",
+                        "extraction_step": "audio_validation",
+                        "info_message": extracted_meta.get("info"),
+                        "content_type": file.content_type,
+                        "extracted_metadata": extracted_meta,
+                        "response": response_data,
+                        "operation": "metadata_extraction"
+                    }
                 )
                 
                 return JSONResponse(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    content=format_response(success=False, error="File does not appear to be a valid audio file")
+                    content=response_data
                 )
             
             # Log successful metadata extraction (ONLY the result)
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_upload_operation(
-                db=db,
-                operation="metadata_extract_success",
-                duration_ms=duration_ms,
-                filename=file.filename,
-                file_size=len(content),
-                status="success",
-                correlation_id=correlation_id
-            )
-            
             response_data = {
                 "filename": sanitize_filename(file.filename),
                 "metadata": extracted_meta
             }
+            formatted_response = format_response(success=True, data=response_data)
+            
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="UPLOAD",
+                action="metadata_extraction_success",
+                message="Metadata extraction completed successfully",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                filename=file.filename,
+                file_size=len(content),
+                operation="metadata_extraction",
+                transfer_status="success",
+                metadata={
+                    "extraction_step": "completed",
+                    "content_type": file.content_type,
+                    "sanitized_filename": sanitize_filename(file.filename),
+                    "extracted_metadata": extracted_meta,
+                    "metadata_fields_found": len(extracted_meta) if isinstance(extracted_meta, dict) else 0,
+                    "has_title": "title" in str(extracted_meta).lower(),
+                    "has_artist": "artist" in str(extracted_meta).lower(),
+                    "has_album": "album" in str(extracted_meta).lower(),
+                    "response": formatted_response,
+                    "operation": "metadata_extraction"
+                }
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content=format_response(success=True, data=response_data)
+                content=formatted_response
             )
 
         except Exception as e:
             # Log the error with full context
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_error(
-                db=db,
+            response_data = format_response(success=False, error=f"An internal server error occurred while extracting metadata: {e}")
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="metadata_extraction_exception",
+                message="Exception occurred during metadata extraction",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
                 error=e,
                 context="metadata extraction",
-                correlation_id=correlation_id,
-                duration_ms=duration_ms,
-                request=request,
+                filename=file.filename,
+                file_size=getattr(file, 'size', 0),
+                operation="metadata_extraction",
+                transfer_status="failed",
                 metadata={
                     "filename": file.filename,
                     "content_type": file.content_type,
-                    "file_size": file.size
+                    "file_size": getattr(file, 'size', 0),
+                    "error_type": type(e).__name__,
+                    "extraction_step": "exception_occurred",
+                    "response": response_data,
+                    "operation": "metadata_extraction"
                 }
             )
             
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(success=False, error=f"An internal server error occurred while extracting metadata: {e}")
+                content=response_data
             )
         finally:
             await file.close()  # Ensure the uploaded file is closed

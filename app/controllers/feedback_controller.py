@@ -52,61 +52,99 @@ class FeedbackController:
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                response_data = format_response(
+                    success=True,
+                    data={"message": result.get("message")}
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="USER_ACTION",
                     action="feedback_submit_success",
-                    message="Feedback submitted",
+                    message="Feedback submitted successfully",
                     correlation_id=correlation_id,
                     request=request,
                     status_code=200,
                     duration_ms=duration_ms,
-                    metadata={"category": feedback_data.get("category")}
+                    metadata={
+                        "category": feedback_data.get("category"),
+                        "user_id": feedback_data.get("user_id"),
+                        "satisfaction": feedback_data.get("satisfaction"),
+                        "recommendation": feedback_data.get("recommendation"),
+                        "feedback_id": result.get("feedback_id"),
+                        "message_length": len(feedback_data.get("message", "")),
+                        "response": response_data,
+                        "operation": "feedback_submission"
+                    }
                 )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(
-                        success=True,
-                        data={"message": result.get("message")}
-                    )
+                    content=response_data
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error")
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
                     action="feedback_submit_failed",
-                    message=result.get("error"),
+                    message=f"Feedback submission failed: {result.get('error')}",
                     correlation_id=correlation_id,
                     request=request,
                     status_code=422,
                     duration_ms=duration_ms,
-                    metadata={"category": feedback_data.get("category")}
+                    metadata={
+                        "category": feedback_data.get("category"),
+                        "user_id": feedback_data.get("user_id"),
+                        "satisfaction": feedback_data.get("satisfaction"),
+                        "recommendation": feedback_data.get("recommendation"),
+                        "message_length": len(feedback_data.get("message", "")),
+                        "error_details": result.get("error"),
+                        "response": response_data,
+                        "operation": "feedback_submission"
+                    }
                 )
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content=format_response(
-                        success=False,
-                        error=result.get("error")
-                    )
+                    content=response_data
                 )
                 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_error(
-                db=db,
-                error=e,
-                context="submit_feedback",
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while processing your feedback"
+            )
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="feedback_submit_exception",
+                message="Exception occurred during feedback submission",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=500,
                 duration_ms=duration_ms,
-                metadata={"error": "An internal server error occurred while processing your feedback"}
+                error=e,
+                context="submit_feedback",
+                metadata={
+                    "category": feedback_data.get("category"),
+                    "user_id": feedback_data.get("user_id"),
+                    "satisfaction": feedback_data.get("satisfaction"),
+                    "recommendation": feedback_data.get("recommendation"),
+                    "message_length": len(feedback_data.get("message", "")),
+                    "error_type": type(e).__name__,
+                    "response": response_data,
+                    "operation": "feedback_submission"
+                }
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="An internal server error occurred while processing your feedback"
-                )
+                content=response_data
             )
     
     async def get_feedback_by_id(self, db: AsyncSession, request: Request, feedback_id: int) -> JSONResponse:
@@ -126,17 +164,6 @@ class FeedbackController:
             feedback = await self.feedback_service.get_feedback_by_id(db, feedback_id)
             
             if feedback:
-                duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
-                    action="get_feedback_success",
-                    message="Feedback retrieved",
-                    correlation_id=correlation_id,
-                    request=request,
-                    status_code=200,
-                    duration_ms=duration_ms,
-                    metadata={"feedback_data": feedback_data}
-                )
                 feedback_data = {
                     "id": feedback.id,
                     "user_id": feedback.user_id,
@@ -148,48 +175,91 @@ class FeedbackController:
                     "submitted_at": feedback.submitted_at.isoformat() if feedback.submitted_at else None
                 }
                 
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(success=True, data=feedback_data)
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="USER_ACTION",
+                    action="get_feedback_success",
+                    message="Feedback retrieved successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback.id,
+                        "user_id": feedback.user_id,
+                        "category": feedback.category,
+                        "satisfaction": feedback.satisfaction,
+                        "recommendation": feedback.recommendation,
+                        "feedback_status": feedback.status,
+                        "message_length": len(feedback.message) if feedback.message else 0,
+                        "response": response_data,
+                        "operation": "feedback_retrieval"
+                    }
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(success=True, data=feedback_data)
+                    content=response_data
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                response_data = format_response(
+                    success=False,
+                    error=f"Feedback with ID {feedback_id} not found"
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
                     action="get_feedback_not_found",
-                    message="Feedback not found",
+                    message=f"Feedback with ID {feedback_id} not found",
                     correlation_id=correlation_id,
                     request=request,
                     status_code=404,
                     duration_ms=duration_ms,
-                    metadata={"feedback_id": feedback_id}
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "error": "Feedback not found",
+                        "response": response_data,
+                        "operation": "feedback_retrieval"
+                    }
                 )
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    content=format_response(
-                        success=False,
-                        error=f"Feedback with ID {feedback_id} not found"
-                    )
+                    content=response_data
                 )
                 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_error(
-                db=db,
-                error=e,
-                context="get_feedback_by_id",
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while retrieving feedback"
+            )
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="get_feedback_exception",
+                message="Exception occurred while retrieving feedback",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=500,
                 duration_ms=duration_ms,
-                metadata={"error": "An internal server error occurred while retrieving feedback"}
+                error=e,
+                context="get_feedback_by_id",
+                metadata={
+                    "feedback_id": feedback_id,
+                    "error_type": type(e).__name__,
+                    "response": response_data,
+                    "operation": "feedback_retrieval"
+                }
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="An internal server error occurred while retrieving feedback"
-                )
+                content=response_data
             )
     
     async def update_feedback_status(self, db: AsyncSession, request: Request, feedback_id: int, status_data: Dict[str, Any]) -> JSONResponse:
@@ -209,71 +279,121 @@ class FeedbackController:
         try:
             new_status = status_data.get("status")
             if not new_status:
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=False,
+                    error="Status is required"
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
+                    action="update_feedback_status_validation_failed",
+                    message="Feedback status update failed: Status is required",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=422,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "error": "Status is required",
+                        "provided_data": status_data,
+                        "response": response_data,
+                        "operation": "feedback_status_update"
+                    }
+                )
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content=format_response(
-                        success=False,
-                        error="Status is required"
-                    )
+                    content=response_data
                 )
             
             result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status)
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                response_data = format_response(
+                    success=True,
+                    data={"message": result.get("message")}
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="USER_ACTION",
                     action="update_feedback_status_success",
-                    message="Feedback status updated",
+                    message="Feedback status updated successfully",
                     correlation_id=correlation_id,
                     request=request,
                     status_code=200,
                     duration_ms=duration_ms,
-                    metadata={"feedback_id": feedback_id, "status": new_status}
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "new_status": new_status,
+                        "previous_status": result.get("previous_status"),
+                        "response": response_data,
+                        "operation": "feedback_status_update"
+                    }
                 )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content=format_response(
-                        success=True,
-                        data={"message": result.get("message")}
-                    )
+                    content=response_data
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error")
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
                     action="update_feedback_status_failed",
-                    message=result.get("error"),
+                    message=f"Feedback status update failed: {result.get('error')}",
                     correlation_id=correlation_id,
                     request=request,
                     status_code=404,
                     duration_ms=duration_ms,
-                    metadata={"feedback_id": feedback_id}
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "attempted_status": new_status,
+                        "error_details": result.get("error"),
+                        "response": response_data,
+                        "operation": "feedback_status_update"
+                    }
                 )
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    content=format_response(
-                        success=False,
-                        error=result.get("error")
-                    )
+                    content=response_data
                 )
                 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_error(
-                db=db,
-                error=e,
-                context="update_feedback_status",
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while updating feedback status"
+            )
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="update_feedback_status_exception",
+                message="Exception occurred while updating feedback status",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=500,
                 duration_ms=duration_ms,
-                metadata={"error": "An internal server error occurred while updating feedback status"}
+                error=e,
+                context="update_feedback_status",
+                metadata={
+                    "feedback_id": feedback_id,
+                    "attempted_status": status_data.get("status"),
+                    "status_data": status_data,
+                    "error_type": type(e).__name__,
+                    "response": response_data,
+                    "operation": "feedback_status_update"
+                }
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(
-                    success=False,
-                    error="An internal server error occurred while updating feedback status"
-                )
+                content=response_data
             )
