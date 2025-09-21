@@ -316,8 +316,8 @@ class MonthlyPipelineController:
             duration_sec = duration
             
             # PRODUCTION MODE: Actually save to database
-            upload_result = await asyncio.to_thread(
-                self.track_upload_service.upload_track_to_database_with_uuid,
+            upload_result = await self.track_upload_service.upload_track_to_database_with_uuid(
+                db,
                 file, 
                 audio_bytes,
                 track_uuid,  # Use the same UUID we sent to similarity server

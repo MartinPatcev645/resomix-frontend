@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 import traceback
 import uuid
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -119,7 +119,7 @@ class LoggingService:
     
     def log_error(
         self,
-        db: Union[Session, AsyncSession],
+        db: AsyncSession,
         error: Exception,
         context: str = None,
         level: str = "ERROR",
@@ -130,12 +130,12 @@ class LoggingService:
         album_id: int = None,
         artist_id: int = None,
         metadata: Dict[str, Any] = None
-    ) -> SystemLog:
+    ) -> None:
         """
         Log an error with full context and stack trace
         
         Args:
-            db: Database session (sync or async)
+            db: Database session (async)
             error: Exception that occurred
             context: Additional context about where the error occurred
             level: Log level (ERROR or CRITICAL)
@@ -146,9 +146,6 @@ class LoggingService:
             album_id: Related album ID
             artist_id: Related artist ID
             metadata: Additional metadata
-            
-        Returns:
-            Created SystemLog instance
         """
         try:
             error_message = str(error)
@@ -187,23 +184,18 @@ class LoggingService:
                     'user_agent': request.headers.get("user-agent", "")
                 })
             
-            # Handle both sync and async sessions
-            if isinstance(db, AsyncSession):
-                import asyncio
-                asyncio.create_task(self._async_create_log_task(db, **log_data))
-                return None
-            else:
-                return self.log_repository.create_log(db, **log_data)
+            # Create async task for logging
+            import asyncio
+            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
             
         except Exception as e:
             logger.error(f"Failed to log error: {e}")
-            return None
     
     # --- User Action Logging ---
     
     def log_user_action(
         self,
-        db: Union[Session, AsyncSession],
+        db: AsyncSession,
         action: str,
         message: str = None,
         correlation_id: str = None,
@@ -212,12 +204,12 @@ class LoggingService:
         album_id: int = None,
         artist_id: int = None,
         metadata: Dict[str, Any] = None
-    ) -> SystemLog:
+    ) -> None:
         """
         Log a user action for audit trail
         
         Args:
-            db: Database session (sync or async)
+            db: Database session (async)
             action: Action performed (e.g., 'upload_track', 'create_playlist')
             message: Descriptive message
             correlation_id: Request correlation ID
@@ -226,9 +218,6 @@ class LoggingService:
             album_id: Related album ID
             artist_id: Related artist ID
             metadata: Additional metadata
-            
-        Returns:
-            Created SystemLog instance
         """
         try:
             log_data = {
@@ -244,42 +233,32 @@ class LoggingService:
                 'log_metadata': metadata
             }
             
-            # Handle both sync and async sessions
-            if isinstance(db, AsyncSession):
-                # For async sessions, we can't return the result directly
-                # We'll create the log entry but return None
-                import asyncio
-                asyncio.create_task(self._async_create_log_task(db, **log_data))
-                return None
-            else:
-                return self.log_repository.create_log(db, **log_data)
+            # Create async task for logging with new session
+            import asyncio
+            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
             
         except Exception as e:
             logger.error(f"Failed to log user action: {e}")
-            return None
     
     # --- System Event Logging ---
     
     def log_system_event(
         self,
-        db: Union[Session, AsyncSession],
+        db: AsyncSession,
         event: str,
         message: str = None,
         level: str = "INFO",
         metadata: Dict[str, Any] = None
-    ) -> SystemLog:
+    ) -> None:
         """
         Log a system event
         
         Args:
-            db: Database session (sync or async)
+            db: Database session (async)
             event: System event (e.g., 'service_start', 'database_backup')
             message: Event description
             level: Log level
             metadata: Additional metadata
-            
-        Returns:
-            Created SystemLog instance
         """
         try:
             log_data = {
@@ -291,23 +270,18 @@ class LoggingService:
                 'log_metadata': metadata
             }
             
-            # Handle both sync and async sessions
-            if isinstance(db, AsyncSession):
-                import asyncio
-                asyncio.create_task(self._async_create_log_task(db, **log_data))
-                return None
-            else:
-                return self.log_repository.create_log(db, **log_data)
+            # Create async task for logging with new session
+            import asyncio
+            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
             
         except Exception as e:
             logger.error(f"Failed to log system event: {e}")
-            return None
     
     # --- Transfer Logging ---
     
     def log_transfer_operation(
         self,
-        db: Union[Session, AsyncSession],
+        db: AsyncSession,
         platform: str,
         operation: str,
         playlist_id: int,
@@ -315,12 +289,12 @@ class LoggingService:
         details: Dict[str, Any],
         correlation_id: str = None,
         duration_ms: float = None
-    ) -> SystemLog:
+    ) -> None:
         """
         Log playlist transfer operations (Spotify, Tidal, etc.)
         
         Args:
-            db: Database session (sync or async)
+            db: Database session (async)
             platform: Platform name (spotify, tidal, etc.)
             operation: Operation type (transfer_playlist, search_track, etc.)
             playlist_id: Playlist being transferred
@@ -328,9 +302,6 @@ class LoggingService:
             details: Operation details (tracks found, errors, etc.)
             correlation_id: Request correlation ID
             duration_ms: Operation duration
-            
-        Returns:
-            Created SystemLog instance
         """
         try:
             log_data = {
@@ -349,23 +320,18 @@ class LoggingService:
                 }
             }
             
-            # Handle both sync and async sessions
-            if isinstance(db, AsyncSession):
-                import asyncio
-                asyncio.create_task(self._async_create_log_task(db, **log_data))
-                return None
-            else:
-                return self.log_repository.create_log(db, **log_data)
+            # Create async task for logging with new session
+            import asyncio
+            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
             
         except Exception as e:
             logger.error(f"Failed to log transfer operation: {e}")
-            return None
     
     # --- Upload Logging ---
     
     def log_upload_operation(
         self,
-        db: Union[Session, AsyncSession],
+        db: AsyncSession,
         operation: str,
         track_id: int = None,
         filename: str = None,
@@ -374,12 +340,12 @@ class LoggingService:
         error_message: str = None,
         correlation_id: str = None,
         duration_ms: float = None
-    ) -> SystemLog:
+    ) -> None:
         """
         Log track upload operations
         
         Args:
-            db: Database session (sync or async)
+            db: Database session (async)
             operation: Upload operation (upload_start, metadata_extract, file_process, etc.)
             track_id: Track ID if available
             filename: Original filename
@@ -388,9 +354,6 @@ class LoggingService:
             error_message: Error message if failed
             correlation_id: Request correlation ID
             duration_ms: Operation duration
-            
-        Returns:
-            Created SystemLog instance
         """
         try:
             level = 'INFO' if status == 'success' else 'ERROR'
@@ -417,17 +380,12 @@ class LoggingService:
                 }
             }
             
-            # Handle both sync and async sessions
-            if isinstance(db, AsyncSession):
-                import asyncio
-                asyncio.create_task(self._async_create_log_task(db, **log_data))
-                return None
-            else:
-                return self.log_repository.create_log(db, **log_data)
+            # Create async task for logging with new session
+            import asyncio
+            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
             
         except Exception as e:
             logger.error(f"Failed to log upload operation: {e}")
-            return None
     
     # --- Admin Dashboard Methods ---
     
@@ -542,12 +500,12 @@ class LoggingService:
     
     async def async_log_error(
         self,
-        db: Union[Session, AsyncSession],
+        db: AsyncSession,
         error: Exception,
         context: str = None,
         correlation_id: str = None,
         **kwargs
-    ) -> SystemLog:
+    ) -> None:
         """Async version of log_error"""
         try:
             log_data = {
@@ -564,17 +522,12 @@ class LoggingService:
                 **kwargs
             }
             
-            # Handle both sync and async sessions
-            if isinstance(db, AsyncSession):
-                import asyncio
-                asyncio.create_task(self._async_create_log_task(db, **log_data))
-                return None
-            else:
-                return self.log_repository.create_log(db, **log_data)
+            # Create async task for logging with new session
+            import asyncio
+            asyncio.create_task(self._async_create_log_with_new_session(**log_data))
             
         except Exception as e:
             logger.error(f"Failed to async log error: {e}")
-            return None
     
     # --- Helper Methods ---
     
@@ -635,5 +588,20 @@ class LoggingService:
         """Helper method to create log entries in async sessions"""
         try:
             await self.log_repository.async_create_log(db, **log_data)
+        except Exception as e:
+            logger.error(f"Failed to create async log entry: {e}")
+
+    async def _async_create_log_with_new_session(self, **log_data):
+        """
+        Helper method to create log entries using a new database session.
+        This prevents session state conflicts by using a separate session.
+        """
+        try:
+            from database.connection import AsyncSessionLocal
+            
+            # Create a new session for logging to avoid conflicts
+            async with AsyncSessionLocal() as log_session:
+                await self.log_repository.async_create_log(log_session, **log_data)
+                # No need for manual commit - repository already handles it
         except Exception as e:
             logger.error(f"Failed to create async log entry: {e}")

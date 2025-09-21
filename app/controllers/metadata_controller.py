@@ -19,7 +19,7 @@ import asyncio
 from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.metadata_service import MetadataService
 from app.services.logging_service import LoggingService
@@ -32,7 +32,7 @@ class MetadataController:
         self.metadata_service = MetadataService()
         self.logging_service = LoggingService()
 
-    async def get_metadata(self, db: Session, request: Request, file: UploadFile) -> JSONResponse:
+    async def get_metadata(self, db: AsyncSession, request: Request, file: UploadFile) -> JSONResponse:
         """
         Extracts and returns metadata from an uploaded audio file using Mutagen.
         """

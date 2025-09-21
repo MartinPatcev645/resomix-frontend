@@ -74,7 +74,6 @@ class PlaylistController:
                 action="rename_playlist_validation_failed",
                 message="Playlist rename failed: empty new_name",
                 correlation_id=correlation_id,
-                playlist_id=playlist_id,
                 metadata={"error": "new_name cannot be empty"}
             )
             
@@ -87,16 +86,20 @@ class PlaylistController:
             )
         
         try:
+            # First, get the playlist to obtain the integer ID for logging
+            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist_int_id = playlist.id if playlist else None
+            
             result = await self.playlist_service.rename_playlist(db, playlist_id, new_name.strip())
             
             if result.get("success"):
-                # Log successful rename
+                # Log successful rename - use integer ID for foreign key
                 self.logging_service.log_user_action(
                     db=db,
                     action="rename_playlist_success",
                     message=f"Playlist renamed successfully: {playlist_id} -> {new_name.strip()}",
                     correlation_id=correlation_id,
-                    playlist_id=playlist_id,
+                    playlist_id=playlist_int_id,
                     metadata={"old_name": result.get("old_name"), "new_name": new_name.strip()}
                 )
                 
@@ -105,13 +108,13 @@ class PlaylistController:
                     content=result
                 )
             else:
-                # Log playlist not found
+                # Log playlist not found - use integer ID for foreign key (may be None)
                 self.logging_service.log_user_action(
                     db=db,
                     action="rename_playlist_not_found",
                     message=f"Playlist rename failed: playlist not found {playlist_id}",
                     correlation_id=correlation_id,
-                    playlist_id=playlist_id,
+                    playlist_id=playlist_int_id,
                     metadata={"error": result.get("error")}
                 )
                 
@@ -121,26 +124,29 @@ class PlaylistController:
                 )
                 
         except Exception as e:
-            # Log error with full context
+            # Log error with full context - use integer ID if available
+            playlist_int_id = None
+            try:
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+                playlist_int_id = playlist.id if playlist else None
+            except:
+                pass  # Ignore errors when getting playlist for logging
+                
             self.logging_service.log_error(
                 db=db,
                 error=e,
                 context="playlist rename operation",
                 correlation_id=correlation_id,
                 request=request,
-                playlist_id=playlist_id,
-                metadata={
-                    "playlist_id": playlist_id,
-                    "new_name": new_name,
-                    "operation": "rename_playlist"
-                }
+                playlist_id=playlist_int_id,
+                metadata={"playlist_uuid": playlist_id, "new_name": new_name}
             )
             
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
                     success=False,
-                    error="An internal server error occurred while renaming the playlist"
+                    error="An error occurred while renaming the playlist"
                 )
             )
     

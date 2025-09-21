@@ -108,9 +108,8 @@ class SimilarityController:
                 await file.seek(0)
                 
                 # STEP 1: Upload track to database with metadata extraction
-                import asyncio
-                upload_result = await asyncio.to_thread(
-                    self.track_upload_service.upload_track_to_database, 
+                upload_result = await self.track_upload_service.upload_track_to_database(
+                    db,
                     file, 
                     audio_bytes
                 )

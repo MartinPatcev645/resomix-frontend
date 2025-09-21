@@ -24,7 +24,7 @@ from typing import Dict, Tuple, List, Optional, BinaryIO, Any
 from fastapi import UploadFile
 
 from sqlalchemy import text
-from database.connection import engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.constants import TrackType
 from app.services.metadata_service import MetadataService
 from app.utils.sanitization import (
@@ -84,7 +84,7 @@ def parse_artist_names(raw: str) -> List[str]:
 
 
 class Cache:
-    """In-memory cache of lookup tables (name → id) - copied from migration script."""
+    """In-memory cache of lookup tables (name → id) - updated for async operations."""
 
     def __init__(self):
         self.artists: Dict[str, int] = {}
@@ -95,25 +95,25 @@ class Cache:
     # --- generic helpers -----------------------------------------------------
 
     @staticmethod
-    def _fetch_table(conn, table: str):
-        return {name.lower(): id_ for name, id_ in conn.execute(text(f"SELECT name, id FROM {table}"))}
+    async def _fetch_table(db: AsyncSession, table: str):
+        result = await db.execute(text(f"SELECT name, id FROM {table}"))
+        return {name.lower(): id_ for name, id_ in result.fetchall()}
 
-    def preload(self, conn):
-        self.artists = self._fetch_table(conn, "artists")
-        self.labels = self._fetch_table(conn, "labels")
-        self.genres = self._fetch_table(conn, "genres")
+    async def preload(self, db: AsyncSession):
+        self.artists = await self._fetch_table(db, "artists")
+        self.labels = await self._fetch_table(db, "labels")
+        self.genres = await self._fetch_table(db, "genres")
         # albums: (title, artist_id) fetch
+        result = await db.execute(text("SELECT title, artist_id, id FROM albums"))
         self.albums = {
             (title.lower(), artist_id): id_
-            for title, artist_id, id_ in conn.execute(
-                text("SELECT title, artist_id, id FROM albums")
-            )
+            for title, artist_id, id_ in result.fetchall()
         }
 
     # --- get-or-create helpers ----------------------------------------------
 
-    def _get_or_create(
-        self, conn, table: str, cache: Dict[str, int], name: str
+    async def _get_or_create(
+        self, db: AsyncSession, table: str, cache: Dict[str, int], name: str
     ) -> int:
         # Sanitize the name for database insertion based on table type
         original_name = name
@@ -137,10 +137,10 @@ class Cache:
         
         try:
             insert_sql = text(f"INSERT IGNORE INTO {table} (name) VALUES (:name)")
-            result = conn.execute(insert_sql, {"name": sanitized_name})
+            await db.execute(insert_sql, {"name": sanitized_name})
             
             # Get the ID - handle potential duplicates
-            select_result = conn.execute(
+            select_result = await db.execute(
                 text(f"SELECT id FROM {table} WHERE name = :name"), {"name": sanitized_name}
             )
             row = select_result.first()
@@ -155,16 +155,16 @@ class Cache:
             logger.error(f"Error in _get_or_create for {table} '{sanitized_name}': {e}")
             raise
 
-    def artist(self, conn, name: str) -> int:
-        return self._get_or_create(conn, "artists", self.artists, name)
+    async def artist(self, db: AsyncSession, name: str) -> int:
+        return await self._get_or_create(db, "artists", self.artists, name)
 
-    def label(self, conn, name: str) -> int:
-        return self._get_or_create(conn, "labels", self.labels, name)
+    async def label(self, db: AsyncSession, name: str) -> int:
+        return await self._get_or_create(db, "labels", self.labels, name)
 
-    def genre(self, conn, name: str) -> int:
-        return self._get_or_create(conn, "genres", self.genres, name)
+    async def genre(self, db: AsyncSession, name: str) -> int:
+        return await self._get_or_create(db, "genres", self.genres, name)
 
-    def album(self, conn, title: str, primary_artist_id: int) -> int:
+    async def album(self, db: AsyncSession, title: str, primary_artist_id: int) -> int:
         # Sanitize the album title
         original_title = title
         sanitized_title = sanitize_album_title(title)
@@ -182,12 +182,12 @@ class Cache:
                 """INSERT IGNORE INTO albums (artist_id, title) 
                        VALUES (:artist_id, :title) """
             )
-            result = conn.execute(
+            await db.execute(
                 insert_sql, {"artist_id": primary_artist_id, "title": sanitized_title}
             )
             
             # Get the ID - handle potential duplicates
-            select_result = conn.execute(
+            select_result = await db.execute(
                 text(
                     "SELECT id FROM albums WHERE artist_id = :artist_id AND title = :title"
                 ),
@@ -213,8 +213,9 @@ class TrackUploadService:
         self.metadata_service = MetadataService()
         self.cache = Cache()
         
-    def upload_track_to_database(
+    async def upload_track_to_database(
         self, 
+        db: AsyncSession,
         file: UploadFile, 
         file_content: bytes
     ) -> Dict[str, any]:
@@ -222,6 +223,7 @@ class TrackUploadService:
         Upload a track to the database and store its metadata.
         
         Args:
+            db: Database session
             file: The uploaded file object
             file_content: The file content as bytes
             
@@ -262,89 +264,95 @@ class TrackUploadService:
             file_path = file.filename or "unknown_file"
             preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
-            # Insert into database
-            with engine.begin() as conn:
-                # Preload cache
-                logger.info("Preloading database cache...")
-                self.cache.preload(conn)
-                
-                # Get or create artists
-                artist_ids = [self.cache.artist(conn, name) for name in artist_names]
-                primary_artist_id = artist_ids[0]
-                
-                # Get or create label (optional)
-                label_id = None
-                if label_name:
-                    label_id = self.cache.label(conn, label_name)
-                
-                # Get or create genre
-                genre_id = self.cache.genre(conn, genre_name)
-                
-                # Get or create album (optional)
-                album_id = None
-                if album_title:
-                    album_id = self.cache.album(conn, album_title, primary_artist_id)
-                
-                # Insert track
-                track_data = {
-                    "uuid": track_uuid,
-                    "album_id": album_id,
-                    "label_id": label_id,
-                    "genre_id": genre_id,
-                    "title": title[:255],  # Ensure it fits in the column
-                    "year": year,
-                    "duration_sec": None,  # Will be updated from similarity server response
-                    "file_path": file_path[:500],  # Ensure it fits in the column
-                    "preview_path": preview_path,
-                    "file_size": file_size,
-                    "type": "upload"  # Set the type to "upload"
-                }
-                
-                logger.info(f"Inserting track: {track_data}")
-                
-                track_sql = text(
-                    """INSERT INTO tracks
-                       (uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                        file_path, preview_path, file_size, type)
-                       VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
-                               :duration_sec, :file_path, :preview_path, :file_size, :type)
-                    """
+            # Insert into database using async session
+            # Preload cache
+            logger.info("Preloading database cache...")
+            await self.cache.preload(db)
+            
+            # Get or create artists
+            artist_ids = []
+            for name in artist_names:
+                artist_id = await self.cache.artist(db, name)
+                artist_ids.append(artist_id)
+            primary_artist_id = artist_ids[0]
+            
+            # Get or create label (optional)
+            label_id = None
+            if label_name:
+                label_id = await self.cache.label(db, label_name)
+            
+            # Get or create genre
+            genre_id = await self.cache.genre(db, genre_name)
+            
+            # Get or create album (optional)
+            album_id = None
+            if album_title:
+                album_id = await self.cache.album(db, album_title, primary_artist_id)
+            
+            # Insert track
+            track_data = {
+                "uuid": track_uuid,
+                "album_id": album_id,
+                "label_id": label_id,
+                "genre_id": genre_id,
+                "title": title[:255],  # Ensure it fits in the column
+                "year": year,
+                "duration_sec": None,  # Will be updated from similarity server response
+                "file_path": file_path[:500],  # Ensure it fits in the column
+                "preview_path": preview_path,
+                "file_size": file_size,
+                "type": "upload"  # Set the type to "upload"
+            }
+            
+            logger.info(f"Inserting track: {track_data}")
+            
+            track_sql = text(
+                """INSERT INTO tracks
+                   (uuid, album_id, label_id, genre_id, title, year, duration_sec,
+                    file_path, preview_path, file_size, type)
+                   VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
+                           :duration_sec, :file_path, :preview_path, :file_size, :type)
+                """
+            )
+            await db.execute(track_sql, track_data)
+            
+            # Get the track ID
+            track_id_result = await db.execute(
+                text("SELECT id FROM tracks WHERE uuid = :uuid"),
+                {"uuid": track_uuid}
+            )
+            track_row = track_id_result.first()
+            if track_row is None:
+                raise Exception("Failed to insert track or retrieve track ID")
+            
+            track_id = track_row[0]
+            
+            # Insert track-artist relationships
+            for artist_id in artist_ids:
+                ta_sql = text(
+                    "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
                 )
-                result = conn.execute(track_sql, track_data)
-                
-                # Get the track ID
-                track_id_result = conn.execute(
-                    text("SELECT id FROM tracks WHERE uuid = :uuid"),
-                    {"uuid": track_uuid}
-                )
-                track_row = track_id_result.first()
-                if track_row is None:
-                    raise Exception("Failed to insert track or retrieve track ID")
-                
-                track_id = track_row[0]
-                
-                # Insert track-artist relationships
-                for artist_id in artist_ids:
-                    ta_sql = text(
-                        "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
-                    )
-                    conn.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
-                
-                logger.info(f"Successfully inserted track {track_uuid} with ID {track_id}")
-                
-                return {
-                    "success": True,
-                    "uuid": track_uuid,
-                    "track_id": track_id,
-                    "metadata": metadata,
-                    "file_size": file_size,
-                    "artist_names": artist_names,
-                    "album_title": album_title,
-                    "label_name": label_name,
-                    "genre_name": genre_name
-                }
+                await db.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
+            
+            # Commit the transaction
+            await db.commit()
+            
+            logger.info(f"Successfully inserted track {track_uuid} with ID {track_id}")
+            
+            return {
+                "success": True,
+                "uuid": track_uuid,
+                "track_id": track_id,
+                "metadata": metadata,
+                "file_size": file_size,
+                "artist_names": artist_names,
+                "album_title": album_title,
+                "label_name": label_name,
+                "genre_name": genre_name
+            }
                 
         except Exception as e:
+            await db.rollback()
             logger.error(f"Error uploading track to database: {e}")
             return {
                 "success": False,
@@ -368,8 +376,9 @@ class TrackUploadService:
         except (ValueError, AttributeError):
             return None
     
-    def upload_track_to_database_with_uuid(
+    async def upload_track_to_database_with_uuid(
         self, 
+        db: AsyncSession,
         file: UploadFile, 
         file_content: bytes,
         track_uuid: str,
@@ -381,6 +390,7 @@ class TrackUploadService:
         Upload a track to the database with a pre-generated UUID and specific track type.
         
         Args:
+            db: Database session
             file: The uploaded file object
             file_content: The file content as bytes
             track_uuid: Pre-generated UUID for the track
@@ -428,90 +438,96 @@ class TrackUploadService:
             else:
                 preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
-            # Insert into database
-            with engine.begin() as conn:
-                # Preload cache
-                logger.info("Preloading database cache...")
-                self.cache.preload(conn)
-                
-                # Get or create artists
-                artist_ids = [self.cache.artist(conn, name) for name in artist_names]
-                primary_artist_id = artist_ids[0]
-                
-                # Get or create label (optional)
-                label_id = None
-                if label_name:
-                    label_id = self.cache.label(conn, label_name)
-                
-                # Get or create genre
-                genre_id = self.cache.genre(conn, genre_name)
-                
-                # Get or create album (optional)
-                album_id = None
-                if album_title:
-                    album_id = self.cache.album(conn, album_title, primary_artist_id)
-                
-                # Insert track
-                track_data = {
-                    "uuid": track_uuid,
-                    "album_id": album_id,
-                    "label_id": label_id,
-                    "genre_id": genre_id,
-                    "title": title[:255],  # Ensure it fits in the column
-                    "year": year,
-                    "duration_sec": duration_sec,
-                    "file_path": file_path[:500],  # Ensure it fits in the column
-                    "preview_path": preview_path,
-                    "file_size": file_size,
-                    "type": track_type  # Use the provided track type
-                }
-                
-                logger.info(f"Inserting track with type '{track_type}': {track_data}")
-                
-                track_sql = text(
-                    """INSERT INTO tracks
-                       (uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                        file_path, preview_path, file_size, type)
-                       VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
-                               :duration_sec, :file_path, :preview_path, :file_size, :type)
-                    """
+            # Insert into database using async session
+            # Preload cache
+            logger.info("Preloading database cache...")
+            await self.cache.preload(db)
+            
+            # Get or create artists
+            artist_ids = []
+            for name in artist_names:
+                artist_id = await self.cache.artist(db, name)
+                artist_ids.append(artist_id)
+            primary_artist_id = artist_ids[0]
+            
+            # Get or create label (optional)
+            label_id = None
+            if label_name:
+                label_id = await self.cache.label(db, label_name)
+            
+            # Get or create genre
+            genre_id = await self.cache.genre(db, genre_name)
+            
+            # Get or create album (optional)
+            album_id = None
+            if album_title:
+                album_id = await self.cache.album(db, album_title, primary_artist_id)
+            
+            # Insert track
+            track_data = {
+                "uuid": track_uuid,
+                "album_id": album_id,
+                "label_id": label_id,
+                "genre_id": genre_id,
+                "title": title[:255],  # Ensure it fits in the column
+                "year": year,
+                "duration_sec": duration_sec,
+                "file_path": file_path[:500],  # Ensure it fits in the column
+                "preview_path": preview_path,
+                "file_size": file_size,
+                "type": track_type  # Use the provided track type
+            }
+            
+            logger.info(f"Inserting track with type '{track_type}': {track_data}")
+            
+            track_sql = text(
+                """INSERT INTO tracks
+                   (uuid, album_id, label_id, genre_id, title, year, duration_sec,
+                    file_path, preview_path, file_size, type)
+                   VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
+                           :duration_sec, :file_path, :preview_path, :file_size, :type)
+                """
+            )
+            await db.execute(track_sql, track_data)
+            
+            # Get the track ID
+            track_id_result = await db.execute(
+                text("SELECT id FROM tracks WHERE uuid = :uuid"),
+                {"uuid": track_uuid}
+            )
+            track_row = track_id_result.first()
+            if track_row is None:
+                raise Exception("Failed to insert track or retrieve track ID")
+            
+            track_id = track_row[0]
+            
+            # Insert track-artist relationships
+            for artist_id in artist_ids:
+                ta_sql = text(
+                    "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
                 )
-                result = conn.execute(track_sql, track_data)
-                
-                # Get the track ID
-                track_id_result = conn.execute(
-                    text("SELECT id FROM tracks WHERE uuid = :uuid"),
-                    {"uuid": track_uuid}
-                )
-                track_row = track_id_result.first()
-                if track_row is None:
-                    raise Exception("Failed to insert track or retrieve track ID")
-                
-                track_id = track_row[0]
-                
-                # Insert track-artist relationships
-                for artist_id in artist_ids:
-                    ta_sql = text(
-                        "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
-                    )
-                    conn.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
-                
-                logger.info(f"Successfully inserted track {track_uuid} with ID {track_id} and type '{track_type}'")
-                
-                return {
-                    "success": True,
-                    "uuid": track_uuid,
-                    "track_id": track_id,
-                    "track_type": track_type,
-                    "metadata": metadata,
-                    "file_size": file_size,
-                    "artist_names": artist_names,
-                    "album_title": album_title,
-                    "label_name": label_name,
-                    "genre_name": genre_name
-                }
+                await db.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
+            
+            # Commit the transaction
+            await db.commit()
+            
+            logger.info(f"Successfully inserted track {track_uuid} with ID {track_id} and type '{track_type}'")
+            
+            return {
+                "success": True,
+                "uuid": track_uuid,
+                "track_id": track_id,
+                "track_type": track_type,
+                "metadata": metadata,
+                "file_size": file_size,
+                "artist_names": artist_names,
+                "album_title": album_title,
+                "label_name": label_name,
+                "genre_name": genre_name
+            }
                 
         except Exception as e:
+            await db.rollback()
             logger.error(f"Error uploading track to database with UUID {track_uuid}: {e}")
             return {
                 "success": False,
