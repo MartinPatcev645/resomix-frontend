@@ -121,6 +121,7 @@ async def get_similarity_upload_endpoint(
     }
 )
 async def get_similarity_by_id_endpoint(
+    request: Request,
     request_data: SimilarityByIdRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -132,4 +133,4 @@ async def get_similarity_by_id_endpoint(
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
     print(request_data)
-    return await similarity_controller.get_similarity_by_id(db, request_data.track_id, request_data.top_sk)
+    return await similarity_controller.get_similarity_by_id(db, request, request_data.track_id, request_data.top_sk)
