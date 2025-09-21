@@ -63,7 +63,7 @@ class SimilarityController:
             file_size=file.size,
             correlation_id=correlation_id,
             request=request,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
             metadata={
                 "requested_top_sk": top_sk,
                 "validated_top_sk": validated_top_sk
