@@ -49,6 +49,7 @@ export function createHlsPlaylistController(): AudioController {
   let playAfterLoad = false;
 
   let isSeeking = false;
+  let isinitMediaSession = false;
 
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
@@ -269,9 +270,27 @@ export function createHlsPlaylistController(): AudioController {
     return tracksIds[i - 1];
   }
 
+  function msInitSession(trackId: string | null) {
+    // Media Session buttons\
+    if (isinitMediaSession) return;
+    msInit({
+      onPlay: () => play(),
+      onPause: () => pause(),
+      onStop: () => stop(),
+      onSeekTo: (t: number) => {
+        // t — absolute time to local
+        if (!currentTrackId) return;
+        const start = offsets.get(currentTrackId) || 0;
+        seek(Math.max(0, t - start));
+      },
+    });
+    isinitMediaSession = true;
+    msSyncMetadata(trackId || '')
+  }
+
   function msSyncMetadata(id?: string) {
     const trackId = id || currentTrackId;
-    if (!trackId) return;
+    if (!trackId || !isinitMediaSession) return;
     const t = tracks.find(x => x.id === trackId);
     if (!t) return;
     msSetMetadata({
@@ -324,11 +343,13 @@ export function createHlsPlaylistController(): AudioController {
       isSeeking = false;
 
       usePlayerStore.setState({ inputCurrentTime: savedLocal });
-      msUpdatePositionState({
-        position: savedLocal,
-        duration: d,
-        playbackRate: shouldPlay ? 1 : 0
-      }, true);
+      if (isinitMediaSession) {
+        msUpdatePositionState({
+          position: savedLocal,
+          duration: d,
+          playbackRate: shouldPlay ? 1 : 0
+        }, true);
+      }
 
       if (shouldPlay) {
         usePlayerStore.getState().setIsPlaying(true);
@@ -363,6 +384,7 @@ export function createHlsPlaylistController(): AudioController {
       load(tracksIds[0], true);
       return;
     }
+    msInitSession(currentTrackId);
     wantPlaying = true;
     usePlayerStore.getState().setIsPlaying(true);
     msSetPlaybackState('playing');
@@ -397,7 +419,9 @@ export function createHlsPlaylistController(): AudioController {
     audio.currentTime = start + local;
 
     usePlayerStore.getState().setTrackTime(id, local);
-    msUpdatePositionState({ position: local, duration: d, playbackRate: audio.paused ? 0 : 1 }, true);
+    if (isinitMediaSession) {
+      msUpdatePositionState({position: local, duration: d, playbackRate: audio.paused ? 0 : 1}, true);
+    }
     usePlayerStore.setState({ inputCurrentTime: local });
   }
 
@@ -438,19 +462,6 @@ export function createHlsPlaylistController(): AudioController {
       lastVolume = volume;
       audio.volume = volume;
     }
-  });
-
-  // Media Session buttons
-  msInit({
-    onPlay: () => play(),
-    onPause: () => pause(),
-    onStop: () => stop(),
-    onSeekTo: (t: number) => {
-      // t — absolute time to local
-      if (!currentTrackId) return;
-      const start = offsets.get(currentTrackId) || 0;
-      seek(Math.max(0, t - start));
-    },
   });
 
   const controller: AudioController = {

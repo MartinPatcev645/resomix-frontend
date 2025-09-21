@@ -6,7 +6,6 @@ export type MediaMeta = {
   artwork?: MediaArtwork[];
 };
 
-const supports = typeof navigator !== 'undefined' && 'mediaSession' in navigator;
 let lastPosUpdate = 0;
 
 type BaseHandlers = {
@@ -16,8 +15,13 @@ type BaseHandlers = {
   onSeekTo: (t: number) => void;
 };
 
+function isSupport() {
+  return typeof navigator !== 'undefined' && 'mediaSession' in navigator;
+}
+
 export function msInit(handlers: BaseHandlers) {
-  if (!supports) return;
+  if (!isSupport()) return;
+  // console.log('ms Init');
 
   try {
     navigator.mediaSession.setActionHandler('seekto', (e: any) => {
@@ -43,9 +47,10 @@ export function msSetTrackControls(opts: {
   onNext: (() => void) | null;
   onPrev: (() => void) | null;
 }) {
-  if (!supports) {
+  if (!isSupport()) {
     return;
   }
+  // console.log('msSetTrackControls');
   navigator.mediaSession.setActionHandler('nexttrack', opts.onNext);
   navigator.mediaSession.setActionHandler('previoustrack', opts.onPrev);
 
@@ -56,9 +61,10 @@ export function msSetTrackControls(opts: {
 }
 
 export function msSetMetadata(meta: MediaMeta) {
-  if (!supports) {
+  if (!isSupport()) {
     return;
   }
+  // console.log('msSetMetadata', meta);
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: meta.title ?? '',
@@ -72,7 +78,8 @@ export function msSetMetadata(meta: MediaMeta) {
 }
 
 export function msSetPlaybackState(state: 'none' | 'paused' | 'playing') {
-  if (!supports) return;
+  if (!isSupport()) return;
+  // console.log('msSetPlaybackState', state);
   navigator.mediaSession.playbackState = state;
 }
 
@@ -81,13 +88,9 @@ export function msUpdatePositionState(input: {
   duration: number;
   playbackRate?: number;
 }, isUrgent: boolean) {
-  if (!supports) return;
+  if (!isSupport()) return;
+  // console.log('msUpdatePositionState', input);
   const now = Date.now();
-  /*
-  if (now - lastPosUpdate < 250 || !isUrgent) {
-    return;
-  }
-   */
   lastPosUpdate = now;
 
   // Never send duration <= 0 to iOS - it grays out the scrubber
@@ -100,16 +103,18 @@ export function msUpdatePositionState(input: {
   if (pos < 0) pos = 0;
   if (pos > dur) pos = dur;
 
-  const playbackRate = input.playbackRate ?? 1;
+  // const playbackRate = input.playbackRate ?? 1;
 
   try {
-    navigator.mediaSession.setPositionState({ position: Math.floor(pos), duration: Math.floor(dur), playbackRate });
+    // playback rate always 1 due to iOS bug
+    navigator.mediaSession.setPositionState({ position: pos, duration: dur, playbackRate: 1 });
   } catch {
   }
 }
 
 export function msReset() {
-  if (!supports) return;
+  if (!isSupport()) return;
+  // console.log('msReset');
   try {
     navigator.mediaSession.metadata = null;
   } catch { }
