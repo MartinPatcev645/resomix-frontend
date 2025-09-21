@@ -29,7 +29,7 @@ from app.services.track_upload_service import TrackUploadService, generate_track
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
 from app.services.logging_service import LoggingService
-from app.utils.mix_filter import validate_track_for_mixesfor_mixes
+from app.utils.mix_filter import validate_track_for_mixes
 
 
 class MonthlyPipelineController:
