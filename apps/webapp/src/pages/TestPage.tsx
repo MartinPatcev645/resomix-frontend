@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState} from "react";
 // import InputPlayer from "@/components/Playlist/InputPlayer.tsx";
-import { useGlobalHowlerController } from "@resomix/hooks";
-import { usePlayerStore } from "@resomix/stores";
 
 // List of UUIDs to request
 const UUIDS: string[] = [
@@ -60,13 +58,6 @@ const UUIDS: string[] = [
 
 const TestPage: React.FC = () => {
   const [play, setPlay] = useState(false);
-  const howlerController = useGlobalHowlerController();
-  const setHowlerController = usePlayerStore((s) => s.setHowlerController);
-
-  // Initialize global controller
-  useEffect(() => {
-    setHowlerController(howlerController);
-  }, [howlerController, setHowlerController]);
 
   const handleHlsRequest = async () => {
     try {

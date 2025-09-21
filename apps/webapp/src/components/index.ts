@@ -22,7 +22,6 @@ import PlaylistExport from "./Modals/PlaylistExport.tsx";
 import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
-import PeaksPlayer from "./Playlist/PeaksPlayer.tsx";
 
 export {
     LogoHeader,
@@ -49,5 +48,4 @@ export {
     StatusMessage,
     UploadLoader,
     ThumbIcon,
-    PeaksPlayer
 }

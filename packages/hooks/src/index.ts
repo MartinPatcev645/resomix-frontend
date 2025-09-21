@@ -8,17 +8,10 @@ export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export { useWaveform } from "./Waveform/useWaveform";
-export { usePeaks } from "./Waveform/usePeaks";
-export { usePeaksWaveform } from "./Waveform/usePeaksWaveform";
 export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';
-export * from './Player/usePlayerManager';
-export * from './Player/useAudioContextUnlocker';
 export * from './Player/AudioProvider';
-export * from './Player/useHowlerController';
-export * from './Player/useGlobalHowlerController';
-export * from './Player/playerActions';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'
 export type { WaveformTheme } from "./Waveform/useWaveform";
