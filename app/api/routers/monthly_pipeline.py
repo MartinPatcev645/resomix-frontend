@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, File, UploadFile, Form, Security, Depends
+from fastapi import APIRouter, File, UploadFile, Form, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,6 +60,7 @@ monthly_pipeline_controller = MonthlyPipelineController()
     },
 )
 async def monthly_pipeline_update_embeddings_endpoint(
+    request: Request,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
 ) -> JSONResponse:
@@ -96,6 +97,7 @@ async def monthly_pipeline_update_embeddings_endpoint(
     }
 )
 async def monthly_pipeline_track_endpoint(
+    request: Request,
     file: UploadFile = File(..., description="Audio file to process for monthly pipeline"),
     path: str = Form(..., description="File path for the track"),
     db: AsyncSession = Depends(get_database_session),
@@ -112,4 +114,4 @@ async def monthly_pipeline_track_endpoint(
     - **file**: The audio file to process
     - **path**: The file path for the track
     """
-    return await monthly_pipeline_controller.process_monthly_pipeline_track(db, file, path)
+    return await monthly_pipeline_controller.process_monthly_pipeline_track(db, request, file, path)

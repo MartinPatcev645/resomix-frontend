@@ -16,8 +16,9 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Metadata endpoints 
-from fastapi import APIRouter, File, UploadFile, Security
+from fastapi import APIRouter, File, UploadFile, Security, Request, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from app.controllers.metadata_controller import MetadataController
 from app.api.dependencies.auth import get_api_key
@@ -25,6 +26,7 @@ from app.schemas.metadata import (
     MetadataSuccessResponse,
     MetadataErrorResponse
 )
+from app.database.session import get_database_session
 
 router = APIRouter(
     tags=["metadata"],
@@ -64,7 +66,9 @@ metadata_controller = MetadataController()
     }
 )
 async def get_metadata_endpoint(
+    request: Request,
     file: UploadFile = File(..., description="Audio file to extract metadata from"),
+    db: Session = Depends(get_database_session),
     _: str = Security(get_api_key)  # Authentication required but not used in controller
 ) -> JSONResponse:
     """
@@ -72,4 +76,4 @@ async def get_metadata_endpoint(
     
     - **file**: Audio file to analyze (supports MP3, FLAC, OGG, M4A, WAV, WMA, AAC, OPUS)
     """
-    return await metadata_controller.get_metadata(file) 
+    return await metadata_controller.get_metadata(db, request, file)

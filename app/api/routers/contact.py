@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Depends, Path, Security
+from fastapi import APIRouter, Depends, Path, Security, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.contact_controller import ContactController
@@ -59,6 +59,7 @@ contact_controller = ContactController()
     }
 )
 async def submit_contact(
+    request: Request,
     contact_request: ContactRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -77,7 +78,7 @@ async def submit_contact(
     Returns success confirmation or validation errors.
     """
     contact_data = contact_request.dict()
-    return await contact_controller.submit_contact(db, contact_data)
+    return await contact_controller.submit_contact(db, request, contact_data)
 
 
 @router.get(
@@ -93,6 +94,7 @@ async def submit_contact(
     }
 )
 async def get_contact(
+    request: Request,
     contact_id: int = Path(..., description="The ID of the contact to retrieve", ge=1),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -103,7 +105,7 @@ async def get_contact(
     This endpoint retrieves a specific contact submission using its unique ID.
     Useful for administrators to view contact details.
     """
-    return await contact_controller.get_contact_by_id(db, contact_id)
+    return await contact_controller.get_contact_by_id(db, request, contact_id)
 
 
 @router.patch(
@@ -119,6 +121,7 @@ async def get_contact(
     }
 )
 async def update_contact_status(
+    request: Request,
     status_request: ContactUpdateRequest,
     contact_id: int = Path(..., description="The ID of the contact to update", ge=1),
     db: AsyncSession = Depends(get_database_session),
@@ -131,4 +134,4 @@ async def update_contact_status(
     Status can be changed between 'open' and 'resolved'.
     """
     status_data = status_request.dict()
-    return await contact_controller.update_contact_status(db, contact_id, status_data) 
+    return await contact_controller.update_contact_status(db, request, contact_id, status_data)

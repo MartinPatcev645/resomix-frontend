@@ -19,7 +19,7 @@ Email: usman.naeem2212@gmail.com
 import os
 import uuid
 from typing import Optional
-from fastapi import UploadFile, HTTPException, status
+from fastapi import UploadFile, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,7 +30,7 @@ from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
-from app.utils.logging_utils import log_request
+from app.services.logging_service import LoggingService
 
 
 class SimilarityController:
@@ -39,8 +39,9 @@ class SimilarityController:
         self.search_service = SearchService()
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
+        self.logging_service = LoggingService()
 
-    async def get_similarity_upload(self, db: AsyncSession, file: UploadFile, top_sk: Optional[int] = None) -> JSONResponse:
+    async def get_similarity_upload(self, db: AsyncSession, request: Request, file: UploadFile, top_sk: Optional[int] = None) -> JSONResponse:
         """
         Process an audio file: first upload to database, then return similar tracks.
         """
@@ -49,11 +50,19 @@ class SimilarityController:
         actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
         duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
         
-        log_request("get_similarity (upload)", "POST", {
-            "filename": file.filename, 
-            "requested_top_sk": top_sk, 
-            "validated_top_sk": validated_top_sk
-        })
+        correlation_id = self.logging_service.generate_correlation_id()
+        # Log operation start (complex upload)
+        self.logging_service.log_upload_operation(
+            db=db,
+            operation="similarity_upload_start",
+            filename=file.filename,
+            file_size=file.size,
+            correlation_id=correlation_id,
+            metadata={
+                "requested_top_sk": top_sk,
+                "validated_top_sk": validated_top_sk
+            }
+        )
         
         # File Size Check using settings
         if file.size > settings.max_file_size:
@@ -141,14 +150,20 @@ class SimilarityController:
                 )
                 
             except Exception as e:
-                print(f"An error occurred in get_similarity (upload with database): {e}")
+                self.logging_service.log_error(
+                    request=request,
+                    db=db,
+                    error=e,
+                    context="similarity upload with database",
+                    correlation_id=correlation_id
+                )
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error="An internal server error occurred.")
                 )
 
         else:  # FFmpeg not available, fall back to saving file and basic content type check
-            print(f"WARNING: FFmpeg not available. Performing basic content type check for: {original_filename} and saving to temp file.")
+            self.logging_service.log_system_event(db=db, event="ffmpeg_unavailable", level="WARNING", message="FFmpeg not available during similarity upload")
             if not file.content_type or not file.content_type.startswith("audio/"):
                 return JSONResponse(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -185,7 +200,8 @@ class SimilarityController:
                     )
 
                 # STEP 2: Perform similarity analysis
-                print("FFmpeg not available. Cannot guarantee audio validity before sending to similarity server. Proceeding with byte upload with caution.")
+                # Log fallback warning
+                self.logging_service.log_system_event(db=db, event="similarity_upload_fallback", level="WARNING", metadata={"filename": original_filename})
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
@@ -211,7 +227,13 @@ class SimilarityController:
                 )
 
             except Exception as e:
-                print(f"An error occurred in get_similarity (upload, no FFmpeg, fallback with bytes): {e}")
+                self.logging_service.log_error(
+                    request=request,
+                    db=db,
+                    error=e,
+                    context="similarity upload fallback",
+                    correlation_id=correlation_id
+                )
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error="An internal server error occurred.")
@@ -283,14 +305,21 @@ class SimilarityController:
                     )
                 )
             
-            # Return successful response
+            # Log success once result is ready
+            self.logging_service.log_user_action(
+                db=db,
+                action="similarity_by_id_success",
+                message=f"Similarity by ID processed for {track_id}",
+                correlation_id=self.logging_service.generate_correlation_id(),
+                track_id=track_id
+            )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(success=True, data=similarity_results)
             )
             
         except Exception as e:
-            print(f"Error in get_similarity_by_id: {e}")
+            self.logging_service.log_error(db=db, error=e, context="similarity by id")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(

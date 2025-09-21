@@ -15,13 +15,14 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import status
+from fastapi import status, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.services.playlist_service import PlaylistService
+from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
-from app.utils.logging_utils import log_request
 
 
 class PlaylistController:
@@ -30,23 +31,34 @@ class PlaylistController:
     def __init__(self):
         """Initialize playlist controller."""
         self.playlist_service = PlaylistService()
+        self.logging_service = LoggingService()
     
-    async def rename_playlist(self, db: AsyncSession, playlist_id: str, new_name: str) -> JSONResponse:
+    async def rename_playlist(self, db: AsyncSession, request: Request, playlist_id: str, new_name: str) -> JSONResponse:
         """
         Rename a playlist by UUID.
         
         Args:
             db: Database session
+            request: FastAPI Request object
             playlist_id: Playlist UUID
             new_name: New playlist name
             
         Returns:
             JSON response with operation result
         """
-        log_request("rename_playlist", "PUT", {"playlist_id": playlist_id, "new_name": new_name})
+        correlation_id = self.logging_service.generate_correlation_id()
         
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
+            # Log validation failure
+            self.logging_service.log_user_action(
+                db=db,
+                action="rename_playlist_validation_failed",
+                message="Playlist rename failed: empty playlist_id",
+                correlation_id=correlation_id,
+                metadata={"error": "playlist_id cannot be empty"}
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 content=format_response(
@@ -56,6 +68,16 @@ class PlaylistController:
             )
         
         if not new_name or not new_name.strip():
+            # Log validation failure
+            self.logging_service.log_user_action(
+                db=db,
+                action="rename_playlist_validation_failed",
+                message="Playlist rename failed: empty new_name",
+                correlation_id=correlation_id,
+                playlist_id=playlist_id,
+                metadata={"error": "new_name cannot be empty"}
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 content=format_response(
@@ -68,18 +90,52 @@ class PlaylistController:
             result = await self.playlist_service.rename_playlist(db, playlist_id, new_name.strip())
             
             if result.get("success"):
+                # Log successful rename
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="rename_playlist_success",
+                    message=f"Playlist renamed successfully: {playlist_id} -> {new_name.strip()}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"old_name": result.get("old_name"), "new_name": new_name.strip()}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
                 )
             else:
+                # Log playlist not found
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="rename_playlist_not_found",
+                    message=f"Playlist rename failed: playlist not found {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"error": result.get("error")}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=result
                 )
                 
         except Exception as e:
-            print(f"Error in playlist controller rename: {e}")
+            # Log error with full context
+            self.logging_service.log_error(
+                db=db,
+                error=e,
+                context="playlist rename operation",
+                correlation_id=correlation_id,
+                request=request,
+                playlist_id=playlist_id,
+                metadata={
+                    "playlist_id": playlist_id,
+                    "new_name": new_name,
+                    "operation": "rename_playlist"
+                }
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -88,22 +144,32 @@ class PlaylistController:
                 )
             )
     
-    async def change_playlist_visibility(self, db: AsyncSession, playlist_id: str, is_public: bool) -> JSONResponse:
+    async def change_playlist_visibility(self, db: AsyncSession, request: Request, playlist_id: str, is_public: bool) -> JSONResponse:
         """
         Change playlist visibility (public/private).
         
         Args:
             db: Database session
+            request: FastAPI Request object
             playlist_id: Playlist UUID
             is_public: Whether to make the playlist public
             
         Returns:
             JSON response with operation result
         """
-        log_request("change_playlist_visibility", "PUT", {"playlist_id": playlist_id, "is_public": is_public})
+        correlation_id = self.logging_service.generate_correlation_id()
         
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
+            # Log validation failure
+            self.logging_service.log_user_action(
+                db=db,
+                action="change_visibility_validation_failed",
+                message="Playlist visibility change failed: empty playlist_id",
+                correlation_id=correlation_id,
+                metadata={"error": "playlist_id cannot be empty"}
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 content=format_response(
@@ -116,18 +182,52 @@ class PlaylistController:
             result = await self.playlist_service.change_playlist_visibility(db, playlist_id, is_public)
             
             if result.get("success"):
+                # Log successful visibility change
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="change_playlist_visibility_success",
+                    message=f"Playlist visibility changed successfully: {playlist_id} -> {'public' if is_public else 'private'}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"is_public": is_public, "previous_visibility": result.get("previous_visibility")}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
                 )
             else:
+                # Log playlist not found
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="change_visibility_not_found",
+                    message=f"Playlist visibility change failed: playlist not found {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"error": result.get("error")}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=result
                 )
                 
         except Exception as e:
-            print(f"Error in playlist controller visibility change: {e}")
+            # Log error with full context
+            self.logging_service.log_error(
+                db=db,
+                error=e,
+                context="playlist visibility change operation",
+                correlation_id=correlation_id,
+                request=request,
+                playlist_id=playlist_id,
+                metadata={
+                    "playlist_id": playlist_id,
+                    "is_public": is_public,
+                    "operation": "change_playlist_visibility"
+                }
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -135,20 +235,21 @@ class PlaylistController:
                     error="An internal server error occurred while changing playlist visibility"
                 )
             )
-    
-    async def get_playlist_similarity_data(self, db: AsyncSession, playlist_id: str) -> JSONResponse:
+
+    async def get_playlist_similarity_data(self, db: AsyncSession, request: Request, playlist_id: str) -> JSONResponse:
         """
         Get playlist with similarity data.
         Only returns data for public playlists.
         
         Args:
             db: Database session
+            request: FastAPI Request object
             playlist_id: Playlist UUID
             
         Returns:
             JSON response with similarity data
         """
-        log_request("get_playlist_similarity_data", "GET", {"playlist_id": playlist_id})
+        correlation_id = self.logging_service.generate_correlation_id()
         
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
@@ -164,23 +265,62 @@ class PlaylistController:
             result = await self.playlist_service.get_playlist_similarity_data(db, playlist_id)
             
             if result.get("success"):
+                # Log successful access
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_playlist_similarity_data_success",
+                    message=f"User accessed playlist similarity data: {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
                 )
             elif "not public" in result.get("error", "").lower():
+                # Log access denied due to privacy
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_playlist_similarity_data_forbidden",
+                    message=f"Access denied to private playlist: {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"error": "playlist_not_public"}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,
                     content=result
                 )
             else:
+                # Log not found
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_playlist_similarity_data_not_found",
+                    message=f"Playlist not found: {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"error": result.get("error")}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=result
                 )
                 
         except Exception as e:
-            print(f"Error in playlist controller get similarity data: {e}")
+            # Log error with full context
+            self.logging_service.log_error(
+                db=db,
+                error=e,
+                context="get playlist similarity data",
+                correlation_id=correlation_id,
+                request=request,
+                playlist_id=playlist_id,
+                metadata={"operation": "get_playlist_similarity_data"}
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -188,20 +328,21 @@ class PlaylistController:
                     error="An internal server error occurred while retrieving playlist data"
                 )
             )
-    
-    async def get_playlist_hls_data(self, db: AsyncSession, playlist_id: str) -> Response:
+
+    async def get_playlist_hls_data(self, db: AsyncSession, request: Request, playlist_id: str) -> Response:
         """
         Get playlist as HLS M3U8 format.
         Only returns data for public playlists.
         
         Args:
             db: Database session
+            request: FastAPI Request object
             playlist_id: Playlist UUID
             
         Returns:
             Response with M3U8 content or error
         """
-        log_request("get_playlist_hls_data", "GET", {"playlist_id": playlist_id})
+        correlation_id = self.logging_service.generate_correlation_id()
         
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
@@ -217,6 +358,15 @@ class PlaylistController:
             result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
             
             if result.get("success"):
+                # Log successful HLS access
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_playlist_hls_data_success",
+                    message=f"User accessed playlist HLS data: {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id
+                )
+                
                 # Return M3U8 content with proper MIME type and CORS headers
                 response = Response(
                     content=result["m3u8_content"],
@@ -228,6 +378,16 @@ class PlaylistController:
                 response.headers["Cache-Control"] = "no-store"
                 return response
             elif "not public" in result.get("error", "").lower():
+                # Log access denied
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_playlist_hls_data_forbidden",
+                    message=f"Access denied to private playlist HLS: {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"error": "playlist_not_public"}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,
                     content=format_response(
@@ -236,6 +396,16 @@ class PlaylistController:
                     )
                 )
             else:
+                # Log not found
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="get_playlist_hls_data_not_found",
+                    message=f"Playlist not found for HLS: {playlist_id}",
+                    correlation_id=correlation_id,
+                    playlist_id=playlist_id,
+                    metadata={"error": result.get("error")}
+                )
+                
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
@@ -245,7 +415,17 @@ class PlaylistController:
                 )
                 
         except Exception as e:
-            print(f"Error in playlist controller get HLS data: {e}")
+            # Log error with full context
+            self.logging_service.log_error(
+                db=db,
+                error=e,
+                context="get playlist HLS data",
+                correlation_id=correlation_id,
+                request=request,
+                playlist_id=playlist_id,
+                metadata={"operation": "get_playlist_hls_data"}
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(

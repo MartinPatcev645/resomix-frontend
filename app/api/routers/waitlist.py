@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Query
+from fastapi import APIRouter, Security, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,6 +63,7 @@ waitlist_controller = WaitlistController()
     }
 )
 async def join_waitlist_endpoint(
+    request: Request,
     request_data: WaitlistRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -72,7 +73,7 @@ async def join_waitlist_endpoint(
     
     - **email**: The email address to add to the waitlist
     """
-    return await waitlist_controller.add_to_waitlist(db, request_data.dict())
+    return await waitlist_controller.add_to_waitlist(db, request, request_data.dict())
 
 
 @router.get(
@@ -96,6 +97,7 @@ async def join_waitlist_endpoint(
     }
 )
 async def check_waitlist_status_endpoint(
+    request: Request,
     email: str = Query(..., description="Email address to check in waitlist"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -105,4 +107,4 @@ async def check_waitlist_status_endpoint(
     
     - **email**: The email address to check (query parameter)
     """
-    return await waitlist_controller.get_waitlist_entry(db, email)
+    return await waitlist_controller.get_waitlist_entry(db, request, email)

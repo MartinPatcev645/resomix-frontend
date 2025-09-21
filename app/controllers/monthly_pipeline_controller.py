@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 import asyncio
 from typing import Optional
-from fastapi import UploadFile, status
+from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,7 +28,7 @@ from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
-from app.utils.logging_utils import log_request
+from app.services.logging_service import LoggingService
 from app.utils.mix_filter import validate_track_for_mixes
 
 
@@ -39,6 +39,7 @@ class MonthlyPipelineController:
         self.monthly_pipeline_service = MonthlyPipelineService()
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
+        self.logging_service = LoggingService()
 
     async def update_embeddings(self, db: AsyncSession) -> JSONResponse:
         """Trigger bulk update of embeddings by sending UUID→path map to similarity server."""
@@ -50,9 +51,10 @@ class MonthlyPipelineController:
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=format_response(False, error=service_resp.get("error", "Unknown error")))
 
     async def process_monthly_pipeline_track(
-        self, 
-        db: AsyncSession, 
-        file: UploadFile, 
+        self,
+        db: AsyncSession,
+        request: Request,
+        file: UploadFile,
         path: str
     ) -> JSONResponse:
         """
@@ -67,10 +69,16 @@ class MonthlyPipelineController:
         Returns:
             JSON response with processing status
         """
-        log_request("monthly_pipeline_track", "POST", {
-            "filename": file.filename,
-            "path": path
-        })
+        correlation_id = self.logging_service.generate_correlation_id()
+        # Log start of monthly pipeline processing
+        self.logging_service.log_upload_operation(
+            db=db,
+            operation="monthly_pipeline_start",
+            filename=file.filename,
+            file_size=file.size,
+            correlation_id=correlation_id,
+            metadata={"path": path}
+        )
         
         # STEP 0: Check if this path already exists in database (duplicate check)
         try:
@@ -86,8 +94,14 @@ class MonthlyPipelineController:
                 count = check_result.scalar()
                 
                 if count > 0:
-                    print(f"[DUPLICATE CHECK] Track already exists with path: {path}")
-                    print(f"  - Found {count} existing track(s) with this path")
+                    # Log duplicate track detection
+                    self.logging_service.log_system_event(
+                        db=db,
+                        event="monthly_pipeline_duplicate",
+                        level="INFO",
+                        message=f"Track already exists with path: {path}",
+                        metadata={"existing_tracks": count}
+                    )
                     
                     return JSONResponse(
                         status_code=status.HTTP_200_OK,
@@ -102,12 +116,21 @@ class MonthlyPipelineController:
                     )
                     
         except Exception as e:
-            print(f"Error during duplicate check: {e}")
-            # Continue with processing if duplicate check fails
+            self.logging_service.log_error(db=db, error=e, context="monthly_pipeline_duplicate_check", correlation_id=correlation_id)
+            # request not critical here
             pass
         
         # File Size Check using settings
         if file.size > settings.max_file_size:
+            # Log file size validation failure
+            self.logging_service.log_upload_operation(
+                db=db,
+                operation="monthly_pipeline_failed",
+                filename=file.filename,
+                status="error",
+                error_message="File too large",
+                correlation_id=correlation_id
+            )
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, 
                 content=format_response(
@@ -118,6 +141,15 @@ class MonthlyPipelineController:
 
         # Check if the file is empty
         if file.size == 0:
+            # Log empty file failure
+            self.logging_service.log_upload_operation(
+                db=db,
+                operation="monthly_pipeline_failed",
+                filename=file.filename,
+                status="error",
+                error_message="Empty file provided",
+                correlation_id=correlation_id
+            )
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 content=format_response(
@@ -139,6 +171,15 @@ class MonthlyPipelineController:
                 # STEP 1: Validate audio format using FFmpeg
                 is_valid_audio = self.audio_service.validate_audio_format(audio_bytes, original_filename)
                 if not is_valid_audio:
+                    # Log invalid audio
+                    self.logging_service.log_upload_operation(
+                        db=db,
+                        operation="monthly_pipeline_failed",
+                        filename=file.filename,
+                        status="error",
+                        error_message="Invalid audio format",
+                        correlation_id=correlation_id
+                    )
                     return JSONResponse(
                         status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                         content=format_response(
@@ -158,6 +199,15 @@ class MonthlyPipelineController:
                 )
                 
                 if not mix_filter_result.is_valid:
+                    # Log mix filter rejection
+                    self.logging_service.log_upload_operation(
+                        db=db,
+                        operation="monthly_pipeline_failed",
+                        filename=file.filename,
+                        status="error",
+                        error_message=f"Mix filter rejection: {mix_filter_result.reason}",
+                        correlation_id=correlation_id
+                    )
                     return JSONResponse(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         content=format_response(
@@ -203,6 +253,15 @@ class MonthlyPipelineController:
                     file.file, file.filename, mode="limited"
                 )
                 if "error" in metadata:
+                    # Log metadata extraction failure
+                    self.logging_service.log_upload_operation(
+                        db=db,
+                        operation="monthly_pipeline_failed",
+                        filename=file.filename,
+                        status="error",
+                        error_message=f"Metadata extraction failed: {metadata['error']}",
+                        correlation_id=correlation_id
+                    )
                     return JSONResponse(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         content=format_response(
@@ -211,6 +270,8 @@ class MonthlyPipelineController:
                         )
                     )
             except Exception as e:
+                self.logging_service.log_error(db=db, error=e, context="monthly_pipeline_metadata_extract", correlation_id=correlation_id)
+                # request available but not used
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(
@@ -231,6 +292,15 @@ class MonthlyPipelineController:
             )
             
             if not embedding_result.get("success", False):
+                # Log embedding failure
+                self.logging_service.log_upload_operation(
+                    db=db,
+                    operation="monthly_pipeline_failed",
+                    filename=file.filename,
+                    status="error",
+                    error_message=embedding_result.get("error", "embedding preview failed"),
+                    correlation_id=correlation_id
+                )
                 return JSONResponse(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     content=format_response(
@@ -257,6 +327,15 @@ class MonthlyPipelineController:
             )
             
             if not upload_result.get("success", False):
+                # Log DB storage failure
+                self.logging_service.log_upload_operation(
+                    db=db,
+                    operation="monthly_pipeline_failed",
+                    filename=file.filename,
+                    status="error",
+                    error_message=f"DB store failed: {upload_result.get('error')}",
+                    correlation_id=correlation_id
+                )
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(
@@ -265,7 +344,16 @@ class MonthlyPipelineController:
                     )
                 )
             
-            # Return success response
+            # Log successful completion
+            self.logging_service.log_upload_operation(
+                db=db,
+                operation="monthly_pipeline_success",
+                filename=file.filename,
+                file_size=file.size,
+                status="success",
+                correlation_id=correlation_id,
+                metadata={"path": path, "track_uuid": track_uuid}
+            )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(
@@ -279,7 +367,8 @@ class MonthlyPipelineController:
             )
             
         except Exception as e:
-            print(f"An error occurred in monthly_pipeline_track: {e}")
+            self.logging_service.log_error(db=db, error=e, context="monthly_pipeline_track", correlation_id=correlation_id)
+            # request param can be added
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred.")

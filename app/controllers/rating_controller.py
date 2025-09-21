@@ -15,14 +15,14 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import status
+from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.services.rating_service import RatingService
+from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
-from app.utils.logging_utils import log_request
 from app.schemas.rating import TrackRatingRequest, PlaylistRatingRequest
 from app.core.exceptions import ValidationError
 
@@ -33,17 +33,13 @@ class RatingController:
     def __init__(self):
         """Initialize rating controller."""
         self.rating_service = RatingService()
+        self.logging_service = LoggingService()
     
     # Track Rating Endpoints
-    async def rate_track(self, db: AsyncSession, request_data: TrackRatingRequest) -> JSONResponse:
+    async def rate_track(self, db: AsyncSession, request: Request, request_data: TrackRatingRequest) -> JSONResponse:
         """Rate a track endpoint handler."""
         try:
-            log_request("rate_track", {
-                "track_id": request_data.track_id,
-                "playlist_id": request_data.playlist_id,
-                "rating": request_data.rating,
-                "has_user_id": bool(request_data.user_id)
-            })
+            correlation_id = self.logging_service.generate_correlation_id()
             
             result = await self.rating_service.rate_track(
                 db, 
@@ -54,11 +50,30 @@ class RatingController:
             )
             
             if result["success"]:
+                # log success
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="rate_track_success",
+                    message="Track rated",
+                    correlation_id=correlation_id,
+                    track_id=request_data.track_id,
+                    playlist_id=request_data.playlist_id,
+                    metadata={"rating": request_data.rating}
+                )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=result
                 )
             else:
+                self.logging_service.log_user_action(
+                    db=db,
+                    action="rate_track_failed",
+                    message=result.get("error"),
+                    correlation_id=correlation_id,
+                    track_id=request_data.track_id,
+                    playlist_id=request_data.playlist_id,
+                    metadata={"rating": request_data.rating}
+                )
                 error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
                 return JSONResponse(
                     status_code=error_code,
@@ -67,6 +82,13 @@ class RatingController:
                 
         except ValueError as e:
             # Handle Pydantic validation errors
+            self.logging_service.log_user_action(
+                db=db,
+                action="rate_track_validation_error",
+                message=str(e),
+                metadata={},
+                correlation_id=self.logging_service.generate_correlation_id()
+            )
             error_response = {
                 "success": False,
                 "error": f"Validation failed: {str(e)}"
@@ -76,6 +98,13 @@ class RatingController:
                 content=error_response
             )
         except ValidationError as e:
+            self.logging_service.log_user_action(
+                db=db,
+                action="rate_track_validation_error",
+                message=str(e),
+                metadata={},
+                correlation_id=self.logging_service.generate_correlation_id()
+            )
             error_response = {
                 "success": False,
                 "error": f"Validation error: {str(e)}"
@@ -85,7 +114,7 @@ class RatingController:
                 content=error_response
             )
         except Exception as e:
-            print(f"Error in rate_track controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="rate_track_controller")
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while processing the rating"
@@ -95,14 +124,10 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_track_rating(self, db: AsyncSession, track_id: str, playlist_id: str, user_id: Optional[str] = None) -> JSONResponse:
+    async def get_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str) -> JSONResponse:
         """Get track rating endpoint handler."""
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
-            log_request("get_track_rating", {
-                "track_id": track_id,
-                "playlist_id": playlist_id,
-                "has_user_id": bool(user_id)
-            })
             
             result = await self.rating_service.get_track_rating(db, track_id, playlist_id, user_id)
             
@@ -118,7 +143,7 @@ class RatingController:
                 )
                 
         except Exception as e:
-            print(f"Error in get_track_rating controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="get_track_rating", correlation_id=correlation_id)
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while retrieving the rating"
@@ -128,14 +153,10 @@ class RatingController:
                 content=error_response
             )
     
-    async def delete_track_rating(self, db: AsyncSession, track_id: str, playlist_id: str, user_id: Optional[str] = None) -> JSONResponse:
+    async def delete_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str) -> JSONResponse:
         """Delete track rating endpoint handler."""
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
-            log_request("delete_track_rating", {
-                "track_id": track_id,
-                "playlist_id": playlist_id,
-                "has_user_id": bool(user_id)
-            })
             
             result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, user_id)
             
@@ -151,7 +172,7 @@ class RatingController:
                 )
                 
         except Exception as e:
-            print(f"Error in delete_track_rating controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="delete_track_rating", correlation_id=correlation_id)
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while deleting the rating"
@@ -161,7 +182,7 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_track_rating_stats(self, db: AsyncSession, track_id: str) -> JSONResponse:
+    async def get_track_rating_stats(self, db: AsyncSession, request: Request, track_id: str) -> JSONResponse:
         """
         Get rating statistics for a specific track.
         
@@ -172,8 +193,7 @@ class RatingController:
         Returns:
             JSON response with rating statistics
         """
-        log_request("get_track_rating_stats", "GET", {"track_id": track_id})
-        
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
             result = await self.rating_service.get_track_rating_stats(db, track_id)
             
@@ -183,7 +203,7 @@ class RatingController:
             )
                 
         except Exception as e:
-            print(f"Error in rating controller get_track_rating_stats: {e}")
+            self.logging_service.log_error(db=db, error=e, context="get_track_rating_stats", correlation_id=correlation_id)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -193,15 +213,10 @@ class RatingController:
             )
     
     # Playlist Rating Endpoints
-    async def rate_playlist(self, db: AsyncSession, request_data: PlaylistRatingRequest) -> JSONResponse:
+    async def rate_playlist(self, db: AsyncSession, request: Request, request_data: PlaylistRatingRequest) -> JSONResponse:
         """Rate a playlist endpoint handler."""
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
-            log_request("rate_playlist", {
-                "playlist_id": request_data.playlist_id,
-                "rating": request_data.rating,
-                "has_message": bool(request_data.message),
-                "has_user_id": bool(request_data.user_id)
-            })
             
             result = await self.rating_service.rate_playlist(
                 db, 
@@ -233,7 +248,7 @@ class RatingController:
                 content=error_response
             )
         except Exception as e:
-            print(f"Error in rate_playlist controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="rate_playlist", correlation_id=correlation_id)
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while processing the rating"
@@ -243,7 +258,7 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_playlist_rating(self, db: AsyncSession, playlist_id: int, user_id: str = None) -> JSONResponse:
+    async def get_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None) -> JSONResponse:
         """
         Get user's rating for a specific playlist.
         
@@ -255,19 +270,19 @@ class RatingController:
         Returns:
             JSON response with rating data
         """
-        log_request("get_playlist_rating", "GET", {"playlist_id": playlist_id, "user_id": user_id})
-        
-        # Validate playlist_id
-        if playlist_id <= 0:
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(
-                    success=False,
-                    error="playlist_id must be a positive integer"
-                )
-            )
-        
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
+            
+            # Validate playlist_id
+            if playlist_id <= 0:
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(
+                        success=False,
+                        error="playlist_id must be a positive integer"
+                    )
+                )
+            
             result = await self.rating_service.get_playlist_rating(db, playlist_id, user_id)
             
             if result.get("success"):
@@ -282,7 +297,7 @@ class RatingController:
                 )
                 
         except Exception as e:
-            print(f"Error in rating controller get_playlist_rating: {e}")
+            self.logging_service.log_error(db=db, error=e, context="get_playlist_rating", correlation_id=correlation_id)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -291,7 +306,7 @@ class RatingController:
                 )
             )
     
-    async def delete_playlist_rating(self, db: AsyncSession, playlist_id: int, user_id: str = None) -> JSONResponse:
+    async def delete_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None) -> JSONResponse:
         """
         Delete user's rating for a specific playlist.
         
@@ -303,19 +318,19 @@ class RatingController:
         Returns:
             JSON response with operation result
         """
-        log_request("delete_playlist_rating", "DELETE", {"playlist_id": playlist_id, "user_id": user_id})
-        
-        # Validate playlist_id
-        if playlist_id <= 0:
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(
-                    success=False,
-                    error="playlist_id must be a positive integer"
-                )
-            )
-        
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
+            
+            # Validate playlist_id
+            if playlist_id <= 0:
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(
+                        success=False,
+                        error="playlist_id must be a positive integer"
+                    )
+                )
+            
             result = await self.rating_service.delete_playlist_rating(db, playlist_id, user_id)
             
             if result.get("success"):
@@ -330,7 +345,7 @@ class RatingController:
                 )
                 
         except Exception as e:
-            print(f"Error in rating controller delete_playlist_rating: {e}")
+            self.logging_service.log_error(db=db, error=e, context="delete_playlist_rating", correlation_id=correlation_id)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -339,7 +354,7 @@ class RatingController:
                 )
             )
     
-    async def get_playlist_rating_stats(self, db: AsyncSession, playlist_id: int) -> JSONResponse:
+    async def get_playlist_rating_stats(self, db: AsyncSession, request: Request, playlist_id: int) -> JSONResponse:
         """
         Get rating statistics for a specific playlist.
         
@@ -350,19 +365,19 @@ class RatingController:
         Returns:
             JSON response with rating statistics
         """
-        log_request("get_playlist_rating_stats", "GET", {"playlist_id": playlist_id})
-        
-        # Validate playlist_id
-        if playlist_id <= 0:
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=format_response(
-                    success=False,
-                    error="playlist_id must be a positive integer"
-                )
-            )
-        
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
+            
+            # Validate playlist_id
+            if playlist_id <= 0:
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    content=format_response(
+                        success=False,
+                        error="playlist_id must be a positive integer"
+                    )
+                )
+            
             result = await self.rating_service.get_playlist_rating_stats(db, playlist_id)
             
             return JSONResponse(
@@ -371,7 +386,7 @@ class RatingController:
             )
                 
         except Exception as e:
-            print(f"Error in rating controller get_playlist_rating_stats: {e}")
+            self.logging_service.log_error(db=db, error=e, context="get_playlist_rating_stats", correlation_id=correlation_id)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(

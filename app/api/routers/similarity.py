@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 # Similarity endpoints 
 from typing import Optional
-from fastapi import APIRouter, File, UploadFile, Query, Body, Security, Depends
+from fastapi import APIRouter, File, UploadFile, Query, Body, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -75,6 +75,7 @@ similarity_controller = SimilarityController()
     }
 )
 async def get_similarity_upload_endpoint(
+    request: Request,
     file: UploadFile = File(..., description="Audio file to analyze for similarity (max 100MB)"), 
     top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
     db: AsyncSession = Depends(get_database_session),
@@ -92,7 +93,7 @@ async def get_similarity_upload_endpoint(
     - **file**: The audio file to upload and analyze (max 100MB)
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
-    return await similarity_controller.get_similarity_upload(db, file, top_sk)
+    return await similarity_controller.get_similarity_upload(db, request, file, top_sk)
 
 
 @router.post(

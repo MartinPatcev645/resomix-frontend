@@ -16,13 +16,13 @@ Email: usman.naeem2212@gmail.com
 """
 
 from typing import Dict, Any
-from fastapi import status
+from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.waitlist_service import WaitlistService
 from app.utils.response_utils import format_response
-from app.utils.logging_utils import log_request
+from app.services.logging_service import LoggingService
 
 
 class WaitlistController:
@@ -30,8 +30,9 @@ class WaitlistController:
     
     def __init__(self):
         self.waitlist_service = WaitlistService()
+        self.logging_service = LoggingService()
     
-    async def add_to_waitlist(self, db: AsyncSession, waitlist_data: Dict[str, Any]) -> JSONResponse:
+    async def add_to_waitlist(self, db: AsyncSession, request: Request, waitlist_data: Dict[str, Any]) -> JSONResponse:
         """
         Add an email to the waitlist.
         
@@ -44,15 +45,14 @@ class WaitlistController:
         """
         email = waitlist_data.get('email')
         
-        log_request("waitlist submission", "POST", {
-            "email": email
-        })
+        correlation_id = self.logging_service.generate_correlation_id()
         
         try:
             # Process waitlist submission
             result = await self.waitlist_service.add_to_waitlist(db, email)
             
             if result.get("success"):
+                self.logging_service.log_user_action(db=db, action="waitlist_submit_success", message="Waitlist email added", correlation_id=correlation_id, metadata={"email": email})
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -61,6 +61,7 @@ class WaitlistController:
                     )
                 )
             else:
+                self.logging_service.log_user_action(db=db, action="waitlist_submit_failed", message=result.get("error"), correlation_id=correlation_id, metadata={"email": email})
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     content=format_response(
@@ -70,7 +71,7 @@ class WaitlistController:
                 )
                 
         except Exception as e:
-            print(f"Error in waitlist controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="add_to_waitlist", correlation_id=correlation_id, request=request)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -79,7 +80,7 @@ class WaitlistController:
                 )
             )
     
-    async def get_waitlist_entry(self, db: AsyncSession, email: str) -> JSONResponse:
+    async def get_waitlist_entry(self, db: AsyncSession, request: Request, email: str) -> JSONResponse:
         """
         Get waitlist entry by email.
         
@@ -90,12 +91,13 @@ class WaitlistController:
         Returns:
             JSON response with waitlist entry data
         """
-        log_request("get waitlist entry", "GET", {"email": email})
+        correlation_id = self.logging_service.generate_correlation_id()
         
         try:
             result = await self.waitlist_service.get_waitlist_entry(db, email)
             
             if result.get("success"):
+                self.logging_service.log_user_action(db=db, action="get_waitlist_success", message="Waitlist entry retrieved", correlation_id=correlation_id, metadata={"email": email})
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -104,6 +106,7 @@ class WaitlistController:
                     )
                 )
             else:
+                self.logging_service.log_user_action(db=db, action="get_waitlist_not_found", message=result.get("error"), correlation_id=correlation_id, metadata={"email": email})
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
@@ -113,7 +116,7 @@ class WaitlistController:
                 )
                 
         except Exception as e:
-            print(f"Error in waitlist controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="get_waitlist_entry", correlation_id=correlation_id, request=request)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(

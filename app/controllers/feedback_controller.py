@@ -17,12 +17,12 @@ Email: usman.naeem2212@gmail.com
 
 from typing import Dict, Any
 from fastapi.responses import JSONResponse
-from fastapi import status
+from fastapi import status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.feedback_service import FeedbackService
 from app.utils.response_utils import format_response
-from app.utils.logging_utils import log_request
+from app.services.logging_service import LoggingService
 
 
 class FeedbackController:
@@ -30,8 +30,9 @@ class FeedbackController:
     
     def __init__(self):
         self.feedback_service = FeedbackService()
+        self.logging_service = LoggingService()
     
-    async def submit_feedback(self, db: AsyncSession, feedback_data: Dict[str, Any]) -> JSONResponse:
+    async def submit_feedback(self, db: AsyncSession, request: Request, feedback_data: Dict[str, Any]) -> JSONResponse:
         """
         Submit feedback.
         
@@ -42,17 +43,14 @@ class FeedbackController:
         Returns:
             JSON response with submission result
         """
-        log_request("feedback submission", "POST", {
-            "satisfaction": feedback_data.get('satisfaction'),
-            "recommendation": feedback_data.get('recommendation'),
-            "category": feedback_data.get('category', 'N/A')
-        })
+        correlation_id = self.logging_service.generate_correlation_id()
         
         try:
             # Process feedback submission
             result = await self.feedback_service.process_feedback_submission(db, feedback_data)
             
             if result.get("success"):
+                self.logging_service.log_user_action(db=db, action="feedback_submit_success", message="Feedback submitted", correlation_id=correlation_id, metadata={"category": feedback_data.get("category")})
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -61,6 +59,7 @@ class FeedbackController:
                     )
                 )
             else:
+                self.logging_service.log_user_action(db=db, action="feedback_submit_failed", message=result.get("error"), correlation_id=correlation_id, metadata={"category": feedback_data.get("category")})
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     content=format_response(
@@ -70,7 +69,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            print(f"Error in feedback controller: {e}")
+            self.logging_service.log_error(db=db, error=e, context="submit_feedback", correlation_id=correlation_id, request=request)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -79,7 +78,7 @@ class FeedbackController:
                 )
             )
     
-    async def get_feedback_by_id(self, db: AsyncSession, feedback_id: int) -> JSONResponse:
+    async def get_feedback_by_id(self, db: AsyncSession, request: Request, feedback_id: int) -> JSONResponse:
         """
         Get a feedback by ID.
         
@@ -90,10 +89,12 @@ class FeedbackController:
         Returns:
             JSON response with feedback data
         """
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
             feedback = await self.feedback_service.get_feedback_by_id(db, feedback_id)
             
             if feedback:
+                self.logging_service.log_user_action(db=db, action="get_feedback_success", message="Feedback retrieved", correlation_id=correlation_id, metadata={"feedback_id": feedback_id})
                 feedback_data = {
                     "id": feedback.id,
                     "user_id": feedback.user_id,
@@ -110,6 +111,7 @@ class FeedbackController:
                     content=format_response(success=True, data=feedback_data)
                 )
             else:
+                self.logging_service.log_user_action(db=db, action="get_feedback_not_found", message="Feedback not found", correlation_id=correlation_id, metadata={"feedback_id": feedback_id})
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
@@ -119,7 +121,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            print(f"Error getting feedback by ID: {e}")
+            self.logging_service.log_error(db=db, error=e, context="get_feedback_by_id", correlation_id=correlation_id, request=request)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -128,7 +130,7 @@ class FeedbackController:
                 )
             )
     
-    async def update_feedback_status(self, db: AsyncSession, feedback_id: int, status_data: Dict[str, Any]) -> JSONResponse:
+    async def update_feedback_status(self, db: AsyncSession, request: Request, feedback_id: int, status_data: Dict[str, Any]) -> JSONResponse:
         """
         Update feedback status.
         
@@ -140,6 +142,7 @@ class FeedbackController:
         Returns:
             JSON response with update result
         """
+        correlation_id = self.logging_service.generate_correlation_id()
         try:
             new_status = status_data.get("status")
             if not new_status:
@@ -154,6 +157,7 @@ class FeedbackController:
             result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status)
             
             if result.get("success"):
+                self.logging_service.log_user_action(db=db, action="update_feedback_status_success", message="Feedback status updated", correlation_id=correlation_id, metadata={"feedback_id": feedback_id, "status": new_status})
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -162,6 +166,7 @@ class FeedbackController:
                     )
                 )
             else:
+                self.logging_service.log_user_action(db=db, action="update_feedback_status_failed", message=result.get("error"), correlation_id=correlation_id, metadata={"feedback_id": feedback_id})
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
@@ -171,11 +176,11 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            print(f"Error updating feedback status: {e}")
+            self.logging_service.log_error(db=db, error=e, context="update_feedback_status", correlation_id=correlation_id, request=request)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
                     success=False,
                     error="An internal server error occurred while updating feedback status"
                 )
-            ) 
+            )

@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Query, Path
+from fastapi import APIRouter, Security, Depends, Query, Path, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -71,6 +71,7 @@ rating_controller = RatingController()
     }
 )
 async def rate_track_endpoint(
+    request: Request,
     request_data: TrackRatingRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -83,7 +84,7 @@ async def rate_track_endpoint(
     - **rating**: Rating value - 0 (not similar) or 1 (similar)
     - **user_id**: Optional user ID for the rating (UUID format)
     """
-    return await rating_controller.rate_track(db, request_data)
+    return await rating_controller.rate_track(db, request, request_data)
 
 
 @router.get(
@@ -107,9 +108,10 @@ async def rate_track_endpoint(
     }
 )
 async def get_track_rating_endpoint(
+    request: Request,
     track_id: str = Path(..., description="Track UUID"),
     playlist_id: str = Path(..., description="Playlist UUID"),
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
+    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -120,7 +122,7 @@ async def get_track_rating_endpoint(
     - **playlist_id**: The UUID of the playlist
     - **user_id**: Optional user ID for the rating (UUID format)
     """
-    return await rating_controller.get_track_rating(db, track_id, playlist_id, user_id)
+    return await rating_controller.get_track_rating(db, request, track_id, user_id, playlist_id)
 
 
 @router.delete(
@@ -144,9 +146,10 @@ async def get_track_rating_endpoint(
     }
 )
 async def delete_track_rating_endpoint(
+    request: Request,
     track_id: str = Path(..., description="Track UUID"),
     playlist_id: str = Path(..., description="Playlist UUID"),
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
+    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -157,7 +160,7 @@ async def delete_track_rating_endpoint(
     - **playlist_id**: The UUID of the playlist
     - **user_id**: Optional user ID for the rating (UUID format)
     """
-    return await rating_controller.delete_track_rating(db, track_id, playlist_id, user_id)
+    return await rating_controller.delete_track_rating(db, request, track_id, user_id, playlist_id)
 
 
 @router.get(
@@ -181,6 +184,7 @@ async def delete_track_rating_endpoint(
     }
 )
 async def get_track_rating_stats_endpoint(
+    request: Request,
     track_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -192,7 +196,7 @@ async def get_track_rating_stats_endpoint(
     
     - **track_id**: The UUID of the track
     """
-    return await rating_controller.get_track_rating_stats(db, track_id)
+    return await rating_controller.get_track_rating_stats(db, request, track_id)
 
 
 # Playlist Rating Endpoints
@@ -221,6 +225,7 @@ async def get_track_rating_stats_endpoint(
     }
 )
 async def rate_playlist_endpoint(
+    request: Request,
     request_data: PlaylistRatingRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -233,7 +238,7 @@ async def rate_playlist_endpoint(
     - **message**: Optional message/feedback about the playlist (max 1000 characters)
     - **user_id**: Optional user ID for the rating (UUID format)
     """
-    return await rating_controller.rate_playlist(db, request_data)
+    return await rating_controller.rate_playlist(db, request, request_data)
 
 
 @router.get(
@@ -261,8 +266,9 @@ async def rate_playlist_endpoint(
     }
 )
 async def get_playlist_rating_endpoint(
+    request: Request,
     playlist_id: int,
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
+    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -272,7 +278,7 @@ async def get_playlist_rating_endpoint(
     - **playlist_id**: The ID of the playlist
     - **user_id**: Optional user ID (query parameter)
     """
-    return await rating_controller.get_playlist_rating(db, playlist_id, user_id)
+    return await rating_controller.get_playlist_rating(db, request, playlist_id, user_id)
 
 
 @router.delete(
@@ -300,8 +306,9 @@ async def get_playlist_rating_endpoint(
     }
 )
 async def delete_playlist_rating_endpoint(
+    request: Request,
     playlist_id: int,
-    user_id: Optional[str] = Query(None, description="User ID (optional for anonymous ratings)"),
+    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -311,7 +318,7 @@ async def delete_playlist_rating_endpoint(
     - **playlist_id**: The ID of the playlist
     - **user_id**: Optional user ID (query parameter)
     """
-    return await rating_controller.delete_playlist_rating(db, playlist_id, user_id)
+    return await rating_controller.delete_playlist_rating(db, request, playlist_id, user_id)
 
 
 @router.get(
@@ -335,6 +342,7 @@ async def delete_playlist_rating_endpoint(
     }
 )
 async def get_playlist_rating_stats_endpoint(
+    request: Request,
     playlist_id: int,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -346,4 +354,4 @@ async def get_playlist_rating_stats_endpoint(
     
     - **playlist_id**: The ID of the playlist
     """
-    return await rating_controller.get_playlist_rating_stats(db, playlist_id) 
+    return await rating_controller.get_playlist_rating_stats(db, request, playlist_id)

@@ -224,16 +224,51 @@ CREATE TABLE IF NOT EXISTS playlist_ratings (
 
 /* ---------- 7. Logs & Feedback ---------------------------- */
 
-CREATE TABLE IF NOT EXISTS logs (
-    id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id   CHAR(36),
-    track_id  BIGINT UNSIGNED,
-    action    VARCHAR(50) NOT NULL,
-    message   VARCHAR(255),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE IF NOT EXISTS system_logs (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    correlation_id  VARCHAR(36),                    -- Optional: for request tracing
+    method          VARCHAR(10),                    -- HTTP method (GET, POST, etc.)
+    endpoint        VARCHAR(500),                   -- API endpoint path
+    path            VARCHAR(500),                   -- Full request path with params
+    query_params    JSON,                          -- Query parameters as JSON
+    status_code     SMALLINT UNSIGNED,             -- HTTP status code (200, 404, 500, etc.)
+    response_size   INT UNSIGNED,                  -- Response size in bytes
+    duration_ms     DECIMAL(10,3),                 -- Request duration in milliseconds
+    level           ENUM('DEBUG','INFO','WARNING','ERROR','CRITICAL') DEFAULT 'INFO',
+    category        VARCHAR(50),                   -- REQUEST, ERROR, USER_ACTION, SYSTEM, etc.
+    action          VARCHAR(100),                  -- Specific action (upload_track, create_playlist, etc.)
+    message         TEXT,                          -- Detailed log message
+    client_ip       VARCHAR(45),                   -- IPv4/IPv6 address
+    user_agent      VARCHAR(500),                  -- Browser/client info
+    referer         VARCHAR(500),                  -- Request referer
+    cpu_percent     DECIMAL(5,2),                  -- CPU usage at request time
+    memory_percent  DECIMAL(5,2),                  -- Memory usage percentage
+    track_id        BIGINT UNSIGNED,               -- Related track
+    playlist_id     BIGINT UNSIGNED,               -- Related playlist
+    album_id        INT UNSIGNED,                  -- Related album
+    artist_id       INT UNSIGNED,                  -- Related artist
+    log_metadata    JSON DEFAULT NULL COMMENT 'Additional structured data',
+    stack_trace     TEXT,                          -- For error logs
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_syslog_level (level),
+    KEY idx_syslog_category (category),
+    KEY idx_syslog_action (action),
+    KEY idx_syslog_created (created_at),
+    KEY idx_syslog_correlation (correlation_id),
+    KEY idx_syslog_endpoint (endpoint),
+    KEY idx_syslog_status (status_code),
+    KEY idx_syslog_track (track_id),
+    KEY idx_syslog_playlist (playlist_id),
+    KEY idx_syslog_album (album_id),
+    KEY idx_syslog_artist (artist_id),
+    KEY idx_syslog_ip (client_ip),
+    KEY idx_syslog_level_created (level, created_at),
+    KEY idx_syslog_category_created (category, created_at),
+    KEY idx_syslog_endpoint_status (endpoint, status_code),
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE SET NULL,
-    KEY idx_log_user (user_id),
-    KEY idx_log_track (track_id)
+    FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE SET NULL,
+    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS feedback (

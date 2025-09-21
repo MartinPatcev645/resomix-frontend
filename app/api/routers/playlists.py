@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -69,6 +69,7 @@ playlist_controller = PlaylistController()
     }
 )
 async def rename_playlist_endpoint(
+    request: Request,
     request_data: PlaylistRenameRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -79,7 +80,7 @@ async def rename_playlist_endpoint(
     - **playlist_id**: The UUID of the playlist to rename
     - **new_name**: The new name for the playlist (1-150 characters)
     """
-    return await playlist_controller.rename_playlist(db, request_data.playlist_id, request_data.new_name)
+    return await playlist_controller.rename_playlist(db, request, request_data.playlist_id, request_data.new_name)
 
 
 @router.put(
@@ -107,6 +108,7 @@ async def rename_playlist_endpoint(
     }
 )
 async def change_playlist_visibility_endpoint(
+    request: Request,
     request_data: PlaylistVisibilityRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -117,7 +119,7 @@ async def change_playlist_visibility_endpoint(
     - **playlist_id**: The UUID of the playlist to modify
     - **is_public**: Whether the playlist should be public (true) or private (false)
     """
-    return await playlist_controller.change_playlist_visibility(db, request_data.playlist_id, request_data.is_public)
+    return await playlist_controller.change_playlist_visibility(db, request, request_data.playlist_id, request_data.is_public)
 
 
 @router.get(
@@ -149,6 +151,7 @@ async def change_playlist_visibility_endpoint(
     }
 )
 async def get_playlist_similarity_endpoint(
+    request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -161,7 +164,7 @@ async def get_playlist_similarity_endpoint(
     
     - **playlist_id**: The UUID of the playlist to retrieve
     """
-    return await playlist_controller.get_playlist_similarity_data(db, playlist_id)
+    return await playlist_controller.get_playlist_similarity_data(db, request, playlist_id)
 
 
 @router.get(
@@ -196,6 +199,7 @@ async def get_playlist_similarity_endpoint(
     }
 )
 async def get_playlist_hls_endpoint(
+    request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -219,5 +223,5 @@ async def get_playlist_hls_endpoint(
     
     - **playlist_id**: The UUID of the playlist to convert to M3U8
     """
-    return await playlist_controller.get_playlist_hls_data(db, playlist_id)
+    return await playlist_controller.get_playlist_hls_data(db, request, playlist_id)
 

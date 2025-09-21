@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Path
+from fastapi import APIRouter, Security, Depends, Path, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,6 +60,7 @@ feedback_controller = FeedbackController()
     }
 )
 async def submit_feedback(
+    request: Request,
     feedback_request: FeedbackRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -77,7 +78,7 @@ async def submit_feedback(
     Returns success confirmation or validation errors.
     """
     feedback_data = feedback_request.dict()
-    return await feedback_controller.submit_feedback(db, feedback_data)
+    return await feedback_controller.submit_feedback(db, request, feedback_data)
 
 
 @router.get(
@@ -93,6 +94,7 @@ async def submit_feedback(
     }
 )
 async def get_feedback(
+    request: Request,
     feedback_id: int = Path(..., description="The ID of the feedback to retrieve", ge=1),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -103,7 +105,7 @@ async def get_feedback(
     This endpoint retrieves a specific feedback submission using its unique ID.
     Useful for administrators to view feedback details.
     """
-    return await feedback_controller.get_feedback_by_id(db, feedback_id)
+    return await feedback_controller.get_feedback_by_id(db, request, feedback_id)
 
 
 @router.patch(
@@ -119,6 +121,7 @@ async def get_feedback(
     }
 )
 async def update_feedback_status(
+    request: Request,
     status_request: FeedbackUpdateRequest,
     feedback_id: int = Path(..., description="The ID of the feedback to update", ge=1),
     db: AsyncSession = Depends(get_database_session),
@@ -131,4 +134,4 @@ async def update_feedback_status(
     Status can be changed between 'open' and 'resolved'.
     """
     status_data = status_request.dict()
-    return await feedback_controller.update_feedback_status(db, feedback_id, status_data)
+    return await feedback_controller.update_feedback_status(db, request, feedback_id, status_data)
