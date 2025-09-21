@@ -26,7 +26,7 @@ from app.schemas.metadata import (
     MetadataSuccessResponse,
     MetadataErrorResponse
 )
-from app.database.session import get_database_session
+from app.api.dependencies.database import get_database_session
 
 router = APIRouter(
     tags=["metadata"],
