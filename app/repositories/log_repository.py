@@ -504,3 +504,44 @@ class LogRepository(BaseRepository[SystemLog]):
         except SQLAlchemyError as e:
             logger.error(f"Failed to get filtered logs: {e}")
             return [], 0
+
+    # --- Abstract method implementations ---
+    
+    def _find_existing(self, db: Session, **kwargs) -> Optional[SystemLog]:
+        """
+        Find existing log entry based on correlation_id and created_at.
+        For logs, we typically don't want exact duplicates, so we check
+        correlation_id and timestamp within a small window.
+        """
+        if 'correlation_id' in kwargs and kwargs['correlation_id']:
+            # Look for logs with same correlation_id within last minute
+            from datetime import datetime, timedelta
+            recent_time = datetime.utcnow() - timedelta(minutes=1)
+            
+            return db.query(SystemLog)\
+                .filter(and_(
+                    SystemLog.correlation_id == kwargs['correlation_id'],
+                    SystemLog.created_at >= recent_time
+                ))\
+                .first()
+        
+        # For logs without correlation_id, assume they're unique
+        return None
+    
+    async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[SystemLog]:
+        """
+        Async version of _find_existing
+        """
+        if 'correlation_id' in kwargs and kwargs['correlation_id']:
+            from datetime import datetime, timedelta
+            recent_time = datetime.utcnow() - timedelta(minutes=1)
+            
+            query = select(SystemLog).where(and_(
+                SystemLog.correlation_id == kwargs['correlation_id'],
+                SystemLog.created_at >= recent_time
+            ))
+            
+            result = await db.execute(query)
+            return result.scalar_one_or_none()
+        
+        return None
