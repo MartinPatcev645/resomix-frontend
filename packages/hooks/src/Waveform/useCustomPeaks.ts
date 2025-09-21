@@ -13,6 +13,7 @@ export function useCustomPeaks(
 ): UsePeaksReturn {
   const [overviewElement, setOverviewElement] = useState<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [normalizedData, setNormalizedData] = useState<number[]>([]);
@@ -20,23 +21,31 @@ export function useCustomPeaks(
   const [duration, setDuration] = useState(0);
   const debounceRef = useRef<any | null>(null);
 
-  const barWidth = 3;
-  const gapWidth = 1;
+  const barWidth = 1;
+  const gapWidth = 0;
   const playedColor = '#ff5500';
   const unplayedColor = '#ffffff';
   const cursorColor = '#ffffff';
+  const hoverColor = '#ffffff';
+  const hoverLineWidth = 2;
 
   let nextDebaunceTime: number = 0;
+
+  const setupCanvasSize = useCallback((canvas: HTMLCanvasElement) => {
+    if (!canvas) return {};
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    return { ctx, width, height};
+  }, []);
 
   const drawWaveform = useCallback((time: number = 0) => {
     const canvas = canvasRef.current;
     if (!canvas || !normalizedData.length) return;
 
-    const ctx = canvas.getContext('2d');
+    const {width, height, ctx} = setupCanvasSize(canvas)
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
     if (width === 0 || height === 0) return;
 
     const barCount = Math.floor(width / (barWidth + gapWidth));
@@ -64,16 +73,41 @@ export function useCustomPeaks(
     }
 
     ctx.fillStyle = cursorColor;
-    ctx.fillRect(cursorPosition, 0.4 * height, barWidth, height);
+    ctx.fillRect(cursorPosition, 0.4 * height, barWidth * 2, height);
   }, [normalizedData, duration]);
 
   const attachOverviewElement = useCallback((el: HTMLDivElement | null) => {
     setOverviewElement(el);
   }, []);
 
+  const clearOverlay = useCallback(() => {
+    const overlay = overlayCanvasRef.current;
+    if (!overlay) return;
+    const {width, height, ctx} = setupCanvasSize(overlay);
+    if (!ctx) return;
+    ctx.clearRect(0, 0, width, height);
+  }, []);
+
+  const drawOverlay = useCallback((xCss: number) => {
+    const overlay = overlayCanvasRef.current;
+    if (!overlay) return;
+    const {width, height, ctx} = setupCanvasSize(overlay);
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = hoverColor;
+    ctx.fillRect(Math.round(xCss - hoverLineWidth / 2), 0.3 * height, hoverLineWidth, height);
+  }, [hoverColor, hoverLineWidth]);
+
   useEffect(() => {
     const el = overviewElement;
     if (!el || !uuid) return;
+
+    const overlay = document.createElement('canvas');
+    overlay.style.position = 'absolute';
+    overlay.style.pointerEvents = 'none';
+    overlayCanvasRef.current = overlay;
+    el.appendChild(overlay);
 
     const canvas = document.createElement('canvas');
     canvas.style.width = '100%';
@@ -83,6 +117,8 @@ export function useCustomPeaks(
 
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
+    overlay.width = canvas.clientWidth;
+    overlay.height = canvas.clientHeight;
 
 
     const loadData = async () => {
@@ -102,16 +138,36 @@ export function useCustomPeaks(
       loadData();
     }
 
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x >= 0 && x <= rect.width) {
+        drawOverlay(x);
+      }
+    };
+
+    const onMouseLeave = () => {
+      clearOverlay();
+    };
+
+    el.addEventListener('mousemove', onMouseMove);
+    el.addEventListener('mouseleave', onMouseLeave);
+
     return () => {
+      el.removeEventListener('mousemove', onMouseMove);
+      el.removeEventListener('mouseleave', onMouseLeave);
       if (canvasRef.current) {
         el.removeChild(canvas);
+        el.removeChild(overlay);
+        canvasRef.current = null;
+        overlayCanvasRef.current = null;
       }
     };
   }, [overviewElement, uuid]);
 
   useEffect(() => {
     drawWaveform(currentTime);
-  }, [normalizedData, duration, canvasRef]);
+  }, [normalizedData, duration, canvasRef, drawOverlay, clearOverlay]);
 
 
   const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
