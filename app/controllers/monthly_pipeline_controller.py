@@ -28,7 +28,7 @@ from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
-from app.services.logging_service import Loggi
+from app.services.logging_service import LoggingService
 from app.utils.mix_filter import validate_track_for_mixesfor_mixes
 
 
