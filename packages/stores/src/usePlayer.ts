@@ -51,12 +51,6 @@ interface PlayerStore {
   uploadedCoverArt: string | null
   setUploadedCoverArt: (coverUrl: string | null) => void
 
-  /**
-   * Howler controller instance for managing audio playback
-   */
-  howlerController: any | null
-  setHowlerController: (controller: any | null) => void
-
   audioController: any | null
   setAudioController: (controller: any | null) => void
 
@@ -119,10 +113,6 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
   uploadedCoverArt: null,
   setUploadedCoverArt: (coverUrl) => set({ uploadedCoverArt: coverUrl }),
-
-  howlerController: null,
-  setHowlerController: (controller) =>
-    set((state) => state.howlerController ? state : { howlerController: controller }),
 
   audioController: null,
   setAudioController: (controller) =>

@@ -245,7 +245,7 @@ export function createHlsPlaylistController(): AudioController {
   }
 
   function findTrackByGlobalTime(t: number): string | null {
-    t += 0.7;
+    t += 0.9;
     let lastId: string | null = null;
     for (const id of tracksIds) {
       const start = offsets.get(id) || 0;

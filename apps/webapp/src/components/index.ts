@@ -12,7 +12,6 @@ import { PopularComponent } from "./upload/PopularComponent.tsx";
 import { SearchComponentMobile } from "./upload/SearchComponentMobile.tsx";
 import { UploadComponentMobile } from "./upload/UploadComponentMobile.tsx";
 import { PopularComponentMobile } from "./upload/PopularComponentMobile.tsx";
-import WaveformPlayer from "./Playlist/WaveformPlayer.tsx";
 import InputPlayer from "./Playlist/InputPlayer.tsx";
 import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Modals/PlaylistRating.tsx";
@@ -22,7 +21,6 @@ import PlaylistExport from "./Modals/PlaylistExport.tsx";
 import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
-import PeaksPlayer from "./Playlist/PeaksPlayer.tsx";
 
 export {
     LogoHeader,
@@ -39,7 +37,6 @@ export {
     SearchComponentMobile,
     UploadComponentMobile,
     PopularComponentMobile,
-    WaveformPlayer,
     InputPlayer,
     SimilarityPlayer,
     PlaylistRating,
@@ -49,5 +46,4 @@ export {
     StatusMessage,
     UploadLoader,
     ThumbIcon,
-    PeaksPlayer
 }
