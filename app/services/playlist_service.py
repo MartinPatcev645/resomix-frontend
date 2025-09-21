@@ -44,27 +44,30 @@ class PlaylistService:
             new_name: New playlist name
             
         Returns:
-            Dictionary with success status and message
+            Dictionary with success status, message, and old_name
         """
         try:
-            success = await self.playlist_repository.async_rename_playlist(db, playlist_uuid, new_name)
+            result = await self.playlist_repository.async_rename_playlist(db, playlist_uuid, new_name)
             
-            if success:
+            if result["success"]:
                 return {
                     "success": True,
-                    "message": "Playlist renamed successfully"
+                    "message": "Playlist renamed successfully",
+                    "old_name": result["old_name"]
                 }
             else:
                 return {
                     "success": False,
-                    "error": "Playlist not found"
+                    "error": "Playlist not found",
+                    "old_name": None
                 }
                 
         except Exception as e:
             print(f"Error in playlist service rename: {e}")
             return {
                 "success": False,
-                "error": "An error occurred while renaming the playlist"
+                "error": "An error occurred while renaming the playlist",
+                "old_name": None
             }
     
     async def change_playlist_visibility(self, db: AsyncSession, playlist_uuid: str, is_public: bool) -> Dict[str, Any]:

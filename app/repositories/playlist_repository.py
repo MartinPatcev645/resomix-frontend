@@ -282,7 +282,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def async_rename_playlist(self, db: AsyncSession, playlist_uuid: str, new_name: str) -> bool:
+    async def async_rename_playlist(self, db: AsyncSession, playlist_uuid: str, new_name: str) -> Dict[str, Any]:
         """
         Rename a playlist by UUID.
         
@@ -292,16 +292,17 @@ class PlaylistRepository(BaseRepository[Playlist]):
             new_name: New playlist name
             
         Returns:
-            True if successful, False if playlist not found
+            Dict with success status and old_name if successful
         """
         try:
             playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
             if not playlist:
-                return False
+                return {"success": False, "old_name": None}
             
+            old_name = playlist.name
             playlist.name = new_name
             await db.commit()
-            return True
+            return {"success": True, "old_name": old_name}
             
         except Exception as e:
             await db.rollback()

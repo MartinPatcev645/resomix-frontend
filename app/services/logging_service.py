@@ -200,6 +200,7 @@ class LoggingService:
         message: str = None,
         correlation_id: str = None,
         request: Request = None,
+        status_code: int = None,
         track_id: int = None,
         playlist_id: int = None,
         album_id: int = None,
@@ -216,6 +217,7 @@ class LoggingService:
             message: Descriptive message
             correlation_id: Request correlation ID
             request: FastAPI Request object for context
+            status_code: HTTP response status code
             track_id: Related track ID
             playlist_id: Related playlist ID
             album_id: Related album ID
@@ -233,6 +235,7 @@ class LoggingService:
                 'category': 'USER_ACTION',
                 'action': action,
                 'message': message or f"User performed action: {action}",
+                'status_code': status_code,
                 'track_id': track_id,
                 'playlist_id': playlist_id,
                 'album_id': album_id,
@@ -247,6 +250,7 @@ class LoggingService:
                     'method': request.method,
                     'endpoint': str(request.url.path),
                     'path': str(request.url),
+                    'query_params': dict(request.query_params) if request.query_params else None,
                     'client_ip': self._get_client_ip(request),
                     'user_agent': request.headers.get("user-agent", ""),
                     'referer': request.headers.get("referer", ""),

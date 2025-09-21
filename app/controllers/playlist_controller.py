@@ -60,6 +60,7 @@ class PlaylistController:
                 message="Playlist rename failed: empty playlist_id",
                 correlation_id=correlation_id,
                 request=request,
+                status_code=422,
                 duration_ms=duration_ms,
                 metadata={"error": "playlist_id cannot be empty"}
             )
@@ -81,6 +82,7 @@ class PlaylistController:
                 message="Playlist rename failed: empty new_name",
                 correlation_id=correlation_id,
                 request=request,
+                status_code=422,
                 duration_ms=duration_ms,
                 metadata={"error": "new_name cannot be empty"}
             )
@@ -111,6 +113,7 @@ class PlaylistController:
                     message=f"Playlist renamed successfully: {playlist_id} -> {new_name.strip()}",
                     correlation_id=correlation_id,
                     request=request,
+                    status_code=200,
                     playlist_id=playlist_int_id,
                     duration_ms=duration_ms,
                     metadata={"old_name": result.get("old_name"), "new_name": new_name.strip()}
@@ -128,6 +131,7 @@ class PlaylistController:
                     message=f"Playlist rename failed: playlist not found {playlist_id}",
                     correlation_id=correlation_id,
                     request=request,
+                    status_code=404,
                     playlist_id=playlist_int_id,
                     duration_ms=duration_ms,
                     metadata={"error": result.get("error")}
