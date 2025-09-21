@@ -677,6 +677,8 @@ class SimilarityController:
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        print(track_id)
         
         # Validate track_id
         if not track_id or not track_id.strip():
