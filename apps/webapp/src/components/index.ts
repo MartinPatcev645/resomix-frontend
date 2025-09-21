@@ -12,7 +12,6 @@ import { PopularComponent } from "./upload/PopularComponent.tsx";
 import { SearchComponentMobile } from "./upload/SearchComponentMobile.tsx";
 import { UploadComponentMobile } from "./upload/UploadComponentMobile.tsx";
 import { PopularComponentMobile } from "./upload/PopularComponentMobile.tsx";
-import WaveformPlayer from "./Playlist/WaveformPlayer.tsx";
 import InputPlayer from "./Playlist/InputPlayer.tsx";
 import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Modals/PlaylistRating.tsx";
@@ -38,7 +37,6 @@ export {
     SearchComponentMobile,
     UploadComponentMobile,
     PopularComponentMobile,
-    WaveformPlayer,
     InputPlayer,
     SimilarityPlayer,
     PlaylistRating,
