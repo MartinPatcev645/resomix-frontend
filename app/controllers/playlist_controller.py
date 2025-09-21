@@ -46,16 +46,21 @@ class PlaylistController:
         Returns:
             JSON response with operation result
         """
+        import time
+        start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
             # Log validation failure
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_user_action(
                 db=db,
                 action="rename_playlist_validation_failed",
                 message="Playlist rename failed: empty playlist_id",
                 correlation_id=correlation_id,
+                request=request,
+                duration_ms=duration_ms,
                 metadata={"error": "playlist_id cannot be empty"}
             )
             
@@ -69,11 +74,14 @@ class PlaylistController:
         
         if not new_name or not new_name.strip():
             # Log validation failure
+            duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log_user_action(
                 db=db,
                 action="rename_playlist_validation_failed",
                 message="Playlist rename failed: empty new_name",
                 correlation_id=correlation_id,
+                request=request,
+                duration_ms=duration_ms,
                 metadata={"error": "new_name cannot be empty"}
             )
             
@@ -92,6 +100,9 @@ class PlaylistController:
             
             result = await self.playlist_service.rename_playlist(db, playlist_id, new_name.strip())
             
+            # Calculate operation duration
+            duration_ms = (time.time() - start_time) * 1000
+            
             if result.get("success"):
                 # Log successful rename - use integer ID for foreign key
                 self.logging_service.log_user_action(
@@ -99,7 +110,9 @@ class PlaylistController:
                     action="rename_playlist_success",
                     message=f"Playlist renamed successfully: {playlist_id} -> {new_name.strip()}",
                     correlation_id=correlation_id,
+                    request=request,
                     playlist_id=playlist_int_id,
+                    duration_ms=duration_ms,
                     metadata={"old_name": result.get("old_name"), "new_name": new_name.strip()}
                 )
                 
@@ -114,7 +127,9 @@ class PlaylistController:
                     action="rename_playlist_not_found",
                     message=f"Playlist rename failed: playlist not found {playlist_id}",
                     correlation_id=correlation_id,
+                    request=request,
                     playlist_id=playlist_int_id,
+                    duration_ms=duration_ms,
                     metadata={"error": result.get("error")}
                 )
                 
@@ -125,6 +140,7 @@ class PlaylistController:
                 
         except Exception as e:
             # Log error with full context - use integer ID if available
+            duration_ms = (time.time() - start_time) * 1000
             playlist_int_id = None
             try:
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
@@ -139,7 +155,7 @@ class PlaylistController:
                 correlation_id=correlation_id,
                 request=request,
                 playlist_id=playlist_int_id,
-                metadata={"playlist_uuid": playlist_id, "new_name": new_name}
+                metadata={"playlist_uuid": playlist_id, "new_name": new_name, "duration_ms": duration_ms}
             )
             
             return JSONResponse(

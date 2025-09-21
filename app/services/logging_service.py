@@ -199,10 +199,12 @@ class LoggingService:
         action: str,
         message: str = None,
         correlation_id: str = None,
+        request: Request = None,
         track_id: int = None,
         playlist_id: int = None,
         album_id: int = None,
         artist_id: int = None,
+        duration_ms: float = None,
         metadata: Dict[str, Any] = None
     ) -> None:
         """
@@ -213,13 +215,18 @@ class LoggingService:
             action: Action performed (e.g., 'upload_track', 'create_playlist')
             message: Descriptive message
             correlation_id: Request correlation ID
+            request: FastAPI Request object for context
             track_id: Related track ID
             playlist_id: Related playlist ID
             album_id: Related album ID
             artist_id: Related artist ID
+            duration_ms: Operation duration in milliseconds
             metadata: Additional metadata
         """
         try:
+            # Get system metrics if available
+            metrics = snapshot() if request else {}
+            
             log_data = {
                 'correlation_id': correlation_id,
                 'level': 'INFO',
@@ -230,8 +237,29 @@ class LoggingService:
                 'playlist_id': playlist_id,
                 'album_id': album_id,
                 'artist_id': artist_id,
+                'duration_ms': duration_ms,
                 'log_metadata': metadata
             }
+            
+            # Add request details if available
+            if request:
+                log_data.update({
+                    'method': request.method,
+                    'endpoint': str(request.url.path),
+                    'path': str(request.url),
+                    'client_ip': self._get_client_ip(request),
+                    'user_agent': request.headers.get("user-agent", ""),
+                    'referer': request.headers.get("referer", ""),
+                    'cpu_percent': metrics.get('cpu_percent'),
+                    'memory_percent': metrics.get('mem_percent'),
+                    'log_metadata': {
+                        **(metadata or {}),
+                        'process_cpu': metrics.get('proc_cpu_percent'),
+                        'process_rss': metrics.get('proc_rss'),
+                        'net_sent': metrics.get('net_bytes_sent'),
+                        'net_recv': metrics.get('net_bytes_recv')
+                    }
+                })
             
             # Create async task for logging with new session
             import asyncio
