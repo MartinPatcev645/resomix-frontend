@@ -7,6 +7,8 @@ interface GlobalFooterProps {
   baseUrl?: string;
 }
 
+const version = "alpha-0.6.6";
+
 const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://resomix.com" }) => (
   <div className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="absolute text-[length:var(--px-63)] -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase">
@@ -30,7 +32,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             <div className="leading-[var(--px-8)]">
               <CodeTyping
                 speed={50}
-                text="company_name: Resomix Inc.<br />status: online [✓]"
+                text={`company_name: Resomix Inc.<br />status: online [✓]<br />version: ${version}`}
                 multiline={true}
               />
             </div>

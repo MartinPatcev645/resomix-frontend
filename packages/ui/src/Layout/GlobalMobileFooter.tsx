@@ -6,6 +6,8 @@ interface GlobalMobileFooterProps {
   baseUrl?: string;
 }
 
+const version = "alpha-0.6.6";
+
 const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl = "https://resomix.com" }) => (
   <div className="mt-[var(--px-250)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
     <div className="flex flex-col w-full">
@@ -30,7 +32,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
             <div>
               <CodeTyping
                 speed={50}
-                text="company_name: Resomix Inc.<br />status: online [✓]"
+                text={`company_name: Resomix Inc.<br />status: online [✓]<br />version: ${version}`}
                 multiline={true}
               />
             </div>
