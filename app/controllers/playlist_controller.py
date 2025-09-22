@@ -511,12 +511,8 @@ class PlaylistController:
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
                 # Extract playlist integer ID if available
-                playlist_int_id = None
-                try:
-                    playlist_data = result.get("playlist_data", {})
-                    playlist_int_id = playlist_data.get("id") if isinstance(playlist_data.get("id"), int) else None
-                except:
-                    pass
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+                playlist_int_id = playlist.id if playlist else None
                 
                 self.logging_service.log(
                     async_db=db,
