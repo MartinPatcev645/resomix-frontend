@@ -308,16 +308,10 @@ class SimilarityController:
                         )
                     )
                 
-                print(similarity_results)
-
-                generated_playlist_uuid = similarity_results.get("playlist")["id"]
-                print(generated_playlist_uuid)
-                
+                generated_playlist_uuid = similarity_results.get("playlist")["id"]             
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, generated_playlist_uuid)
                 playlist_int_id = playlist.id if playlist else None
 
-                print(playlist_int_id)
-                
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(success=True, data=similarity_results)
@@ -589,6 +583,10 @@ class SimilarityController:
                         )
                     )
                 
+                generated_playlist_uuid = similarity_results.get("playlist")["id"]             
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, generated_playlist_uuid)
+                playlist_int_id = playlist.id if playlist else None
+                
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(success=True, data=similarity_results)
@@ -611,6 +609,7 @@ class SimilarityController:
                     response_size=len(str(response_content)),
                     duration_ms=duration_ms,
                     track_id=int(upload_result.get("track_id")) if upload_result.get("track_id") else None,
+                    playlist_id=playlist_int_id,
                     context="Successful completion of fallback similarity upload processing",
                     metadata={
                         "similarity_results": similarity_results,
@@ -689,6 +688,9 @@ class SimilarityController:
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        track = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
+        track_int_id = track.id if track else None
         
         # Validate track_id
         if not track_id or not track_id.strip():
@@ -704,6 +706,7 @@ class SimilarityController:
                 method=request.method,
                 endpoint=str(request.url.path),
                 path=str(request.url),
+                track_id=track_int_id,
                 query_params=dict(request.query_params),
                 client_ip=request.client.host if request.client else None,
                 user_agent=request.headers.get("user-agent"),
@@ -735,6 +738,7 @@ class SimilarityController:
                     method=request.method,
                     endpoint=str(request.url.path),
                     path=str(request.url),
+                    track_id=track_int_id,
                     query_params=dict(request.query_params),
                     client_ip=request.client.host if request.client else None,
                     user_agent=request.headers.get("user-agent"),
@@ -787,6 +791,7 @@ class SimilarityController:
                     client_ip=request.client.host if request.client else None,
                     user_agent=request.headers.get("user-agent"),
                     referer=request.headers.get("referer"),
+                    track_id=track_int_id,
                     status_code=503,
                     duration_ms=duration_ms,
                     track_id=track_id_int,
@@ -803,11 +808,16 @@ class SimilarityController:
             
             # Log success once result is ready
             # Extract track_id from database lookup if available
-            try:
-                track_id_int = int(track_id) if track_id.isdigit() else None
-            except:
-                track_id_int = None
-                
+            if track_id is None:
+                try:
+                    track_id_int = int(track_id) if track_id.isdigit() else None
+                except:
+                    track_id_int = None
+            
+            generated_playlist_uuid = similarity_results.get("playlist")["id"]             
+            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, generated_playlist_uuid)
+            playlist_int_id = playlist.id if playlist else None
+            
             response_content = format_response(success=True, data=similarity_results)
             self.logging_service.log(
                 async_db=db,
@@ -819,6 +829,8 @@ class SimilarityController:
                 request=request,
                 method=request.method,
                 endpoint=str(request.url.path),
+                track_id=track_int_id,
+                playlist_id=playlist_int_id,
                 path=str(request.url),
                 query_params=dict(request.query_params),
                 client_ip=request.client.host if request.client else None,
@@ -857,6 +869,7 @@ class SimilarityController:
                 correlation_id=correlation_id,
                 request=request,
                 method=request.method,
+                track_id=track_int_id,
                 endpoint=str(request.url.path),
                 path=str(request.url),
                 query_params=dict(request.query_params),

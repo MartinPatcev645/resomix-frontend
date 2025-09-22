@@ -20,8 +20,8 @@ import json
 import urllib.parse
 from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repositories.playlist_repository import PlaylistRepository
+from app.repositories.track_repository import TrackRepository
 from app.services.metadata_service import MetadataService
 from app.utils.hls_utils import generate_m3u8_playlist
 from app.core.config import settings
@@ -33,6 +33,7 @@ class PlaylistService:
     def __init__(self):
         """Initialize playlist service."""
         self.playlist_repository = PlaylistRepository()
+        self.track_repository = TrackRepository()
     
     async def rename_playlist(self, db: AsyncSession, playlist_uuid: str, new_name: str) -> Dict[str, Any]:
         """
