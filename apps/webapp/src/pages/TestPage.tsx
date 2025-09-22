@@ -117,6 +117,25 @@ const TestPage: React.FC = () => {
     }
   };
 
+  const handleHlsRequestFour = async () => {
+    try {
+      // 88741ea8-abe3-4d25-808a-3428e8531b02
+      // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
+      const url = new URL('https://media.resomix.com/signed-audio/segment/?uuid=silent_1984&seg=0');
+      url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Accept': 'application/vnd.apple.mpegurl'
+        }
+      });
+      const data = await response.text();
+      console.log('HLS Response:', data);
+    } catch (error) {
+      console.error('Error fetching HLS:', error);
+    }
+  };
+
   return (
     <div className="w-screen h-screen overflow-hidden bg-[var(--color-primary-background)] text-[var(--color-primary)] flex flex-col gap-[var(--px-40)] justify-start items-start p-[var(--px-40)]">
       <div className="w-full h-full gap-[var(--px-20)] flex flex-col">
@@ -148,6 +167,12 @@ const TestPage: React.FC = () => {
           onClick={handleHlsRequestThree}
         >
           Fetch Segment
+        </button>
+        <button
+          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
+          onClick={handleHlsRequestFour}
+        >
+          Fetch Silent Segment
         </button>
       </div>
     </div>
