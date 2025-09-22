@@ -22,7 +22,7 @@ from typing import Optional
 from fastapi import UploadFile, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.services.playlist_service import PlaylistService
 from app.core.config import settings
 from app.services.similarity_service import SimilarityService
 from app.services.search_service import SearchService
@@ -37,6 +37,7 @@ import time
 class SimilarityController:
     def __init__(self):
         self.similarity_service = SimilarityService()
+        self.playlist_service = PlaylistService()
         self.search_service = SearchService()
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
@@ -306,6 +307,14 @@ class SimilarityController:
                             error=similarity_results.get("error", "Similarity processing failed.")
                         )
                     )
+
+                generated_playlist_uuid = similarity_results.get("data")["playlist"]["id"]
+                print(generated_playlist_uuid)
+                
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, generated_playlist_uuid)
+                playlist_int_id = playlist.id if playlist else None
+
+                print(playlist_int_id)
                 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
@@ -328,6 +337,7 @@ class SimilarityController:
                     status_code=200,
                     response_size=len(str(response_content)),
                     duration_ms=duration_ms,
+                    playlist_id=playlist_int_id,
                     track_id=int(upload_result.get("track_id")) if upload_result.get("track_id") else None,
                     context="Successful completion of similarity upload processing",
                     metadata={
@@ -677,8 +687,6 @@ class SimilarityController:
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-
-        print(track_id)
         
         # Validate track_id
         if not track_id or not track_id.strip():
