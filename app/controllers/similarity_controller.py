@@ -310,7 +310,7 @@ class SimilarityController:
                 
                 print(similarity_results)
 
-                generated_playlist_uuid = similarity_results.get("data")["playlist"]["id"]
+                generated_playlist_uuid = similarity_results.get("playlist")["id"]
                 print(generated_playlist_uuid)
                 
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, generated_playlist_uuid)
