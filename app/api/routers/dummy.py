@@ -48,7 +48,9 @@ async def dummy_hls_endpoint(
     - **playlist_id**: UUID of the playlist (ignored)
     """
     try:
-        file_path = "hls.m3u8"
+        file_path = "api/routers/hls.m3u8"
+        print(file_path)
+        print("current directory", os.getcwd())
         if not os.path.exists(file_path):
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
