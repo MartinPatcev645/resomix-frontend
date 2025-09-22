@@ -78,6 +78,23 @@ const TestPage: React.FC = () => {
     }
   };
 
+  const handleHlsRequestDummy = async () => {
+    try {
+      const url = new URL('https://bserver.resomix.com/dummy/dummy-hls/ce0223d0-94c0-4b8a-8f26-c1b7db17a0a6.m3u8');
+      url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Accept': 'application/vnd.apple.mpegurl'
+        }
+      });
+      const data = await response.text();
+      console.log('HLS Response:', data);
+    } catch (error) {
+      console.error('Error fetching HLS:', error);
+    }
+  };
+
   const handleHlsRequestTwo = async () => {
     try {
       const url = new URL('https://media.resomix.com/signed-audio/hls-m3u8/');
@@ -155,6 +172,12 @@ const TestPage: React.FC = () => {
           onClick={handleHlsRequest}
         >
           Fetch HLS
+        </button>
+        <button
+          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
+          onClick={handleHlsRequestDummy}
+        >
+          Fetch HLS Dummy
         </button>
         <button
           className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
