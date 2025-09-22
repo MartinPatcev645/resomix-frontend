@@ -771,10 +771,11 @@ class SimilarityController:
             # Check if similarity processing failed
             if similarity_results.get("success") is False:
                 # Extract track_id from database lookup if available
-                try:
-                    track_id_int = int(track_id) if track_id.isdigit() else None
-                except:
-                    track_id_int = None
+                if track_int_id is None:
+                    try:
+                        track_int_id = int(track_id) if track_id.isdigit() else None
+                    except:
+                        track_int_id = None
                     
                 self.logging_service.log(
                     async_db=db,
@@ -794,7 +795,6 @@ class SimilarityController:
                     track_id=track_int_id,
                     status_code=503,
                     duration_ms=duration_ms,
-                    track_id=track_id_int,
                     context="Similarity processing by track ID",
                     metadata={
                         "error": similarity_results.get("error"),
@@ -808,16 +808,17 @@ class SimilarityController:
             
             # Log success once result is ready
             # Extract track_id from database lookup if available
-            if track_id is None:
+            if track_int_id is None:
                 try:
-                    track_id_int = int(track_id) if track_id.isdigit() else None
+                    track_int_id = int(track_id) if track_id.isdigit() else None
                 except:
-                    track_id_int = None
+                    track_int_id = None
             
             generated_playlist_uuid = similarity_results.get("playlist")["id"]             
             playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, generated_playlist_uuid)
             playlist_int_id = playlist.id if playlist else None
-            
+
+            duration_ms = (time.time() - start_time) * 1000            
             response_content = format_response(success=True, data=similarity_results)
             self.logging_service.log(
                 async_db=db,
@@ -839,7 +840,6 @@ class SimilarityController:
                 status_code=200,
                 response_size=len(str(response_content)),
                 duration_ms=duration_ms,
-                track_id=track_id_int,
                 context="Successful similarity processing by track ID",
                 metadata={
                     "similarity_results": similarity_results,
@@ -854,10 +854,11 @@ class SimilarityController:
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             # Extract track_id from database lookup if available
-            try:
-                track_id_int = int(track_id) if track_id.isdigit() else None
-            except:
-                track_id_int = None
+            if track_int_id is None:
+                try:
+                    track_int_id = int(track_id) if track_id.isdigit() else None
+                except:
+                    track_int_id = None
                 
             import traceback
             self.logging_service.log(
@@ -878,7 +879,6 @@ class SimilarityController:
                 referer=request.headers.get("referer"),
                 status_code=500,
                 duration_ms=duration_ms,
-                track_id=track_id_int,
                 error=e,
                 stack_trace=traceback.format_exc(),
                 context="Similarity by ID processing",
