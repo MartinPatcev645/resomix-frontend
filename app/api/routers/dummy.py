@@ -48,6 +48,7 @@ async def dummy_hls_endpoint(
     - **playlist_id**: UUID of the playlist (ignored)
     """
     try:
+        # Playlist ID: 74378e98-b6fa-42c9-afb8-81da05256fd6
         file_path = "app/api/routers/hls.m3u8"
         if not os.path.exists(file_path):
             return JSONResponse(
