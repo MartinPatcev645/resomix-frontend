@@ -49,6 +49,8 @@ class FeedbackController:
         try:
             # Process feedback submission
             result = await self.feedback_service.process_feedback_submission(db, feedback_data)
+
+            print(feedback_data)
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
@@ -72,6 +74,7 @@ class FeedbackController:
                         "satisfaction": feedback_data.get("satisfaction"),
                         "recommendation": feedback_data.get("recommendation"),
                         "feedback_id": result.get("feedback_id"),
+                        "message": feedback_data.get("message"),
                         "message_length": len(feedback_data.get("message", "")),
                         "response": response_data,
                         "operation": "feedback_submission"
