@@ -281,7 +281,7 @@ export function createHlsPlaylistController(): AudioController {
         // t — absolute time to local
         if (!currentTrackId) return;
         const start = offsets.get(currentTrackId) || 0;
-        seek(Math.max(0, t - start));
+        seek(Math.max(0, start + t));
       },
     });
     isinitMediaSession = true;
@@ -364,6 +364,7 @@ export function createHlsPlaylistController(): AudioController {
   function load(trackId: string, isPlayAfter: boolean = false) {
     if (!tracks.length) initPlaylist();
     ensureHlsLoaded();
+    if (isPlayAfter) msInitSession(trackId);
     playAfterLoad = isPlayAfter;
 
     const onReady = () => {
