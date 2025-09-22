@@ -74,8 +74,8 @@ class FeedbackController:
                         "satisfaction": feedback_data.get("satisfaction"),
                         "recommendation": feedback_data.get("recommendation"),
                         "feedback_id": result.get("feedback_id"),
-                        "message": feedback_data.get("message"),
-                        "message_length": len(feedback_data.get("message", "")),
+                        "message": feedback_data.get("feedback"),
+                        "message_length": len(feedback_data.get("feedback", "")),
                         "response": response_data,
                         "operation": "feedback_submission"
                     }
