@@ -307,6 +307,8 @@ class SimilarityController:
                             error=similarity_results.get("error", "Similarity processing failed.")
                         )
                     )
+                
+                print(similarity_results)
 
                 generated_playlist_uuid = similarity_results.get("data")["playlist"]["id"]
                 print(generated_playlist_uuid)
