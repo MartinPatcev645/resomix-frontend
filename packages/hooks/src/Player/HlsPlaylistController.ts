@@ -278,10 +278,7 @@ export function createHlsPlaylistController(): AudioController {
       onPause: () => pause(),
       onStop: () => stop(),
       onSeekTo: (t: number) => {
-        // t — absolute time to local
-        if (!currentTrackId) return;
-        const start = offsets.get(currentTrackId) || 0;
-        seek(Math.max(0, start + t));
+        seek(t);
       },
     });
     isinitMediaSession = true;
