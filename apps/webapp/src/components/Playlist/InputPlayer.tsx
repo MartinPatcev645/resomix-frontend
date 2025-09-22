@@ -47,7 +47,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
             cancelAnimationFrame(seekRef.current);
         }
         seekRef.current = requestAnimationFrame(() => {
-            console.log('seek', currentTrackId, effectiveId);
             if (currentTrackId === effectiveId) {
                 hlsController.seek(time, effectiveId);
             }
@@ -278,7 +277,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                 </div>
             </div>
             <div className="text-sm text-gray-500 text-right -my-2">
-                Version: alpha-0.6.2
+                Version: alpha-0.6.6
             </div>
         </>
     );
