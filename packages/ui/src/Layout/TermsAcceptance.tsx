@@ -55,7 +55,7 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                                 id="privacy-checkbox"
                                 checked={privacyChecked}
                                 onChange={(e) => setPrivacyChecked(e.target.checked)}
-                                className="w-full h-full accent-[var(--color-primary)] cursor-pointer"
+                                className="w-full h-full accent-[var(--color-secondary-background)] cursor-pointer"
                             />
                         </div>
                         <label htmlFor="privacy-checkbox" className="flex flex-col items-start text-left cursor-pointer flex-1">
@@ -85,7 +85,7 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                                 id="contact-checkbox"
                                 checked={contactChecked}
                                 onChange={(e) => setContactChecked(e.target.checked)}
-                                className="w-full h-full accent-[var(--color-primary)] cursor-pointer"
+                                className="w-full h-full accent-[var(--color-secondary-background)] cursor-pointer"
                             />
                         </div>
                         <label htmlFor="contact-checkbox" className="flex flex-col items-start text-left cursor-pointer flex-1">
