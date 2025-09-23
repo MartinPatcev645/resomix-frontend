@@ -18,16 +18,23 @@ export function UploadMobile() {
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
+  const processedId = React.useRef<string | null>(null);
 
   const { handleSelectTrack } = useTrackSimilarity();
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if (id) {
+    
+    // Prevent infinite loop by checking if we've already processed this ID
+    if (id && processedId.current !== id) {
+      processedId.current = id;
+      console.log("🔄 Processing ID:", id);
+      
       // First check cache before making API call
       const cachedResponse = loadCachedResponse(id);
       if (cachedResponse) {
+        console.log("💾 Found cached response, navigating...");
         // Found in cache, use cached data and navigate directly
         setPlaylistResponse(cachedResponse);
         const playlistId = cachedResponse.data?.playlist?.id || null;
@@ -37,11 +44,12 @@ export function UploadMobile() {
           navigate('/playlist');
         }
       } else {
+        console.log("🚀 No cache, calling handleSelectTrack...");
         // Not in cache, make API call
         handleSelectTrack(id, true);
       }
     }
-  }, [handleSelectTrack, loadCachedResponse, setPlaylistResponse, navigate]);
+  }, [loadCachedResponse, setPlaylistResponse, navigate]);
 
   React.useEffect(() => {
     if (response && response.success) {
