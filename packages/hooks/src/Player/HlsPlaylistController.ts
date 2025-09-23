@@ -126,7 +126,7 @@ export function createHlsPlaylistController(): AudioController {
     } else {
       const t = audio.currentTime || 0;
       const wasPlaying = wantPlaying;
-      audio.src = playlistUrl;
+      audio.src = playlistUrl + (playlistUrl.includes('?') ? '&' : '?') + 'r=' + Date.now();
       audio.load();
       audio.currentTime = t;
       if (wasPlaying) audio.play().catch(() => { });
@@ -140,6 +140,11 @@ export function createHlsPlaylistController(): AudioController {
     retryTimer = window.setInterval(() => {
       attemptResume(false);
     }, RETRY_EVERY);
+  }
+
+  function onMediaHiccup(evt: Event) {
+    if (!wantPlaying) return;
+    attemptResume(true);
   }
 
   function wireHlsErrorHandlers() {
@@ -183,6 +188,9 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        // for network problems tests
+        // maxBufferLength: 2,
+        // maxMaxBufferLength: 2,
       });
       hls.loadSource(playlistUrl);
       hls.attachMedia(audio);
@@ -350,7 +358,9 @@ export function createHlsPlaylistController(): AudioController {
 
       if (shouldPlay) {
         usePlayerStore.getState().setIsPlaying(true);
-        audio.play().catch(() => { });
+        audio.play().catch(() => {
+          scheduleRetry();
+        });
       }
     };
 
@@ -461,6 +471,16 @@ export function createHlsPlaylistController(): AudioController {
       audio.volume = volume;
     }
   });
+
+  ['stalled','suspend','waiting','emptied','error','abort'].forEach((ev) => {
+    audio.addEventListener(ev, onMediaHiccup);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') attemptResume(true);
+  });
+  window.addEventListener('pageshow', () => attemptResume(true));
+  window.addEventListener('focus', () => attemptResume(true));
 
   const controller: AudioController = {
     load,
