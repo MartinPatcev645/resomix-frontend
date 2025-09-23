@@ -104,6 +104,8 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        // maxMaxBufferLength: 0,
+        // maxBufferSize: 0,
       });
       hls.attachMedia(audio);
       hls.loadSource(playlistUrl);
@@ -359,6 +361,9 @@ export function createHlsPlaylistController(): AudioController {
     selectCurrent(trackId);
 
     const shouldPlay = autoplay;
+    if (shouldPlay) {
+      wantPlaying = true; // start offline retries before play
+    }
     isSeeking = true;
     audio.pause();
 
@@ -390,7 +395,13 @@ export function createHlsPlaylistController(): AudioController {
   function load(trackId: string, isPlayAfter: boolean = false) {
     if (!tracks.length) initPlaylist();
     ensureHlsLoaded();
-    if (isPlayAfter) msInitSession(trackId);
+    if (isPlayAfter) {
+      wantPlaying = true; // offline retry support
+      msInitSession(trackId);
+      selectCurrent(trackId);
+      usePlayerStore.getState().setIsPlaying(true);
+      scheduleRetry(); // start offline retry support and don't waiting hls events
+    }
     playAfterLoad = isPlayAfter;
 
     const onReady = () => {
