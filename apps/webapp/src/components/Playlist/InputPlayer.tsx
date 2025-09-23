@@ -7,6 +7,7 @@ import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
+import { useConfig } from "@resomix/stores";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -277,7 +278,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                 </div>
             </div>
             <div className="text-sm text-gray-500 text-right -my-2">
-                Version: alpha-0.6.9
+                Version: {useConfig(s => s.version)}
             </div>
         </>
     );
