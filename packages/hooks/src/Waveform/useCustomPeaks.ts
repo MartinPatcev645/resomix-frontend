@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { loadPeaksData } from './peaksCache';
+import { loadPeaksData, PeaksRich } from './peaksCache';
 
 export type UsePeaksReturn = {
   loading: boolean;
@@ -8,26 +8,34 @@ export type UsePeaksReturn = {
   attachOverviewElement: (overviewElement: HTMLDivElement) => void;
 };
 
-export function useCustomPeaks(
-  uuid: string
-): UsePeaksReturn {
+export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const [overviewElement, setOverviewElement] = useState<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [normalizedData, setNormalizedData] = useState<number[]>([]);
+
+  // Two series: fullband (required), lowband (optional)
+  const [fullband, setFullband] = useState<number[]>([]);
+  const [lowband, setLowband] = useState<number[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const debounceRef = useRef<any | null>(null);
 
+  // Style constants (dark background friendly)
   const barWidth = 1;
   const gapWidth = 0;
-  const playedColor = '#ff5500';
-  const unplayedColor = '#ffffff';
-  const cursorColor = '#ffffff';
+  // Fullband colors
+  const playedColor = '#f1ff00';      // bright orange for played
+  const unplayedColor = '#eaeff5';    // white for unplayed
+  // Lowband colors (distinct on dark bg)
+  const lowPlayedColor = '#ff5714';   // bright cyan for played low-end
+  const lowUnplayedColor = '#b9bcc2'; // teal/cyan for unplayed low-end
+
+  const cursorColor = '#ff5714';
   const hoverColor = '#ffffff';
   const hoverLineWidth = 2;
+  const lowbandScale = 0.4; // render low-end 2x lower than fullband by height
 
   let nextDebaunceTime: number = 0;
 
@@ -41,16 +49,15 @@ export function useCustomPeaks(
     const width = canvas.width;
     const height = canvas.height;
     const ctx = canvas.getContext('2d');
-    return { ctx, width, height};
+    return { ctx, width, height };
   }, []);
 
   const drawWaveform = useCallback((time: number = 0) => {
     const canvas = canvasRef.current;
-    if (!canvas || !normalizedData.length) return;
+    if (!canvas || !fullband.length) return;
 
-    const {width, height, ctx} = setupCanvasSize(canvas)
+    const { width, height, ctx } = setupCanvasSize(canvas);
     if (!ctx) return;
-
     if (width === 0 || height === 0) return;
 
     const barCount = Math.floor(width / (barWidth + gapWidth));
@@ -60,26 +67,49 @@ export function useCustomPeaks(
     ctx.clearRect(0, 0, width, height);
 
     for (let i = 0; i < barCount; i++) {
-      const position = (i / barCount) * (normalizedData.length - 1);
-      const index = Math.floor(position);
-      const value = normalizedData[index] || 0;
-      const barHeight = Math.max(1, value * height);
+      // Use position in [0..1] to index series of potentially different length safely
+      const pos01 = barCount > 1 ? i / (barCount - 1) : 0;
+
+      const fi = Math.floor(pos01 * Math.max(0, fullband.length - 1));
+      const fv = fullband[fi] || 0;
+      const fullHeight = Math.max(1, fv * height);
+
+      let lv = 0;
+      let lowHeight = 0;
+      if (lowband && lowband.length > 0) {
+        const li = Math.floor(pos01 * Math.max(0, lowband.length - 1));
+        lv = lowband[li] || 0;
+        lowHeight = Math.max(1, lv * height * lowbandScale);
+      }
 
       const x = i * (barWidth + gapWidth);
       const isPlayed = x < cursorPosition;
 
+      // Draw fullband first
       ctx.fillStyle = isPlayed ? playedColor : unplayedColor;
       ctx.fillRect(
         x,
-        height - barHeight,
+        height - fullHeight,
         barWidth,
-        barHeight
+        fullHeight
       );
+
+      // Draw lowband on top (shorter bar, with its own color)
+      if (lowHeight > 0) {
+        ctx.fillStyle = isPlayed ? lowPlayedColor : lowUnplayedColor;
+        ctx.fillRect(
+          x,
+          height - lowHeight,
+          barWidth,
+          lowHeight
+        );
+      }
     }
 
+    // Cursor
     ctx.fillStyle = cursorColor;
-    ctx.fillRect(cursorPosition, 0.4 * height, barWidth * 2, height);
-  }, [normalizedData, duration]);
+    ctx.fillRect(cursorPosition, 0.4 * height, Math.max(2, barWidth * 2), height);
+  }, [fullband, lowband, duration]);
 
   const attachOverviewElement = useCallback((el: HTMLDivElement | null) => {
     setOverviewElement(el);
@@ -88,7 +118,7 @@ export function useCustomPeaks(
   const clearOverlay = useCallback(() => {
     const overlay = overlayCanvasRef.current;
     if (!overlay) return;
-    const {width, height, ctx} = setupCanvasSize(overlay);
+    const { width, height, ctx } = setupCanvasSize(overlay);
     if (!ctx) return;
     ctx.clearRect(0, 0, width, height);
   }, []);
@@ -96,7 +126,7 @@ export function useCustomPeaks(
   const drawOverlay = useCallback((xCss: number) => {
     const overlay = overlayCanvasRef.current;
     if (!overlay) return;
-    const {width, height, ctx} = setupCanvasSize(overlay);
+    const { width, height, ctx } = setupCanvasSize(overlay);
     if (!ctx) return;
 
     ctx.clearRect(0, 0, width, height);
@@ -134,7 +164,6 @@ export function useCustomPeaks(
       el.addEventListener('mousemove', onMouseMove);
       el.addEventListener('mouseleave', onMouseLeave);
     } else {
-      // На мобильных явно очищаем ref overlay
       overlayCanvasRef.current = null;
     }
 
@@ -144,6 +173,7 @@ export function useCustomPeaks(
     canvasRef.current = canvas;
     el.appendChild(canvas);
 
+    // Initial sizing
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     if (overlay) {
@@ -151,13 +181,15 @@ export function useCustomPeaks(
       overlay.height = canvas.clientHeight;
     }
 
-
     const loadData = async () => {
       try {
         setLoading(true);
-        const data = await loadPeaksData(uuid);
-        setNormalizedData(data);
-        setDuration(data.length);
+        const payload: PeaksRich = await loadPeaksData(uuid);
+        setFullband(payload.fullband || []);
+        setLowband(payload.lowband || []);
+        // Prefer duration from payload, fallback to fullband length (1 value = 1s)
+        const dur = payload.durationSeconds ?? (payload.fullband?.length ?? 0);
+        setDuration(dur);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
@@ -165,7 +197,7 @@ export function useCustomPeaks(
       }
     };
 
-    if (!normalizedData.length && !loading) {
+    if (!fullband.length && !loading) {
       loadData();
     }
 
@@ -187,8 +219,7 @@ export function useCustomPeaks(
 
   useEffect(() => {
     drawWaveform(currentTime);
-  }, [normalizedData, duration, canvasRef, drawOverlay, clearOverlay]);
-
+  }, [fullband, lowband, duration, canvasRef, drawOverlay, clearOverlay]);
 
   const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
     setCurrentTime(timeSec);
@@ -206,7 +237,6 @@ export function useCustomPeaks(
       drawWaveform(nextDebaunceTime);
       debounceRef.current = null;
     }, 100);
-
   }, [drawWaveform]);
 
   return { loading, error, setTime, attachOverviewElement };
