@@ -35,7 +35,7 @@ export function UploadPage() {
         }
       } else {
         // Not in cache, make API call
-        handleSelectTrack(id);
+        handleSelectTrack(id, true);
       }
     }
   }, [handleSelectTrack, loadCachedResponse, setPlaylistResponse, navigate]);

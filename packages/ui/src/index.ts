@@ -35,16 +35,15 @@ import { ToggleButton } from "./Buttons/ToggleButton";
 import { IconButton } from "./Buttons/IconButton";
 import { HoverFlow } from "./Animations/HoverFlow";
 import { InfoPageLayout } from "./Layout/InfoPageLayout";
-
 import GlobalFooter from "./Layout/GlobalFooter";
 import GlobalMobileFooter from "./Layout/GlobalMobileFooter";
 import { SideLines } from "./Layout/SideLines";
-
 import ErrorContent from "./Content/ErrorContent";
 import Error404 from "./Content/Error404";
 import ContactContent from "./Content/ContactContent";
 import { FeedbackForm } from "./Content/FeedbackForm";
 import { WelcomeMessage } from "./Layout/WelcomeMessage";
+import { TermsAcceptance } from "./Layout/TermsAcceptance";
 import { Tooltip } from "./Layout/Tooltip";
 import { StatusMessage } from "./Elements/StatusMessage";
 
@@ -93,6 +92,7 @@ export {
   ContactContent,
   Error404,
   WelcomeMessage,
+  TermsAcceptance,
   Tooltip,
   FeedbackForm,
   StatusMessage,
