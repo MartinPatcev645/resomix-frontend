@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
+import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
 
 interface TermsAcceptanceProps {
     onAccept: () => void;
@@ -41,55 +42,91 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                     <div className="text-[length:var(--px-22)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
                         Terms & Privacy
                     </div>
-                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80">
-                        Please accept our terms to continue using Resomix.
+                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80 mt-[var(--px-10)]">
+                        Please review and accept our terms to continue using Resomix.
                     </div>
                 </div>
 
                 <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
-                    <div className="flex items-start gap-[var(--px-12)] w-full">
-                        <input
-                            type="checkbox"
-                            id="privacy-checkbox"
-                            checked={privacyChecked}
-                            onChange={(e) => setPrivacyChecked(e.target.checked)}
-                            className="mt-[var(--px-2)] w-[var(--px-16)] h-[var(--px-16)] accent-[var(--color-primary)] cursor-pointer"
-                        />
-                        <label htmlFor="privacy-checkbox" className="flex flex-col items-start text-left cursor-pointer">
-                            <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-80 uppercase">
+                    <div className="flex items-start gap-[var(--px-12)] w-full min-h-[var(--px-60)]">
+                        <div className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] mt-[var(--px-2)]">
+                            <input
+                                type="checkbox"
+                                id="privacy-checkbox"
+                                checked={privacyChecked}
+                                onChange={(e) => setPrivacyChecked(e.target.checked)}
+                                className="w-full h-full accent-[var(--color-primary)] cursor-pointer"
+                            />
+                        </div>
+                        <label htmlFor="privacy-checkbox" className="flex flex-col items-start text-left cursor-pointer flex-1">
+                            <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-90 uppercase">
                                 Privacy Policy
                             </div>
                             <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80">
-                                I agree to the privacy policy and data handling terms
+                                I agree to Resomix's{" "}
+                                <a 
+                                    href={`${BASE_LANDING_URL}/privacy`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="underline hover:font-normal"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Privacy Policy
+                                </a>
+                                {" "}and understand that uploaded files are automatically deleted after 24 hours
                             </div>
                         </label>
                     </div>
 
-                    <div className="flex items-start gap-[var(--px-12)] w-full">
-                        <input
-                            type="checkbox"
-                            id="contact-checkbox"
-                            checked={contactChecked}
-                            onChange={(e) => setContactChecked(e.target.checked)}
-                            className="mt-[var(--px-2)] w-[var(--px-16)] h-[var(--px-16)] accent-[var(--color-primary)] cursor-pointer"
-                        />
-                        <label htmlFor="contact-checkbox" className="flex flex-col items-start text-left cursor-pointer">
-                            <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-80 uppercase">
-                                Contact Terms
+                    <div className="flex items-start gap-[var(--px-12)] w-full min-h-[var(--px-60)]">
+                        <div className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] mt-[var(--px-2)]">
+                            <input
+                                type="checkbox"
+                                id="contact-checkbox"
+                                checked={contactChecked}
+                                onChange={(e) => setContactChecked(e.target.checked)}
+                                className="w-full h-full accent-[var(--color-primary)] cursor-pointer"
+                            />
+                        </div>
+                        <label htmlFor="contact-checkbox" className="flex flex-col items-start text-left cursor-pointer flex-1">
+                            <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-90 uppercase">
+                                Terms of Service
                             </div>
                             <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80">
-                                I agree to receive service-related communications
+                                I agree to Resomix's{" "}
+                                <a 
+                                    href={`${BASE_LANDING_URL}/terms`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="underline hover:font-normal"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Terms of Service
+                                </a>
+                                {" "}
                             </div>
                         </label>
                     </div>
                 </div>
 
-                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
+                <div className="flex flex-col items-center gap-[var(--px-20)]">
                     <ButtonSleek 
                         text="Accept Terms" 
                         onClick={handleAccept}
                         disabled={!canAccept}
                     />
+                    <div className="text-[length:var(--px-9)] font-light font-fira leading-[var(--px-12)] opacity-60 text-center">
+                        Questions? Contact us at{" "}
+                        <a 
+                            href={`${BASE_BETA_URL}/contact`}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="underline hover:font-normal"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            resomix.com/contact
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
