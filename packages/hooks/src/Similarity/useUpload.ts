@@ -3,6 +3,7 @@ import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { create } from "zustand";
 import { extractCoverArt } from "../meta/useMetatags";
+import { useTermsAcceptance } from "../useTermsAcceptance";
 
 export interface UploadResult<T = any> {
     success: boolean;
@@ -58,6 +59,7 @@ export function useUpload() {
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
     const { topSk, setUploadedCoverArt } = usePlayerStore();
+    const { checkTermsAcceptance } = useTermsAcceptance();
 
     const inputAccept = useMemo(() => {
         // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
@@ -66,11 +68,17 @@ export function useUpload() {
         return ["audio/*", ...mimes, ...extensions].join(",");
     }, []);
 
-    const openFilePicker = useCallback(() => {
+    const openFilePicker = useCallback(async () => {
+        // Check terms acceptance before allowing file picker
+        const termsAccepted = await checkTermsAcceptance();
+        if (!termsAccepted) {
+            return; // User dismissed terms without accepting
+        }
+        
         if (inputRef.current) {
             inputRef.current.click();
         }
-    }, []);
+    }, [checkTermsAcceptance]);
 
     const validateFile = useCallback((file: File): { valid: boolean; error?: string } => {
         if (!file) return { valid: false, error: "No file selected." };

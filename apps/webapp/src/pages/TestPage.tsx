@@ -59,6 +59,25 @@ const UUIDS: string[] = [
 const TestPage: React.FC = () => {
   const [play, setPlay] = useState(false);
 
+  const getPeaksRich = async () => {
+    try {
+      // 88741ea8-abe3-4d25-808a-3428e8531b02
+      // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
+      const url = new URL('https://media.resomix.com/peaks-rich/?uuid=67b026f66fd8f3b791b10662');
+      url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Accept': 'application/vnd.apple.mpegurl'
+        }
+      });
+      const data = await response.text();
+      console.log('HLS Response:', data);
+    } catch (error) {
+      console.error('Error fetching HLS:', error);
+    }
+  };
+
   const handleHlsRequest = async () => {
     try {
       // 88741ea8-abe3-4d25-808a-3428e8531b02
@@ -167,6 +186,12 @@ const TestPage: React.FC = () => {
           {play ? "Pause" : "Play"}
         </button>
         {/* Button to make HLS request */}
+        <button
+          className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
+          onClick={getPeaksRich}
+        >
+          Get Rich Peaks
+        </button>
         <button
           className="w-[var(--px-150)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer"
           onClick={handleHlsRequest}

@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
-import { useFirstVisit, useResponsive } from "@resomix/hooks";
-import { WelcomeMessage, FeedbackForm } from "@resomix/ui";
+import { useFirstVisit, useResponsive, useTermsAcceptance } from "@resomix/hooks";
+import { WelcomeMessage, FeedbackForm, TermsAcceptance } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage, TestTwo, PlayerPage } from "@/pages/index.ts";
 import { UploadLoader } from "@/components/index.ts";
@@ -31,7 +31,8 @@ function PlaylistLanding() {
 function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
-
+  const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
+  
   return (
     <>
       {/* <DevMobileConsole /> */}
@@ -44,6 +45,8 @@ function App() {
         />}
 
       {showFeedback && <FeedbackForm />}
+
+      {showTerms && <TermsAcceptance onAccept={acceptTerms} onDismiss={dismissTerms} />}
 
       <Routes>
         <Route path="/" element={<UploadLanding />} />
