@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { create } from "zustand";
 
 const COOKIE_NAME = "resomix_terms_accepted";
@@ -13,7 +12,9 @@ function getCookie(name: string): string | null {
 function setCookie(name: string, value: string, domain?: string) {
   let cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/`;
   if (domain) cookie += `; domain=${domain}`;
-  // Session cookie (no expiry)
+  const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+  const expires = new Date(Date.now() + oneYearMs).toUTCString();
+  cookie += `; Expires=${expires}; SameSite=Lax`;
   document.cookie = cookie;
 }
 
