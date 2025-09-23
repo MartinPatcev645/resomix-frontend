@@ -8,13 +8,10 @@ interface TermsAcceptanceProps {
 }
 
 export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDismiss }) => {
-    console.log("🎭 TermsAcceptance component rendered");
-    
     const [privacyChecked, setPrivacyChecked] = useState(false);
     const [contactChecked, setContactChecked] = useState(false);
 
     const canAccept = privacyChecked && contactChecked;
-    console.log("✅ canAccept:", canAccept, "privacy:", privacyChecked, "contact:", contactChecked);
 
     // lock body scroll while modal open
     useEffect(() => {
@@ -24,12 +21,8 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
     }, []);
 
     const handleAccept = () => {
-        console.log("🎯 handleAccept called, canAccept:", canAccept);
         if (canAccept) {
-            console.log("✅ Calling onAccept...");
             onAccept();
-        } else {
-            console.log("❌ Cannot accept - checkboxes not checked");
         }
     };
 

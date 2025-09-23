@@ -29,12 +29,10 @@ export function UploadMobile() {
     // Prevent infinite loop by checking if we've already processed this ID
     if (id && processedId.current !== id) {
       processedId.current = id;
-      console.log("🔄 Processing ID:", id);
       
       // First check cache before making API call
       const cachedResponse = loadCachedResponse(id);
       if (cachedResponse) {
-        console.log("💾 Found cached response, navigating...");
         // Found in cache, use cached data and navigate directly
         setPlaylistResponse(cachedResponse);
         const playlistId = cachedResponse.data?.playlist?.id || null;
@@ -44,7 +42,6 @@ export function UploadMobile() {
           navigate('/playlist');
         }
       } else {
-        console.log("🚀 No cache, calling handleSelectTrack...");
         // Not in cache, make API call
         handleSelectTrack(id, true);
       }
