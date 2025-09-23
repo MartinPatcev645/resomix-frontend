@@ -90,11 +90,13 @@ const UploadLoader: React.FC = () => {
                 <div className="hidden lg:flex w-full items-start justify-between min-h-[var(--px-36)]">
                     <div className="text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)]">
                         <CodeTyping
-                            text="[SCAN_01] → Analyzing rhythm and tone…<br />[SCAN_02] → Tracing harmonic intent…<br />[SCAN_03] → Reading the spectral flow…<br />[SCAN_04] → Listening... Matching in progress..."
+                            text="[SCAN_01] → Analyzing rhythm and tone<|>.<|><br />[SCAN_02] → Tracing harmonic intent<|>.<|><br />[SCAN_03] → Reading the spectral flow<|>.<|><br />[SCAN_04] → Listening … Matching in progress<|>.<|>"
                             // Speed = 100 delay = 1000
-                            speed={60}
+                            speed={130}
                             delay={1000}
                             multiline={true}
+                            loadingEffect={true}
+                            loadingEffectDelay={4}
                         />
                     </div>
                     <div className="text-right text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)]">
@@ -129,11 +131,13 @@ const UploadLoader: React.FC = () => {
                     <div className="hidden lg:flex text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)] min-w-[var(--px-203)] flex-col gap-[var(--px-10)] items-start">
                         <img src={LoadingBubblesSvg} alt="Loading Bubbles" className="w-[var(--px-90)] h-[var(--px-9)]" />
                         <CodeTyping
-                            text="[SCAN_05] → Mapping sonic DNA…<br />[SCAN_06] → Decoding musical patterns…<br />[SCAN_07] → Scanning frequency fingerprints…<br />[FINAL] → Finalizing playlist blueprint…"
+                            text="[SCAN_05] → Mapping sonic DNA<|>.<|><br />[SCAN_06] → Decoding musical patterns<|>.<|><br />[SCAN_07] → Scanning frequency fingerprints<|>.<|><br />[FINAL] → Finalizing playlist blueprint<|>.<|>"
                             // Speed = 100 delay = 5000
-                            speed={60}
-                            delay={15000}
+                            speed={130}
+                            delay={33000}
                             multiline={true}
+                            loadingEffect={true}
+                            loadingEffectDelay={3}
                         />
                     </div>
                     <div className="text-center mx-auto lg:mx-0 max-w-[var(--px-280)] lg:max-w-none text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-1)] mt-[var(--px-40)]">
