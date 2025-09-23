@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { loadPeaksData } from './peaksCache';
 
 export type UsePeaksReturn = {
@@ -30,6 +30,11 @@ export function useCustomPeaks(
   const hoverLineWidth = 2;
 
   let nextDebaunceTime: number = 0;
+
+  const supportsHover = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  }, []);
 
   const setupCanvasSize = useCallback((canvas: HTMLCanvasElement) => {
     if (!canvas) return {};
@@ -103,11 +108,35 @@ export function useCustomPeaks(
     const el = overviewElement;
     if (!el || !uuid) return;
 
-    const overlay = document.createElement('canvas');
-    overlay.style.position = 'absolute';
-    overlay.style.pointerEvents = 'none';
-    overlayCanvasRef.current = overlay;
-    el.appendChild(overlay);
+    let overlay: HTMLCanvasElement | null = null;
+    let onMouseMove: ((e: MouseEvent) => void) | null = null;
+    let onMouseLeave: (() => void) | null = null;
+
+    if (supportsHover) {
+      overlay = document.createElement('canvas');
+      overlay.style.position = 'absolute';
+      overlay.style.pointerEvents = 'none';
+      overlayCanvasRef.current = overlay;
+      el.appendChild(overlay);
+
+      onMouseMove = (e: MouseEvent) => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        if (x >= 0 && x <= rect.width) {
+          drawOverlay(x);
+        }
+      };
+
+      onMouseLeave = () => {
+        clearOverlay();
+      };
+
+      el.addEventListener('mousemove', onMouseMove);
+      el.addEventListener('mouseleave', onMouseLeave);
+    } else {
+      // На мобильных явно очищаем ref overlay
+      overlayCanvasRef.current = null;
+    }
 
     const canvas = document.createElement('canvas');
     canvas.style.width = '100%';
@@ -117,8 +146,10 @@ export function useCustomPeaks(
 
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-    overlay.width = canvas.clientWidth;
-    overlay.height = canvas.clientHeight;
+    if (overlay) {
+      overlay.width = canvas.clientWidth;
+      overlay.height = canvas.clientHeight;
+    }
 
 
     const loadData = async () => {
@@ -138,29 +169,18 @@ export function useCustomPeaks(
       loadData();
     }
 
-    const onMouseMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      if (x >= 0 && x <= rect.width) {
-        drawOverlay(x);
-      }
-    };
-
-    const onMouseLeave = () => {
-      clearOverlay();
-    };
-
-    el.addEventListener('mousemove', onMouseMove);
-    el.addEventListener('mouseleave', onMouseLeave);
-
     return () => {
-      el.removeEventListener('mousemove', onMouseMove);
-      el.removeEventListener('mouseleave', onMouseLeave);
       if (canvasRef.current) {
         el.removeChild(canvas);
-        el.removeChild(overlay);
         canvasRef.current = null;
+      }
+      if (overlay) {
+        el.removeChild(overlay);
         overlayCanvasRef.current = null;
+      }
+      if (supportsHover) {
+        if (onMouseMove) el.removeEventListener('mousemove', onMouseMove);
+        if (onMouseLeave) el.removeEventListener('mouseleave', onMouseLeave);
       }
     };
   }, [overviewElement, uuid]);
