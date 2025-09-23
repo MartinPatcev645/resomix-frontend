@@ -43,7 +43,7 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                         Terms & Privacy
                     </div>
                     <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80 mt-[var(--px-10)]">
-                        Please review and accept our terms to continue using Resomix.
+                        Review and accept our privacy policy and terms of service, once accepted we'll start your playlist generation.
                     </div>
                 </div>
 
