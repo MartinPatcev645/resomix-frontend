@@ -37,7 +37,8 @@ export const getSimilarityPlaylistHlsUrl = (
   playlistUuid: string,
   extraParams: Record<string, unknown> = {},
 ): string => {
-  const endpoint = `${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY_HLS}${playlistUuid}.m3u8`;
+  // const endpoint = `${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY_HLS}${playlistUuid}.m3u8`;
+  const endpoint = `/dummy/dummy-hls/${playlistUuid}.m3u8`;
   return getUrl(endpoint, extraParams);
 };
 

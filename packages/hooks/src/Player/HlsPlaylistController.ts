@@ -32,6 +32,8 @@ export function createHlsPlaylistController(): AudioController {
   let playlistUrl = '';
   let retryTimer: number | null = null;
   const RETRY_EVERY = 2000;
+  const GAP_BETWEEN_TRACKS = 2.005; // sec silent segment
+  const AUTOSWITCH_PREROLL = 0.5;   // sec preroll between new track start
   let wantPlaying = false;
 
   let tracksIds: string[] = [];
@@ -70,12 +72,15 @@ export function createHlsPlaylistController(): AudioController {
     offsets = new Map();
     durations = new Map();
     let acc = 0;
-    for (const t of tracks) {
+    tracks.forEach((t, i) => {
       const d = Math.max(0, Number(t.duration) || 0);
       offsets.set(t.id, acc);
       durations.set(t.id, d);
+
       acc += d;
-    }
+      if (i < tracks.length - 1) acc += GAP_BETWEEN_TRACKS;
+    });
+
     totalDuration = acc;
   }
 
@@ -126,7 +131,7 @@ export function createHlsPlaylistController(): AudioController {
     } else {
       const t = audio.currentTime || 0;
       const wasPlaying = wantPlaying;
-      audio.src = playlistUrl;
+      audio.src = playlistUrl + (playlistUrl.includes('?') ? '&' : '?') + 'r=' + Date.now();
       audio.load();
       audio.currentTime = t;
       if (wasPlaying) audio.play().catch(() => { });
@@ -140,6 +145,11 @@ export function createHlsPlaylistController(): AudioController {
     retryTimer = window.setInterval(() => {
       attemptResume(false);
     }, RETRY_EVERY);
+  }
+
+  function onMediaHiccup(evt: Event) {
+    if (!wantPlaying) return;
+    attemptResume(true);
   }
 
   function wireHlsErrorHandlers() {
@@ -183,6 +193,9 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        // for network problems tests
+        // maxBufferLength: 2,
+        // maxMaxBufferLength: 2,
       });
       hls.loadSource(playlistUrl);
       hls.attachMedia(audio);
@@ -235,7 +248,7 @@ export function createHlsPlaylistController(): AudioController {
         const { autoplay } = usePlayerStore.getState();
         if (autoplay) {
           const shouldAutoplay = !audio.paused;
-          goToTrack(newId, shouldAutoplay);
+          goToTrack(newId, shouldAutoplay, true);
           wantPlaying = true;
         } else {
           pause();
@@ -246,15 +259,26 @@ export function createHlsPlaylistController(): AudioController {
   }
 
   function findTrackByGlobalTime(t: number): string | null {
-    t += 0.9;
-    let lastId: string | null = null;
-    for (const id of tracksIds) {
+    if (!tracksIds.length) return null;
+
+    for (let i = 0; i < tracksIds.length; i++) {
+      const id = tracksIds[i];
       const start = offsets.get(id) || 0;
-      const end = start + (durations.get(id) || 0);
+      const dur = durations.get(id) || 0;
+      const end = start + dur;
+      const nextStart = i + 1 < tracksIds.length ? (offsets.get(tracksIds[i + 1]) || 0) : Infinity;
+
+      // inside track
       if (t >= start && t < end) return id;
-      if (t >= end) lastId = id;
+
+      // inside silent - time to next track
+      if (t >= end && t < nextStart) {
+        return i + 1 < tracksIds.length ? tracksIds[i + 1] : id;
+      }
     }
-    return lastId;
+
+    // outside the border — return last
+    return tracksIds[tracksIds.length - 1] || null;
   }
 
   function getNextTrackId(): string | null {
@@ -301,8 +325,8 @@ export function createHlsPlaylistController(): AudioController {
       ]
     });
     msSetTrackControls({
-      onNext: getNextTrackId() ? () => { const nx = getNextTrackId()!; goToTrack(nx, true); } : null,
-      onPrev: getPrevTrackId() ? () => { const pv = getPrevTrackId()!; goToTrack(pv, true); } : null,
+      onNext: getNextTrackId() ? () => { const nx = getNextTrackId()!; goToTrack(nx, true, true); } : null,
+      onPrev: getPrevTrackId() ? () => { const pv = getPrevTrackId()!; goToTrack(pv, true, true); } : null,
     });
   }
 
@@ -320,14 +344,17 @@ export function createHlsPlaylistController(): AudioController {
     return Math.min(Math.max(0, saved), max);
   }
 
-  function goToTrack(trackId: string, autoplay = false) {
+  function goToTrack(trackId: string, autoplay = false, preRollOnZero = false) {
     if (!isPlaylistLoaded) ensureHlsLoaded();
     if (!tracksIds.length) return;
 
     const start = offsets.get(trackId) || 0;
     const d = durations.get(trackId) || 0;
     const savedLocal = getSavedLocalTime(trackId);
-    const target = start + savedLocal;
+    let target = start + savedLocal;
+    if (preRollOnZero && savedLocal === 0) {
+      target = Math.max(0, start - AUTOSWITCH_PREROLL);
+    }
 
     selectCurrent(trackId);
 
@@ -350,7 +377,9 @@ export function createHlsPlaylistController(): AudioController {
 
       if (shouldPlay) {
         usePlayerStore.getState().setIsPlaying(true);
-        audio.play().catch(() => { });
+        audio.play().catch(() => {
+          scheduleRetry();
+        });
       }
     };
 
@@ -366,11 +395,11 @@ export function createHlsPlaylistController(): AudioController {
 
     const onReady = () => {
       audio.removeEventListener('loadedmetadata', onReady);
-      goToTrack(trackId, playAfterLoad);
+      goToTrack(trackId, playAfterLoad, true);
       playAfterLoad = false;
     };
     if (audio.readyState >= 1) {
-      goToTrack(trackId, isPlayAfter);
+      goToTrack(trackId, isPlayAfter, true);
     } else {
       audio.addEventListener('loadedmetadata', onReady);
     }
@@ -461,6 +490,16 @@ export function createHlsPlaylistController(): AudioController {
       audio.volume = volume;
     }
   });
+
+  ['stalled','suspend','waiting','emptied','error','abort'].forEach((ev) => {
+    audio.addEventListener(ev, onMediaHiccup);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') attemptResume(true);
+  });
+  window.addEventListener('pageshow', () => attemptResume(true));
+  window.addEventListener('focus', () => attemptResume(true));
 
   const controller: AudioController = {
     load,
