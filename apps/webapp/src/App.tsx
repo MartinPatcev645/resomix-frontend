@@ -33,6 +33,8 @@ function App() {
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
   
+  console.log("📱 App render - showTerms:", showTerms, "showWelcome:", showWelcome, "showFeedback:", showFeedback);
+  
   return (
     <>
       {/* <DevMobileConsole /> */}
