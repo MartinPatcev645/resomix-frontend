@@ -12,6 +12,10 @@ export interface HoverFlowProps {
   delay?: number;
   /** Pause duration in milliseconds when reaching the end before looping */
   endPause?: number;
+  /** Pause duration in milliseconds when text resets to start before flowing again. Defaults to half of endPause */
+  startPause?: number;
+  /** If true, flow continuously without requiring hover */
+  flowAlways?: boolean;
   /** Optional click handler on the container */
   onClick?: () => void;
   className?: string;
@@ -20,6 +24,7 @@ export interface HoverFlowProps {
 /**
  * HoverFlow – shows a truncated string (by characters) with ellipsis. When hovered for the specified delay,
  * it starts smoothly scrolling the full text horizontally within the maxWidth viewport, looping while hovered.
+ * If flowAlways is true, it continuously flows without requiring hover.
  * Text inherits its styling from the parent; this component applies only layout/overflow for the effect.
  */
 export const HoverFlow: React.FC<HoverFlowProps> = ({
@@ -29,6 +34,8 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
   speed = 60,
   delay = 400,
   endPause = 0,
+  startPause,
+  flowAlways = false,
   onClick,
   className = "",
 }) => {
@@ -41,10 +48,14 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
 
   const hoverTimerRef = React.useRef<number | null>(null);
   const pauseTimerRef = React.useRef<number | null>(null);
+  const startPauseTimerRef = React.useRef<number | null>(null);
   const rafRef = React.useRef<number | null>(null);
   const lastTsRef = React.useRef<number | null>(null);
   const maxScrollRef = React.useRef(0);
   const offsetRef = React.useRef(0);
+
+  // Calculate effective startPause (defaults to half of endPause)
+  const effectiveStartPause = startPause ?? Math.floor(endPause / 2);
 
   // Truncated presentation string
   const truncated = React.useMemo(() => {
@@ -68,6 +79,10 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
       window.clearTimeout(pauseTimerRef.current);
       pauseTimerRef.current = null;
     }
+    if (startPauseTimerRef.current) {
+      window.clearTimeout(startPauseTimerRef.current);
+      startPauseTimerRef.current = null;
+    }
   }, []);
 
   const stopAnimation = React.useCallback(() => {
@@ -84,8 +99,8 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
 
   const step = React.useCallback(
     (ts: number) => {
-      // If hover ended, bail out
-      if (!containerRef.current?.matches(":hover")) return;
+      // If not flowAlways and hover ended, bail out
+      if (!flowAlways && !containerRef.current?.matches(":hover")) return;
 
       const last = lastTsRef.current ?? ts;
       const dt = (ts - last) / 1000; // seconds
@@ -111,12 +126,35 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
               lastTsRef.current = null;
               offsetRef.current = 0;
               applyTransform(0);
-              rafRef.current = requestAnimationFrame(step);
+              
+              // Apply startPause before beginning the next cycle
+              if (effectiveStartPause > 0) {
+                startPauseTimerRef.current = window.setTimeout(() => {
+                  startPauseTimerRef.current = null;
+                  rafRef.current = requestAnimationFrame(step);
+                }, effectiveStartPause) as unknown as number;
+              } else {
+                rafRef.current = requestAnimationFrame(step);
+              }
             }, endPause) as unknown as number;
             return;
           } else if (endPause <= 0) {
-            // No pause, wrap immediately
-            next = 0;
+            // No pause, wrap immediately but still apply startPause
+            if (effectiveStartPause > 0) {
+              if (rafRef.current) cancelAnimationFrame(rafRef.current);
+              rafRef.current = null;
+              lastTsRef.current = null;
+              offsetRef.current = 0;
+              applyTransform(0);
+              
+              startPauseTimerRef.current = window.setTimeout(() => {
+                startPauseTimerRef.current = null;
+                rafRef.current = requestAnimationFrame(step);
+              }, effectiveStartPause) as unknown as number;
+              return;
+            } else {
+              next = 0;
+            }
           }
         }
 
@@ -126,7 +164,7 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
 
       rafRef.current = requestAnimationFrame(step);
     },
-    [applyTransform, speed, endPause]
+    [applyTransform, speed, endPause, flowAlways, effectiveStartPause]
   );
 
   const startAfterDelay = React.useCallback(() => {
@@ -149,6 +187,9 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
   }, [applyTransform, step]);
 
   const handleMouseEnter = React.useCallback(() => {
+    // Don't start on hover if flowAlways is true (it's already running)
+    if (flowAlways) return;
+    
     setIsHovered(true);
     if (hoverTimerRef.current) window.clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = window.setTimeout(() => {
@@ -157,12 +198,27 @@ export const HoverFlow: React.FC<HoverFlowProps> = ({
         startAfterDelay();
       }
     }, delay) as unknown as number;
-  }, [delay, startAfterDelay]);
+  }, [delay, startAfterDelay, flowAlways]);
 
   const handleMouseLeave = React.useCallback(() => {
+    // Don't stop on mouse leave if flowAlways is true
+    if (flowAlways) return;
+    
     setIsHovered(false);
     stopAnimation();
-  }, [stopAnimation]);
+  }, [stopAnimation, flowAlways]);
+
+  // Start animation automatically if flowAlways is true
+  React.useEffect(() => {
+    if (flowAlways) {
+      startAfterDelay();
+    }
+    return () => {
+      if (flowAlways) {
+        stopAnimation();
+      }
+    };
+  }, [flowAlways, startAfterDelay, stopAnimation]);
 
   // Cleanup on unmount
   React.useEffect(() => stopAnimation, [stopAnimation]);
