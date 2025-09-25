@@ -18,13 +18,18 @@ export function UploadMobile() {
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
+  const processedId = React.useRef<string | null>(null);
 
   const { handleSelectTrack } = useTrackSimilarity();
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if (id) {
+    
+    // Prevent infinite loop by checking if we've already processed this ID
+    if (id && processedId.current !== id) {
+      processedId.current = id;
+      
       // First check cache before making API call
       const cachedResponse = loadCachedResponse(id);
       if (cachedResponse) {
@@ -41,7 +46,7 @@ export function UploadMobile() {
         handleSelectTrack(id, true);
       }
     }
-  }, [handleSelectTrack, loadCachedResponse, setPlaylistResponse, navigate]);
+  }, [loadCachedResponse, setPlaylistResponse, navigate]);
 
   React.useEffect(() => {
     if (response && response.success) {

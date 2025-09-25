@@ -43,6 +43,7 @@ export function useTrackSimilarity() {
       
       // Check terms acceptance before proceeding (don't show overlay yet)
       const termsAccepted = await checkTermsAcceptance();
+      
       if (!termsAccepted) {
         // User dismissed terms without accepting
         if (parameter) {

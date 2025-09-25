@@ -14,6 +14,7 @@ export function UploadPage() {
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
+  const processedId = React.useRef<string | null>(null);
 
   const { handleSelectTrack } = useTrackSimilarity();
 
@@ -21,7 +22,11 @@ export function UploadPage() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if (id) {
+    
+    // Prevent infinite loop by checking if we've already processed this ID
+    if (id && processedId.current !== id) {
+      processedId.current = id;
+      
       // First check cache before making API call
       const cachedResponse = loadCachedResponse(id);
       if (cachedResponse) {
@@ -38,7 +43,7 @@ export function UploadPage() {
         handleSelectTrack(id, true);
       }
     }
-  }, [handleSelectTrack, loadCachedResponse, setPlaylistResponse, navigate]);
+  }, [loadCachedResponse, setPlaylistResponse, navigate]);
 
   // Watch for API completion and route to playlist
   React.useEffect(() => {

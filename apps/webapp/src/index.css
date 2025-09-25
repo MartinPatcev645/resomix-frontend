@@ -7,6 +7,7 @@
   --color-secondary: #000000;
   --color-text-primary: #000000;
   --color-text-secondary: #ffffff;
+  --color-light-theme: #B9B9B9;
   --color-neon-orange: #EE4A26;
   /* Transparency levels (black base) */
   --opacity-10: rgba(0, 0, 0, 0.10);

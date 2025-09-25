@@ -21,15 +21,19 @@ function setCookie(name: string, value: string, domain?: string) {
 interface TermsAcceptanceStore {
   showTerms: boolean;
   isAccepted: boolean;
+  pendingResolve: ((value: boolean) => void) | null;
   setShowTerms: (show: boolean) => void;
   setIsAccepted: (accepted: boolean) => void;
+  setPendingResolve: (resolve: ((value: boolean) => void) | null) => void;
 }
 
 const useTermsAcceptanceStore = create<TermsAcceptanceStore>((set) => ({
   showTerms: false,
   isAccepted: getCookie(COOKIE_NAME) === COOKIE_VALUE,
+  pendingResolve: null,
   setShowTerms: (show) => set({ showTerms: show }),
   setIsAccepted: (accepted) => set({ isAccepted: accepted }),
+  setPendingResolve: (resolve) => set({ pendingResolve: resolve }),
 }));
 
 /**
@@ -37,18 +41,19 @@ const useTermsAcceptanceStore = create<TermsAcceptanceStore>((set) => ({
  * Returns whether the terms dialog should be shown, handlers, and acceptance status.
  */
 export function useTermsAcceptance() {
-  const { showTerms, isAccepted, setShowTerms, setIsAccepted } = useTermsAcceptanceStore();
+  const { showTerms, isAccepted, pendingResolve, setShowTerms, setIsAccepted, setPendingResolve } = useTermsAcceptanceStore();
 
   const checkTermsAcceptance = (): Promise<boolean> => {
     return new Promise((resolve) => {
       const currentStatus = getCookie(COOKIE_NAME) === COOKIE_VALUE;
+      
       if (currentStatus) {
         setIsAccepted(true);
         resolve(true);
       } else {
         setShowTerms(true);
-        // Store the resolve function to call it when terms are accepted/dismissed
-        (window as any).__termsResolve = resolve;
+        // Store the resolve function in zustand store instead of window
+        setPendingResolve(resolve);
       }
     });
   };
@@ -57,19 +62,20 @@ export function useTermsAcceptance() {
     setCookie(COOKIE_NAME, COOKIE_VALUE, COOKIE_DOMAIN);
     setIsAccepted(true);
     setShowTerms(false);
+    
     // Resolve the promise with true
-    if ((window as any).__termsResolve) {
-      (window as any).__termsResolve(true);
-      delete (window as any).__termsResolve;
+    if (pendingResolve) {
+      pendingResolve(true);
+      setPendingResolve(null);
     }
   };
 
   const dismissTerms = () => {
     setShowTerms(false);
     // Resolve the promise with false
-    if ((window as any).__termsResolve) {
-      (window as any).__termsResolve(false);
-      delete (window as any).__termsResolve;
+    if (pendingResolve) {
+      pendingResolve(false);
+      setPendingResolve(null);
     }
   };
 
