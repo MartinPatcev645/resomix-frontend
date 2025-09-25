@@ -9,6 +9,7 @@ import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { useConfig } from "@resomix/stores";
 import { useDebouncedWaveformSeek } from "@resomix/hooks/Waveform/useDebouncedWaveformSeek.js";
+import {WaveformLoader} from "@resomix/ui";
 
 const SEEK_DEBOUNCE_MS = 300;
 const HOLD_AFTER_SEEK_MS = 200;
@@ -127,7 +128,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                     className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
                     style={{ cursor: isDragging ? "grabbing" : "pointer" }}
                   >
-                      {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
+                      {wfLoading && <WaveformLoader/>}
                       {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
                   </div>
 
