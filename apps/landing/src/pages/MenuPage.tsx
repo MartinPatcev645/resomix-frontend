@@ -44,6 +44,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
             [{t('general.menu.feedback')}]
           </div>
+          <a href={`https://resomix.blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+            [{t('general.menu.journal')}]
+          </a>
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/contact`
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
