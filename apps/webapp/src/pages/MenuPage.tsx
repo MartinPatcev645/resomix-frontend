@@ -47,11 +47,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
             [Contact]
           </div>
-          <div onClick={() => {
-            window.location.href = `https://resomix.blog`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          <a href={`https://resomix.blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
             [Journal]
-          </div>
+          </a>
           <div className="">
             <img src={MenuSeparator} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
