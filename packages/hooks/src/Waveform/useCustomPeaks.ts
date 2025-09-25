@@ -37,10 +37,10 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const barWidthDev = 1;
   const gapWidthDev = 0;
 
-  const playedColor = '#ee4a26';
+  const playedColor = '#f15f27';
   const unplayedColor = '#eaeff5';
 
-  const lowPlayedColor = '#2f73ff';
+  const lowPlayedColor = '#3171fe';
   const lowUnplayedColor = '#b9bcc2';
 
   const cursorColor = '#ff5714';
