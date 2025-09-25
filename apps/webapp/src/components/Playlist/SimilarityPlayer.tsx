@@ -6,6 +6,9 @@ import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 
+const SEEK_DEBOUNCE_MS = 300;
+const HOLD_AFTER_SEEK_MS = 200;
+
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -34,17 +37,39 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const volume: number = usePlayerStore(s => s.volume);
     const setVolume = usePlayerStore(s => s.setVolume);
 
-    const seekRef = useRef<number | null>(null);
-    const requestSeek = useCallback((time: number) => {
-        if (seekRef.current) {
-            cancelAnimationFrame(seekRef.current);
-        }
-        seekRef.current = requestAnimationFrame(() => {
-            hlsController.seek(time, trackId);
-            setTime(time, true);
-            setTrackTime(trackId, time);
-        });
-    }, [hlsController, trackId, setTime, setTrackTime]);
+    const seekTimeoutRef = useRef<number | null>(null);
+    const lastRequestedTimeRef = useRef<number | null>(null);
+    const holdUntilRef = useRef<number>(0);
+
+    const isUiHoldActive = () => Date.now() < holdUntilRef.current;
+
+    const requestSeek = useCallback(
+      (time: number, opts?: { immediate?: boolean }) => {
+          setTime(time, true);
+          setTrackTime(trackId, time);
+
+          lastRequestedTimeRef.current = time;
+
+          const now = Date.now();
+          holdUntilRef.current = now + (opts?.immediate ? 0 : SEEK_DEBOUNCE_MS) + HOLD_AFTER_SEEK_MS;
+
+          if (seekTimeoutRef.current !== null) {
+              clearTimeout(seekTimeoutRef.current);
+              seekTimeoutRef.current = null;
+          }
+          const delay = opts?.immediate ? 0 : SEEK_DEBOUNCE_MS;
+
+          seekTimeoutRef.current = window.setTimeout(() => {
+              const t = lastRequestedTimeRef.current;
+              if (t == null) return;
+
+              hlsController.seek(t, trackId);
+              holdUntilRef.current = Date.now() + HOLD_AFTER_SEEK_MS;
+              seekTimeoutRef.current = null;
+          }, delay);
+      },
+      [trackId, hlsController, setTime, setTrackTime]
+    );
 
     const handleSeek = useCallback((clientX: number) => {
         const el = waveformContainerRef.current;
@@ -57,6 +82,14 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
             pendingSeekPosition.current = newPosition;
         }
     }, [totalDuration, setTime]);
+
+    useEffect(() => {
+        return () => {
+            if (seekTimeoutRef.current !== null) {
+                clearTimeout(seekTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const applyPendingSeek = useCallback(() => {
         if (pendingSeekPosition.current !== null) {
@@ -98,7 +131,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     }, [applyPendingSeek]);
 
     useEffect(() => {
-        if (!isDragging) {
+        if (!isDragging && !isUiHoldActive()) {
             setTime(currentTime);
         }
     }, [currentTime, setTime, isDragging]);
@@ -138,9 +171,21 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     const skipForward = useCallback(() => {
         if (!hlsController) return;
-        const d = hlsController.getDuration();
+        const d = Number.isFinite(hlsController.getDuration())
+          ? hlsController.getDuration()
+          : totalDuration;
         requestSeek(Math.min(d, currentTime + 10));
-    }, [hlsController, requestSeek, currentTime]);
+    }, [hlsController, requestSeek, currentTime, totalDuration]);
+
+    const uiTime = (() => {
+        if (isDragging && pendingSeekPosition.current != null) {
+            return pendingSeekPosition.current;
+        }
+        if (isUiHoldActive() && lastRequestedTimeRef.current != null) {
+            return lastRequestedTimeRef.current;
+        }
+        return currentTime;
+    })();
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -215,7 +260,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                 </div>
 
                 <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                    {formatTime(currentTime)} / {formatTime(totalDuration)}
+                    {formatTime(uiTime)} / {formatTime(totalDuration)}
                 </span>
             </div>
         </div>
