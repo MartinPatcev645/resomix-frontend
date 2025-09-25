@@ -26,11 +26,11 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const barWidth = 1;
   const gapWidth = 0;
   // Fullband colors
-  const playedColor = '#f1ff00';      // bright orange for played
-  const unplayedColor = '#eaeff5';    // white for unplayed
+  const playedColor = '#ee4a26';
+  const unplayedColor = '#eaeff5';
   // Lowband colors (distinct on dark bg)
-  const lowPlayedColor = '#ff5714';   // bright cyan for played low-end
-  const lowUnplayedColor = '#b9bcc2'; // teal/cyan for unplayed low-end
+  const lowPlayedColor = '#2f73ff';
+  const lowUnplayedColor = '#b9bcc2';
 
   const cursorColor = '#ff5714';
   const hoverColor = '#ffffff';
