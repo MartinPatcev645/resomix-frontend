@@ -6,6 +6,7 @@ import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { useDebouncedWaveformSeek } from "@resomix/hooks/Waveform/useDebouncedWaveformSeek.js";
+import {WaveformLoader} from "@resomix/ui";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -76,7 +77,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
       <div className="flex flex-col w-full gap-[var(--px-5)]">
           <div className="h-[var(--px-50)] overflow-y-hidden">
               <div ref={containerRef} className="w-full h-full">
-                  {wfLoading && <div className="text-center text-sm text-gray-500">Loading waveform...</div>}
+                  {wfLoading && <WaveformLoader/>}
                   {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
               </div>
           </div>
