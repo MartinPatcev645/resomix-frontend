@@ -31,9 +31,10 @@ export function createHlsPlaylistController(): AudioController {
 
   let playlistUrl = '';
   let retryTimer: number | null = null;
-  const RETRY_EVERY = 2000;
+  const RETRY_EVERY = 5000;
   const GAP_BETWEEN_TRACKS = 2.005; // sec silent segment
   const AUTOSWITCH_PREROLL = 0.5;   // sec preroll between new track start
+  const MIN_BUFFER_BEFORE_PLAY = 3; // min 3 sec in buffer
   let wantPlaying = false;
 
   let tracksIds: string[] = [];
@@ -104,6 +105,7 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        fragLoadingTimeOut: RETRY_EVERY,
         // maxMaxBufferLength: 0,
         // maxBufferSize: 0,
       });
@@ -128,7 +130,7 @@ export function createHlsPlaylistController(): AudioController {
         }
       }
       if (immediate) {
-        audio.play().catch(() => { });
+        playWhenBuffered().catch(() => { });
       }
     } else {
       const t = audio.currentTime || 0;
@@ -136,7 +138,7 @@ export function createHlsPlaylistController(): AudioController {
       audio.src = playlistUrl + (playlistUrl.includes('?') ? '&' : '?') + 'r=' + Date.now();
       audio.load();
       audio.currentTime = t;
-      if (wasPlaying) audio.play().catch(() => { });
+      if (wasPlaying) playWhenBuffered().catch(() => { });
     }
   }
 
@@ -195,6 +197,7 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        fragLoadingTimeOut: RETRY_EVERY,
         // for network problems tests
         // maxBufferLength: 2,
         // maxMaxBufferLength: 2,
@@ -346,6 +349,71 @@ export function createHlsPlaylistController(): AudioController {
     return Math.min(Math.max(0, saved), max);
   }
 
+  function getBufferedAhead(): number {
+    const t = audio.currentTime || 0;
+    const buf = audio.buffered;
+    for (let i = 0; i < buf.length; i++) {
+      const start = buf.start(i);
+      const end = buf.end(i);
+      if (t >= start && t <= end) {
+        return Math.max(0, end - t);
+      }
+    }
+    return 0;
+  }
+
+  function playWhenBuffered(minSec = MIN_BUFFER_BEFORE_PLAY): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!wantPlaying) return resolve(); // если уже не хотим играть — выходим
+
+      const tryPlay = () => {
+        if (!wantPlaying) {
+          cleanup();
+          return resolve();
+        }
+        const ahead = getBufferedAhead();
+        if (ahead >= minSec) {
+          cleanup();
+          audio.play().then(resolve).catch(err => reject(err));
+        }
+      };
+
+      const onProgress = () => tryPlay();
+      const onTimeUpdate = () => tryPlay();
+      const onCanPlay = () => tryPlay();
+      const onCanPlayThrough = () => tryPlay();
+      const onFragLoaded = () => tryPlay();
+      const onBufferAppended = () => tryPlay();
+
+      const cleanup = () => {
+        audio.removeEventListener('progress', onProgress);
+        audio.removeEventListener('timeupdate', onTimeUpdate);
+        audio.removeEventListener('canplay', onCanPlay);
+        audio.removeEventListener('canplaythrough', onCanPlayThrough);
+        try { hls?.off(Hls.Events.FRAG_LOADED as any, onFragLoaded as any); } catch {}
+        try { hls?.off(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch {}
+        if (timer) clearTimeout(timer);
+      };
+
+      // Fallback: if can't start on 5 sec - play as it is
+      const timer = window.setTimeout(() => {
+        cleanup();
+        audio.play().then(resolve).catch(err => reject(err));
+      }, 5000);
+
+      audio.addEventListener('progress', onProgress);
+      audio.addEventListener('timeupdate', onTimeUpdate);
+      audio.addEventListener('canplay', onCanPlay);
+      audio.addEventListener('canplaythrough', onCanPlayThrough);
+
+      try { hls?.on(Hls.Events.FRAG_LOADED as any, onFragLoaded as any); } catch {}
+      try { hls?.on(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch {}
+
+      // Первая попытка сразу
+      tryPlay();
+    });
+  }
+
   function goToTrack(trackId: string, autoplay = false, preRollOnZero = false) {
     if (!isPlaylistLoaded) ensureHlsLoaded();
     if (!tracksIds.length) return;
@@ -382,7 +450,7 @@ export function createHlsPlaylistController(): AudioController {
 
       if (shouldPlay) {
         usePlayerStore.getState().setIsPlaying(true);
-        audio.play().catch(() => {
+        playWhenBuffered().catch(() => {
           scheduleRetry();
         });
       }
@@ -426,7 +494,7 @@ export function createHlsPlaylistController(): AudioController {
     wantPlaying = true;
     usePlayerStore.getState().setIsPlaying(true);
     msSetPlaybackState('playing');
-    audio.play().catch(() => {
+    playWhenBuffered().catch(() => {
       scheduleRetry();
     });
   }
@@ -449,6 +517,7 @@ export function createHlsPlaylistController(): AudioController {
 
 
   function seek(seconds: number, trackId?: string) {
+    console.log('seek',seconds, trackId);
     const id = trackId || currentTrackId;
     if (!id) return;
     const start = offsets.get(id) || 0;
