@@ -1,4 +1,5 @@
 import React, { useState} from "react";
+import { WaveformLoader } from "@resomix/ui";
 // import InputPlayer from "@/components/Playlist/InputPlayer.tsx";
 
 // List of UUIDs to request
@@ -180,6 +181,10 @@ const TestPage: React.FC = () => {
             trackId="1a9983daf38caac5a8e8adaf"
             totalDuration={482}
           /> */}
+        </div>
+        <div className="w-[var(--px-400)] h-[var(--px-70)] bg-transparent">
+          {/* Display the WaveformLoader Animation here */}
+          <WaveformLoader />
         </div>
         {/* Display a button saying play, that changes its value to pause based on state */}
         <button className="w-[var(--px-100)] h-[var(--px-50)] bg-[var(--color-secondary)] text-[var(--color-primary)] p-2 rounded-md cursor-pointer" onClick={() => setPlay(!play)}>
