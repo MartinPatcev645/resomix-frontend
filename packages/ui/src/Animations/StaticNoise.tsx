@@ -46,14 +46,13 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     container.appendChild(canvas);
 
     /* --------------------------- 2. resize helper -------------------------- */
-    const resize = () => {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    };
-    resize();
-
-    const ro = new ResizeObserver(resize);
-    ro.observe(container);
+    // Draw at a fixed design-space resolution (1280×800) and let CSS scale
+    // it to fit the container. This keeps the noise density constant and
+    // caps the per-frame cost no matter how large the viewport becomes.
+    canvas.width = 1280;
+    canvas.height = 800;
+    // Optional: preserve crisp pixels when the bitmap is enlarged
+    (canvas.style as CSSStyleDeclaration).imageRendering = "pixelated";
 
     /* --------------------------- 3. draw noise ----------------------------- */
     const drawNoise = () => {
@@ -81,7 +80,6 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
 
     /* --------------------------- 5. cleanup -------------------------------- */
     return () => {
-      ro.disconnect();
       container.removeChild(canvas);
     };
   }, [color]);

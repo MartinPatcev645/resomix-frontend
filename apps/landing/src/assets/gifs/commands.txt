@@ -41,3 +41,16 @@ ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_
 
 :: tv_noise.gif  →  tv_noise_short.gif  (≈ 0.5‑1 MB)
 ffmpeg -t 1.5 -i "tv_noise.gif" -vf "fps=30,format=gray,palettegen=max_colors=16" -y "tv_noise_pal.png" && ffmpeg -t 1.5 -i "tv_noise.gif" -i "tv_noise_pal.png" -filter_complex "[0:v]fps=10,format=gray[x];[x][1:v]paletteuse" -y "tv_noise_short.gif" && del "tv_noise_pal.png"
+
+
+Noise MP4 to .gif:
+Input file is 1.5 s long and 6.1 MBs
+We want output file less then 1 MB.
+
+ffmpeg -i noise.mp4 -t 1.5 -an -vf "fps=12,scale=480:-2:flags=lanczos,eq=saturation=0,format=yuv420p" -c:v libwebp_anim -q:v 65 -compression_level 6 -lossless 0 -loop 0 noise.webp
+
+
+ffmpeg -i noise.mp4 -t 1.5 -an -vf "fps=24,scale=480:-2:flags=lanczos,eq=saturation=0,format=yuv420p" -c:v libvpx-vp9 -b:v 0 -crf 38 -row-mt 1 noise.webm
+
+ffmpeg -i noise.mp4 -t 1.5 -vf "fps=10,scale=360:-2:flags=lanczos,format=gray,palettegen=max_colors=16" -y pal.png & ffmpeg -i noise.mp4 -t 1.5 -i pal.png -filter_complex "[0:v]fps=10,scale=360:-2:flags=lanczos,format=gray[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5" -y noise.gif & del pal.png
+
