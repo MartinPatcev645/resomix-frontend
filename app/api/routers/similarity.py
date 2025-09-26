@@ -135,7 +135,6 @@ async def get_similarity_by_id_endpoint(
     - **track_id**: The database ID of the track to find similar tracks for.
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
-    print("Request received:", request_data.track_id)
     return await similarity_controller.get_similarity_by_id(db, request, request_data.track_id, request_data.top_sk)
 
 

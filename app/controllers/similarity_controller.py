@@ -686,7 +686,6 @@ class SimilarityController:
         Returns:
             JSON response with similar tracks
         """
-        print("Here")
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
 
@@ -890,4 +889,5 @@ class SimilarityController:
                 },
                 operation="similarity_by_id"
             )
+            print(e)
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=format_response(success=False, error="An internal server error occurred while processing similarity by ID"))
