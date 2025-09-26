@@ -87,7 +87,7 @@ class SimilaritySegmentService:
 
                 if remaining and processed:
                     per_track = elapsed / processed
-                    wait_time = per_track * remaining * 1.5  # safety factor
+                    wait_time = per_track * remaining * 2.5  # safety factor
                     print(f"[SEGMENT] Waiting ~{wait_time:.1f}s for remaining segment jobs before marking playlist ready")
                     asyncio.create_task(self._delayed_mark_ready(playlist_id, wait_time))
                 else:
