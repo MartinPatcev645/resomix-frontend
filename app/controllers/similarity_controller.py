@@ -686,6 +686,7 @@ class SimilarityController:
         Returns:
             JSON response with similar tracks
         """
+        print("Here")
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
 
