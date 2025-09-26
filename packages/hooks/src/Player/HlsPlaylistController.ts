@@ -62,6 +62,10 @@ export function createHlsPlaylistController(): AudioController {
   let isSeeking = false;
   let isinitMediaSession = false;
 
+  let seekGraceUntil = 0;
+  function inSeekGrace() { return Date.now() < seekGraceUntil; }
+  function startSeekGrace(ms = 1000) { seekGraceUntil = Date.now() + ms; }
+
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
     if (!playlistData) return;
@@ -161,9 +165,18 @@ export function createHlsPlaylistController(): AudioController {
     }, RETRY_EVERY);
   }
 
-  function onMediaHiccup(evt: Event) {
+  function onMediaHiccup(_evt: Event) {
     if (!wantPlaying) return;
-    setNetworkErrorFlag(true, evt.type);
+
+    if (isSeeking || inSeekGrace()) return;
+
+    if (!navigator.onLine) {
+      setNetworkErrorFlag(true, 'offline');
+      scheduleRetry();
+      return;
+    }
+
+    // Иначе просто пробуем восстановиться без поднятия флага
     attemptResume(true);
   }
 
@@ -236,6 +249,15 @@ export function createHlsPlaylistController(): AudioController {
     });
     audio.addEventListener('canplaythrough', () => {
       setNetworkErrorFlag(false);
+    });
+    audio.addEventListener('seeking', () => {
+      isSeeking = true;
+      startSeekGrace(1200); // во время перемотки и чуть после
+    });
+
+    audio.addEventListener('seeked', () => {
+      isSeeking = false;
+      startSeekGrace(800); // короткий «хвост» после перемотки
     });
     audio.addEventListener('ended', () => {
       wantPlaying = false;

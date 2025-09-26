@@ -10,6 +10,7 @@ import { usePlayerStore } from "@resomix/stores";
 import { useConfig } from "@resomix/stores";
 import { useDebouncedWaveformSeek } from "@resomix/hooks/Waveform/useDebouncedWaveformSeek.js";
 import {WaveformLoader} from "@resomix/ui";
+import NetworkSvg from "@/assets/icons/network-aleft.svg";
 
 const SEEK_DEBOUNCE_MS = 300;
 const HOLD_AFTER_SEEK_MS = 200;
@@ -210,7 +211,23 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
                 {formatTime(uiTime)} / {formatTime(totalDuration)}
               </span>
-                          {networkError && <div className="absolute text-[length:var(--px-10)]  bottom-9 left-40 text-yellow-200">Network problems</div>}
+                          {networkError && isPlaying && (
+                            <div className="absolute bottom-9 left-40 flex items-center gap-[var(--px-3)] text-yellow-200">
+                                <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
+                                style={{
+                                    WebkitMaskImage: `url("${NetworkSvg}")`,
+                                    WebkitMaskRepeat: "no-repeat",
+                                    WebkitMaskPosition: "center",
+                                    WebkitMaskSize: "contain",
+                                    maskImage: `url("${NetworkSvg}")`,
+                                    maskRepeat: "no-repeat",
+                                    maskPosition: "center",
+                                    maskSize: "contain",
+                                }}
+                                />
+                                <span className="text-[length:var(--px-10)]">Network</span>
+                            </div>
+                          )}
                       </div>
                   </div>
               </div>

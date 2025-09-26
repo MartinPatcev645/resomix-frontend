@@ -7,6 +7,7 @@ import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { useDebouncedWaveformSeek } from "@resomix/hooks/Waveform/useDebouncedWaveformSeek.js";
 import {WaveformLoader} from "@resomix/ui";
+import NetworkSvg from "@/assets/icons/network-aleft.svg";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -138,7 +139,23 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
           {formatTime(uiTime)} / {formatTime(totalDuration)}
         </span>
-              {networkError && <div className="absolute text-[length:var(--px-10)] bottom-2 left-32 text-yellow-200">Network problems</div>}
+              {networkError && (
+                <div className="absolute bottom-2 left-32 flex items-center gap-[var(--px-3)] text-yellow-200">
+                                <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
+                                      style={{
+                                          WebkitMaskImage: `url("${NetworkSvg}")`,
+                                          WebkitMaskRepeat: "no-repeat",
+                                          WebkitMaskPosition: "center",
+                                          WebkitMaskSize: "contain",
+                                          maskImage: `url("${NetworkSvg}")`,
+                                          maskRepeat: "no-repeat",
+                                          maskPosition: "center",
+                                          maskSize: "contain",
+                                      }}
+                                />
+                    <span className="text-[length:var(--px-10)]">Network</span>
+                </div>
+              )}
           </div>
       </div>
     );
