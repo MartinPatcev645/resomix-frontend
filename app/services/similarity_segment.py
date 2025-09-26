@@ -21,6 +21,9 @@ import httpx
 import asyncio
 from typing import Dict, List, Any
 from app.core.config import settings
+from app.repositories.playlist_repository import PlaylistRepository
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.dependencies.database import get_database_session
 
 
 class SimilaritySegmentService:
@@ -36,6 +39,7 @@ class SimilaritySegmentService:
             similarity_server_url: URL of the similarity server
         """
         self.similarity_server_url = similarity_server_url
+        self.playlist_repository = PlaylistRepository()
     
     async def call_segment_preview_endpoint(self, uuids: List[str], playlist_id: str) -> None:
         """
@@ -72,6 +76,9 @@ class SimilaritySegmentService:
                 summary = response_data.get("summary", {})
                 print(f"[SEGMENT] Playlist {playlist_id}: Processed={summary.get('total_processed', 0)}, "
                       f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}")
+
+                # Mark playlist as ready (similarity) in DB
+                await self._mark_playlist_ready(playlist_id)
                 
         except Exception as e:
             print(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
@@ -83,7 +90,10 @@ class SimilaritySegmentService:
                 "uuids_count": len(uuids)
             }
             await self.save_segment_response(playlist_id, error_data)
-    
+
+            # Even on error, mark playlist ready to unblock polling
+            await self._mark_playlist_ready(playlist_id)
+
     async def save_segment_response(self, playlist_id: str, response_data: Dict[str, Any]) -> None:
         """
         Save segment response data to a log file.
@@ -133,3 +143,17 @@ class SimilaritySegmentService:
             await self.call_segment_preview_endpoint(uuids, playlist_id)
         except Exception as e:
             print(f"[SEGMENT] Error in segment preview workflow: {e}")
+
+    async def _mark_playlist_ready(self, playlist_uuid: str) -> None:
+        """Update playlist type to similarity once segment processing done."""
+        try:
+            # Obtain new DB session (cannot reuse FastAPI dep here easily)
+            async for db in get_database_session():
+                # Fetch playlist via UUID then update
+                playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
+                if playlist:
+                    playlist.type = "similarity"
+                    await db.commit()
+                break
+        except Exception as e:
+            print(f"[SEGMENT] Error marking playlist ready: {e}")

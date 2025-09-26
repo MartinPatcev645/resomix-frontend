@@ -24,6 +24,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.controllers.similarity_controller import SimilarityController
 from app.api.dependencies.auth import get_api_key
 from app.api.dependencies.database import get_database_session
+from app.repositories.playlist_repository import PlaylistRepository
+from fastapi import HTTPException
 from app.schemas.similarity import (
     SimilarityByIdRequest,
     SimilarityUploadSuccessResponse,
@@ -44,6 +46,7 @@ router = APIRouter(
 
 # Initialize controller
 similarity_controller = SimilarityController()
+playlist_repository = PlaylistRepository()
 
 
 @router.post(
@@ -133,3 +136,22 @@ async def get_similarity_by_id_endpoint(
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
     """
     return await similarity_controller.get_similarity_by_id(db, request, request_data.track_id, request_data.top_sk)
+
+
+# New endpoint to poll segment status
+
+@router.get(
+    "/segment_status/{playlist_uuid}",
+    summary="Check if segment preview processing completed for a playlist",
+    description="Returns segmentation_completed true/false based on playlist type.",
+    response_model=dict,
+)
+async def segment_status_endpoint(
+    playlist_uuid: str,
+    db: AsyncSession = Depends(get_database_session),
+) -> JSONResponse:
+    playlist = await playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    completed = playlist.type != "waiting_segments"
+    return JSONResponse(content={"segmentation_completed": completed})

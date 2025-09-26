@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     user_id     CHAR(36),                         -- nullable (anon)
     name        VARCHAR(150) NOT NULL,
     is_public   TINYINT(1) DEFAULT 0,
-    type        ENUM('custom','similarity') DEFAULT 'custom',
+    type        ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
     seed_track_id BIGINT UNSIGNED,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,

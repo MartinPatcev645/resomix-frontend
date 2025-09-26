@@ -43,6 +43,7 @@ from app.utils.similarity_filters import (
     filter_track_title,
     apply_response_filtering
 )
+from app.models.constants import PlaylistType
 
 load_dotenv()
 
@@ -210,7 +211,8 @@ class SimilarityService:
                               seed_track_id=uploaded_track.id,
                               track_ids=deduplicated_track_ids,
                               track_scores=deduplicated_track_scores,
-                              name=playlist_name
+                              name=playlist_name,
+                              playlist_type=PlaylistType.WAITING_SEGMENTS,
                         )
                         
                         # Send playlist peaks request (fire and forget)
@@ -243,8 +245,8 @@ class SimilarityService:
                 all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
                 
                 if all_uuids:
-                    # Wait for segment preview response before returning
-                    await self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
+                    # Launch segment preview in background and return immediately
+                    asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
              
             return response_data
         else:
@@ -373,7 +375,8 @@ class SimilarityService:
                                 seed_track_id=queried_track.id,
                                 track_ids=deduplicated_track_ids,
                                 track_scores=deduplicated_track_scores,
-                                name=playlist_name
+                                name=playlist_name,
+                                playlist_type=PlaylistType.WAITING_SEGMENTS,
                             )
                             
                             # Send playlist peaks request (fire and forget) - COMMENTED OUT
@@ -407,8 +410,8 @@ class SimilarityService:
                 all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
                 
                 if all_uuids:
-                    # Wait for segment preview response before returning
-                    await self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
+                    # Launch segment workflow in background
+                    asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
             
             return response_data
         elif similarity_response.get("status") == "not_found":

@@ -33,6 +33,7 @@ class PlaylistType:
     """Constants for playlist type values."""
     CUSTOM = "custom"
     SIMILARITY = "similarity"
+    WAITING_SEGMENTS = "waiting_segments"
 
 
 class RatingValue:
@@ -42,4 +43,4 @@ class RatingValue:
     
     # Playlist ratings (0-3 stars)
     PLAYLIST_MIN = 0
-    PLAYLIST_MAX = 3 
+    PLAYLIST_MAX = 3

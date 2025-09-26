@@ -111,7 +111,7 @@ CREATE TABLE playlists (
     user_id       CHAR(36),                                 -- Supabase UUID
     name          VARCHAR(100) NOT NULL,
     is_public     TINYINT(1) DEFAULT 0,
-    type          ENUM('custom','similarity') DEFAULT 'custom',
+    type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
     seed_track_id BIGINT UNSIGNED,                          -- For similarity playlists
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 );

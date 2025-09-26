@@ -34,12 +34,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
         super().__init__(Playlist)
     
     async def async_create_similarity_playlist(
-        self, 
-        db: AsyncSession, 
-        seed_track_id: int, 
+        self,
+        db: AsyncSession,
+        seed_track_id: int,
         track_ids: List[int],
         track_scores: List[float] = None,
-        name: str = "Playlist"
+        name: str = "Playlist",
+        playlist_type: str = PlaylistType.SIMILARITY,
     ) -> Dict[str, Any]:
         """
         Create a similarity playlist with tracks.
@@ -60,7 +61,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 user_id=None,  # Anonymous playlist
                 name=name,
                 is_public=False,  # Keep is_public as 0
-                type=PlaylistType.SIMILARITY,
+                type=playlist_type,
                 seed_track_id=seed_track_id
             )
             
@@ -86,8 +87,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
             await db.commit()
             
             return {
-                "id": playlist.uuid,  # Return UUID as 'id' field
-                "name": playlist.name
+                "id": playlist.uuid,  # UUID for external use
+                "pk": playlist.id,    # Primary key for internal DB ops
+                "name": playlist.name,
             }
             
         except Exception as e:
@@ -137,7 +139,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         db: Session, 
         seed_track_id: int, 
         track_ids: List[int],
-        name: str = "Playlist"
+        name: str = "Playlist",
+        playlist_type: str = PlaylistType.SIMILARITY
     ) -> Dict[str, Any]:
         """
         Synchronous version of create_similarity_playlist.
@@ -157,7 +160,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 user_id=None,  # Anonymous playlist
                 name=name,
                 is_public=False,  # Keep is_public as 0
-                type=PlaylistType.SIMILARITY,
+                type=playlist_type,
                 seed_track_id=seed_track_id
             )
             
@@ -464,6 +467,34 @@ class PlaylistRepository(BaseRepository[Playlist]):
             
         except Exception as e:
             print(f"Error getting playlist similarity data: {e}")
+            raise e
+    
+    async def async_update_type(self, db: AsyncSession, playlist_id: int, new_type: str) -> bool:
+        """
+        Update the type of a playlist.
+        
+        Args:
+            db: Database session
+            playlist_id: Playlist ID
+            new_type: New playlist type
+            
+        Returns:
+            True if successful, False if playlist not found
+        """
+        try:
+            stmt = select(self.model).where(self.model.id == playlist_id)
+            result = await db.execute(stmt)
+            playlist = result.scalar_one_or_none()
+            if not playlist:
+                return False
+            
+            playlist.type = new_type
+            await db.commit()
+            return True
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error updating playlist type: {e}")
             raise e
     
     async def async_get_playlist_hls_data(self, db: AsyncSession, playlist_uuid: str) -> Optional[Dict[str, Any]]:

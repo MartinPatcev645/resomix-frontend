@@ -33,7 +33,7 @@ class Playlist(Base):
         user_id     CHAR(36),                         -- nullable (anon)
         name        VARCHAR(100) NOT NULL,
         is_public   TINYINT(1) DEFAULT 0,
-        type        ENUM('custom','similarity') DEFAULT 'custom',
+        type        ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
         seed_track_id BIGINT UNSIGNED,
         created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
@@ -53,7 +53,7 @@ class Playlist(Base):
     user_id = Column(String(36), nullable=True, index=True)  # Supabase UUID, nullable for anonymous
     name = Column(String(100), nullable=False)
     is_public = Column(Boolean, nullable=False, default=False)
-    type = Column(Enum('custom', 'similarity', name='playlist_type'), nullable=False, default='custom')
+    type = Column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')
     
     # Foreign keys
     seed_track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True)
