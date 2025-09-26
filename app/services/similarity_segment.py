@@ -82,7 +82,7 @@ class SimilaritySegmentService:
                 processed = summary.get("total_processed", 0)
                 print(
                     f"[SEGMENT] Playlist {playlist_id}: Processed={processed}, "
-                    f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}, Remaining={remaining}"
+                    f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}, Already Existed={summary.get('already_existed', 0)}, Skipped Range={summary.get('skipped_range', 0)}, Remaining={remaining}"
                 )
 
                 if remaining and processed:
