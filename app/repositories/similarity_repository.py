@@ -1,0 +1,250 @@
+"""
+Similarity Repository
+=====================
+
+This repository handles database operations for similarity-related functionality.
+It provides methods for fetching track details, updating track durations,
+and other similarity-specific database operations using MariaDB with SQLAlchemy ORM.
+
+Implements proper repository pattern for similarity service database operations,
+replacing direct SQL queries with proper ORM methods.
+
+Version: 3.0.1
+Init Date: September 26, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
+from typing import Optional, List, Dict, Any
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
+
+from ..models.track import Track
+from ..models.playlist import Playlist
+from ..repositories.base_repository import BaseRepository
+
+
+class SimilarityRepository(BaseRepository[Track]):
+    """Repository for similarity-related database operations."""
+    
+    def __init__(self):
+        """Initialize SimilarityRepository with Track model."""
+        super().__init__(Track)
+    
+    async def async_get_reference_track_details_by_path(
+        self, 
+        db: AsyncSession, 
+        track_path: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fetch complete track details from the database by path for reference track formatting.
+        
+        Args:
+            db: Database session
+            track_path: The file path to lookup in the database
+            
+        Returns:
+            Dictionary with track details or None if not found
+        """
+        try:
+            query = text("""
+                SELECT 
+                    t.uuid as id,
+                    t.title,
+                    t.year,
+                    t.duration_sec as duration,
+                    COALESCE(l.name, '') as label,
+                    COALESCE(
+                        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                        ''
+                    ) as artist
+                FROM tracks t
+                LEFT JOIN labels l ON t.label_id = l.id
+                LEFT JOIN track_artists ta ON t.id = ta.track_id
+                LEFT JOIN artists a ON ta.artist_id = a.id
+                WHERE t.file_path = :track_path OR t.preview_path = :track_path
+                GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+                LIMIT 1
+            """)
+            
+            result = await db.execute(query, {"track_path": track_path})
+            row = result.first()
+            
+            if row:
+                return {
+                    "id": row.id,
+                    "title": row.title or "Unknown",
+                    "year": row.year,
+                    "duration": float(row.duration) if row.duration is not None else 0.0,
+                    "label": row.label,
+                    "artist": row.artist or "Unknown"
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching reference track details by path: {e}")
+            raise e
+    
+    async def async_get_reference_track_details_by_uuid(
+        self, 
+        db: AsyncSession, 
+        track_uuid: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fetch complete track details from the database by UUID for reference track formatting.
+        
+        Args:
+            db: Database session
+            track_uuid: The UUID to lookup in the database
+            
+        Returns:
+            Dictionary with track details or None if not found
+        """
+        try:
+            query = text("""
+                SELECT 
+                    t.uuid as id,
+                    t.title,
+                    t.year,
+                    t.duration_sec as duration,
+                    COALESCE(l.name, '') as label,
+                    COALESCE(
+                        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                        ''
+                    ) as artist
+                FROM tracks t
+                LEFT JOIN labels l ON t.label_id = l.id
+                LEFT JOIN track_artists ta ON t.id = ta.track_id
+                LEFT JOIN artists a ON ta.artist_id = a.id
+                WHERE t.uuid = :track_uuid
+                GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+                LIMIT 1
+            """)
+            
+            result = await db.execute(query, {"track_uuid": track_uuid})
+            row = result.first()
+            
+            if row:
+                return {
+                    "id": row.id,
+                    "title": row.title or "Unknown",
+                    "year": row.year,
+                    "duration": float(row.duration) if row.duration is not None else 0.0,
+                    "label": row.label,
+                    "artist": row.artist or "Unknown"
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching reference track details by UUID: {e}")
+            raise e
+    
+    async def async_get_track_details_by_paths(
+        self, 
+        db: AsyncSession, 
+        track_paths: List[str]
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Fetches full track details from MariaDB based on a list of file paths 
+        returned by the similarity server.
+
+        Args:
+            db: Database session
+            track_paths: A list of file paths (e.g., veggera/public_html/audio.mp3).
+            
+        Returns:
+            A dictionary mapping file_path to track_details_dict.
+            Track_details_dict contains: id, track_id, filename, album, duration, artist, all_artists.
+        """
+        if not track_paths:
+            return {}
+
+        # Use paths as-is since they're already in the correct format
+        paths_to_query = set(track_paths)
+        
+        if not paths_to_query:
+            return {}
+
+        details_map: Dict[str, Dict[str, Any]] = {}
+        try:
+            # Use the existing track repository method for getting tracks by file paths
+            from ..repositories.track_repository import TrackRepository
+            track_repo = TrackRepository()
+            tracks = await track_repo.async_get_tracks_by_file_paths(db, list(paths_to_query))
+            
+            for track in tracks:
+                # Get primary artist (first artist in track_artists) for backward compatibility
+                artist_name = "N/A"
+                all_artists = []
+                
+                if track.track_artists:
+                    artist_name = track.track_artists[0].artist.name
+                    # Collect all artists for deduplication purposes
+                    all_artists = [ta.artist.name for ta in track.track_artists]
+                
+                # Extract filename from file_path
+                filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
+                
+                # Get album name
+                album_name = track.album.title if track.album else "N/A"
+                
+                # Get label name
+                label_name = track.label.name if track.label else "N/A"
+                
+                # Get genre name
+                genre_name = track.genre.name if track.genre else "N/A"
+                
+                track_data = {
+                    "id": track.uuid,  # Use UUID for compatibility with existing API
+                    "track_id": track.id,  # Add database ID for playlist creation
+                    "label": label_name,
+                    "duration": float(track.duration_sec) if track.duration_sec is not None else 0.0,
+                    "artist": artist_name,  # Primary artist for display
+                    "all_artists": all_artists,  # All artists for deduplication
+                    "title": track.title or "N/A",
+                    "year": track.year
+                }
+                details_map[track.file_path] = track_data
+            
+            print(f"MariaDB: Fetched details for {len(details_map)} out of {len(paths_to_query)} unique paths.")
+            
+        except Exception as e:
+            print(f"Error during MariaDB fetch for track details: {e}")
+            raise e
+            
+        return details_map
+    
+    async def async_update_track_duration(
+        self, 
+        db: AsyncSession, 
+        track_uuid: str, 
+        duration: float
+    ) -> bool:
+        """
+        Updates the duration of a track in the database.
+        
+        Args:
+            db: Database session
+            track_uuid: Track UUID
+            duration: New duration in seconds
+            
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        try:
+            # Ensure it is 3 decimal float
+            duration_sec = round(duration, 3) if duration is not None else None
+            
+            query = text("""
+                UPDATE tracks
+                SET duration_sec = :duration
+                WHERE uuid = :track_uuid
+            """)
+            
+            result = await db.execute(query, {"duration": duration_sec, "track_uuid": track_uuid})
+            await db.commit()
+            return result.rowcount > 0
+        except Exception as e:
+            await db.rollback()
+            print(f"Error updating track duration: {e}")
+            raise e

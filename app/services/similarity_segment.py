@@ -1,0 +1,149 @@
+"""
+Similarity Segment Service
+==========================
+
+This service handles segment preview functionality for the similarity system.
+It provides methods for calling segment preview endpoints, saving responses,
+and managing the segment preview workflow.
+
+This is separated from the main similarity service for better organization
+and maintainability of segment-related operations.
+
+Version: 3.0.1
+Init Date: September 26, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+"""
+
+import os
+import json
+import httpx
+import asyncio
+from typing import Dict, List, Any
+
+from app.core.config import settings
+
+
+class SimilaritySegmentService:
+    """
+    Service for handling segment preview functionality in the similarity system.
+    """
+    
+    def __init__(self, similarity_server_url: str):
+        """
+        Initialize segment service.
+        
+        Args:
+            similarity_server_url: URL of the similarity server
+        """
+        self.similarity_server_url = similarity_server_url
+    
+    async def call_segment_preview_endpoint(self, uuids: List[str], playlist_id: str) -> None:
+        """
+        Call the segment preview endpoint and save the response to a log file.
+        This runs in the background and doesn't affect the main similarity response.
+        
+        Args:
+            uuids: List of track UUIDs to process
+            playlist_id: Playlist identifier for logging
+        """
+        if not self.similarity_server_url:
+            print("ERROR: SIMILARITY_SERVER_URL is not set, skipping segment preview request")
+            return
+        
+        # Ensure log directory exists first
+        log_dir = settings.segment_requests_log_dir
+        os.makedirs(log_dir, exist_ok=True)
+        
+        target_url = f"{self.similarity_server_url.rstrip('/')}/previews-segment/"
+        payload = {"uuids": uuids}
+        
+        print(f"[SEGMENT] Calling segment preview endpoint for playlist {playlist_id} with {len(uuids)} UUIDs")
+        
+        try:
+            async with httpx.AsyncClient(timeout=settings.segment_requests_timeout) as client:
+                response = await client.post(target_url, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                # Save response to log file
+                await self.save_segment_response(playlist_id, response_data)
+                
+                # Log summary
+                summary = response_data.get("summary", {})
+                print(f"[SEGMENT] Playlist {playlist_id}: Processed={summary.get('total_processed', 0)}, "
+                      f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}")
+                
+        except Exception as e:
+            print(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
+            # Save error log
+            error_data = {
+                "status": "error",
+                "error": str(e),
+                "playlist_id": playlist_id,
+                "uuids_count": len(uuids)
+            }
+            await self.save_segment_response(playlist_id, error_data)
+    
+    async def save_segment_response(self, playlist_id: str, response_data: Dict[str, Any]) -> None:
+        """
+        Save segment response data to a log file.
+        
+        Args:
+            playlist_id: Playlist identifier for the log file name
+            response_data: Response data to save
+        """
+        try:
+            # Ensure log directory exists
+            log_dir = settings.segment_requests_log_dir
+            os.makedirs(log_dir, exist_ok=True)
+            
+            # Create log file path
+            log_file = os.path.join(log_dir, f"{playlist_id}.json")
+            
+            # Save response
+            with open(log_file, 'w') as f:
+                json.dump(response_data, f, indent=2)
+                
+            print(f"[SEGMENT] Response saved to {log_file}")
+            
+        except Exception as e:
+            print(f"[SEGMENT] Error saving response for playlist {playlist_id}: {e}")
+
+    async def handle_segment_preview_workflow(
+        self, 
+        uuids: List[str], 
+        playlist_id: str, 
+        deduplicated_enriched_tracks: List[Dict]
+    ) -> None:
+        """
+        TEMPORARY FEATURE: Handle segment preview workflow.
+        This method orchestrates steps 9,10,11 in background and waits for segment response.
+        Remove this entire method and its calls to disable the feature.
+        
+        Args:
+            uuids: List of track UUIDs to process
+            playlist_id: Playlist identifier
+            deduplicated_enriched_tracks: List of enriched track data
+        """
+        if not settings.segment_requests_enabled:
+            return
+            
+        try:
+            # Start steps 9,10,11 in background (playlist peaks request) - COMMENTED OUT
+            peaks_task = None
+            # if deduplicated_enriched_tracks:
+            #     # This would be the peaks request that normally runs at the end
+            #     peaks_task = asyncio.create_task(
+            #         send_playlist_peaks_request(self.similarity_server_url, uuids[0] if uuids else "", deduplicated_enriched_tracks)
+            #     )
+            
+            # Wait for segment preview response (main blocking operation)
+            await self.call_segment_preview_endpoint(uuids, playlist_id)
+            
+            # Ensure peaks task completes if it was started - COMMENTED OUT
+            # if peaks_task:
+            #     await peaks_task
+                
+        except Exception as e:
+            print(f"[SEGMENT] Error in segment preview workflow: {e}")

@@ -27,8 +27,22 @@ from sqlalchemy import text
 
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_repository import PlaylistRepository
+from app.repositories.similarity_repository import SimilarityRepository
+from app.services.similarity_segment import SimilaritySegmentService
 from app.core.config import settings
 from app.services.metadata_service import MetadataService
+from app.utils.similarity_utils import (
+    get_duration_from_bytes_sync,
+    normalize_artist_name,
+    deduplicate_tracks,
+    execute_playlist_peaks_request,
+    send_playlist_peaks_request,
+    generate_playlist_name_from_seed_track
+)
+from app.utils.similarity_filters import (
+    filter_track_title,
+    apply_response_filtering
+)
 
 load_dotenv()
 
@@ -42,7 +56,9 @@ class SimilarityService:
         """Initialize similarity service."""
         self.track_repository = TrackRepository()
         self.playlist_repository = PlaylistRepository()
+        self.similarity_repository = SimilarityRepository()
         self.similarity_server_url = os.getenv("SIMILARITY_SERVER_URL")
+        self.similarity_segment_service = SimilaritySegmentService(self.similarity_server_url)
         self.path_prefix_to_remove = "/home/usman/data/"  # Ensured this is the exact prefix.
 
     async def calculate_similarity_for_upload(
@@ -72,7 +88,7 @@ class SimilarityService:
             return {"success": False, "error": "Audio data is empty for similarity processing."}
 
         # Concurrently get duration and call similarity server
-        duration_task = asyncio.to_thread(self._get_duration_from_bytes_sync, audio_bytes)
+        duration_task = asyncio.to_thread(get_duration_from_bytes_sync, audio_bytes)
 
         files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
         request_data = {"top_k": top_k, "track_uuid": track_uuid}
@@ -100,7 +116,7 @@ class SimilarityService:
                     clean_paths.append(abs_path)
             
             # Get track details from database
-            db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths)
+            db_details_map = await self.similarity_repository.async_get_track_details_by_paths(db, clean_paths)
             
             # Enrich similarity results with database details
             enriched_similar_tracks = []
@@ -138,11 +154,11 @@ class SimilarityService:
                 target_count_after_deduplication = 0  # Ensure not negative
             
             # Apply response-level filtering to existing tracks before deduplication
-            filtered_enriched_tracks = self._apply_response_filtering(enriched_similar_tracks)
+            filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
             
             # NEW: Fetch uploaded track details to use as reference track and update duration
             try:
-                uploaded_track_details = await self._fetch_reference_track_details_from_db_by_uuid(db, track_uuid)
+                uploaded_track_details = await self.similarity_repository.async_get_reference_track_details_by_uuid(db, track_uuid)
             except Exception as e:
                 print(f"Error fetching uploaded track details: {e}")
                 return {"success": False, "error": "Failed to retrieve uploaded track details"}
@@ -155,15 +171,16 @@ class SimilarityService:
             uploaded_track_details["duration"] = final_duration
             if final_duration is not None and final_duration > 0:
                 try:
-                    await self._update_track_duration_in_db(db, track_uuid, final_duration)
+                    await self.similarity_repository.async_update_track_duration(db, track_uuid, final_duration)
                     print(f"Updated track {track_uuid} duration to {final_duration} seconds")
                 except Exception as e:
                     print(f"Warning: Could not update track duration in database: {e}")
             
-            deduplicated_enriched_tracks = self._deduplicate_tracks(
+            deduplicated_enriched_tracks = deduplicate_tracks(
                 filtered_enriched_tracks, 
                 target_count_after_deduplication,
-                reference_track=uploaded_track_details  # Passing reference track for upload similarity
+                reference_track=uploaded_track_details,  # Passing reference track for upload similarity
+                filter_title_func=filter_track_title
             )
             
             # Get corresponding track IDs and scores for deduplicated tracks
@@ -186,7 +203,7 @@ class SimilarityService:
                     uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
                     if uploaded_track:
                         # Generate playlist name based on uploaded track details
-                        playlist_name = self._generate_playlist_name_from_seed_track(uploaded_track_details)
+                        playlist_name = generate_playlist_name_from_seed_track(uploaded_track_details)
                         
                         playlist_info = await self.playlist_repository.async_create_similarity_playlist(
                               db=db,
@@ -198,7 +215,7 @@ class SimilarityService:
                         
                         # Send playlist peaks request (fire and forget)
                         # if playlist_info:
-                        #     await self._send_playlist_peaks_request(track_uuid, deduplicated_enriched_tracks)
+                        #     await send_playlist_peaks_request(self.similarity_server_url, track_uuid, deduplicated_enriched_tracks)
                 except Exception as e:
                     print(f"Error creating playlist for upload similarity: {e}")
             
@@ -214,7 +231,7 @@ class SimilarityService:
             
             # Apply filtering to queried track as well
             if response_data.get("queried_track"):
-                filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
+                filtered_queried_tracks = apply_response_filtering([response_data["queried_track"]])
                 if filtered_queried_tracks:
                     response_data["queried_track"] = filtered_queried_tracks[0]
             
@@ -227,7 +244,7 @@ class SimilarityService:
                 
                 if all_uuids:
                     # Wait for segment preview response before returning
-                    await self._handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
+                    await self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
              
             return response_data
         else:
@@ -256,7 +273,7 @@ class SimilarityService:
         """
         queried_track_data: Optional[Dict[str, Any]] = None
         try:
-            queried_track_data = await self._fetch_reference_track_details_from_db_by_path(db, server_track_path)
+            queried_track_data = await self.similarity_repository.async_get_reference_track_details_by_path(db, server_track_path)
             if not queried_track_data:
                 print(f"Warning: Details for queried path '{server_track_path}' not found in local DB.")
         except Exception as e:
@@ -279,7 +296,7 @@ class SimilarityService:
                     clean_paths.append(abs_path)
             
             # Get track details from database
-            db_details_map = await self._fetch_track_details_from_db_by_path(db, clean_paths)
+            db_details_map = await self.similarity_repository.async_get_track_details_by_paths(db, clean_paths)
             
             # Enrich similarity results with database details
             enriched_similar_tracks = []
@@ -318,12 +335,13 @@ class SimilarityService:
                 target_count_after_deduplication = 0  # Ensure not negative
             
             # Apply response-level filtering to existing tracks before deduplication
-            filtered_enriched_tracks = self._apply_response_filtering(enriched_similar_tracks)
+            filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
             
-            deduplicated_enriched_tracks = self._deduplicate_tracks(
+            deduplicated_enriched_tracks = deduplicate_tracks(
                 filtered_enriched_tracks, 
                 target_count_after_deduplication,
-                reference_track=queried_track_data  # Use queried track for reference in deduplication
+                reference_track=queried_track_data,  # Use queried track for reference in deduplication
+                filter_title_func=filter_track_title
             )
 
             # Get corresponding track IDs and scores for deduplicated tracks
@@ -348,7 +366,7 @@ class SimilarityService:
                         queried_track = await self.track_repository.async_get_by_uuid(db, queried_track_uuid)
                         if queried_track:
                             # Generate playlist name based on queried track details
-                            playlist_name = self._generate_playlist_name_from_seed_track(queried_track_data)
+                            playlist_name = generate_playlist_name_from_seed_track(queried_track_data)
                             
                             playlist_info = await self.playlist_repository.async_create_similarity_playlist(
                                 db=db,
@@ -360,7 +378,7 @@ class SimilarityService:
                             
                             # Send playlist peaks request (fire and forget) - COMMENTED OUT
                             # if playlist_info:
-                            #     await self._send_playlist_peaks_request(queried_track_uuid, deduplicated_enriched_tracks)
+                            #     await send_playlist_peaks_request(self.similarity_server_url, queried_track_uuid, deduplicated_enriched_tracks)
                                 
                 except Exception as e:
                     print(f"Error creating playlist for path similarity: {e}")
@@ -377,7 +395,7 @@ class SimilarityService:
             
             # Apply filtering to queried track as well
             if response_data.get("queried_track"):
-                filtered_queried_tracks = self._apply_response_filtering([response_data["queried_track"]])
+                filtered_queried_tracks = apply_response_filtering([response_data["queried_track"]])
                 if filtered_queried_tracks:
                     response_data["queried_track"] = filtered_queried_tracks[0]
             
@@ -390,7 +408,7 @@ class SimilarityService:
                 
                 if all_uuids:
                     # Wait for segment preview response before returning
-                    await self._handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
+                    await self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks)
             
             return response_data
         elif similarity_response.get("status") == "not_found":
@@ -406,388 +424,6 @@ class SimilarityService:
             error_message = similarity_response.get("message", "Unknown error from similarity server.")
             return {"success": False, "error": error_message}
 
-    async def _fetch_reference_track_details_from_db_by_path(self, db: AsyncSession, track_path: str) -> Optional[Dict[str, Any]]:
-        """
-        Fetch complete track details from the database by path for reference track formatting.
-        
-        Args:
-            db: Database session
-            track_path: The file path to lookup in the database
-            
-        Returns:
-            Dictionary with track details or None if not found
-        """
-        query = text("""
-            SELECT 
-                t.uuid as id,
-                t.title,
-                t.year,
-                t.duration_sec as duration,
-                COALESCE(l.name, '') as label,
-                COALESCE(
-                    GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
-                    ''
-                ) as artist
-            FROM tracks t
-            LEFT JOIN labels l ON t.label_id = l.id
-            LEFT JOIN track_artists ta ON t.id = ta.track_id
-            LEFT JOIN artists a ON ta.artist_id = a.id
-            WHERE t.file_path = :track_path OR t.preview_path = :track_path
-            GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
-            LIMIT 1
-        """)
-        
-        result = await db.execute(query, {"track_path": track_path})
-        row = result.first()
-        
-        if row:
-            return {
-                "id": row.id,
-                "title": row.title or "Unknown",
-                "year": row.year,
-                "duration": float(row.duration) if row.duration is not None else 0.0,
-                "label": row.label,
-                "artist": row.artist or "Unknown"
-            }
-        return None
-
-    async def _fetch_reference_track_details_from_db_by_uuid(self, db: AsyncSession, track_uuid: str) -> Optional[Dict[str, Any]]:
-        """
-        Fetch complete track details from the database by UUID for reference track formatting.
-        
-        Args:
-            db: Database session
-            track_uuid: The UUID to lookup in the database
-            
-        Returns:
-            Dictionary with track details or None if not found
-        """
-        query = text("""
-            SELECT 
-                t.uuid as id,
-                t.title,
-                t.year,
-                t.duration_sec as duration,
-                COALESCE(l.name, '') as label,
-                COALESCE(
-                    GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
-                    ''
-                ) as artist
-            FROM tracks t
-            LEFT JOIN labels l ON t.label_id = l.id
-            LEFT JOIN track_artists ta ON t.id = ta.track_id
-            LEFT JOIN artists a ON ta.artist_id = a.id
-            WHERE t.uuid = :track_uuid
-            GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
-            LIMIT 1
-        """)
-        
-        result = await db.execute(query, {"track_uuid": track_uuid})
-        row = result.first()
-        
-        if row:
-            return {
-                "id": row.id,
-                "title": row.title or "Unknown",
-                "year": row.year,
-                "duration": float(row.duration) if row.duration is not None else 0.0,
-                "label": row.label,
-                "artist": row.artist or "Unknown"
-            }
-        return None
-
-    async def _fetch_track_details_from_db_by_path(self, db: AsyncSession, track_paths_from_similarity_server: List[str]) -> Dict[str, Dict[str, Any]]:
-        """
-        Fetches full track details from MariaDB based on a list of file paths 
-        returned by the similarity server.
-
-        Args:
-            db: Database session
-            track_paths_from_similarity_server: A list of file paths 
-                                                (e.g., veggera/public_html/audio.mp3).
-            
-        Returns:
-            A dictionary mapping file_path to track_details_dict.
-            Track_details_dict contains: id, track_id, filename, album, duration, artist, all_artists.
-        """
-        if not track_paths_from_similarity_server:
-            return {}
-
-        # Use paths as-is since they're already in the correct format
-        paths_to_query = set(track_paths_from_similarity_server)
-        
-        if not paths_to_query:
-            return {}
-
-        details_map: Dict[str, Dict[str, Any]] = {}
-        try:
-            # Query tracks by file paths using MariaDB repository
-            tracks = await self.track_repository.async_get_tracks_by_file_paths(db, list(paths_to_query))
-            
-            for track in tracks:
-                # Get primary artist (first artist in track_artists) for backward compatibility
-                artist_name = "N/A"
-                all_artists = []
-                
-                if track.track_artists:
-                    artist_name = track.track_artists[0].artist.name
-                    # Collect all artists for deduplication purposes
-                    all_artists = [ta.artist.name for ta in track.track_artists]
-                
-                # Extract filename from file_path
-                filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
-                
-                # Get album name
-                album_name = track.album.title if track.album else "N/A"
-                
-                # Get label name
-                label_name = track.label.name if track.label else "N/A"
-                
-                # Get genre name
-                genre_name = track.genre.name if track.genre else "N/A"
-                
-                track_data = {
-                    "id": track.uuid,  # Use UUID for compatibility with existing API
-                    "track_id": track.id,  # Add database ID for playlist creation
-                    "label": label_name,
-                    "duration": float(track.duration_sec) if track.duration_sec is not None else 0.0,
-                    "artist": artist_name,  # Primary artist for display
-                    "all_artists": all_artists,  # All artists for deduplication
-                    "title": track.title or "N/A",
-                    "year": track.year
-                }
-                details_map[track.file_path] = track_data
-            
-            print(f"MariaDB: Fetched details for {len(details_map)} out of {len(paths_to_query)} unique paths.")
-            
-        except Exception as e:
-            print(f"Error during MariaDB fetch for track details: {e}")
-            return {} 
-            
-        return details_map
-
-    def _get_duration_from_bytes_sync(self, audio_bytes: bytes) -> Optional[int]:
-        """Calculates the duration of audio from bytes using mutagen."""
-        try:
-            file_like_object = io.BytesIO(audio_bytes)
-            audio = MutagenFile(file_like_object)
-            if audio and audio.info and hasattr(audio.info, 'length') and audio.info.length is not None:
-                return int(round(audio.info.length))
-        except MutagenError:
-            print("MutagenError: Could not load audio from bytes to get duration.")
-        except Exception as e:
-            print(f"Error getting duration from bytes: {e}")
-        return None  # Return None if duration can't be determined
-
-    def _normalize_artist_name(self, artist_name: str) -> str:
-        """
-        Normalize artist name to handle variations in formatting.
-        
-        Examples:
-        - "Jacob Stone" -> "jacob stone"
-        - "jacob-stone" -> "jacob stone"  
-        - "JACOB    STONE" -> "jacob stone"
-        - "Artist A & Artist B" -> "artist a artist b"
-        
-        Args:
-            artist_name: Raw artist name
-            
-        Returns:
-            Normalized artist name
-        """
-        if not artist_name:
-            return ""
-        
-        # Convert to lowercase
-        normalized = artist_name.lower()
-        
-        # Replace common separators with spaces
-        # Handle: hyphens, underscores, various types of dashes
-        separators = ['-', '_', '–', '—', '•']
-        for sep in separators:
-            normalized = normalized.replace(sep, ' ')
-        
-        # Replace common connecting words/symbols with spaces for more aggressive matching
-        # Handle: &, feat, ft, featuring, vs, x, +
-        connectors = [' & ', ' feat ', ' feat. ', ' ft ', ' ft. ', ' featuring ', ' vs ', ' vs. ', ' x ', ' + ']
-        for connector in connectors:
-            normalized = normalized.replace(connector, ' ')
-        
-        # Normalize whitespace: multiple spaces to single space, strip ends
-        normalized = re.sub(r'\s+', ' ', normalized).strip()
-        
-        return normalized
-
-    def _filter_track_title(self, title: str) -> str:
-        """
-        Filter track title by removing specified strings and stopping at certain markers.
-        
-        Processing order:
-        1. Apply meta regex check (if entire title matches domain/URL pattern, return empty string)
-        2. Apply title stopper strings (truncate at first occurrence)
-        3. Apply title removal strings (remove completely)
-        
-        Args:
-            title: Original track title
-            
-        Returns:
-            Filtered track title
-        """
-        return MetadataService._filter_title_field(title)
-
-    def _apply_title_filtering_to_tracks(self, tracks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Apply title filtering to a list of tracks.
-        
-        Args:
-            tracks: List of track dictionaries
-            
-        Returns:
-            List of tracks with filtered titles
-        """
-        filtered_tracks = []
-        
-        for track in tracks:
-            # Create a copy of the track to avoid modifying the original
-            filtered_track = track.copy()
-            
-            # Apply title filtering if title exists
-            if "title" in filtered_track and filtered_track["title"]:
-                filtered_track["title"] = self._filter_track_title(filtered_track["title"])
-            
-            filtered_tracks.append(filtered_track)
-        
-        return filtered_tracks
-
-    def _deduplicate_tracks(self, tracks: List[Dict[str, Any]], target_count: int, reference_track: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        """
-        Removes duplicate tracks based on:
-        1. Filename (without extension) and duration (existing logic)
-        2. Artist set and title combination (enhanced for multiple artists per track with robust normalization)
-        3. Reference track exclusion (for track selection similarity)
-        
-        Then sorts by score, re-ranks, and returns up to target_count tracks.
-        
-        Args:
-            tracks: List of track dictionaries to deduplicate
-            target_count: Maximum number of tracks to return
-            reference_track: Optional reference track to exclude from results
-        """
-        # STEP 0: Apply title filtering BEFORE deduplication to normalize titles
-        # This ensures tracks like "Junior Gee" and "Junior Gee (Original Mix)" are seen as duplicates
-        preprocessed_tracks = []
-        for track in tracks:
-            # Create a copy to avoid modifying the original
-            processed_track = track.copy()
-            
-            # Apply title filtering if title exists
-            if "title" in processed_track and processed_track["title"]:
-                processed_track["title"] = self._filter_track_title(processed_track["title"]).strip()
-            
-            preprocessed_tracks.append(processed_track)
-        
-        # First layer: Filename-based deduplication (existing logic)
-        seen_filename_tracks = set()
-        filename_deduplicated_list = []
-        
-        for track in preprocessed_tracks:
-            filename_full = track.get("filename", "")
-            # Remove extension from filename for the key
-            filename_base, file_extension = os.path.splitext(filename_full)
-            duration = track.get("duration", -1)
-            track_key = (filename_base.lower().strip(), duration)  # Use lowercased base filename
-            
-            if track_key not in seen_filename_tracks:
-                filename_deduplicated_list.append(track)
-                seen_filename_tracks.add(track_key)
-        
-        # Second layer: Artist set and title-based deduplication (enhanced for multiple artists)
-        seen_artist_title_tracks = set()
-        final_deduplicated_list = []
-        
-        # Prepare reference track normalization if provided
-        reference_normalized_key = None
-        if reference_track:
-            # Apply title filtering to reference track as well for consistent comparison
-            ref_title = reference_track.get("title", "").strip()
-            if ref_title:
-                ref_title = self._filter_track_title(ref_title).strip().lower()
-            
-            ref_all_artists = reference_track.get("all_artists", [])
-            
-            # If no all_artists field, fall back to primary artist field
-            if not ref_all_artists:
-                ref_primary_artist = reference_track.get("artist", "").strip()
-                ref_all_artists = [ref_primary_artist] if ref_primary_artist else []
-            
-            # Create normalized reference key if we have title and artists
-            if ref_title and ref_all_artists:
-                ref_normalized_artists = []
-                for artist in ref_all_artists:
-                    normalized_artist = self._normalize_artist_name(artist)
-                    if normalized_artist:
-                        ref_normalized_artists.append(normalized_artist)
-                
-                if ref_normalized_artists:
-                    ref_normalized_artists_tuple = tuple(sorted(ref_normalized_artists))
-                    reference_normalized_key = (ref_normalized_artists_tuple, ref_title)
-        
-        for track in filename_deduplicated_list:
-            # Exclude the reference/queried track itself based on UUID equality before any further checks
-            if reference_track and track.get("id") and reference_track.get("id") and track.get("id") == reference_track.get("id"):
-                continue
-            # Title is already filtered, just need to normalize case and trim
-            title = track.get("title", "").strip().lower()
-            
-            # Get all artists for this track
-            all_artists = track.get("all_artists", [])
-            
-            # If no all_artists field, fall back to primary artist field
-            if not all_artists:
-                primary_artist = track.get("artist", "").strip()
-                all_artists = [primary_artist] if primary_artist else []
-            
-            # Skip tracks with empty title or no artists to avoid false positives
-            if not title or not all_artists:
-                final_deduplicated_list.append(track)
-                continue
-            
-            # Create a normalized, sorted set of artists with robust normalization
-            normalized_artists = []
-            for artist in all_artists:
-                normalized_artist = self._normalize_artist_name(artist)
-                if normalized_artist:  # Only add non-empty normalized names
-                    normalized_artists.append(normalized_artist)
-            
-            # Sort the normalized artists and convert to tuple for hashing
-            normalized_artists_tuple = tuple(sorted(normalized_artists))
-            
-            # Create a key from normalized artist set and title
-            artist_title_key = (normalized_artists_tuple, title)
-            
-            # Skip this track if its normalized key matches that of the reference track.
-            # This ensures consistency between track-to-track and reference track deduplication (both use normalized artist set and filtered title).
-            if reference_normalized_key and artist_title_key == reference_normalized_key:
-                continue
-            
-            if artist_title_key not in seen_artist_title_tracks:
-                final_deduplicated_list.append(track)
-                seen_artist_title_tracks.add(artist_title_key)
-            # else: this track has the same artist set and title as a previous track, so skip it
-        
-        # Sort by score in descending order (higher score is better)
-        # Ensure score exists and is a number, default to 0 or a very low number if missing/invalid
-        final_deduplicated_list.sort(key=lambda x: float(x.get("score", 0)) if isinstance(x.get("score"), (int, float, str)) and str(x.get("score")).replace('.', '', 1).isdigit() else 0, reverse=True)
-        
-        # Re-rank the sorted list
-        reranked_list = []
-        for i, track_item in enumerate(final_deduplicated_list):
-            track_item["rank"] = i + 1
-            reranked_list.append(track_item)
-        
-        # Title filtering is now done BEFORE deduplication, so just return the tracks
-        # Limited to target_count
-        return reranked_list[:target_count]
 
     async def _call_similarity_server(self, endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None) -> Dict[str, Any]:
         """Helper function to call the similarity server. Returns the JSON response directly or a structured error."""
@@ -826,96 +462,6 @@ class SimilarityService:
             except Exception as e:
                 print(f"Generic error calling similarity server {target_url}: {e}")
                 return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []}
-
-    async def _call_segment_preview_endpoint(self, uuids: List[str], playlist_id: str) -> None:
-        """
-        Call the segment preview endpoint and save the response to a log file.
-        This runs in the background and doesn't affect the main similarity response.
-        """
-        if not self.similarity_server_url:
-            print("ERROR: SIMILARITY_SERVER_URL is not set, skipping segment preview request")
-            return
-        
-        # Ensure log directory exists first
-        log_dir = settings.segment_requests_log_dir
-        os.makedirs(log_dir, exist_ok=True)
-        
-        target_url = f"{self.similarity_server_url.rstrip('/')}/previews-segment/"
-        payload = {"uuids": uuids}
-        
-        print(f"[SEGMENT] Calling segment preview endpoint for playlist {playlist_id} with {len(uuids)} UUIDs")
-        
-        try:
-            async with httpx.AsyncClient(timeout=settings.segment_requests_timeout) as client:
-                response = await client.post(target_url, json=payload)
-                response.raise_for_status()
-                response_data = response.json()
-                
-                # Save response to log file
-                await self._save_segment_response(playlist_id, response_data)
-                
-                # Log summary
-                summary = response_data.get("summary", {})
-                print(f"[SEGMENT] Playlist {playlist_id}: Processed={summary.get('total_processed', 0)}, "
-                      f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}")
-                
-        except Exception as e:
-            print(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
-            # Save error log
-            error_data = {
-                "status": "error",
-                "error": str(e),
-                "playlist_id": playlist_id,
-                "uuids_count": len(uuids)
-            }
-            await self._save_segment_response(playlist_id, error_data)
-    
-    async def _save_segment_response(self, playlist_id: str, response_data: Dict[str, Any]) -> None:
-        """Save segment response data to a log file."""
-        try:
-            # Ensure log directory exists
-            log_dir = settings.segment_requests_log_dir
-            os.makedirs(log_dir, exist_ok=True)
-            
-            # Create log file path
-            log_file = os.path.join(log_dir, f"{playlist_id}.json")
-            
-            # Save response
-            with open(log_file, 'w') as f:
-                json.dump(response_data, f, indent=2)
-                
-            print(f"[SEGMENT] Response saved to {log_file}")
-            
-        except Exception as e:
-            print(f"[SEGMENT] Error saving response for playlist {playlist_id}: {e}")
-
-    async def _handle_segment_preview_workflow(self, uuids: List[str], playlist_id: str, deduplicated_enriched_tracks: List[Dict]) -> None:
-        """
-        TEMPORARY FEATURE: Handle segment preview workflow.
-        This method orchestrates steps 9,10,11 in background and waits for segment response.
-        Remove this entire method and its calls to disable the feature.
-        """
-        if not settings.segment_requests_enabled:
-            return
-            
-        try:
-            # Start steps 9,10,11 in background (playlist peaks request) - COMMENTED OUT
-            peaks_task = None
-            # if deduplicated_enriched_tracks:
-            #     # This would be the peaks request that normally runs at the end
-            #     peaks_task = asyncio.create_task(
-            #         self._send_playlist_peaks_request(uuids[0] if uuids else "", deduplicated_enriched_tracks)
-            #     )
-            
-            # Wait for segment preview response (main blocking operation)
-            await self._call_segment_preview_endpoint(uuids, playlist_id)
-            
-            # Ensure peaks task completes if it was started - COMMENTED OUT
-            # if peaks_task:
-            #     await peaks_task
-                
-        except Exception as e:
-            print(f"[SEGMENT] Error in segment preview workflow: {e}")
 
     # Convenience methods for different use cases
     async def find_similar_tracks_by_upload(
@@ -1014,198 +560,3 @@ class SimilarityService:
         except Exception as e:
             print(f"Error getting similarity for track UUID {track_uuid}: {e}")
             return {"success": False, "error": f"Error processing similarity request: {e}"}
-
-    async def get_track_path_by_uuid(self, db: AsyncSession, track_uuid: str) -> Optional[str]:
-        """
-        Get track file path by UUID.
-        
-        Args:
-            db: Database session
-            track_uuid: Track UUID
-            
-        Returns:
-            File path string or None if not found
-        """
-        return await self.track_repository.async_get_track_path_by_uuid(db, track_uuid)
-
-    def _apply_response_filtering(self, tracks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Apply metadata filtering to track data returned from database.
-        This ensures existing tracks get filtered even if they weren't filtered during upload.
-        
-        Args:
-            tracks: List of track dictionaries from database
-            
-        Returns:
-            List of tracks with filtered metadata
-        """
-        filtered_tracks = []
-        
-        for track in tracks:
-            filtered_track = track.copy()
-            
-            # Apply filtering to relevant fields
-            if "title" in filtered_track and filtered_track["title"]:
-                filtered_track["title"] = MetadataService._filter_title_field(filtered_track["title"])
-            
-            if "artist" in filtered_track and filtered_track["artist"]:
-                filtered_track["artist"] = MetadataService._filter_metadata_field(filtered_track["artist"], "Artist")
-            
-            if "label" in filtered_track and filtered_track["label"]:
-                filtered_track["label"] = MetadataService._filter_metadata_field(filtered_track["label"], "Label")
-            
-            # Note: Album and Genre are not typically returned in similarity responses,
-            # but we can add them if needed in the future
-            
-            filtered_tracks.append(filtered_track)
-        
-        return filtered_tracks
-
-    def _generate_playlist_name_from_seed_track(self, seed_track_data: Dict[str, Any]) -> str:
-        """
-        Generate a playlist name based on the seed track's artist and title information.
-        
-        Format:
-        - Single artist: "Artist - Title"
-        - Multiple artists (up to max_artists): "Artist1, Artist2, Artist3 - Title"
-        - More than max_artists: "VA - Title"
-        
-        Args:
-            seed_track_data: Dictionary containing seed track information with 'artist' and 'title' keys
-            
-        Returns:
-            Generated playlist name string
-        """
-        from app.core.config import settings
-        
-        if not seed_track_data:
-            return "Playlist"
-        
-        title = seed_track_data.get("title", "Unknown")
-        artist_string = seed_track_data.get("artist", "Unknown")
-        
-        # Handle empty or unknown values
-        if not title or title.lower() in ["unknown", "n/a", ""]:
-            title = "Unknown"
-        if not artist_string or artist_string.lower() in ["unknown", "n/a", ""]:
-            return "Playlist"
-        
-        # Split artists by comma and clean them up
-        artists = [artist.strip() for artist in artist_string.split(",") if artist.strip()]
-        
-        # Remove duplicates while preserving order
-        unique_artists = []
-        seen = set()
-        for artist in artists:
-            if artist.lower() not in seen:
-                unique_artists.append(artist)
-                seen.add(artist.lower())
-        
-        if not unique_artists:
-            return "Playlist"
-        
-        # Determine artist part of the name
-        max_artists = settings.default_similarity_playlist_max_artists
-        
-        if len(unique_artists) == 1:
-            artist_part = unique_artists[0]
-        elif len(unique_artists) <= max_artists:
-            artist_part = ", ".join(unique_artists)
-        else:
-            artist_part = "VA"  # Various Artists
-        
-        # Generate the final playlist name
-        playlist_name = f"{artist_part} - {title}"
-        
-        # Ensure the name doesn't exceed the database limit (100 characters for playlist names)
-        if len(playlist_name) > 100:
-            # Truncate the title part if needed, keeping the artist part intact
-            max_title_length = 100 - len(artist_part) - 3  # 3 for " - "
-            if max_title_length > 10:  # Ensure we have at least some title
-                truncated_title = title[:max_title_length-3] + "..."
-                playlist_name = f"{artist_part} - {truncated_title}"
-            else:
-                # If artist part is too long, just use a simple format
-                playlist_name = f"{artist_part[:90]}... - {title[:5]}..."
-        
-        return playlist_name
-
-    async def _update_track_duration_in_db(self, db: AsyncSession, track_uuid: str, duration: float) -> None:
-        """
-        Updates the duration of a track in the database.
-        
-        Args:
-            db: Database session
-            track_uuid: Track UUID
-            duration: New duration in seconds
-        """
-        # Convert to integer since database field is INT UNSIGNED
-        duration_int = int(round(duration)) if duration is not None else None
-        
-        query = text("""
-            UPDATE tracks
-            SET duration_sec = :duration
-            WHERE uuid = :track_uuid
-        """)
-        
-        await db.execute(query, {"duration": duration_int, "track_uuid": track_uuid})
-        await db.commit()
-
-    async def _send_playlist_peaks_request(self, reference_track_uuid: str, similar_tracks: List[Dict[str, Any]]) -> None:
-        """
-        Sends a playlist peaks request to the similarity server (fire and forget).
-        This is a background request that triggers processing on the similarity server.
-        
-        Args:
-            reference_track_uuid: UUID of the reference/queried track
-            similar_tracks: List of similar track dictionaries
-        """
-        if not self.similarity_server_url:
-            print("Warning: SIMILARITY_SERVER_URL is not set, skipping playlist peaks request")
-            return
-
-        try:
-            # Collect all track UUIDs including the reference track
-            track_uuids = [reference_track_uuid]  # Start with reference track
-            
-            # Add similar track UUIDs
-            for track in similar_tracks:
-                track_uuid = track.get("id")
-                if track_uuid:
-                    track_uuids.append(track_uuid)
-            
-            if len(track_uuids) <= 1:  # Only reference track, no similar tracks
-                print("No similar tracks found, skipping playlist peaks request")
-                return
-            
-            # Prepare the request
-            target_url = f"{self.similarity_server_url.rstrip('/')}/playlist_peaks"
-            payload = {"track_uuids": track_uuids}
-            
-            print(f"Sending playlist peaks request to {target_url} with {len(track_uuids)} tracks")
-            
-            # Fire and forget request - don't await the response
-            asyncio.create_task(self._execute_playlist_peaks_request(target_url, payload))
-            
-        except Exception as e:
-            print(f"Error preparing playlist peaks request: {e}")
-            # Don't fail the main request if this background task fails
-
-    async def _execute_playlist_peaks_request(self, target_url: str, payload: Dict[str, Any]) -> None:
-        """
-        Execute the playlist peaks request in the background.
-        
-        Args:
-            target_url: The full URL to send the request to
-            payload: The request payload
-        """
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            try:
-                response = await client.post(target_url, json=payload)
-                print(f"Playlist peaks request completed with status: {response.status_code}")
-            except httpx.HTTPStatusError as e:
-                print(f"HTTP error in playlist peaks request: {e.response.status_code} - {e.response.text}")
-            except httpx.RequestError as e:
-                print(f"Request error in playlist peaks request: {e}")
-            except Exception as e:
-                print(f"Unexpected error in playlist peaks request: {e}")
