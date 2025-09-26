@@ -724,7 +724,7 @@ class SimilarityController:
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=format_response(success=False, error="track_id cannot be empty"))
         try:
             # Get file path from MariaDB using track UUID
-            server_track_path = await self.similarity_service.get_track_path_by_uuid(db, track_id)
+            server_track_path = await self.similarity_service.track_repository.async_get_track_path_by_uuid(db, track_id)
             duration_ms = (time.time() - start_time) * 1000
             if server_track_path is None:
                 self.logging_service.log(
