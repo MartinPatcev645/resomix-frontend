@@ -199,27 +199,29 @@ class SimilarityService:
             # Create similarity playlist if we have tracks
             playlist_info = None
             if deduplicated_track_ids:
-                try:
-                    # Get the uploaded track's database ID
-                    uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
-                    if uploaded_track:
-                        # Generate playlist name based on uploaded track details
-                        playlist_name = generate_playlist_name_from_seed_track(uploaded_track_details)
-                        
-                        playlist_info = await self.playlist_repository.async_create_similarity_playlist(
-                              db=db,
-                              seed_track_id=uploaded_track.id,
-                              track_ids=deduplicated_track_ids,
-                              track_scores=deduplicated_track_scores,
-                              name=playlist_name,
-                              playlist_type=PlaylistType.WAITING_SEGMENTS,
-                        )
-                        
-                        # Send playlist peaks request (fire and forget)
-                        # if playlist_info:
-                        #     await send_playlist_peaks_request(self.similarity_server_url, track_uuid, deduplicated_enriched_tracks)
-                except Exception as e:
-                    print(f"Error creating playlist for upload similarity: {e}")
+                # try:
+                print(f"Removed Catch, Creating playlist for upload similarity: {deduplicated_track_ids}")
+                # Get the uploaded track's database ID
+                uploaded_track = await self.track_repository.async_get_by_uuid(db, track_uuid)
+                if uploaded_track:
+                    # Generate playlist name based on uploaded track details
+                    playlist_name = generate_playlist_name_from_seed_track(uploaded_track_details)
+                    
+                    playlist_info = await self.playlist_repository.async_create_similarity_playlist(
+                            db=db,
+                            seed_track_id=uploaded_track.id,
+                            track_ids=deduplicated_track_ids,
+                            track_scores=deduplicated_track_scores,
+                            name=playlist_name,
+                            playlist_type=PlaylistType.WAITING_SEGMENTS,
+                    )
+                    
+                    # Send playlist peaks request (fire and forget)
+                    # if playlist_info:
+                    #     await send_playlist_peaks_request(self.similarity_server_url, track_uuid, deduplicated_enriched_tracks)
+                
+                # except Exception as e:
+                #     print(f"Error creating playlist for upload similarity: {e}")
             
             # Format response like similarity by ID
             response_data = {
