@@ -33,6 +33,22 @@ class SimilarityRepository(BaseRepository[Track]):
         """Initialize SimilarityRepository with Track model."""
         super().__init__(Track)
     
+    def _find_existing(self, db: Session, **kwargs) -> Optional[Track]:
+        """Find existing track by UUID."""
+        uuid = kwargs.get('uuid')
+        if not uuid:
+            return None
+        return db.query(self.model).filter(self.model.uuid == uuid).first()
+
+    async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Track]:
+        """Async version of _find_existing."""
+        uuid = kwargs.get('uuid')
+        if not uuid:
+            return None
+        stmt = select(self.model).where(self.model.uuid == uuid)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+    
     async def async_get_reference_track_details_by_path(
         self, 
         db: AsyncSession, 
