@@ -1,0 +1,16 @@
+<svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="feather feather-alert-triangle"
+>
+    <path d="M10.29 3.86l-8.18 14.32a1 1 0 0 0 .86 1.54h16.36a1 1 0 0 0 .86-1.54l-8.18-14.32a1 1 0 0 0-1.72 0z"></path>
+    <line x1="11" y1="9" x2="11" y2="13"></line>
+    <line x1="11" y1="17" x2="11" y2="17"></line>
+</svg>

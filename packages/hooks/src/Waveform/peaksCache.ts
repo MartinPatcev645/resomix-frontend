@@ -27,7 +27,7 @@ const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 // }
 function parseV2Payload(payload: any): PeaksRich | null {
   if (!payload || typeof payload !== 'object') return null;
-  if (payload.schema !== 'peaks-v2') return null;
+  if (payload.schema_type !== 'peaks-v2') return null;
 
   const fb = payload?.peaks?.fullband?.values;
   if (!Array.isArray(fb)) return null;

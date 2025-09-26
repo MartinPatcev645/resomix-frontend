@@ -7,6 +7,7 @@ import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { useDebouncedWaveformSeek } from "@resomix/hooks/Waveform/useDebouncedWaveformSeek.js";
 import {WaveformLoader} from "@resomix/ui";
+import NetworkSvg from "@/assets/icons/network-aleft.svg";
 
 // Simple time formatter mm:ss
 function formatTime(seconds: number): string {
@@ -30,6 +31,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
     const volume: number = usePlayerStore(s => s.volume);
     const setVolume = usePlayerStore(s => s.setVolume);
+    const networkError: boolean = usePlayerStore((s) => s.networkError);
 
     const { containerRef, uiTime, requestSeek } = useDebouncedWaveformSeek({
         id: trackId,
@@ -53,16 +55,18 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     const skipBackward = useCallback(() => {
         if (!hlsController) return;
-        requestSeek(Math.max(0, currentTime - 10));
-    }, [hlsController, requestSeek, currentTime]);
+        const base = uiTime || 0;
+        requestSeek(Math.max(0, base - 10));
+    }, [hlsController, requestSeek, uiTime]);
 
     const skipForward = useCallback(() => {
         if (!hlsController) return;
         const d = Number.isFinite(hlsController.getDuration())
           ? hlsController.getDuration()
           : totalDuration;
-        requestSeek(Math.min(d, currentTime + 10));
-    }, [hlsController, requestSeek, currentTime, totalDuration]);
+        const base = uiTime || 0;
+        requestSeek(Math.min(d, base + 10));
+    }, [hlsController, requestSeek, uiTime, totalDuration]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
@@ -135,6 +139,23 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
           {formatTime(uiTime)} / {formatTime(totalDuration)}
         </span>
+              {networkError && (
+                <div className="absolute bottom-2 left-32 flex items-center gap-[var(--px-3)] text-yellow-200">
+                                <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
+                                      style={{
+                                          WebkitMaskImage: `url("${NetworkSvg}")`,
+                                          WebkitMaskRepeat: "no-repeat",
+                                          WebkitMaskPosition: "center",
+                                          WebkitMaskSize: "contain",
+                                          maskImage: `url("${NetworkSvg}")`,
+                                          maskRepeat: "no-repeat",
+                                          maskPosition: "center",
+                                          maskSize: "contain",
+                                      }}
+                                />
+                    <span className="text-[length:var(--px-10)]">Network</span>
+                </div>
+              )}
           </div>
       </div>
     );

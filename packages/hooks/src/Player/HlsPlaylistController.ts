@@ -10,6 +10,14 @@ import {
 } from './mediaSessionActions';
 import { getSimilarityPlaylistHlsUrl } from "@resomix/api-client";
 
+function setNetworkErrorFlag(on: boolean, reason?: string) {
+  try {
+    usePlayerStore.getState().setNetworkError(on, reason);
+  } catch {
+    /* noop for non-react contexts */
+  }
+}
+
 export interface AudioController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
@@ -54,6 +62,10 @@ export function createHlsPlaylistController(): AudioController {
   let isSeeking = false;
   let isinitMediaSession = false;
 
+  let seekGraceUntil = 0;
+  function inSeekGrace() { return Date.now() < seekGraceUntil; }
+  function startSeekGrace(ms = 1000) { seekGraceUntil = Date.now() + ms; }
+
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
     if (!playlistData) return;
@@ -90,6 +102,7 @@ export function createHlsPlaylistController(): AudioController {
       clearInterval(retryTimer);
       retryTimer = null;
     }
+    setNetworkErrorFlag(false);
   }
 
   function restartHls() {
@@ -106,8 +119,8 @@ export function createHlsPlaylistController(): AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
-        // maxMaxBufferLength: 0,
-        // maxBufferSize: 0,
+         maxMaxBufferLength: 0,
+         maxBufferSize: 0,
       });
       hls.attachMedia(audio);
       hls.loadSource(playlistUrl);
@@ -145,14 +158,25 @@ export function createHlsPlaylistController(): AudioController {
   function scheduleRetry() {
     if (!wantPlaying) return;
     if (retryTimer !== null) return;
+    setNetworkErrorFlag(true, navigator.onLine ? 'retrying' : 'offline');
     attemptResume(true);
     retryTimer = window.setInterval(() => {
       attemptResume(false);
     }, RETRY_EVERY);
   }
 
-  function onMediaHiccup(evt: Event) {
+  function onMediaHiccup(_evt: Event) {
     if (!wantPlaying) return;
+
+    if (isSeeking || inSeekGrace()) return;
+
+    if (!navigator.onLine) {
+      setNetworkErrorFlag(true, 'offline');
+      scheduleRetry();
+      return;
+    }
+
+    // Иначе просто пробуем восстановиться без поднятия флага
     attemptResume(true);
   }
 
@@ -160,17 +184,20 @@ export function createHlsPlaylistController(): AudioController {
     if (!hls) return;
     hls.on(Hls.Events.ERROR, (_e, data) => {
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        setNetworkErrorFlag(true, 'network-error');
         scheduleRetry();
       }
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
+            setNetworkErrorFlag(true, 'network-error-fatal');
             scheduleRetry();
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
             try { hls?.recoverMediaError(); } catch { }
             break;
           default:
+            setNetworkErrorFlag(true, 'fatal-error');
             restartHls();
             scheduleRetry();
             break;
@@ -220,6 +247,18 @@ export function createHlsPlaylistController(): AudioController {
     audio.addEventListener('pause', () => {
       // msSetPlaybackState('paused');
     });
+    audio.addEventListener('canplaythrough', () => {
+      setNetworkErrorFlag(false);
+    });
+    audio.addEventListener('seeking', () => {
+      isSeeking = true;
+      startSeekGrace(1200); // во время перемотки и чуть после
+    });
+
+    audio.addEventListener('seeked', () => {
+      isSeeking = false;
+      startSeekGrace(800); // короткий «хвост» после перемотки
+    });
     audio.addEventListener('ended', () => {
       wantPlaying = false;
       clearRetry();
@@ -230,7 +269,10 @@ export function createHlsPlaylistController(): AudioController {
     });
 
     window.addEventListener('online', () => attemptResume(true));
-    window.addEventListener('offline', () => scheduleRetry());
+    window.addEventListener('offline', () => {
+      setNetworkErrorFlag(true, 'offline');
+      scheduleRetry();
+    });
 
     audio.addEventListener('timeupdate', () => {
       if (!currentTrackId || isSeeking) return;
@@ -510,6 +552,7 @@ export function createHlsPlaylistController(): AudioController {
   function stop() {
     wantPlaying = false;
     clearRetry();
+    setNetworkErrorFlag(false);
     usePlayerStore.getState().setIsPlaying(false);
     msSetPlaybackState('none');
     audio.pause();
@@ -535,6 +578,7 @@ export function createHlsPlaylistController(): AudioController {
   function unload() {
     wantPlaying = false;
     clearRetry();
+    setNetworkErrorFlag(false);
     audio.pause();
     if (hls) {
       try { hls.destroy(); } catch { }
