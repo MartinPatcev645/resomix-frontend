@@ -53,16 +53,18 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
     const skipBackward = useCallback(() => {
         if (!hlsController) return;
-        requestSeek(Math.max(0, currentTime - 10));
-    }, [hlsController, requestSeek, currentTime]);
+        const base = uiTime || 0;
+        requestSeek(Math.max(0, base - 10));
+    }, [hlsController, requestSeek, uiTime]);
 
     const skipForward = useCallback(() => {
         if (!hlsController) return;
         const d = Number.isFinite(hlsController.getDuration())
           ? hlsController.getDuration()
           : totalDuration;
-        requestSeek(Math.min(d, currentTime + 10));
-    }, [hlsController, requestSeek, currentTime, totalDuration]);
+        const base = uiTime || 0;
+        requestSeek(Math.min(d, base + 10));
+    }, [hlsController, requestSeek, uiTime, totalDuration]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = parseFloat(e.target.value);
