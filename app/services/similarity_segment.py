@@ -20,7 +20,6 @@ import json
 import httpx
 import asyncio
 from typing import Dict, List, Any
-
 from app.core.config import settings
 
 
@@ -130,20 +129,7 @@ class SimilaritySegmentService:
             return
             
         try:
-            # Start steps 9,10,11 in background (playlist peaks request) - COMMENTED OUT
-            peaks_task = None
-            # if deduplicated_enriched_tracks:
-            #     # This would be the peaks request that normally runs at the end
-            #     peaks_task = asyncio.create_task(
-            #         send_playlist_peaks_request(self.similarity_server_url, uuids[0] if uuids else "", deduplicated_enriched_tracks)
-            #     )
-            
             # Wait for segment preview response (main blocking operation)
             await self.call_segment_preview_endpoint(uuids, playlist_id)
-            
-            # Ensure peaks task completes if it was started - COMMENTED OUT
-            # if peaks_task:
-            #     await peaks_task
-                
         except Exception as e:
             print(f"[SEGMENT] Error in segment preview workflow: {e}")
