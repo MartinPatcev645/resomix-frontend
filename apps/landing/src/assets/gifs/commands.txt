@@ -47,10 +47,6 @@ Noise MP4 to .gif:
 Input file is 1.5 s long and 6.1 MBs
 We want output file less then 1 MB.
 
-ffmpeg -i noise.mp4 -t 1.5 -an -vf "fps=12,scale=480:-2:flags=lanczos,eq=saturation=0,format=yuv420p" -c:v libwebp_anim -q:v 65 -compression_level 6 -lossless 0 -loop 0 noise.webp
+ffmpeg -hide_banner -f lavfi -t 2 -r 12 -i "nullsrc=s=1280x800,geq=random(1)*255:128:128" -c:v libvpx-vp9 -pix_fmt yuv420p -b:v 2.6M -minrate 2.6M -maxrate 2.6M -bufsize 2.6M -row-mt 1 -an tv_static_1280x800.webm
 
-
-ffmpeg -i noise.mp4 -t 1.5 -an -vf "fps=24,scale=480:-2:flags=lanczos,eq=saturation=0,format=yuv420p" -c:v libvpx-vp9 -b:v 0 -crf 38 -row-mt 1 noise.webm
-
-ffmpeg -i noise.mp4 -t 1.5 -vf "fps=10,scale=360:-2:flags=lanczos,format=gray,palettegen=max_colors=16" -y pal.png & ffmpeg -i noise.mp4 -t 1.5 -i pal.png -filter_complex "[0:v]fps=10,scale=360:-2:flags=lanczos,format=gray[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5" -y noise.gif & del pal.png
 
