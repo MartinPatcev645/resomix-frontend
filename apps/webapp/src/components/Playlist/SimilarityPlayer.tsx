@@ -30,6 +30,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     const setTrackTime = usePlayerStore(s => s.setTrackTime);
     const volume: number = usePlayerStore(s => s.volume);
     const setVolume = usePlayerStore(s => s.setVolume);
+    const networkError: boolean = usePlayerStore((s) => s.networkError);
 
     const { containerRef, uiTime, requestSeek } = useDebouncedWaveformSeek({
         id: trackId,
@@ -137,6 +138,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
           {formatTime(uiTime)} / {formatTime(totalDuration)}
         </span>
+              {networkError && <div className="absolute text-[length:var(--px-10)] bottom-2 left-32 text-yellow-200">Network problems</div>}
           </div>
       </div>
     );

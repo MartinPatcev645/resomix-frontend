@@ -36,6 +36,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
     const isCommonPlay: boolean = usePlayerStore((s) => s.isPlaying);
     const volume: number = usePlayerStore((s) => s.volume);
     const setVolume = usePlayerStore((s) => s.setVolume);
+    const networkError: boolean = usePlayerStore((s) => s.networkError);
+    // const networkErrorReason: string | null = usePlayerStore((s) => s.networkErrorReason);
 
     const isPlaying = isCommonPlay && currentTrackId === effectiveId;
 
@@ -208,6 +210,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
                 {formatTime(uiTime)} / {formatTime(totalDuration)}
               </span>
+                          {networkError && <div className="absolute text-[length:var(--px-10)]  bottom-9 left-40 text-yellow-200">Network problems</div>}
                       </div>
                   </div>
               </div>
