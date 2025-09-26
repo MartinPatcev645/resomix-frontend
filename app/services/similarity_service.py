@@ -36,7 +36,7 @@ from app.utils.similarity_utils import (
     normalize_artist_name,
     deduplicate_tracks,
     execute_playlist_peaks_request,
-    # send_playlist_peaks_request,
+    send_playlist_peaks_request,
     generate_playlist_name_from_seed_track
 )
 from app.utils.similarity_filters import (

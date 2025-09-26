@@ -233,111 +233,111 @@ async def execute_playlist_peaks_request(target_url: str, payload: Dict[str, Any
             print(f"Unexpected error in playlist peaks request: {e}")
 
 
-    async def send_playlist_peaks_request(similarity_server_url: str, reference_track_uuid: str, similar_tracks: List[Dict[str, Any]]) -> None:
-        """
-        Sends a playlist peaks request to the similarity server (fire and forget).
-        This is a background request that triggers processing on the similarity server.
+async def send_playlist_peaks_request(similarity_server_url: str, reference_track_uuid: str, similar_tracks: List[Dict[str, Any]]) -> None:
+    """
+    Sends a playlist peaks request to the similarity server (fire and forget).
+    This is a background request that triggers processing on the similarity server.
+    
+    Args:
+        reference_track_uuid: UUID of the reference/queried track
+        similar_tracks: List of similar track dictionaries
+    """
+    if not similarity_server_url:
+        print("Warning: SIMILARITY_SERVER_URL is not set, skipping playlist peaks request")
+        return
+
+    try:
+        # Collect all track UUIDs including the reference track
+        track_uuids = [reference_track_uuid]  # Start with reference track
         
-        Args:
-            reference_track_uuid: UUID of the reference/queried track
-            similar_tracks: List of similar track dictionaries
-        """
-        if not similarity_server_url:
-            print("Warning: SIMILARITY_SERVER_URL is not set, skipping playlist peaks request")
+        # Add similar track UUIDs
+        for track in similar_tracks:
+            track_uuid = track.get("id")
+            if track_uuid:
+                track_uuids.append(track_uuid)
+        
+        if len(track_uuids) <= 1:  # Only reference track, no similar tracks
+            print("No similar tracks found, skipping playlist peaks request")
             return
+        
+        # Prepare the request
+        target_url = f"{similarity_server_url.rstrip('/')}/playlist_peaks"
+        payload = {"track_uuids": track_uuids}
+        
+        print(f"Sending playlist peaks request to {target_url} with {len(track_uuids)} tracks")
+        
+        # Fire and forget request - don't await the response
+        asyncio.create_task(execute_playlist_peaks_request(target_url, payload))
+        
+    except Exception as e:
+        print(f"Error preparing playlist peaks request: {e}")
+        # Don't fail the main request if this background task fails
 
-        try:
-            # Collect all track UUIDs including the reference track
-            track_uuids = [reference_track_uuid]  # Start with reference track
-            
-            # Add similar track UUIDs
-            for track in similar_tracks:
-                track_uuid = track.get("id")
-                if track_uuid:
-                    track_uuids.append(track_uuid)
-            
-            if len(track_uuids) <= 1:  # Only reference track, no similar tracks
-                print("No similar tracks found, skipping playlist peaks request")
-                return
-            
-            # Prepare the request
-            target_url = f"{similarity_server_url.rstrip('/')}/playlist_peaks"
-            payload = {"track_uuids": track_uuids}
-            
-            print(f"Sending playlist peaks request to {target_url} with {len(track_uuids)} tracks")
-            
-            # Fire and forget request - don't await the response
-            asyncio.create_task(execute_playlist_peaks_request(target_url, payload))
-            
-        except Exception as e:
-            print(f"Error preparing playlist peaks request: {e}")
-            # Don't fail the main request if this background task fails
-
-    def generate_playlist_name_from_seed_track(seed_track_data: Dict[str, Any]) -> str:
-        """
-        Generate a playlist name based on the seed track's artist and title information.
+def generate_playlist_name_from_seed_track(seed_track_data: Dict[str, Any]) -> str:
+    """
+    Generate a playlist name based on the seed track's artist and title information.
+    
+    Format:
+    - Single artist: "Artist - Title"
+    - Multiple artists (up to max_artists): "Artist1, Artist2, Artist3 - Title"
+    - More than max_artists: "VA - Title"
+    
+    Args:
+        seed_track_data: Dictionary containing seed track information with 'artist' and 'title' keys
         
-        Format:
-        - Single artist: "Artist - Title"
-        - Multiple artists (up to max_artists): "Artist1, Artist2, Artist3 - Title"
-        - More than max_artists: "VA - Title"
-        
-        Args:
-            seed_track_data: Dictionary containing seed track information with 'artist' and 'title' keys
-            
-        Returns:
-            Generated playlist name string
-        """
-        from app.core.config import settings
-        
-        if not seed_track_data:
-            return "Playlist"
-        
-        title = seed_track_data.get("title", "Unknown")
-        artist_string = seed_track_data.get("artist", "Unknown")
-        
-        # Handle empty or unknown values
-        if not title or title.lower() in ["unknown", "n/a", ""]:
-            title = "Unknown"
-        if not artist_string or artist_string.lower() in ["unknown", "n/a", ""]:
-            return "Playlist"
-        
-        # Split artists by comma and clean them up
-        artists = [artist.strip() for artist in artist_string.split(",") if artist.strip()]
-        
-        # Remove duplicates while preserving order
-        unique_artists = []
-        seen = set()
-        for artist in artists:
-            if artist.lower() not in seen:
-                unique_artists.append(artist)
-                seen.add(artist.lower())
-        
-        if not unique_artists:
-            return "Playlist"
-        
-        # Determine artist part of the name
-        max_artists = settings.default_similarity_playlist_max_artists
-        
-        if len(unique_artists) == 1:
-            artist_part = unique_artists[0]
-        elif len(unique_artists) <= max_artists:
-            artist_part = ", ".join(unique_artists)
+    Returns:
+        Generated playlist name string
+    """
+    from app.core.config import settings
+    
+    if not seed_track_data:
+        return "Playlist"
+    
+    title = seed_track_data.get("title", "Unknown")
+    artist_string = seed_track_data.get("artist", "Unknown")
+    
+    # Handle empty or unknown values
+    if not title or title.lower() in ["unknown", "n/a", ""]:
+        title = "Unknown"
+    if not artist_string or artist_string.lower() in ["unknown", "n/a", ""]:
+        return "Playlist"
+    
+    # Split artists by comma and clean them up
+    artists = [artist.strip() for artist in artist_string.split(",") if artist.strip()]
+    
+    # Remove duplicates while preserving order
+    unique_artists = []
+    seen = set()
+    for artist in artists:
+        if artist.lower() not in seen:
+            unique_artists.append(artist)
+            seen.add(artist.lower())
+    
+    if not unique_artists:
+        return "Playlist"
+    
+    # Determine artist part of the name
+    max_artists = settings.default_similarity_playlist_max_artists
+    
+    if len(unique_artists) == 1:
+        artist_part = unique_artists[0]
+    elif len(unique_artists) <= max_artists:
+        artist_part = ", ".join(unique_artists)
+    else:
+        artist_part = "VA"  # Various Artists
+    
+    # Generate the final playlist name
+    playlist_name = f"{artist_part} - {title}"
+    
+    # Ensure the name doesn't exceed the database limit (100 characters for playlist names)
+    if len(playlist_name) > 100:
+        # Truncate the title part if needed, keeping the artist part intact
+        max_title_length = 100 - len(artist_part) - 3  # 3 for " - "
+        if max_title_length > 10:  # Ensure we have at least some title
+            truncated_title = title[:max_title_length-3] + "..."
+            playlist_name = f"{artist_part} - {truncated_title}"
         else:
-            artist_part = "VA"  # Various Artists
-        
-        # Generate the final playlist name
-        playlist_name = f"{artist_part} - {title}"
-        
-        # Ensure the name doesn't exceed the database limit (100 characters for playlist names)
-        if len(playlist_name) > 100:
-            # Truncate the title part if needed, keeping the artist part intact
-            max_title_length = 100 - len(artist_part) - 3  # 3 for " - "
-            if max_title_length > 10:  # Ensure we have at least some title
-                truncated_title = title[:max_title_length-3] + "..."
-                playlist_name = f"{artist_part} - {truncated_title}"
-            else:
-                # If artist part is too long, just use a simple format
-                playlist_name = f"{artist_part[:90]}... - {title[:5]}..."
-        
-        return playlist_name
+            # If artist part is too long, just use a simple format
+            playlist_name = f"{artist_part[:90]}... - {title[:5]}..."
+    
+    return playlist_name
