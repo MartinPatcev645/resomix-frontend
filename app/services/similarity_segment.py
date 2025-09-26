@@ -19,6 +19,7 @@ import os
 import json
 import httpx
 import asyncio
+import time
 from typing import Dict, List, Any
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
@@ -64,21 +65,34 @@ class SimilaritySegmentService:
         print(f"[SEGMENT] Calling segment preview endpoint for playlist {playlist_id} with {len(uuids)} UUIDs")
         
         try:
+            start_ts = time.perf_counter()
             async with httpx.AsyncClient(timeout=settings.segment_requests_timeout) as client:
                 response = await client.post(target_url, json=payload)
                 response.raise_for_status()
                 response_data = response.json()
-                
+
+                elapsed = time.perf_counter() - start_ts
+
                 # Save response to log file
                 await self.save_segment_response(playlist_id, response_data)
-                
+
                 # Log summary
                 summary = response_data.get("summary", {})
-                print(f"[SEGMENT] Playlist {playlist_id}: Processed={summary.get('total_processed', 0)}, "
-                      f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}")
+                remaining = summary.get("remaining", 0)
+                processed = summary.get("total_processed", 0)
+                print(
+                    f"[SEGMENT] Playlist {playlist_id}: Processed={processed}, "
+                    f"Successful={summary.get('successful', 0)}, Errors={summary.get('errors', 0)}, Remaining={remaining}"
+                )
 
-                # Mark playlist as ready (similarity) in DB
-                await self._mark_playlist_ready(playlist_id)
+                if remaining and processed:
+                    per_track = elapsed / processed
+                    wait_time = per_track * remaining * 1.5  # safety factor
+                    print(f"[SEGMENT] Waiting ~{wait_time:.1f}s for remaining segment jobs before marking playlist ready")
+                    asyncio.create_task(self._delayed_mark_ready(playlist_id, wait_time))
+                else:
+                    # No remaining tasks – mark ready immediately
+                    await self._mark_playlist_ready(playlist_id)
                 
         except Exception as e:
             print(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
@@ -157,3 +171,10 @@ class SimilaritySegmentService:
                 break
         except Exception as e:
             print(f"[SEGMENT] Error marking playlist ready: {e}")
+
+    async def _delayed_mark_ready(self, playlist_id: str, delay: float):
+        """Sleep for delay seconds then mark playlist ready."""
+        try:
+            await asyncio.sleep(delay)
+        finally:
+            await self._mark_playlist_ready(playlist_id)
