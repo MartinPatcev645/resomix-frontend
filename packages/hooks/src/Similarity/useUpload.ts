@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
+import { getSimilarTracks, API_CONFIG, waitForSegmentation } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { create } from "zustand";
 import { extractCoverArt } from "../meta/useMetatags";
@@ -135,6 +135,17 @@ export function useUpload() {
                 setProgress(Math.round(boundedProgress));
             });
             if (result && result.success) {
+                // Wait for segments to be generated before proceeding
+                const playlistId = (result as any).data?.playlist?.id as string | undefined;
+                let segmentationOk = true;
+                if (playlistId) {
+                    segmentationOk = await waitForSegmentation(playlistId, 300_000, 4_000);
+                }
+
+                if (!segmentationOk) {
+                    throw new Error("Timed out while waiting for playlist segments to be generated.");
+                }
+
                 setResponse(result as UploadResult);
                 setPlaylistResponse(result as any);
                 // Keep overlay visible; UploadPage effect will hide after navigation

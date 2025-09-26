@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { getSimilarityForSelectedTrack } from "@resomix/api-client";
+import { getSimilarityForSelectedTrack, waitForSegmentation } from "@resomix/api-client";
 import { useUploadStore } from "./useUpload";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import type { UploadResult } from "./useUpload";
@@ -60,6 +60,16 @@ export function useTrackSimilarity() {
         const result = await getSimilarityForSelectedTrack(String(trackId), topSk);
 
         if (result && result.success) {
+          const playlistId = (result as any).data?.playlist?.id as string | undefined;
+
+          let segmentationOk = true;
+          if (playlistId) {
+            segmentationOk = await waitForSegmentation(playlistId, 300_000, 4_000);
+          }
+
+          if (!segmentationOk) {
+            throw new Error("Timed out while waiting for playlist segments to be generated.");
+          }
           // Success path
           setProgress(100);
           setResponse(result as UploadResult);

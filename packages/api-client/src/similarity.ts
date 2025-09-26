@@ -69,4 +69,41 @@ export const getSimilarityForSelectedTrack = async (
   } catch (error) {
     return handleApiError(error as any);
   }
-}; 
+};
+
+/**
+ * Polls the /segment_status/ endpoint until segmentation is complete or timeout.
+ * Returns true when segmentation_completed === true, false on timeout or fatal error.
+ */
+export const waitForSegmentation = async (
+  playlistUuid: string,
+  timeoutMs = 300_000, // 5 minutes
+  pollIntervalMs = 4_000,
+) => {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const res = await axiosInstance.get<{ segmentation_completed: boolean }>(
+        `${API_CONFIG.ENDPOINTS.SEGMENT_STATUS}${playlistUuid}`,
+      );
+
+      if (res.data?.segmentation_completed) {
+        return true; // ✅ ready
+      }
+      // Not ready → sleep and retry
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    } catch (err: any) {
+      // 404 means playlist vanished – abort early
+      if (err?.response?.status === 404) {
+        console.error("Playlist not found");
+        return false;
+      }
+      // Log and retry on transient errors
+      console.warn("Segment status polling error", err);
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+  }
+
+  return false;
+};
