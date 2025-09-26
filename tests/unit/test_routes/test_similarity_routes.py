@@ -107,7 +107,7 @@ def test_similarity_valid_files():
             headers=HEADERS,
             files=files,
             params=params,
-            timeout=60  # Similarity calculation might take longer
+            timeout=300  # Similarity calculation might take longer
         )
         
         duration = time.time() - start_time

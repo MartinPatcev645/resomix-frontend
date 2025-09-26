@@ -161,7 +161,7 @@ class PlaylistService:
         
         print(f"Calling media server: {signed_url}")
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             try:
                 response = await client.post(
                     signed_url,

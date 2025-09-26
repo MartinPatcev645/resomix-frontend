@@ -152,7 +152,7 @@ async def _call_similarity_server(endpoint: str, data: Optional[Dict] = None, fi
     target_url = f"{SIMILARITY_SERVER_URL.rstrip('/')}{endpoint}"
     print(f"Calling similarity server: {target_url} with data: {data}")
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:
         try:
             if files:
                 response = await client.post(target_url, files=files, data=data)

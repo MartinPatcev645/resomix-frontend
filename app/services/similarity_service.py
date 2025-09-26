@@ -798,7 +798,7 @@ class SimilarityService:
         target_url = f"{self.similarity_server_url.rstrip('/')}{endpoint}"
         print(f"Calling similarity server: {target_url} with data: {data}")
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             try:
                 if files:
                     response = await client.post(target_url, files=files, data=data)
@@ -1199,7 +1199,7 @@ class SimilarityService:
             target_url: The full URL to send the request to
             payload: The request payload
         """
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             try:
                 response = await client.post(target_url, json=payload)
                 print(f"Playlist peaks request completed with status: {response.status_code}")

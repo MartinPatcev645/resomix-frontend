@@ -686,7 +686,7 @@ def test_monthly_pipeline_special_characters_path():
             files=files,
             data=data,
             params=params,
-            timeout=60
+            timeout=300
         )
         
         duration = time.time() - start_time

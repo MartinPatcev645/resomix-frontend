@@ -376,7 +376,7 @@ The `top_sk` parameter controls result quantity with built-in deduplication:
 
 - **File Size**: Maximum 100MB for uploads
 - **Search Query**: 1-200 characters
-- **Timeout**: 60 seconds for similarity processing
+- **Timeout**: 300 seconds (5 minutes) for similarity processing
 - **Concurrency**: Designed for multiple concurrent requests
 
 ### Error Handling
@@ -395,7 +395,7 @@ All endpoints return appropriate HTTP status codes:
 
 - **Base URL**: `https://bserver.resomix.com`
 - **SSL**: Required (HTTPS only)
-- **Timeout**: Configure 60+ second timeouts for similarity operations
+- **Timeout**: Configure 300+ second timeouts for similarity operations
 - **Retry Logic**: Implement exponential backoff for 503 errors
 
 ---

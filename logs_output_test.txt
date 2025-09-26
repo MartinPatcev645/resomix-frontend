@@ -1,0 +1,19 @@
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+[2025-09-26 05:57:23] GET search_tracks - Params: {'query': 'ah'}
+INFO:elastic_transport.transport:POST https://localhost:9200/tracks-*/_search [status:200 duration:0.119s]
+[Timing] Total search_tracks execution time: 0.395s
+INFO:     162.158.170.105:0 - "GET /search_tracks/?query=ah&api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ HTTP/1.1" 200 OK
+INFO:     162.158.170.170:0 - "OPTIONS /get_selection_similarity/?api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ HTTP/1.1" 200 OK
+Calling similarity server: https://media.resomix.com/similarity/query-by-path/ with data: {'file_path': 'veggera/public_html/electrobuzz_music/Electrobuzz_FTP/ULTIMATE/BASIC/Electrobuzz_Music/2014/12-2014/08/VA - Fabric 79 Prosumer [Fabric]/09-Kaptein Kaliber-Oh Ah Ah-electrobuzz.net.mp3', 'top_k': 250}
+INFO:httpx:HTTP Request: POST https://media.resomix.com/similarity/query-by-path/ "HTTP/1.1 200 OK"
+MariaDB: Fetched details for 250 out of 250 unique paths.
+[SEGMENT] Calling segment preview endpoint for playlist 8aae0866-f9e2-4a2e-ac8e-b0aa25fd2734 with 101 UUIDs
+INFO:     185.244.104.2:0 - "PROPFIND / HTTP/1.1" 405 Method Not Allowed
+INFO:httpx:HTTP Request: POST https://media.resomix.com/previews-segment/ "HTTP/1.1 504 Gateway Timeout"
+[SEGMENT] Error calling segment preview endpoint for playlist 8aae0866-f9e2-4a2e-ac8e-b0aa25fd2734: Server error '504 Gateway Timeout' for url 'https://media.resomix.com/previews-segment/'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504
+[SEGMENT] Response saved to logs/segment_requests/8aae0866-f9e2-4a2e-ac8e-b0aa25fd2734.json
+INFO:     162.158.170.170:0 - "POST /get_selection_similarity/?api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ HTTP/1.1" 200 OK
+Calling media server: https://media.resomix.com/signed-audio/hls-m3u8/?api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ
+INFO:httpx:HTTP Request: POST https://media.resomix.com/signed-audio/hls-m3u8/?api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ "HTTP/1.1 200 OK"
+INFO:     162.158.170.105:0 - "GET /playlists/similarity-hls/8aae0866-f9e2-4a2e-ac8e-b0aa25fd2734.m3u8?api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ HTTP/1.1" 200 OK
