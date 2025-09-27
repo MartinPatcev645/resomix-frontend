@@ -1,27 +1,14 @@
-import React, { useEffect, useCallback } from "react";
+import React from "react";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import { useCustomPeaks, useGlobalAudioController } from "@resomix/hooks";
-import { usePlayerStore } from "@resomix/stores";
-import { useConfig } from "@resomix/stores";
-import { useDebouncedWaveformSeek } from "@resomix/hooks/Waveform/useDebouncedWaveformSeek.js";
-import {WaveformLoader} from "@resomix/ui";
 import NetworkSvg from "@/assets/icons/network-aleft.svg";
-
-const SEEK_DEBOUNCE_MS = 300;
-const HOLD_AFTER_SEEK_MS = 200;
-
-// Simple time formatter mm:ss
-function formatTime(seconds: number): string {
-    if (!seconds || isNaN(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
+import { useWaveformControls, formatTime } from "@resomix/hooks";
+import { usePlayerStore, useConfig } from "@resomix/stores";
+import { WaveformLoader } from "@resomix/ui";
 
 interface InputPlayerProps {
     trackId?: string;
@@ -29,87 +16,16 @@ interface InputPlayerProps {
 }
 
 const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => {
+    const volumeStore = usePlayerStore((s) => ({
+        volume: s.volume,
+        networkError: s.networkError,
+    }));
+
     const effectiveId = trackId ?? "uploaded-local";
 
-    const currentTime = usePlayerStore((s) => s.trackTimes?.[effectiveId] ?? 0);
-    const setTrackTime = usePlayerStore((s) => s.setTrackTime);
-    const currentTrackId = usePlayerStore((s) => s.currentTrackId);
-    const isCommonPlay: boolean = usePlayerStore((s) => s.isPlaying);
-    const volume: number = usePlayerStore((s) => s.volume);
-    const setVolume = usePlayerStore((s) => s.setVolume);
-    const networkError: boolean = usePlayerStore((s) => s.networkError);
-    // const networkErrorReason: string | null = usePlayerStore((s) => s.networkErrorReason);
+    const ctl = useWaveformControls({ id: effectiveId, totalDuration, withPlayPause: true });
 
-    const isPlaying = isCommonPlay && currentTrackId === effectiveId;
-
-    const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(trackId || "");
-
-    const hlsController = useGlobalAudioController();
-
-    const { containerRef, isDragging, uiTime, requestSeek } = useDebouncedWaveformSeek({
-        id: effectiveId,
-        totalDuration,
-        currentTime,
-        setTime,
-        onPreview: (t) => setTrackTime(effectiveId, t),
-        onCommit: (t) => {
-            if (currentTrackId === effectiveId) {
-                hlsController.seek(t, effectiveId);
-            }
-            setTrackTime(effectiveId, t);
-        },
-        debounceMs: SEEK_DEBOUNCE_MS,
-        holdAfterMs: HOLD_AFTER_SEEK_MS,
-    });
-
-    useEffect(() => {
-        hlsController.load(effectiveId);
-    }, [hlsController, effectiveId]);
-
-    useEffect(() => {
-        if (containerRef.current) {
-            attachOverviewElement(containerRef.current);
-        }
-    }, [containerRef, attachOverviewElement]);
-
-    const togglePlay = () => {
-        if (!hlsController) return;
-
-        if (isPlaying) {
-            hlsController.pause();
-        } else {
-            if (currentTrackId !== effectiveId) {
-                hlsController.load(effectiveId, true);
-            } else {
-                hlsController.play();
-            }
-        }
-    };
-
-    // skip +/- 10s
-    const skipBackward = useCallback(() => {
-        if (!hlsController) return;
-        const base = uiTime || 0;
-        requestSeek(Math.max(0, base - 10));
-    }, [requestSeek, uiTime]);
-
-    const skipForward = useCallback(() => {
-        if (!hlsController) return;
-        const d = Number.isFinite(hlsController.getDuration())
-          ? hlsController.getDuration()
-          : totalDuration;
-        const base = uiTime || 0;
-        requestSeek(Math.min(d, base + 10));
-    }, [requestSeek, uiTime, totalDuration]);
-
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newVolume = parseFloat(e.target.value);
-        setVolume(newVolume);
-    };
-
-    const handleVolumeIconClick = () => {
-        setVolume(volume === 0 ? 0.7 : 0);
-    };
+    const { volume, networkError } = volumeStore;
 
     return (
       <>
@@ -118,23 +34,23 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
               <button
                 type="button"
                 className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0"
-                onClick={togglePlay}
+                onClick={ctl.togglePlay}
               >
                   <img
-                    src={isPlaying ? PauseSvg : PlaySvg}
-                    alt={isPlaying ? "Pause" : "Play"}
+                    src={ctl.isPlaying ? PauseSvg : PlaySvg}
+                    alt={ctl.isPlaying ? "Pause" : "Play"}
                     className="w-[var(--px-16)] h-[var(--px-16)]"
                   />
               </button>
 
               <div className="flex flex-col w-full gap-[var(--px-5)]">
                   <div
-                    ref={containerRef}
+                    ref={ctl.containerRef}
                     className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
-                    style={{ cursor: isDragging ? "grabbing" : "pointer" }}
+                    style={{ cursor: ctl.isDragging ? "grabbing" : "pointer" }}
                   >
-                      {wfLoading && <WaveformLoader/>}
-                      {wfError && <div className="text-center text-sm text-red-500">Error: {wfError}</div>}
+                      {ctl.wfLoading && <WaveformLoader/>}
+                      {ctl.wfError && <div className="text-center text-sm text-red-500">Error: {ctl.wfError}</div>}
                   </div>
 
                   <div className="flex items-center justify-between w-full">
@@ -142,7 +58,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                           {/* Skip Backward */}
                           <button
                             type="button"
-                            onClick={skipBackward}
+                            onClick={ctl.skipBackward}
                             title="Skip back 10s"
                             className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]"
                           >
@@ -156,7 +72,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                           {/* Skip Forward */}
                           <button
                             type="button"
-                            onClick={skipForward}
+                            onClick={ctl.skipForward}
                             title="Skip forward 10s"
                             className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] p-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)]"
                           >
@@ -174,7 +90,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                           {/* Volume Icon */}
                           <button
                             type="button"
-                            onClick={handleVolumeIconClick}
+                            onClick={ctl.toggleMute}
                             className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)]"
                           >
                               {volume === 0 ? (
@@ -196,7 +112,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                                 max="1"
                                 step="0.01"
                                 value={volume}
-                                onChange={handleVolumeChange}
+                                onChange={ctl.handleVolumeChange}
                                 className="relative w-full h-[var(--px-2)] appearance-none cursor-pointer bg-transparent z-10 [&::-webkit-slider-track]:bg-transparent [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:cursor-pointer"
                                 style={{
                                     background: "transparent",
@@ -209,9 +125,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                       {/* Time Display */}
                       <div className="flex items-center gap-2">
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                {formatTime(uiTime)} / {formatTime(totalDuration)}
+                {formatTime(ctl.uiTime)} / {formatTime(totalDuration)}
               </span>
-                          {networkError && isPlaying && (
+                          {networkError && ctl.isPlaying && (
                             <div className="absolute bottom-9 left-40 flex items-center gap-[var(--px-3)] text-yellow-200">
                                 <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
                                 style={{

@@ -19,15 +19,15 @@ export interface UseDebouncedWaveformSeekResult {
 }
 
 export function useDebouncedWaveformSeek({
-                                           id,
-                                           totalDuration,
-                                           currentTime,
-                                           setTime,
-                                           onPreview,
-                                           onCommit,
-                                           debounceMs = 300,
-                                           holdAfterMs = 200,
-                                         }: UseDebouncedWaveformSeekOptions): UseDebouncedWaveformSeekResult {
+  id,
+  totalDuration,
+  currentTime,
+  setTime,
+  onPreview,
+  onCommit,
+  debounceMs = 300,
+  holdAfterMs = 200,
+}: UseDebouncedWaveformSeekOptions): UseDebouncedWaveformSeekResult {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);

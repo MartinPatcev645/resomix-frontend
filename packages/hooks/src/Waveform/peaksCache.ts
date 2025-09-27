@@ -18,7 +18,7 @@ const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 // Expects payload:
 // {
 //   version: 2,
-//   schema: "peaks-v2",
+//   schema_type: "peaks-v2",
 //   duration_seconds: number,
 //   peaks: {
 //     fullband: { encoding: "uint8", values: number[] },
