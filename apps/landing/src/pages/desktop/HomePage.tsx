@@ -7,7 +7,7 @@ export function HomePage() {
   return (
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise now overscans 50 vh above & below viewport to avoid flashes during fast scroll */}
-      <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
+      <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} />
 
       {/* Content layer */}
       <div

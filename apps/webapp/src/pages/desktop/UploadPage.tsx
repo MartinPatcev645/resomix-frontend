@@ -4,11 +4,10 @@ import { UploadHero, UploadOne } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { UploadLoader } from "@/components/index.ts";
 import { StatusMessage } from "@resomix/ui";
-import { useUploadStore } from "@resomix/hooks";
+import { useUploadStore, useTrackSimilarity } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
 import React from "react";
-import { useTrackSimilarity } from "@resomix/hooks";
 
 export function UploadPage() {
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
@@ -63,7 +62,7 @@ export function UploadPage() {
   return (
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
-      <StaticNoise color="#313132" opacity={0.7} zIndex={1} overscanVh={50} />
+      <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} />
 
       {/* Content layer */}
       <div
