@@ -21,6 +21,7 @@ export interface ApiConfig {
     TIDAL_TRANSFER: string;
     PLAYLIST_SIMILARITY_HLS: string;
     WAITLIST: string;
+    SEGMENT_STATUS: string;
   };
 }
 
@@ -75,6 +76,7 @@ export const API_CONFIG: ApiConfig = {
     TIDAL_TRANSFER: "/tidal/transfer-playlist/",
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     WAITLIST: "/waitlist/",
+    SEGMENT_STATUS: "/segment_status/",
   },
 };
 

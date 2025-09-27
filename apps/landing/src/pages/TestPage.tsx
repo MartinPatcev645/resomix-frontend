@@ -1,5 +1,6 @@
 import React from "react";
-import { StaticNoise, Terrain } from "@resomix/ui";
+import { StaticNoise } from "@resomix/ui";
+// import { Terrain } from "@resomix/ui";
 
 const TestPage: React.FC = () => (
   <div className="w-screen h-screen relative overflow-hidden">
@@ -7,7 +8,7 @@ const TestPage: React.FC = () => (
     <StaticNoise color="#323233" zIndex={0} />
 
     {/* Terrain overlay at the top of the screen */}
-    <div
+    {/* <div
       style={{
         position: "absolute",
         top: 0,
@@ -31,7 +32,7 @@ const TestPage: React.FC = () => (
         wireframeColor="#FFFFFF"
         floorVisible={false}
       />
-    </div>
+    </div> */}
   </div>
 );
 

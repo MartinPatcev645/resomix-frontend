@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useRef } from "react";
-import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
+import { getSimilarTracks, API_CONFIG, waitForSegmentation } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { create } from "zustand";
 import { extractCoverArt } from "../meta/useMetatags";
+import { useTermsAcceptance } from "../useTermsAcceptance";
 
 export interface UploadResult<T = any> {
     success: boolean;
@@ -58,6 +59,7 @@ export function useUpload() {
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
     const { topSk, setUploadedCoverArt } = usePlayerStore();
+    const { checkTermsAcceptance } = useTermsAcceptance();
 
     const inputAccept = useMemo(() => {
         // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
@@ -66,11 +68,17 @@ export function useUpload() {
         return ["audio/*", ...mimes, ...extensions].join(",");
     }, []);
 
-    const openFilePicker = useCallback(() => {
+    const openFilePicker = useCallback(async () => {
+        // Check terms acceptance before allowing file picker
+        const termsAccepted = await checkTermsAcceptance();
+        if (!termsAccepted) {
+            return; // User dismissed terms without accepting
+        }
+        
         if (inputRef.current) {
             inputRef.current.click();
         }
-    }, []);
+    }, [checkTermsAcceptance]);
 
     const validateFile = useCallback((file: File): { valid: boolean; error?: string } => {
         if (!file) return { valid: false, error: "No file selected." };
@@ -127,6 +135,17 @@ export function useUpload() {
                 setProgress(Math.round(boundedProgress));
             });
             if (result && result.success) {
+                // Wait for segments to be generated before proceeding
+                const playlistId = (result as any).data?.playlist?.id as string | undefined;
+                let segmentationOk = true;
+                if (playlistId) {
+                    segmentationOk = await waitForSegmentation(playlistId, 300_000, 4_000);
+                }
+
+                if (!segmentationOk) {
+                    throw new Error("Timed out while waiting for playlist segments to be generated.");
+                }
+
                 setResponse(result as UploadResult);
                 setPlaylistResponse(result as any);
                 // Keep overlay visible; UploadPage effect will hide after navigation

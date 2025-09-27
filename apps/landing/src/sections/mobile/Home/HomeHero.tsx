@@ -1,5 +1,5 @@
 import React from "react";
-import { FlyingThroughSpace, IconComp } from "@resomix/ui";
+import { FlyingThroughSpace, IconComp, ButtonHeavyRight } from "@resomix/ui";
 // import { Remains, IconComp } from "@resomix/ui";
 // import { BackgroundNoise } from "@/components/index.ts";
 import XSvg from "@/assets/icons/twitter_x.svg";
@@ -7,7 +7,7 @@ import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
 import SoundWaves from "@/assets/icons/sound_waves.svg";
 import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
-import { FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomix/config";
+import { BASE_BETA_URL, FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomix/config";
 
 const HomeHero: React.FC = () => (
   <div className="relative">
@@ -52,10 +52,15 @@ const HomeHero: React.FC = () => (
 
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-start w-full h-full select-none -mt-[var(--px-20)]">
-        <div className="flex flex-col text-start mt-[var(--px-200)] mb-[var(--px-100)] w-full relative z-15">
+        <div className="flex flex-col text-start mt-[var(--px-200)] mb-[var(--px-70)] w-full relative z-15">
           <div className="justify-start text-[length:var(--px-46)] font-bold font-helvetica uppercase leading-[var(--px-52)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— Align with<br />your Sound </div>
           <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
           <img className="w-[var(--px-35)] h-[var(--px-35)] mt-[var(--px-12)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
+        </div>
+        <div className="w-full flex justify-center items-center mb-[var(--px-20)]">
+          <ButtonHeavyRight text="Start Your Sonic Discovery" onClick={() => {
+            window.location.href = BASE_BETA_URL
+          }} />
         </div>
         <div className="flex gap-[var(--px-4)] mx-auto relative z-15 my-[var(--px-50)]">
           <IconComp

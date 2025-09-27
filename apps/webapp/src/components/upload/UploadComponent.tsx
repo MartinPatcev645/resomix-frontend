@@ -72,7 +72,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                         >
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] text-[length:var(--px-16)] font-helvetica font-light text-center leading-[var(--px-20)] uppercase">
-                                    Upload your Audio
+                                    Discover the Power of<br />Deep Sonic Analysis
                                 </div>
                                 <div className="flex items-center justify-center gap-[var(--px-10)] mt-[var(--px-10)]">
                                     <img src={ReferenceSvg} alt="sound waves" className="w-[var(--px-33)] h-[var(--px-33)] my-[var(--px-10)]" />
@@ -81,7 +81,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                                     </div>
                                 </div>
                                 <div className="text-[length:var(--px-9)] font-fira font-light my-[var(--px-20)] text-center">
-                                    or
+                                    {/* or */}
                                 </div>
                                 <ButtonSleek text="Upload Your Audio" onClick={openFilePicker} />
                             </div>

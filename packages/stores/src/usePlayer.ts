@@ -99,6 +99,10 @@ interface PlayerStore {
   getTrackTime: (trackId: string) => number
   removeTrackTime: (trackId: string) => void
   clearTrackTimes: () => void
+
+  networkError: boolean
+  networkErrorReason: string | null
+  setNetworkError: (hasError: boolean, reason?: string | null) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -184,6 +188,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       setStoredValue(STORAGE_KEYS.trackTimes, {})
       return { trackTimes: {} }
     }),
+
+  networkError: false,
+  networkErrorReason: null,
+  setNetworkError: (hasError, reason = null) =>
+    set({ networkError: hasError, networkErrorReason: hasError ? (reason ?? null) : null }),
 }));
 
 export default usePlayerStore

@@ -1,8 +1,8 @@
 import { SimilarityPlayer } from "@/components/index.ts";
 import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
+import { HoverFlow } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
-import TrackSvg from "@/assets/icons/track_2.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 
 interface PlaylistTableProps {
@@ -31,22 +31,38 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     <div className="flex flex-col w-full">
                         <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)]">
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
-                                <img src={TrackSvg} alt="Track" className="w-[var(--px-40)] h-[var(--px-40)]" />
+                                <div className="w-[var(--px-36)] h-[var(--px-36)] m-[var(--px-2)] flex items-center justify-center border-3 rounded-md border-[var(--color-light-theme)] relative z-20">
+                                    <span className="text-[length:var(--px-15)] font-fira font-light text-[var(--color-primary)] relative z-0">
+                                        {track.rank}
+                                    </span>
+                                    {currentTrackId === track.id && isPlaying && (
+                                        <div className="absolute inset-1 bg-black/80 rounded-sm z-10"></div>
+                                    )}
+                                </div>
                                 {currentTrackId === track.id && isPlaying && (
-                                    <>
-                                        <div className="absolute inset-0 bg-black/80 rounded-lg"></div>
-                                        <img
-                                            src={PauseSvg}
-                                            alt="Play"
-                                            className="absolute inset-0 w-[var(--px-16)] h-[var(--px-16)] m-auto z-10"
-                                        />
-                                    </>
+                                    <img
+                                        src={PauseSvg}
+                                        alt="Play"
+                                        className="absolute inset-0 w-[var(--px-16)] h-[var(--px-16)] m-auto z-30"
+                                    />
                                 )}
                             </div>
                             <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]">
                                 <div className="w-full">
                                     <div className="text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
-                                        {track.title}
+                                        {currentTrackId === track.id && isPlaying ? (
+                                            <HoverFlow
+                                                text={track.title}
+                                                maxChars={32}
+                                                delay={800}
+                                                speed={40}
+                                                endPause={1000}
+                                                maxWidth="250px"
+                                                flowAlways={true}
+                                            />
+                                        ) : (
+                                            track.title
+                                        )}
                                     </div>
                                 </div>
                                 <div className="w-full">

@@ -10,6 +10,14 @@ import {
 } from './mediaSessionActions';
 import { getSimilarityPlaylistHlsUrl } from "@resomix/api-client";
 
+function setNetworkErrorFlag(on: boolean, reason?: string) {
+  try {
+    usePlayerStore.getState().setNetworkError(on, reason);
+  } catch {
+    /* noop for non-react contexts */
+  }
+}
+
 export interface AudioController {
   load: (trackId: string, isPlayAfter?: boolean) => void;
   play: () => void;
@@ -31,7 +39,10 @@ export function createHlsPlaylistController(): AudioController {
 
   let playlistUrl = '';
   let retryTimer: number | null = null;
-  const RETRY_EVERY = 2000;
+  const RETRY_EVERY = 5000;
+  const GAP_BETWEEN_TRACKS = 2.005; // sec silent segment
+  const AUTOSWITCH_PREROLL = 0.5;   // sec preroll between new track start
+  const MIN_BUFFER_BEFORE_PLAY = 3; // min 3 sec in buffer
   let wantPlaying = false;
 
   let tracksIds: string[] = [];
@@ -49,6 +60,11 @@ export function createHlsPlaylistController(): AudioController {
   let playAfterLoad = false;
 
   let isSeeking = false;
+  let isinitMediaSession = false;
+
+  let seekGraceUntil = 0;
+  function inSeekGrace() { return Date.now() < seekGraceUntil; }
+  function startSeekGrace(ms = 1000) { seekGraceUntil = Date.now() + ms; }
 
   function initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
@@ -69,12 +85,15 @@ export function createHlsPlaylistController(): AudioController {
     offsets = new Map();
     durations = new Map();
     let acc = 0;
-    for (const t of tracks) {
+    tracks.forEach((t, i) => {
       const d = Math.max(0, Number(t.duration) || 0);
       offsets.set(t.id, acc);
       durations.set(t.id, d);
+
       acc += d;
-    }
+      if (i < tracks.length - 1) acc += GAP_BETWEEN_TRACKS;
+    });
+
     totalDuration = acc;
   }
 
@@ -83,6 +102,7 @@ export function createHlsPlaylistController(): AudioController {
       clearInterval(retryTimer);
       retryTimer = null;
     }
+    setNetworkErrorFlag(false);
   }
 
   function restartHls() {
@@ -98,6 +118,9 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        fragLoadingTimeOut: RETRY_EVERY,
+         maxMaxBufferLength: 0,
+         maxBufferSize: 0,
       });
       hls.attachMedia(audio);
       hls.loadSource(playlistUrl);
@@ -120,42 +143,61 @@ export function createHlsPlaylistController(): AudioController {
         }
       }
       if (immediate) {
-        audio.play().catch(() => { });
+        playWhenBuffered().catch(() => { });
       }
     } else {
       const t = audio.currentTime || 0;
       const wasPlaying = wantPlaying;
-      audio.src = playlistUrl;
+      audio.src = playlistUrl + (playlistUrl.includes('?') ? '&' : '?') + 'r=' + Date.now();
       audio.load();
       audio.currentTime = t;
-      if (wasPlaying) audio.play().catch(() => { });
+      if (wasPlaying) playWhenBuffered().catch(() => { });
     }
   }
 
   function scheduleRetry() {
     if (!wantPlaying) return;
     if (retryTimer !== null) return;
+    setNetworkErrorFlag(true, navigator.onLine ? 'retrying' : 'offline');
     attemptResume(true);
     retryTimer = window.setInterval(() => {
       attemptResume(false);
     }, RETRY_EVERY);
   }
 
+  function onMediaHiccup(_evt: Event) {
+    if (!wantPlaying) return;
+
+    if (isSeeking || inSeekGrace()) return;
+
+    if (!navigator.onLine) {
+      setNetworkErrorFlag(true, 'offline');
+      scheduleRetry();
+      return;
+    }
+
+    // Иначе просто пробуем восстановиться без поднятия флага
+    attemptResume(true);
+  }
+
   function wireHlsErrorHandlers() {
     if (!hls) return;
     hls.on(Hls.Events.ERROR, (_e, data) => {
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        setNetworkErrorFlag(true, 'network-error');
         scheduleRetry();
       }
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
+            setNetworkErrorFlag(true, 'network-error-fatal');
             scheduleRetry();
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
             try { hls?.recoverMediaError(); } catch { }
             break;
           default:
+            setNetworkErrorFlag(true, 'fatal-error');
             restartHls();
             scheduleRetry();
             break;
@@ -182,10 +224,15 @@ export function createHlsPlaylistController(): AudioController {
         manifestLoadingMaxRetry: 0,
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
+        fragLoadingTimeOut: RETRY_EVERY,
+        // for network problems tests
+        // maxBufferLength: 2,
+        // maxMaxBufferLength: 2,
       });
       hls.loadSource(playlistUrl);
       hls.attachMedia(audio);
       wireHlsErrorHandlers();
+      try { hls.startLoad(-1); } catch { }
     } else {
       audio.src = playlistUrl;
     }
@@ -201,6 +248,18 @@ export function createHlsPlaylistController(): AudioController {
     audio.addEventListener('pause', () => {
       // msSetPlaybackState('paused');
     });
+    audio.addEventListener('canplaythrough', () => {
+      setNetworkErrorFlag(false);
+    });
+    audio.addEventListener('seeking', () => {
+      isSeeking = true;
+      startSeekGrace(1200); // во время перемотки и чуть после
+    });
+
+    audio.addEventListener('seeked', () => {
+      isSeeking = false;
+      startSeekGrace(800); // короткий «хвост» после перемотки
+    });
     audio.addEventListener('ended', () => {
       wantPlaying = false;
       clearRetry();
@@ -211,7 +270,10 @@ export function createHlsPlaylistController(): AudioController {
     });
 
     window.addEventListener('online', () => attemptResume(true));
-    window.addEventListener('offline', () => scheduleRetry());
+    window.addEventListener('offline', () => {
+      setNetworkErrorFlag(true, 'offline');
+      scheduleRetry();
+    });
 
     audio.addEventListener('timeupdate', () => {
       if (!currentTrackId || isSeeking) return;
@@ -234,7 +296,7 @@ export function createHlsPlaylistController(): AudioController {
         const { autoplay } = usePlayerStore.getState();
         if (autoplay) {
           const shouldAutoplay = !audio.paused;
-          goToTrack(newId, shouldAutoplay);
+          goToTrack(newId, shouldAutoplay, true);
           wantPlaying = true;
         } else {
           pause();
@@ -245,15 +307,26 @@ export function createHlsPlaylistController(): AudioController {
   }
 
   function findTrackByGlobalTime(t: number): string | null {
-    t += 0.9;
-    let lastId: string | null = null;
-    for (const id of tracksIds) {
+    if (!tracksIds.length) return null;
+
+    for (let i = 0; i < tracksIds.length; i++) {
+      const id = tracksIds[i];
       const start = offsets.get(id) || 0;
-      const end = start + (durations.get(id) || 0);
+      const dur = durations.get(id) || 0;
+      const end = start + dur;
+      const nextStart = i + 1 < tracksIds.length ? (offsets.get(tracksIds[i + 1]) || 0) : Infinity;
+
+      // inside track
       if (t >= start && t < end) return id;
-      if (t >= end) lastId = id;
+
+      // inside silent - time to next track
+      if (t >= end && t < nextStart) {
+        return i + 1 < tracksIds.length ? tracksIds[i + 1] : id;
+      }
     }
-    return lastId;
+
+    // outside the border — return last
+    return tracksIds[tracksIds.length - 1] || null;
   }
 
   function getNextTrackId(): string | null {
@@ -269,9 +342,24 @@ export function createHlsPlaylistController(): AudioController {
     return tracksIds[i - 1];
   }
 
+  function msInitSession(trackId: string | null) {
+    // Media Session buttons\
+    if (isinitMediaSession) return;
+    msInit({
+      onPlay: () => play(),
+      onPause: () => pause(),
+      onStop: () => stop(),
+      onSeekTo: (t: number) => {
+        seek(t);
+      },
+    });
+    isinitMediaSession = true;
+    msSyncMetadata(trackId || '')
+  }
+
   function msSyncMetadata(id?: string) {
     const trackId = id || currentTrackId;
-    if (!trackId) return;
+    if (!trackId || !isinitMediaSession) return;
     const t = tracks.find(x => x.id === trackId);
     if (!t) return;
     msSetMetadata({
@@ -285,8 +373,8 @@ export function createHlsPlaylistController(): AudioController {
       ]
     });
     msSetTrackControls({
-      onNext: getNextTrackId() ? () => { const nx = getNextTrackId()!; goToTrack(nx, true); } : null,
-      onPrev: getPrevTrackId() ? () => { const pv = getPrevTrackId()!; goToTrack(pv, true); } : null,
+      onNext: getNextTrackId() ? () => { const nx = getNextTrackId()!; goToTrack(nx, true, true); } : null,
+      onPrev: getPrevTrackId() ? () => { const pv = getPrevTrackId()!; goToTrack(pv, true, true); } : null,
     });
   }
 
@@ -304,18 +392,89 @@ export function createHlsPlaylistController(): AudioController {
     return Math.min(Math.max(0, saved), max);
   }
 
-  function goToTrack(trackId: string, autoplay = false) {
+  function getBufferedAhead(): number {
+    const t = audio.currentTime || 0;
+    const buf = audio.buffered;
+    for (let i = 0; i < buf.length; i++) {
+      const start = buf.start(i);
+      const end = buf.end(i);
+      if (t >= start && t <= end) {
+        return Math.max(0, end - t);
+      }
+    }
+    return 0;
+  }
+
+  function playWhenBuffered(minSec = MIN_BUFFER_BEFORE_PLAY): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!wantPlaying) return resolve(); // если уже не хотим играть — выходим
+
+      const tryPlay = () => {
+        if (!wantPlaying) {
+          cleanup();
+          return resolve();
+        }
+        const ahead = getBufferedAhead();
+        if (ahead >= minSec) {
+          cleanup();
+          audio.play().then(resolve).catch(err => reject(err));
+        }
+      };
+
+      const onProgress = () => tryPlay();
+      const onTimeUpdate = () => tryPlay();
+      const onCanPlay = () => tryPlay();
+      const onCanPlayThrough = () => tryPlay();
+      const onFragLoaded = () => tryPlay();
+      const onBufferAppended = () => tryPlay();
+
+      const cleanup = () => {
+        audio.removeEventListener('progress', onProgress);
+        audio.removeEventListener('timeupdate', onTimeUpdate);
+        audio.removeEventListener('canplay', onCanPlay);
+        audio.removeEventListener('canplaythrough', onCanPlayThrough);
+        try { hls?.off(Hls.Events.FRAG_LOADED as any, onFragLoaded as any); } catch {}
+        try { hls?.off(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch {}
+        if (timer) clearTimeout(timer);
+      };
+
+      // Fallback: if can't start on 5 sec - play as it is
+      const timer = window.setTimeout(() => {
+        cleanup();
+        audio.play().then(resolve).catch(err => reject(err));
+      }, 5000);
+
+      audio.addEventListener('progress', onProgress);
+      audio.addEventListener('timeupdate', onTimeUpdate);
+      audio.addEventListener('canplay', onCanPlay);
+      audio.addEventListener('canplaythrough', onCanPlayThrough);
+
+      try { hls?.on(Hls.Events.FRAG_LOADED as any, onFragLoaded as any); } catch {}
+      try { hls?.on(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch {}
+
+      // Первая попытка сразу
+      tryPlay();
+    });
+  }
+
+  function goToTrack(trackId: string, autoplay = false, preRollOnZero = false) {
     if (!isPlaylistLoaded) ensureHlsLoaded();
     if (!tracksIds.length) return;
 
     const start = offsets.get(trackId) || 0;
     const d = durations.get(trackId) || 0;
     const savedLocal = getSavedLocalTime(trackId);
-    const target = start + savedLocal;
+    let target = start + savedLocal;
+    if (preRollOnZero && savedLocal === 0) {
+      target = Math.max(0, start - AUTOSWITCH_PREROLL);
+    }
 
     selectCurrent(trackId);
 
     const shouldPlay = autoplay;
+    if (shouldPlay) {
+      wantPlaying = true; // start offline retries before play
+    }
     isSeeking = true;
     audio.pause();
 
@@ -324,15 +483,19 @@ export function createHlsPlaylistController(): AudioController {
       isSeeking = false;
 
       usePlayerStore.setState({ inputCurrentTime: savedLocal });
-      msUpdatePositionState({
-        position: savedLocal,
-        duration: d,
-        playbackRate: shouldPlay ? 1 : 0
-      }, true);
+      if (isinitMediaSession) {
+        msUpdatePositionState({
+          position: savedLocal,
+          duration: d,
+          playbackRate: shouldPlay ? 1 : 0
+        }, true);
+      }
 
       if (shouldPlay) {
         usePlayerStore.getState().setIsPlaying(true);
-        audio.play().catch(() => { });
+        playWhenBuffered().catch(() => {
+          scheduleRetry();
+        });
       }
     };
 
@@ -343,15 +506,22 @@ export function createHlsPlaylistController(): AudioController {
   function load(trackId: string, isPlayAfter: boolean = false) {
     if (!tracks.length) initPlaylist();
     ensureHlsLoaded();
+    if (isPlayAfter) {
+      wantPlaying = true; // offline retry support
+      msInitSession(trackId);
+      selectCurrent(trackId);
+      usePlayerStore.getState().setIsPlaying(true);
+      scheduleRetry(); // start offline retry support and don't waiting hls events
+    }
     playAfterLoad = isPlayAfter;
 
     const onReady = () => {
       audio.removeEventListener('loadedmetadata', onReady);
-      goToTrack(trackId, playAfterLoad);
+      goToTrack(trackId, playAfterLoad, true);
       playAfterLoad = false;
     };
     if (audio.readyState >= 1) {
-      goToTrack(trackId, isPlayAfter);
+      goToTrack(trackId, isPlayAfter, true);
     } else {
       audio.addEventListener('loadedmetadata', onReady);
     }
@@ -363,10 +533,11 @@ export function createHlsPlaylistController(): AudioController {
       load(tracksIds[0], true);
       return;
     }
+    msInitSession(currentTrackId);
     wantPlaying = true;
     usePlayerStore.getState().setIsPlaying(true);
     msSetPlaybackState('playing');
-    audio.play().catch(() => {
+    playWhenBuffered().catch(() => {
       scheduleRetry();
     });
   }
@@ -382,6 +553,7 @@ export function createHlsPlaylistController(): AudioController {
   function stop() {
     wantPlaying = false;
     clearRetry();
+    setNetworkErrorFlag(false);
     usePlayerStore.getState().setIsPlaying(false);
     msSetPlaybackState('none');
     audio.pause();
@@ -389,6 +561,7 @@ export function createHlsPlaylistController(): AudioController {
 
 
   function seek(seconds: number, trackId?: string) {
+    console.log('seek',seconds, trackId);
     const id = trackId || currentTrackId;
     if (!id) return;
     const start = offsets.get(id) || 0;
@@ -397,13 +570,16 @@ export function createHlsPlaylistController(): AudioController {
     audio.currentTime = start + local;
 
     usePlayerStore.getState().setTrackTime(id, local);
-    msUpdatePositionState({ position: local, duration: d, playbackRate: audio.paused ? 0 : 1 }, true);
+    if (isinitMediaSession) {
+      msUpdatePositionState({position: local, duration: d, playbackRate: audio.paused ? 0 : 1}, true);
+    }
     usePlayerStore.setState({ inputCurrentTime: local });
   }
 
   function unload() {
     wantPlaying = false;
     clearRetry();
+    setNetworkErrorFlag(false);
     audio.pause();
     if (hls) {
       try { hls.destroy(); } catch { }
@@ -440,18 +616,15 @@ export function createHlsPlaylistController(): AudioController {
     }
   });
 
-  // Media Session buttons
-  msInit({
-    onPlay: () => play(),
-    onPause: () => pause(),
-    onStop: () => stop(),
-    onSeekTo: (t: number) => {
-      // t — absolute time to local
-      if (!currentTrackId) return;
-      const start = offsets.get(currentTrackId) || 0;
-      seek(Math.max(0, t - start));
-    },
+  ['stalled','suspend','waiting','emptied','error','abort'].forEach((ev) => {
+    audio.addEventListener(ev, onMediaHiccup);
   });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') attemptResume(true);
+  });
+  window.addEventListener('pageshow', () => attemptResume(true));
+  window.addEventListener('focus', () => attemptResume(true));
 
   const controller: AudioController = {
     load,
@@ -465,11 +638,7 @@ export function createHlsPlaylistController(): AudioController {
     get isLoaded() { return !!(audio.readyState >= 1); },
   };
 
-  try {
-    usePlayerStore.getState().setAudioController(controller);
-  } catch {
-    // ignore in non-react contexts
-  }
+  // Do NOT publish to zustand store here – this happens in React layer (AudioProvider)
 
   return controller;
 }

@@ -7,6 +7,7 @@ export * from "./utils"
 export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
+export * from './useTermsAcceptance';
 export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';
@@ -18,3 +19,5 @@ export * from './howler_peaks/useHowler2';
 export * from './howler_peaks/usePeaks2';
 export * from './Playlist/usePlaylistExport';
 export * from './useWaitlist';
+export * from './Waveform/useDebouncedWaveformSeek';
+export * from './Player/useWaveformControls';

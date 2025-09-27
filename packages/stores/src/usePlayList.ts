@@ -30,24 +30,39 @@ export interface PlaylistResponse {
 
 // Cache helper functions
 const saveResponseToCache = (response: PlaylistResponse): void => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return;
+  }
+
   try {
     const playlistId = response.data.playlist.id
-    const lastAccessedId = localStorage.getItem('lastAccessedPlaylist')
-    const cachedPlaylistsStr = localStorage.getItem('playlistsBackup')
+    if (!playlistId) {
+      console.warn('Cannot cache playlist response: missing playlist ID');
+      return;
+    }
+
+    const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
     
     let cachedPlaylists: PlaylistResponse[] = []
     if (cachedPlaylistsStr) {
       try {
         cachedPlaylists = JSON.parse(cachedPlaylistsStr)
+        // Validate that it's an array
+        if (!Array.isArray(cachedPlaylists)) {
+          cachedPlaylists = []
+        }
       } catch {
         cachedPlaylists = []
       }
     }
     
     // Remove existing response with same ID if it exists
-    cachedPlaylists = cachedPlaylists.filter(p => p.data.playlist.id !== playlistId)
+    cachedPlaylists = cachedPlaylists.filter(p => 
+      p?.data?.playlist?.id && p.data.playlist.id !== playlistId
+    )
     
-    // Add new response
+    // Add new response to the end (most recent)
     cachedPlaylists.push(response)
     
     // Keep only last 2 responses
@@ -55,29 +70,81 @@ const saveResponseToCache = (response: PlaylistResponse): void => {
       cachedPlaylists = cachedPlaylists.slice(-2)
     }
     
-    // Update localStorage
-    localStorage.setItem('lastAccessedPlaylist', playlistId)
-    localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists))
+    // Update localStorage - store the most recent playlist ID separately
+    window.localStorage.setItem('lastAccessedPlaylist', playlistId)
+    window.localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists))
   } catch (error) {
     console.warn('Failed to save playlist to cache:', error)
+    // On iOS Safari in private mode, localStorage can throw errors
+    // Clear potentially corrupted data
+    try {
+      window.localStorage.removeItem('playlistsBackup')
+      window.localStorage.removeItem('lastAccessedPlaylist')
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 
 const loadCachedResponse = (id?: string): PlaylistResponse | null => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null;
+  }
+
   try {
-    const targetId = id || localStorage.getItem('lastAccessedPlaylist')
+    // If specific ID is requested, use that; otherwise get the last accessed one
+    const targetId = id || window.localStorage.getItem('lastAccessedPlaylist')
     if (!targetId) return null
     
-    const cachedPlaylistsStr = localStorage.getItem('playlistsBackup')
+    const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
     if (!cachedPlaylistsStr) return null
     
     const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
-    const foundResponse = cachedPlaylists.find(p => p.data.playlist.id === targetId)
+    
+    // Validate the cached data structure
+    if (!Array.isArray(cachedPlaylists)) {
+      console.warn('Invalid cached playlists data, clearing cache')
+      window.localStorage.removeItem('playlistsBackup')
+      window.localStorage.removeItem('lastAccessedPlaylist')
+      return null
+    }
+    
+    // Find the response with matching ID
+    const foundResponse = cachedPlaylists.find(p => 
+      p?.data?.playlist?.id === targetId
+    )
+    
+    // Validate the found response structure
+    if (foundResponse && !foundResponse.data?.playlist?.id) {
+      console.warn('Invalid cached response structure')
+      return null
+    }
     
     return foundResponse || null
   } catch (error) {
     console.warn('Failed to load playlist from cache:', error)
+    // Clear potentially corrupted cache on error
+    try {
+      window.localStorage.removeItem('playlistsBackup')
+      window.localStorage.removeItem('lastAccessedPlaylist')
+    } catch {
+      // Ignore cleanup errors
+    }
     return null
+  }
+}
+
+const clearCache = (): void => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return;
+  }
+  
+  try {
+    window.localStorage.removeItem('playlistsBackup')
+    window.localStorage.removeItem('lastAccessedPlaylist')
+  } catch (error) {
+    console.warn('Failed to clear playlist cache:', error)
   }
 }
 
@@ -100,6 +167,9 @@ interface PlaylistStore {
   // Cache actions
   saveResponseToCache: (response: PlaylistResponse) => void
   loadCachedResponse: (id?: string) => PlaylistResponse | null
+  clearCache: () => void
+  // Utility to check if current data matches URL context
+  validateCurrentData: () => boolean
 }
 
 // Create the Zustand store
@@ -135,14 +205,32 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   
   // Cache actions
   saveResponseToCache,
-  loadCachedResponse
+  loadCachedResponse,
+  clearCache,
+  
+  // Utility to check if current data matches URL context
+  validateCurrentData: () => {
+    const state = get()
+    if (!state.playlistData?.playlist?.id) return true // No data to validate
+    
+    // Check if current playlist ID matches URL parameter
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const urlId = params.get('id')
+      
+      // If URL has an ID, it should match current data
+      if (urlId && urlId !== state.playlistData.playlist.id) {
+        return false
+      }
+    }
+    
+    return true
+  }
 }))
 
-// Pre-hydrate store with cached data on creation
-const cachedResponse = loadCachedResponse()
-if (cachedResponse) {
-  usePlaylistStore.getState().setPlaylistData(cachedResponse.data)
-}
+// Note: We don't pre-hydrate the store with cached data on creation
+// This prevents stale data from showing up when users navigate to new playlists
+// Instead, the cache is only used when explicitly requested via loadCachedResponse()
 
 // Export default store for convenience
 export default usePlaylistStore

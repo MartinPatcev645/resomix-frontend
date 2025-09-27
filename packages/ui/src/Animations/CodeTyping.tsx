@@ -13,6 +13,10 @@ interface CodeTypingProps {
   text?: string;
   children?: React.ReactNode;
   className?: string;
+  /** Enables special loading effect triggered by <|>pattern<|> markers */
+  loadingEffect?: boolean;
+  /** Number of seconds (integer) the loading effect should run – the string inside the markers is appended once per second */
+  loadingEffectDelay?: number;
 }
 
 /**
@@ -27,6 +31,8 @@ export const CodeTyping: React.FC<CodeTypingProps> = ({
   text,
   children,
   className = "",
+  loadingEffect = false,
+  loadingEffectDelay = 5,
 }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = React.useState(false);
@@ -73,15 +79,28 @@ export const CodeTyping: React.FC<CodeTypingProps> = ({
       .map((l) => l.trim());
   }, [rawText, multiline]);
 
+  // Normalised text respecting multiline (<br> → \n)
+  const effectiveText = React.useMemo(() => {
+    if (!multiline) return rawText;
+    return rawText.replace(/<br\s*\/?>/gi, "\n");
+  }, [rawText, multiline]);
+
   // Typing effect
   React.useEffect(() => {
     if (!isVisible || !rawText) return;
 
-    let timeout: NodeJS.Timeout;
-    const startTyping = () => {
+    // Helper to clear an array of timeouts
+    const timeouts: NodeJS.Timeout[] = [];
+    const addTimeout = (t: NodeJS.Timeout) => {
+      timeouts.push(t);
+    };
+
+    const charsPerMs = speed / 1000;
+
+    if (!loadingEffect) {
+      // Original behaviour
       let lineIndex = 0;
       let charIndex = 0;
-      const charsPerMs = speed / 1000;
 
       function step() {
         const currentLine = lines[lineIndex] ?? "";
@@ -91,26 +110,75 @@ export const CodeTyping: React.FC<CodeTypingProps> = ({
             setDisplay((prev) => prev + nextChar);
           }
           charIndex += 1;
-          timeout = setTimeout(step, 1 / charsPerMs);
+          addTimeout(setTimeout(step, 1 / charsPerMs));
         } else {
           if (multiline && lineIndex < lines.length - 1) {
             lineIndex += 1;
             charIndex = 0;
             setDisplay((prev) => prev + "\n");
-            timeout = setTimeout(step, 1 / charsPerMs);
+            addTimeout(setTimeout(step, 1 / charsPerMs));
           }
         }
       }
 
-      step();
-    };
+      // Respect initial delay
+      addTimeout(setTimeout(step, delay));
+    } else {
+      // Loading effect enabled – build action queue
+      type Action = { type: "char"; value: string } | { type: "loading"; value: string };
+      const actions: Action[] = [];
+      const pattern = /<\|>(.*?)<\|>/gs;
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(effectiveText)) !== null) {
+        if (match.index > lastIndex) {
+          const normalChunk = effectiveText.slice(lastIndex, match.index);
+          for (const ch of normalChunk) {
+            actions.push({ type: "char", value: ch });
+          }
+        }
+        const inner = match[1] ?? "";
+        actions.push({ type: "loading", value: inner });
+        lastIndex = pattern.lastIndex;
+      }
+      // Push remaining normal text
+      if (lastIndex < effectiveText.length) {
+        const tail = effectiveText.slice(lastIndex);
+        for (const ch of tail) {
+          actions.push({ type: "char", value: ch });
+        }
+      }
 
-    const initialTimeout = setTimeout(startTyping, delay);
+      const runActions = (idx: number) => {
+        if (idx >= actions.length) return;
+        const action = actions[idx];
+        if (action.type === "char") {
+          setDisplay((prev) => prev + action.value);
+          addTimeout(setTimeout(() => runActions(idx + 1), 1 / charsPerMs));
+        } else if (action.type === "loading") {
+          let count = 0;
+          const repeat = () => {
+            if (count < loadingEffectDelay) {
+              setDisplay((prev) => prev + action.value);
+              count += 1;
+              addTimeout(setTimeout(repeat, 1000));
+            } else {
+              runActions(idx + 1);
+            }
+          };
+          repeat();
+        }
+      };
+
+      // Respect initial delay
+      addTimeout(setTimeout(() => runActions(0), delay));
+    }
+
+    // Cleanup
     return () => {
-      clearTimeout(initialTimeout);
-      clearTimeout(timeout);
+      timeouts.forEach(clearTimeout);
     };
-  }, [isVisible, rawText, lines, speed, multiline, delay]);
+  }, [isVisible, rawText, lines, effectiveText, speed, multiline, delay, loadingEffect, loadingEffectDelay]);
 
   return (
     <div ref={containerRef} className={className} style={{ whiteSpace: "pre-wrap" }}>
