@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
@@ -16,9 +16,16 @@ interface SimilarityPlayerProps {
 }
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration }) => {
-    const volumeStore = usePlayerStore((s) => ({ volume: s.volume, networkError: s.networkError }));
+    const volume = usePlayerStore((s) => s.volume);
+    const networkError = usePlayerStore((s) => s.networkError);
     const ctl = useWaveformControls({ id: trackId, totalDuration });
-    const { volume, networkError } = volumeStore;
+
+    // Initialize Peaks by attaching the overview element (matches previous behavior)
+    useEffect(() => {
+        if (ctl.containerRef.current) {
+            ctl.attachOverviewElement(ctl.containerRef.current);
+        }
+    }, [ctl.attachOverviewElement, ctl.containerRef]);
 
     return (
       <div className="flex flex-col w-full gap-[var(--px-5)]">

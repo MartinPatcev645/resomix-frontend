@@ -232,6 +232,7 @@ export function createHlsPlaylistController(): AudioController {
       hls.loadSource(playlistUrl);
       hls.attachMedia(audio);
       wireHlsErrorHandlers();
+      try { hls.startLoad(-1); } catch { }
     } else {
       audio.src = playlistUrl;
     }
@@ -637,11 +638,7 @@ export function createHlsPlaylistController(): AudioController {
     get isLoaded() { return !!(audio.readyState >= 1); },
   };
 
-  try {
-    usePlayerStore.getState().setAudioController(controller);
-  } catch {
-    // ignore in non-react contexts
-  }
+  // Do NOT publish to zustand store here – this happens in React layer (AudioProvider)
 
   return controller;
 }

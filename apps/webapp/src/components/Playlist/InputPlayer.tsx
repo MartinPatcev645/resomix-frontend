@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
@@ -16,16 +16,21 @@ interface InputPlayerProps {
 }
 
 const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => {
-    const volumeStore = usePlayerStore((s) => ({
-        volume: s.volume,
-        networkError: s.networkError,
-    }));
+    const volume = usePlayerStore((s) => s.volume);
+    const networkError = usePlayerStore((s) => s.networkError);
 
     const effectiveId = trackId ?? "uploaded-local";
 
     const ctl = useWaveformControls({ id: effectiveId, totalDuration, withPlayPause: true });
 
-    const { volume, networkError } = volumeStore;
+    // Initialize Peaks by attaching the overview element (matches previous behavior)
+    useEffect(() => {
+        if (ctl.containerRef.current) {
+            ctl.attachOverviewElement(ctl.containerRef.current);
+        }
+    }, [ctl.attachOverviewElement, ctl.containerRef]);
+
+    
 
     return (
       <>

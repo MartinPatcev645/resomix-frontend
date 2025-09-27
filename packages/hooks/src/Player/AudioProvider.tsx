@@ -1,10 +1,16 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
+import { usePlayerStore } from '@resomix/stores';
 import { getOrCreateAudioController, AudioController } from "./HlsPlaylistController";
 
 const AudioCtx = createContext<AudioController | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const controller = useMemo(() => getOrCreateAudioController(), []);
+
+  // Publish controller to zustand AFTER initial render to avoid 'setState in render' issues.
+  useEffect(() => {
+    usePlayerStore.getState().setAudioController(controller);
+  }, [controller]);
   return <AudioCtx.Provider value={controller}>{children}</AudioCtx.Provider>;
 }
 
