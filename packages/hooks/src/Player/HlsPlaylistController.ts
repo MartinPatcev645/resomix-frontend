@@ -273,6 +273,7 @@ export function createHlsPlaylistController(): AudioController {
       try { hls.startLoad(-1); } catch { }
     } else {
       audio.src = playlistUrl;
+      audio.load();
     }
 
     wireEvents();
@@ -513,11 +514,18 @@ export function createHlsPlaylistController(): AudioController {
       wantPlaying = true; // start offline retries before play
     }
     isSeeking = true;
-    audio.pause();
+    if (Hls.isSupported()) {
+      audio.pause();
+    }
 
     const onSeeked = () => {
       audio.removeEventListener('seeked', onSeeked);
       isSeeking = false;
+      if (!Hls.isSupported()) {
+        try {
+          audio.currentTime = audio.currentTime + 0.001;
+        } catch {}
+      }
 
       usePlayerStore.setState({ inputCurrentTime: savedLocal });
       if (isinitMediaSession) {
