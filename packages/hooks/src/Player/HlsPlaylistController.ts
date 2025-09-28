@@ -132,7 +132,6 @@ export function createHlsPlaylistController(): AudioController {
   function attemptResume(immediate = false) {
     if (!wantPlaying) return;
     if (!navigator.onLine) return;
-    console.log('attemptResume');
 
     if (Hls.isSupported()) {
       if (!hls) {
@@ -598,7 +597,6 @@ export function createHlsPlaylistController(): AudioController {
 
 
   function seek(seconds: number, trackId?: string) {
-    console.log('seek',seconds, trackId);
     const id = trackId || currentTrackId;
     if (!id) return;
     const start = offsets.get(id) || 0;
