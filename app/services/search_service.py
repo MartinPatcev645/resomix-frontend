@@ -37,7 +37,7 @@ class SearchService:
         """Initialize search service."""
         self.track_repository = TrackRepository()
     
-    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "both"]] = "both") -> Dict[str, Any]:
+    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto") -> Dict[str, Any]:
         """
         Search for tracks via Elasticsearch first, then fetch full details from MariaDB.
         """
@@ -65,8 +65,8 @@ class SearchService:
             es_body = self.build_artist_query(query_clean, tokens_lower, limit)
         elif mode == "title":
             es_body = self.build_title_query(query_clean, tokens_lower, limit)
-        else:  # mode == "both" (default)
-            # Use existing logic for "both" mode
+        else:  # mode == "auto" (default)
+            # Use existing logic for "auto" mode
             if len(tokens_list) <= 2:
                 es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
             else:

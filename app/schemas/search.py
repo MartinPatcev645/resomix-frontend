@@ -22,13 +22,13 @@ from pydantic import BaseModel, Field
 class SearchRequest(BaseModel):
     """Request schema for track search."""
     query: str = Field(..., description="Search term to find matching tracks", min_length=1, max_length=200)
-    mode: Optional[Literal["artist", "title", "both"]] = Field("both", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'both' (search both)")
+    mode: Optional[Literal["artist", "title", "auto"]] = Field("auto", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'auto' (search both)")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "query": "electronic music",
-                "mode": "both"
+                "mode": "auto"
             }
         }
 

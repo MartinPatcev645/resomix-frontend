@@ -59,7 +59,7 @@ search_controller = SearchController()
 )
 async def search_tracks_endpoint(
     query: str = Query(..., description="The search term to find matching tracks", min_length=1, max_length=200),
-    mode: Optional[Literal["artist", "title", "both"]] = Query("both", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'both' (search both)"),
+    mode: Optional[Literal["artist", "title", "auto"]] = Query("auto", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'auto' (search both)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -67,6 +67,6 @@ async def search_tracks_endpoint(
     Search for tracks based on a query string.
     
     - **query**: Search term to find matching tracks across titles, artists, albums, and other metadata
-    - **mode**: Search mode - 'artist' for artist-only search, 'title' for title-only search, 'both' for both (default)
+    - **mode**: Search mode - 'artist' for artist-only search, 'title' for title-only search, 'auto' for both (default)
     """
     return await search_controller.search_tracks(db, query, mode)

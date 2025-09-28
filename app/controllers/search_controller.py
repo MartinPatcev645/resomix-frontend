@@ -30,7 +30,7 @@ class SearchController:
     def __init__(self):
         self.search_service = SearchService()
 
-    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "both"]] = "both") -> JSONResponse:
+    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto") -> JSONResponse:
         """
         Search for tracks based on a query string.
         """
