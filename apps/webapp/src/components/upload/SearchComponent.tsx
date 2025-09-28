@@ -2,8 +2,10 @@ import React, { useRef } from "react";
 import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
-import { SearchInput, SearchDropdown } from "@resomix/ui";
+import InfoSvg from "@/assets/icons/info.svg";
+import { SearchInput, SearchDropdown, Tooltip } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
+import { usePlayerStore } from "@resomix/stores";
 import type { SearchResult } from "@resomix/hooks";
 
 interface SearchComponentProps {
@@ -21,6 +23,13 @@ interface SearchComponentProps {
 export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick, onTrackSelect }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
     const { query, results, isLoading, handleQueryChange } = useSearch();
+    
+    // Get searchMode state and setter from the store
+    const { searchMode, setSearchMode } = usePlayerStore();
+
+    const handleSearchModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSearchMode(e.target.value as 'auto' | 'artist' | 'title');
+    };
 
     return (
         <div ref={sectionRef} className="relative">
@@ -62,6 +71,32 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                     </div>
                     <div className="m-[var(--px-30)]">
                         <div className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300">
+                            <div className="w-full flex justify-end p-[var(--px-12)] absolute right-[var(--px-24)]">
+                                {/* Search Mode Dropdown */}
+                                <div className="flex items-center gap-[var(--px-6)]">
+                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (song title only).">
+                                        <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
+                                            <div className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]">
+                                                Search Mode
+                                            </div>
+                                            <div>
+                                                <img src={InfoSvg} alt="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
+                                            </div>
+                                        </div>
+                                    </Tooltip>
+                                    <div className="">
+                                        <select 
+                                            value={searchMode}
+                                            onChange={handleSearchModeChange}
+                                            className="w-[var(--px-80)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]"
+                                        >
+                                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="auto">Auto</option>
+                                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="artist">Artist</option>
+                                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="title">Title</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] relative">
                                     {/** Search bar & dropdown */}

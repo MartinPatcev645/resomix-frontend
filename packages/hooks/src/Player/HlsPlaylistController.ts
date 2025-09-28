@@ -39,10 +39,10 @@ export function createHlsPlaylistController(): AudioController {
 
   let playlistUrl = '';
   let retryTimer: number | null = null;
-  const RETRY_EVERY = 5000;
+  const RETRY_EVERY = 8000;
   const GAP_BETWEEN_TRACKS = 2.005; // sec silent segment
   const AUTOSWITCH_PREROLL = 0.5;   // sec preroll between new track start
-  const MIN_BUFFER_BEFORE_PLAY = 3; // min 3 sec in buffer
+  const MIN_BUFFER_BEFORE_PLAY = 6; // min 3 sec in buffer
   let wantPlaying = false;
 
   let tracksIds: string[] = [];
@@ -119,8 +119,9 @@ export function createHlsPlaylistController(): AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
-         maxMaxBufferLength: 0,
-         maxBufferSize: 0,
+        // only for tests
+         // maxMaxBufferLength: 0,
+         // maxBufferSize: 0,
       });
       hls.attachMedia(audio);
       hls.loadSource(playlistUrl);
@@ -155,10 +156,12 @@ export function createHlsPlaylistController(): AudioController {
     }
   }
 
-  function scheduleRetry() {
+  function scheduleRetry(showFlag = false, reason?: string) {
     if (!wantPlaying) return;
     if (retryTimer !== null) return;
-    setNetworkErrorFlag(true, navigator.onLine ? 'retrying' : 'offline');
+    if (showFlag) {
+      setNetworkErrorFlag(true, reason || (navigator.onLine ? 'retrying' : 'offline'));
+    }
     attemptResume(true);
     retryTimer = window.setInterval(() => {
       attemptResume(false);
@@ -167,39 +170,73 @@ export function createHlsPlaylistController(): AudioController {
 
   function onMediaHiccup(_evt: Event) {
     if (!wantPlaying) return;
-
     if (isSeeking || inSeekGrace()) return;
 
     if (!navigator.onLine) {
       setNetworkErrorFlag(true, 'offline');
-      scheduleRetry();
+      scheduleRetry(true, 'offline');
       return;
     }
-
-    // Иначе просто пробуем восстановиться без поднятия флага
     attemptResume(true);
   }
 
   function wireHlsErrorHandlers() {
     if (!hls) return;
-    hls.on(Hls.Events.ERROR, (_e, data) => {
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        setNetworkErrorFlag(true, 'network-error');
-        scheduleRetry();
+
+    const SERIOUS_NET_DETAILS = new Set([
+      Hls.ErrorDetails.MANIFEST_LOAD_ERROR,
+      Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT,      // "manifestLoadTimeOut"
+      Hls.ErrorDetails.LEVEL_LOAD_ERROR,
+      Hls.ErrorDetails.LEVEL_LOAD_TIMEOUT,         // "levelLoadTimeOut"
+      Hls.ErrorDetails.FRAG_LOAD_ERROR,
+      Hls.ErrorDetails.FRAG_LOAD_TIMEOUT,          // "fragLoadTimeOut"
+      Hls.ErrorDetails.KEY_LOAD_ERROR,
+      Hls.ErrorDetails.KEY_LOAD_TIMEOUT,           // "keyLoadTimeOut"
+      Hls.ErrorDetails.AUDIO_TRACK_LOAD_ERROR,
+      Hls.ErrorDetails.AUDIO_TRACK_LOAD_TIMEOUT,   // "audioTrackLoadTimeOut"
+      Hls.ErrorDetails.SUBTITLE_LOAD_ERROR,        // "subtitleTrackLoadError"
+      Hls.ErrorDetails.SUBTITLE_TRACK_LOAD_TIMEOUT,// "subtitleTrackLoadTimeOut"
+      Hls.ErrorDetails.ASSET_LIST_LOAD_ERROR,
+      Hls.ErrorDetails.ASSET_LIST_LOAD_TIMEOUT,
+    ]);
+
+    const isAbortError = (data: any) =>
+      data?.details === Hls.ErrorDetails.INTERNAL_ABORTED; // "aborted" on seek/changes
+
+    const isSeriousNetworkError = (data: any) => {
+      if (!navigator.onLine) return true;
+      if (SERIOUS_NET_DETAILS.has(data?.details)) return true;
+
+      // FRAG_LOAD_ERROR is important if now abort and get 4xx/5xx
+      if (data?.details === Hls.ErrorDetails.FRAG_LOAD_ERROR) {
+        const code = data?.response?.code ?? data?.response?.status;
+        if (typeof code === 'number' && code >= 400) return true;
       }
+      return false;
+    };
+
+    hls.on(Hls.Events.ERROR, (_e, data) => {
+      if (isAbortError(data)) return;
+
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        if (isSeriousNetworkError(data)) {
+          setNetworkErrorFlag(true, data?.details || (navigator.onLine ? 'network-error' : 'offline'));
+          scheduleRetry(true, data?.details);
+        } else {
+          attemptResume(true);
+        }
+        return;
+      }
+
       if (data.fatal) {
         switch (data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            setNetworkErrorFlag(true, 'network-error-fatal');
-            scheduleRetry();
-            break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            try { hls?.recoverMediaError(); } catch { }
+            try { hls?.recoverMediaError(); } catch {}
             break;
           default:
             setNetworkErrorFlag(true, 'fatal-error');
             restartHls();
-            scheduleRetry();
+            scheduleRetry(true, 'fatal-error');
             break;
         }
       }
@@ -209,6 +246,7 @@ export function createHlsPlaylistController(): AudioController {
     hls.on(Hls.Events.LEVEL_LOADED, clearRetry);
     hls.on(Hls.Events.FRAG_LOADED, clearRetry);
   }
+
 
   function ensureHlsLoaded() {
     if (isPlaylistLoaded) return;
@@ -235,6 +273,7 @@ export function createHlsPlaylistController(): AudioController {
       try { hls.startLoad(-1); } catch { }
     } else {
       audio.src = playlistUrl;
+      audio.load();
     }
 
     wireEvents();
@@ -253,12 +292,12 @@ export function createHlsPlaylistController(): AudioController {
     });
     audio.addEventListener('seeking', () => {
       isSeeking = true;
-      startSeekGrace(1200); // во время перемотки и чуть после
+      startSeekGrace(1200);
     });
 
     audio.addEventListener('seeked', () => {
       isSeeking = false;
-      startSeekGrace(800); // короткий «хвост» после перемотки
+      startSeekGrace(800);
     });
     audio.addEventListener('ended', () => {
       wantPlaying = false;
@@ -407,7 +446,7 @@ export function createHlsPlaylistController(): AudioController {
 
   function playWhenBuffered(minSec = MIN_BUFFER_BEFORE_PLAY): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!wantPlaying) return resolve(); // если уже не хотим играть — выходим
+      if (!wantPlaying) return resolve();
 
       const tryPlay = () => {
         if (!wantPlaying) {
@@ -452,7 +491,6 @@ export function createHlsPlaylistController(): AudioController {
       try { hls?.on(Hls.Events.FRAG_LOADED as any, onFragLoaded as any); } catch {}
       try { hls?.on(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch {}
 
-      // Первая попытка сразу
       tryPlay();
     });
   }
@@ -476,11 +514,18 @@ export function createHlsPlaylistController(): AudioController {
       wantPlaying = true; // start offline retries before play
     }
     isSeeking = true;
-    audio.pause();
+    if (Hls.isSupported()) {
+      audio.pause();
+    }
 
     const onSeeked = () => {
       audio.removeEventListener('seeked', onSeeked);
       isSeeking = false;
+      if (!Hls.isSupported()) {
+        try {
+          audio.currentTime = audio.currentTime + 0.001;
+        } catch {}
+      }
 
       usePlayerStore.setState({ inputCurrentTime: savedLocal });
       if (isinitMediaSession) {
@@ -494,7 +539,7 @@ export function createHlsPlaylistController(): AudioController {
       if (shouldPlay) {
         usePlayerStore.getState().setIsPlaying(true);
         playWhenBuffered().catch(() => {
-          scheduleRetry();
+          scheduleRetry(false);
         });
       }
     };
@@ -507,11 +552,10 @@ export function createHlsPlaylistController(): AudioController {
     if (!tracks.length) initPlaylist();
     ensureHlsLoaded();
     if (isPlayAfter) {
-      wantPlaying = true; // offline retry support
+      wantPlaying = true;
       msInitSession(trackId);
       selectCurrent(trackId);
       usePlayerStore.getState().setIsPlaying(true);
-      scheduleRetry(); // start offline retry support and don't waiting hls events
     }
     playAfterLoad = isPlayAfter;
 
@@ -561,7 +605,6 @@ export function createHlsPlaylistController(): AudioController {
 
 
   function seek(seconds: number, trackId?: string) {
-    console.log('seek',seconds, trackId);
     const id = trackId || currentTrackId;
     if (!id) return;
     const start = offsets.get(id) || 0;

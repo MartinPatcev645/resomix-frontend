@@ -1,5 +1,6 @@
 import React from "react";
 import { searchTracks } from "@resomix/api-client";
+import { usePlayerStore } from "@resomix/stores";
 
 export interface SearchResult {
   id: string | number;
@@ -20,6 +21,9 @@ export const useSearch = () => {
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  
+  // Get searchMode directly from the store
+  const { searchMode } = usePlayerStore();
 
   const performSearch = React.useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
@@ -32,7 +36,7 @@ export const useSearch = () => {
     setError(null);
 
     try {
-      const response = await searchTracks(searchQuery);
+      const response = await searchTracks(searchQuery, searchMode);
       
       if (response.success && response.data?.tracks) {
         const tracks = response.data.tracks;
@@ -53,7 +57,7 @@ export const useSearch = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [searchMode]);
 
   React.useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -61,7 +65,7 @@ export const useSearch = () => {
     }, 300); // Debounce search by 300ms
 
     return () => clearTimeout(timeoutId);
-  }, [query, performSearch]);
+  }, [query, searchMode, performSearch]);
 
   const handleQueryChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),

@@ -57,6 +57,10 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
             <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)]">
               privacy_policy()
             </a>
+            <br />
+            <a href={`${baseUrl}/contact`} className="hover:underline decoration-[var(--px-0-5)]">
+              contact()
+            </a>
           </div>
           <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)]">
             <CodeTyping

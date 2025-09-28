@@ -43,9 +43,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
             [Feedback]
           </div>
           <div onClick={() => {
-            window.location.href = `${BASE_LANDING_URL}/contact`
+            window.location.href = `${BASE_LANDING_URL}/waitlist`
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
-            [Contact]
+            [Waitlist]
           </div>
           <a href={`https://resomix.blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
             [Journal]

@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
   autoplay: 'resomix.player.autoplay',
   volume: 'resomix.player.volume',
   topSk: 'resomix.player.topSk',
-  trackTimes: 'resomix.player.trackTimes'
+  trackTimes: 'resomix.player.trackTimes',
+  searchMode: 'resomix.player.searchMode'
 } as const;
 
 // NOTE: Settings are now stored only in browser localStorage.
@@ -78,6 +79,12 @@ interface PlayerStore {
    */
   topSk: number
   setTopSk: (value: number) => void
+
+  /**
+   * Search mode for track searching
+   */
+  searchMode: 'auto' | 'artist' | 'title'
+  setSearchMode: (value: 'auto' | 'artist' | 'title') => void
   /** Current playback position (seconds) of the main input waveform */
   inputCurrentTime: number
   /** Setter for inputCurrentTime */
@@ -145,6 +152,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     set(() => {
       setStoredValue(STORAGE_KEYS.topSk, value);
       return { topSk: value };
+    }),
+
+  searchMode: getStoredValue<'auto' | 'artist' | 'title'>(STORAGE_KEYS.searchMode, 'auto'),
+  setSearchMode: (value) =>
+    set(() => {
+      setStoredValue(STORAGE_KEYS.searchMode, value);
+      return { searchMode: value };
     }),
 
   // --- Real-time playback positions ---------------------------------------
