@@ -80,6 +80,10 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
               privacy_policy(): fetch('/privacy')
             </a>
+            <br />
+            <a href={`${baseUrl}/contact`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+              contact_us(): fetch('/contact')
+            </a>
           </div>
         </div>
       </div>

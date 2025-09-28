@@ -48,9 +48,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
             [{t('general.menu.journal')}]
           </a>
           <div onClick={() => {
-            window.location.href = `${BASE_LANDING_URL}/contact`
+            window.location.href = `${BASE_LANDING_URL}/waitlist`
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
-            [{t('general.menu.contact')}]
+            [{t('general.menu.waitlist')}]
           </div>
           <div className="">
             <img src={MenuSeparator} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
