@@ -15,18 +15,20 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, Field
 
 
 class SearchRequest(BaseModel):
     """Request schema for track search."""
     query: str = Field(..., description="Search term to find matching tracks", min_length=1, max_length=200)
+    mode: Optional[Literal["artist", "title", "both"]] = Field("both", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'both' (search both)")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "query": "electronic music"
+                "query": "electronic music",
+                "mode": "both"
             }
         }
 

@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 import re
 import unicodedata
 import time
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Literal
 from app.core.config import settings
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +37,7 @@ class SearchService:
         """Initialize search service."""
         self.track_repository = TrackRepository()
     
-    async def search_tracks(self, db: AsyncSession, query: str) -> Dict[str, Any]:
+    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "both"]] = "both") -> Dict[str, Any]:
         """
         Search for tracks via Elasticsearch first, then fetch full details from MariaDB.
         """
@@ -50,23 +50,27 @@ class SearchService:
         # Pre-process query
         raw_q = query.strip()
         query_clean = self.clean_for_text(raw_q)   # for multi_match / match
-        tokens_lower = self.normalize_for_keyword(raw_q)  # for terms_set
 
         if not query_clean:
             return {"tracks": []}
+        
+        tokens_list = query_clean.split()
+        tokens_lower = [t.lower() for t in tokens_list if t]
 
         es_client = get_es_client()
         overall_start = time.perf_counter()
 
-        # Build ES body (simplified to mirror previous logic)
-        tokens_list = query_clean.split()
-
-        tokens_lower = [t.lower() for t in tokens_list if t]
-
-        if len(tokens_list) <= 2:
-            es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
-        else:
-            es_body = self.build_long_query_es_body(query_clean, tokens_lower, limit)
+        # Build ES body based on mode
+        if mode == "artist":
+            es_body = self.build_artist_query(query_clean, tokens_lower, limit)
+        elif mode == "title":
+            es_body = self.build_title_query(query_clean, tokens_lower, limit)
+        else:  # mode == "both" (default)
+            # Use existing logic for "both" mode
+            if len(tokens_list) <= 2:
+                es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
+            else:
+                es_body = self.build_long_query_es_body(query_clean, tokens_lower, limit)
 
         es_failed = False
         try:
@@ -124,7 +128,7 @@ class SearchService:
                 })
         else:
             # No ES hits and ES succeeded: return empty results
-            print("[Timing] Elasticsearch returned 0 hits; not falling back to DB.")
+            print(f"[Timing] Elasticsearch returned 0 hits for mode '{mode}'; not falling back to DB.")
 
         print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
         return {"tracks": formatted_results}
@@ -276,6 +280,83 @@ class SearchService:
         return es_body
 
 
+    def build_artist_query(self, query_text: str, tokens_kw: list[str], limit: int = 20):
+        # tokens_kw already lowercased in your caller; each token must match artists in some way
+        # Strategy:
+        # - For each token: (prefix OR wildcard) on artists => token must match (minimum_should_match=1 inside token-clause)
+        # - Boost if the entire phrase (query_text) appears in a single artist value via wildcard
+        # - Keep your electrobuzz source boost
+        must_per_token = [
+            {
+                "bool": {
+                    "should": [
+                        {"prefix":   {"artists": tok}},             # starts-with
+                        {"wildcard": {"artists": f"*{tok}*"}}       # contains (slower but effective on keyword)
+                    ],
+                    "minimum_should_match": 1
+                }
+            }
+            for tok in tokens_kw if tok
+        ]
+
+        phrase_wildcard = {"wildcard": {"artists": f"*{query_text}*"}} if query_text else None
+
+        es_body = {
+            "collapse": {"field": "dedupe"},
+            "query": {
+                "function_score": {
+                    "query": {
+                        "bool": {
+                            "must": must_per_token or [{"wildcard": {"artists": f"*{query_text}*"}}]
+                        }
+                    },
+                    "functions": [
+                        # Extra boost when the whole phrase lands inside a single artist value
+                        *( [{"filter": phrase_wildcard, "weight": 3.5}] if phrase_wildcard else [] ),
+
+                        # Your existing source/type boost
+                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
+                    ],
+                    "score_mode": "sum",
+                    "boost_mode": "sum"
+                }
+            },
+            "_source": ["uuid", "type", "artists", "title"],
+            "size": limit
+        }
+        return es_body
+
+    def build_title_query(self, query_text: str, tokens_kw: list[str], limit: int = 20):
+        es_body = {
+            "collapse": {"field": "dedupe"},
+            "query": {
+                "function_score": {
+                    "query": {
+                        "dis_max": {
+                            "tie_breaker": 0.2,
+                            "queries": [
+                                # Autocomplete on the last token in the phrase
+                                {"match_phrase_prefix": {"title": {"query": query_text, "boost": 2.6}}},
+
+                                # Strong precision when the phrase occurs in order (with small slop)
+                                {"match_phrase": {"title": {"query": query_text, "slop": 2, "boost": 3.0}}},
+
+                                # Fuzzy full-text title match for minor typos
+                                {"match": {"title": {"query": query_text, "operator": "and", "fuzziness": "AUTO", "boost": 2.0}}}
+                            ]
+                        }
+                    },
+                    "functions": [
+                        {"filter": {"term": {"type": "electrobuzz"}}, "weight": 2.0}
+                    ],
+                    "score_mode": "sum",
+                    "boost_mode": "sum"
+                }
+            },
+            "_source": ["uuid", "type", "artists", "title"],
+            "size": limit
+        }
+        return es_body
 
     async def get_track_path_by_id(self, db: AsyncSession, track_id: str) -> Optional[str]:
         """
