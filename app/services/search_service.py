@@ -9,6 +9,8 @@ and musical key searches using MariaDB repositories.
 Coordinates with track repository to perform complex queries and format results
 for API consumption with proper error handling and data validation.
 
+For artist and title specific query: https://chatgpt.com/share/68d8d31f-ae08-8012-8985-29e93da8da6d
+
 Version: 3.0.1
 Init Date: June 11, 2025
 Author: Muhammad Usman Naeem

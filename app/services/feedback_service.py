@@ -15,10 +15,11 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.feedback_repository import FeedbackRepository
 from app.models.feedback import Feedback
+import math
 
 
 class FeedbackService:
@@ -225,3 +226,266 @@ class FeedbackService:
             Feedback record or None if not found
         """
         return await self.feedback_repository.async_get_by_id(db, feedback_id)
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_feedback_list_admin(
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Get paginated feedback list with filters for admin.
+        
+        Args:
+            db: Database session
+            filters: Dictionary of filter parameters
+            
+        Returns:
+            Paginated feedback data with metadata
+        """
+        try:
+            # Extract filter parameters
+            page = filters.get('page', 1)
+            page_size = filters.get('page_size', 30)
+            search = filters.get('search')
+            search_column = filters.get('search_column')
+            status = filters.get('status', 'all')
+            date_from = filters.get('date_from')
+            date_to = filters.get('date_to')
+            sort_by = filters.get('sort_by', 'submitted_at')
+            sort_order = filters.get('sort_order', 'desc')
+            
+            # Get feedback list and total count
+            feedback_list, total = await self.feedback_repository.get_feedback_list_with_filters(
+                db=db,
+                page=page,
+                page_size=page_size,
+                search=search,
+                search_column=search_column,
+                status=status,
+                date_from=date_from,
+                date_to=date_to,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+            
+            # Calculate pagination metadata
+            total_pages = math.ceil(total / page_size) if total > 0 else 0
+            
+            return {
+                "success": True,
+                "data": feedback_list,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total": total,
+                    "total_pages": total_pages
+                }
+            }
+            
+        except Exception as e:
+            print(f"Error getting feedback list: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving feedback list",
+                "data": [],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 30,
+                    "total": 0,
+                    "total_pages": 0
+                }
+            }
+    
+    async def delete_feedback_admin(
+        self,
+        db: AsyncSession,
+        feedback_id: int
+    ) -> Dict[str, Any]:
+        """
+        Delete a single feedback entry.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID to delete
+            
+        Returns:
+            Delete result
+        """
+        try:
+            deleted = await self.feedback_repository.delete_feedback(db, feedback_id)
+            
+            if deleted:
+                return {
+                    "success": True,
+                    "message": "Feedback deleted successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Feedback with ID {feedback_id} not found"
+                }
+                
+        except Exception as e:
+            print(f"Error deleting feedback: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while deleting feedback"
+            }
+    
+    async def batch_delete_feedback_admin(
+        self,
+        db: AsyncSession,
+        feedback_ids: List[int]
+    ) -> Dict[str, Any]:
+        """
+        Delete multiple feedback entries.
+        
+        Args:
+            db: Database session
+            feedback_ids: List of feedback IDs to delete
+            
+        Returns:
+            Batch delete result
+        """
+        try:
+            deleted_count = await self.feedback_repository.batch_delete_feedback(db, feedback_ids)
+            
+            return {
+                "success": True,
+                "deleted_count": deleted_count,
+                "message": f"{deleted_count} feedback entries deleted"
+            }
+            
+        except Exception as e:
+            print(f"Error batch deleting feedback: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while deleting feedback entries",
+                "deleted_count": 0
+            }
+    
+    async def mark_feedback_status_admin(
+        self,
+        db: AsyncSession,
+        feedback_id: int,
+        status: str
+    ) -> Dict[str, Any]:
+        """
+        Mark feedback status for admin.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID
+            status: New status
+            
+        Returns:
+            Status update result with feedback data
+        """
+        try:
+            feedback = await self.feedback_repository.update_feedback_status(
+                db=db,
+                feedback_id=feedback_id,
+                status=status
+            )
+            
+            if feedback:
+                return {
+                    "success": True,
+                    "data": feedback,
+                    "message": "Status updated successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Feedback with ID {feedback_id} not found"
+                }
+                
+        except Exception as e:
+            print(f"Error marking feedback status: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while updating feedback status"
+            }
+    
+    async def update_feedback_admin(
+        self,
+        db: AsyncSession,
+        feedback_id: int,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update feedback fields for admin.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID
+            update_data: Dictionary of fields to update
+            
+        Returns:
+            Update result with feedback data
+        """
+        try:
+            feedback = await self.feedback_repository.update_feedback(
+                db=db,
+                feedback_id=feedback_id,
+                update_data=update_data
+            )
+            
+            if feedback:
+                return {
+                    "success": True,
+                    "data": feedback,
+                    "message": "Feedback updated successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Feedback with ID {feedback_id} not found"
+                }
+                
+        except Exception as e:
+            print(f"Error updating feedback: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while updating feedback"
+            }
+    
+    async def get_feedback_statistics_admin(
+        self,
+        db: AsyncSession
+    ) -> Dict[str, Any]:
+        """
+        Get feedback statistics for admin dashboard.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            Statistics data
+        """
+        try:
+            stats = await self.feedback_repository.get_feedback_statistics(db)
+            
+            return {
+                "success": True,
+                "stats": stats
+            }
+            
+        except Exception as e:
+            print(f"Error getting feedback statistics: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving statistics",
+                "stats": {
+                    "total": 0,
+                    "open": 0,
+                    "resolved": 0,
+                    "avg_satisfaction": 0.0,
+                    "avg_recommendation": 0.0,
+                    "by_category": {}
+                }
+            }

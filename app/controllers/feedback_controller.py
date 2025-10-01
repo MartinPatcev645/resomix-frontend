@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi.responses import JSONResponse
 from fastapi import status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -396,6 +396,648 @@ class FeedbackController:
                     "operation": "feedback_status_update"
                 }
             )
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_feedback_list_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        filters: Dict[str, Any]
+    ) -> JSONResponse:
+        """Get paginated feedback list with filters for admin."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.get_feedback_list_admin(db, filters)
+            
+            if result.get("success"):
+                # Convert feedback objects to dictionaries
+                feedback_list = []
+                for feedback in result.get("data", []):
+                    feedback_list.append({
+                        "id": feedback.id,
+                        "user_id": feedback.user_id,
+                        "category": feedback.category,
+                        "message": feedback.message,
+                        "satisfaction": feedback.satisfaction,
+                        "recommendation": feedback.recommendation,
+                        "status": feedback.status,
+                        "submitted_at": feedback.submitted_at.isoformat() if feedback.submitted_at else None
+                    })
+                
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = {
+                    "success": True,
+                    "data": feedback_list,
+                    "pagination": result.get("pagination")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_feedback_list_success",
+                    message="Admin feedback list retrieved successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "filters": filters,
+                        "result_count": len(feedback_list),
+                        "total": result.get("pagination", {}).get("total", 0),
+                        "operation": "admin_feedback_list"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error", "Failed to retrieve feedback list")
+                )
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_feedback_list_failed",
+                    message="Failed to retrieve admin feedback list",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "filters": filters,
+                        "error": result.get("error"),
+                        "operation": "admin_feedback_list"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_feedback_list_exception",
+                message="Exception occurred while retrieving admin feedback list",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="get_feedback_list_admin",
+                metadata={
+                    "filters": filters,
+                    "error_type": type(e).__name__,
+                    "operation": "admin_feedback_list"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )
+    
+    async def delete_feedback_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        feedback_id: int
+    ) -> JSONResponse:
+        """Delete a single feedback entry."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.delete_feedback_admin(db, feedback_id)
+            
+            if result.get("success"):
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=True,
+                    data={"message": result.get("message")}
+                )
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_feedback_delete_success",
+                    message=f"Feedback {feedback_id} deleted successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "operation": "admin_feedback_delete"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error")
+                )
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_feedback_delete_failed",
+                    message=f"Failed to delete feedback {feedback_id}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=404,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "error": result.get("error"),
+                        "operation": "admin_feedback_delete"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_feedback_delete_exception",
+                message="Exception occurred while deleting feedback",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="delete_feedback_admin",
+                metadata={
+                    "feedback_id": feedback_id,
+                    "error_type": type(e).__name__,
+                    "operation": "admin_feedback_delete"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )
+    
+    async def batch_delete_feedback_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        feedback_ids: List[int]
+    ) -> JSONResponse:
+        """Delete multiple feedback entries."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.batch_delete_feedback_admin(db, feedback_ids)
+            
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = {
+                "success": result.get("success"),
+                "deleted_count": result.get("deleted_count", 0),
+                "message": result.get("message", result.get("error", ""))
+            }
+            
+            if result.get("success"):
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_batch_delete_success",
+                    message=f"Batch deleted {result.get('deleted_count')} feedback entries",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_ids": feedback_ids,
+                        "deleted_count": result.get("deleted_count"),
+                        "operation": "admin_batch_delete"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_batch_delete_failed",
+                    message="Batch delete failed",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_ids": feedback_ids,
+                        "error": result.get("error"),
+                        "operation": "admin_batch_delete"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_batch_delete_exception",
+                message="Exception occurred during batch delete",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="batch_delete_feedback_admin",
+                metadata={
+                    "feedback_ids": feedback_ids,
+                    "error_type": type(e).__name__,
+                    "operation": "admin_batch_delete"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )
+    
+    async def mark_feedback_status_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        feedback_id: int,
+        status_value: str
+    ) -> JSONResponse:
+        """Mark feedback status for admin."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.mark_feedback_status_admin(db, feedback_id, status_value)
+            
+            if result.get("success"):
+                feedback = result.get("data")
+                feedback_data = {
+                    "id": feedback.id,
+                    "user_id": feedback.user_id,
+                    "category": feedback.category,
+                    "message": feedback.message,
+                    "satisfaction": feedback.satisfaction,
+                    "recommendation": feedback.recommendation,
+                    "status": feedback.status,
+                    "submitted_at": feedback.submitted_at.isoformat() if feedback.submitted_at else None
+                }
+                
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = {
+                    "success": True,
+                    "data": feedback_data,
+                    "message": result.get("message")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_mark_status_success",
+                    message=f"Feedback {feedback_id} status updated to {status_value}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "new_status": status_value,
+                        "operation": "admin_mark_status"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error")
+                )
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_mark_status_failed",
+                    message=f"Failed to update feedback {feedback_id} status",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=404,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "attempted_status": status_value,
+                        "error": result.get("error"),
+                        "operation": "admin_mark_status"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_mark_status_exception",
+                message="Exception occurred while marking feedback status",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="mark_feedback_status_admin",
+                metadata={
+                    "feedback_id": feedback_id,
+                    "attempted_status": status_value,
+                    "error_type": type(e).__name__,
+                    "operation": "admin_mark_status"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )
+    
+    async def update_feedback_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        feedback_id: int,
+        update_data: Dict[str, Any]
+    ) -> JSONResponse:
+        """Update feedback for admin."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.update_feedback_admin(db, feedback_id, update_data)
+            
+            if result.get("success"):
+                feedback = result.get("data")
+                feedback_data = {
+                    "id": feedback.id,
+                    "user_id": feedback.user_id,
+                    "category": feedback.category,
+                    "message": feedback.message,
+                    "satisfaction": feedback.satisfaction,
+                    "recommendation": feedback.recommendation,
+                    "status": feedback.status,
+                    "submitted_at": feedback.submitted_at.isoformat() if feedback.submitted_at else None
+                }
+                
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = {
+                    "success": True,
+                    "data": feedback_data,
+                    "message": result.get("message")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_update_feedback_success",
+                    message=f"Feedback {feedback_id} updated successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "update_fields": list(update_data.keys()),
+                        "operation": "admin_update_feedback"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error")
+                )
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_update_feedback_failed",
+                    message=f"Failed to update feedback {feedback_id}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=404,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "feedback_id": feedback_id,
+                        "update_data": update_data,
+                        "error": result.get("error"),
+                        "operation": "admin_update_feedback"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_update_feedback_exception",
+                message="Exception occurred while updating feedback",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="update_feedback_admin",
+                metadata={
+                    "feedback_id": feedback_id,
+                    "update_data": update_data,
+                    "error_type": type(e).__name__,
+                    "operation": "admin_update_feedback"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )
+    
+    async def get_feedback_statistics_admin(
+        self,
+        db: AsyncSession,
+        request: Request
+    ) -> JSONResponse:
+        """Get feedback statistics for admin dashboard."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.get_feedback_statistics_admin(db)
+            
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = {
+                "success": result.get("success"),
+                "stats": result.get("stats")
+            }
+            
+            if result.get("success"):
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_stats_success",
+                    message="Feedback statistics retrieved successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "stats": result.get("stats"),
+                        "operation": "admin_feedback_stats"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_stats_failed",
+                    message="Failed to retrieve feedback statistics",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "error": result.get("error"),
+                        "operation": "admin_feedback_stats"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_stats_exception",
+                message="Exception occurred while retrieving feedback statistics",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="get_feedback_statistics_admin",
+                metadata={
+                    "error_type": type(e).__name__,
+                    "operation": "admin_feedback_stats"
+                }
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=response_data

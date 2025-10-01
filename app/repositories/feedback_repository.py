@@ -15,10 +15,11 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, delete, func, and_, or_, desc, asc
+from datetime import datetime
 from app.models.feedback import Feedback
 from app.repositories.base_repository import BaseRepository
 
@@ -233,4 +234,227 @@ class FeedbackRepository(BaseRepository[Feedback]):
             await db.commit()
             await db.refresh(feedback)
         
-        return feedback 
+        return feedback
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_feedback_list_with_filters(
+        self,
+        db: AsyncSession,
+        page: int = 1,
+        page_size: int = 30,
+        search: Optional[str] = None,
+        search_column: Optional[str] = None,
+        status: str = "all",
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        sort_by: str = "submitted_at",
+        sort_order: str = "desc"
+    ) -> Tuple[List[Feedback], int]:
+        """
+        Get paginated feedback list with filters for admin.
+        
+        Args:
+            db: Database session
+            page: Page number
+            page_size: Items per page
+            search: Search term
+            search_column: Column to search in (message, category, user_id)
+            status: Filter by status (open, resolved, all)
+            date_from: Start date filter
+            date_to: End date filter
+            sort_by: Column to sort by
+            sort_order: Sort order (asc, desc)
+            
+        Returns:
+            Tuple of (feedback list, total count)
+        """
+        # Build base query
+        query = select(Feedback)
+        count_query = select(func.count(Feedback.id))
+        
+        # Apply filters
+        filters = []
+        
+        # Status filter
+        if status != "all":
+            filters.append(Feedback.status == status)
+        
+        # Search filter
+        if search and search_column:
+            search_term = f"%{search}%"
+            if search_column == "message":
+                filters.append(Feedback.message.like(search_term))
+            elif search_column == "category":
+                filters.append(Feedback.category.like(search_term))
+            elif search_column == "user_id":
+                filters.append(Feedback.user_id.like(search_term))
+        elif search:
+            # Search in all columns if no specific column
+            search_term = f"%{search}%"
+            filters.append(
+                or_(
+                    Feedback.message.like(search_term),
+                    Feedback.category.like(search_term),
+                    Feedback.user_id.like(search_term)
+                )
+            )
+        
+        # Date range filter
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+                filters.append(Feedback.submitted_at >= date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+                # Add one day to include the entire end date
+                filters.append(Feedback.submitted_at < date_to_obj.replace(hour=23, minute=59, second=59))
+            except ValueError:
+                pass
+        
+        # Apply all filters
+        if filters:
+            query = query.where(and_(*filters))
+            count_query = count_query.where(and_(*filters))
+        
+        # Get total count
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+        
+        # Apply sorting
+        sort_column = getattr(Feedback, sort_by, Feedback.submitted_at)
+        if sort_order == "asc":
+            query = query.order_by(asc(sort_column))
+        else:
+            query = query.order_by(desc(sort_column))
+        
+        # Apply pagination
+        offset = (page - 1) * page_size
+        query = query.limit(page_size).offset(offset)
+        
+        # Execute query
+        result = await db.execute(query)
+        feedback_list = result.scalars().all()
+        
+        return feedback_list, total
+    
+    async def delete_feedback(self, db: AsyncSession, feedback_id: int) -> bool:
+        """
+        Delete a single feedback entry.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID to delete
+            
+        Returns:
+            True if deleted, False if not found
+        """
+        feedback = await self.async_get_by_id(db, feedback_id)
+        if feedback:
+            await db.delete(feedback)
+            await db.commit()
+            return True
+        return False
+    
+    async def batch_delete_feedback(self, db: AsyncSession, feedback_ids: List[int]) -> int:
+        """
+        Delete multiple feedback entries.
+        
+        Args:
+            db: Database session
+            feedback_ids: List of feedback IDs to delete
+            
+        Returns:
+            Number of deleted entries
+        """
+        stmt = delete(Feedback).where(Feedback.id.in_(feedback_ids))
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.rowcount
+    
+    async def update_feedback(
+        self,
+        db: AsyncSession,
+        feedback_id: int,
+        update_data: Dict[str, Any]
+    ) -> Optional[Feedback]:
+        """
+        Update feedback fields.
+        
+        Args:
+            db: Database session
+            feedback_id: Feedback ID
+            update_data: Dictionary of fields to update
+            
+        Returns:
+            Updated feedback or None if not found
+        """
+        feedback = await self.async_get_by_id(db, feedback_id)
+        if feedback:
+            for key, value in update_data.items():
+                if hasattr(feedback, key) and value is not None:
+                    setattr(feedback, key, value)
+            await db.commit()
+            await db.refresh(feedback)
+        
+        return feedback
+    
+    async def get_feedback_statistics(self, db: AsyncSession) -> Dict[str, Any]:
+        """
+        Get feedback statistics for admin dashboard.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            Dictionary containing various statistics
+        """
+        # Get counts by status
+        total_query = select(func.count(Feedback.id))
+        open_query = select(func.count(Feedback.id)).where(Feedback.status == 'open')
+        resolved_query = select(func.count(Feedback.id)).where(Feedback.status == 'resolved')
+        
+        # Get averages
+        avg_satisfaction_query = select(func.avg(Feedback.satisfaction))
+        avg_recommendation_query = select(func.avg(Feedback.recommendation))
+        
+        # Execute queries
+        total_result = await db.execute(total_query)
+        open_result = await db.execute(open_query)
+        resolved_result = await db.execute(resolved_query)
+        avg_satisfaction_result = await db.execute(avg_satisfaction_query)
+        avg_recommendation_result = await db.execute(avg_recommendation_query)
+        
+        total = total_result.scalar() or 0
+        open_count = open_result.scalar() or 0
+        resolved_count = resolved_result.scalar() or 0
+        avg_satisfaction = avg_satisfaction_result.scalar() or 0.0
+        avg_recommendation = avg_recommendation_result.scalar() or 0.0
+        
+        # Get category distribution
+        category_query = select(
+            Feedback.category,
+            func.count(Feedback.id).label('count')
+        ).group_by(Feedback.category)
+        
+        category_result = await db.execute(category_query)
+        category_stats = {}
+        for row in category_result:
+            category = row[0] if row[0] else "uncategorized"
+            count = row[1]
+            category_stats[category] = count
+        
+        return {
+            "total": total,
+            "open": open_count,
+            "resolved": resolved_count,
+            "avg_satisfaction": round(float(avg_satisfaction), 2),
+            "avg_recommendation": round(float(avg_recommendation), 2),
+            "by_category": category_stats
+        }
