@@ -72,3 +72,7 @@ The app will run on `http://localhost:5175` (or next available port).
 - **React Router v6** - Routing
 - **Tailwind CSS 4** - Styling
 - **Shared packages**: `@resomix/ui`, `@resomix/hooks`, `@resomix/api-client`
+
+## Init Date
+
+- October 01, 2025

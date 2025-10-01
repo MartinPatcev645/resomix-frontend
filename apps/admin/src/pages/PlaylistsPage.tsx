@@ -1,12 +1,12 @@
 function PlaylistsPage() {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Playlists</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Generated playlists will be displayed here</p>
+      <h1 className="text-3xl font-bold mb-6 text-primary">Playlists</h1>
+      <div className="bg-surface rounded-lg shadow p-6 border border-default transition-colors">
+        <p className="text-secondary">Generated playlists will be displayed here</p>
       </div>
     </div>
   )
 }
 
-export default PlaylistsPage 
+export default PlaylistsPage

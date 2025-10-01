@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { MessageSquare, Mail, ClipboardList, GitBranch, BarChart3, Music, Music2} from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -6,12 +7,13 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: 'Feedback', path: '/feedback', icon: '💬' },
-  { name: 'Contact', path: '/contact', icon: '✉️' },
-  { name: 'Waitlist', path: '/waitlist', icon: '📋' },
-  { name: 'Pipeline', path: '/pipeline', icon: '🔄' },
-  { name: 'Analytics', path: '/analytics', icon: '📊' },
-  { name: 'Playlists', path: '/playlists', icon: '🎵' },
+  { name: 'Feedback', path: '/feedback', Icon: MessageSquare },
+  { name: 'Contact', path: '/contact', Icon: Mail },
+  { name: 'Waitlist', path: '/waitlist', Icon: ClipboardList },
+  { name: 'Pipeline', path: '/pipeline', Icon: GitBranch },
+  { name: 'Analytics', path: '/analytics', Icon: BarChart3 },
+  { name: 'Playlists', path: '/playlists', Icon: Music },
+  { name: 'Tracks', path: '/tracks', Icon: Music2 },
 ]
 
 function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -29,28 +31,31 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-64 bg-white border-r border-gray-200
-          transform transition-transform duration-300 ease-in-out
+          w-64 bg-surface border-r border-default
+          transform transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         <div className="h-full flex flex-col">
           {/* Logo/Brand */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-default">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
                   R
                 </div>
-                <span className="font-semibold text-gray-900">Admin</span>
+                <span className="font-semibold text-primary">Admin</span>
               </div>
               <button
                 onClick={onClose}
-                className="lg:hidden p-1 rounded hover:bg-gray-100"
+                className="lg:hidden p-1 rounded transition-colors hover:bg-gray-200 dark:hover:bg-gray-400"
                 aria-label="Close menu"
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 text-secondary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -68,23 +73,32 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
-            {navigation.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => onClose()}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-indigo-50 text-indigo-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span>{item.name}</span>
-              </NavLink>
-            ))}
+            {navigation.map((item) => {
+              const Icon = item.Icon
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => onClose()}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'font-medium'
+                        : 'text-secondary hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`
+                  }
+                  style={({ isActive }) => 
+                    isActive ? {
+                      backgroundColor: 'var(--opacity-10)',
+                      color: 'var(--color-primary)'
+                    } : undefined
+                  }
+                >
+                  <Icon size={20} />
+                  <span>{item.name}</span>
+                </NavLink>
+              )
+            })}
           </nav>
         </div>
       </aside>
@@ -92,4 +106,4 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   )
 }
 
-export default Sidebar 
+export default Sidebar
