@@ -1,17 +1,22 @@
-import { Input, Select, DatePicker, Button, Space, Dropdown } from 'antd'
-import { RefreshCw, Search, Download, Trash2 } from 'lucide-react'
+import React from 'react'
+import { Input, Select, DatePicker, Button, Space, Dropdown, Tag } from 'antd'
+import { RefreshCw, Search, Download, Trash2, FilterX } from 'lucide-react'
 import type { MenuProps } from 'antd'
 import type { FeedbackItem } from '@/hooks/useFeedback.ts'
+import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
 interface FeedbackTableControlsProps {
   searchText: string
   searchColumn: keyof FeedbackItem
+  dateRange: [string, string] | null
   selectedCount: number
   onSearch: (value: string, column: keyof FeedbackItem) => void
   onDateRangeChange: (dates: [string, string] | null) => void
+  onStatusFilter: (status: 'all' | 'open' | 'resolved') => void
   onRefresh: () => void
+  onClearFilters: () => void
   onExport: (format: 'csv' | 'excel' | 'pdf') => void
   onDeleteSelected: () => void
 }
@@ -19,18 +24,35 @@ interface FeedbackTableControlsProps {
 function FeedbackTableControls({
   searchText,
   searchColumn,
+  dateRange,
   selectedCount,
   onSearch,
   onDateRangeChange,
   onRefresh,
+  onClearFilters,
   onExport,
   onDeleteSelected,
 }: FeedbackTableControlsProps) {
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'open' | 'resolved'>('all')
+  
+  // Check if any filters are active
+  const hasActiveFilters = searchText.trim() !== '' || dateRange !== null || statusFilter !== 'all'
+  
   const searchColumns = [
     { label: 'Message', value: 'message' },
-    { label: 'Category', value: 'category' },
-    { label: 'User ID', value: 'user_id' },
+    { label: 'ID', value: 'id' },
   ]
+  
+  const statusOptions = [
+    { label: 'All Status', value: 'all' },
+    { label: <Tag color="orange">Open</Tag>, value: 'open' },
+    { label: <Tag color="green">Resolved</Tag>, value: 'resolved' },
+  ]
+  
+  const handleClearFiltersClick = () => {
+    setStatusFilter('all')
+    onClearFilters()
+  }
 
   const exportMenuItems: MenuProps['items'] = [
     {
@@ -77,6 +99,7 @@ function FeedbackTableControls({
 
           {/* Date range filter */}
           <RangePicker
+            value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
             style={{ width: '100%', maxWidth: 280 }}
             onChange={(dates) => {
               if (dates && dates[0] && dates[1]) {
@@ -88,6 +111,17 @@ function FeedbackTableControls({
                 onDateRangeChange(null)
               }
             }}
+          />
+          
+          {/* Status filter */}
+          <Select
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value)
+            }}
+            options={statusOptions}
+            style={{ width: 150 }}
+            placeholder="Filter by status"
           />
         </Space>
       </div>
@@ -105,6 +139,16 @@ function FeedbackTableControls({
               onClick={onDeleteSelected}
             >
               <span className="hidden sm:inline">Delete</span> ({selectedCount})
+            </Button>
+          )}
+
+          {/* Clear filters (only show when filters are active) */}
+          {hasActiveFilters && (
+            <Button
+              icon={<FilterX size={16} />}
+              onClick={handleClearFiltersClick}
+            >
+              <span className="hidden sm:inline">Clear Filters</span>
             </Button>
           )}
 
