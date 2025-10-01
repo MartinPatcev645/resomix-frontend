@@ -22,6 +22,7 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.23.0",
     "rechart": "^0.0.1",
+    "sweetalert2": "^11.23.0",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {

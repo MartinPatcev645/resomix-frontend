@@ -7,6 +7,7 @@ import WaitlistPage from '@/pages/WaitlistPage.tsx'
 import PipelinePage from '@/pages/PipelinePage.tsx'
 import AnalyticsPage from '@/pages/AnalyticsPage.tsx'
 import PlaylistsPage from '@/pages/PlaylistsPage.tsx'
+import TracksPage from '@/pages/TracksPage.tsx'
 import { useTheme } from '@/hooks/useTheme.ts'
 import { lightTheme, darkTheme } from '@/lib/antdTheme.ts'
 
@@ -26,6 +27,7 @@ function App() {
               <Route path="pipeline" element={<PipelinePage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
+              <Route path="tracks" element={<TracksPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

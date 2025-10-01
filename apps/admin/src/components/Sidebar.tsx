@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Mail, ClipboardList, GitBranch, BarChart3, Music } from 'lucide-react'
+import { MessageSquare, Mail, ClipboardList, GitBranch, BarChart3, Music, Music2} from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Pipeline', path: '/pipeline', Icon: GitBranch },
   { name: 'Analytics', path: '/analytics', Icon: BarChart3 },
   { name: 'Playlists', path: '/playlists', Icon: Music },
+  { name: 'Tracks', path: '/tracks', Icon: Music2 },
 ]
 
 function Sidebar({ isOpen, onClose }: SidebarProps) {

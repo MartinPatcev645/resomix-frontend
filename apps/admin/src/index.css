@@ -141,3 +141,334 @@
     border-color: var(--color-border);
   }
 }
+
+/* ─── Ant Design Theme Overrides ─────────────────────────── */
+
+/* Make Ant Design components responsive to our theme */
+.ant-table-wrapper {
+  /* Ensure table respects theme colors */
+  color: var(--color-text-primary);
+}
+
+.ant-table {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary);
+}
+
+.ant-table-thead > tr > th {
+  background: var(--color-background-secondary) !important;
+  color: var(--color-text-primary) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--color-surface-hover) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: var(--opacity-5) !important;
+}
+
+.ant-input,
+.ant-select-selector,
+.ant-picker {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-input::placeholder,
+.ant-select-selection-placeholder {
+  color: var(--color-text-tertiary) !important;
+}
+
+.ant-btn-default {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-btn-default:hover {
+  background-color: var(--color-surface-hover) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+
+.ant-modal-content {
+  background-color: var(--color-surface) !important;
+}
+
+.ant-modal-header {
+  background-color: var(--color-surface) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-modal-title {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-modal-body {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-dropdown-menu {
+  background-color: var(--color-surface) !important;
+}
+
+.ant-dropdown-menu-item {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+.ant-pagination {
+  color: var(--color-text-primary);
+}
+
+.ant-pagination-item {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+.ant-pagination-item a {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-pagination-item:hover {
+  border-color: var(--color-primary) !important;
+}
+
+.ant-pagination-item-active {
+  border-color: var(--color-primary) !important;
+  background-color: var(--opacity-10) !important;
+}
+
+.ant-pagination-item-active a {
+  color: var(--color-primary) !important;
+}
+
+.ant-select-dropdown {
+  background-color: var(--color-surface) !important;
+}
+
+.ant-select-item {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-select-item-option-selected {
+  background-color: var(--opacity-10) !important;
+}
+
+.ant-picker-panel-container {
+  background-color: var(--color-surface) !important;
+}
+
+.ant-picker-panel {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+.ant-picker-header,
+.ant-picker-footer {
+  border-color: var(--color-border) !important;
+}
+
+.ant-picker-cell {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-picker-cell-in-view {
+  color: var(--color-text-primary) !important;
+}
+
+/* Dark Mode Specific Fixes */
+.dark .ant-input:focus,
+.dark .ant-input-focused {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.dark .ant-select-focused .ant-select-selector {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Checkbox in dark mode */
+.dark .ant-checkbox-inner {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+.dark .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.dark .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+  border-color: var(--color-primary) !important;
+}
+
+/* Table column sorting active state */
+.dark .ant-table-column-sort {
+  background: var(--color-background-secondary) !important;
+}
+
+.dark .ant-table-thead > tr > th.ant-table-column-has-sorters:hover {
+  background: var(--color-background-tertiary) !important;
+}
+
+/* Empty state in dark mode */
+.dark .ant-empty-description {
+  color: var(--color-text-secondary) !important;
+}
+
+.dark .ant-empty-image svg {
+  fill: var(--color-text-tertiary) !important;
+  opacity: 0.5;
+}
+
+/* Select dropdown in dark mode */
+.dark .ant-select-item-option-active {
+  background-color: var(--color-surface-hover) !important;
+}
+
+.dark .ant-select-item-option:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+/* Input clear icon */
+.dark .ant-input-clear-icon {
+  color: var(--color-text-tertiary) !important;
+}
+
+.dark .ant-input-clear-icon:hover {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Date picker in dark mode */
+.dark .ant-picker-focused {
+  border-color: var(--color-primary) !important;
+}
+
+.dark .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: var(--color-primary) !important;
+}
+
+.dark .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
+  background: var(--color-primary) !important;
+}
+
+.dark .ant-picker-cell:hover:not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end) .ant-picker-cell-inner {
+  background: var(--color-surface-hover) !important;
+}
+
+/* Pagination in dark mode */
+.dark .ant-pagination-item:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+.dark .ant-pagination-prev:hover .ant-pagination-item-link,
+.dark .ant-pagination-next:hover .ant-pagination-item-link {
+  background-color: var(--color-surface-hover) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+
+.dark .ant-pagination-disabled .ant-pagination-item-link {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-tertiary) !important;
+}
+
+/* Dropdown menu in dark mode */
+.dark .ant-dropdown-menu-item-danger:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Modal in dark mode */
+.dark .ant-modal-footer {
+  background-color: var(--color-surface) !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+.dark .ant-modal-close {
+  color: var(--color-text-secondary) !important;
+}
+
+.dark .ant-modal-close:hover {
+  color: var(--color-text-primary) !important;
+  background-color: var(--color-surface-hover) !important;
+}
+
+/* Select arrow icon */
+.dark .ant-select-arrow {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Input prefix/suffix icons */
+.dark .ant-input-prefix {
+  color: var(--color-text-tertiary) !important;
+}
+
+/* Table filter dropdown */
+.dark .ant-table-filter-dropdown {
+  background-color: var(--color-surface) !important;
+}
+
+/* Spin loading in dark mode */
+.dark .ant-spin-dot-item {
+  background-color: var(--color-primary) !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  /* Make text and controls larger on mobile */
+  .ant-table {
+    font-size: 14px;
+  }
+  
+  .ant-btn {
+    height: 40px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .ant-input {
+    height: 40px;
+    font-size: 14px;
+  }
+  
+  .ant-select-selector {
+    height: 40px !important;
+    font-size: 14px !important;
+  }
+  
+  .ant-select-selection-item {
+    line-height: 40px !important;
+  }
+  
+  .ant-picker {
+    height: 40px;
+    font-size: 14px;
+  }
+  
+  /* Better spacing on mobile */
+  .ant-space-item {
+    margin-bottom: 8px;
+  }
+  
+  /* Table adjustments for mobile */
+  .ant-table-wrapper .ant-table-pagination {
+    margin: 16px 0 !important;
+  }
+  
+  .ant-pagination-options {
+    display: none; /* Hide page size selector on very small screens */
+  }
+}

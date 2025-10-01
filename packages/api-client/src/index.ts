@@ -8,4 +8,5 @@ export * from "./playlists";
 export * from "./tidal";
 export * from "./peaks";
 export * from "./waitlist";
+export * from "./admin/feedback";
 export { default as apiAxiosInstance } from "./utils";

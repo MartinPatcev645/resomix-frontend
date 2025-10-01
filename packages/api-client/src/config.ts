@@ -22,6 +22,12 @@ export interface ApiConfig {
     PLAYLIST_SIMILARITY_HLS: string;
     WAITLIST: string;
     SEGMENT_STATUS: string;
+    // Admin endpoints
+    ADMIN_FEEDBACK_LIST: string;
+    ADMIN_FEEDBACK_DELETE: string;
+    ADMIN_FEEDBACK_BATCH_DELETE: string;
+    ADMIN_FEEDBACK_UPDATE: string;
+    ADMIN_FEEDBACK_MARK_STATUS: string;
   };
 }
 
@@ -77,6 +83,12 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     WAITLIST: "/waitlist/",
     SEGMENT_STATUS: "/segment_status/",
+    // Admin endpoints
+    ADMIN_FEEDBACK_LIST: "/admin/feedback/",
+    ADMIN_FEEDBACK_DELETE: "/admin/feedback/delete/",
+    ADMIN_FEEDBACK_BATCH_DELETE: "/admin/feedback/batch-delete",
+    ADMIN_FEEDBACK_UPDATE: "/admin/feedback/update/",
+    ADMIN_FEEDBACK_MARK_STATUS: "/admin/feedback/mark-status/",
   },
 };
 
