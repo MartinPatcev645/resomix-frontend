@@ -1,71 +1,143 @@
 @import "tailwindcss";
-@source "../../../packages/ui/src";
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* ─── Light Mode (Default) ─────────────────────────────── */
+  /* Primary colors - Soft indigo/purple palette */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #a5b4fc;
+  --color-primary-dark: #4338ca;
+  
+  /* Accent colors */
+  --color-accent: #ec4899;
+  --color-accent-hover: #db2777;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Background colors */
+  --color-background: #ffffff;
+  --color-background-secondary: #f9fafb;
+  --color-background-tertiary: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f9fafb;
+  
+  /* Border colors */
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-border-dark: #d1d5db;
+  
+  /* Text colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  
+  /* Shadow colors */
+  --color-shadow: rgba(0, 0, 0, 0.05);
+  --color-shadow-md: rgba(0, 0, 0, 0.1);
+  --color-shadow-lg: rgba(0, 0, 0, 0.15);
+  
+  /* Opacity levels (black base for light mode) */
+  --opacity-5: rgba(0, 0, 0, 0.05);
+  --opacity-10: rgba(0, 0, 0, 0.10);
+  --opacity-15: rgba(0, 0, 0, 0.15);
+  --opacity-20: rgba(0, 0, 0, 0.20);
+  --opacity-30: rgba(0, 0, 0, 0.30);
+  --opacity-40: rgba(0, 0, 0, 0.40);
+  --opacity-50: rgba(0, 0, 0, 0.50);
+  --opacity-60: rgba(0, 0, 0, 0.60);
+  --opacity-70: rgba(0, 0, 0, 0.70);
+  --opacity-80: rgba(0, 0, 0, 0.80);
+  --opacity-90: rgba(0, 0, 0, 0.90);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+.dark {
+  /* ─── Dark Mode ─────────────────────────────────────────── */
+  /* Primary colors - Softer, muted tones for dark mode */
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-light: #6366f1;
+  --color-primary-dark: #c7d2fe;
+  
+  /* Accent colors */
+  --color-accent: #f472b6;
+  --color-accent-hover: #f9a8d4;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+  
+  /* Background colors - Soft dark grays with slight blue tint */
+  --color-background: #0f172a;
+  --color-background-secondary: #1e293b;
+  --color-background-tertiary: #334155;
+  --color-surface: #1e293b;
+  --color-surface-hover: #334155;
+  
+  /* Border colors */
+  --color-border: #334155;
+  --color-border-light: #1e293b;
+  --color-border-dark: #475569;
+  
+  /* Text colors */
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-text-inverse: #0f172a;
+  
+  /* Shadow colors */
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-md: rgba(0, 0, 0, 0.4);
+  --color-shadow-lg: rgba(0, 0, 0, 0.5);
+  
+  /* Opacity levels (white base for dark mode) */
+  --opacity-5: rgba(255, 255, 255, 0.05);
+  --opacity-10: rgba(255, 255, 255, 0.10);
+  --opacity-15: rgba(255, 255, 255, 0.15);
+  --opacity-20: rgba(255, 255, 255, 0.20);
+  --opacity-30: rgba(255, 255, 255, 0.30);
+  --opacity-40: rgba(255, 255, 255, 0.40);
+  --opacity-50: rgba(255, 255, 255, 0.50);
+  --opacity-60: rgba(255, 255, 255, 0.60);
+  --opacity-70: rgba(255, 255, 255, 0.70);
+  --opacity-80: rgba(255, 255, 255, 0.80);
+  --opacity-90: rgba(255, 255, 255, 0.90);
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* ─── Base Styles ───────────────────────────────────────── */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-  a:hover {
-    color: #747bff;
+  
+  * {
+    border-color: var(--color-border);
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+/* ─── Utility Classes ───────────────────────────────────── */
+@layer utilities {
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+  
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+  
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+  
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  
+  .border-default {
+    border-color: var(--color-border);
   }
 }

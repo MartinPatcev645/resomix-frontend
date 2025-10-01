@@ -16,9 +16,12 @@
     "@resomix/stores": "workspace:*",
     "@resomix/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.11",
+    "antd": "^5.27.4",
+    "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.23.0",
+    "rechart": "^0.0.1",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
