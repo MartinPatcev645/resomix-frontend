@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi.responses import JSONResponse
 from fastapi import status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -393,3 +393,92 @@ class ContactController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=response_data
             )
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_contact_list_admin(self, db: AsyncSession, request: Request, filters: Dict[str, Any]) -> JSONResponse:
+        """Get paginated contact list with filters for admin."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        try:
+            result = await self.contact_service.get_contact_list_admin(db, filters)
+            if result.get("success"):
+                contact_list = [{"id": c.id, "user_id": c.user_id, "name": c.name, "email": c.email,
+                                "subject": c.subject, "phone": c.phone, "message": c.message, "status": c.status,
+                                "submitted_at": c.submitted_at.isoformat() if c.submitted_at else None}
+                               for c in result.get("data", [])]
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = {"success": True, "data": contact_list, "pagination": result.get("pagination")}
+                self.logging_service.log(async_db=db, level="INFO", category="ADMIN_ACTION",
+                    action="admin_contact_list_success", message="Admin contact list retrieved successfully",
+                    correlation_id=correlation_id, request=request, status_code=200, duration_ms=duration_ms,
+                    metadata={"filters": filters, "result_count": len(contact_list), "operation": "admin_contact_list"})
+                return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            else:
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(success=False, error=result.get("error", "Failed to retrieve contact list")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def delete_contact_admin(self, db: AsyncSession, request: Request, contact_id: int) -> JSONResponse:
+        """Delete a single contact entry."""
+        try:
+            result = await self.contact_service.delete_contact_admin(db, contact_id)
+            if result.get("success"):
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                    content=format_response(success=True, data={"message": result.get("message")}))
+            else:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error=result.get("error")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def batch_delete_contact_admin(self, db: AsyncSession, request: Request, contact_ids: List[int]) -> JSONResponse:
+        """Delete multiple contact entries."""
+        try:
+            result = await self.contact_service.batch_delete_contact_admin(db, contact_ids)
+            return JSONResponse(status_code=status.HTTP_200_OK,
+                content={"success": result.get("success"), "deleted_count": result.get("deleted_count", 0),
+                        "message": result.get("message", result.get("error", ""))})
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def mark_contact_status_admin(self, db: AsyncSession, request: Request, contact_id: int, status_value: str) -> JSONResponse:
+        """Mark contact status for admin."""
+        try:
+            result = await self.contact_service.mark_contact_status_admin(db, contact_id, status_value)
+            if result.get("success"):
+                contact = result.get("data")
+                contact_data = {"id": contact.id, "user_id": contact.user_id, "name": contact.name,
+                              "email": contact.email, "subject": contact.subject, "phone": contact.phone,
+                              "message": contact.message, "status": contact.status,
+                              "submitted_at": contact.submitted_at.isoformat() if contact.submitted_at else None}
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                    content={"success": True, "data": contact_data, "message": result.get("message")})
+            else:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error=result.get("error")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def export_contact_csv_admin(self, db: AsyncSession, request: Request, filters: Dict[str, Any]) -> JSONResponse:
+        """Export contact to CSV and return download URL."""
+        try:
+            result = await self.contact_service.export_contact_csv_admin(db, filters)
+            if result.get("success"):
+                return JSONResponse(status_code=status.HTTP_200_OK, content={
+                    "success": True, "download_url": result.get("download_url"),
+                    "filename": result.get("filename"), "expires_at": result.get("expires_at")
+                })
+            else:
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(success=False, error=result.get("error", "Failed to export contact")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))

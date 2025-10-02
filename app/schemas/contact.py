@@ -15,8 +15,9 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator, EmailStr
+from datetime import datetime
 from app.schemas.common import StatusEnum
 
 
@@ -117,4 +118,100 @@ class ContactUpdateRequest(BaseModel):
             "example": {
                 "status": "resolved"
             }
-        } 
+        }
+
+
+# ============================================================================
+# Admin Schemas
+# ============================================================================
+
+class AdminContactFilters(BaseModel):
+    """Query parameters for admin contact list endpoint."""
+    page: int = Field(1, ge=1, description="Page number")
+    page_size: int = Field(30, ge=1, le=100, description="Items per page")
+    search: Optional[str] = Field(None, description="Search term")
+    search_column: Optional[str] = Field("message", description="Column to search in: id, user_id, name, email, message")
+    status: Optional[str] = Field(None, description="Filter by status: open, resolved")
+    date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    sort_by: str = Field("id", description="Column to sort by")
+    sort_order: str = Field("desc", description="Sort order: asc or desc")
+
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata."""
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class AdminContactListResponse(BaseModel):
+    """Response schema for admin contact list."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: List[ContactEntity] = Field(..., description="List of contact entries")
+    pagination: PaginationMeta = Field(..., description="Pagination information")
+
+
+class AdminBatchDeleteRequest(BaseModel):
+    """Request schema for batch delete operation."""
+    ids: List[int] = Field(..., description="List of contact IDs to delete", min_length=1)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "ids": [1, 2, 3, 4, 5]
+            }
+        }
+
+
+class AdminBatchDeleteResponse(BaseModel):
+    """Response schema for batch delete operation."""
+    success: bool = Field(True, description="Always true for successful responses")
+    deleted_count: int = Field(..., description="Number of items deleted")
+    message: str = Field(..., description="Success message")
+
+
+class AdminContactDetailResponse(BaseModel):
+    """Response schema for admin contact detail operations."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: ContactEntity = Field(..., description="Contact data")
+    message: str = Field(..., description="Success message")
+
+
+class AdminContactExportRequest(BaseModel):
+    """Request schema for contact export."""
+    format: str = Field("csv", description="Export format (only csv supported)")
+    page: int = Field(1, ge=1, description="Page number (not used in export)")
+    page_size: int = Field(30, ge=1, le=100, description="Items per page (not used in export)")
+    search: Optional[str] = Field(None, description="Search term")
+    search_column: Optional[str] = Field("message", description="Column to search in")
+    status: Optional[str] = Field(None, description="Filter by status")
+    date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    sort_by: str = Field("id", description="Column to sort by")
+    sort_order: str = Field("desc", description="Sort order: asc or desc")
+
+
+class AdminContactExportResponse(BaseModel):
+    """Response schema for contact export."""
+    success: bool = Field(True, description="Always true for successful responses")
+    download_url: str = Field(..., description="URL to download the exported file")
+    filename: str = Field(..., description="Name of the exported file")
+    expires_at: str = Field(..., description="ISO timestamp when the download link expires")
+
+
+class AdminDeleteResponse(BaseModel):
+    """Response schema for delete operations."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: Dict[str, str] = Field(..., description="Delete result data")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "message": "Contact deleted successfully"
+                }
+            }
+        }

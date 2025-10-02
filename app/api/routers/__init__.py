@@ -19,6 +19,7 @@ from .metadata import router as metadata_router
 from .search import router as search_router
 from .feedback import router as feedback_router
 from .admin.feedback import router as admin_feedback_router
+from .admin.contact import router as admin_contact_router
 from .contact import router as contact_router
 from .health import router as health_router
 from .preview import router as preview_router
@@ -37,6 +38,7 @@ all_routers = [
     search_router,
     feedback_router,
     admin_feedback_router,
+    admin_contact_router,
     contact_router,
     health_router,
     preview_router,
