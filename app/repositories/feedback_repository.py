@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete, func, and_, or_, desc, asc
+from sqlalchemy import select, delete, func, and_, or_, desc, asc, String
 from datetime import datetime
 from app.models.feedback import Feedback
 from app.repositories.base_repository import BaseRepository
@@ -282,25 +282,25 @@ class FeedbackRepository(BaseRepository[Feedback]):
         if status != "all":
             filters.append(Feedback.status == status)
         
-        # Search filter
+        # Search filter - only support 'message' and 'id'
         if search and search_column:
-            search_term = f"%{search}%"
             if search_column == "message":
+                search_term = f"%{search}%"
                 filters.append(Feedback.message.like(search_term))
-            elif search_column == "category":
-                filters.append(Feedback.category.like(search_term))
-            elif search_column == "user_id":
-                filters.append(Feedback.user_id.like(search_term))
+            elif search_column == "id":
+                # For ID search, try exact match first, then partial match
+                try:
+                    # Try exact match if search is a number
+                    search_id = int(search)
+                    filters.append(Feedback.id == search_id)
+                except ValueError:
+                    # If not a number, do partial match by converting ID to string
+                    search_term = f"%{search}%"
+                    filters.append(func.cast(Feedback.id, String).like(search_term))
         elif search:
-            # Search in all columns if no specific column
+            # Default to message search if no column specified
             search_term = f"%{search}%"
-            filters.append(
-                or_(
-                    Feedback.message.like(search_term),
-                    Feedback.category.like(search_term),
-                    Feedback.user_id.like(search_term)
-                )
-            )
+            filters.append(Feedback.message.like(search_term))
         
         # Date range filter
         if date_from:
@@ -458,3 +458,86 @@ class FeedbackRepository(BaseRepository[Feedback]):
             "avg_recommendation": round(float(avg_recommendation), 2),
             "by_category": category_stats
         }
+    
+    async def get_feedback_for_export(
+        self,
+        db: AsyncSession,
+        search: Optional[str] = None,
+        search_column: Optional[str] = None,
+        status: str = "all",
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        sort_by: str = "submitted_at",
+        sort_order: str = "desc"
+    ) -> List[Feedback]:
+        """
+        Get all feedback for export (no pagination).
+        
+        Args:
+            db: Database session
+            search: Search term
+            search_column: Column to search in (message, id)
+            status: Filter by status (open, resolved, all)
+            date_from: Start date filter
+            date_to: End date filter
+            sort_by: Column to sort by
+            sort_order: Sort order (asc, desc)
+            
+        Returns:
+            List of all feedback matching filters
+        """
+        # Build base query
+        query = select(Feedback)
+        
+        # Apply filters
+        filters = []
+        
+        # Status filter
+        if status != "all":
+            filters.append(Feedback.status == status)
+        
+        # Search filter - only support 'message' and 'id'
+        if search and search_column:
+            if search_column == "message":
+                search_term = f"%{search}%"
+                filters.append(Feedback.message.like(search_term))
+            elif search_column == "id":
+                try:
+                    search_id = int(search)
+                    filters.append(Feedback.id == search_id)
+                except ValueError:
+                    search_term = f"%{search}%"
+                    filters.append(func.cast(Feedback.id, String).like(search_term))
+        elif search:
+            search_term = f"%{search}%"
+            filters.append(Feedback.message.like(search_term))
+        
+        # Date range filter
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+                filters.append(Feedback.submitted_at >= date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+                filters.append(Feedback.submitted_at < date_to_obj.replace(hour=23, minute=59, second=59))
+            except ValueError:
+                pass
+        
+        # Apply all filters
+        if filters:
+            query = query.where(and_(*filters))
+        
+        # Apply sorting
+        sort_column = getattr(Feedback, sort_by, Feedback.submitted_at)
+        if sort_order == "asc":
+            query = query.order_by(asc(sort_column))
+        else:
+            query = query.order_by(desc(sort_column))
+        
+        # Execute query (no pagination)
+        result = await db.execute(query)
+        return result.scalars().all()

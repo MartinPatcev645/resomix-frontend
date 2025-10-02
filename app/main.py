@@ -23,6 +23,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from starlette.exceptions import HTTPException
 
@@ -120,6 +121,12 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     if not os.path.exists(settings.temp_dir):
         os.makedirs(settings.temp_dir)
     
+    # Create exports directory if it doesn't exist
+    exports_dir = os.path.join(os.getcwd(), 'exports')
+    if not os.path.exists(exports_dir):
+        os.makedirs(exports_dir)
+        print(f"Created exports directory: {exports_dir}")
+    
     # Check if FFmpeg is installed at startup
     ffmpeg_available = AudioService.is_ffmpeg_installed()
     if not ffmpeg_available:
@@ -164,6 +171,11 @@ app.add_middleware(TimingMiddleware)
 # Include all routers
 for router in all_routers:
     app.include_router(router)
+
+# Mount static files for exports
+exports_dir = os.path.join(os.getcwd(), 'exports')
+if os.path.exists(exports_dir):
+    app.mount("/exports", StaticFiles(directory=exports_dir), name="exports")
 
 
 # Root endpoint

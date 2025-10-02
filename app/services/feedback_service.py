@@ -20,6 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.feedback_repository import FeedbackRepository
 from app.models.feedback import Feedback
 import math
+import csv
+import os
+import uuid
+from datetime import datetime, timedelta
+from app.core.config import settings
 
 
 class FeedbackService:
@@ -488,4 +493,96 @@ class FeedbackService:
                     "avg_recommendation": 0.0,
                     "by_category": {}
                 }
+            }
+    
+    async def export_feedback_csv_admin(
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Export feedback to CSV file and return download URL.
+        
+        Args:
+            db: Database session
+            filters: Dictionary of filter parameters
+            
+        Returns:
+            Export result with download URL
+        """
+        try:
+            # Extract filter parameters
+            search = filters.get('search')
+            search_column = filters.get('search_column', 'message')
+            status = filters.get('status', 'all')
+            date_from = filters.get('date_from')
+            date_to = filters.get('date_to')
+            sort_by = filters.get('sort_by', 'submitted_at')
+            sort_order = filters.get('sort_order', 'desc')
+            
+            # Get all feedback data (no pagination)
+            feedback_list = await self.feedback_repository.get_feedback_for_export(
+                db=db,
+                search=search,
+                search_column=search_column,
+                status=status,
+                date_from=date_from,
+                date_to=date_to,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+            
+            # Generate unique filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            unique_id = uuid.uuid4().hex[:8]
+            filename = f"feedback_export_{timestamp}_{unique_id}.csv"
+            
+            # Create exports directory if it doesn't exist
+            export_dir = os.path.join(os.getcwd(), 'exports')
+            os.makedirs(export_dir, exist_ok=True)
+            
+            # Generate CSV file
+            file_path = os.path.join(export_dir, filename)
+            
+            with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Write header
+                writer.writerow([
+                    'ID', 'User ID', 'Category', 'Satisfaction',
+                    'Recommendation', 'Message', 'Status', 'Submitted At'
+                ])
+                
+                # Write data rows
+                for feedback in feedback_list:
+                    writer.writerow([
+                        feedback.id,
+                        feedback.user_id or '',
+                        feedback.category or '',
+                        feedback.satisfaction if feedback.satisfaction is not None else '',
+                        feedback.recommendation if feedback.recommendation is not None else '',
+                        feedback.message or '',
+                        feedback.status,
+                        feedback.submitted_at.isoformat() if feedback.submitted_at else ''
+                    ])
+            
+            # Generate public URL
+            base_url = getattr(settings, 'base_url', 'https://bserver.resomix.com')
+            download_url = f"{base_url}/exports/{filename}"
+            
+            # Calculate expiration time (24 hours from now)
+            expires_at = datetime.now() + timedelta(hours=24)
+            
+            return {
+                "success": True,
+                "download_url": download_url,
+                "filename": filename,
+                "expires_at": expires_at.isoformat()
+            }
+            
+        except Exception as e:
+            print(f"Error exporting feedback: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while exporting feedback"
             }

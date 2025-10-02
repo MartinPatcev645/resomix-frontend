@@ -1042,3 +1042,106 @@ class FeedbackController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=response_data
             )
+    
+    async def export_feedback_csv_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        filters: Dict[str, Any]
+    ) -> JSONResponse:
+        """Export feedback to CSV and return download URL."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.feedback_service.export_feedback_csv_admin(db, filters)
+            
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_data = {
+                    "success": True,
+                    "download_url": result.get("download_url"),
+                    "filename": result.get("filename"),
+                    "expires_at": result.get("expires_at")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN_ACTION",
+                    action="admin_export_feedback_success",
+                    message="Feedback exported successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "filters": filters,
+                        "filename": result.get("filename"),
+                        "operation": "admin_feedback_export"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
+            else:
+                response_data = format_response(
+                    success=False,
+                    error=result.get("error", "Failed to export feedback")
+                )
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN_ACTION",
+                    action="admin_export_feedback_failed",
+                    message="Failed to export feedback",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "filters": filters,
+                        "error": result.get("error"),
+                        "operation": "admin_feedback_export"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_data
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="admin_export_feedback_exception",
+                message="Exception occurred while exporting feedback",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="export_feedback_csv_admin",
+                metadata={
+                    "filters": filters,
+                    "error_type": type(e).__name__,
+                    "operation": "admin_feedback_export"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )

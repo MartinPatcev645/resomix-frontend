@@ -31,6 +31,8 @@ from app.schemas.feedback import (
     AdminFeedbackDetailResponse,
     AdminFeedbackStatsResponse,
     AdminDeleteResponse,
+    AdminFeedbackExportRequest,
+    AdminFeedbackExportResponse,
     FeedbackErrorResponse
 )
 
@@ -63,7 +65,7 @@ async def get_feedback_list(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(30, ge=1, le=100, description="Items per page"),
     search: Optional[str] = Query(None, description="Search term"),
-    search_column: Optional[str] = Query(None, description="Column to search in: message, category, or user_id"),
+    search_column: Optional[str] = Query("message", description="Column to search in: message or id"),
     status: str = Query("all", description="Filter by status: open, resolved, or all"),
     date_from: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
@@ -79,7 +81,7 @@ async def get_feedback_list(
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 30, max: 100)
     - **search**: Search term to filter results
-    - **search_column**: Specific column to search in (message, category, user_id)
+    - **search_column**: Specific column to search in (message or id only)
     - **status**: Filter by status (open, resolved, all)
     - **date_from**: Start date for filtering (YYYY-MM-DD)
     - **date_to**: End date for filtering (YYYY-MM-DD)
@@ -88,6 +90,17 @@ async def get_feedback_list(
     
     Returns paginated feedback list with pagination metadata.
     """
+    # Validate search_column
+    ALLOWED_SEARCH_COLUMNS = ['message', 'id']
+    if search_column and search_column not in ALLOWED_SEARCH_COLUMNS:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
+            }
+        )
+    
     filters = {
         "page": page,
         "page_size": page_size,
@@ -271,3 +284,49 @@ async def get_feedback_statistics(
     Useful for admin dashboard and reporting.
     """
     return await feedback_controller.get_feedback_statistics_admin(db, request)
+
+
+@router.post(
+    "/export",
+    response_model=AdminFeedbackExportResponse,
+    status_code=200,
+    summary="Export Feedback to CSV",
+    description="Export feedback data to CSV file with current filters and return download URL.",
+    response_description="Download URL for exported CSV file"
+)
+async def export_feedback(
+    request: Request,
+    export_request: AdminFeedbackExportRequest,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Export feedback to CSV.
+    
+    This endpoint generates a CSV file containing all feedback matching the provided filters:
+    - **page**: Page number (for reference, export includes all matching records)
+    - **page_size**: Page size (for reference, export includes all matching records)
+    - **search**: Search term to filter results
+    - **search_column**: Specific column to search in (message or id)
+    - **status**: Filter by status (open, resolved, all)
+    - **date_from**: Start date for filtering (YYYY-MM-DD)
+    - **date_to**: End date for filtering (YYYY-MM-DD)
+    - **sort_by**: Column to sort by
+    - **sort_order**: Sort order (asc, desc)
+    
+    Returns a download URL that expires in 24 hours.
+    The CSV file includes: ID, User ID, Category, Satisfaction, Recommendation, Message, Status, Submitted At
+    """
+    # Validate search_column
+    ALLOWED_SEARCH_COLUMNS = ['message', 'id']
+    if export_request.search_column and export_request.search_column not in ALLOWED_SEARCH_COLUMNS:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
+            }
+        )
+    
+    filters = export_request.dict()
+    return await feedback_controller.export_feedback_csv_admin(db, request, filters)

@@ -326,3 +326,49 @@ class AdminDeleteResponse(BaseModel):
                 "message": "Feedback deleted successfully"
             }
         }
+
+
+class AdminFeedbackExportRequest(BaseModel):
+    """Request schema for feedback export."""
+    page: int = Field(1, ge=1, description="Page number")
+    page_size: int = Field(30, ge=1, le=100, description="Items per page")
+    search: Optional[str] = Field(None, description="Search term")
+    search_column: Optional[str] = Field("message", description="Column to search in: message or id")
+    status: Optional[str] = Field("all", description="Filter by status: open, resolved, or all")
+    date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    sort_by: str = Field("submitted_at", description="Column to sort by")
+    sort_order: str = Field("desc", description="Sort order: asc or desc")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "page": 1,
+                "page_size": 30,
+                "search": "bug",
+                "search_column": "message",
+                "status": "open",
+                "date_from": "2025-01-01",
+                "date_to": "2025-12-31",
+                "sort_by": "submitted_at",
+                "sort_order": "desc"
+            }
+        }
+
+
+class AdminFeedbackExportResponse(BaseModel):
+    """Response schema for feedback export."""
+    success: bool = Field(True, description="Always true for successful responses")
+    download_url: str = Field(..., description="URL to download the exported file")
+    filename: str = Field(..., description="Name of the exported file")
+    expires_at: str = Field(..., description="ISO timestamp when the download link expires")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "download_url": "https://bserver.resomix.com/exports/feedback_20250102_123456.csv",
+                "filename": "feedback_20250102_123456.csv",
+                "expires_at": "2025-01-03T12:34:56Z"
+            }
+        }
