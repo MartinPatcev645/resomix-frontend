@@ -30,7 +30,8 @@ from app.schemas.playlist import (
     AdminDeleteResponse,
     AdminPlaylistExportRequest,
     AdminPlaylistExportResponse,
-    PlaylistErrorResponse
+    PlaylistErrorResponse,
+    AdminPlaylistDetailResponse
 )
 
 # Create router instance
@@ -105,6 +106,44 @@ async def get_playlist_list(
         "sort_by": sort_by, "sort_order": sort_order
     }
     return await playlist_controller.get_playlist_list_admin(db, request, filters)
+
+
+@router.get(
+    "/{uuid}",
+    response_model=AdminPlaylistDetailResponse,
+    status_code=200,
+    summary="Get Playlist Details by UUID",
+    description="Get detailed playlist information including all tracks and metadata by UUID.",
+    responses={
+        400: {
+            "model": PlaylistErrorResponse,
+            "description": "Invalid UUID format"
+        },
+        404: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist not found"
+        }
+    }
+)
+async def get_playlist_detail(
+    request: Request,
+    uuid: str = Path(..., description="Playlist UUID", regex="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"),
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Get detailed playlist information by UUID.
+    
+    This endpoint retrieves complete playlist details including:
+    - Playlist basic information (name, type, visibility, etc.)
+    - Track count
+    - Seed track details (if similarity playlist)
+    - All tracks with complete metadata (artists, genre, label, album, etc.)
+    - Track positions and similarity scores
+    
+    Returns detailed playlist data with all associated tracks ordered by position.
+    """
+    return await playlist_controller.get_playlist_detail_by_uuid_admin(db, request, uuid)
 
 
 @router.delete(

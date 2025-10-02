@@ -237,3 +237,71 @@ class AdminPlaylistExportResponse(BaseModel):
     download_url: str = Field(..., description="URL to download the exported file")
     filename: str = Field(..., description="Name of the exported file")
     expires_at: str = Field(..., description="ISO timestamp when the download link expires")
+
+
+# Admin Playlist Detail Schemas
+class SeedTrackDetail(BaseModel):
+    """Schema for seed track details."""
+    id: int
+    uuid: str
+    title: str
+    artists: List[str]
+    duration_sec: float
+    bpm: Optional[int]
+    musical_key: Optional[str]
+    genre: Optional[str]
+    label: Optional[str]
+    year: Optional[int]
+
+
+class TrackDetail(BaseModel):
+    """Schema for track details in playlist."""
+    id: int
+    uuid: str
+    title: str
+    artists: List[str]
+    duration_sec: float
+    file_size: int
+    type: str
+    genre: Optional[str]
+    label: Optional[str]
+    album: Optional[str]
+    year: Optional[int]
+    bpm: Optional[int]
+    musical_key: Optional[str]
+    file_path: str
+    preview_path: Optional[str]
+    created_at: str
+
+
+class PlaylistTrackDetail(BaseModel):
+    """Schema for track with position in playlist."""
+    position: int
+    score: Optional[float]
+    track: TrackDetail
+
+
+class PlaylistDetailInfo(BaseModel):
+    """Schema for playlist basic info."""
+    id: int
+    uuid: str
+    user_id: Optional[str]
+    name: str
+    is_public: bool
+    type: str
+    seed_track_id: Optional[int]
+    created_at: str
+    track_count: int
+
+
+class PlaylistDetailData(BaseModel):
+    """Schema for complete playlist detail data."""
+    playlist: PlaylistDetailInfo
+    seed_track: Optional[SeedTrackDetail]
+    tracks: List[PlaylistTrackDetail]
+
+
+class AdminPlaylistDetailResponse(BaseModel):
+    """Response schema for admin playlist detail."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: PlaylistDetailData = Field(..., description="Complete playlist details")

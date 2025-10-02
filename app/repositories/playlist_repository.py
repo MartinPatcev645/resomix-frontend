@@ -898,3 +898,169 @@ class PlaylistRepository(BaseRepository[Playlist]):
         except Exception as e:
             print(f"Error getting playlists for export: {e}")
             raise e
+    
+    async def async_get_playlist_detail_by_uuid_admin(
+        self,
+        db: AsyncSession,
+        playlist_uuid: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get detailed playlist information by UUID for admin.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            Dictionary with complete playlist details or None if not found
+        """
+        try:
+            from sqlalchemy import func
+            from sqlalchemy.orm import aliased
+            from app.models.track import Track
+            from app.models.artist import Artist
+            from app.models.genre import Genre
+            from app.models.label import Label
+            from app.models.album import Album
+            from app.models.playlist import PlaylistTrack
+            
+            # Get playlist
+            query = select(Playlist).where(Playlist.uuid == playlist_uuid)
+            result = await db.execute(query)
+            playlist = result.scalar_one_or_none()
+            
+            if not playlist:
+                return None
+            
+            # Get track count
+            count_query = select(func.count()).select_from(PlaylistTrack).where(
+                PlaylistTrack.playlist_id == playlist.id
+            )
+            count_result = await db.execute(count_query)
+            track_count = count_result.scalar() or 0
+            
+            # Get seed track if exists
+            seed_track_data = None
+            if playlist.seed_track_id:
+                seed_query = select(
+                    Track.id,
+                    Track.uuid,
+                    Track.title,
+                    Track.duration_sec,
+                    Track.bpm,
+                    Track.musical_key,
+                    Track.year,
+                    Genre.name.label('genre_name'),
+                    Label.name.label('label_name')
+                ).outerjoin(Genre, Track.genre_id == Genre.id
+                ).outerjoin(Label, Track.label_id == Label.id
+                ).where(Track.id == playlist.seed_track_id)
+                
+                seed_result = await db.execute(seed_query)
+                seed_row = seed_result.first()
+                
+                if seed_row:
+                    # Get seed track artists
+                    from app.models.track import TrackArtist
+                    artists_query = select(Artist.name).join(
+                        TrackArtist, Artist.id == TrackArtist.artist_id
+                    ).where(TrackArtist.track_id == seed_row.id)
+                    artists_result = await db.execute(artists_query)
+                    artist_names = [row[0] for row in artists_result.fetchall()]
+                    
+                    seed_track_data = {
+                        "id": seed_row.id,
+                        "uuid": seed_row.uuid,
+                        "title": seed_row.title,
+                        "artists": artist_names if artist_names else [],
+                        "duration_sec": float(seed_row.duration_sec) if seed_row.duration_sec else 0.0,
+                        "bpm": seed_row.bpm,
+                        "musical_key": seed_row.musical_key,
+                        "genre": seed_row.genre_name,
+                        "label": seed_row.label_name,
+                        "year": seed_row.year
+                    }
+            
+            # Get all tracks in playlist with metadata
+            tracks_query = select(
+                PlaylistTrack.position,
+                PlaylistTrack.score,
+                Track.id,
+                Track.uuid,
+                Track.title,
+                Track.duration_sec,
+                Track.file_size,
+                Track.type,
+                Track.year,
+                Track.bpm,
+                Track.musical_key,
+                Track.file_path,
+                Track.preview_path,
+                Track.created_at,
+                Genre.name.label('genre_name'),
+                Label.name.label('label_name'),
+                Album.title.label('album_name')
+            ).join(Track, PlaylistTrack.track_id == Track.id
+            ).outerjoin(Genre, Track.genre_id == Genre.id
+            ).outerjoin(Label, Track.label_id == Label.id
+            ).outerjoin(Album, Track.album_id == Album.id
+            ).where(PlaylistTrack.playlist_id == playlist.id
+            ).order_by(PlaylistTrack.position.asc())
+            
+            tracks_result = await db.execute(tracks_query)
+            track_rows = tracks_result.fetchall()
+            
+            # Format tracks with artists
+            tracks_data = []
+            for row in track_rows:
+                # Get artists for this track
+                from app.models.track import TrackArtist
+                artists_query = select(Artist.name).join(
+                    TrackArtist, Artist.id == TrackArtist.artist_id
+                ).where(TrackArtist.track_id == row.id)
+                artists_result = await db.execute(artists_query)
+                artist_names = [a[0] for a in artists_result.fetchall()]
+                
+                tracks_data.append({
+                    "position": row.position,
+                    "score": float(row.score) if row.score else None,
+                    "track": {
+                        "id": row.id,
+                        "uuid": row.uuid,
+                        "title": row.title,
+                        "artists": artist_names if artist_names else [],
+                        "duration_sec": float(row.duration_sec) if row.duration_sec else 0.0,
+                        "file_size": row.file_size or 0,
+                        "type": row.type or "electrobuzz",
+                        "genre": row.genre_name,
+                        "label": row.label_name,
+                        "album": row.album_name,
+                        "year": row.year,
+                        "bpm": row.bpm,
+                        "musical_key": row.musical_key,
+                        "file_path": row.file_path,
+                        "preview_path": row.preview_path,
+                        "created_at": row.created_at.isoformat() if row.created_at else None
+                    }
+                })
+            
+            # Format response
+            return {
+                "playlist": {
+                    "id": playlist.id,
+                    "uuid": playlist.uuid,
+                    "user_id": playlist.user_id,
+                    "name": playlist.name,
+                    "is_public": playlist.is_public,
+                    "type": playlist.type,
+                    "seed_track_id": playlist.seed_track_id,
+                    "created_at": playlist.created_at.isoformat() if playlist.created_at else None,
+                    "track_count": track_count
+                },
+                "seed_track": seed_track_data,
+                "tracks": tracks_data
+            }
+            
+        except Exception as e:
+            print(f"Error getting playlist detail by UUID: {e}")
+            raise e

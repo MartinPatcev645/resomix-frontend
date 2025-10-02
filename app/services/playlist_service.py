@@ -446,3 +446,50 @@ class PlaylistService:
                 "success": False,
                 "error": "An error occurred while exporting playlists"
             }
+    
+    async def get_playlist_detail_by_uuid_admin(
+        self,
+        db: AsyncSession,
+        playlist_uuid: str
+    ) -> Dict[str, Any]:
+        """
+        Get detailed playlist information by UUID for admin.
+        
+        Args:
+            db: Database session
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            Dictionary with success status and playlist details
+        """
+        try:
+            # Validate UUID format
+            import re
+            uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            if not re.match(uuid_pattern, playlist_uuid.lower()):
+                return {
+                    "success": False,
+                    "error": "Invalid playlist UUID format"
+                }
+            
+            result = await self.playlist_repository.async_get_playlist_detail_by_uuid_admin(
+                db, playlist_uuid
+            )
+            
+            if result:
+                return {
+                    "success": True,
+                    "data": result
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Playlist not found"
+                }
+                
+        except Exception as e:
+            print(f"Error getting playlist detail by UUID: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving playlist details"
+            }

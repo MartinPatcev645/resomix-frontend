@@ -1026,3 +1026,107 @@ class PlaylistController:
                 }
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def get_playlist_detail_by_uuid_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_uuid: str
+    ) -> JSONResponse:
+        """
+        Get detailed playlist information by UUID.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            playlist_uuid: Playlist UUID
+            
+        Returns:
+            JSON response with playlist details
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.get_playlist_detail_by_uuid_admin(db, playlist_uuid)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "data": result.get("data")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="get_playlist_detail_admin",
+                    message=f"Admin retrieved playlist detail for UUID {playlist_uuid}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist detail",
+                    metadata={
+                        "playlist_uuid": playlist_uuid,
+                        "track_count": result.get("data", {}).get("playlist", {}).get("track_count", 0)
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                error_message = result.get("error", "Playlist not found")
+                status_code = status.HTTP_404_NOT_FOUND if "not found" in error_message.lower() else status.HTTP_400_BAD_REQUEST
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=error_message)
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING" if status_code == 404 else "ERROR",
+                    category="ADMIN",
+                    action="get_playlist_detail_admin_failed",
+                    message=f"Failed to retrieve playlist detail: {error_message}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=status_code,
+                    duration_ms=duration_ms,
+                    context="admin playlist detail",
+                    metadata={"playlist_uuid": playlist_uuid, "error": error_message}
+                )
+                
+                return JSONResponse(
+                    status_code=status_code,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while retrieving playlist details"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="get_playlist_detail_admin_exception",
+                message="Exception occurred while retrieving playlist detail",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist detail",
+                metadata={
+                    "playlist_uuid": playlist_uuid,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
