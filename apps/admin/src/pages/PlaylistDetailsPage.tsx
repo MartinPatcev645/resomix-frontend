@@ -8,7 +8,7 @@ import { useStatusModals } from '@resomix/hooks'
 import { StatusModal } from '@resomix/ui'
 
 function PlaylistDetailsPage() {
-  const { id } = useParams<{ id: string }>()
+  const { uuid } = useParams<{ uuid: string }>()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [playlistData, setPlaylistData] = useState<PlaylistDetailsResponse['data'] | null>(null)
@@ -21,18 +21,19 @@ function PlaylistDetailsPage() {
   } = useStatusModals()
 
   const fetchPlaylistDetails = async () => {
-    if (!id) return
+    if (!uuid) return
     
     setLoading(true)
     try {
-      const numericId = parseInt(id, 10)
-      if (isNaN(numericId)) {
-        showErrorModal('Invalid Playlist ID', 'The playlist ID must be a valid number.')
+      // Validate UUID format (basic check)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(uuid)) {
+        showErrorModal('Invalid Playlist UUID', 'The playlist UUID format is invalid.')
         setLoading(false)
         return
       }
 
-      const result = await getPlaylistDetails(numericId)
+      const result = await getPlaylistDetails(uuid)
       
       if (result.success && 'data' in result && result.data) {
         setPlaylistData(result.data)
@@ -55,7 +56,7 @@ function PlaylistDetailsPage() {
 
   useEffect(() => {
     fetchPlaylistDetails()
-  }, [id])
+  }, [uuid])
 
   const getTypeColor = (type: string) => {
     switch (type) {

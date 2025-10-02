@@ -29,7 +29,7 @@ function App() {
               <Route path="pipeline" element={<PipelinePage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
-              <Route path="playlists/:id" element={<PlaylistDetailsPage />} />
+              <Route path="playlists/:uuid" element={<PlaylistDetailsPage />} />
               <Route path="tracks" element={<TracksPage />} />
               <Route path="logs" element={<LogsPage />} />
             </Route>

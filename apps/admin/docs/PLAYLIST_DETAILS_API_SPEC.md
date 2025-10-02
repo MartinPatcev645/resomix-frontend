@@ -12,13 +12,17 @@ This endpoint retrieves complete information about a single playlist, including:
 - All tracks in the playlist with full details
 - Artist, genre, and label information for each track
 
+**Note:** This endpoint shares the same base path (`/admin/playlist/`) as the playlist list endpoint, but includes a UUID parameter to fetch a specific playlist:
+- **List all playlists**: `GET /admin/playlist/` (without UUID)
+- **Get specific playlist**: `GET /admin/playlist/{uuid}` (with UUID)
+
 ---
 
 ## 🔧 Endpoint Specification
 
 ### Get Playlist Details
 
-**GET** `/admin/playlist/:id`
+**GET** `/admin/playlist/:uuid`
 
 Retrieves detailed information about a specific playlist including all associated tracks.
 
@@ -26,12 +30,12 @@ Retrieves detailed information about a specific playlist including all associate
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | integer | ✅ | Playlist ID (numeric ID, not UUID) |
+| `uuid` | string (UUID v4) | ✅ | Playlist UUID (e.g., "44e77239-b716-4c82-9cd6-7175a152a750") |
 
 #### Request Example
 
 ```http
-GET /admin/playlist/123
+GET /admin/playlist/44e77239-b716-4c82-9cd6-7175a152a750
 Authorization: Bearer <admin_token>
 ```
 
@@ -125,6 +129,15 @@ Authorization: Bearer <admin_token>
 }
 ```
 
+**Error (400 Bad Request - Invalid UUID):**
+
+```json
+{
+  "success": false,
+  "error": "Invalid playlist UUID format"
+}
+```
+
 ---
 
 ## 📊 Data Structure Details
@@ -194,12 +207,12 @@ Authorization: Bearer <admin_token>
 ### 1. SQL Query Structure
 
 ```sql
--- Get playlist details
+-- Get playlist details by UUID
 SELECT 
   p.*,
   (SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id = p.id) as track_count
 FROM playlists p
-WHERE p.id = ?
+WHERE p.uuid = ?
 
 -- Get seed track (if seed_track_id is not null)
 SELECT 
@@ -256,7 +269,7 @@ ORDER BY pt.position ASC
 - Return 404 if playlist doesn't exist
 - Return 404 if playlist exists but has no tracks (or return empty tracks array)
 - Handle missing seed track gracefully (return null in response)
-- Validate playlist ID is numeric
+- Validate playlist UUID format (UUID v4: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` case-insensitive)
 
 ---
 
@@ -314,9 +327,10 @@ ORDER BY pt.position ASC
 
 1. **Authentication**: Require admin token
 2. **Authorization**: Verify admin role/permissions
-3. **Input Validation**: Validate playlist ID is positive integer
+3. **Input Validation**: Validate playlist UUID format using regex pattern `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` (case-insensitive)
 4. **Rate Limiting**: Limit to 60 requests/minute per admin user
 5. **File Path Security**: Ensure file paths don't expose sensitive system information
+6. **SQL Injection Prevention**: Use parameterized queries with UUID as parameter
 
 ---
 

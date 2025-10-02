@@ -262,11 +262,12 @@ export const exportPlaylist = async (
 
 /**
  * Get detailed information about a specific playlist including all tracks
+ * @param playlistUuid - The UUID of the playlist (e.g., "44e77239-b716-4c82-9cd6-7175a152a750")
  */
-export const getPlaylistDetails = async (playlistId: number) => {
+export const getPlaylistDetails = async (playlistUuid: string) => {
   try {
     const data = await axiosWrapper<PlaylistDetailsResponse>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistId}`)
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistUuid}`)
     );
 
     if (data.success && data.data) return data;

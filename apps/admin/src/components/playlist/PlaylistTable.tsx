@@ -78,7 +78,7 @@ function PlaylistTable({
       label: 'Expand Playlist',
       icon: <Expand size={16} />,
       onClick: () => {
-        window.open(`/playlists/${record.id}`, '_blank')
+        window.open(`/playlists/${record.uuid}`, '_blank')
       },
     },
     {
