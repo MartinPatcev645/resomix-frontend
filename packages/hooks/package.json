@@ -12,6 +12,7 @@
     "dependencies": {
         "@resomix/api-client": "workspace:*",
         "@resomix/stores": "workspace:*",
+        "antd": "^5.27.4",
         "hls.js": "^1.6.12",
         "howler": "^2.2.4",
         "jsmediatags": "^3.9.7",

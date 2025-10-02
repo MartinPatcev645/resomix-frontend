@@ -47,6 +47,7 @@ import { WelcomeMessage } from "./Layout/WelcomeMessage";
 import { TermsAcceptance } from "./Layout/TermsAcceptance";
 import { Tooltip } from "./Layout/Tooltip";
 import { StatusMessage } from "./Elements/StatusMessage";
+import { StatusModal } from "./Modals/StatusModal";
 
 export {
   Navbar,
@@ -98,4 +99,5 @@ export {
   Tooltip,
   FeedbackForm,
   StatusMessage,
+  StatusModal,
 };
