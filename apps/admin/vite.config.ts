@@ -16,6 +16,7 @@ export default defineConfig({
       '@resomix/hooks':     path.resolve(__dirname, '../../packages/hooks/src'),
       '@resomix/api-client':path.resolve(__dirname, '../../packages/api-client/src'),
       '@resomix/config':     path.resolve(__dirname, '../../packages/config/src')
-    }
+    },
+    dedupe: ['react', 'react-dom']
   }
 })
