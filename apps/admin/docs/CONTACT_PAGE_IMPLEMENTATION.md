@@ -1230,9 +1230,9 @@ function ContactTableControls({
   }
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 w-full">
       {/* Top row - Search and filters */}
-      <div className="mb-4">
+      <div className="mb-4 overflow-x-auto">
         <Space wrap size="middle" className="w-full">
           {/* Search with column selector */}
           <div className="flex gap-2 flex-wrap w-full md:w-auto">
@@ -1291,7 +1291,7 @@ function ContactTableControls({
       </div>
 
       {/* Bottom row - Action buttons */}
-      <div className="flex flex-wrap gap-2 justify-between items-center">
+      <div className="flex flex-wrap gap-2 justify-between items-center overflow-x-auto">
         <div className="flex-1" />
         
         <Space wrap size="middle">
@@ -1417,10 +1417,10 @@ function ContactPage() {
   }
 
   return (
-    <div>
+    <div className="w-full">
       <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary">Contact</h1>
 
-      <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6">
+      <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6 overflow-hidden">
         {/* Table Controls */}
         <ContactTableControls
           searchText={searchText}

@@ -10,7 +10,6 @@ This document provides the complete backend API specification for Waitlist manag
 2. [API Endpoints Overview](#api-endpoints-overview)
 3. [Endpoint Specifications](#endpoint-specifications)
 4. [Error Handling](#error-handling)
-5. [Security & Authentication](#security--authentication)
 
 ---
 

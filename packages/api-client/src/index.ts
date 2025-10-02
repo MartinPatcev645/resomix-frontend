@@ -11,4 +11,5 @@ export * from "./waitlist";
 export * from "./admin/feedback";
 export * from "./admin/contact";
 export * from "./admin/waitlist";
+export * from "./admin/playlist";
 export { default as apiAxiosInstance } from "./utils";

@@ -261,7 +261,7 @@ function FeedbackTable({
           pageSizeOptions: ['10', '20', '30', '50', '100'],
           onChange: onPageChange,
         }}
-        scroll={{ x: 800 }}
+        scroll={{ x: 'max-content' }}
       />
 
       {/* View Message Modal */}
