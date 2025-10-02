@@ -4,6 +4,7 @@ import {
   deleteFeedback as apiDeleteFeedback,
   batchDeleteFeedback as apiBatchDeleteFeedback,
   markFeedbackStatus,
+  exportFeedback,
   type FeedbackItem as ApiFeedbackItem,
   type FeedbackListParams
 } from '@resomix/api-client'
@@ -32,7 +33,13 @@ const convertApiFeedback = (apiData: ApiFeedbackItem): FeedbackItem => ({
   category: apiData.category,
 })
 
-export function useFeedback() {
+interface UseFeedbackOptions {
+  onError?: (title: string, message: string) => void
+  onSuccess?: (title: string, message: string) => void
+}
+
+export function useFeedback(options?: UseFeedbackOptions) {
+  const { onError, onSuccess } = options || {}
   const [data, setData] = useState<FeedbackItem[]>([])
   const [searchText, setSearchText] = useState('')
   const [searchColumn, setSearchColumn] = useState<keyof FeedbackItem>('message')
@@ -45,6 +52,9 @@ export function useFeedback() {
     pageSize: 30,
     total: 0,
   })
+  const [sortBy, setSortBy] = useState<'id' | 'submitted_at' | 'satisfaction' | 'recommendation' | undefined>(undefined)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(undefined)
+  const [exportLoading, setExportLoading] = useState(false)
 
   // Fetch data from API
   const fetchData = useCallback(async () => {
@@ -72,6 +82,12 @@ export function useFeedback() {
         params.status = statusFilter
       }
 
+      // Add sorting if present
+      if (sortBy) {
+        params.sort_by = sortBy
+        params.sort_order = sortOrder || 'desc'
+      }
+
       console.log('Fetching feedback with params:', params) // Debug log
 
       const result = await getFeedbackList(params)
@@ -83,17 +99,27 @@ export function useFeedback() {
           total: result.pagination.total,
         }))
       } else {
-        message.error((result as any).error || 'Failed to fetch feedback')
+        const errorMsg = (result as any).error || 'Failed to fetch feedback'
+        if (onError) {
+          onError('Failed to Load Feedback', errorMsg)
+        } else {
+          message.error(errorMsg)
+        }
         setData([])
       }
     } catch (error) {
       console.error('Error fetching feedback:', error) // Debug log
-      message.error('An error occurred while fetching feedback')
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred while fetching feedback'
+      if (onError) {
+        onError('Error Fetching Feedback', errorMsg)
+      } else {
+        message.error(errorMsg)
+      }
       setData([])
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter])
+  }, [pagination.current, pagination.pageSize, searchText, dateRange, statusFilter, sortBy, sortOrder])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -112,6 +138,8 @@ export function useFeedback() {
     setDateRange(null)
     setStatusFilter('all')
     setSelectedRowKeys([])
+    setSortBy(undefined)
+    setSortOrder(undefined)
     setPagination(prev => ({ ...prev, current: 1 }))
     // fetchData will be triggered by useEffect when dependencies change
   }
@@ -123,10 +151,14 @@ export function useFeedback() {
   }
 
   const handleSearch = (value: string, column: keyof FeedbackItem) => {
-    setSearchText(value)
-    setSearchColumn(column)
+    setSearchColumn(column) // Update column without triggering reload
+    setSearchText(value) // This will trigger reload
     setPagination(prev => ({ ...prev, current: 1 })) // Reset to first page
     // fetchData will be triggered by useEffect when dependencies change
+  }
+
+  const handleSearchColumnChange = (column: keyof FeedbackItem) => {
+    setSearchColumn(column) // Only update column, don't reload
   }
 
   const handleDateRangeChange = (dates: [string, string] | null) => {
@@ -147,27 +179,50 @@ export function useFeedback() {
         console.log('Delete result:', result) // Debug log
         
         if (result.success) {
-          message.success('Feedback deleted successfully')
           setSelectedRowKeys([])
           await fetchData()
+          if (onSuccess) {
+            onSuccess('Feedback Deleted', 'The feedback entry has been successfully deleted.')
+          } else {
+            message.success('Feedback deleted successfully')
+          }
         } else {
-          message.error((result as any).error || 'Failed to delete feedback')
+          const errorMsg = (result as any).error || 'Failed to delete feedback'
+          if (onError) {
+            onError('Delete Failed', errorMsg)
+          } else {
+            message.error(errorMsg)
+          }
         }
       } else {
         const result = await apiBatchDeleteFeedback(numericIds)
         console.log('Batch delete result:', result) // Debug log
         
         if (result.success) {
-          message.success(`${result.deleted_count} feedback entries deleted`)
           setSelectedRowKeys([])
           await fetchData()
+          if (onSuccess) {
+            onSuccess('Feedback Deleted', `Successfully deleted ${result.deleted_count} feedback ${result.deleted_count === 1 ? 'entry' : 'entries'}.`)
+          } else {
+            message.success(`${result.deleted_count} feedback entries deleted`)
+          }
         } else {
-          message.error((result as any).error || 'Failed to delete feedback')
+          const errorMsg = (result as any).error || 'Failed to delete feedback'
+          if (onError) {
+            onError('Batch Delete Failed', errorMsg)
+          } else {
+            message.error(errorMsg)
+          }
         }
       }
     } catch (error) {
       console.error('Error deleting feedback:', error) // Debug log
-      message.error('An error occurred while deleting')
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred while deleting'
+      if (onError) {
+        onError('Delete Error', errorMsg)
+      } else {
+        message.error(errorMsg)
+      }
     }
   }
 
@@ -182,14 +237,31 @@ export function useFeedback() {
       console.log('Mark status result:', result) // Debug log
       
       if (result.success) {
-        message.success(`Feedback marked as ${status}`)
         await fetchData()
+        if (onSuccess) {
+          onSuccess(
+            'Status Updated', 
+            `Feedback has been successfully marked as ${status === 'open' ? 'Open' : 'Resolved'}.`
+          )
+        } else {
+          message.success(`Feedback marked as ${status}`)
+        }
       } else {
-        message.error((result as any).error || 'Failed to update status')
+        const errorMsg = (result as any).error || 'Failed to update status'
+        if (onError) {
+          onError('Status Update Failed', errorMsg)
+        } else {
+          message.error(errorMsg)
+        }
       }
     } catch (error) {
       console.error('Error marking status:', error) // Debug log
-      message.error('An error occurred while updating status')
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred while updating status'
+      if (onError) {
+        onError('Status Update Error', errorMsg)
+      } else {
+        message.error(errorMsg)
+      }
     }
   }
 
@@ -197,29 +269,119 @@ export function useFeedback() {
     setPagination(prev => ({ ...prev, current: page, pageSize }))
   }
 
-  const handleExport = (format: 'csv' | 'excel' | 'pdf') => {
-    message.info(`Export as ${format} - Feature coming soon`)
-    // TODO: Implement export functionality
+  const handleExport = async (format: 'csv') => {
+    if (exportLoading) return // Prevent multiple clicks
+
+    try {
+      setExportLoading(true)
+      message.loading('Preparing export...', 0)
+
+      const result = await exportFeedback(format, {
+        search: searchText.trim() || undefined,
+        search_column: searchColumn as any,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        date_from: dateRange?.[0],
+        date_to: dateRange?.[1],
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      })
+
+      message.destroy()
+
+      if (result.success && result.download_url) {
+        // Download the file with authentication
+        await downloadFile(result.download_url, result.filename)
+        
+        // Show success after download completes
+        if (onSuccess) {
+          onSuccess('Export Successful', `Your CSV export has been downloaded successfully.\n\nFilename: ${result.filename}`)
+        } else {
+          message.success('Export downloaded successfully')
+        }
+      } else {
+        const errorMsg = result.error || 'Failed to export feedback'
+        if (onError) {
+          onError('Export Failed', errorMsg)
+        } else {
+          message.error(errorMsg)
+        }
+      }
+    } catch (error) {
+      message.destroy()
+      console.error('Error exporting feedback:', error)
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred while exporting feedback'
+      if (onError) {
+        onError('Export Error', errorMsg)
+      } else {
+        message.error(errorMsg)
+      }
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
+  // Helper function to download file with authentication
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      const { apiAxiosInstance } = await import('@resomix/api-client')
+      
+      const response = await apiAxiosInstance.get(url, {
+        responseType: 'blob',
+      })
+
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'text/csv' })
+      const blobUrl = window.URL.createObjectURL(blob)
+      
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('Error downloading file:', error)
+      const errorMsg = error instanceof Error ? error.message : 'Failed to download file'
+      if (onError) {
+        onError('Download Error', errorMsg)
+      } else {
+        message.error(errorMsg)
+      }
+    }
+  }
+
+  const handleSortChange = (sortByField: 'id' | 'submitted_at' | 'satisfaction' | 'recommendation' | undefined, order: 'asc' | 'desc' | undefined) => {
+    setSortBy(sortByField)
+    setSortOrder(order)
+    setPagination(prev => ({ ...prev, current: 1 })) // Reset to first page
   }
 
   return {
     data,
     loading,
+    exportLoading,
     searchText,
     searchColumn,
     dateRange,
     statusFilter,
     selectedRowKeys,
     pagination,
+    sortBy,
+    sortOrder,
     setSelectedRowKeys,
     handleRefresh,
     handleClearFilters,
     handleSearch,
+    handleSearchColumnChange,
     handleDateRangeChange,
     handleStatusFilter,
     handleDelete,
     handleMarkStatus,
     handlePageChange,
     handleExport,
+    handleSortChange,
   }
 }

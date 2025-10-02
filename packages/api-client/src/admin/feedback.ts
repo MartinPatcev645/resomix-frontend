@@ -203,34 +203,57 @@ export const getFeedbackById = async (feedbackId: number) => {
   }
 };
 
+export interface FeedbackExportResponse {
+  success: boolean;
+  download_url: string;
+  filename: string;
+  expires_at: string;
+  error?: string;
+}
+
 /**
- * Export feedback data (returns CSV/Excel download URL or data)
- * NOTE: This endpoint is not yet implemented by the backend
+ * Export feedback data (returns download URL to CSV file)
  */
 export const exportFeedback = async (
-  format: 'csv' | 'excel' | 'json',
+  format: 'csv',
   params: FeedbackListParams = {}
 ) => {
   try {
-    const queryParams: Record<string, any> = {
+    const requestBody: Record<string, any> = {
       format,
-      ...params,
     };
 
-    // This could return a blob or a download URL depending on backend implementation
-    const data = await axiosWrapper<any>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST}export`, {
-        params: queryParams,
-        responseType: format === 'json' ? 'json' : 'blob',
-      })
+    // Add optional filters to the request body
+    if (params.page) requestBody.page = params.page;
+    if (params.page_size) requestBody.page_size = params.page_size;
+    if (params.search) requestBody.search = params.search;
+    if (params.search_column) requestBody.search_column = params.search_column;
+    if (params.status && params.status !== 'all') requestBody.status = params.status;
+    if (params.date_from) requestBody.date_from = params.date_from;
+    if (params.date_to) requestBody.date_to = params.date_to;
+    if (params.sort_by) requestBody.sort_by = params.sort_by;
+    if (params.sort_order) requestBody.sort_order = params.sort_order;
+
+    const data = await axiosWrapper<FeedbackExportResponse>(
+      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_EXPORT, requestBody)
     );
 
+    if (data.success) return data;
+    
     return {
-      success: true,
-      data,
+      success: false,
+      error: (data as any).error || "Failed to export feedback.",
+      download_url: "",
+      filename: "",
+      expires_at: "",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return {
+      ...handleApiError(error as any),
+      download_url: "",
+      filename: "",
+      expires_at: "",
+    };
   }
 };
 

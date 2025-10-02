@@ -28,6 +28,7 @@ export interface ApiConfig {
     ADMIN_FEEDBACK_BATCH_DELETE: string;
     ADMIN_FEEDBACK_UPDATE: string;
     ADMIN_FEEDBACK_MARK_STATUS: string;
+    ADMIN_FEEDBACK_EXPORT: string;
   };
 }
 
@@ -89,6 +90,7 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_FEEDBACK_BATCH_DELETE: "/admin/feedback/batch-delete",
     ADMIN_FEEDBACK_UPDATE: "/admin/feedback/update/",
     ADMIN_FEEDBACK_MARK_STATUS: "/admin/feedback/mark-status/",
+    ADMIN_FEEDBACK_EXPORT: "/admin/feedback/export",
   },
 };
 
