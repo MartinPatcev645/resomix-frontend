@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator, EmailStr
 from datetime import datetime
 from app.schemas.common import APIResponse, ErrorResponse
@@ -80,5 +80,125 @@ class WaitlistErrorResponse(ErrorResponse):
             "example": {
                 "success": False,
                 "error": "Email already exists in waitlist"
+            }
+        }
+
+
+# ============================================================================
+# Admin Schemas
+# ============================================================================
+
+class AdminWaitlistFilters(BaseModel):
+    """Query parameters for admin waitlist list endpoint."""
+    page: int = Field(1, ge=1, description="Page number")
+    page_size: int = Field(30, ge=1, le=100, description="Items per page")
+    search: Optional[str] = Field(None, description="Search term")
+    search_column: Optional[str] = Field("email", description="Column to search in: id, email")
+    status: Optional[str] = Field(None, description="Filter by status: pending, approved, rejected")
+    date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    sort_by: str = Field("id", description="Column to sort by: id, created_at")
+    sort_order: str = Field("desc", description="Sort order: asc or desc")
+
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata."""
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class WaitlistEntity(BaseModel):
+    """Schema for waitlist database entity."""
+    id: int
+    email: str
+    status: str
+    created_at: str
+    updated_at: str
+
+    class Config:
+        from_attributes = True
+
+
+class AdminWaitlistListResponse(BaseModel):
+    """Response schema for admin waitlist list."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: List[WaitlistEntity] = Field(..., description="List of waitlist entries")
+    pagination: PaginationMeta = Field(..., description="Pagination information")
+
+
+class AdminBatchDeleteRequest(BaseModel):
+    """Request schema for batch delete operation."""
+    ids: List[int] = Field(..., description="List of waitlist IDs to delete", min_length=1)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "ids": [1, 2, 3, 4, 5]
+            }
+        }
+
+
+class AdminBatchDeleteResponse(BaseModel):
+    """Response schema for batch delete operation."""
+    success: bool = Field(True, description="Always true for successful responses")
+    deleted_count: int = Field(..., description="Number of items deleted")
+    message: str = Field(..., description="Success message")
+
+
+class AdminWaitlistStatusUpdateRequest(BaseModel):
+    """Request schema for updating waitlist status."""
+    status: str = Field(..., description="New status: pending, approved, or rejected")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "approved"
+            }
+        }
+
+
+class AdminWaitlistDetailResponse(BaseModel):
+    """Response schema for admin waitlist detail operations."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: WaitlistEntity = Field(..., description="Waitlist data")
+    message: str = Field(..., description="Success message")
+
+
+class AdminWaitlistExportRequest(BaseModel):
+    """Request schema for waitlist export."""
+    format: str = Field("csv", description="Export format (only csv supported)")
+    page: int = Field(1, ge=1, description="Page number (not used in export)")
+    page_size: int = Field(30, ge=1, le=100, description="Items per page (not used in export)")
+    search: Optional[str] = Field(None, description="Search term")
+    search_column: Optional[str] = Field("email", description="Column to search in")
+    status: Optional[str] = Field(None, description="Filter by status")
+    date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    sort_by: str = Field("id", description="Column to sort by")
+    sort_order: str = Field("desc", description="Sort order: asc or desc")
+
+
+class AdminWaitlistExportResponse(BaseModel):
+    """Response schema for waitlist export."""
+    success: bool = Field(True, description="Always true for successful responses")
+    download_url: str = Field(..., description="URL to download the exported file")
+    filename: str = Field(..., description="Name of the exported file")
+    expires_at: str = Field(..., description="ISO timestamp when the download link expires")
+
+
+class AdminDeleteResponse(BaseModel):
+    """Response schema for delete operations."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: Dict[str, str] = Field(..., description="Delete result data")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "message": "Waitlist entry deleted successfully"
+                }
             }
         }

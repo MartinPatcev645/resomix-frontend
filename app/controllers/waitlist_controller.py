@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -298,3 +298,84 @@ class WaitlistController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=response_content
             )
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_waitlist_list_admin(self, db: AsyncSession, request: Request, filters: Dict[str, Any]) -> JSONResponse:
+        """Get paginated waitlist list with filters for admin."""
+        try:
+            result = await self.waitlist_service.get_waitlist_list_admin(db, filters)
+            if result.get("success"):
+                waitlist_list = [{"id": w.id, "email": w.email, "status": w.status,
+                                 "created_at": w.created_at.isoformat() if w.created_at else None,
+                                 "updated_at": w.updated_at.isoformat() if w.updated_at else None}
+                                for w in result.get("data", [])]
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                    content={"success": True, "data": waitlist_list, "pagination": result.get("pagination")})
+            else:
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(success=False, error=result.get("error", "Failed to retrieve waitlist")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def delete_waitlist_admin(self, db: AsyncSession, request: Request, waitlist_id: int) -> JSONResponse:
+        """Delete a single waitlist entry."""
+        try:
+            result = await self.waitlist_service.delete_waitlist_admin(db, waitlist_id)
+            if result.get("success"):
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                    content=format_response(success=True, data={"message": result.get("message")}))
+            else:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error=result.get("error")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def batch_delete_waitlist_admin(self, db: AsyncSession, request: Request, waitlist_ids: List[int]) -> JSONResponse:
+        """Delete multiple waitlist entries."""
+        try:
+            result = await self.waitlist_service.batch_delete_waitlist_admin(db, waitlist_ids)
+            return JSONResponse(status_code=status.HTTP_200_OK,
+                content={"success": result.get("success"), "deleted_count": result.get("deleted_count", 0),
+                        "message": result.get("message", result.get("error", ""))})
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def update_waitlist_status_admin(self, db: AsyncSession, request: Request, waitlist_id: int, status_value: str) -> JSONResponse:
+        """Update waitlist status for admin."""
+        try:
+            result = await self.waitlist_service.update_waitlist_status_admin(db, waitlist_id, status_value)
+            if result.get("success"):
+                waitlist = result.get("data")
+                waitlist_data = {"id": waitlist.id, "email": waitlist.email, "status": waitlist.status,
+                               "created_at": waitlist.created_at.isoformat() if waitlist.created_at else None,
+                               "updated_at": waitlist.updated_at.isoformat() if waitlist.updated_at else None}
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                    content={"success": True, "data": waitlist_data, "message": result.get("message")})
+            else:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error=result.get("error")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))
+    
+    async def export_waitlist_csv_admin(self, db: AsyncSession, request: Request, filters: Dict[str, Any]) -> JSONResponse:
+        """Export waitlist to CSV and return download URL."""
+        try:
+            result = await self.waitlist_service.export_waitlist_csv_admin(db, filters)
+            if result.get("success"):
+                return JSONResponse(status_code=status.HTTP_200_OK, content={
+                    "success": True, "download_url": result.get("download_url"),
+                    "filename": result.get("filename"), "expires_at": result.get("expires_at")
+                })
+            else:
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(success=False, error=result.get("error", "Failed to export waitlist")))
+        except Exception as e:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal server error occurred"))

@@ -16,12 +16,18 @@ Email: usman.naeem2212@gmail.com
 """
 
 import re
-from typing import Dict, Any, Optional
+import csv
+import os
+import uuid
+import math
+from typing import Dict, Any, Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta
 
 from app.repositories.waitlist_repository import WaitlistRepository
 from app.models.waitlist import Waitlist
+from app.core.config import settings
 
 
 class WaitlistService:
@@ -246,3 +252,79 @@ class WaitlistService:
         # Basic email regex pattern
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(email_pattern, email) is not None
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_waitlist_list_admin(self, db: AsyncSession, filters: Dict[str, Any]) -> Dict[str, Any]:
+        """Get paginated waitlist list with filters for admin."""
+        try:
+            waitlist_list, total = await self.waitlist_repository.get_waitlist_list_with_filters(
+                db=db, **{k: v for k, v in filters.items() if k not in ['format']}
+            )
+            total_pages = math.ceil(total / filters.get('page_size', 30)) if total > 0 else 0
+            return {"success": True, "data": waitlist_list, "pagination": {
+                "page": filters.get('page', 1), "page_size": filters.get('page_size', 30),
+                "total": total, "total_pages": total_pages
+            }}
+        except Exception as e:
+            return {"success": False, "error": str(e), "data": [], "pagination": {
+                "page": 1, "page_size": 30, "total": 0, "total_pages": 0
+            }}
+    
+    async def delete_waitlist_admin(self, db: AsyncSession, waitlist_id: int) -> Dict[str, Any]:
+        """Delete a single waitlist entry."""
+        try:
+            deleted = await self.waitlist_repository.delete_waitlist(db, waitlist_id)
+            return {"success": deleted, "message": "Waitlist entry deleted successfully"} if deleted else \
+                   {"success": False, "error": f"Waitlist entry with ID {waitlist_id} not found"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def batch_delete_waitlist_admin(self, db: AsyncSession, waitlist_ids: List[int]) -> Dict[str, Any]:
+        """Delete multiple waitlist entries."""
+        try:
+            deleted_count = await self.waitlist_repository.batch_delete_waitlist(db, waitlist_ids)
+            return {"success": True, "deleted_count": deleted_count, 
+                    "message": f"{deleted_count} waitlist entries deleted"}
+        except Exception as e:
+            return {"success": False, "error": str(e), "deleted_count": 0}
+    
+    async def update_waitlist_status_admin(self, db: AsyncSession, waitlist_id: int, status: str) -> Dict[str, Any]:
+        """Update waitlist status for admin."""
+        try:
+            waitlist = await self.waitlist_repository.update_waitlist_status(db, waitlist_id, status)
+            return {"success": True, "data": waitlist, "message": "Status updated successfully"} if waitlist else \
+                   {"success": False, "error": f"Waitlist entry with ID {waitlist_id} not found"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def export_waitlist_csv_admin(self, db: AsyncSession, filters: Dict[str, Any]) -> Dict[str, Any]:
+        """Export waitlist to CSV file and return download URL."""
+        try:
+            waitlist_list = await self.waitlist_repository.get_waitlist_for_export(
+                db=db, **{k: v for k, v in filters.items() if k not in ['page', 'page_size', 'format']}
+            )
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"waitlist_export_{timestamp}_{uuid.uuid4().hex[:8]}.csv"
+            export_dir = os.path.join(os.getcwd(), 'exports')
+            os.makedirs(export_dir, exist_ok=True)
+            
+            with open(os.path.join(export_dir, filename), 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['ID', 'Email', 'Status', 'Created At', 'Updated At'])
+                for w in waitlist_list:
+                    writer.writerow([w.id, w.email, w.status, 
+                                   w.created_at.isoformat() if w.created_at else '',
+                                   w.updated_at.isoformat() if w.updated_at else ''])
+            
+            base_url = getattr(settings, 'base_url', 'https://bserver.resomix.com')
+            return {
+                "success": True,
+                "download_url": f"{base_url}/exports/{filename}",
+                "filename": filename,
+                "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
