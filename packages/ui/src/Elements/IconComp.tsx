@@ -35,7 +35,7 @@ export const IconComp: React.FC<IconCompProps> = ({
       style={containerStyle}
       onClick={onClick}
     >
-      {React.cloneElement(svg as React.ReactElement, {
+      {React.cloneElement(svg as React.ReactElement<any>, {
         width: width,
         height: height,
         style: { stroke: strokeColor }

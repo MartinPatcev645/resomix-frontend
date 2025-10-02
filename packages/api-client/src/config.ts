@@ -35,6 +35,11 @@ export interface ApiConfig {
     ADMIN_CONTACT_UPDATE: string;
     ADMIN_CONTACT_MARK_STATUS: string;
     ADMIN_CONTACT_EXPORT: string;
+    ADMIN_WAITLIST_LIST: string;
+    ADMIN_WAITLIST_DELETE: string;
+    ADMIN_WAITLIST_BATCH_DELETE: string;
+    ADMIN_WAITLIST_UPDATE_STATUS: string;
+    ADMIN_WAITLIST_EXPORT: string;
   };
 }
 
@@ -103,6 +108,11 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_CONTACT_UPDATE: "/admin/contact/update/",
     ADMIN_CONTACT_MARK_STATUS: "/admin/contact/mark-status/",
     ADMIN_CONTACT_EXPORT: "/admin/contact/export",
+    ADMIN_WAITLIST_LIST: "/admin/waitlist/",
+    ADMIN_WAITLIST_DELETE: "/admin/waitlist/delete/",
+    ADMIN_WAITLIST_BATCH_DELETE: "/admin/waitlist/batch-delete",
+    ADMIN_WAITLIST_UPDATE_STATUS: "/admin/waitlist/update-status/",
+    ADMIN_WAITLIST_EXPORT: "/admin/waitlist/export",
   },
 };
 

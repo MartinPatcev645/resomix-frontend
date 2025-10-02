@@ -28,6 +28,7 @@ function App() {
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
               <Route path="tracks" element={<TracksPage />} />
+              <Route path="logs" element={<LogsPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
