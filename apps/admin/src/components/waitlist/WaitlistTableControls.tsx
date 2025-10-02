@@ -65,9 +65,9 @@ function WaitlistTableControls({
   }
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 w-full">
       {/* Top row - Search and filters */}
-      <div className="mb-4">
+      <div className="mb-4 overflow-x-auto">
         <Space wrap size="middle" className="w-full">
           {/* Search with column selector */}
           <div className="flex gap-2 flex-wrap w-full md:w-auto">
@@ -126,7 +126,7 @@ function WaitlistTableControls({
       </div>
 
       {/* Bottom row - Action buttons */}
-      <div className="flex flex-wrap gap-2 justify-between items-center">
+      <div className="flex flex-wrap gap-2 justify-between items-center overflow-x-auto">
         <div className="flex-1" />
         
         <Space wrap size="middle">

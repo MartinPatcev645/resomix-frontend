@@ -7,6 +7,7 @@ import WaitlistPage from '@/pages/WaitlistPage.tsx'
 import PipelinePage from '@/pages/PipelinePage.tsx'
 import AnalyticsPage from '@/pages/AnalyticsPage.tsx'
 import PlaylistsPage from '@/pages/PlaylistsPage.tsx'
+import PlaylistDetailsPage from '@/pages/PlaylistDetailsPage.tsx'
 import TracksPage from '@/pages/TracksPage.tsx'
 import LogsPage from '@/pages/LogsPage.tsx'
 import { useTheme } from '@/hooks/useTheme.ts'
@@ -28,6 +29,7 @@ function App() {
               <Route path="pipeline" element={<PipelinePage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
+              <Route path="playlists/:uuid" element={<PlaylistDetailsPage />} />
               <Route path="tracks" element={<TracksPage />} />
               <Route path="logs" element={<LogsPage />} />
             </Route>

@@ -32,14 +32,14 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-64 bg-surface border-r border-default
+          w-64 bg-surface border-r border-default overflow-hidden
           transform transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col overflow-hidden">
           {/* Logo/Brand */}
-          <div className="p-6 border-b border-default">
+          <div className="p-6 border-b border-default flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div 
@@ -73,7 +73,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1">
             {navigation.map((item) => {
               const Icon = item.Icon
               return (

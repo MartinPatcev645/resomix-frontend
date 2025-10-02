@@ -40,6 +40,11 @@ export interface ApiConfig {
     ADMIN_WAITLIST_BATCH_DELETE: string;
     ADMIN_WAITLIST_UPDATE_STATUS: string;
     ADMIN_WAITLIST_EXPORT: string;
+    ADMIN_PLAYLIST_LIST: string;
+    ADMIN_PLAYLIST_DELETE: string;
+    ADMIN_PLAYLIST_BATCH_DELETE: string;
+    ADMIN_PLAYLIST_EXPORT: string;
+    ADMIN_PLAYLIST_DETAILS: string;
   };
 }
 
@@ -113,6 +118,11 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_WAITLIST_BATCH_DELETE: "/admin/waitlist/batch-delete",
     ADMIN_WAITLIST_UPDATE_STATUS: "/admin/waitlist/update-status/",
     ADMIN_WAITLIST_EXPORT: "/admin/waitlist/export",
+    ADMIN_PLAYLIST_LIST: "/admin/playlist/",
+    ADMIN_PLAYLIST_DELETE: "/admin/playlist/delete/",
+    ADMIN_PLAYLIST_BATCH_DELETE: "/admin/playlist/batch-delete",
+    ADMIN_PLAYLIST_EXPORT: "/admin/playlist/export",
+    ADMIN_PLAYLIST_DETAILS: "/admin/playlist/",
   },
 };
 
