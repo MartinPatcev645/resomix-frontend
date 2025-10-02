@@ -45,6 +45,8 @@ export function useFeedback() {
     pageSize: 30,
     total: 0,
   })
+  const [sortBy, setSortBy] = useState<'id' | 'submitted_at' | 'satisfaction' | 'recommendation' | undefined>(undefined)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(undefined)
 
   // Fetch data from API
   const fetchData = useCallback(async () => {
@@ -72,6 +74,12 @@ export function useFeedback() {
         params.status = statusFilter
       }
 
+      // Add sorting if present
+      if (sortBy) {
+        params.sort_by = sortBy
+        params.sort_order = sortOrder || 'desc'
+      }
+
       console.log('Fetching feedback with params:', params) // Debug log
 
       const result = await getFeedbackList(params)
@@ -93,7 +101,7 @@ export function useFeedback() {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter])
+  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter, sortBy, sortOrder])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -112,6 +120,8 @@ export function useFeedback() {
     setDateRange(null)
     setStatusFilter('all')
     setSelectedRowKeys([])
+    setSortBy(undefined)
+    setSortOrder(undefined)
     setPagination(prev => ({ ...prev, current: 1 }))
     // fetchData will be triggered by useEffect when dependencies change
   }
@@ -202,6 +212,12 @@ export function useFeedback() {
     // TODO: Implement export functionality
   }
 
+  const handleSortChange = (sortByField: 'id' | 'submitted_at' | 'satisfaction' | 'recommendation' | undefined, order: 'asc' | 'desc' | undefined) => {
+    setSortBy(sortByField)
+    setSortOrder(order)
+    setPagination(prev => ({ ...prev, current: 1 })) // Reset to first page
+  }
+
   return {
     data,
     loading,
@@ -211,6 +227,8 @@ export function useFeedback() {
     statusFilter,
     selectedRowKeys,
     pagination,
+    sortBy,
+    sortOrder,
     setSelectedRowKeys,
     handleRefresh,
     handleClearFilters,
@@ -221,5 +239,6 @@ export function useFeedback() {
     handleMarkStatus,
     handlePageChange,
     handleExport,
+    handleSortChange,
   }
 }

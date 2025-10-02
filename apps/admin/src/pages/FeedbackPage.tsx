@@ -14,6 +14,8 @@ function FeedbackPage() {
     dateRange,
     selectedRowKeys,
     pagination,
+    sortBy,
+    sortOrder,
     setSelectedRowKeys,
     handleRefresh,
     handleClearFilters,
@@ -24,6 +26,7 @@ function FeedbackPage() {
     handleMarkStatus,
     handlePageChange,
     handleExport,
+    handleSortChange,
   } = useFeedback()
 
   const handleDeleteSelected = () => {
@@ -69,10 +72,13 @@ function FeedbackPage() {
           loading={loading}
           selectedRowKeys={selectedRowKeys}
           pagination={pagination}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
           onSelectionChange={setSelectedRowKeys}
           onDelete={handleDelete}
           onMarkStatus={handleMarkStatus}
           onPageChange={handlePageChange}
+          onSortChange={handleSortChange}
         />
       </div>
     </div>

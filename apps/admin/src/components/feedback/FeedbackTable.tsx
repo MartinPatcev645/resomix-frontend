@@ -15,10 +15,13 @@ interface FeedbackTableProps {
     pageSize: number
     total: number
   }
+  sortBy?: 'id' | 'submitted_at' | 'satisfaction' | 'recommendation'
+  sortOrder?: 'asc' | 'desc'
   onSelectionChange: (keys: string[]) => void
   onDelete: (ids: string[]) => void
   onMarkStatus: (id: string, status: 'open' | 'resolved') => void
   onPageChange: (page: number, pageSize: number) => void
+  onSortChange: (sortBy: 'id' | 'submitted_at' | 'satisfaction' | 'recommendation' | undefined, sortOrder: 'asc' | 'desc' | undefined) => void
 }
 
 function FeedbackTable({
@@ -26,10 +29,13 @@ function FeedbackTable({
   loading,
   selectedRowKeys,
   pagination,
+  sortBy,
+  sortOrder,
   onSelectionChange,
   onDelete,
   onMarkStatus,
   onPageChange,
+  onSortChange,
 }: FeedbackTableProps) {
   const { modal } = App.useApp()
   const [viewingMessage, setViewingMessage] = useState<FeedbackItem | null>(null)
@@ -124,12 +130,23 @@ function FeedbackTable({
     },
   ]
 
+  const handleTableChange = (_pagination: any, _filters: any, sorter: any) => {
+    if (sorter.columnKey) {
+      const order = sorter.order === 'ascend' ? 'asc' : sorter.order === 'descend' ? 'desc' : undefined
+      onSortChange(sorter.columnKey, order)
+    } else {
+      onSortChange(undefined, undefined)
+    }
+  }
+
   const columns: TableColumnsType<FeedbackItem> = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 100,
+      width: 80,
+      sorter: true,
+      sortOrder: sortBy === 'id' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: (id: string) => (
         <span className="font-mono text-sm text-primary">{id}</span>
       ),
@@ -140,6 +157,8 @@ function FeedbackTable({
       key: 'satisfaction',
       width: 120,
       align: 'center',
+      sorter: true,
+      sortOrder: sortBy === 'satisfaction' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: (satisfaction: number | null) => (
         satisfaction !== null ? (
           <div className="flex items-center justify-center gap-1">
@@ -155,6 +174,8 @@ function FeedbackTable({
       key: 'recommendation',
       width: 150,
       align: 'center',
+      sorter: true,
+      sortOrder: sortBy === 'recommendation' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: (recommendation: number | null) => (
         recommendation !== null ? (
           <div className="flex items-center justify-center gap-1">
@@ -172,6 +193,19 @@ function FeedbackTable({
       render: (message: string | null) => (
         <span className="text-secondary" title={message || ''}>
           {message || '-'}
+        </span>
+      ),
+    },
+    {
+      title: 'Submitted',
+      dataIndex: 'submitted_at',
+      key: 'submitted_at',
+      width: 180,
+      sorter: true,
+      sortOrder: sortBy === 'submitted_at' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
+      render: (submitted_at: string) => (
+        <span className="text-secondary text-sm">
+          {new Date(submitted_at).toLocaleString()}
         </span>
       ),
     },
@@ -222,6 +256,7 @@ function FeedbackTable({
         rowKey="id"
         loading={loading}
         rowSelection={rowSelection}
+        onChange={handleTableChange}
         pagination={{
           current: pagination.current,
           pageSize: pagination.pageSize,
