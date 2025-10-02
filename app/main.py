@@ -168,14 +168,21 @@ setup_cors(app)
 # Add timing middleware *after* CORS so we measure downstream handlers too
 app.add_middleware(TimingMiddleware)
 
+# Mount static files for exports BEFORE including routers to avoid conflicts
+exports_dir = os.path.join(os.getcwd(), 'exports')
+if not os.path.exists(exports_dir):
+    os.makedirs(exports_dir)
+    print(f"Created exports directory for static serving: {exports_dir}")
+
+try:
+    app.mount("/exports", StaticFiles(directory=exports_dir), name="exports")
+    print(f"Mounted /exports static files from: {exports_dir}")
+except Exception as e:
+    print(f"WARNING: Failed to mount /exports static files: {e}")
+
 # Include all routers
 for router in all_routers:
     app.include_router(router)
-
-# Mount static files for exports
-exports_dir = os.path.join(os.getcwd(), 'exports')
-if os.path.exists(exports_dir):
-    app.mount("/exports", StaticFiles(directory=exports_dir), name="exports")
 
 
 # Root endpoint
