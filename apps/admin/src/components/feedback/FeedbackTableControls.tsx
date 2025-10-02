@@ -1,7 +1,6 @@
 import React from 'react'
-import { Input, Select, DatePicker, Button, Space, Dropdown, Tag } from 'antd'
+import { Input, Select, DatePicker, Button, Space, Tag } from 'antd'
 import { RefreshCw, Search, Download, Trash2, FilterX } from 'lucide-react'
-import type { MenuProps } from 'antd'
 import type { FeedbackItem } from '@/hooks/useFeedback.ts'
 import dayjs from 'dayjs'
 
@@ -12,12 +11,15 @@ interface FeedbackTableControlsProps {
   searchColumn: keyof FeedbackItem
   dateRange: [string, string] | null
   selectedCount: number
+  totalCount: number
+  exportLoading: boolean
   onSearch: (value: string, column: keyof FeedbackItem) => void
+  onSearchColumnChange: (column: keyof FeedbackItem) => void
   onDateRangeChange: (dates: [string, string] | null) => void
   onStatusFilter: (status: 'all' | 'open' | 'resolved') => void
   onRefresh: () => void
   onClearFilters: () => void
-  onExport: (format: 'csv' | 'excel' | 'pdf') => void
+  onExport: (format: 'csv') => void
   onDeleteSelected: () => void
 }
 
@@ -26,8 +28,12 @@ function FeedbackTableControls({
   searchColumn,
   dateRange,
   selectedCount,
+  totalCount,
+  exportLoading,
   onSearch,
+  onSearchColumnChange,
   onDateRangeChange,
+  onStatusFilter,
   onRefresh,
   onClearFilters,
   onExport,
@@ -54,23 +60,9 @@ function FeedbackTableControls({
     onClearFilters()
   }
 
-  const exportMenuItems: MenuProps['items'] = [
-    {
-      key: 'csv',
-      label: 'Export as CSV',
-      onClick: () => onExport('csv'),
-    },
-    {
-      key: 'excel',
-      label: 'Export as Excel',
-      onClick: () => onExport('excel'),
-    },
-    {
-      key: 'pdf',
-      label: 'Export as PDF',
-      onClick: () => onExport('pdf'),
-    },
-  ]
+  const handleExportCSV = () => {
+    onExport('csv')
+  }
 
   return (
     <div className="mb-6">
@@ -91,7 +83,7 @@ function FeedbackTableControls({
             {/* Search column selector */}
             <Select
               value={searchColumn}
-              onChange={(value) => onSearch(searchText, value as keyof FeedbackItem)}
+              onChange={(value) => onSearchColumnChange(value as keyof FeedbackItem)}
               options={searchColumns}
               style={{ width: 120 }}
             />
@@ -118,11 +110,18 @@ function FeedbackTableControls({
             value={statusFilter}
             onChange={(value) => {
               setStatusFilter(value)
+              onStatusFilter(value)
             }}
             options={statusOptions}
             style={{ width: 150 }}
             placeholder="Filter by status"
           />
+
+          {/* Total Count */}
+          <div className="flex items-center px-3 py-1 rounded border border-default bg-surface-secondary">
+            <span className="text-sm text-secondary">Total:</span>
+            <span className="ml-2 text-sm font-semibold text-primary">{totalCount.toLocaleString()}</span>
+          </div>
         </Space>
       </div>
 
@@ -160,12 +159,15 @@ function FeedbackTableControls({
             <span className="hidden sm:inline">Refresh</span>
           </Button>
 
-          {/* Export dropdown */}
-          <Dropdown menu={{ items: exportMenuItems }} placement="bottomRight">
-            <Button icon={<Download size={16} />}>
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-          </Dropdown>
+          {/* Export CSV */}
+          <Button 
+            icon={<Download size={16} />}
+            onClick={handleExportCSV}
+            loading={exportLoading}
+            disabled={exportLoading}
+          >
+            <span className="hidden sm:inline">{exportLoading ? 'Exporting...' : 'Export CSV'}</span>
+          </Button>
         </Space>
       </div>
     </div>

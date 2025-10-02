@@ -186,17 +186,6 @@ function FeedbackTable({
       ),
     },
     {
-      title: 'Message',
-      dataIndex: 'message',
-      key: 'message',
-      ellipsis: true,
-      render: (message: string | null) => (
-        <span className="text-secondary" title={message || ''}>
-          {message || '-'}
-        </span>
-      ),
-    },
-    {
       title: 'Submitted',
       dataIndex: 'submitted_at',
       key: 'submitted_at',
