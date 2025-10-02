@@ -12,7 +12,7 @@ export interface UseDebouncedWaveformSeekOptions {
 }
 
 export interface UseDebouncedWaveformSeekResult {
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   isDragging: boolean;
   uiTime: number;
   requestSeek: (time: number, opts?: { immediate?: boolean }) => void;
