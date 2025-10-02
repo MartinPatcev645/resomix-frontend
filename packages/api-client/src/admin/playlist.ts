@@ -59,6 +59,58 @@ export interface PlaylistExportResponse {
   error?: string;
 }
 
+export interface PlaylistDetailsResponse {
+  success: boolean;
+  data?: {
+    playlist: {
+      id: number;
+      uuid: string;
+      user_id: string | null;
+      name: string;
+      is_public: boolean;
+      type: 'custom' | 'similarity' | 'waiting_segments';
+      seed_track_id: number | null;
+      created_at: string;
+      track_count: number;
+    };
+    seed_track: {
+      id: number;
+      uuid: string;
+      title: string;
+      artists: string[];
+      duration_sec: number;
+      bpm: number | null;
+      musical_key: string | null;
+      genre: string | null;
+      label: string | null;
+      year: number | null;
+    } | null;
+    tracks: Array<{
+      position: number;
+      score: number | null;
+      track: {
+        id: number;
+        uuid: string;
+        title: string;
+        artists: string[];
+        duration_sec: number;
+        file_size: number;
+        type: string;
+        genre: string | null;
+        label: string | null;
+        album: string | null;
+        year: number | null;
+        bpm: number | null;
+        musical_key: string | null;
+        file_path: string;
+        preview_path: string | null;
+        created_at: string;
+      };
+    }>;
+  };
+  error?: string;
+}
+
 // ─── API Functions ─────────────────────────────────────────
 
 /**
@@ -205,5 +257,25 @@ export const exportPlaylist = async (
       filename: "",
       expires_at: "",
     };
+  }
+};
+
+/**
+ * Get detailed information about a specific playlist including all tracks
+ */
+export const getPlaylistDetails = async (playlistId: number) => {
+  try {
+    const data = await axiosWrapper<PlaylistDetailsResponse>(
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistId}`)
+    );
+
+    if (data.success && data.data) return data;
+    
+    return {
+      success: false,
+      error: (data as any).error || "Failed to fetch playlist details.",
+    };
+  } catch (error) {
+    return handleApiError(error as any);
   }
 };

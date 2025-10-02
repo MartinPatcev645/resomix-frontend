@@ -78,8 +78,7 @@ function PlaylistTable({
       label: 'Expand Playlist',
       icon: <Expand size={16} />,
       onClick: () => {
-        // TODO: Implement expand playlist functionality
-        console.log('Expand playlist:', record.id)
+        window.open(`/playlists/${record.id}`, '_blank')
       },
     },
     {

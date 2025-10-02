@@ -44,6 +44,7 @@ export interface ApiConfig {
     ADMIN_PLAYLIST_DELETE: string;
     ADMIN_PLAYLIST_BATCH_DELETE: string;
     ADMIN_PLAYLIST_EXPORT: string;
+    ADMIN_PLAYLIST_DETAILS: string;
   };
 }
 
@@ -121,6 +122,7 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PLAYLIST_DELETE: "/admin/playlist/delete/",
     ADMIN_PLAYLIST_BATCH_DELETE: "/admin/playlist/batch-delete",
     ADMIN_PLAYLIST_EXPORT: "/admin/playlist/export",
+    ADMIN_PLAYLIST_DETAILS: "/admin/playlist/",
   },
 };
 
