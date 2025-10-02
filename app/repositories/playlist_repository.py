@@ -589,3 +589,312 @@ class PlaylistRepository(BaseRepository[Playlist]):
         except Exception as e:
             print(f"Error getting playlist HLS data: {e}")
             raise e
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def async_get_playlist_list_admin(
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Get paginated playlist list with filters for admin.
+        
+        Args:
+            db: Database session
+            filters: Dictionary containing filter parameters
+            
+        Returns:
+            Dictionary with playlists and pagination metadata
+        """
+        try:
+            from sqlalchemy import and_, or_, func, case
+            from datetime import datetime
+            
+            page = filters.get("page", 1)
+            page_size = filters.get("page_size", 30)
+            search = filters.get("search")
+            search_column = filters.get("search_column", "name")
+            is_public = filters.get("is_public")
+            type_filter = filters.get("type")
+            date_from = filters.get("date_from")
+            date_to = filters.get("date_to")
+            sort_by = filters.get("sort_by", "id")
+            sort_order = filters.get("sort_order", "desc")
+            
+            # Build base query
+            query = select(Playlist)
+            conditions = []
+            
+            # Search filter
+            if search:
+                if search_column == "id" and search.isdigit():
+                    conditions.append(Playlist.id == int(search))
+                elif search_column == "uuid":
+                    conditions.append(Playlist.uuid == search)
+                elif search_column == "name":
+                    conditions.append(Playlist.name.like(f"%{search}%"))
+                else:
+                    # Default to name search
+                    conditions.append(Playlist.name.like(f"%{search}%"))
+            
+            # Visibility filter
+            if is_public is not None and is_public != "":
+                conditions.append(Playlist.is_public == (is_public == "1"))
+            
+            # Type filter
+            if type_filter:
+                conditions.append(Playlist.type == type_filter)
+            
+            # Date filters
+            if date_from:
+                try:
+                    date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+                    conditions.append(Playlist.created_at >= date_from_obj)
+                except ValueError:
+                    pass
+            
+            if date_to:
+                try:
+                    date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+                    # Add 23:59:59 to include the entire day
+                    from datetime import timedelta
+                    date_to_obj = date_to_obj + timedelta(days=1) - timedelta(seconds=1)
+                    conditions.append(Playlist.created_at <= date_to_obj)
+                except ValueError:
+                    pass
+            
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+            
+            # Get total count
+            count_query = select(func.count()).select_from(Playlist)
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_result = await db.execute(count_query)
+            total = total_result.scalar() or 0
+            
+            # Sorting
+            if sort_by == "created_at":
+                order_column = Playlist.created_at
+            else:
+                order_column = Playlist.id
+            
+            if sort_order.lower() == "asc":
+                query = query.order_by(order_column.asc())
+            else:
+                query = query.order_by(order_column.desc())
+            
+            # Pagination
+            offset = (page - 1) * page_size
+            query = query.offset(offset).limit(page_size)
+            
+            # Execute query
+            result = await db.execute(query)
+            playlists = result.scalars().all()
+            
+            # Format results
+            playlist_list = []
+            for playlist in playlists:
+                playlist_list.append({
+                    "id": playlist.id,
+                    "uuid": playlist.uuid,
+                    "user_id": playlist.user_id,
+                    "name": playlist.name,
+                    "is_public": playlist.is_public,
+                    "type": playlist.type,
+                    "seed_track_id": playlist.seed_track_id,
+                    "created_at": playlist.created_at.isoformat() if playlist.created_at else None
+                })
+            
+            # Calculate pagination
+            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+            
+            return {
+                "data": playlist_list,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total": total,
+                    "total_pages": total_pages
+                }
+            }
+            
+        except Exception as e:
+            print(f"Error getting admin playlist list: {e}")
+            raise e
+    
+    async def async_delete_playlist_admin(
+        self,
+        db: AsyncSession,
+        playlist_id: int
+    ) -> bool:
+        """
+        Delete a playlist by ID.
+        
+        Args:
+            db: Database session
+            playlist_id: Playlist ID to delete
+            
+        Returns:
+            True if deleted, False if not found
+        """
+        try:
+            # Get playlist
+            query = select(Playlist).where(Playlist.id == playlist_id)
+            result = await db.execute(query)
+            playlist = result.scalar_one_or_none()
+            
+            if not playlist:
+                return False
+            
+            # Delete playlist (cascade will handle playlist_tracks)
+            await db.delete(playlist)
+            await db.commit()
+            
+            return True
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error deleting playlist: {e}")
+            raise e
+    
+    async def async_batch_delete_playlists_admin(
+        self,
+        db: AsyncSession,
+        playlist_ids: List[int]
+    ) -> int:
+        """
+        Delete multiple playlists by IDs.
+        
+        Args:
+            db: Database session
+            playlist_ids: List of playlist IDs to delete
+            
+        Returns:
+            Number of playlists deleted
+        """
+        try:
+            from sqlalchemy import delete
+            
+            # Delete playlists
+            stmt = delete(Playlist).where(Playlist.id.in_(playlist_ids))
+            result = await db.execute(stmt)
+            await db.commit()
+            
+            return result.rowcount
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error batch deleting playlists: {e}")
+            raise e
+    
+    async def async_get_all_playlists_for_export(
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all playlists matching filters for export (no pagination).
+        
+        Args:
+            db: Database session
+            filters: Dictionary containing filter parameters
+            
+        Returns:
+            List of playlist dictionaries
+        """
+        try:
+            from sqlalchemy import and_, func
+            from datetime import datetime
+            
+            search = filters.get("search")
+            search_column = filters.get("search_column", "name")
+            is_public = filters.get("is_public")
+            type_filter = filters.get("type")
+            date_from = filters.get("date_from")
+            date_to = filters.get("date_to")
+            sort_by = filters.get("sort_by", "id")
+            sort_order = filters.get("sort_order", "desc")
+            
+            # Build base query
+            query = select(Playlist)
+            conditions = []
+            
+            # Search filter
+            if search:
+                if search_column == "id" and search.isdigit():
+                    conditions.append(Playlist.id == int(search))
+                elif search_column == "uuid":
+                    conditions.append(Playlist.uuid == search)
+                elif search_column == "name":
+                    conditions.append(Playlist.name.like(f"%{search}%"))
+                else:
+                    conditions.append(Playlist.name.like(f"%{search}%"))
+            
+            # Visibility filter
+            if is_public is not None and is_public != "":
+                conditions.append(Playlist.is_public == (is_public == "1"))
+            
+            # Type filter
+            if type_filter:
+                conditions.append(Playlist.type == type_filter)
+            
+            # Date filters
+            if date_from:
+                try:
+                    date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+                    conditions.append(Playlist.created_at >= date_from_obj)
+                except ValueError:
+                    pass
+            
+            if date_to:
+                try:
+                    date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+                    from datetime import timedelta
+                    date_to_obj = date_to_obj + timedelta(days=1) - timedelta(seconds=1)
+                    conditions.append(Playlist.created_at <= date_to_obj)
+                except ValueError:
+                    pass
+            
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+            
+            # Sorting
+            if sort_by == "created_at":
+                order_column = Playlist.created_at
+            else:
+                order_column = Playlist.id
+            
+            if sort_order.lower() == "asc":
+                query = query.order_by(order_column.asc())
+            else:
+                query = query.order_by(order_column.desc())
+            
+            # Execute query (no pagination for export)
+            result = await db.execute(query)
+            playlists = result.scalars().all()
+            
+            # Format results
+            playlist_list = []
+            for playlist in playlists:
+                playlist_list.append({
+                    "id": playlist.id,
+                    "uuid": playlist.uuid,
+                    "user_id": playlist.user_id or "",
+                    "name": playlist.name,
+                    "is_public": "Public" if playlist.is_public else "Private",
+                    "type": playlist.type.replace('_', ' ').title() if playlist.type else "",
+                    "seed_track_id": playlist.seed_track_id or "",
+                    "created_at": playlist.created_at.strftime("%Y-%m-%d %H:%M:%S") if playlist.created_at else ""
+                })
+            
+            return playlist_list
+            
+        except Exception as e:
+            print(f"Error getting playlists for export: {e}")
+            raise e

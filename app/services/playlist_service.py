@@ -264,3 +264,185 @@ class PlaylistService:
                 "success": False,
                 "error": "An error occurred while generating HLS playlist"
             }
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_playlist_list_admin(
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Get paginated playlist list for admin with filters.
+        
+        Args:
+            db: Database session
+            filters: Dictionary containing filter parameters
+            
+        Returns:
+            Dictionary with success status and playlist data
+        """
+        try:
+            result = await self.playlist_repository.async_get_playlist_list_admin(db, filters)
+            return {
+                "success": True,
+                **result
+            }
+        except Exception as e:
+            print(f"Error getting playlist list for admin: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving playlists"
+            }
+    
+    async def delete_playlist_admin(
+        self,
+        db: AsyncSession,
+        playlist_id: int
+    ) -> Dict[str, Any]:
+        """
+        Delete a playlist by ID.
+        
+        Args:
+            db: Database session
+            playlist_id: Playlist ID to delete
+            
+        Returns:
+            Dictionary with success status and message
+        """
+        try:
+            deleted = await self.playlist_repository.async_delete_playlist_admin(db, playlist_id)
+            
+            if deleted:
+                return {
+                    "success": True,
+                    "message": "Playlist deleted successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Playlist not found"
+                }
+                
+        except Exception as e:
+            print(f"Error deleting playlist: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while deleting the playlist"
+            }
+    
+    async def batch_delete_playlists_admin(
+        self,
+        db: AsyncSession,
+        playlist_ids: list
+    ) -> Dict[str, Any]:
+        """
+        Delete multiple playlists.
+        
+        Args:
+            db: Database session
+            playlist_ids: List of playlist IDs to delete
+            
+        Returns:
+            Dictionary with success status, count, and message
+        """
+        try:
+            deleted_count = await self.playlist_repository.async_batch_delete_playlists_admin(
+                db, playlist_ids
+            )
+            
+            if deleted_count > 0:
+                message = f"Successfully deleted {deleted_count} playlist{'s' if deleted_count > 1 else ''}"
+            else:
+                message = "No playlists were deleted"
+            
+            return {
+                "success": True,
+                "deleted_count": deleted_count,
+                "message": message
+            }
+            
+        except Exception as e:
+            print(f"Error batch deleting playlists: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while batch deleting playlists"
+            }
+    
+    async def export_playlists_csv_admin(
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Export playlists to CSV.
+        
+        Args:
+            db: Database session
+            filters: Dictionary containing filter parameters
+            
+        Returns:
+            Dictionary with download URL, filename, and expiry
+        """
+        try:
+            import csv
+            import os
+            from datetime import datetime, timedelta
+            
+            # Get all playlists matching filters
+            playlists = await self.playlist_repository.async_get_all_playlists_for_export(
+                db, filters
+            )
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"playlist_export_{timestamp}.csv"
+            
+            # Ensure exports directory exists
+            exports_dir = os.path.join("exports")
+            os.makedirs(exports_dir, exist_ok=True)
+            
+            filepath = os.path.join(exports_dir, filename)
+            
+            # Write CSV with UTF-8 BOM for Excel compatibility
+            with open(filepath, 'w', encoding='utf-8-sig', newline='') as f:
+                writer = csv.writer(f)
+                
+                # Write header
+                writer.writerow([
+                    'ID', 'UUID', 'User ID', 'Name', 
+                    'Visibility', 'Type', 'Seed Track ID', 'Created At'
+                ])
+                
+                # Write data
+                for playlist in playlists:
+                    writer.writerow([
+                        playlist.get('id', ''),
+                        playlist.get('uuid', ''),
+                        playlist.get('user_id', ''),
+                        playlist.get('name', ''),
+                        playlist.get('is_public', ''),
+                        playlist.get('type', ''),
+                        playlist.get('seed_track_id', ''),
+                        playlist.get('created_at', '')
+                    ])
+            
+            # Generate download URL (expires in 1 hour)
+            download_url = f"/exports/{filename}"
+            expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
+            
+            return {
+                "success": True,
+                "download_url": download_url,
+                "filename": filename,
+                "expires_at": expires_at
+            }
+            
+        except Exception as e:
+            print(f"Error exporting playlists to CSV: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while exporting playlists"
+            }

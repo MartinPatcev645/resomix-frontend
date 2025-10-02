@@ -608,3 +608,421 @@ class PlaylistController:
                 }
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
+    
+    # ============================================================================
+    # Admin Methods
+    # ============================================================================
+    
+    async def get_playlist_list_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        filters: dict
+    ) -> JSONResponse:
+        """
+        Get paginated playlist list for admin.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            filters: Dictionary containing filter parameters
+            
+        Returns:
+            JSON response with playlist list and pagination
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.get_playlist_list_admin(db, filters)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "data": result.get("data", []),
+                    "pagination": result.get("pagination", {})
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="get_playlist_list_admin",
+                    message="Admin retrieved playlist list successfully",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist list",
+                    metadata={
+                        "filters": filters,
+                        "result_count": len(result.get("data", [])),
+                        "total": result.get("pagination", {}).get("total", 0)
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=result.get("error"))
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="ADMIN",
+                    action="get_playlist_list_admin_failed",
+                    message="Failed to retrieve playlist list for admin",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    context="admin playlist list",
+                    metadata={"filters": filters, "error": result.get("error")}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while retrieving playlists"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="get_playlist_list_admin_exception",
+                message="Exception occurred while retrieving playlist list",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist list",
+                metadata={
+                    "filters": filters,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def delete_playlist_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: int
+    ) -> JSONResponse:
+        """
+        Delete a single playlist.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            playlist_id: Playlist ID to delete
+            
+        Returns:
+            JSON response with deletion result
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.delete_playlist_admin(db, playlist_id)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "data": {
+                        "message": result.get("message", "Playlist deleted successfully")
+                    }
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="delete_playlist_admin",
+                    message=f"Admin deleted playlist ID {playlist_id}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist delete",
+                    playlist_id=playlist_id,
+                    metadata={"playlist_id": playlist_id}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                # Playlist not found
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=result.get("error", "Playlist not found"))
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN",
+                    action="delete_playlist_admin_not_found",
+                    message=f"Playlist ID {playlist_id} not found for deletion",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=404,
+                    duration_ms=duration_ms,
+                    context="admin playlist delete",
+                    metadata={"playlist_id": playlist_id}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while deleting the playlist"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="delete_playlist_admin_exception",
+                message="Exception occurred while deleting playlist",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist delete",
+                metadata={
+                    "playlist_id": playlist_id,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def batch_delete_playlist_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_ids: list
+    ) -> JSONResponse:
+        """
+        Delete multiple playlists.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            playlist_ids: List of playlist IDs to delete
+            
+        Returns:
+            JSON response with batch deletion result
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.batch_delete_playlists_admin(db, playlist_ids)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "deleted_count": result.get("deleted_count", 0),
+                    "message": result.get("message", "Playlists deleted successfully")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="batch_delete_playlist_admin",
+                    message=f"Admin batch deleted {result.get('deleted_count', 0)} playlists",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist batch delete",
+                    metadata={
+                        "playlist_ids": playlist_ids,
+                        "deleted_count": result.get("deleted_count", 0)
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=result.get("error"))
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="ADMIN",
+                    action="batch_delete_playlist_admin_failed",
+                    message="Failed to batch delete playlists",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    context="admin playlist batch delete",
+                    metadata={"playlist_ids": playlist_ids, "error": result.get("error")}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while batch deleting playlists"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="batch_delete_playlist_admin_exception",
+                message="Exception occurred while batch deleting playlists",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist batch delete",
+                metadata={
+                    "playlist_ids": playlist_ids,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def export_playlist_csv_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        filters: dict
+    ) -> JSONResponse:
+        """
+        Export playlists to CSV.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            filters: Dictionary containing filter parameters
+            
+        Returns:
+            JSON response with download URL
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.export_playlists_csv_admin(db, filters)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "download_url": result.get("download_url"),
+                    "filename": result.get("filename"),
+                    "expires_at": result.get("expires_at")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="export_playlist_csv_admin",
+                    message="Admin exported playlists to CSV",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist export",
+                    metadata={
+                        "filters": filters,
+                        "filename": result.get("filename")
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=result.get("error"))
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="ADMIN",
+                    action="export_playlist_csv_admin_failed",
+                    message="Failed to export playlists to CSV",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    context="admin playlist export",
+                    metadata={"filters": filters, "error": result.get("error")}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while exporting playlists"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="export_playlist_csv_admin_exception",
+                message="Exception occurred while exporting playlists",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist export",
+                metadata={
+                    "filters": filters,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)

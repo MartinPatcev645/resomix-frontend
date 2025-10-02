@@ -21,6 +21,7 @@ from .feedback import router as feedback_router
 from .admin.feedback import router as admin_feedback_router
 from .admin.contact import router as admin_contact_router
 from .admin.waitlist import router as admin_waitlist_router
+from .admin.playlist import router as admin_playlist_router
 from .contact import router as contact_router
 from .health import router as health_router
 from .preview import router as preview_router
@@ -41,6 +42,7 @@ all_routers = [
     admin_feedback_router,
     admin_contact_router,
     admin_waitlist_router,
+    admin_playlist_router,
     contact_router,
     health_router,
     preview_router,

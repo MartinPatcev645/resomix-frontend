@@ -13,5 +13,6 @@ Init Date: October 1, 2025
 from .feedback import router as admin_feedback_router
 from .contact import router as admin_contact_router
 from .waitlist import router as admin_waitlist_router
+from .playlist import router as admin_playlist_router
 
-__all__ = ["admin_feedback_router", "admin_contact_router", "admin_waitlist_router"]
+__all__ = ["admin_feedback_router", "admin_contact_router", "admin_waitlist_router", "admin_playlist_router"]

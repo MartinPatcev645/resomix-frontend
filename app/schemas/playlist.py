@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
 from app.schemas.similarity import SimilarityByIdResponse
 import re
@@ -145,3 +145,95 @@ class PlaylistSimilarityResponse(BaseModel):
                 }
             }
         }
+
+
+# ============================================================================
+# Admin Schemas
+# ============================================================================
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata."""
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class PlaylistEntity(BaseModel):
+    """Schema for playlist database entity."""
+    id: int
+    uuid: str
+    user_id: Optional[str]
+    name: str
+    is_public: bool
+    type: str
+    seed_track_id: Optional[int]
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+
+class AdminPlaylistListResponse(BaseModel):
+    """Response schema for admin playlist list."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: List[PlaylistEntity] = Field(..., description="List of playlist entries")
+    pagination: PaginationMeta = Field(..., description="Pagination information")
+
+
+class AdminBatchDeleteRequest(BaseModel):
+    """Request schema for batch delete operation."""
+    ids: List[int] = Field(..., description="List of playlist IDs to delete", min_length=1)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "ids": [1, 2, 3, 4, 5]
+            }
+        }
+
+
+class AdminBatchDeleteResponse(BaseModel):
+    """Response schema for batch delete operation."""
+    success: bool = Field(True, description="Always true for successful responses")
+    deleted_count: int = Field(..., description="Number of items deleted")
+    message: str = Field(..., description="Success message")
+
+
+class AdminDeleteResponse(BaseModel):
+    """Response schema for delete operations."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: Dict[str, str] = Field(..., description="Delete result data")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "message": "Playlist deleted successfully"
+                }
+            }
+        }
+
+
+class AdminPlaylistExportRequest(BaseModel):
+    """Request schema for playlist export."""
+    format: str = Field("csv", description="Export format (only csv supported)")
+    page: int = Field(1, ge=1, description="Page number (not used in export)")
+    page_size: int = Field(30, ge=1, le=100, description="Items per page (not used in export)")
+    search: Optional[str] = Field(None, description="Search term")
+    search_column: Optional[str] = Field(None, description="Column to search in: id, uuid, name")
+    is_public: Optional[str] = Field(None, description="Filter by visibility: 0 (private), 1 (public)")
+    type: Optional[str] = Field(None, description="Filter by type: custom, similarity, waiting_segments")
+    date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    sort_by: str = Field("id", description="Column to sort by: id, created_at")
+    sort_order: str = Field("desc", description="Sort order: asc or desc")
+
+
+class AdminPlaylistExportResponse(BaseModel):
+    """Response schema for playlist export."""
+    success: bool = Field(True, description="Always true for successful responses")
+    download_url: str = Field(..., description="URL to download the exported file")
+    filename: str = Field(..., description="Name of the exported file")
+    expires_at: str = Field(..., description="ISO timestamp when the download link expires")
