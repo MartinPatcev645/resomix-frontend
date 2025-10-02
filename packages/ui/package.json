@@ -33,12 +33,14 @@
     "dist"
   ],
   "dependencies": {
-    "@resomix/stores": "workspace:*",
+    "@react-three/fiber": "^9.2.0",
     "@resomix/api-client": "workspace:*",
     "@resomix/hooks": "workspace:*",
-    "@react-three/fiber": "^9.2.0",
+    "@resomix/stores": "workspace:*",
     "@tailwindcss/vite": "^4.1.11",
+    "antd": "^5.27.4",
     "gsap": "^3.12.5",
+    "lucide-react": "^0.544.0",
     "resize-observer-polyfill": "^1.5.1",
     "tailwindcss": "^4.1.11",
     "three": "^0.178.0"

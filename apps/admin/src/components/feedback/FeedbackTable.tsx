@@ -3,6 +3,7 @@ import { Table, Tag, Dropdown, Button, App, Modal, Input } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
 import { CheckCircle, XCircle, Trash2, MoreVertical, Eye } from 'lucide-react'
 import type { FeedbackItem } from '@/hooks/useFeedback.ts'
+import { useConfirmDialog } from '@resomix/hooks'
 
 const { TextArea } = Input
 
@@ -38,10 +39,11 @@ function FeedbackTable({
   onSortChange,
 }: FeedbackTableProps) {
   const { modal } = App.useApp()
+  const { confirmDelete } = useConfirmDialog()
   const [viewingMessage, setViewingMessage] = useState<FeedbackItem | null>(null)
 
   const handleDeleteSingle = (record: FeedbackItem) => {
-    modal.confirm({
+    confirmDelete({
       title: 'Delete Feedback',
       content: (
         <div>
@@ -54,11 +56,6 @@ function FeedbackTable({
           <p className="mt-2 text-sm text-red-600">This action cannot be undone.</p>
         </div>
       ),
-      okText: 'Delete',
-      okType: 'danger',
-      okButtonProps: { danger: true },
-      cancelText: 'Cancel',
-      centered: true,
       onOk: async () => {
         await onDelete([record.id])
       },

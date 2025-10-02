@@ -29,6 +29,12 @@ export interface ApiConfig {
     ADMIN_FEEDBACK_UPDATE: string;
     ADMIN_FEEDBACK_MARK_STATUS: string;
     ADMIN_FEEDBACK_EXPORT: string;
+    ADMIN_CONTACT_LIST: string;
+    ADMIN_CONTACT_DELETE: string;
+    ADMIN_CONTACT_BATCH_DELETE: string;
+    ADMIN_CONTACT_UPDATE: string;
+    ADMIN_CONTACT_MARK_STATUS: string;
+    ADMIN_CONTACT_EXPORT: string;
   };
 }
 
@@ -91,6 +97,12 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_FEEDBACK_UPDATE: "/admin/feedback/update/",
     ADMIN_FEEDBACK_MARK_STATUS: "/admin/feedback/mark-status/",
     ADMIN_FEEDBACK_EXPORT: "/admin/feedback/export",
+    ADMIN_CONTACT_LIST: "/admin/contact/",
+    ADMIN_CONTACT_DELETE: "/admin/contact/delete/",
+    ADMIN_CONTACT_BATCH_DELETE: "/admin/contact/batch-delete",
+    ADMIN_CONTACT_UPDATE: "/admin/contact/update/",
+    ADMIN_CONTACT_MARK_STATUS: "/admin/contact/mark-status/",
+    ADMIN_CONTACT_EXPORT: "/admin/contact/export",
   },
 };
 

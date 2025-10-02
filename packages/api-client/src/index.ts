@@ -9,4 +9,5 @@ export * from "./tidal";
 export * from "./peaks";
 export * from "./waitlist";
 export * from "./admin/feedback";
+export * from "./admin/contact";
 export { default as apiAxiosInstance } from "./utils";

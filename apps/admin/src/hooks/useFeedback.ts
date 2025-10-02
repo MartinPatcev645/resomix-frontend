@@ -5,6 +5,7 @@ import {
   batchDeleteFeedback as apiBatchDeleteFeedback,
   markFeedbackStatus,
   exportFeedback,
+  apiAxiosInstance,
   type FeedbackItem as ApiFeedbackItem,
   type FeedbackListParams
 } from '@resomix/api-client'
@@ -323,8 +324,6 @@ export function useFeedback(options?: UseFeedbackOptions) {
   // Helper function to download file with authentication
   const downloadFile = async (url: string, filename: string) => {
     try {
-      const { apiAxiosInstance } = await import('@resomix/api-client')
-      
       const response = await apiAxiosInstance.get(url, {
         responseType: 'blob',
       })
