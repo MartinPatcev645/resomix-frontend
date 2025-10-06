@@ -23,7 +23,7 @@ export interface UseHowlerResult {
  */
 export function useHowler2(uuid?: string): UseHowlerResult {
   const url = useMemo(
-    () => (uuid ? `https://rmedia.resomix.com/signed-audio/?uuid=${uuid}` : undefined),
+    () => (uuid ? `https://media.resomix.com/signed-audio/?uuid=${uuid}` : undefined),
     [uuid]
   );
 

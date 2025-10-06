@@ -86,7 +86,7 @@ export function usePeaks2(
     const loadData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`https://rmedia.resomix.com/peaks/?uuid=${uuid}`, {
+        const res = await fetch(`https://media.resomix.com/peaks/?uuid=${uuid}`, {
           cache: 'no-store'
         });
 
