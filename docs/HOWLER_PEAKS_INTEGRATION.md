@@ -482,7 +482,7 @@ export function usePeaksWaveform({
         const options = {
           containers: { overview: containerRef.current },
           mediaElement: audioElement,
-          dataUri: { json: `https://media.resomix.com/peaks/?uuid=${trackId}` },
+          dataUri: { json: `https://rmedia.resomix.com/peaks/?uuid=${trackId}` },
           height,
           zoomLevels: [256, 512, 1024],
         };

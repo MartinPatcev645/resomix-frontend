@@ -64,7 +64,7 @@ const TestPage: React.FC = () => {
     try {
       // 88741ea8-abe3-4d25-808a-3428e8531b02
       // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
-      const url = new URL('https://media.resomix.com/peaks-rich/?uuid=67b026f66fd8f3b791b10662');
+      const url = new URL('https://rmedia.resomix.com/peaks-rich/?uuid=67b026f66fd8f3b791b10662');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
 
       const response = await fetch(url.toString(), {
@@ -117,7 +117,7 @@ const TestPage: React.FC = () => {
 
   const handleHlsRequestTwo = async () => {
     try {
-      const url = new URL('https://media.resomix.com/signed-audio/hls-m3u8/');
+      const url = new URL('https://rmedia.resomix.com/signed-audio/hls-m3u8/');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
 
       const response = await fetch(url.toString(), {
@@ -139,7 +139,7 @@ const TestPage: React.FC = () => {
     try {
       // 88741ea8-abe3-4d25-808a-3428e8531b02
       // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
-      const url = new URL('https://media.resomix.com/signed-audio/segment/?uuid=67ada10e799206f8d64dae5f&seg=0');
+      const url = new URL('https://rmedia.resomix.com/signed-audio/segment/?uuid=67ada10e799206f8d64dae5f&seg=0');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
 
       const response = await fetch(url.toString(), {
@@ -158,7 +158,7 @@ const TestPage: React.FC = () => {
     try {
       // 88741ea8-abe3-4d25-808a-3428e8531b02
       // 71a7fdf0-ac11-4a36-8d68-c13204d7b983
-      const url = new URL('https://media.resomix.com/signed-audio/segment/?uuid=silent_1984&seg=0');
+      const url = new URL('https://rmedia.resomix.com/signed-audio/segment/?uuid=silent_1984&seg=0');
       url.searchParams.append('api_key', 'bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ');
 
       const response = await fetch(url.toString(), {
