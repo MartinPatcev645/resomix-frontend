@@ -36,13 +36,13 @@ class PreviewDownloadResponse(BaseModel):
     """Response schema for preview download URL generation."""
     download_url: str = Field(
         description="Signed URL for preview download",
-        example="https://rmedia.resomix.com/signed-audio/?uuid=abc123&xpi=encrypted_expiry&token=hmac_signature"
+        example="https://media.resomix.com/signed-audio/?uuid=abc123&xpi=encrypted_expiry&token=hmac_signature"
     )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "download_url": "https://rmedia.resomix.com/signed-audio/?uuid=67addcb39387d00fbdc3acdf&xpi=gAAAAABh...&token=abc123..."
+                "download_url": "https://media.resomix.com/signed-audio/?uuid=67addcb39387d00fbdc3acdf&xpi=gAAAAABh...&token=abc123..."
             }
         }
 
@@ -57,7 +57,7 @@ class PreviewDownloadSuccessResponse(BaseModel):
             "example": {
                 "success": True,
                 "data": {
-                    "download_url": "https://rmedia.resomix.com/signed-audio/?uuid=67addcb39387d00fbdc3acdf&xpi=gAAAAABh...&token=abc123..."
+                    "download_url": "https://media.resomix.com/signed-audio/?uuid=67addcb39387d00fbdc3acdf&xpi=gAAAAABh...&token=abc123..."
                 }
             }
         }
