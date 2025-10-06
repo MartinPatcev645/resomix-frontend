@@ -74,7 +74,7 @@ class URLSigner:
         token = hmac.new(self.hmac_secret.encode(), hmac_raw, hashlib.sha256).hexdigest()
         
         # Generate signed URL
-        signed_url = f"https://media.resomix.com/signed-audio/?uuid={uuid}&xpi={xpi}&token={token}"
+        signed_url = f"https://rmedia.resomix.com/signed-audio/?uuid={uuid}&xpi={xpi}&token={token}"
         
         return signed_url
     

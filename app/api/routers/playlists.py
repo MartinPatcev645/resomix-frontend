@@ -176,7 +176,7 @@ async def get_playlist_similarity_endpoint(
             "description": "M3U8 playlist generated successfully",
             "content": {
                 "application/vnd.apple.mpegurl": {
-                    "example": "#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-TARGETDURATION:556\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:420.000,Artist - Track Title\nhttps://media.resomix.com/signed-audio/?uuid=track-uuid&exp=1234567890&sig=signature\n#EXT-X-DISCONTINUITY\n..."
+                    "example": "#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-TARGETDURATION:556\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:420.000,Artist - Track Title\nhttps://rmedia.resomix.com/signed-audio/?uuid=track-uuid&exp=1234567890&sig=signature\n#EXT-X-DISCONTINUITY\n..."
                 }
             }
         },

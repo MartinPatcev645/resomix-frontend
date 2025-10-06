@@ -12,7 +12,7 @@ The user uploads an audio file and immediately receives a ranked list of similar
 **Narrative**
 
 1. **Frontend** (`app.resomix.com`) sends `POST /get_similarity/` + audio file → **Backend** (`bserver.resomix.com`, Alwyzon).
-2. Backend extracts metadata, stores the temporary track, then calls **Media** (`media.resomix.com`, 22 TB) `POST /similarity/query-by-upload/`.
+2. Backend extracts metadata, stores the temporary track, then calls **Media** (`rmedia.resomix.com`, 22 TB) `POST /similarity/query-by-upload/`.
 3. Media server validates file, forwards it to its local **Embedding micro-service** (`/get_embeddings`), performs FAISS search, and returns the ranked list.
 4. Backend deduplicates results, wraps them in the standard `{ success: true, data: {...} }` schema, and replies to **Frontend**.
 5. Frontend renders the similar-tracks list, and optionally offers a “Generate Preview” button that triggers Flow 1.4 below.
@@ -158,8 +158,8 @@ If Backend returns `502/503`, Electrobuzz re-queues the track and retries on the
 | ------------ | ------------------------------------------- | ---------------------------------- |
 | UI           | Resomix Web Frontend                        | *browser→app*                      |
 | BE           | Backend API (Alwyzon)                       | `bserver.resomix.com`              |
-| MS           | Media API (22 TB)                           | `media.resomix.com`                |
-| EM           | Embedding Micro-service (internal to media) | `media.resomix.com/get_embeddings` |
+| MS           | Media API (22 TB)                           | `rmedia.resomix.com`                |
+| EM           | Embedding Micro-service (internal to media) | `rmedia.resomix.com/get_embeddings` |
 | EB           | Electrobuzz Monthly Pipeline                | *electrobuzz host*                 |
 
 ---

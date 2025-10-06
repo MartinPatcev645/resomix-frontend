@@ -103,7 +103,7 @@ class Settings(BaseModel):
     
     # HLS Configuration
     hls_media_base_url: str = Field(
-        default="https://media.resomix.com/signed-audio/",
+        default="https://rmedia.resomix.com/signed-audio/",
         description="Base URL for HLS media segments"
     )
     hls_signing_secret: str = Field(
