@@ -21,7 +21,7 @@ const HomeSix: React.FC = () => (
           let Resomix be the gravitational force that draws you<br />
           to the tracks you need.
         </div>
-        <div className='flex w-full justify-center text-center text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-28)]'>
+        <div className='flex w-full justify-center text-center text-[length:var(--px-25)] font-medium font-helvetica uppercase leading-[var(--px-28)]'>
           RESOMIX revolutionized music<br />
           discovery by putting sound first
         </div>

@@ -9,7 +9,7 @@ const HomeTwo: React.FC = () => (
     <div
       style={{
         position: 'absolute',
-        top: '15%',
+        top: '20%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
         zIndex: 2,
@@ -23,6 +23,9 @@ const HomeTwo: React.FC = () => (
       <div className='flex flex-col justify-center items-center'>
         <div className=''>
           <img src={LayersSvg} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
+        </div>
+        <div className="text-center justify-start text-[length:var(--px-13)] font-extrabold font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-90">
+          Quality-over-quantity
         </div>
         <div className="text-center justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-70">Resomix goes deeper than anyone else, carefully selecting music <br />that reflects the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
       </div>

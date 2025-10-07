@@ -137,11 +137,11 @@ const HomeFour: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="mt-[var(--px-90)]">
-        <div className="w-full flex justify-center items-center">
-          <ButtonHeavyRight text="Are you Ready" onClick={() => {
+      <div className="mt-[var(--px-10)]">
+        <div className="w-full flex justify-end items-center">
+          <ButtonHeavyRight text="Get your first match free" onClick={() => {
             window.location.href = BASE_BETA_URL
-          }} transparent={true} link_arrow={true} />
+          }} link_arrow={true} />
         </div>
       </div>
     </div>
