@@ -11,10 +11,6 @@ export interface StaticNoiseProps {
   className?: string;
   /** Extra vertical coverage outside the viewport, in viewport-height units (vh). Useful to prevent flashes during rapid scroll. For example, 25 means the noise layer starts 25 vh above the viewport and extends 25 vh below it. Defaults to 0. */
   overscanVh?: number;
-  /** Scale factor for pixel size; 1 keeps current density. */
-  pixel_dot_ratio?: number;
-  /** Whether to use pixelated image rendering. */
-  pixelated?: boolean;
 }
 
 /**
@@ -28,8 +24,6 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
   zIndex,
   className = "",
   overscanVh = 0,
-  pixel_dot_ratio = 2,
-  pixelated = false,
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -52,39 +46,24 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     container.appendChild(canvas);
 
     /* --------------------------- 2. resize helper -------------------------- */
-    // Draw at a fixed design-space resolution (1280×800) and let CSS scale
-    // it to fit the container. This keeps the noise density constant and
-    // caps the per-frame cost no matter how large the viewport becomes.
-    const scale = Math.max(1, pixel_dot_ratio);
-    canvas.width = Math.max(1, Math.round(1280 / scale));
-    canvas.height = Math.max(1, Math.round(800 / scale));
-    // Optional: preserve crisp pixels when the bitmap is enlarged
-    if (pixelated) {
-      (canvas.style as CSSStyleDeclaration).imageRendering = "pixelated";
-    }
+    const resize = () => {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    };
+    resize();
 
-    /* --------------------------- 3. precompute frames ---------------------- */
-    const FRAME_COUNT = 20;
-    const frames: ImageData[] = [];
-    {
-      const { width, height } = canvas;
-      if (width > 0 && height > 0) {
-        for (let f = 0; f < FRAME_COUNT; f++) {
-          const imageData = ctx.createImageData(width, height);
-          const buffer32 = new Uint32Array(imageData.data.buffer);
-          const len = buffer32.length;
-          for (let i = 0; i < len; i++) buffer32[i] = (Math.random() * 220) << 24;
-          frames.push(imageData);
-        }
-      }
-    }
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
 
-    /* --------------------------- 4. draw noise ----------------------------- */
-    let frameIndex = 0;
+    /* --------------------------- 3. draw noise ----------------------------- */
     const drawNoise = () => {
-      if (frames.length === 0) return;
-      ctx.putImageData(frames[frameIndex], 0, 0);
-      frameIndex = (frameIndex + 1) % frames.length;
+      const { width, height } = canvas;
+      if (width <= 0 || height <= 0) return; // Guard against zero dimensions
+      const imageData = ctx.createImageData(width, height);
+      const buffer32 = new Uint32Array(imageData.data.buffer);
+      const len = buffer32.length;
+      for (let i = 0; i < len; i++) buffer32[i] = (Math.random() * 205) << 24;
+      ctx.putImageData(imageData, 0, 0);
     };
 
     /* --------------------------- 4. animation loop ------------------------- */
@@ -102,9 +81,10 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
 
     /* --------------------------- 5. cleanup -------------------------------- */
     return () => {
+      ro.disconnect();
       container.removeChild(canvas);
     };
-  }, [color, pixel_dot_ratio]);
+  }, [color]);
 
   /* --------------------------- wrapper element --------------------------- */
   const extra = overscanVh > 0 ? `${overscanVh}vh` : "0";
