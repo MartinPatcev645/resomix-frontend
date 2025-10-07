@@ -11,7 +11,7 @@ const HomeFive: React.FC = () => {
   const dropdownResults = React.useMemo(() => results.map((r) => ({ ...r, id: r.id })), [results]);
 
   return (
-    <div className='mt-[var(--px-150)] flex flex-col relative z-15'>
+    <div className='mt-[var(--px-230)] flex flex-col relative z-15'>
       {/* Section Five A */}
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
@@ -63,7 +63,7 @@ const HomeFive: React.FC = () => {
           </div>
           <div className='mt-[var(--px-16)] relative w-[var(--px-588)] self-end'>
             {/** Search bar & dropdown */}
-            <SearchInput value={query} onChange={handleQueryChange} />
+            <SearchInput value={query} onChange={handleQueryChange} placeholder="Click to search our Vast Collection..." />
             <SearchDropdown show={query.length > 0} results={dropdownResults} truncateLength={22} isLoading={isLoading} onSelect={(result) => {
               window.location.href = `${BASE_BETA_URL}/?id=${result.id}`;
             }} />
