@@ -10,7 +10,7 @@ const HomeThree: React.FC = () => (
       <div className="w-full flex justify-center items-center">
         <ButtonHeavyRight text="Start Your Sonic Journey" onClick={() => {
           window.location.href = BASE_BETA_URL
-        }} transparent={true} link_arrow={true} />
+        }} link_arrow={true} />
       </div>
     </div>
     <div className='flex flex-col w-full'>
