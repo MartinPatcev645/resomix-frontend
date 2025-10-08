@@ -24,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         }}>
         <LinkButton text="About Us" path={`${baseUrl}/about`} />
         <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} />
-        <LinkButton text="Journal" path={`https://resomix.blog`} newTab={true} />
+        <LinkButton text="Journal" path={`https://resomix.com/blog`} newTab={true} />
       </div>
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
         {logo}

@@ -47,7 +47,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
             [Waitlist]
           </div>
-          <a href={`https://resomix.blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          <a href={`https://resomix.com/blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
             [Journal]
           </a>
           <div className="">
