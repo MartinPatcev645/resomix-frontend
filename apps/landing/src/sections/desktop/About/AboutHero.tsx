@@ -46,7 +46,7 @@ const AboutHero: React.FC = () => {
         }}
       >
         {/* Remains background animation */}
-        <div className="absolute inset-0 flex justify-center items-center w-full h-full">
+        <div className="absolute inset-0 flex justify-center items-center w-full h-full overflow-clip">
           {/* {isVisible && <Remains />} */}
           <img src={GradientOne} className="w-[var(--px-1100)] h-[var(--px-750)] mt-[var(--px-6)]" alt="Gradient" />
         </div>

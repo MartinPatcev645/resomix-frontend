@@ -43,7 +43,7 @@ const UploadOne: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-[var(--px-6)]">
-                    <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest.">
+                    <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
                             <div className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]">
                                 Results Count
