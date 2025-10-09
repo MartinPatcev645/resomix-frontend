@@ -14,8 +14,8 @@ import { getSimilarityPlaylistHlsUrl } from "@resomix/api-client";
 const RETRY_EVERY = 8000;
 const GAP_BETWEEN_TRACKS = 2.005; // sec silent segment
 const AUTOSWITCH_PREROLL = 0.5;   // sec preroll between new track start
-const MIN_BUFFER_BEFORE_PLAY = 6; // sec in buffer before play
-const PLAY_FALLBACK_AFTER_MS = 5000;
+const MIN_BUFFER_BEFORE_PLAY = 3; // sec in buffer before play
+const PLAY_FALLBACK_AFTER_MS = 3000;
 
 // ================== Helpers ==================
 function setNetworkErrorFlag(on: boolean, reason?: string) {
@@ -277,6 +277,9 @@ class HlsPlaylistController implements AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
+        maxBufferSize: 1,
+        maxMaxBufferLength: 1,
+        maxBufferLength: 1,
       });
       this.hls.loadSource(this.playlistUrl);
       this.hls.attachMedia(this.audio);

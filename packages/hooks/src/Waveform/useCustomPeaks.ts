@@ -21,6 +21,16 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // Refs to latest values for event handlers
+  const currentTimeRef = useRef(0);
+  useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
+
+  const durationRef = useRef(0);
+  useEffect(() => { durationRef.current = duration; }, [duration]);
+
+  // Drag state
+  const draggingRef = useRef<boolean>(false);
+
   // Debounce
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextDebounceTimeRef = useRef<number>(0);
@@ -123,41 +133,11 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     );
   }, [fullband, lowband, duration, getCtxAndDevSize]);
 
-  const resizeCanvases = useCallback(() => {
-    const el = overviewElement;
-    const canvas = canvasRef.current;
-    const overlay = overlayCanvasRef.current;
-    if (!el || !canvas) return;
-
-    const cssWidth = el.clientWidth || 0;
-    const cssHeight = el.clientHeight || 0;
-    if (cssWidth === 0 || cssHeight === 0) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const nextWidth = Math.max(1, Math.round(cssWidth * dpr));
-    const nextHeight = Math.max(1, Math.round(cssHeight * dpr));
-
-    let needRedraw = false;
-
-    if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
-      canvas.width = nextWidth;
-      canvas.height = nextHeight;
-      needRedraw = true;
-    }
-
-    if (overlay) {
-      if (overlay.width !== nextWidth || overlay.height !== nextHeight) {
-        overlay.width = nextWidth;
-        overlay.height = nextHeight;
-        needRedraw = true;
-      }
-    }
-
-    if (needRedraw || dprRef.current !== dpr) {
-      dprRef.current = dpr;
-      drawWaveform(currentTime);
-    }
-  }, [overviewElement, drawWaveform, currentTime]);
+  // Keep latest draw function for event handlers/resize without re-subscribing
+  const drawWaveformRef = useRef<(t?: number) => void>(() => {});
+  useEffect(() => {
+    drawWaveformRef.current = drawWaveform;
+  }, [drawWaveform]);
 
   const attachOverviewElement = useCallback((el: HTMLDivElement | null) => {
     setOverviewElement(el);
@@ -172,6 +152,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   }, [getCtxAndDevSize]);
 
   const drawOverlay = useCallback((xCss: number) => {
+    if (draggingRef.current) return;
     const overlay = overlayCanvasRef.current;
     if (!overlay) return;
     const { ctx, width, height } = getCtxAndDevSize(overlay);
@@ -192,9 +173,38 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     );
   }, [getCtxAndDevSize, hoverColor]);
 
+  // Load data ONLY when uuid changes
+  useEffect(() => {
+    let cancelled = false;
+    if (!uuid) return;
+    setLoading(true);
+    setError(null);
+
+    loadPeaksData(uuid)
+      .then((payload: PeaksRich) => {
+        if (cancelled) return;
+        setFullband(payload.fullband || []);
+        setLowband(payload.lowband || []);
+        const dur = payload.durationSeconds ?? (payload.fullband?.length ?? 0);
+        setDuration(dur);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uuid]);
+
+  // Setup canvases, hover and pointer listeners
   useEffect(() => {
     const el = overviewElement;
-    if (!el || !uuid) return;
+    if (!el) return;
 
     const computedPos = window.getComputedStyle(el).position;
     if (computedPos === 'static') {
@@ -208,17 +218,15 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     canvas.style.position = 'absolute';
     canvas.style.left = '0';
     canvas.style.top = '0';
-    canvas.style.width = '100%';   // CSS размеры
+    canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.zIndex = '1';
+    canvas.style.pointerEvents = 'none'; // allow events to reach container
     canvasRef.current = canvas;
     el.appendChild(canvas);
 
-    // Overlay
+    // Overlay (for hover)
     let overlay: HTMLCanvasElement | null = null;
-    let onMouseMove: ((e: MouseEvent) => void) | null = null;
-    let onMouseLeave: (() => void) | null = null;
-
     if (supportsHover) {
       overlay = document.createElement('canvas');
       overlay.style.position = 'absolute';
@@ -230,53 +238,107 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
       overlay.style.pointerEvents = 'none';
       overlayCanvasRef.current = overlay;
       el.appendChild(overlay);
-
-      onMouseMove = (e: MouseEvent) => {
-        const rect = el.getBoundingClientRect();
-        const xCss = e.clientX - rect.left;
-        if (xCss >= 0 && xCss <= rect.width) {
-          drawOverlay(xCss);
-        }
-      };
-      onMouseLeave = () => {
-        clearOverlay();
-      };
-
-      el.addEventListener('mousemove', onMouseMove);
-      el.addEventListener('mouseleave', onMouseLeave);
     } else {
       overlayCanvasRef.current = null;
     }
 
-    resizeCanvases();
+    // Function to set canvas sizes to DPR and redraw current frame
+    const resizeNow = () => {
+      const cssWidth = el.clientWidth || 0;
+      const cssHeight = el.clientHeight || 0;
+      if (cssWidth === 0 || cssHeight === 0) return;
 
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const payload: PeaksRich = await loadPeaksData(uuid);
-        setFullband(payload.fullband || []);
-        setLowband(payload.lowband || []);
-        const dur = payload.durationSeconds ?? (payload.fullband?.length ?? 0);
-        setDuration(dur);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoading(false);
+      const dpr = window.devicePixelRatio || 1;
+      const nextWidth = Math.max(1, Math.round(cssWidth * dpr));
+      const nextHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+      let needRedraw = false;
+
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
+        needRedraw = true;
+      }
+
+      if (overlay) {
+        if (overlay.width !== nextWidth || overlay.height !== nextHeight) {
+          overlay.width = nextWidth;
+          overlay.height = nextHeight;
+          needRedraw = true;
+        }
+      }
+
+      if (needRedraw || dprRef.current !== dpr) {
+        dprRef.current = dpr;
+        drawWaveformRef.current(currentTimeRef.current);
       }
     };
-    if (!fullband.length && !loading) {
-      loadData();
-    }
 
-    // Resize/dpr observers
+    resizeNow();
+
+    // Hover listeners
+    const onMouseMove = (e: MouseEvent) => {
+      if (!supportsHover || draggingRef.current) return;
+      const rect = el.getBoundingClientRect();
+      const xCss = e.clientX - rect.left;
+      if (xCss >= 0 && xCss <= rect.width) {
+        drawOverlay(xCss);
+      }
+    };
+    const onMouseLeave = () => {
+      if (!supportsHover) return;
+      clearOverlay();
+    };
+    el.addEventListener('mousemove', onMouseMove);
+    el.addEventListener('mouseleave', onMouseLeave);
+
+    // Pointer-based seeking (robust)
+    const updateFromPos = (clientX: number) => {
+      const rect = el.getBoundingClientRect();
+      const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+      const percent = rect.width > 0 ? x / rect.width : 0;
+      const t = percent * (durationRef.current || 0);
+      setCurrentTime(t);
+      drawWaveformRef.current(t); // immediate during drag
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      draggingRef.current = true;
+      clearOverlay();
+      try { (e.target as Element)?.setPointerCapture?.(e.pointerId); } catch {}
+      updateFromPos(e.clientX);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      updateFromPos(e.clientX);
+    };
+    const stopDragging = (e?: PointerEvent) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      try { e && (e.target as Element)?.releasePointerCapture?.(e.pointerId); } catch {}
+    };
+    const onPointerUp = (e: PointerEvent) => stopDragging(e);
+    const onPointerCancel = (e: PointerEvent) => stopDragging(e);
+    const onWindowBlur = () => stopDragging();
+
+    const prevTouchAction = el.style.touchAction;
+    el.style.touchAction = 'none'; // prevent scroll during drag on touch devices
+
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', onPointerCancel);
+    window.addEventListener('blur', onWindowBlur);
+
+    // Resize observers
     const ro = new ResizeObserver(() => {
-      resizeCanvases();
+      resizeNow();
     });
     ro.observe(el);
     roRef.current = ro;
 
     const handleViewportResize = () => {
-      resizeCanvases();
+      resizeNow();
     };
     window.addEventListener('resize', handleViewportResize);
     if (window.visualViewport) {
@@ -293,17 +355,24 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
         window.visualViewport.removeEventListener('resize', handleViewportResize);
       }
 
-      if (canvasRef.current) {
+      el.removeEventListener('mousemove', onMouseMove);
+      el.removeEventListener('mouseleave', onMouseLeave);
+
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointercancel', onPointerCancel);
+      window.removeEventListener('blur', onWindowBlur);
+
+      el.style.touchAction = prevTouchAction;
+
+      if (canvasRef.current && canvasRef.current.parentElement === el) {
         el.removeChild(canvasRef.current);
         canvasRef.current = null;
       }
-      if (overlay) {
-        el.removeChild(overlay);
+      if (overlayCanvasRef.current && overlayCanvasRef.current.parentElement === el) {
+        el.removeChild(overlayCanvasRef.current);
         overlayCanvasRef.current = null;
-      }
-      if (supportsHover) {
-        if (onMouseMove) el.removeEventListener('mousemove', onMouseMove);
-        if (onMouseLeave) el.removeEventListener('mouseleave', onMouseLeave);
       }
 
       if (restoredContainerPosRef.current) {
@@ -311,8 +380,9 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
         restoredContainerPosRef.current = false;
       }
     };
-  }, [overviewElement, uuid, supportsHover, resizeCanvases, drawOverlay, clearOverlay, fullband.length, loading]);
+  }, [overviewElement, supportsHover, getCtxAndDevSize, clearOverlay, drawOverlay]);
 
+  // Redraw when data/time changes
   useEffect(() => {
     drawWaveform(currentTime);
   }, [fullband, lowband, duration, currentTime, drawWaveform]);
