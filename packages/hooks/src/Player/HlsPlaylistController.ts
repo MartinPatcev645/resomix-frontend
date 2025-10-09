@@ -277,9 +277,6 @@ class HlsPlaylistController implements AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
-        maxBufferSize: 1,
-        maxMaxBufferLength: 1,
-        maxBufferLength: 1,
       });
       this.hls.loadSource(this.playlistUrl);
       this.hls.attachMedia(this.audio);
