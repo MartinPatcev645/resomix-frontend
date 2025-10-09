@@ -6,6 +6,7 @@ const TestPage: React.FC = () => (
   <div className="w-screen h-screen relative overflow-hidden">
     {/* Background static noise */}
     <StaticNoise color="#323233" zIndex={0} />
+    THIS IS THE TEST PAGE
 
     {/* Terrain overlay at the top of the screen */}
     {/* <div
