@@ -317,6 +317,8 @@ class HlsPlaylistController implements AudioController {
       this.hls.loadSource(this.playlistUrl);
       this.wireHlsErrorHandlers();
     }
+
+    return this.hls;
   }
 
   // =============== Private: events ===============
@@ -464,8 +466,12 @@ class HlsPlaylistController implements AudioController {
       const t = this.audio.currentTime || 0;
 
       if (!this.hls) {
-        this.restartHls();
-        try { this.hls?.startLoad(t || -1); } catch { /* noop */ }
+        this.hls = this.restartHls() || null;
+        try {
+          if (this.hls && typeof this.hls.startLoad === 'function') {
+            this.hls.startLoad(t || -1);
+          }
+        } catch { /* noop */ }
       } else {
         const bufAhead = this.getBufferedAhead();
         const isStalled = this.audio.readyState <= HTMLMediaElement.HAVE_CURRENT_DATA || bufAhead < 0.25;
