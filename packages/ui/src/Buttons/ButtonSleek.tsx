@@ -18,7 +18,7 @@ export const ButtonSleek: React.FC<ButtonSleekProps> = ({ text, onClick, transpa
         } ${className} ${customWidth ? customWidth : 'min-w-[var(--px-160)]'}`}
     >
       <div
-        className={`tracking-normal whitespace-nowrap m-auto text-[length:var(--px-12)] font-light font-fira ${transparent
+        className={`tracking-normal whitespace-nowrap m-auto text-[length:var(--px-12)] xl:text-[length:var(--px-10-37)] font-light font-fira ${transparent
           ? 'text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]'
           : 'text-[var(--color-text-primary)]'
           }`}
