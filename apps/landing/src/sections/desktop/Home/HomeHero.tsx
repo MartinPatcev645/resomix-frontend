@@ -72,7 +72,7 @@ const HomeHero: React.FC = () => {
             <div className="flex justify-end w-full min-w-[var(--px-204-5)] mt-[var(--px-42)]">
               <ButtonHeavyRight text="Upload Your Track" onClick={() => {
                 window.location.href = BASE_BETA_URL
-              }} transparent={true} link_arrow={true} />
+              }} link_arrow={true} />
             </div>
           </div>
           <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
