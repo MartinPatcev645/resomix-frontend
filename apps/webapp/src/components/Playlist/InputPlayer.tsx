@@ -38,6 +38,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
               {/* Play / Pause */}
               <button
                 type="button"
+                id="input-player-play-pause"
                 className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0"
                 onClick={ctl.togglePlay}
               >
