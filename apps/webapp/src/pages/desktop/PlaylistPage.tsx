@@ -61,7 +61,8 @@ export function PlaylistPage() {
       ) : (
         <div className="bg-[var(--color-secondary)]">
           {/* Static noise background */}
-          <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} />
+          {/* <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} /> */}
+          <StaticNoise overscanVh={10} />
 
           {/* Content layer */}
           <div

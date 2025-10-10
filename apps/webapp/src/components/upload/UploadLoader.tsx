@@ -80,7 +80,8 @@ const UploadLoader: React.FC = () => {
     return (
         <div className="w-screen h-screen relative overflow-hidden bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)]">
             <div className="hidden lg:block">
-                <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} />
+                {/* <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} /> */}
+                <StaticNoise overscanVh={10} />
             </div>
             <div className="absolute inset-0 w-full h-full">
                 <SineWaves />

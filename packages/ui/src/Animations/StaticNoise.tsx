@@ -1,104 +1,171 @@
+// StaticNoise.tsx
 import { useEffect, useRef } from "react";
+import * as THREE from "three";
 
 export interface StaticNoiseProps {
-  /** Background colour on which the noise canvas sits (e.g. "#313132"). */
-  color?: string;
-  /** Opacity of the whole noise layer (0-1). */
-  opacity?: number;
-  /** z-index applied to the wrapper element. */
-  zIndex?: number;
-  /** Extra Tailwind / CSS classes applied to the wrapper. */
-  className?: string;
-  /** Extra vertical coverage outside the viewport, in viewport-height units (vh). Useful to prevent flashes during rapid scroll. For example, 25 means the noise layer starts 25 vh above the viewport and extends 25 vh below it. Defaults to 0. */
+  /** Extra vertical coverage outside the viewport, in vh (optional). */
   overscanVh?: number;
 }
 
-/**
- * Canvas-based “TV static” overlay.
- * By default it stretches to 100×100 % of its parent. Control placement (absolute / fixed …)
- * through the `className` prop just like any other element.
- */
-export const StaticNoise: React.FC<StaticNoiseProps> = ({
-  color = "#313132",
-  opacity = 1,
-  zIndex,
-  className = "",
-  overscanVh = 0,
-}) => {
+export const StaticNoise: React.FC<StaticNoiseProps> = ({ overscanVh = 0 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = boxRef.current;
     if (!container) return;
 
-    /* --------------------------- 1. canvas setup --------------------------- */
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    // --- Renderer (transparent, fast, predictable) -------------------------
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(container.clientWidth, container.clientHeight, false);
+    renderer.setClearColor(0x000000, 0);
+    (renderer as any).toneMapping = (THREE as any).NoToneMapping ?? 0;
+    if ("SRGBColorSpace" in THREE && "outputColorSpace" in renderer) {
+      (renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace; // r152+
+    } else {
+      (renderer as any).outputEncoding = (THREE as any).sRGBEncoding; // <= r151
+    }
 
-    const style = canvas.style as CSSStyleDeclaration;
-    style.width = "100%";
-    style.height = "100%";
-    style.display = "block"; // avoid inline-block gaps
-    style.pointerEvents = "none";
-    style.background = color;
-
+    const canvas = renderer.domElement as HTMLCanvasElement;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    canvas.style.pointerEvents = "none";
     container.appendChild(canvas);
 
-    /* --------------------------- 2. resize helper -------------------------- */
-    const resize = () => {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    };
-    resize();
+    // --- Scene / camera -----------------------------------------------------
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
+    // --- Fullscreen quad ----------------------------------------------------
+    const geom = new THREE.BufferGeometry();
+    const positions = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]);
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geom.setIndex(new THREE.BufferAttribute(indices, 1));
+
+    // === Fixed look (two-tone) =============================================
+    // Precomputed linear values for:
+    //   LIGHT sRGB #0a0a07  -> linear ≈ (0.002614, 0.002614, 0.001953)
+    //   DARK  sRGB #171716  -> linear ≈ (0.00856813, 0.00856813, 0.00802319)
+    const LIGHT_LIN = new THREE.Vector3(0.002614, 0.002614, 0.001953);
+    const DARK_LIN  = new THREE.Vector3(0.00856813, 0.00856813, 0.00802319);
+
+    const GRAIN_PX    = 2.0;   // pixel size of speck cells (1 = crisp, 2–3 = larger)
+    const DENSITY     = 0.7;  // fraction of cells that become dark specks
+    const SHUFFLE_FPS = 30.0;  // refresh rate of the pattern
+    const ALPHA       = 1.0;   // overall opacity
+
+    const uniforms = {
+      uResolution: { value: new THREE.Vector2(1, 1) },
+      uTime:       { value: 0 },
+      uLightLin:   { value: LIGHT_LIN },
+      uDarkLin:    { value: DARK_LIN },
+      uAlpha:      { value: ALPHA },
+      uGrainPx:    { value: GRAIN_PX },
+      uDensity:    { value: DENSITY },
+      uFps:        { value: SHUFFLE_FPS },
+    };
+
+    const vertexShader = `void main(){ gl_Position = vec4(position,1.0); }`;
+
+    // Work in linear, encode to sRGB at the end (manual, fast).
+    const fragmentShader = `
+      precision highp float;
+      uniform vec2  uResolution;
+      uniform float uTime;
+      uniform vec3  uLightLin;
+      uniform vec3  uDarkLin;
+      uniform float uAlpha;
+      uniform float uGrainPx;
+      uniform float uDensity;
+      uniform float uFps;
+
+      float hash21(vec2 p){
+        p = vec2(dot(p, vec2(127.1, 311.7)),
+                 dot(p, vec2(269.5, 183.3)));
+        return fract(sin(p.x + p.y) * 43758.5453123);
+      }
+
+      vec3 linearToSRGB(vec3 x){ return pow(max(x, vec3(0.0)), vec3(1.0/2.2)); }
+
+      void main(){
+        vec2 pix  = gl_FragCoord.xy;
+        float sz  = max(uGrainPx, 1.0);
+        vec2 cell = floor(pix / sz) * sz;
+
+        float frame = mod(floor(uTime * uFps), 1024.0);
+        vec2  seed  = vec2(frame, frame * 1.61803398875);
+
+        float n = hash21(cell + seed + vec2(0.73, 0.41));
+        float isSpeck = step(1.0 - uDensity, n);
+
+        // Two-tone: light base, dark specks (linear domain)
+        vec3 colLin = mix(uLightLin, uDarkLin, isSpeck);
+
+        // Encode to sRGB for display
+        vec3 colSRGB = linearToSRGB(colLin);
+        gl_FragColor = vec4(colSRGB, uAlpha);
+      }
+    `;
+
+    const mat = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      toneMapped: false as any,
+    });
+
+    const mesh = new THREE.Mesh(geom, mat);
+    scene.add(mesh);
+
+    // --- Resize -------------------------------------------------------------
+    const resize = () => {
+      const w = container.clientWidth || 1;
+      const h = container.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      uniforms.uResolution.value.set(canvas.width, canvas.height);
+    };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
+    resize();
 
-    /* --------------------------- 3. draw noise ----------------------------- */
-    const drawNoise = () => {
-      const { width, height } = canvas;
-      if (width <= 0 || height <= 0) return; // Guard against zero dimensions
-      const imageData = ctx.createImageData(width, height);
-      const buffer32 = new Uint32Array(imageData.data.buffer);
-      const len = buffer32.length;
-      for (let i = 0; i < len; i++) buffer32[i] = (Math.random() * 205) << 24;
-      ctx.putImageData(imageData, 0, 0);
-    };
-
-    /* --------------------------- 4. animation loop ------------------------- */
-    let toggle = true;
+    // --- Loop ---------------------------------------------------------------
+    let raf = 0;
+    const t0 = performance.now();
     const loop = () => {
-      toggle = !toggle;
-      if (toggle) {
-        requestAnimationFrame(loop);
-        return;
-      }
-      drawNoise();
-      requestAnimationFrame(loop);
+      uniforms.uTime.value = (performance.now() - t0) / 1000;
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(loop);
     };
-    requestAnimationFrame(loop);
+    loop();
 
-    /* --------------------------- 5. cleanup -------------------------------- */
+    // --- Cleanup ------------------------------------------------------------
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
-      container.removeChild(canvas);
+      renderer.dispose();
+      geom.dispose();
+      mat.dispose();
+      if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, [color]);
+  }, [overscanVh]);
 
-  /* --------------------------- wrapper element --------------------------- */
   const extra = overscanVh > 0 ? `${overscanVh}vh` : "0";
-
   return (
     <div
       ref={boxRef}
-      className={"pointer-events-none fixed left-0 right-0 " + className}
+      className="pointer-events-none fixed left-0 right-0"
       style={{
         top: `-${extra}`,
         width: "100%",
         height: `calc(100vh + ${overscanVh * 2}vh)`,
-        opacity,
-        zIndex,
+        zIndex: undefined,
+        opacity: 1,
       }}
       aria-hidden="true"
     />

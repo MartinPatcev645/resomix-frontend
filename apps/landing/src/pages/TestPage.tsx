@@ -5,8 +5,9 @@ import { StaticNoise } from "@resomix/ui";
 const TestPage: React.FC = () => (
   <div className="w-screen h-screen relative overflow-hidden">
     {/* Background static noise */}
-    <StaticNoise color="#323233" zIndex={0} />
-
+    {/* <StaticNoise color="#323233" zIndex={0} /> */}
+    <StaticNoise overscanVh={10} />
+    
     {/* Terrain overlay at the top of the screen */}
     {/* <div
       style={{
