@@ -71,7 +71,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                             {/* Search Mode Dropdown for Mobile */}
                             <div className="absolute top-[var(--px-8)] right-[var(--px-8)]">
                                 <div className="flex items-center gap-[var(--px-4)]">
-                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (song title only).">
+                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (song title only)." displayOnClick={true}>
                                         <div className="flex items-center gap-[var(--px-4)] hover:cursor-pointer">
                                             <div className="text-[length:var(--px-8)] font-fira font-light">
                                                 Mode

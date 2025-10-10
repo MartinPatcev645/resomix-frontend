@@ -17,14 +17,14 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
   const { showFeedbackForm } = useFeedbackStore();
 
   return (
-    <nav className={`${customClass ? customClass : 'flex justify-between items-center align-center pt-[var(--px-28)] px-[var(--px-65)] z-20 relative'}`}>
+    <nav className={`${customClass ? customClass : 'flex justify-between items-center align-center pt-[var(--px-28)] px-[var(--px-65)] z-40 relative'}`}>
       <div className="inline-flex justify-center items-center gap-[var(--px-16)]"
         style={{
           color: "var(--color-text-secondary)",
         }}>
         <LinkButton text="About Us" path={`${baseUrl}/about`} />
         <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} />
-        <LinkButton text="Journal" path={`https://resomix.blog`} newTab={true} />
+        <LinkButton text="Journal" path={`https://resomix.com/blog`} newTab={true} />
       </div>
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
         {logo}

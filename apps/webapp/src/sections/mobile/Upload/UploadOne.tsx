@@ -76,7 +76,7 @@ const UploadOne: React.FC = () => {
                             />
                         </svg>
                     </div>
-                    <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest.">
+                    <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)]">
                             <div className="text-[length:var(--px-9)] font-fira font-light">
                                 Results Count
