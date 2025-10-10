@@ -15,7 +15,7 @@ export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero, base
             {/* Static noise background for Desktop only */}
             <div className="hidden lg:block">
                 {/* <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} /> */}
-                <StaticNoise overscanVh={10} />
+                <StaticNoise />
             </div>
 
             {/* Content layer */}

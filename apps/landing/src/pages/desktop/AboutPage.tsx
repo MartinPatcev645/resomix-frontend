@@ -8,7 +8,7 @@ export function AboutPage() {
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
       {/* <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} /> */}
-      <StaticNoise overscanVh={10} />
+      <StaticNoise />
 
       {/* Content layer */}
       <div
