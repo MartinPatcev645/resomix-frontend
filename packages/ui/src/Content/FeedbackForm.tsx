@@ -68,7 +68,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-15)]">
                     <div className="flex flex-col items-start text-left w-full">
-                        <div className="text-[length:var(--px-10)] font-medium font-fira mb-[var(--px-10)]">
+                        <div className="text-[length:var(--px-14)] font-medium font-fira mb-[var(--px-10)]">
                             How satisfied are you with the results?
                         </div>
                         {/* Display numbers from 1 to 10 with boxes */}
@@ -79,20 +79,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                                     <div
                                         key={val}
                                         onClick={() => setSatisfaction(val)}
-                                        className={`text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)] ${val === satisfaction ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'}`}
+                                        className={`text-[length:var(--px-12)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)] ${val === satisfaction ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'}`}
                                     >
                                         {val}
                                     </div>
                                 );
                             })}
                         </div>
-                        <div className="text-[length:var(--px-9)] text-[var(--color-primary-hover)] font-fira flex items-center justify-between w-full mt-[var(--px-5)]">
+                        <div className="text-[length:var(--px-11)] text-[var(--color-primary-hover)] font-fira flex items-center justify-between w-full mt-[var(--px-5)]">
                             <span>Not Satisfied</span>
                             <span>Very Satisfied</span>
                         </div>
                     </div>
                     <div className="flex flex-col items-start text-left w-full">
-                        <div className="text-[length:var(--px-10)] font-medium font-fira mb-[var(--px-10)]">
+                        <div className="text-[length:var(--px-14)] font-medium font-fira mb-[var(--px-10)]">
                             How likely are you to recommend Resomix?
                         </div>
                         {/* Display numbers from 1 to 10 with boxes */}
@@ -103,21 +103,21 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                                     <div
                                         key={val}
                                         onClick={() => setRecommendation(val)}
-                                        className={`text-[length:var(--px-10)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)] ${val === recommendation ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'}`}
+                                        className={`text-[length:var(--px-12)] font-medium font-fira w-[var(--px-37)] h-[var(--px-26)] border border-dotted border-[var(--color-primary)] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-secondary)] ${val === recommendation ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'}`}
                                     >
                                         {val}
                                     </div>
                                 );
                             })}
                         </div>
-                        <div className="text-[length:var(--px-9)] text-[var(--color-primary-hover)] font-fira flex items-center justify-between w-full mt-[var(--px-5)]">
+                        <div className="text-[length:var(--px-11)] text-[var(--color-primary-hover)] font-fira flex items-center justify-between w-full mt-[var(--px-5)]">
                             <span>Not Likely</span>
                             <span>Very Likely</span>
                         </div>
                     </div>
                     <div className="flex flex-col items-start text-left w-full">
-                        <div className="text-[length:var(--px-10)] font-medium font-fira mb-[var(--px-10)]">
-                            Additional feedback <span className="text-[var(--color-primary-hover)] font-light font-fira text-[length:var(--px-9)]">(optional)</span>
+                        <div className="text-[length:var(--px-12)] font-medium font-fira mb-[var(--px-10)]">
+                            Additional feedback <span className="text-[var(--color-primary-hover)] font-light font-fira text-[length:var(--px-11)]">(optional)</span>
                         </div>
                         {/* Display Input area with same border and proper padding and text font */}
                         <textarea

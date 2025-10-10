@@ -59,9 +59,10 @@ export function PlaylistPage() {
           message="Playlist expired. Redirecting..."
         />
       ) : (
-        <div className="bg-[var(--color-secondary)]">
+        <div className="bg-[var(--color-noise-background)]">
           {/* Static noise background */}
-          <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} />
+          {/* <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} /> */}
+          <StaticNoise />
 
           {/* Content layer */}
           <div

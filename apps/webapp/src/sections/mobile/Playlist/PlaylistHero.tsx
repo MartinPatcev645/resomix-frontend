@@ -10,6 +10,7 @@ import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import AngleDownSvg from "@/assets/icons/AngleDown.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
+import StarBlackSvg from "@/assets/icons/star.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
@@ -95,7 +96,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   customWidth="min-w-[var(--px-80)]"
                   mobile={true}
                   onClick={() => setShowRating(true)}
-                  icon={<img src={StarSvg} draggable={false} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  icon={<img src={StarSvg} draggable={false}  alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  hoverIcon={<img src={StarBlackSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 />
                 <IconButton
                   text="Share"

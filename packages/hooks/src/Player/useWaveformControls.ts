@@ -6,7 +6,7 @@ import { usePlayerStore } from "@resomix/stores";
 
 // Constants shared by both player components
 const SEEK_DEBOUNCE_MS = 300;
-const HOLD_AFTER_SEEK_MS = 200;
+const HOLD_AFTER_SEEK_MS = 500;
 
 // Simple mm:ss formatter (shared utility)
 export function formatTime(seconds: number): string {
