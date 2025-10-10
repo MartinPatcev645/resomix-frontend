@@ -55,7 +55,7 @@ const PlaylistTable: React.FC = () => {
             </div>
             {/* Table */}
             {tracks.map((track) => (
-                <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
+                <div key={track.id} className="w-full border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
                     <div className="flex flex-col w-full">
                         <div key={track.id} className="flex items-center">
                             <div className="text-[length:var(--px-10)] font-fira font-light mr-[var(--px-5)]">

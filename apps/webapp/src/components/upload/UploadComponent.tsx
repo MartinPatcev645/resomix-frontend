@@ -66,7 +66,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                     </div>
                     <div className="m-[var(--px-30)]">
                         <div
-                            className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300"
+                            className="w-full h-[var(--px-265)] border border-dotted border-slate-300"
                             onDrop={onDrop}
                             onDragOver={onDragOver}
                         >

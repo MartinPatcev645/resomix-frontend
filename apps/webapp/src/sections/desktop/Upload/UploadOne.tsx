@@ -33,7 +33,7 @@ const UploadOne: React.FC = () => {
 
     return (
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
-            <div className="w-[var(--px-880)] h-[var(--px-61)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
+            <div className="w-[var(--px-880)] h-[var(--px-61)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
                 <div className="">
                     <div className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
                         Set Your Depth

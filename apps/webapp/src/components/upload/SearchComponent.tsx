@@ -70,7 +70,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                         </div>
                     </div>
                     <div className="m-[var(--px-30)]">
-                        <div className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300">
+                        <div className="w-full h-[var(--px-265)] border border-dotted border-slate-300">
                             <div className="w-full flex justify-end p-[var(--px-12)] absolute right-[var(--px-24)]">
                                 {/* Search Mode Dropdown */}
                                 <div className="flex items-center gap-[var(--px-6)]">
