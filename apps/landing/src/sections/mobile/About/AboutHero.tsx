@@ -30,22 +30,22 @@ const AboutHero: React.FC = () => {
           Who Feel<br />The Music
         </div>
       </div>
-      <div className="flex gap-[var(--px-4)] relative z-15">
+      <div className="flex gap-[var(--px-15)] relative z-15">
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={FbSvg} alt="Fb" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+          svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" src={FbSvg} alt="Fb" />}
+          className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)]"
           padding=""
           onClick={() => window.open(FACEBOOK_URL, "_blank")}
         />
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={InstaSvg} alt="Insta" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+          svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" src={InstaSvg} alt="Insta" />}
+          className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)]"
           padding=""
           onClick={() => window.open(INSTAGRAM_URL, "_blank")}
         />
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={XSvg} alt="X" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+          svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" src={XSvg} alt="X" />}
+          className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)]"
           padding=""
           onClick={() => window.open(TWITTER_URL, "_blank")}
         />
