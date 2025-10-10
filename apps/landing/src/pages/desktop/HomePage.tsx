@@ -5,9 +5,10 @@ import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 export function HomePage() {
   return (
-    <div className="bg-[var(--color-secondary)]">
+    <div className="bg-[var(--color-noise-background)]">
       {/* Static noise now overscans 50 vh above & below viewport to avoid flashes during fast scroll */}
-      <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} />
+      {/* <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} /> */}
+      <StaticNoise />
 
       {/* Content layer */}
       <div

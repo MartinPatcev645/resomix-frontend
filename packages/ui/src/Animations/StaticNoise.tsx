@@ -1,106 +1,222 @@
+// StaticNoise.tsx
 import { useEffect, useRef } from "react";
+import * as THREE from "three";
 
-export interface StaticNoiseProps {
-  /** Background colour on which the noise canvas sits (e.g. "#313132"). */
-  color?: string;
-  /** Opacity of the whole noise layer (0-1). */
-  opacity?: number;
-  /** z-index applied to the wrapper element. */
-  zIndex?: number;
-  /** Extra Tailwind / CSS classes applied to the wrapper. */
-  className?: string;
-  /** Extra vertical coverage outside the viewport, in viewport-height units (vh). Useful to prevent flashes during rapid scroll. For example, 25 means the noise layer starts 25 vh above the viewport and extends 25 vh below it. Defaults to 0. */
-  overscanVh?: number;
-}
-
-/**
- * Canvas-based “TV static” overlay.
- * By default it stretches to 100×100 % of its parent. Control placement (absolute / fixed …)
- * through the `className` prop just like any other element.
- */
-export const StaticNoise: React.FC<StaticNoiseProps> = ({
-  color = "#313132",
-  opacity = 1,
-  zIndex,
-  className = "",
-  overscanVh = 0,
-}) => {
+// Keep the same export symbol so your imports don't break.
+export const StaticNoise: React.FC = () => {
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = boxRef.current;
     if (!container) return;
 
-    /* --------------------------- 1. canvas setup --------------------------- */
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    // --- Renderer (transparent overlay) ------------------------------------
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(container.clientWidth, container.clientHeight, false);
 
-    const style = canvas.style as CSSStyleDeclaration;
-    style.width = "100%";
-    style.height = "100%";
-    style.display = "block"; // avoid inline-block gaps
-    style.pointerEvents = "none";
-    style.background = color;
+    // Transparent clear
+    renderer.setClearColor(0x000000, 0);
 
+    // Keep tonemapping off
+    (renderer as any).toneMapping = (THREE as any).NoToneMapping ?? 0;
+
+    // three r152+ uses outputColorSpace (your 0.178 is in this bucket)
+    // Do NOT reference sRGBEncoding (removed in modern three)
+    (renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace;
+
+    const canvas = renderer.domElement as HTMLCanvasElement;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    canvas.style.pointerEvents = "none";
     container.appendChild(canvas);
 
-    /* --------------------------- 2. resize helper -------------------------- */
-    const resize = () => {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    };
-    resize();
+    // --- Scene / Camera -----------------------------------------------------
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
+    // --- Fullscreen quad ----------------------------------------------------
+    const geom = new THREE.BufferGeometry();
+    const positions = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]);
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geom.setIndex(new THREE.BufferAttribute(indices, 1));
+
+    // --- Tunables -----------------------------------------------------------
+    const SHUFFLE_FPS = 30.0;   // pattern refresh rate
+    const ALPHA       = 1.0;    // overlay alpha multiplier
+    const DENSITY     = 0.90;   // increased from 0.65
+    // Per-layer nominal cell sizes in device pixels (small -> finer grain)
+    const L0_SIZE_PX  = 2;
+    const L1_SIZE_PX  = 3;
+    const L2_SIZE_PX  = 4;
+
+    // --- Uniforms -----------------------------------------------------------
+    const uniforms = {
+      uResolution: { value: new THREE.Vector2(1, 1) }, // (canvas.width, canvas.height)
+      uTime:       { value: 0 },
+      uFps:        { value: SHUFFLE_FPS },
+      uAlpha:      { value: ALPHA },
+      uDensity:    { value: DENSITY },
+      uSizePx0:    { value: L0_SIZE_PX },
+      uSizePx1:    { value: L1_SIZE_PX },
+      uSizePx2:    { value: L2_SIZE_PX },
+      // Dark set (formerly slightly black) -> #121211
+      uDark:       { value: new THREE.Vector3(9/255, 9/255, 8/255) },  // 18/255, 18/255, 17/255
+      // Lighter set (still darker than #1B1B1A) -> #161615
+      uGray:       { value: new THREE.Vector3(22/255, 22/255, 21/255) },
+    };
+
+    const vertexShader = `
+      void main(){
+        gl_Position = vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      precision highp float;
+
+      uniform vec2  uResolution; // in device pixels
+      uniform float uTime;        // seconds
+      uniform float uFps;
+      uniform float uAlpha;
+      uniform float uDensity;
+      uniform float uSizePx0;
+      uniform float uSizePx1;
+      uniform float uSizePx2;
+      uniform vec3  uDark;        // #121211
+      uniform vec3  uGray;        // #161615
+
+      // --- Hash helpers -----------------------------------------------------
+      float hash31(vec3 p){
+        p = fract(p * 0.1031);
+        p += dot(p, p.yzx + 19.19);
+        return fract((p.x + p.y) * p.z);
+      }
+
+      float frameAngle(int layer, float frameIdx){
+        return 6.28318530718 * hash31(vec3(float(layer) + 0.37, frameIdx * 0.137, 0.777));
+      }
+
+      mat2 rot(float a){
+        float s = sin(a), c = cos(a);
+        return mat2(c, -s, s, c);
+      }
+
+      // One grain layer: round dots in a rotated, jittered lattice.
+      float layerGrain(vec2 pix, float cellPx, float density, float frameIdx, int layerId){
+        float theta = frameAngle(layerId, frameIdx);
+        vec2 q = rot(theta) * pix;
+
+        vec2 cell = floor(q / cellPx);
+        vec2 cellBase = cell * cellPx;
+
+        float h0 = hash31(vec3(cell, frameIdx * 0.73 + float(layerId) * 2.11));
+        if (h0 > density) return 0.0;
+
+        float hx = hash31(vec3(cell + 3.1, frameIdx * 1.23 + float(layerId) * 1.7));
+        float hy = hash31(vec3(cell + 7.9, frameIdx * 2.37 + float(layerId) * 0.9));
+        vec2 jitter = vec2(hx, hy);
+        vec2 center = cellBase + (jitter + 0.5) * cellPx;
+
+        float hr = hash31(vec3(cell + 11.7, frameIdx * 3.1 + float(layerId) * 4.2));
+        float r = mix(0.33, 0.55, hr) * cellPx;
+
+        float d = length(q - center);
+        float edge = 1.0; // falloff width in px
+        float a = smoothstep(r, r - edge, d);
+        return a;
+      }
+
+      void main(){
+        vec2 pix = gl_FragCoord.xy;
+
+        // Frame index (discrete at uFps)
+        float frameIdx = mod(floor(uTime * uFps), 4096.0);
+
+        // ---- DARK DOTS (formerly black) -----------------------------------
+        float a0D = layerGrain(pix, uSizePx0, uDensity, frameIdx + 13.0, 0);
+        float a1D = layerGrain(pix, uSizePx1, uDensity, frameIdx + 37.0, 1);
+        float a2D = layerGrain(pix, uSizePx2, uDensity, frameIdx + 71.0, 2);
+        float aDark = max(a0D, max(a1D, a2D));
+
+        // ---- LIGHTER DOTS (independent seeds) ------------------------------
+        float a0G = layerGrain(pix, uSizePx0, uDensity, frameIdx + 113.0, 10);
+        float a1G = layerGrain(pix, uSizePx1, uDensity, frameIdx + 137.0, 11);
+        float a2G = layerGrain(pix, uSizePx2, uDensity, frameIdx + 171.0, 12);
+        float aGray = max(a0G, max(a1G, a2G));
+
+        // Union alpha for coverage; keep edges crisp
+        float a = max(aDark, aGray);
+        float alpha = a * uAlpha;
+        if (alpha <= 0.001) discard;
+
+        // Prefer the darker tone when overlapping
+        vec3 col = (aDark >= aGray) ? uDark : uGray;
+
+        gl_FragColor = vec4(col, alpha);
+      }
+    `;
+
+    const mat = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      toneMapped: false as any,
+    });
+
+    const mesh = new THREE.Mesh(geom, mat);
+    scene.add(mesh);
+
+    // --- Resize handling ----------------------------------------------------
+    const resize = () => {
+      const w = container.clientWidth || 1;
+      const h = container.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      uniforms.uResolution.value.set(canvas.width, canvas.height);
+    };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
+    resize();
 
-    /* --------------------------- 3. draw noise ----------------------------- */
-    const drawNoise = () => {
-      const { width, height } = canvas;
-      if (width <= 0 || height <= 0) return; // Guard against zero dimensions
-      const imageData = ctx.createImageData(width, height);
-      const buffer32 = new Uint32Array(imageData.data.buffer);
-      const len = buffer32.length;
-      for (let i = 0; i < len; i++) buffer32[i] = (Math.random() * 205) << 24;
-      ctx.putImageData(imageData, 0, 0);
-    };
-
-    /* --------------------------- 4. animation loop ------------------------- */
-    let toggle = true;
+    // --- Render loop --------------------------------------------------------
+    let raf = 0;
+    const t0 = performance.now();
     const loop = () => {
-      toggle = !toggle;
-      if (toggle) {
-        requestAnimationFrame(loop);
-        return;
-      }
-      drawNoise();
-      requestAnimationFrame(loop);
+      uniforms.uTime.value = (performance.now() - t0) / 1000;
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(loop);
     };
-    requestAnimationFrame(loop);
+    loop();
 
-    /* --------------------------- 5. cleanup -------------------------------- */
+    // --- Cleanup ------------------------------------------------------------
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
-      container.removeChild(canvas);
+      renderer.dispose();
+      geom.dispose();
+      mat.dispose();
+      if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, [color]);
-
-  /* --------------------------- wrapper element --------------------------- */
-  const extra = overscanVh > 0 ? `${overscanVh}vh` : "0";
+  }, []);
 
   return (
     <div
       ref={boxRef}
-      className={"pointer-events-none fixed left-0 right-0 " + className}
+      className="pointer-events-none fixed inset-0"
       style={{
-        top: `-${extra}`,
-        width: "100%",
-        height: `calc(100vh + ${overscanVh * 2}vh)`,
-        opacity,
-        zIndex,
+        // Fully cover viewport; zIndex left undefined so you can control in parent if needed
+        zIndex: undefined,
+        opacity: 1,
       }}
       aria-hidden="true"
     />
   );
 };
+
+export default StaticNoise;
