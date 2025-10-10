@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ButtonSleek } from '@resomix/ui'
 import { changePlaylistVisibility } from '@resomix/api-client';
 import { usePlaylistStore } from '@resomix/stores';
@@ -12,24 +12,70 @@ interface PlaylistShareProps {
     id: string
 }
 
+interface ShareData {
+    title?: string;
+    text?: string;
+    url?: string;
+}
+
+type NavigatorWithWebShare = Navigator & {
+    share?: (data: ShareData) => Promise<void>;
+    canShare?: (data?: ShareData) => boolean;
+};
+
+function hasWebShare(nav: Navigator): nav is NavigatorWithWebShare {
+    return typeof (nav as NavigatorWithWebShare).share === 'function';
+}
+
+function useIsMobileView(breakpoint = 768) {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mql = window.matchMedia(`(max-width: ${breakpoint}px)`);
+        const update = () => setIsMobile(mql.matches);
+
+        update();
+        mql.addEventListener('change', update);
+        return () => mql.removeEventListener('change', update);
+    }, [breakpoint]);
+
+    return isMobile;
+}
+
+function isAbortError(err: unknown): boolean {
+    if (typeof DOMException !== 'undefined' && err instanceof DOMException) {
+        return err.name === 'AbortError';
+    }
+    return typeof err === 'object' && err !== null && 'name' in err && (err as { name?: string }).name === 'AbortError';
+}
+
 export const PlaylistShare: React.FC<PlaylistShareProps> = ({
-    isOpen,
-    onClose,
-    id: _id,
-}) => {
+                                                                isOpen,
+                                                                onClose,
+                                                            }) => {
     const { playlistData } = usePlaylistStore();
     const [link, setLink] = useState('');
+    const isMobileView = useIsMobileView(768);
 
-    // Generate share link once visibility is changed
+    const canNativeShare = useMemo(() => {
+        return typeof navigator !== 'undefined' && hasWebShare(navigator);
+    }, []);
+
+    const [buttonText, setButtonText] = useState("Copy Link");
+
     useEffect(() => {
-        const share = async () => {
-            if (!isOpen || !playlistData?.playlist.id) return;
+        if (!isOpen || !playlistData?.playlist.id) return;
 
+        const updateVisibilityAndLink = async () => {
             try {
                 const response = await changePlaylistVisibility(playlistData.playlist.id, true);
 
                 if (response.success) {
-                    const generated = response?.details?.share_url || response?.details?.link || (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                    const generated =
+                      response?.details?.share_url ||
+                      response?.details?.link ||
+                      (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                     setLink(generated);
                 } else {
                     setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
@@ -40,26 +86,27 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
             }
         };
 
-        share();
+        updateVisibilityAndLink();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
-    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (!isOpen) return;
+        setButtonText(isMobileView && canNativeShare ? "Share" : "Copy Link");
+    }, [isOpen, isMobileView, canNativeShare]);
+
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden'
         } else {
             document.body.style.overflow = 'unset'
         }
-
-        // Cleanup on unmount
         return () => {
             document.body.style.overflow = 'unset'
-            setButtonText("Copy Link")
+            setButtonText(isMobileView && canNativeShare ? "Share" : "Copy Link")
         }
-    }, [isOpen])
+    }, [isOpen, isMobileView, canNativeShare])
 
-    // Close modal on escape key
     useEffect(() => {
         const handleEscape = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
@@ -76,9 +123,13 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
         }
     }, [isOpen, onClose])
 
-    const handleCopyLink = () => {
+    const handleCopyLink = async () => {
         if (link) {
-            navigator.clipboard.writeText(link)
+            try {
+                await navigator.clipboard.writeText(link)
+            } catch (e) {
+                console.warn('Clipboard copy failed, link:', link, e);
+            }
         }
         setButtonText("Copied!")
         setTimeout(() => {
@@ -86,47 +137,76 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
         }, 2000)
     }
 
-    const [buttonText, setButtonText] = useState("Copy Link")
+    const handleShare = async () => {
+        if (!link) return;
+
+        const title = playlistData?.playlist?.name || 'Resomix Playlist';
+        const text = 'Check out my Resomix playlist';
+
+        try {
+            const nav = navigator;
+            if (hasWebShare(nav)) {
+                await nav.share({ title, text, url: link });
+                setButtonText("Shared!");
+                setTimeout(() => {
+                    onClose();
+                }, 1500);
+            } else {
+                await handleCopyLink();
+            }
+        } catch (err: unknown) {
+            if (isAbortError(err)) {
+                return;
+            }
+            await handleCopyLink();
+        }
+    }
+
+    const handlePrimaryAction = async () => {
+        if (isMobileView && canNativeShare) {
+            await handleShare();
+        } else {
+            await handleCopyLink();
+        }
+    }
 
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop with blur effect */}
-            <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-                onClick={onClose}
-            />
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={onClose}
+          />
 
-            {/* Modal content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
+          <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
 
-                <img src={SuccessSvg} alt="Success" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
+              <img src={SuccessSvg} alt="Success" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
 
-                <div className="text-center w-full">
-                    <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                        PLAYLIST SHARED!
-                    </div>
-                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                        Your playlist is now publicly accessible.
-                    </div>
-                </div>
+              <div className="text-center w-full">
+                  <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+                      PLAYLIST SHARED!
+                  </div>
+                  <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
+                      Your playlist is now publicly accessible.
+                  </div>
+              </div>
 
-                <div onClick={handleCopyLink} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)]'>
-                    <img src={BrakesSvg} alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
-                    {link || 'Generating link...'}
-                </div>
+              <div onClick={handlePrimaryAction} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)]'>
+                  <img src={BrakesSvg} alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
+                  {link || 'Generating link...'}
+              </div>
 
-                <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                    Your playlist is now publicly accessible.
-                </div>
+              <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
+                  Your playlist is now publicly accessible.
+              </div>
 
-                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text={buttonText} onClick={handleCopyLink} />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
-                </div>
-            </div>
-        </div>
+              <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
+                  <ButtonSleek text={buttonText} onClick={handlePrimaryAction} />
+                  <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
+              </div>
+          </div>
+      </div>
     )
 }
 

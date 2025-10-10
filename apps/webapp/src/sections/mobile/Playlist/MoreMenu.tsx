@@ -74,8 +74,8 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     }, []);
 
     return (
-        <div className="w-screen h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
-            <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)] py-[var(--px-60)] px-[var(--px-40)] overflow-y-auto">
+      <div className="w-full h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
+            <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)] py-[var(--px-60)] px-[var(--px-40)] overflow-y-auto overflow-x-hidden">
                 <div className="flex flex-col gap-[var(--px-30)] items-center">
                     <div className="text-[length:var(--px-22)] font-light uppercase font-helvetica text-center w-[var(--px-300)] truncate">
                       <HoverFlow

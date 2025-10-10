@@ -132,7 +132,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
               <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
                 {formatTime(ctl.uiTime)} / {formatTime(totalDuration)}
               </span>
-                          {networkError && ctl.isPlaying && (
+                          {networkError && (
                             <div className="absolute bottom-9 left-40 flex items-center gap-[var(--px-3)] text-yellow-200">
                                 <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
                                 style={{
