@@ -22,12 +22,12 @@ const HomeTwo: React.FC = () => (
       <div className=''></div>
       <div className='flex flex-col justify-center items-center'>
         <div className=''>
-          <img src={LayersSvg} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
+          <img src={LayersSvg} draggable={false} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
         </div>
         <div className="text-center justify-start text-[length:var(--px-14)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-14)]">Resomix goes deeper than anyone else,<br />carefully selecting music that reflects<br />the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
       </div>
       <div className='my-[var(--px-32)]'>
-        <img src={VerticalLineSvg} alt="Vertical Line" className="w-[var(--px-4)] h-[var(--px-63)]" />
+        <img src={VerticalLineSvg} draggable={false} alt="Vertical Line" className="w-[var(--px-4)] h-[var(--px-63)]" />
       </div>
       <div className="justify-start text-[var(--color-primary)] text-[length:var(--px-10)] font-light font-fira tracking-widest min-h-[var(--px-15)]">
         <CodeTyping

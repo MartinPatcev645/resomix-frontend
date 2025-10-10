@@ -16,14 +16,14 @@ const AboutFour: React.FC = () => {
                     <div className="text-[length:var(--px-43)] font-medium font-helvetica uppercase leading-[var(--px-45)]">
                         <span className="ml-[var(--px-100)]">Who<br /></span>
                         <div className="flex items-center">
-                            <img src={ArrowSmallUp} alt="arrow_small_up" className="w-[var(--px-32)] h-[var(--px-31)] mb-[var(--px-2)]" />
+                            <img src={ArrowSmallUp} draggable={false} alt="arrow_small_up" className="w-[var(--px-32)] h-[var(--px-31)] mb-[var(--px-2)]" />
                             Resomix<br />
                         </div>
                         <span className="ml-[var(--px-53)]">is for</span>
                     </div>
                     <div className="flex flex-col items-start gap-[var(--px-30)]">
                         <div className="flex gap-[var(--px-10)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
+                            <img src={PlaySvg} draggable={false} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                     DJs
@@ -34,7 +34,7 @@ const AboutFour: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-10)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
+                            <img src={PlaySvg} draggable={false} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                     Producers
@@ -45,7 +45,7 @@ const AboutFour: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-10)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
+                            <img src={PlaySvg} draggable={false} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                     Curators
@@ -56,7 +56,7 @@ const AboutFour: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-10)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
+                            <img src={PlaySvg} draggable={false} alt="play" className="w-[var(--px-17)] h-[var(--px-19)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                     Music Enthusiasts

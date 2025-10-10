@@ -15,17 +15,17 @@ const AboutTwo: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 {/* Graphics Overlay */}
                 <div className="absolute -top-[var(--px-200)] w-[var(--px-520)] left-[var(--px-320)] pointer-events-none z-5">
-                    <img src={GradientThree} alt="gradient_three" className="w-full h-auto" />
+                    <img src={GradientThree} draggable={false} alt="gradient_three" className="w-full h-auto" />
                 </div>
                 <div className="absolute top-[var(--px-500)] w-[var(--px-550)] -left-[var(--px-300)] pointer-events-none z-5">
-                    <img src={GradientFour} alt="gradient_four" className="w-full h-auto" />
+                    <img src={GradientFour} draggable={false} alt="gradient_four" className="w-full h-auto" />
                 </div>
 
                 {/* Content */}
                 <div className="flex flex-col gap-[var(--px-20)] w-full items-center relative z-15">
                     <div className="text-[length:var(--px-26)] font-helvetica font-extralight leading-[var(--px-26)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_two.preamble_one') }}>
                     </div>
-                    <img src={AboutSeparatorLineTwo} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                    <img src={AboutSeparatorLineTwo} draggable={false} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
                     <div className="text-[length:var(--px-26)] font-helvetica font-extralight leading-[var(--px-26)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_two.preamble_two') }}>
                     </div>
                 </div>
@@ -56,7 +56,7 @@ const AboutTwo: React.FC = () => {
                 </div>
                 <div className="flex gap-[var(--px-30)] w-full items-start justify-start">
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
-                        <img src={AnalysisSvg} alt="analysis" className="w-[var(--px-45)] h-[var(--px-46)]" />
+                        <img src={AnalysisSvg} draggable={false} alt="analysis" className="w-[var(--px-45)] h-[var(--px-46)]" />
                         <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]">
                             {t('about.about_two.card_analysis_title')}
                         </div>
@@ -65,7 +65,7 @@ const AboutTwo: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
-                        <img src={CraftSvg} alt="craft" className="w-[var(--px-45)] h-[var(--px-46)]" />
+                        <img src={CraftSvg} draggable={false} alt="craft" className="w-[var(--px-45)] h-[var(--px-46)]" />
                         <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]">
                             {t('about.about_two.card_craft_title')}
                         </div>
@@ -73,7 +73,7 @@ const AboutTwo: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
-                        <img src={MatchesSvg} alt="matches" className="w-[var(--px-45)] h-[var(--px-46)]" />
+                        <img src={MatchesSvg} draggable={false} alt="matches" className="w-[var(--px-45)] h-[var(--px-46)]" />
                         <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_path_title') }}>
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-17)] font-helvetica font-extralight tracking-[var(--px-1)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_path_desc') }}>

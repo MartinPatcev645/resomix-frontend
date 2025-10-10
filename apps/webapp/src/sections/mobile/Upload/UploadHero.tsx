@@ -22,7 +22,7 @@ const UploadHero: React.FC = () => {
       <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
         <div className="text-[length:var(--px-49)] font-helvetica leading-[var(--px-50)] font-bold uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></div>
         <div className="text-[length:var(--px-20)] font-helvetica font-extralight leading-[var(--px-24)] uppercase">upload a reference track,<br />and unlock a universe<br />of sounds</div>
-        <img src={ArrowDownRightSvg} alt="arrow_down_right" className="w-[var(--px-44)] h-[var(--px-44)]" />
+        <img src={ArrowDownRightSvg} draggable={false} alt="arrow_down_right" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>
       <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] min-h-[var(--px-33)]">
         <CodeTyping
@@ -34,19 +34,19 @@ const UploadHero: React.FC = () => {
       </div>
       <div className="flex gap-[var(--px-4)] relative z-15">
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={FbSvg} alt="Fb" />}
+          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={FbSvg} alt="Fb" />}
           className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
           padding=""
           onClick={() => window.open(FACEBOOK_URL, "_blank")}
         />
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={InstaSvg} alt="Insta" />}
+          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={InstaSvg} alt="Insta" />}
           className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
           padding=""
           onClick={() => window.open(INSTAGRAM_URL, "_blank")}
         />
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" src={XSvg} alt="X" />}
+          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={XSvg} alt="X" />}
           className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
           padding=""
           onClick={() => window.open(TWITTER_URL, "_blank")}

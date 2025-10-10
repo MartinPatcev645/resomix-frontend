@@ -69,7 +69,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
             <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex items-center hover:cursor-pointer ml-[var(--px-10)]">
-              <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-30)] h-[var(--px-30)]" />
+              <img src={AngleLeftSvg} draggable={false} alt="Angle Left" className="w-[var(--px-30)] h-[var(--px-30)]" />
             </div>
             <div className="flex flex-col items-center gap-[var(--px-15)]">
               <div className="flex items-center gap-[var(--px-22)] mr-[var(--px-5)]">
@@ -79,8 +79,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   customWidth="min-w-[var(--px-70)]"
                   mobile={true}
                   onClick={() => setShowRename(true)}
-                  icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                  hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  icon={<img src={RenameSvg} draggable={false} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 />
                 <ToggleButton
                   text="Autoplay"
@@ -96,7 +96,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   customWidth="min-w-[var(--px-80)]"
                   mobile={true}
                   onClick={() => setShowRating(true)}
-                  icon={<img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  icon={<img src={StarSvg} draggable={false}  alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={StarBlackSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 />
                 <IconButton
@@ -105,8 +105,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   customWidth="min-w-[var(--px-70)]"
                   mobile={true}
                   onClick={() => setShowShare(true)}
-                  icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                  hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  icon={<img src={ShareSvg} draggable={false} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  hoverIcon={<img src={ShareBlackSvg} draggable={false} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 />
               </div>
             </div>
@@ -117,9 +117,9 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
                     {uploadedCoverArt ? (
-                      <img src={uploadedCoverArt} alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                      <img src={uploadedCoverArt} draggable={false} alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     ) : (
-                      <img src={TrackSvg} alt="Track" className="w-[var(--px-50)] h-[var(--px-50)]" />
+                      <img src={TrackSvg} draggable={false} alt="Track" className="w-[var(--px-50)] h-[var(--px-50)]" />
                     )}
                   </div>
                   <div className={`py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C] ${showMeta ? 'inline-flex' : 'hidden'}`}>Input Track</div>
@@ -148,13 +148,13 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       />
                     </div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] lg:text-[length:var(--px-7)] font-light font-fira leading-[var(--px-9)] items-center">
-                      <img src={TimeSvg} alt="Time" className="w-[var(--px-8)] h-[var(--px-8)]" />
+                      <img src={TimeSvg} draggable={false} alt="Time" className="w-[var(--px-8)] h-[var(--px-8)]" />
                       <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
                       <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
-                      <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)] ml-auto hover:cursor-pointer" />
+                      <img onClick={() => setShowMeta((v) => !v)} draggable={false} src={InfoSvg} alt="Info" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)] ml-auto hover:cursor-pointer" />
                     </div>
                   </div>
                 </div>
@@ -183,12 +183,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 null,
                 true
               )} className="cursor-pointer">
-                <img src={MoreSvg} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
+                <img src={MoreSvg} draggable={false} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
               </div>
             </div>
           </div>
         </div>
-        <img src={AngleDownSvg} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
+        <img src={AngleDownSvg} draggable={false} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
         <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
       </div>
 

@@ -33,7 +33,7 @@ const HomeSix: React.FC = () => (
       </div>
     </div>
     <div className="flex w-full justify-center mt-[var(--px-40)]">
-      <img src={AngleDownSvg} alt="Angle Down" className="w-[var(--px-67)] h-[var(--px-67)]" />
+      <img src={AngleDownSvg} draggable={false} alt="Angle Down" className="w-[var(--px-67)] h-[var(--px-67)]" />
     </div>
   </div>
 );

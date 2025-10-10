@@ -21,7 +21,7 @@ const HomeThree: React.FC = () => (
               Resomix brings<br />the art of selection
             </div>
             <div className="flex items-center justify-center">
-              <img src={ArrowDownLeftSvg} alt="Arrow Down" className="w-[var(--px-36)] h-[var(--px-36)]" />
+              <img src={ArrowDownLeftSvg} draggable={false} alt="Arrow Down" className="w-[var(--px-36)] h-[var(--px-36)]" />
             </div>
           </div>
           <div className="text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] uppercase tracking-wide text-left">
@@ -39,7 +39,7 @@ const HomeThree: React.FC = () => (
     <div className='mt-[var(--px-180)] flex flex-col justify-between w-full'>
       <div className="justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">A safe haven for DJs escaping<br />the noise of algorithms and<br />trends</div>
       <div className="flex items-center justify-center my-[var(--px-40)]">
-        <img src={SoundWavesSvg} alt="Sound Waves" className="w-[var(--px-160)] h-[var(--px-131)]" />
+        <img src={SoundWavesSvg} draggable={false} alt="Sound Waves" className="w-[var(--px-160)] h-[var(--px-131)]" />
       </div>
       <div className="text-right justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">Resomix will expand your sonic<br />horizon, discovering threads you<br />never knew were there.</div>
     </div>

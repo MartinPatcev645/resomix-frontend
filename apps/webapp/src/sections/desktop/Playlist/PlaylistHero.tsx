@@ -103,7 +103,7 @@ const PlaylistHero: React.FC = () => {
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
               <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer">
-                <img src={AngleLeftSvg} alt="Angle Left" className="w-[var(--px-13)] h-[var(--px-13)]" />
+                <img src={AngleLeftSvg} draggable={false} alt="Angle Left" className="w-[var(--px-13)] h-[var(--px-13)]" />
                 Generate track similarity
               </div>
               <div className="flex items-center gap-[var(--px-8)]">
@@ -121,8 +121,8 @@ const PlaylistHero: React.FC = () => {
                     transparent={true}
                     customWidth="min-w-[var(--px-100)]"
                     onClick={() => setShowRename(true)}
-                    icon={<img src={RenameSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={RenameBlackSvg} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    icon={<img src={RenameSvg} draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   />
                 </Tooltip>
                 <Tooltip message="Make Public and Generate Shareable Link">
@@ -131,8 +131,8 @@ const PlaylistHero: React.FC = () => {
                     transparent={true}
                     customWidth="min-w-[var(--px-100)]"
                     onClick={() => setShowShare(true)}
-                    icon={<img src={ShareSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={ShareBlackSvg} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    icon={<img src={ShareSvg} draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ShareBlackSvg} draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   />
                 </Tooltip>
                 <Tooltip message="Export Playlist to TXT file">
@@ -142,8 +142,8 @@ const PlaylistHero: React.FC = () => {
                     customWidth="min-w-[var(--px-100)]"
                     onClick={handleExportClick}
                     disabled={isExporting}
-                    icon={<img src={ExportSvg} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={ExportBlackSvg} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    icon={<img src={ExportSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                   />
                 </Tooltip>
               </div>
@@ -153,13 +153,13 @@ const PlaylistHero: React.FC = () => {
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 p-[var(--px-20)]">
                     {uploadedCoverArt ? (
-                      <img src={uploadedCoverArt} alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
+                      <img src={uploadedCoverArt} draggable={false} alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
                     ) : (
-                      <img src={TrackSvg} alt="Track" className="w-[var(--px-90)] h-[var(--px-90)]" />
+                      <img src={TrackSvg} draggable={false} alt="Track" className="w-[var(--px-90)] h-[var(--px-90)]" />
                     )}
                   </div>
                   <div onClick={() => setShowRating(true)} className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end hover:cursor-pointer">
-                    <img src={StarSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
+                    <img src={StarSvg} draggable={false} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
                     <div className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</div>
                   </div>
                 </div>
@@ -200,14 +200,14 @@ const PlaylistHero: React.FC = () => {
                     </div>
                     <div className={`${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? '' : 'hidden'}`}></div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
-                      <img src={TimeSvg} alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
+                      <img src={TimeSvg} draggable={false} alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
                       <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.label}</div>
                       <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
-                        <img onClick={() => setShowMeta((v) => !v)} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
+                        <img onClick={() => setShowMeta((v) => !v)} draggable={false} src={InfoSvg} alt="Info" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer" />
                       </Tooltip>
                     </div>
                   </div>

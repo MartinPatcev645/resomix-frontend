@@ -23,7 +23,7 @@ const HomeFour: React.FC = () => {
             <div className='mr-[var(--px-8)]'>
               HOW
             </div>
-            <img className="w-[var(--px-33)] h-[var(--px-33)] -mt-[var(--px-2)]" src={ArrowDownRightSvg} alt="Arrow Small Up" />
+            <img className="w-[var(--px-33)] h-[var(--px-33)] -mt-[var(--px-2)]" draggable={false} src={ArrowDownRightSvg} alt="Arrow Small Up" />
           </div>
           <div className=''>
             RESOMIX<br />WORKS
@@ -31,7 +31,7 @@ const HomeFour: React.FC = () => {
         </div>
         <div className='flex flex-col items-start'>
           <div className='flex items-center justify-start mb-[var(--px-16)]'>
-            <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-52)] h-[var(--px-52)]" />
+            <img src={ReferenceSvg} draggable={false} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-52)] h-[var(--px-52)]" />
             <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
               1 — Upload Your<br />Reference Track
             </div>
@@ -42,7 +42,7 @@ const HomeFour: React.FC = () => {
         </div>
         <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
           <div className='flex items-center justify-start mb-[var(--px-16)]'>
-            <img className="w-[var(--px-58)] h-[var(--px-60)] mr-[var(--px-12)] mb-[var(--px-4)]" src={AnalysisSvg} alt="Analysis" />
+            <img className="w-[var(--px-58)] h-[var(--px-60)] mr-[var(--px-12)] mb-[var(--px-4)]" draggable={false} src={AnalysisSvg} alt="Analysis" />
             <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
               2 — Deep Sound<br />Analysis
             </div>
@@ -53,7 +53,7 @@ const HomeFour: React.FC = () => {
         </div>
         <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
           <div className='flex items-center justify-start mb-[var(--px-16)]'>
-            <img className="w-[var(--px-52)] h-[var(--px-52)] mr-[var(--px-12)] mb-[var(--px-4)]" src={MatchesSvg} alt="Matches" />
+            <img className="w-[var(--px-52)] h-[var(--px-52)] mr-[var(--px-12)] mb-[var(--px-4)]" draggable={false} src={MatchesSvg} alt="Matches" />
             <div className='text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-24)]'>
               3 — Get Perfect<br />Matches
             </div>

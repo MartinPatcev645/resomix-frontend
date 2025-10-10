@@ -13,10 +13,10 @@ const AboutTwo: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-300)]">
                 {/* Graphics Overlay */}
                 <div className="absolute -top-[var(--px-120)] w-[var(--px-400)] -left-[var(--px-20)] pointer-events-none z-5">
-                    <img src={GradientThree} alt="gradient_three" className="w-full h-auto" />
+                    <img src={GradientThree} draggable={false} alt="gradient_three" className="w-full h-auto" />
                 </div>
                 <div className="absolute top-[var(--px-300)] w-[var(--px-700)] -left-[var(--px-400)] pointer-events-none z-5">
-                    <img src={GradientFour} alt="gradient_four" className="w-full h-auto" />
+                    <img src={GradientFour} draggable={false} alt="gradient_four" className="w-full h-auto" />
                 </div>
 
                 {/* Content */}
@@ -25,7 +25,7 @@ const AboutTwo: React.FC = () => {
                         What we care about is that you find the right track for the right moment,
                         the one that can galvanize your audience and make you stand out as a DJ.
                     </div>
-                    <img src={AboutSeparatorLineTwo} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                    <img src={AboutSeparatorLineTwo} draggable={false} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
                     <div className="text-[length:var(--px-18)] font-helvetica font-light leading-[var(--px-18)] text-center">
                         We're here to make that process faster, more intuitive,
                         and based on what matters the most: the music.
@@ -59,7 +59,7 @@ const AboutTwo: React.FC = () => {
                 </div>
                 <div className="flex flex-col gap-[var(--px-50)] w-full items-start justify-start">
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
-                        <img src={AnalysisSvg} alt="analysis" className="w-[var(--px-54)] h-[var(--px-54)]" />
+                        <img src={AnalysisSvg} draggable={false} alt="analysis" className="w-[var(--px-54)] h-[var(--px-54)]" />
                         <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
                             Deeper Sound Analysis
                         </div>
@@ -68,7 +68,7 @@ const AboutTwo: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
-                        <img src={CraftSvg} alt="craft" className="w-[var(--px-54)] h-[var(--px-54)]" />
+                        <img src={CraftSvg} draggable={false} alt="craft" className="w-[var(--px-54)] h-[var(--px-54)]" />
                         <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
                             Technology and Craft
                         </div>
@@ -77,7 +77,7 @@ const AboutTwo: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
-                        <img src={MatchesSvg} alt="matches" className="w-[var(--px-54)] h-[var(--px-54)]" />
+                        <img src={MatchesSvg} draggable={false} alt="matches" className="w-[var(--px-54)] h-[var(--px-54)]" />
                         <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
                             A Faster Path<br />to the Right Track
                         </div>

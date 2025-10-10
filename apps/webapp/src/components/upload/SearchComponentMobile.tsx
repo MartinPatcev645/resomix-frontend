@@ -56,14 +56,14 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                     <div className="flex">
                         <div className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2">
                             <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</div>
-                            <img src={searchIcon} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            <img src={searchIcon} draggable={false} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                         <div
                             className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline"
                             onClick={onUploadClick}
                         >
                             <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
-                            <img src={uploadIcon} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            <img src={uploadIcon} draggable={false} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                     </div>
                     <div className="m-[var(--px-20)]">
@@ -77,7 +77,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                                 Mode
                                             </div>
                                             <div>
-                                                <img src={InfoSvg} alt="Info" className="w-[var(--px-8)] h-[var(--px-8)]" />
+                                                <img src={InfoSvg} draggable={false} alt="Info" className="w-[var(--px-8)] h-[var(--px-8)]" />
                                             </div>
                                         </div>
                                     </Tooltip>
@@ -111,7 +111,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                 <div className="text-[length:var(--px-12)] font-fira font-light text-center mt-[var(--px-30)]">
                                     Do you have a song<br />in mind?
                                 </div>
-                                <img src={SoundWavesSvg} alt="sound waves" className="w-[var(--px-33)] h-[var(--px-40)] my-[var(--px-10)]" />
+                                <img src={SoundWavesSvg} draggable={false} alt="sound waves" className="w-[var(--px-33)] h-[var(--px-40)] my-[var(--px-10)]" />
                                 <div className="text-[length:var(--px-12)] font-fira font-light text-center">
                                     Let's find tunes that<br />resonate with it!
                                 </div>

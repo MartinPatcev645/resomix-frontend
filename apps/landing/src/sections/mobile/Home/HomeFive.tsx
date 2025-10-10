@@ -18,7 +18,7 @@ const HomeFive: React.FC = () => {
           <div className="absolute top-1/3 right-0 transform text-[length:var(--px-14)] font-extralight font-auger text-right z-20 mr-[var(--px-35)] -mt-[var(--px-14)] leading-[var(--px-16)]">
             Deep sonic analysis, pure<br />and simple, unaffected by<br />metadata or trends.
           </div>
-          <img src={SectionFiveGraphicRight} alt="Section Five Graphic Right" className="w-[var(--px-280)] h-[var(--px-100)]" />
+          <img src={SectionFiveGraphicRight} draggable={false} alt="Section Five Graphic Right" className="w-[var(--px-280)] h-[var(--px-100)]" />
         </div>
         <div className='flex flex-col w-full justify-center'>
           <div className="mx-auto text-center text-[length:var(--px-20)] font-light leading-[var(--px-24)] mt-[var(--px-80)] font-helvetica uppercase">
@@ -32,7 +32,7 @@ const HomeFive: React.FC = () => {
           <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-14)] font-extralight font-auger z-20 ml-[var(--px-32)] -mt-[var(--px-2)] leading-[var(--px-16)]">
             A human approach<br />to modern technology.
           </div>
-          <img src={SectionFiveGraphicLeft} alt="Section Five Graphic Left" className="w-[var(--px-280)] h-[var(--px-100)]" />
+          <img src={SectionFiveGraphicLeft} draggable={false} alt="Section Five Graphic Left" className="w-[var(--px-280)] h-[var(--px-100)]" />
         </div>
       </div>
 
@@ -43,7 +43,7 @@ const HomeFive: React.FC = () => {
             INSTANT
           </div>
           <div className='flex items-center gap-[var(--px-12)]'>
-            <img src={ArrowBigDownSvg} alt="Arrow Big Down" className="w-[var(--px-31)] h-[var(--px-31)]" />
+            <img src={ArrowBigDownSvg} draggable={false} alt="Arrow Big Down" className="w-[var(--px-31)] h-[var(--px-31)]" />
             <div className=''>
               CATALOG
             </div>

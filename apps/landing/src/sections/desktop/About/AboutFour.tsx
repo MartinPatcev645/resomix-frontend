@@ -18,14 +18,14 @@ const AboutFour: React.FC = () => {
                     <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-50)]">
                         <span className="ml-[var(--px-100)]">{t('about.about_four.headline_who')}<br /></span>
                         <div className="flex items-center gap-[var(--px-10)]">
-                            <img src={ArrowSmallUp} alt="arrow_small_up" className="w-[var(--px-43)] h-[var(--px-43)]" />
+                            <img src={ArrowSmallUp} draggable={false} alt="arrow_small_up" className="w-[var(--px-43)] h-[var(--px-43)]" />
                             {t('about.about_four.headline_resomix')}<br />
                         </div>
                         <span className="ml-[var(--px-53)]">{t('about.about_four.headline_is_for')}</span>
                     </div>
                     <div className="flex flex-col items-start mr-[var(--px-100)] gap-[var(--px-20)]">
                         <div className="flex gap-[var(--px-20)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
+                            <img src={PlaySvg} alt="play" draggable={false} className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                     {t('about.about_four.audience_djs_title')}
@@ -36,7 +36,7 @@ const AboutFour: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-20)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
+                            <img src={PlaySvg} alt="play" draggable={false} className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                     {t('about.about_four.audience_producers_title')}
@@ -47,7 +47,7 @@ const AboutFour: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-20)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
+                            <img src={PlaySvg} alt="play" draggable={false} className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                     {t('about.about_four.audience_curators_title')}
@@ -58,7 +58,7 @@ const AboutFour: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex gap-[var(--px-20)] z-15">
-                            <img src={PlaySvg} alt="play" className="w-[var(--px-13)] h-[var(--px-16)]" />
+                            <img src={PlaySvg} alt="play" draggable={false} className="w-[var(--px-13)] h-[var(--px-16)]" />
                             <div className="flex flex-col items-center gap-[var(--px-10)]">
                                 <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                     {t('about.about_four.audience_music_enthusiasts_title')}
