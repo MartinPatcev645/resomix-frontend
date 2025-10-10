@@ -61,7 +61,7 @@ export function UploadPage() {
 
   return (
     // <div className="bg-[var(--color-secondary)]">
-    <div className="bg-[#202020]">
+    <div className="bg-[var(--color-noise-background)]">
       {/* Static noise background */}
       {/* <StaticNoise color="#3a3a3b" opacity={0.5} zIndex={1} overscanVh={50} /> */}
       <StaticNoise />

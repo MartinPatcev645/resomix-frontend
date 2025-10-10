@@ -3,7 +3,7 @@ import { StaticNoise } from "@resomix/ui";
 // import { Terrain } from "@resomix/ui";
 
 const TestPage: React.FC = () => (
-  <div className="w-screen h-screen relative overflow-hidden">
+  <div className="w-screen h-screen relative overflow-hidden bg-[var(--color-noise-background)]">
     {/* Background static noise */}
     {/* <StaticNoise color="#323233" zIndex={0} /> */}
     <StaticNoise />
