@@ -2,6 +2,7 @@ import React from "react";
 import SectionFiveGraphicLeft from "@/assets/icons/composites/section_five_graphic_left.svg";
 import SectionFiveGraphicRight from "@/assets/icons/composites/section_five_graphic_right.svg";
 import ArrowBigDownSvg from "@/assets/icons/arrow_big_down_stroke.svg";
+import SoulOfReference from "@/assets/icons/hero/section_five_soul_of_reference.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 import { BASE_BETA_URL } from "@resomix/config";
@@ -21,9 +22,10 @@ const HomeFive: React.FC = () => {
           <img src={SectionFiveGraphicRight} alt="Section Five Graphic Right" className="w-[var(--px-444)] h-[var(--px-154)]" />
         </div>
         <div className='flex flex-col w-full justify-center'>
-          <div className="mx-auto text-center text-[length:var(--px-25)] font-extralight leading-[var(--px-28)] mt-[var(--px-24)] opacity-90 font-helvetica uppercase">
-            Resomix is the only platform in the world that<br />focuses on the “soul” of your reference track to<br />find music that matches its mood and spirit.
+          <div className="relative z-20 mx-auto text-center text-[length:var(--px-25-19)] font-extralight leading-[var(--px-28)] mt-[var(--px-24)] opacity-90 font-helvetica uppercase">
+            Resomix is the only platform in the world that<br />focuses on <span className="font-medium text-black">the “soul” of your reference track<br />to find music that matches its mood and spirit.</span>
           </div>
+          <img src={SoulOfReference} alt="Soul Of Reference" className="absolute z-5 top-[25.3%] left-[50.35%] transform -translate-x-1/2 w-[var(--px-695)] h-[var(--px-65)]" />
           <div className='mx-auto text-center text-[length:var(--px-13)] font-extralight mt-[var(--px-12)] opacity-60 font-auger'>
             Cutting-Edge Innovation
           </div>
