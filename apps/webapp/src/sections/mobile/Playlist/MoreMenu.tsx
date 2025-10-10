@@ -88,7 +88,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                       />
                     </div>
                     <div className="">
-                        <img src={MenuSeparator} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
+                        <img src={MenuSeparator} draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] w-full">
                         <div className="flex w-full justify-between">

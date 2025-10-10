@@ -6,7 +6,7 @@ const HomeOne: React.FC = () => (
     <div className='flex flex-col w-full relative z-15 items-center'>
       <div className="text-center text-[length:var(--px-33)] font-extralight font-helvetica uppercase leading-[var(--px-33)]">Resomix is the first sonic<br />analysis platform<br />of its kind</div>
       <div className="w-full relative mt-[var(--px-10)] mb-[var(--px-50)]">
-        <img className="w-full" src={SectionOneGraphicFull} alt="Section One Graphic Full" />
+        <img className="w-full" draggable={false} src={SectionOneGraphicFull} alt="Section One Graphic Full" />
         <div className="absolute top-[65%] left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
           Built by DJs,<br />for DJs
         </div>

@@ -22,18 +22,18 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
         <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
           {onClose ? (
             <button onClick={onClose} aria-label="Close menu">
-              <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
+              <img src={CrossSvg} alt="Cross" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </button>
           ) : (
             <a href={BASE_LANDING_URL}>
-              <img src={CrossSvg} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
+              <img src={CrossSvg} alt="Cross" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           )}
         </div>
         <div className="flex flex-col gap-[var(--px-30)] items-center">
           <div className="">
             <a href={BASE_LANDING_URL}>
-              <img src={RIconsFooter} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
+              <img src={RIconsFooter} draggable={false} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           </div>
           <div onClick={() => {
@@ -53,7 +53,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
             [{t('general.menu.waitlist')}]
           </div>
           <div className="">
-            <img src={MenuSeparator} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
+            <img src={MenuSeparator} draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
           <div className="w-full">
             <ButtonHeavyRight className="w-[var(--px-276)]" text={t('general.menu.upload_your_track')} onClick={() => {

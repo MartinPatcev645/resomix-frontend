@@ -60,14 +60,14 @@ const HomeHero: React.FC = () => {
         <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none">
           <div className="flex flex-col text-start my-auto w-full relative z-15">
             <div className="w-full justify-start h-[var(--px-164)] mt-[var(--px-42)]">
-              <img className="w-[var(--px-613)] h-[var(--px-122)]" src={HeroResomix} alt="Resomix" />
+              <img className="w-[var(--px-613)] h-[var(--px-122)]" src={HeroResomix} alt="Resomix" draggable={false} />
             </div>
             <div className='flex w-full justify-between items-start -mt-[var(--px-34)]'>
               <div className='flex gap-[var(--px-12)]'>
-                <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
+                <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" draggable={false} />
                 <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
               </div>
-              <img className="w-[var(--px-596)] h-[var(--px-54)]" src={HeroAlign} alt="Align With Your Sound" />
+              <img className="w-[var(--px-596)] h-[var(--px-54)]" src={HeroAlign} alt="Align With Your Sound" draggable={false} />
             </div>
             <div className="flex justify-end w-full min-w-[var(--px-204-5)] mt-[var(--px-42)]">
               <ButtonHeavyRight text="Upload Your Track" onClick={() => {
@@ -77,19 +77,19 @@ const HomeHero: React.FC = () => {
           </div>
           <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={FbSvg} alt="Fb" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} src={FbSvg} alt="Fb" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
               onClick={() => window.open(FACEBOOK_URL, "_blank")}
             />
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={InstaSvg} alt="Insta" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} src={InstaSvg} alt="Insta" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
               onClick={() => window.open(INSTAGRAM_URL, "_blank")}
             />
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={XSvg} alt="X" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} src={XSvg} alt="X" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
               onClick={() => window.open(TWITTER_URL, "_blank")}
@@ -101,7 +101,7 @@ const HomeHero: React.FC = () => {
       {/* Text below the SVG clip path */}
       <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15'>
         <div className="text-right justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
-        <img src={SoundWaves} className="w-[var(--px-55)] h-[var(--px-44)]" alt="Sound Waves" />
+        <img src={SoundWaves} draggable={false} className="w-[var(--px-55)] h-[var(--px-44)]" alt="Sound Waves" />
       </div>
     </div>
   );

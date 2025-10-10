@@ -36,7 +36,7 @@ export function AboutMobile() {
           mode="about"
         >
           
-          <img src={AngleDown} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
+          <img src={AngleDown} draggable={false} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
 
           {/* Section One */}
           <div className="relative z-20 mt-[var(--px-60)]">

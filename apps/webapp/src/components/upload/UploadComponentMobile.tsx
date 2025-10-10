@@ -57,11 +57,11 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
                             onClick={onSearchClick}
                         >
                             <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</div>
-                            <img src={searchIcon} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            <img src={searchIcon} draggable={false} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                         <div className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2">
                             <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
-                            <img src={uploadIcon} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            <img src={uploadIcon} draggable={false} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                     </div>
                     <div className="m-[var(--px-20)]">
@@ -71,7 +71,7 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
                                     Discover the Power of<br />Deep Sonic Analysis
                                 </div>
                                 <div className="flex items-center justify-center gap-[var(--px-10)] mt-[var(--px-10)] ml-[var(--px-16)]">
-                                    <img src={ReferenceSvg} alt="sound waves" className="w-[var(--px-37)] h-[var(--px-37)] my-[var(--px-10)]" />
+                                    <img src={ReferenceSvg} draggable={false} alt="sound waves" className="w-[var(--px-37)] h-[var(--px-37)] my-[var(--px-10)]" />
                                     <div className="text-[length:var(--px-12)] font-fira font-light text-left leading-[var(--px-15)] opacity-70">
                                         Drop in a reference sound.<br />It can be a released or<br />unreleased song, or just a short<br />sketch from your archive. Resomix<br />will analyze the audio and find<br />perfect matches for you.
                                     </div>

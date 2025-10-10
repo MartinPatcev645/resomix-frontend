@@ -48,7 +48,7 @@ const AboutHero: React.FC = () => {
         {/* Remains background animation */}
         <div className="absolute inset-0 flex justify-center items-center w-full h-full overflow-clip">
           {/* {isVisible && <Remains />} */}
-          <img src={GradientOne} className="w-[var(--px-1100)] h-[var(--px-750)] mt-[var(--px-6)]" alt="Gradient" />
+          <img src={GradientOne} draggable={false} className="w-[var(--px-1100)] h-[var(--px-750)] mt-[var(--px-6)]" alt="Gradient" />
         </div>
 
         {/* Overlay content */}
@@ -59,19 +59,19 @@ const AboutHero: React.FC = () => {
         <div className="absolute inset-0 flex flex-col justify-end items-end w-full h-full select-none py-auto z-15">
           <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={FbSvg} alt="Fb" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} src={FbSvg} alt="Fb" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
               onClick={() => window.open(FACEBOOK_URL, "_blank")}
             />
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={InstaSvg} alt="Insta" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} src={InstaSvg} alt="Insta" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
               onClick={() => window.open(INSTAGRAM_URL, "_blank")}
             />
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" src={XSvg} alt="X" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} src={XSvg} alt="X" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)]"
               padding=""
               onClick={() => window.open(TWITTER_URL, "_blank")}
