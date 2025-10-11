@@ -49,9 +49,9 @@ export const StaticNoise: React.FC = () => {
     const ALPHA       = 1.0;    // overlay alpha multiplier
     const DENSITY     = 1.0;   // increased from 0.65
     // Per-layer nominal cell sizes in device pixels (small -> finer grain)
-    const L0_SIZE_PX  = 3;
-    const L1_SIZE_PX  = 3.5;
-    const L2_SIZE_PX  = 5;
+    const L0_SIZE_PX  = 2.5;
+    const L1_SIZE_PX  = 3;
+    const L2_SIZE_PX  = 4.5;
 
     // --- Uniforms -----------------------------------------------------------
     const uniforms = {
@@ -66,7 +66,7 @@ export const StaticNoise: React.FC = () => {
       // Dark set (formerly slightly black) -> #121211
       uDark:       { value: new THREE.Vector3(9/255, 9/255, 8/255) },  // 18/255, 18/255, 17/255
       // Lighter set (still darker than #1B1B1A) -> #161615
-      uGray:       { value: new THREE.Vector3(22/255, 22/255, 21/255) },
+      uGray:       { value: new THREE.Vector3(22/255, 22/255, 21/255) },  // 22/255, 22/255, 21/255
     };
 
     const vertexShader = `
@@ -122,10 +122,10 @@ export const StaticNoise: React.FC = () => {
         vec2 center = cellBase + (jitter + 0.5) * cellPx;
 
         float hr = hash31(vec3(cell + 11.7, frameIdx * 3.1 + float(layerId) * 4.2));
-        float r = mix(0.33, 0.55, hr) * cellPx;
+        float r = 0.5 * cellPx;
 
         float d = length(q - center);
-        float edge = 1.0; // falloff width in px
+        float edge = 0.5; // set to 0.5 for crisp edges
         float a = smoothstep(r, r - edge, d);
         return a;
       }
