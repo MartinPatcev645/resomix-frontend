@@ -2,13 +2,96 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
+type Triplet = [number, number, number];
+type SizeSet = { sm?: Triplet; md?: Triplet; lg?: Triplet };
+
+export interface StaticNoiseProps {
+  className?: string;
+  zIndex?: number;
+  /** Target refresh FPS for the noise shuffle. */
+  fps?: number;
+
+  /** DARK dot layer config (your current default). */
+  dark?: {
+    enabled?: boolean;          // default true
+    color?: Triplet;             // hex, default "#121211"
+    density?: number;           // 0..1, default 1
+    alpha?: number;             // 0..1, default 1
+    edge?: number;              // px softness, default 0.5
+    radiusFactor?: number;      // r = radiusFactor * cellPx, default 0.5
+    sizes?: SizeSet;            // per-breakpoint [L0, L1, L2] cell sizes in px
+  };
+
+  /** LIGHT dot layer config. */
+  light?: {
+    enabled?: boolean;          // default false
+    color?: Triplet;             // hex, default "#161615"
+    density?: number;           // 0..1, default 1
+    alpha?: number;             // 0..1, default 1
+    edge?: number;              // px softness, default 0.5
+    radiusFactor?: number;      // r = radiusFactor * cellPx, default 0.5
+    sizes?: SizeSet;            // per-breakpoint [L0, L1, L2] cell sizes in px
+  };
+}
+
+// ---- Defaults (exactly match your current rendering) -----------------------
+const DEF_FPS = 30;
+const DEF_DARK: Required<NonNullable<StaticNoiseProps["dark"]>> = {
+  enabled: true,
+  color: [9/255, 9/255, 8/255] as Triplet,
+  density: 1,
+  alpha: 1,
+  edge: 0.5,
+  radiusFactor: 0.5,
+  sizes: {
+    sm: [2.5, 3.0, 4.5],
+    md: [2.5, 3.0, 4.5],
+    lg: [2.5, 3.0, 4.5],
+  },
+};
+const DEF_LIGHT: Required<NonNullable<StaticNoiseProps["light"]>> = {
+  enabled: false,
+  color: [22/255, 22/255, 21/255] as Triplet,
+  density: 1,
+  alpha: 1,
+  edge: 0.5,
+  radiusFactor: 0.5,
+  sizes: {
+    sm: [2.5, 3.0, 4.5],
+    md: [2.5, 3.0, 4.5],
+    lg: [2.5, 3.0, 4.5],
+  },
+};
+
+function pickSizes(sizes: SizeSet | undefined, fallback: Triplet): Triplet {
+  // Tailwind-ish breakpoints based on viewport width
+  const w = typeof window !== "undefined" ? window.innerWidth : 1024;
+  const sm = (sizes?.sm ?? fallback) as Triplet;
+  const md = (sizes?.md ?? fallback) as Triplet;
+  const lg = (sizes?.lg ?? fallback) as Triplet;
+  return w < 640 ? sm : w < 1024 ? md : lg;
+}
+
 // Keep the same export symbol so your imports don't break.
-export const StaticNoise: React.FC = () => {
+export const StaticNoise: React.FC<StaticNoiseProps> = ({
+  className = "pointer-events-none fixed inset-0",
+  zIndex,
+  fps = DEF_FPS,
+  dark,
+  light,
+}) => {
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = boxRef.current;
     if (!container) return;
+
+    const d = { ...DEF_DARK, ...(dark || {}) };
+    const l = { ...DEF_LIGHT, ...(light || {}) };
+
+    // Resolve responsive sizes (Triplets) for each layer set
+    const [d0, d1, d2] = pickSizes(d.sizes, DEF_DARK.sizes.md!);
+    const [l0, l1, l2] = pickSizes(l.sizes, DEF_LIGHT.sizes.md!);
 
     // --- Renderer (transparent overlay) ------------------------------------
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
@@ -23,7 +106,6 @@ export const StaticNoise: React.FC = () => {
     (renderer as any).toneMapping = (THREE as any).NoToneMapping ?? 0;
 
     // three r152+ uses outputColorSpace (your 0.178 is in this bucket)
-    // Do NOT reference sRGBEncoding (removed in modern three)
     (renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace;
 
     const canvas = renderer.domElement as HTMLCanvasElement;
@@ -44,29 +126,31 @@ export const StaticNoise: React.FC = () => {
     geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geom.setIndex(new THREE.BufferAttribute(indices, 1));
 
-    // --- Tunables -----------------------------------------------------------
-    const SHUFFLE_FPS = 30.0;   // pattern refresh rate
-    const ALPHA       = 1.0;    // overlay alpha multiplier
-    const DENSITY     = 1.0;    // increased from 0.65
-    // Per-layer nominal cell sizes in device pixels (small -> finer grain)
-    const L0_SIZE_PX  = 2.5;
-    const L1_SIZE_PX  = 3.0;
-    const L2_SIZE_PX  = 4.5;
-
     // --- Uniforms -----------------------------------------------------------
     const uniforms = {
-      uResolution: { value: new THREE.Vector2(1, 1) }, // (canvas.width, canvas.height)
-      uTime:       { value: 0 },
-      uFps:        { value: SHUFFLE_FPS },
-      uAlpha:      { value: ALPHA },
-      uDensity:    { value: DENSITY },
-      uSizePx0:    { value: L0_SIZE_PX },
-      uSizePx1:    { value: L1_SIZE_PX },
-      uSizePx2:    { value: L2_SIZE_PX },
-      // Dark set (formerly slightly black) -> #121211
-      uDark:       { value: new THREE.Vector3(9/255, 9/255, 8/255) },  // 18/255, 18/255, 17/255
-      // Lighter set (still darker than #1B1B1A) -> #161615
-      uGray:       { value: new THREE.Vector3(22/255, 22/255, 21/255) },  // kept but unused
+      uResolution:   { value: new THREE.Vector2(1, 1) },
+      uTime:         { value: 0 },
+      uFps:          { value: fps },
+
+      // Dark set
+      uDark: { value: new THREE.Vector3(d.color[0], d.color[1], d.color[2]) },
+      uDensityDark:  { value: d.enabled ? d.density : 0.0 },
+      uAlphaDark:    { value: d.enabled ? d.alpha : 0.0 },
+      uEdgeDark:     { value: d.edge },
+      uRFactorDark:  { value: d.radiusFactor },
+      uSizePxD0:     { value: d0 },
+      uSizePxD1:     { value: d1 },
+      uSizePxD2:     { value: d2 },
+
+      // Light set
+      uGray: { value: new THREE.Vector3(l.color[0], l.color[1], l.color[2]) },
+      uDensityLight: { value: l.enabled ? l.density : 0.0 },
+      uAlphaLight:   { value: l.enabled ? l.alpha : 0.0 },
+      uEdgeLight:    { value: l.edge },
+      uRFactorLight: { value: l.radiusFactor },
+      uSizePxL0:     { value: l0 },
+      uSizePxL1:     { value: l1 },
+      uSizePxL2:     { value: l2 },
     };
 
     const vertexShader = `
@@ -81,13 +165,26 @@ export const StaticNoise: React.FC = () => {
       uniform vec2  uResolution; // in device pixels
       uniform float uTime;        // seconds
       uniform float uFps;
-      uniform float uAlpha;
-      uniform float uDensity;
-      uniform float uSizePx0;
-      uniform float uSizePx1;
-      uniform float uSizePx2;
-      uniform vec3  uDark;        // #121211
-      uniform vec3  uGray;        // #161615 (unused)
+
+      // Dark
+      uniform vec3  uDark;
+      uniform float uDensityDark;
+      uniform float uAlphaDark;
+      uniform float uEdgeDark;
+      uniform float uRFactorDark;
+      uniform float uSizePxD0;
+      uniform float uSizePxD1;
+      uniform float uSizePxD2;
+
+      // Light
+      uniform vec3  uGray;
+      uniform float uDensityLight;
+      uniform float uAlphaLight;
+      uniform float uEdgeLight;
+      uniform float uRFactorLight;
+      uniform float uSizePxL0;
+      uniform float uSizePxL1;
+      uniform float uSizePxL2;
 
       // --- Hash helpers -----------------------------------------------------
       float hash31(vec3 p){
@@ -106,7 +203,7 @@ export const StaticNoise: React.FC = () => {
       }
 
       // One grain layer: round dots in a rotated, jittered lattice.
-      float layerGrain(vec2 pix, float cellPx, float density, float frameIdx, int layerId){
+      float layerGrain(vec2 pix, float cellPx, float density, float frameIdx, int layerId, float rFactor, float edge){
         float theta = frameAngle(layerId, frameIdx);
         vec2 q = rot(theta) * pix;
 
@@ -121,10 +218,9 @@ export const StaticNoise: React.FC = () => {
         vec2 jitter = vec2(hx, hy);
         vec2 center = cellBase + (jitter + 0.5) * cellPx;
 
-        float r = 0.5 * cellPx;
+        float r = rFactor * cellPx;
 
         float d = length(q - center);
-        float edge = 0.5; // set to 0.5 for crisp edges
         float a = smoothstep(r, r - edge, d);
         return a;
       }
@@ -135,25 +231,25 @@ export const StaticNoise: React.FC = () => {
         // Frame index (discrete at uFps)
         float frameIdx = mod(floor(uTime * uFps), 4096.0);
 
-        // ---- DARK DOTS (formerly black) -----------------------------------
-        float a0D = layerGrain(pix, uSizePx0, uDensity, frameIdx + 13.0, 0);
-        float a1D = layerGrain(pix, uSizePx1, uDensity, frameIdx + 37.0, 1);
-        float a2D = layerGrain(pix, uSizePx2, uDensity, frameIdx + 71.0, 2);
+        // ---- DARK DOTS -----------------------------------------------------
+        float a0D = layerGrain(pix, uSizePxD0, uDensityDark, frameIdx + 13.0, 0, uRFactorDark, uEdgeDark);
+        float a1D = layerGrain(pix, uSizePxD1, uDensityDark, frameIdx + 37.0, 1, uRFactorDark, uEdgeDark);
+        float a2D = layerGrain(pix, uSizePxD2, uDensityDark, frameIdx + 71.0, 2, uRFactorDark, uEdgeDark);
         float aDark = max(a0D, max(a1D, a2D));
+        float alphaDark = aDark * uAlphaDark;
 
-        // ---- LIGHTER DOTS REMOVED ------------------------------------------
-        // float a0G = layerGrain(...);
-        // float a1G = layerGrain(...);
-        // float a2G = layerGrain(...);
-        // float aGray = max(a0G, max(a1G, a2G));
-        float aGray = 0.0;
+        // ---- LIGHT DOTS ----------------------------------------------------
+        float a0G = layerGrain(pix, uSizePxL0, uDensityLight, frameIdx + 113.0, 10, uRFactorLight, uEdgeLight);
+        float a1G = layerGrain(pix, uSizePxL1, uDensityLight, frameIdx + 137.0, 11, uRFactorLight, uEdgeLight);
+        float a2G = layerGrain(pix, uSizePxL2, uDensityLight, frameIdx + 171.0, 12, uRFactorLight, uEdgeLight);
+        float aGray = max(a0G, max(a1G, a2G));
+        float alphaLight = aGray * uAlphaLight;
 
-        // Use only dark layer
-        float a = aDark;
-        float alpha = a * uAlpha;
+        // Composite: take whichever dot dominates at each pixel
+        float alpha = max(alphaDark, alphaLight);
         if (alpha <= 0.001) discard;
 
-        vec3 col = uDark;
+        vec3 col = (alphaDark >= alphaLight) ? uDark : uGray;
         gl_FragColor = vec4(col, alpha);
       }
     `;
@@ -176,7 +272,17 @@ export const StaticNoise: React.FC = () => {
       const w = container.clientWidth || 1;
       const h = container.clientHeight || 1;
       renderer.setSize(w, h, false);
-      uniforms.uResolution.value.set(canvas.width, canvas.height);
+      (uniforms.uResolution.value as THREE.Vector2).set(canvas.width, canvas.height);
+
+      // Update sizes if breakpoint changed
+      const [nd0, nd1, nd2] = pickSizes(d.sizes, DEF_DARK.sizes.md!);
+      const [nl0, nl1, nl2] = pickSizes(l.sizes, DEF_LIGHT.sizes.md!);
+      uniforms.uSizePxD0.value = nd0;
+      uniforms.uSizePxD1.value = nd1;
+      uniforms.uSizePxD2.value = nd2;
+      uniforms.uSizePxL0.value = nl0;
+      uniforms.uSizePxL1.value = nl1;
+      uniforms.uSizePxL2.value = nl2;
     };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
@@ -186,7 +292,7 @@ export const StaticNoise: React.FC = () => {
     let raf = 0;
     const t0 = performance.now();
     const loop = () => {
-      uniforms.uTime.value = (performance.now() - t0) / 1000;
+      (uniforms.uTime.value as number) = (performance.now() - t0) / 1000;
       renderer.render(scene, camera);
       raf = requestAnimationFrame(loop);
     };
@@ -201,17 +307,13 @@ export const StaticNoise: React.FC = () => {
       mat.dispose();
       if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, []);
+  }, [fps, dark, light]);
 
   return (
     <div
       ref={boxRef}
-      className="pointer-events-none fixed inset-0"
-      style={{
-        // Fully cover viewport; zIndex left undefined so you can control in parent if needed
-        zIndex: undefined,
-        opacity: 1,
-      }}
+      className={className}
+      style={{ zIndex, opacity: 1 }}
       aria-hidden="true"
     />
   );
