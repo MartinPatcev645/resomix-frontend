@@ -47,11 +47,11 @@ export const StaticNoise: React.FC = () => {
     // --- Tunables -----------------------------------------------------------
     const SHUFFLE_FPS = 30.0;   // pattern refresh rate
     const ALPHA       = 1.0;    // overlay alpha multiplier
-    const DENSITY     = 0.90;   // increased from 0.65
+    const DENSITY     = 1.0;   // increased from 0.65
     // Per-layer nominal cell sizes in device pixels (small -> finer grain)
-    const L0_SIZE_PX  = 2;
-    const L1_SIZE_PX  = 3;
-    const L2_SIZE_PX  = 4;
+    const L0_SIZE_PX  = 3;
+    const L1_SIZE_PX  = 3.5;
+    const L2_SIZE_PX  = 5;
 
     // --- Uniforms -----------------------------------------------------------
     const uniforms = {
