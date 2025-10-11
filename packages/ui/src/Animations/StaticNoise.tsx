@@ -47,10 +47,10 @@ export const StaticNoise: React.FC = () => {
     // --- Tunables -----------------------------------------------------------
     const SHUFFLE_FPS = 30.0;   // pattern refresh rate
     const ALPHA       = 1.0;    // overlay alpha multiplier
-    const DENSITY     = 1.0;   // increased from 0.65
+    const DENSITY     = 1.0;    // increased from 0.65
     // Per-layer nominal cell sizes in device pixels (small -> finer grain)
     const L0_SIZE_PX  = 2.5;
-    const L1_SIZE_PX  = 3;
+    const L1_SIZE_PX  = 3.0;
     const L2_SIZE_PX  = 4.5;
 
     // --- Uniforms -----------------------------------------------------------
@@ -66,7 +66,7 @@ export const StaticNoise: React.FC = () => {
       // Dark set (formerly slightly black) -> #121211
       uDark:       { value: new THREE.Vector3(9/255, 9/255, 8/255) },  // 18/255, 18/255, 17/255
       // Lighter set (still darker than #1B1B1A) -> #161615
-      uGray:       { value: new THREE.Vector3(22/255, 22/255, 21/255) },  // 22/255, 22/255, 21/255
+      uGray:       { value: new THREE.Vector3(22/255, 22/255, 21/255) },  // kept but unused
     };
 
     const vertexShader = `
@@ -87,7 +87,7 @@ export const StaticNoise: React.FC = () => {
       uniform float uSizePx1;
       uniform float uSizePx2;
       uniform vec3  uDark;        // #121211
-      uniform vec3  uGray;        // #161615
+      uniform vec3  uGray;        // #161615 (unused)
 
       // --- Hash helpers -----------------------------------------------------
       float hash31(vec3 p){
@@ -121,7 +121,6 @@ export const StaticNoise: React.FC = () => {
         vec2 jitter = vec2(hx, hy);
         vec2 center = cellBase + (jitter + 0.5) * cellPx;
 
-        float hr = hash31(vec3(cell + 11.7, frameIdx * 3.1 + float(layerId) * 4.2));
         float r = 0.5 * cellPx;
 
         float d = length(q - center);
@@ -142,20 +141,19 @@ export const StaticNoise: React.FC = () => {
         float a2D = layerGrain(pix, uSizePx2, uDensity, frameIdx + 71.0, 2);
         float aDark = max(a0D, max(a1D, a2D));
 
-        // ---- LIGHTER DOTS (independent seeds) ------------------------------
-        float a0G = layerGrain(pix, uSizePx0, uDensity, frameIdx + 113.0, 10);
-        float a1G = layerGrain(pix, uSizePx1, uDensity, frameIdx + 137.0, 11);
-        float a2G = layerGrain(pix, uSizePx2, uDensity, frameIdx + 171.0, 12);
-        float aGray = max(a0G, max(a1G, a2G));
+        // ---- LIGHTER DOTS REMOVED ------------------------------------------
+        // float a0G = layerGrain(...);
+        // float a1G = layerGrain(...);
+        // float a2G = layerGrain(...);
+        // float aGray = max(a0G, max(a1G, a2G));
+        float aGray = 0.0;
 
-        // Union alpha for coverage; keep edges crisp
-        float a = max(aDark, aGray);
+        // Use only dark layer
+        float a = aDark;
         float alpha = a * uAlpha;
         if (alpha <= 0.001) discard;
 
-        // Prefer the darker tone when overlapping
-        vec3 col = (aDark >= aGray) ? uDark : uGray;
-
+        vec3 col = uDark;
         gl_FragColor = vec4(col, alpha);
       }
     `;
