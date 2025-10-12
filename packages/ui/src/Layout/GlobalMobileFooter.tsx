@@ -18,7 +18,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
         </div>
         <div className="flex flex-col items-start px-[var(--px-10)] min-h-[var(--px-129)] mt-[var(--px-40)]">
           <div className="flex w-full justify-start">
-            <a href={baseUrl} className="cursor-default footer-logo-link" id="footer-logo-link">
+            <a href={baseUrl} aria-label="Resomix home" className="cursor-default footer-logo-link" id="footer-logo-link">
               {logo}
             </a>
           </div>

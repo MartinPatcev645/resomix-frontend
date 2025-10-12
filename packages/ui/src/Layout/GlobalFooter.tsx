@@ -19,7 +19,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
       <div className="flex flex-col gap-[var(--px-130)]">
         <div className="flex flex-col px-[var(--px-65)] min-h-[var(--px-129)]">
           <div className="flex w-full justify-start">
-            <a href={baseUrl} className="cursor-default footer-logo-link" id="footer-logo-link">
+            <a href={baseUrl} aria-label="Resomix home" className="cursor-default footer-logo-link" id="footer-logo-link">
               {logo}
             </a>
           </div>
