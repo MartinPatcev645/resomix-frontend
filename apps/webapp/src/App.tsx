@@ -1,14 +1,23 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, TermsAcceptance } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { UploadPage, UploadMobile, PlaylistPage, PlaylistMobile, InfoPage, TestPage, TestTwo, PlayerPage } from "@/pages/index.ts";
-import { UploadLoader } from "@/components/index.ts";
+
+// Lazy-load pages
+const UploadPage = lazy(() => import("@/pages/desktop/UploadPage.tsx").then(m => ({ default: m.UploadPage })));
+const UploadMobile = lazy(() => import("@/pages/mobile/UploadMobile.tsx").then(m => ({ default: m.UploadMobile })));
+const PlaylistPage = lazy(() => import("@/pages/desktop/PlaylistPage.tsx").then(m => ({ default: m.PlaylistPage })));
+const PlaylistMobile = lazy(() => import("@/pages/mobile/PlaylistMobile.tsx").then(m => ({ default: m.PlaylistMobile })));
+const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
+const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
+const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
+const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
+const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
 
-// import DevMobileConsole from "@/DevMobileConsole.tsx";
 
 function UploadLanding() {
   const { isDesktop } = useResponsive();
@@ -32,7 +41,7 @@ function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
-  
+
   return (
     <>
       {/* <DevMobileConsole /> */}
@@ -48,18 +57,20 @@ function App() {
 
       {showTerms && <TermsAcceptance onAccept={acceptTerms} onDismiss={dismissTerms} />}
 
-      <Routes>
-        <Route path="/" element={<UploadLanding />} />
-        <Route path="/loader" element={<UploadLoader />} />
-        <Route path="/playlist" element={<PlaylistLanding />} />
-        <Route path="/sonic-discovery" element={<PlaylistLanding />} />
-        <Route path="/contact" element={<InfoPage mode="contact" />} />
-        <Route path="/error" element={<InfoPage mode="error" />} />
-        <Route path="/test" element={<TestPage />} />
-        <Route path="/test-two" element={<TestTwo />} />
-        <Route path="/player" element={<PlayerPage />} />
-        <Route path="*" element={<InfoPage mode="404" />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<UploadLanding />} />
+          <Route path="/loader" element={<UploadLoader />} />
+          <Route path="/playlist" element={<PlaylistLanding />} />
+          <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+          <Route path="/contact" element={<InfoPage mode="contact" />} />
+          <Route path="/error" element={<InfoPage mode="error" />} />
+          <Route path="/test" element={<TestPage />} />
+          <Route path="/test-two" element={<TestTwo />} />
+          <Route path="/player" element={<PlayerPage />} />
+          <Route path="*" element={<InfoPage mode="404" />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }

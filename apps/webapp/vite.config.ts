@@ -22,5 +22,29 @@ export default defineConfig({
       '@resomix/api-client':path.resolve(__dirname, '../../packages/api-client/src'),
       '@resomix/config':     path.resolve(__dirname, '../../packages/config/src')
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Third-party libraries
+          if (id.includes('node_modules')) {
+            if (id.includes('react-router')) return 'router'
+            if (id.includes('posthog-js')) return 'analytics'
+            if (id.includes('/three')) return 'three'
+            if (id.includes('@react-three/fiber')) return 'r3f'
+            if (id.includes('/react/') || id.includes('react-dom')) return 'react'
+            return 'vendor'
+          }
+          // Internal workspaces
+          if (id.includes('/packages/ui/')) return 'resomix-ui'
+          if (id.includes('/packages/hooks/')) return 'resomix-hooks'
+          if (id.includes('/packages/stores/')) return 'resomix-stores'
+          if (id.includes('/packages/api-client/')) return 'resomix-api'
+          if (id.includes('/packages/config/')) return 'resomix-config'
+          return undefined
+        }
+      }
+    }
   }
 })

@@ -8,6 +8,7 @@ interface InfoPageProps {
   mode: string;
 }
 
+
 export default function InfoPage({ mode }: InfoPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

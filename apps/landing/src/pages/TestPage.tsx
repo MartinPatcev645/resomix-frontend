@@ -34,6 +34,7 @@ interface NoiseConfig {
   };
 }
 
+
 const DEFAULT_CONFIG: NoiseConfig = {
   fps: 30,
   dark: {
