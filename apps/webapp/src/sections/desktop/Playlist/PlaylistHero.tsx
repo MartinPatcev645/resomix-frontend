@@ -109,7 +109,7 @@ const PlaylistHero: React.FC = () => {
               <div className="flex items-center gap-[var(--px-8)]">
                 <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
                   <ToggleButton
-                    text="Autoplay"
+                    text="Sonic Journey"
                     customWidth="min-w-[var(--px-120)]"
                     isOn={autoplay}
                     onToggle={setAutoplay}

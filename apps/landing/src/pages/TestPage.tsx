@@ -38,10 +38,10 @@ const DEFAULT_CONFIG: NoiseConfig = {
   fps: 30,
   dark: {
     enabled: true,
-    color: [9/255, 9/255, 8/255],
+    color: [5/255, 5/255, 5/255],   // 9/255, 9/255, 8/255
     density: 1,
-    alpha: 1,
-    edge: 0.5,
+    alpha: 0.99,
+    edge: 0.4,
     radiusFactor: 0.5,
     sizes: {
       sm: [2.3, 2.8, 4.2],

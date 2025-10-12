@@ -83,7 +83,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                 />
                 <ToggleButton
-                  text="Autoplay"
+                  text="Sonic Journey"
                   customWidth="min-w-[var(--px-100)]"
                   isOn={autoplay}
                   onToggle={setAutoplay}

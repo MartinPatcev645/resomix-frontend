@@ -38,15 +38,15 @@ export interface StaticNoiseProps {
 const DEF_FPS = 30;
 const DEF_DARK: Required<NonNullable<StaticNoiseProps["dark"]>> = {
   enabled: true,
-  color: [9/255, 9/255, 8/255] as Triplet,
+  color: [5/255, 5/255, 5/255] as Triplet,
   density: 1,
-  alpha: 1,
-  edge: 0.5,
+  alpha: 0.99,
+  edge: 0.4,
   radiusFactor: 0.5,
   sizes: {
-    sm: [2.5, 3.0, 4.5],
+    sm: [2.3, 2.8, 4.2],
     md: [2.5, 3.0, 4.5],
-    lg: [2.5, 3.0, 4.5],
+    lg: [2.7, 3.2, 4.8],
   },
 };
 const DEF_LIGHT: Required<NonNullable<StaticNoiseProps["light"]>> = {
