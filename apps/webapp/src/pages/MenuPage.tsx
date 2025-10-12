@@ -23,40 +23,40 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
               <img src={CrossSvg} draggable={false} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </button>
           ) : (
-            <a href={BASE_LANDING_URL}>
+            <a href={BASE_LANDING_URL} className="menu-home-link" id="beta-menu-home-link">
               <img src={CrossSvg} draggable={false} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           )}
         </div>
         <div className="flex flex-col gap-[var(--px-30)] items-center">
           <div className="">
-            <a href={BASE_LANDING_URL}>
+            <a href={BASE_LANDING_URL} className="menu-logo-link" id="beta-menu-logo-link">
               <img src={RIconsFooter} draggable={false} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           </div>
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/about`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-about-link">
             [About Us]
           </div>
-          <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-feedback-link">
             [Feedback]
           </div>
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/waitlist`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-waitlist-link">
             [Waitlist]
           </div>
-          <a href={`https://resomix.com/blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          <a href={`https://resomix.com/blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-journal-link">
             [Journal]
           </a>
           <div className="">
             <img src={MenuSeparator} draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
           <div className="w-full">
-            <ButtonHeavyRight className="w-[var(--px-276)]" text="Upload Your Track" onClick={() => {
+            <ButtonHeavyRight className="w-[var(--px-276)] cta-button primary" text="Upload Your Track" onClick={() => {
               window.location.href = BASE_BETA_URL
-            }} />
+            }} id="beta-menu-upload-button" />
           </div>
         </div>
         <div className="text-[length:var(--px-30)] font-normal font-benzin uppercase text-start">

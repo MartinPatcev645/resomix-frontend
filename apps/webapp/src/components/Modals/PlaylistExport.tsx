@@ -122,8 +122,9 @@ export const PlaylistExport: React.FC<PlaylistExportProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop with blur effect */}
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
                 onClick={onClose}
+                id="playlist-export-backdrop"
             />
 
             {/* Modal content */}
@@ -156,8 +157,10 @@ export const PlaylistExport: React.FC<PlaylistExportProps> = ({
                         text={isReady ? buttonText : "Preparing..."}
                         onClick={handleDownload}
                         disabled={!isReady}
+                        className="cta-button primary"
+                        id="playlist-export-download-button"
                     />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
+                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-export-cancel-button" />
                 </div>
             </div>
         </div>

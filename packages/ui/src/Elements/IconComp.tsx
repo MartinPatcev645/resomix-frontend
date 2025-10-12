@@ -11,6 +11,7 @@ interface IconCompProps {
   strokeColor?: string;
   className?: string;
   onClick?: () => void;
+  id?: string;
 }
 
 export const IconComp: React.FC<IconCompProps> = ({ 
@@ -23,6 +24,7 @@ export const IconComp: React.FC<IconCompProps> = ({
   strokeColor = "stroke-[var(--color-primary)]",
   className = "",
   onClick = () => {},
+  id,
 }) => {
   const containerStyle = {
     width: width,
@@ -34,6 +36,7 @@ export const IconComp: React.FC<IconCompProps> = ({
       className={`relative cursor-pointer ${backgroundColor} rounded-2xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] ${borderColor} group-hover:outline-[var(--color-primary-hover)] hover:bg-[var(--color-primary-hover)] transition-colors overflow-hidden ${padding} ${className}`}
       style={containerStyle}
       onClick={onClick}
+      id={id}
     >
       {React.cloneElement(svg as React.ReactElement<any>, {
         width: width,

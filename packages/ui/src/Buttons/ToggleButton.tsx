@@ -7,6 +7,7 @@ interface ToggleButtonProps {
   isOn?: boolean; // if provided, component becomes controlled
   className?: string;
   customWidth?: string;
+  id?: string;
 }
 
 export const ToggleButton: React.FC<ToggleButtonProps> = ({
@@ -16,6 +17,7 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
   isOn,
   className,
   customWidth,
+  id,
 }) => {
   const isControlled = typeof isOn === "boolean";
   const [internalOn, setInternalOn] = useState<boolean>(false);
@@ -78,7 +80,7 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
   }, [value]);
 
   return (
-    <div className="flex justify-center items-center cursor-pointer group" id={`${text}-toggle-button`} onClick={handleToggle}>
+    <div className="flex justify-center items-center cursor-pointer group" id={id} onClick={handleToggle}>
       <div
         className={`h-[var(--px-20)] lg:h-[var(--px-25)] pl-[var(--px-5)] lg:pl-[var(--px-6)] py-[var(--px-8)] rounded-3xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-12)] bg-transparent ${className ? className : ""} ${customWidth ? customWidth : "min-w-[var(--px-160)]"}`}
       >

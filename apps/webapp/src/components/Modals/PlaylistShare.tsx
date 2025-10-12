@@ -175,8 +175,9 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
             onClick={onClose}
+            id="playlist-share-backdrop"
           />
 
           <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
@@ -192,7 +193,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                   </div>
               </div>
 
-              <div onClick={handlePrimaryAction} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)]'>
+              <div onClick={handlePrimaryAction} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link' id="playlist-share-link">
                   <img src={BrakesSvg} draggable={false}  alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
                   {link || 'Generating link...'}
               </div>
@@ -202,8 +203,8 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
               </div>
 
               <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                  <ButtonSleek text={buttonText} onClick={handlePrimaryAction} />
-                  <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
+                  <ButtonSleek text={buttonText} onClick={handlePrimaryAction} className="cta-button primary" id="playlist-share-action-button" />
+                  <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-share-cancel-button" />
               </div>
           </div>
       </div>

@@ -62,7 +62,7 @@ const PlaylistTable: React.FC = () => {
                                 {track.rank}
                             </div>
                             <IconComp
-                                className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)]"
+                                className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)] playlist-play-button"
                                 svg={<img
                                     src={currentTrackId === track.id && isPlaying ? PauseSvg : PlaySvg}
                                     alt={currentTrackId === track.id && isPlaying ? "Pause" : "Play"}
@@ -70,6 +70,7 @@ const PlaylistTable: React.FC = () => {
                                 />}
                                 padding='py-[var(--px-3)] px-[var(--px-4)]'
                                 onClick={() => handlePlayPause(track.id)}
+                                id={`playlist-table-play-button-${track.id}`}
                             />
                             <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]">
                                 {track.artist}
@@ -111,7 +112,8 @@ const PlaylistTable: React.FC = () => {
                                                         if (upSelected) return;
                                                         handleTrackRating(track.id, 1);
                                                     }}
-                                                    className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                    className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
+                                                    id={`playlist-table-thumb-up-${track.id}`}
                                                 />
                                             </Tooltip>
                                             <Tooltip message="No, Not Similar to Input Track!">
@@ -120,16 +122,17 @@ const PlaylistTable: React.FC = () => {
                                                         if (downSelected) return;
                                                         handleTrackRating(track.id, 0);
                                                     }}
-                                                    className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                    className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
+                                                    id={`playlist-table-thumb-down-${track.id}`}
                                                 />
                                             </Tooltip>
                                         </>
                                     );
                                 })()}
                             </div>
-                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer" onClick={() => {
+                            <div className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer playlist-sonic-discovery-button" onClick={() => {
                                 window.location.href = `${BASE_BETA_URL}/?id=${track.id}`;
-                            }}>
+                            }} id={`playlist-table-sonic-discovery-${track.id}`}>
                                 <Tooltip message="Find Similarity For this Track!">
                                     <img src={SonicDiscoverySvg} draggable={false} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
                                 </Tooltip>

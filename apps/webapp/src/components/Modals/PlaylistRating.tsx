@@ -100,8 +100,9 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop with blur effect */}
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
                 onClick={onClose}
+                id="playlist-rating-backdrop"
             />
 
             {/* Modal content */}
@@ -114,10 +115,11 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
 
                 <div className='flex items-center w-full justify-evenly mb-[var(--px-10)]'>
                     <div
-                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
+                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
                         onClick={() => handleRatingSelect('bad')}
                         onMouseEnter={() => setHoveredRating('bad')}
                         onMouseLeave={() => setHoveredRating(null)}
+                        id="playlist-rating-bad"
                     >
                         <BadIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
@@ -129,10 +131,11 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                         </div>
                     </div>
                     <div
-                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
+                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
                         onClick={() => handleRatingSelect('fine')}
                         onMouseEnter={() => setHoveredRating('fine')}
                         onMouseLeave={() => setHoveredRating(null)}
+                        id="playlist-rating-fine"
                     >
                         <FineIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
@@ -144,10 +147,11 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                         </div>
                     </div>
                     <div
-                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
+                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
                         onClick={() => handleRatingSelect('good')}
                         onMouseEnter={() => setHoveredRating('good')}
                         onMouseLeave={() => setHoveredRating(null)}
+                        id="playlist-rating-good"
                     >
                         <GoodIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
@@ -159,10 +163,11 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                         </div>
                     </div>
                     <div
-                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer'
+                        className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
                         onClick={() => handleRatingSelect('fire')}
                         onMouseEnter={() => setHoveredRating('fire')}
                         onMouseLeave={() => setHoveredRating(null)}
+                        id="playlist-rating-fire"
                     >
                         <FireIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
@@ -189,8 +194,8 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                 </div>
 
                 <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text={submitting ? 'Submitting...' : 'Submit Feedback'} onClick={handleSubmit} />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
+                    <ButtonSleek text={submitting ? 'Submitting...' : 'Submit Feedback'} onClick={handleSubmit} className="cta-button primary" id="playlist-rating-submit-button" />
+                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-rating-cancel-button" />
                 </div>
             </div>
         </div>

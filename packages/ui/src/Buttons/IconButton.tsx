@@ -10,10 +10,11 @@ interface IconButtonProps {
   mobile?: boolean;
   icon: React.ReactNode;
   hoverIcon?: React.ReactNode;
-}
+  id?: string;
+  }
 
-export const IconButton: React.FC<IconButtonProps> = ({ text, onClick, transparent = false, className, customWidth, icon, hoverIcon, mobile = false, disabled = false }) => (
-  <div className={`flex justify-center items-center group ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={disabled ? undefined : onClick}>
+export const IconButton: React.FC<IconButtonProps> = ({ text, onClick, transparent = false, className, customWidth, icon, hoverIcon, mobile = false, disabled = false, id }) => (
+  <div className={`flex justify-center items-center group ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={disabled ? undefined : onClick} id={id}>
     <div
       className={`rounded-3xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors inline-flex justify-center items-center gap-[var(--px-8)] ${transparent
         ? 'bg-transparent group-hover:bg-[var(--color-primary-hover)]'

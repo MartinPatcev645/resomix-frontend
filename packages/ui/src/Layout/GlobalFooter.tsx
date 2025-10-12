@@ -19,7 +19,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
       <div className="flex flex-col gap-[var(--px-130)]">
         <div className="flex flex-col px-[var(--px-65)] min-h-[var(--px-129)]">
           <div className="flex w-full justify-start">
-            <a href={baseUrl} className="cursor-default">
+            <a href={baseUrl} className="cursor-default footer-logo-link" id="footer-logo-link">
               {logo}
             </a>
           </div>
@@ -73,15 +73,15 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             />
           </div>
           <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
-            <a href={`${baseUrl}/terms`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+            <a href={`${baseUrl}/terms`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-terms-link">
               legal.terms(): open('/terms')
             </a>
             <br />
-            <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+            <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-privacy-link">
               privacy_policy(): fetch('/privacy')
             </a>
             <br />
-            <a href={`${baseUrl}/contact`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity">
+            <a href={`${baseUrl}/contact`} className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-contact-link">
               contact_us(): fetch('/contact')
             </a>
           </div>
