@@ -281,7 +281,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
-    //resize();
+    resize();
 
     // --- Render loop --------------------------------------------------------
     let raf = 0;
