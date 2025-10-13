@@ -49,4 +49,4 @@ export function StatusModal({ type, visible, title, message, onClose }: StatusMo
       </div>
     </ModalComponent>
   )
-} 
+}

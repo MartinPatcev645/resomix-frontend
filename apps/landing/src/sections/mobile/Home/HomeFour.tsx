@@ -14,7 +14,7 @@ const HomeFour: React.FC = () => {
         <div className="w-full flex justify-center items-center">
           <ButtonHeavyRight text="Our Mission" onClick={() => {
             window.location.href = BASE_LANDING_URL + "/about"
-          }} link_arrow={true} />
+          }} link_arrow={true} className="cta-button secondary" id="home-four-mission-button" />
         </div>
       </div>
       <div className='flex flex-col gap-[var(--px-40)]'>
@@ -66,7 +66,7 @@ const HomeFour: React.FC = () => {
           <div className="w-full flex justify-center items-center">
             <ButtonHeavyRight text="Get your first match free" onClick={() => {
               window.location.href = BASE_BETA_URL
-            }} link_arrow={true} />
+            }} link_arrow={true} className="cta-button primary" id="home-four-get-match-button" />
           </div>
         </div>
 

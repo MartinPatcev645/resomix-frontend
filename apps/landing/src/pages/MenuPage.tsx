@@ -21,44 +21,44 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
       <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)]">
         <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
           {onClose ? (
-            <button onClick={onClose} aria-label="Close menu">
+            <button onClick={onClose} aria-label="Close menu" className="menu-close-button" id="menu-close-button">
               <img src={CrossSvg} alt="Cross" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </button>
           ) : (
-            <a href={BASE_LANDING_URL}>
+            <a href={BASE_LANDING_URL} className="menu-home-link" id="menu-home-link">
               <img src={CrossSvg} alt="Cross" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           )}
         </div>
         <div className="flex flex-col gap-[var(--px-30)] items-center">
           <div className="">
-            <a href={BASE_LANDING_URL}>
+            <a href={BASE_LANDING_URL} className="menu-logo-link" id="menu-logo-link">
               <img src={RIconsFooter} draggable={false} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           </div>
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/about`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-about-link">
             [{t('general.menu.about_us')}]
           </div>
-          <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-feedback-link">
             [{t('general.menu.feedback')}]
           </div>
-          <a href={`https://resomix.com/blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          <a href={`https://resomix.com/blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-journal-link">
             [{t('general.menu.journal')}]
           </a>
           <div onClick={() => {
             window.location.href = `${BASE_LANDING_URL}/waitlist`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer">
+          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-waitlist-link">
             [{t('general.menu.waitlist')}]
           </div>
           <div className="">
             <img src={MenuSeparator} draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
           <div className="w-full">
-            <ButtonHeavyRight className="w-[var(--px-276)]" text={t('general.menu.upload_your_track')} onClick={() => {
+            <ButtonHeavyRight className="w-[var(--px-276)] cta-button primary" text={t('general.menu.upload_your_track')} onClick={() => {
               window.location.href = BASE_BETA_URL
-            }} />
+            }} id="menu-upload-button" />
           </div>
         </div>
         <div className="text-[length:var(--px-30)] font-normal font-benzin uppercase text-start" dangerouslySetInnerHTML={{ __html: t('general.menu.join_the_resomix_universe') }}>

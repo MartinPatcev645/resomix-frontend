@@ -62,15 +62,16 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                             <img src={searchIcon} draggable={false} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                         <div 
-                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline"
+                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline search-component-upload-button"
                             onClick={onUploadClick}
+                            id="search-component-upload-button"
                         >
                             <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
                             <img src={uploadIcon} draggable={false} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
                         </div>
                     </div>
                     <div className="m-[var(--px-30)]">
-                        <div className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300">
+                        <div className="w-full h-[var(--px-265)] border border-dotted border-slate-300">
                             <div className="w-full flex justify-end p-[var(--px-12)] absolute right-[var(--px-24)]">
                                 {/* Search Mode Dropdown */}
                                 <div className="flex items-center gap-[var(--px-6)]">

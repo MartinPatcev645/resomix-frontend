@@ -7,10 +7,11 @@ interface ButtonHeavyLeftProps {
   transparent?: boolean;
   link_arrow?: boolean;
   className?: string;
+  id?: string;
 }
 
-export const ButtonHeavyLeft: React.FC<ButtonHeavyLeftProps> = ({ text, onClick, transparent = false, link_arrow = false, className }) => (
-  <div className='flex justify-center items-center cursor-pointer group' onClick={onClick}>
+export const ButtonHeavyLeft: React.FC<ButtonHeavyLeftProps> = ({ text, onClick, transparent = false, link_arrow = false, className, id }) => (
+  <div className='flex justify-center items-center cursor-pointer group' onClick={onClick} id={id}>
     <IconComp
       className="mr-[var(--px-1)]"
       svg={

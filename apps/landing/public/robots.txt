@@ -1,48 +1,29 @@
-# Robots.txt for resomix.com
-# This file tells search engine crawlers which URLs they can access on your site.
+# -----------------------------------------------------
+# robots.txt for Resomix (https://resomix.com)
+# Purpose: Allow full site crawling except dev artifacts
+# -----------------------------------------------------
 
 User-agent: *
+# Allow all main pages and assets
 Allow: /
 
-# Allow all major search engines to crawl the site
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Slurp
-Allow: /
-
-User-agent: DuckDuckBot
-Allow: /
-
-User-agent: Baiduspider
-Allow: /
-
-User-agent: YandexBot
-Allow: /
-
-# Disallow crawling of development/build files and directories
+# Block internal or build system folders
 Disallow: /node_modules/
 Disallow: /dist/
 Disallow: /.git/
 Disallow: /.turbo/
 Disallow: /src/
-Disallow: *.map
-Disallow: /vite.config.*
-Disallow: /tsconfig.*
-Disallow: /package.json
-Disallow: /pnpm-lock.yaml
+Disallow: /*.map$
 
-# Allow crawling of public assets
+# Optional: Block query parameter crawls if not meaningful
+# Disallow: /*?*
+
+# Explicitly allow static assets
 Allow: /fonts/
+Allow: /images/
 Allow: /logo.png
-Allow: /*.css
-Allow: /*.js
+Allow: /*.css$
+Allow: /*.js$
 
-# Sitemap location (will be created)
+# Reference sitemap for discoverability
 Sitemap: https://resomix.com/sitemap.xml
-
-# Crawl delay (optional - helps prevent server overload)
-Crawl-delay: 1

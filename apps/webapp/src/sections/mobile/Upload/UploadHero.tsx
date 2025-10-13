@@ -35,21 +35,24 @@ const UploadHero: React.FC = () => {
       <div className="flex gap-[var(--px-4)] relative z-15">
         <IconComp
           svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={FbSvg} alt="Fb" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
           padding=""
           onClick={() => window.open(FACEBOOK_URL, "_blank")}
+          id="upload-hero-facebook-icon"
         />
         <IconComp
           svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={InstaSvg} alt="Insta" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
           padding=""
           onClick={() => window.open(INSTAGRAM_URL, "_blank")}
+          id="upload-hero-instagram-icon"
         />
         <IconComp
           svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={XSvg} alt="X" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
           padding=""
           onClick={() => window.open(TWITTER_URL, "_blank")}
+          id="upload-hero-twitter-icon"
         />
       </div>
     </div>

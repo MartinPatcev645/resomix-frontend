@@ -96,8 +96,9 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop with blur effect */}
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
                 onClick={onClose}
+                id="playlist-rename-backdrop"
             />
 
             {/* Modal content */}
@@ -117,8 +118,8 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
                 </div>
 
                 <div className="flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text={submitting ? 'Renaming...' : 'Rename'} onClick={handleRename} />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} />
+                    <ButtonSleek text={submitting ? 'Renaming...' : 'Rename'} onClick={handleRename} className="cta-button primary" id="playlist-rename-submit-button" />
+                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-rename-cancel-button" />
                 </div>
             </div>
         </div>

@@ -134,14 +134,16 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                                             if (upSelected) return;
                                                             handleTrackRating(1);
                                                         }}
-                                                        className={`w-[var(--px-26)] h-[var(--px-26)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                        className={`w-[var(--px-26)] h-[var(--px-26)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
+                                                        id={`playlist-table-thumb-up-${trackId}`}
                                                     />
                                                     <ThumbIcon
                                                         onClick={() => {
                                                             if (downSelected) return;
                                                             handleTrackRating(0);
                                                         }}
-                                                        className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer`}
+                                                        className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
+                                                        id={`playlist-table-thumb-down-${trackId}`}
                                                     />
                                                 </>
                                             );
@@ -187,19 +189,19 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         {/* Hide discovery button if this is the input/reference track */}
                         {!isInput && (
                         <div className="w-full">
-                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
+                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
                                 window.location.href = `${BASE_BETA_URL}/?id=${trackId}`;
-                            }} />
+                            }} id={`playlist-table-sonic-discovery-${trackId}`} />
                         </div>
                         )}
                         {/* Hide Export button if this is not the input/reference track */}
                         {isInput && (
                         <div className="w-full">
-                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} />
+                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                         </div>
                         )}
                         <div className="w-full">
-                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)]" text="Close" customWidth="w-full" onClick={onClose || (() => {})} />
+                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] menu-link" text="Close" customWidth="w-full" onClick={onClose || (() => {})} id={`beta-menu-close-button`} />
                         </div>
                     </div>
                 </div>

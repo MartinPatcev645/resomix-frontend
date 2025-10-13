@@ -50,7 +50,8 @@ const UploadOne: React.FC = () => {
                         <select
                             value={topSk}
                             onChange={handleCountChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none upload-settings-select"
+                            id="upload-results-count-select"
                         >
                             <option value="10">10 tracks</option>
                             <option value="20">20 tracks</option>

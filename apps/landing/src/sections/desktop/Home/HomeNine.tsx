@@ -14,7 +14,7 @@ const HomeNine: React.FC = () => {
         <div className="flex justify-center w-full min-w-[var(--px-204-5)]">
           <ButtonHeavyRight text="Upload Your Track" onClick={() => {
             window.location.href = BASE_BETA_URL
-          }} link_arrow={true} />
+          }} link_arrow={true} className="cta-button primary" id="home-nine-upload-button" />
         </div>
       </div>
       <div className="absolute top-[var(--px-690)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">

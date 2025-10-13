@@ -3,7 +3,7 @@
 /* TEAM */
   Developer: Resomix Development Team
   Site: https://resomix.com
-  Location: Global
+  Location: Greece
 
 /* THANKS */
   React: https://reactjs.org

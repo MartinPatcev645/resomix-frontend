@@ -56,7 +56,7 @@ const AboutOne: React.FC = () => {
                 <div className="w-full flex justify-center items-center">
                     <ButtonHeavyRight text="Find the Perfect Sonic Match" onClick={() => {
                         window.location.href = BASE_BETA_URL
-                    }} transparent={true} link_arrow={true} />
+                    }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-one-find-perfect-button" />
                 </div>
             </div>
 

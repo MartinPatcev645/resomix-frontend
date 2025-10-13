@@ -1,0 +1,27 @@
+# -----------------------------------------------------
+# robots.txt for Resomix Beta (https://beta.resomix.com)
+# Purpose: Allow crawlers to index homepage only
+# -----------------------------------------------------
+
+User-agent: *
+# Allow homepage
+Allow: /
+
+# Disallow all subpages and query variations
+Disallow: /*/
+Disallow: /*?
+Disallow: /*.map$
+Disallow: /node_modules/
+Disallow: /dist/
+Disallow: /.git/
+Disallow: /.turbo/
+Disallow: /src/
+
+# Optional: Allow essential static assets for rendering
+Allow: /fonts/
+Allow: /images/
+Allow: /*.css$
+Allow: /*.js$
+
+# Sitemap reference (optional, keep if you maintain one)
+Sitemap: https://beta.resomix.com/sitemap.xml

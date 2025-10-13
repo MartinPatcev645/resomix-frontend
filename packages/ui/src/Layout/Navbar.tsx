@@ -22,9 +22,9 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         style={{
           color: "var(--color-text-secondary)",
         }}>
-        <LinkButton text="About Us" path={`${baseUrl}/about`} />
-        <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} />
-        <LinkButton text="Journal" path={`https://resomix.com/blog`} newTab={true} />
+        <LinkButton text="About Us" path={`${baseUrl}/about`} className="nav-link" id="navbar-about-link" />
+        <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} className="nav-link" id="navbar-waitlist-link" />
+        <LinkButton text="Journal" path={`https://resomix.com/blog`} newTab={true} className="nav-link" id="navbar-journal-link" />
       </div>
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
         {logo}
@@ -32,16 +32,16 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
       {(mode === 'home' || mode === 'contact' || mode === 'error' || mode === '404') && (
         <ButtonHeavyRight text="Upload Your Track" onClick={() => {
           window.location.href = baseBetaUrl
-        }} />
+        }} className="cta-button primary" id="navbar-upload-button" />
       )}
       {(mode === 'upload' || mode === 'terms' || mode === 'privacy') && (
         <ButtonHeavyLeft text="Why Resomix?" onClick={() => {
           window.location.href = `${baseUrl}/about`
-        }} transparent={true} link_arrow={true} />
+        }} transparent={true} link_arrow={true} className="cta-button secondary" id="navbar-why-resomix-button" />
       )}
       {mode === 'playlist' && (
         <div className="flex justify-center items-center">
-          <ButtonSleek text="Feedback" transparent={true} customWidth="min-w-[var(--px-120)]" onClick={showFeedbackForm} />
+          <ButtonSleek text="Feedback" transparent={true} customWidth="min-w-[var(--px-120)]" onClick={showFeedbackForm} className="feedback-button" id="navbar-feedback-button" />
         </div>
       )}
     </nav>

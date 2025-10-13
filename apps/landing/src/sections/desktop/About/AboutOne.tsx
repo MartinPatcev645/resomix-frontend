@@ -50,7 +50,7 @@ const AboutOne: React.FC = () => {
                 <div className="w-full flex justify-center items-center">
                     <ButtonHeavyRight text={t('about.about_one.cta_find_perfect')} onClick={() => {
                         window.location.href = BASE_BETA_URL
-                    }} transparent={true} link_arrow={true} />
+                    }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-one-find-perfect-button" />
                 </div>
             </div>
 

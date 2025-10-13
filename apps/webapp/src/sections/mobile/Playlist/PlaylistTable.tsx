@@ -29,7 +29,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             {tracks.map((track) => (
                 <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative">
                     <div className="flex flex-col w-full">
-                        <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)]">
+                        <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)] playlist-play-button" id={`playlist-table-play-button-${track.id}`}>
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <div className="w-[var(--px-36)] h-[var(--px-36)] m-[var(--px-2)] flex items-center justify-center border-3 rounded-md border-[var(--color-light-theme)] relative z-20">
                                     <span className="text-[length:var(--px-15)] font-fira font-light text-[var(--color-primary)] relative z-0">
@@ -106,7 +106,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         track.label,
                         track.duration,
                         track.score,
-                        false)} className="absolute right-[var(--px-8)] top-[var(--px-8)] select-none text-[#5C5C5C]">
+                        false)} className="absolute right-[var(--px-8)] top-[var(--px-8)] select-none text-[#5C5C5C] playlist-more-button" id={`playlist-table-more-${track.id}`}>
                         <img src={MoreSvg} draggable={false} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
                     </div>
                 </div>

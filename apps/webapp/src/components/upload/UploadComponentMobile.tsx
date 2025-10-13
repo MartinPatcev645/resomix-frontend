@@ -79,7 +79,7 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
                                 <div className="text-[length:var(--px-12)] opacity-70 font-fira font-light my-[var(--px-20)] text-center">
                                     {/* or */}
                                 </div>
-                                <ButtonSleek className="w-[var(--px-250)]" text="Upload Your Audio" onClick={openFilePicker} />
+                                <ButtonSleek className="w-[var(--px-250)] upload-button" text="Upload Your Audio" onClick={openFilePicker} id="upload-component-upload-button" />
                             </div>
                         </div>
                     </div>

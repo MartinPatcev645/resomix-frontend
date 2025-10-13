@@ -7,10 +7,11 @@ interface ButtonSleekProps {
   className?: string;
   disabled?: boolean;
   customWidth?: string;
+  id?: string;
 }
 
-export const ButtonSleek: React.FC<ButtonSleekProps> = ({ text, onClick, transparent = false, className, customWidth, disabled = false }) => (
-  <div className={`flex justify-center items-center group ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={disabled ? undefined : onClick}>
+export const ButtonSleek: React.FC<ButtonSleekProps> = ({ text, onClick, transparent = false, className, customWidth, disabled = false, id }) => (
+  <div className={`flex justify-center items-center group ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={disabled ? undefined : onClick} id={id}>
     <div
       className={`h-[var(--px-36)] px-[var(--px-20)] py-[var(--px-8)] rounded-3xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] outline-[var(--color-primary)] group-hover:outline-[var(--color-primary-hover)] transition-colors flex gap-[var(--px-8)] ${transparent
         ? 'bg-transparent group-hover:bg-[var(--color-primary-hover)]'

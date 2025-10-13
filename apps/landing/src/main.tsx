@@ -10,18 +10,10 @@ import './i18n.ts';
 import { CONFIG } from '@resomix/config'
 void CONFIG;
 
-// PostHog
-import { PostHogProvider } from 'posthog-js/react'
-const options = {
-  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={options}>
-        <App />
-      </PostHogProvider>
+      <App />
     </BrowserRouter>
   </StrictMode>,
 )

@@ -66,7 +66,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                     </div>
                     <div className="m-[var(--px-30)]">
                         <div
-                            className="w-full h-[var(--px-265)] bg-[var(--color-primary-background)] border border-dotted border-slate-300"
+                            className="w-full h-[var(--px-265)] border border-dotted border-slate-300"
                             onDrop={onDrop}
                             onDragOver={onDragOver}
                         >
@@ -83,7 +83,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                                 <div className="text-[length:var(--px-9)] font-fira font-light my-[var(--px-20)] text-center">
                                     {/* or */}
                                 </div>
-                                <ButtonSleek text="Upload Your Audio" onClick={openFilePicker} />
+                                <ButtonSleek text="Upload Your Audio" onClick={openFilePicker} id="upload-component-upload-button" className="upload-button" />
                             </div>
                         </div>
                     </div>

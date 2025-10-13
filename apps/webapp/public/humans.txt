@@ -1,0 +1,29 @@
+# humanstxt.org
+
+/* TEAM */
+  Developer: Resomix Beta Development Team
+  Site: https://beta.resomix.com
+  Location: Greece
+
+/* THANKS */
+  React: https://reactjs.org
+  Vite: https://vitejs.dev
+  Three.js: https://threejs.org
+  Tailwind CSS: https://tailwindcss.com
+
+/* SITE */
+  Environment: Beta
+  Last update: 2025/10/13
+  Language: English
+  Doctype: HTML5
+  IDE: Visual Studio Code
+  Standards: HTML5, CSS3, ES6+
+  Components: React, TypeScript
+
+/* DESCRIPTION */
+  Resomix Beta is the live testing environment for Resomix — a deep learning platform helping DJs discover tracks by feeling.
+
+/* CONTACT */
+  Website: https://resomix.com
+  Email: support@resomix.com
+  Social: @resomix

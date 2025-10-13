@@ -37,6 +37,7 @@ export const PopularComponentMobile: React.FC<{ onTrackSelect?: (track: SearchRe
                         {popularTracks.map((track) => (
                             <div
                                 key={track.id}
+                                id={`popular-track-${track.id}`}
                                 className="group w-full h-[var(--px-70)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-auto flex justify-between items-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] transition-colors"
                                 onClick={() => onTrackSelect?.(track)}
                             >

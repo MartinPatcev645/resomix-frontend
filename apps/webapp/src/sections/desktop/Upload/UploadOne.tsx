@@ -33,7 +33,7 @@ const UploadOne: React.FC = () => {
 
     return (
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
-            <div className="w-[var(--px-880)] h-[var(--px-61)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
+            <div className="w-[var(--px-880)] h-[var(--px-61)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
                 <div className="">
                     <div className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
                         Set Your Depth
@@ -58,7 +58,8 @@ const UploadOne: React.FC = () => {
                         <select 
                             value={topSk}
                             onChange={handleCountChange}
-                            className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]"
+                            className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)] upload-settings-select"
+                            id="upload-results-count-select"
                         >
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="10">10 tracks</option>
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="20">20 tracks</option>

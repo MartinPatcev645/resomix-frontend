@@ -68,8 +68,9 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                                     href={`${BASE_LANDING_URL}/privacy`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="underline hover:font-normal"
+                                    className="underline hover:font-normal footer-link"
                                     onClick={(e) => e.stopPropagation()}
+                                    id="terms-privacy-link"
                                 >
                                     Privacy Policy
                                 </a>
@@ -98,8 +99,9 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                                     href={`${BASE_LANDING_URL}/terms`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="underline hover:font-normal"
+                                    className="underline hover:font-normal footer-link"
                                     onClick={(e) => e.stopPropagation()}
+                                    id="terms-terms-link"
                                 >
                                     Terms of Service
                                 </a>
@@ -114,6 +116,8 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                         text="Accept Terms" 
                         onClick={handleAccept}
                         disabled={!canAccept}
+                        className="cta-button primary"
+                        id="terms-accept-button"
                     />
                     <div className="text-[length:var(--px-9)] font-light font-fira leading-[var(--px-12)] opacity-60 text-center">
                         Questions? Contact us at{" "}
@@ -121,8 +125,9 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                             href={`${BASE_BETA_URL}/contact`}
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="underline hover:font-normal"
+                            className="underline hover:font-normal footer-link"
                             onClick={(e) => e.stopPropagation()}
+                            id="terms-contact-link"
                         >
                             resomix.com/contact
                         </a>

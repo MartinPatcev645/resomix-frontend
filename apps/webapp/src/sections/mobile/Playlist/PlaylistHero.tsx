@@ -68,7 +68,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex items-center hover:cursor-pointer ml-[var(--px-10)]">
+            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex items-center hover:cursor-pointer ml-[var(--px-10)] playlist-nav-link" id="playlist-hero-back-link">
               <img src={AngleLeftSvg} draggable={false} alt="Angle Left" className="w-[var(--px-30)] h-[var(--px-30)]" />
             </div>
             <div className="flex flex-col items-center gap-[var(--px-15)]">
@@ -81,6 +81,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   onClick={() => setShowRename(true)}
                   icon={<img src={RenameSvg} draggable={false} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  className="playlist-action-button"
+                  id="playlist-hero-rename-button"
                 />
                 <ToggleButton
                   text="Autoplay"
@@ -98,6 +100,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   onClick={() => setShowRating(true)}
                   icon={<img src={StarSvg} draggable={false}  alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={StarBlackSvg} alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  className="playlist-rating-button"
+                  id="playlist-hero-rating-button"
                 />
                 <IconButton
                   text="Share"
@@ -107,6 +111,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   onClick={() => setShowShare(true)}
                   icon={<img src={ShareSvg} draggable={false} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={ShareBlackSvg} draggable={false} alt="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
+                  className="playlist-action-button"
+                  id="playlist-hero-share-button"
                 />
               </div>
             </div>
@@ -154,7 +160,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
                       <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
-                      <img onClick={() => setShowMeta((v) => !v)} draggable={false} src={InfoSvg} alt="Info" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)] ml-auto hover:cursor-pointer" />
+                      <img onClick={() => setShowMeta((v) => !v)} draggable={false} src={InfoSvg} alt="Info" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)] ml-auto hover:cursor-pointer playlist-meta-toggle" id="playlist-hero-meta-toggle" />
                     </div>
                   </div>
                 </div>
@@ -182,7 +188,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 playlistData?.queried_track.duration ?? 0,
                 null,
                 true
-              )} className="cursor-pointer">
+              )} className="cursor-pointer playlist-more-button" id={`playlist-hero-more-${playlistData?.queried_track.id || ''}`}>
                 <img src={MoreSvg} draggable={false} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
               </div>
             </div>

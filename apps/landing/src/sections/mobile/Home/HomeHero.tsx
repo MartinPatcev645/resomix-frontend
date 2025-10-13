@@ -60,26 +60,29 @@ const HomeHero: React.FC = () => (
         <div className="w-full flex justify-center items-center mb-[var(--px-20)]">
           <ButtonHeavyRight text="Start Your Sonic Discovery" onClick={() => {
             window.location.href = BASE_BETA_URL
-          }} />
+          }} className="cta-button primary" id="home-hero-upload-button" />
         </div>
         <div className="flex gap-[var(--px-4)] mx-auto relative z-15 my-[var(--px-50)]">
           <IconComp
             svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={FbSvg} alt="Fb" />}
-            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
             padding=""
             onClick={() => window.open(FACEBOOK_URL, "_blank")}
+            id="home-hero-facebook-icon"
           />
           <IconComp
             svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={InstaSvg} alt="Insta" />}
-            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
             padding=""
             onClick={() => window.open(INSTAGRAM_URL, "_blank")}
+            id="home-hero-instagram-icon"
           />
           <IconComp
             svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" draggable={false} src={XSvg} alt="X" />}
-            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)]"
+            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
             padding=""
             onClick={() => window.open(TWITTER_URL, "_blank")}
+            id="home-hero-twitter-icon"
           />
         </div>
         {/* Text below the SVG clip path */}

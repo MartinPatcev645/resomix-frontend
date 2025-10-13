@@ -8,6 +8,7 @@ interface InfoPageProps {
   mode: string;
 }
 
+
 export default function InfoPage({ mode }: InfoPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -15,7 +16,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
     <>
       <div className="hidden lg:block">
         <Navbar
-          logo={<a href={BASE_BETA_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          logo={<a href={BASE_BETA_URL} aria-label="Resomix beta home" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
           mode={mode}
           baseUrl={BASE_LANDING_URL}
           baseBetaUrl={BASE_BETA_URL}
@@ -24,8 +25,8 @@ export default function InfoPage({ mode }: InfoPageProps) {
       </div>
       <div className="block lg:hidden">
         <MobileNavbar
-          logo={<a href="/" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-          menuIcon={<button onClick={() => setIsMenuOpen(true)} className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
+          logo={<a href="/" aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+          menuIcon={<button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
           customClass="flex justify-between items-center align-center z-50 relative"
         />
       </div>

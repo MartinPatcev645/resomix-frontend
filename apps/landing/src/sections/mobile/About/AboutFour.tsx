@@ -74,7 +74,7 @@ const AboutFour: React.FC = () => {
             <div className="w-full flex justify-center items-center">
                 <ButtonHeavyRight text="Try it Now" onClick={() => {
                     window.location.href = BASE_BETA_URL
-                }} transparent={true} link_arrow={true} />
+                }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-four-try-now-button" />
             </div>
 
             {/* About 2 B */}
@@ -88,7 +88,8 @@ const AboutFour: React.FC = () => {
                     </div>
                     <a
                       href="mailto:support@resomix.com"
-                      className="text-[length:var(--px-14)] font-helvetica leading-[var(--px-16)] tracking-[var(--px-1)] underline hover:cursor-pointer text-right w-full mt-[var(--px-10)]"
+                      className="text-[length:var(--px-14)] font-helvetica leading-[var(--px-16)] tracking-[var(--px-1)] underline hover:cursor-pointer text-right w-full mt-[var(--px-10)] contact-link"
+                      id="about-four-contact-email"
                     >
                         Reach us anytime:<br />support@resomix.com
                     </a>

@@ -73,8 +73,9 @@ export const SearchDropdown: React.FC<SearchDropdownProps> = ({ results, show, i
         <ul className="max-h-[var(--px-300)] overflow-y-auto divide-y divide-[var(--opacity-10)]">
           {results.map((item) => (
             <li
+              id={`search-dropdown-item-${item.id}`}
               key={item.id}
-              className="flex justify-between items-center py-[var(--px-12)] px-[var(--px-19-259)] hover:bg-[var(--color-primary-hover)] cursor-pointer select-none shadow-md"
+              className="flex justify-between items-center py-[var(--px-12)] px-[var(--px-19-259)] hover:bg-[var(--color-primary-hover)] cursor-pointer select-none shadow-md search-dropdown-item"
               onClick={() => onSelect?.(item)}
             >
               <div className="flex items-center">

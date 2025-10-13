@@ -18,7 +18,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
         </div>
         <div className="flex flex-col items-start px-[var(--px-10)] min-h-[var(--px-129)] mt-[var(--px-40)]">
           <div className="flex w-full justify-start">
-            <a href={baseUrl} className="cursor-default">
+            <a href={baseUrl} aria-label="Resomix home" className="cursor-default footer-logo-link" id="footer-logo-link">
               {logo}
             </a>
           </div>
@@ -50,15 +50,15 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
         </div>
         <div className="flex flex-col items-center text-center justify-between">
           <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)] items-center my-[var(--px-60)]">
-            <a href={`${baseUrl}/terms`} className="hover:underline decoration-[var(--px-0-5)]">
+            <a href={`${baseUrl}/terms`} className="hover:underline decoration-[var(--px-0-5)] footer-link" id="footer-terms-link">
               legal.terms()
             </a>
             <br />
-            <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)]">
+            <a href={`${baseUrl}/privacy`} className="hover:underline decoration-[var(--px-0-5)] footer-link" id="footer-privacy-link">
               privacy_policy()
             </a>
             <br />
-            <a href={`${baseUrl}/contact`} className="hover:underline decoration-[var(--px-0-5)]">
+            <a href={`${baseUrl}/contact`} className="hover:underline decoration-[var(--px-0-5)] footer-link" id="footer-contact-link">
               contact()
             </a>
           </div>
