@@ -1,4 +1,5 @@
-import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
+import { Navbar, GlobalFooter, SideLines } from "@resomix/ui";
+// import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { UploadHero, UploadOne } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
@@ -64,7 +65,7 @@ export function UploadPage() {
     <div className="bg-[var(--color-noise-background)]">
       {/* Static noise background */}
       {/* <StaticNoise color="#3a3a3b" opacity={0.5} zIndex={1} overscanVh={50} /> */}
-      <StaticNoise />
+      {/* <StaticNoise /> */}
 
       {/* Content layer */}
       <div
