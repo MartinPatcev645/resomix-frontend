@@ -17,11 +17,11 @@ Disallow: /.git/
 Disallow: /.turbo/
 Disallow: /src/
 
-# Optional: Allow essential static assets for rendering
+# Allow essential static assets for rendering
 Allow: /fonts/
 Allow: /images/
 Allow: /*.css$
 Allow: /*.js$
 
-# Sitemap reference (optional, keep if you maintain one)
+# Sitemap reference
 Sitemap: https://beta.resomix.com/sitemap.xml
