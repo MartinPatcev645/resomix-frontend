@@ -189,7 +189,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 null,
                 true
               )} className="cursor-pointer playlist-more-button" id={`playlist-hero-more-${playlistData?.queried_track.id || ''}`}>
-                <img src={MoreSvg} draggable={false} alt="More" className="w-[var(--px-14)] h-[var(--px-10)]" />
+                <img src={MoreSvg} draggable={false} alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
               </div>
             </div>
           </div>

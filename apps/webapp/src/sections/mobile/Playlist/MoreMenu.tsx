@@ -128,24 +128,24 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                             const upSelected = currentRating === 1;
                                             const downSelected = currentRating === 0;
                                             return (
-                                                <>
-                                                    <ThumbIcon
-                                                        onClick={() => {
-                                                            if (upSelected) return;
-                                                            handleTrackRating(1);
-                                                        }}
-                                                        className={`w-[var(--px-26)] h-[var(--px-26)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
-                                                        id={`playlist-table-thumb-up-${trackId}`}
-                                                    />
-                                                    <ThumbIcon
-                                                        onClick={() => {
-                                                            if (downSelected) return;
-                                                            handleTrackRating(0);
-                                                        }}
-                                                        className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
-                                                        id={`playlist-table-thumb-down-${trackId}`}
-                                                    />
-                                                </>
+                                              <>
+                                                  <ThumbIcon
+                                                    onClick={() => {
+                                                        if (upSelected) return;
+                                                        handleTrackRating(1);
+                                                    }}
+                                                    className={`w-[var(--px-26)] h-[var(--px-26)] text-white ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-up`}
+                                                    id={`playlist-table-thumb-up-${trackId}`}
+                                                  />
+                                                  <ThumbIcon
+                                                    onClick={() => {
+                                                        if (downSelected) return;
+                                                        handleTrackRating(0);
+                                                    }}
+                                                    className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 text-white ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-down`}
+                                                    id={`playlist-table-thumb-down-${trackId}`}
+                                                  />
+                                              </>
                                             );
                                         })()}
                                     </div>

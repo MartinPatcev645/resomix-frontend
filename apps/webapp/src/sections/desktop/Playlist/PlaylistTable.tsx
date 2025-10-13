@@ -112,7 +112,7 @@ const PlaylistTable: React.FC = () => {
                                                         if (upSelected) return;
                                                         handleTrackRating(track.id, 1);
                                                     }}
-                                                    className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
+                                                    className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
                                                     id={`playlist-table-thumb-up-${track.id}`}
                                                 />
                                             </Tooltip>
@@ -122,7 +122,7 @@ const PlaylistTable: React.FC = () => {
                                                         if (downSelected) return;
                                                         handleTrackRating(track.id, 0);
                                                     }}
-                                                    className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary-hover)]'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
+                                                    className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
                                                     id={`playlist-table-thumb-down-${track.id}`}
                                                 />
                                             </Tooltip>
