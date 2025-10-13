@@ -141,7 +141,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
         if (!link) return;
 
         const title = playlistData?.playlist?.name || 'Resomix Playlist';
-        const text = 'Check out my Resomix playlist';
+        const text = 'Check out my sonic discovery on Resomix';
 
         try {
             const nav = navigator;

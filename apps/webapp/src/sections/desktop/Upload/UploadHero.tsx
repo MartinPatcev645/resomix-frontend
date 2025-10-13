@@ -41,7 +41,7 @@ const UploadHero: React.FC = () => {
       >
         {/* Overlay content */}
         <div className="absolute inset-0 flex flex-col justify-center w-full h-full select-none py-auto">
-          <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[var(--px-42)]">
+          <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[42px] max-h-[42px]">
             <CodeTyping
               speed={50}
               text='// RESOMIX SYSTEM v1.0.9'
@@ -90,14 +90,14 @@ const UploadHero: React.FC = () => {
           <div className="flex justify-center items-center w-full relative z-15">
             <img src={LineThree} className="w-[var(--px-4)] h-[var(--px-60)]" draggable={false} alt="Line Three" />
           </div>
-          <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[var(--px-30)]">
+          <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[30px] max-h-[30px]">
             <CodeTyping
               speed={50}
               text='> gateway.open()<br /> auth_granted: DJ_MODE_ACTIVE<br /> session_ID: RSX_8472A'
               multiline={true}
             />
           </div>
-          <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] leading-[var(--px-16)] w-full text-center relative z-15 min-h-[var(--px-40)]">
+          <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] leading-[var(--px-16)] w-full text-center relative z-15 min-h-[40px] max-h-[40px]">
             <CodeTyping
               speed={50}
               text='—<br />/* Beginning Sonic Transition */<br />[✓] Welcome to Resomix'
