@@ -31,8 +31,8 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
         
         try {
             const playlistId = playlistData?.playlist.id || null;
-            await rateTrack(trackId, rating, playlistId);
             setTrackRating(trackId, rating);
+            await rateTrack(trackId, rating, playlistId);
             // Success notification could go here if needed
         } catch (error) {
             console.error('Failed to rate track:', error);
