@@ -8,7 +8,7 @@ import { StaticNoise } from "@resomix/ui";
  */
 const TestPage: React.FC = () => {
   return (
-    <div className="w-screen h-screen overflow-hidden bg-[#0A0A0A]">
+    <div className="w-screen h-screen overflow-hidden bg-[var(--color-secondary)]">
       <StaticNoise className="pointer-events-none fixed inset-0" fps={20} />
     </div>
   );
