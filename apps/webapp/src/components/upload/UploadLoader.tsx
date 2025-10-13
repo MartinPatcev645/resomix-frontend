@@ -141,7 +141,7 @@ const UploadLoader: React.FC = () => {
                             loadingEffectDelay={3}
                         />
                     </div>
-                    <div className="text-center mx-auto lg:mx-0 max-w-[var(--px-280)] lg:max-w-none text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-1)] mt-[var(--px-40)]">
+                    <div className="text-center mx-auto lg:mx-0 max-w-[var(--px-280)] lg:max-w-none min-h-[14px] и max-h-[14px] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-1)] mt-[var(--px-40)]">
                         <CodeTyping
                             text={messages[currentMessageIndex]}
                             speed={100}
