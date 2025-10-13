@@ -1,84 +1,26 @@
-// StaticNoise.tsx
 import { useEffect, useRef } from "react";
-import * as THREE from "three";
-
-type Triplet = [number, number, number];
-type SizeSet = { sm?: Triplet; md?: Triplet; lg?: Triplet };
 
 export interface StaticNoiseProps {
+  /** Optional Tailwind/utility classes. Defaults to a fullscreen fixed overlay. */
   className?: string;
+  /** Optional z-index so you can position above/below other layers. */
   zIndex?: number;
-  /** Target refresh FPS for the noise shuffle. */
+  /** Target frames-per-second for the noise refresh. Defaults to 20 (≈ original). */
   fps?: number;
-
-  /** DARK dot layer config (your current default). */
-  dark?: {
-    enabled?: boolean;          // default true
-    color?: Triplet;             // hex, default "#121211"
-    density?: number;           // 0..1, default 1
-    alpha?: number;             // 0..1, default 1
-    edge?: number;              // px softness, default 0.5
-    radiusFactor?: number;      // r = radiusFactor * cellPx, default 0.5
-    sizes?: SizeSet;            // per-breakpoint [L0, L1, L2] cell sizes in px
-  };
-
-  /** LIGHT dot layer config. */
-  light?: {
-    enabled?: boolean;          // default false
-    color?: Triplet;             // hex, default "#161615"
-    density?: number;           // 0..1, default 1
-    alpha?: number;             // 0..1, default 1
-    edge?: number;              // px softness, default 0.5
-    radiusFactor?: number;      // r = radiusFactor * cellPx, default 0.5
-    sizes?: SizeSet;            // per-breakpoint [L0, L1, L2] cell sizes in px
-  };
 }
 
-// ---- Defaults (exactly match your current rendering) -----------------------
-const DEF_FPS = 30;
-const DEF_DARK: Required<NonNullable<StaticNoiseProps["dark"]>> = {
-  enabled: true,
-  color: [5/255, 5/255, 5/255] as Triplet,
-  density: 1,
-  alpha: 0.99,
-  edge: 0.4,
-  radiusFactor: 0.5,
-  sizes: {
-    sm: [2.3, 2.8, 4.2],
-    md: [2.5, 3.0, 4.5],
-    lg: [2.7, 3.2, 4.8],
-  },
-};
-const DEF_LIGHT: Required<NonNullable<StaticNoiseProps["light"]>> = {
-  enabled: false,
-  color: [22/255, 22/255, 21/255] as Triplet,
-  density: 1,
-  alpha: 1,
-  edge: 0.5,
-  radiusFactor: 0.5,
-  sizes: {
-    sm: [2.5, 3.0, 4.5],
-    md: [2.5, 3.0, 4.5],
-    lg: [2.5, 3.0, 4.5],
-  },
-};
-
-function pickSizes(sizes: SizeSet | undefined, fallback: Triplet): Triplet {
-  // Tailwind-ish breakpoints based on viewport width
-  const w = typeof window !== "undefined" ? window.innerWidth : 1024;
-  const sm = (sizes?.sm ?? fallback) as Triplet;
-  const md = (sizes?.md ?? fallback) as Triplet;
-  const lg = (sizes?.lg ?? fallback) as Triplet;
-  return w < 640 ? sm : w < 1024 ? md : lg;
-}
-
-// Keep the same export symbol so your imports don't break.
+/**
+ * Static-noise overlay implemented with raw WebGL (no three.js).
+ *
+ * The fragment shader and render loop are lifted verbatim from the
+ * `test - Copy (2).html` proof-of-concept, packaged here as a reusable React
+ * component. Behaviour, look and performance should be **identical** to the
+ * HTML demo, merely wrapped for convenient reuse across pages.
+ */
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
   className = "pointer-events-none fixed inset-0",
   zIndex,
-  fps = DEF_FPS,
-  dark,
-  light,
+  fps = 30,
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -86,229 +28,137 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     const container = boxRef.current;
     if (!container) return;
 
-    const d = { ...DEF_DARK, ...(dark || {}) };
-    const l = { ...DEF_LIGHT, ...(light || {}) };
-
-    // Resolve responsive sizes (Triplets) for each layer set
-    const [d0, d1, d2] = pickSizes(d.sizes, DEF_DARK.sizes.md!);
-    const [l0, l1, l2] = pickSizes(l.sizes, DEF_LIGHT.sizes.md!);
-
-    // --- Renderer (transparent overlay) ------------------------------------
-    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-    const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-    renderer.setPixelRatio(dpr);
-    renderer.setSize(container.clientWidth, container.clientHeight, false);
-
-    // Transparent clear
-    renderer.setClearColor(0x000000, 0);
-
-    // Keep tonemapping off
-    (renderer as any).toneMapping = (THREE as any).NoToneMapping ?? 0;
-
-    // three r152+ uses outputColorSpace (your 0.178 is in this bucket)
-    (renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace;
-
-    const canvas = renderer.domElement as HTMLCanvasElement;
+    // --- Canvas / GL context --------------------------------------------------
+    const canvas = document.createElement("canvas");
+    canvas.style.display = "block";
     canvas.style.width = "100%";
     canvas.style.height = "100%";
-    canvas.style.display = "block";
     canvas.style.pointerEvents = "none";
     container.appendChild(canvas);
 
-    // --- Scene / Camera -----------------------------------------------------
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
-    // --- Fullscreen quad ----------------------------------------------------
-    const geom = new THREE.BufferGeometry();
-    const positions = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]);
-    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geom.setIndex(new THREE.BufferAttribute(indices, 1));
-
-    // --- Uniforms -----------------------------------------------------------
-    const uniforms = {
-      uResolution:   { value: new THREE.Vector2(1, 1) },
-      uTime:         { value: 0 },
-      uFps:          { value: fps },
-
-      // Dark set
-      uDark: { value: new THREE.Vector3(d.color[0], d.color[1], d.color[2]) },
-      uDensityDark:  { value: d.enabled ? d.density : 0.0 },
-      uAlphaDark:    { value: d.enabled ? d.alpha : 0.0 },
-      uEdgeDark:     { value: d.edge },
-      uRFactorDark:  { value: d.radiusFactor },
-      uSizePxD0:     { value: d0 },
-      uSizePxD1:     { value: d1 },
-      uSizePxD2:     { value: d2 },
-
-      // Light set
-      uGray: { value: new THREE.Vector3(l.color[0], l.color[1], l.color[2]) },
-      uDensityLight: { value: l.enabled ? l.density : 0.0 },
-      uAlphaLight:   { value: l.enabled ? l.alpha : 0.0 },
-      uEdgeLight:    { value: l.edge },
-      uRFactorLight: { value: l.radiusFactor },
-      uSizePxL0:     { value: l0 },
-      uSizePxL1:     { value: l1 },
-      uSizePxL2:     { value: l2 },
-    };
-
-    const vertexShader = `
-      void main(){
-        gl_Position = vec4(position, 1.0);
-      }
-    `;
-
-    const fragmentShader = `
-      precision highp float;
-
-      uniform vec2  uResolution; // in device pixels
-      uniform float uTime;        // seconds
-      uniform float uFps;
-
-      // Dark
-      uniform vec3  uDark;
-      uniform float uDensityDark;
-      uniform float uAlphaDark;
-      uniform float uEdgeDark;
-      uniform float uRFactorDark;
-      uniform float uSizePxD0;
-      uniform float uSizePxD1;
-      uniform float uSizePxD2;
-
-      // Light
-      uniform vec3  uGray;
-      uniform float uDensityLight;
-      uniform float uAlphaLight;
-      uniform float uEdgeLight;
-      uniform float uRFactorLight;
-      uniform float uSizePxL0;
-      uniform float uSizePxL1;
-      uniform float uSizePxL2;
-
-      // --- Hash helpers -----------------------------------------------------
-      float hash31(vec3 p){
-        p = fract(p * 0.1031);
-        p += dot(p, p.yzx + 19.19);
-        return fract((p.x + p.y) * p.z);
-      }
-
-      float frameAngle(int layer, float frameIdx){
-        return 6.28318530718 * hash31(vec3(float(layer) + 0.37, frameIdx * 0.137, 0.777));
-      }
-
-      mat2 rot(float a){
-        float s = sin(a), c = cos(a);
-        return mat2(c, -s, s, c);
-      }
-
-      // One grain layer: round dots in a rotated, jittered lattice.
-      float layerGrain(vec2 pix, float cellPx, float density, float frameIdx, int layerId, float rFactor, float edge){
-        float theta = frameAngle(layerId, frameIdx);
-        vec2 q = rot(theta) * pix;
-
-        vec2 cell = floor(q / cellPx);
-        vec2 cellBase = cell * cellPx;
-
-        float h0 = hash31(vec3(cell, frameIdx * 0.73 + float(layerId) * 2.11));
-        if (h0 > density) return 0.0;
-
-        float hx = hash31(vec3(cell + 3.1, frameIdx * 1.23 + float(layerId) * 1.7));
-        float hy = hash31(vec3(cell + 7.9, frameIdx * 2.37 + float(layerId) * 0.9));
-        vec2 jitter = vec2(hx, hy);
-        vec2 center = cellBase + (jitter + 0.5) * cellPx;
-
-        float r = rFactor * cellPx;
-
-        float d = length(q - center);
-        float a = smoothstep(r, r - edge, d);
-        return a;
-      }
-      float random(vec2 st, float seed) {
-         vec3 p3 = fract(vec3(st.xyx) * 0.1031 + seed);
-         p3 += dot(p3, p3.yzx + 33.33);
-         return fract((p3.x + p3.y) * p3.z);
-      }
-      void main(){
-        vec2 pix = gl_FragCoord.xy;
-
-        // Frame index (discrete at uFps)
-        float frameIdx = mod(floor(uTime * uFps), 4096.0);
-
-        // ---- DARK DOTS -----------------------------------------------------
-        float a0D = layerGrain(pix, uSizePxD0, uDensityDark, frameIdx + 13.0, 0, uRFactorDark, uEdgeDark);
-        float a1D = layerGrain(pix, uSizePxD1, uDensityDark, frameIdx + 37.0, 1, uRFactorDark, uEdgeDark);
-        float a2D = layerGrain(pix, uSizePxD2, uDensityDark, frameIdx + 71.0, 2, uRFactorDark, uEdgeDark);
-        float aDark = max(a0D, max(a1D, a2D));
-        float alphaDark = aDark * uAlphaDark;
-
-        // ---- LIGHT DOTS ----------------------------------------------------
-        float a0G = layerGrain(pix, uSizePxL0, uDensityLight, frameIdx + 113.0, 10, uRFactorLight, uEdgeLight);
-        float a1G = layerGrain(pix, uSizePxL1, uDensityLight, frameIdx + 137.0, 11, uRFactorLight, uEdgeLight);
-        float a2G = layerGrain(pix, uSizePxL2, uDensityLight, frameIdx + 171.0, 12, uRFactorLight, uEdgeLight);
-        float aGray = max(a0G, max(a1G, a2G));
-        float alphaLight = aGray * uAlphaLight;
-
-        // Composite: take whichever dot dominates at each pixel
-        float alpha = max(alphaDark, alphaLight);
-        if (alpha <= 0.001) discard;
-
-        vec3 col = (alphaDark >= alphaLight) ? uDark : uGray;
-        //vec3 col = vec3(pow(pow(random(pix, frameIdx),.5)*.8,2.0)*.6);
-        gl_FragColor = vec4(col, col.x);
-      }
-    `;
-
-    const mat = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms,
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
-      toneMapped: false as any,
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      premultipliedAlpha: false,
     });
+    if (!gl) return;
 
-    const mesh = new THREE.Mesh(geom, mat);
-    scene.add(mesh);
-
-    // --- Resize handling ----------------------------------------------------
+    // --- Resize handling ------------------------------------------------------
     const resize = () => {
-      const w = container.clientWidth || 1;
-      const h = container.clientHeight || 1;
-      renderer.setSize(w, h, false);
-      uniforms.uResolution.value.set(canvas.width, canvas.height);
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
     resize();
 
-    // --- Render loop --------------------------------------------------------
-    let raf = 0;
-    const t0 = performance.now();
-    const loop = () => {
-      (uniforms.uTime.value as number) = (performance.now() - t0) / 1000;
-      renderer.render(scene, camera);
-      raf = requestAnimationFrame(loop);
+    // --- Shader helpers -------------------------------------------------------
+    const compileShader = (src: string, type: number): WebGLShader => {
+      const shader = gl.createShader(type)!;
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        // tslint:disable-next-line:no-console
+        console.error(gl.getShaderInfoLog(shader));
+      }
+      return shader;
     };
-    loop();
 
-    // --- Cleanup ------------------------------------------------------------
+    const VERTEX_SRC = `
+      attribute vec2 aPosition;
+      varying vec2 vUv;
+      void main() {
+        vUv = (aPosition + 1.0) * 0.5;
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+      }
+    `;
+
+    const FRAGMENT_SRC = `
+      precision mediump float;
+
+      uniform vec2 uResolution;
+      uniform float uSeed;
+      varying vec2 vUv;
+
+      // Improved random hash (no visible patterns)
+      float random(vec2 st, float seed) {
+        vec3 p3 = fract(vec3(st.xyx) * 0.1031 + seed);
+        p3 += dot(p3, p3.yzx + 33.33);
+        return min(fract((p3.x + p3.y) * p3.z) * 2.0, 1.0);
+      }
+
+      void main() {
+        // Use pixel coordinates for per-pixel randomization
+        vec2 pixel = floor(gl_FragCoord.xy);
+        float val = random(pixel, uSeed);
+        float alpha = val;
+        val = ceil(val - 0.01) * 0.15;
+        if (val < 0.02) discard;
+        gl_FragColor = vec4(vec3(val, val, val * 0.95), alpha);
+      }
+    `;
+
+    // --- Program --------------------------------------------------------------
+    const vert = compileShader(VERTEX_SRC, gl.VERTEX_SHADER);
+    const frag = compileShader(FRAGMENT_SRC, gl.FRAGMENT_SHADER);
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, vert);
+    gl.attachShader(prog, frag);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      // tslint:disable-next-line:no-console
+      console.error(gl.getProgramInfoLog(prog));
+    }
+    gl.useProgram(prog);
+
+    // --- Geometry -------------------------------------------------------------
+    const quad = new Float32Array([
+      -1, -1,
+      1, -1,
+      -1, 1,
+      1, 1,
+    ]);
+    const buf = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+
+    const posLoc = gl.getAttribLocation(prog, "aPosition");
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const uResolution = gl.getUniformLocation(prog, "uResolution");
+    const uSeed = gl.getUniformLocation(prog, "uSeed");
+
+    // --- Render loop ----------------------------------------------------------
+    let timer = 0;
+    const render = () => {
+      gl.uniform2f(uResolution, canvas.width, canvas.height);
+      gl.uniform1f(uSeed, Math.random() * 1000.0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      timer = window.setTimeout(render, 1000 / fps);
+    };
+    render();
+
+    // --- Cleanup --------------------------------------------------------------
     return () => {
-      cancelAnimationFrame(raf);
+      clearTimeout(timer);
       ro.disconnect();
-      renderer.dispose();
-      geom.dispose();
-      mat.dispose();
+
+      gl.deleteProgram(prog);
+      gl.deleteShader(vert);
+      gl.deleteShader(frag);
+      gl.deleteBuffer(buf);
+
       if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, [fps, dark, light]);
+  }, [fps]);
 
   return (
     <div
       ref={boxRef}
       className={className}
-      style={{ zIndex, opacity: 1 }}
+      style={{ zIndex }}
       aria-hidden="true"
     />
   );
