@@ -1,7 +1,13 @@
+# -----------------------------------------------------
+# robots.txt for Resomix (https://resomix.com)
+# Purpose: Allow full site crawling except dev artifacts
+# -----------------------------------------------------
+
 User-agent: *
+# Allow all main pages and assets
 Allow: /
 
-# Disallow crawling of development/build files and directories (defensive; may not exist in production)
+# Block internal or build system folders
 Disallow: /node_modules/
 Disallow: /dist/
 Disallow: /.git/
@@ -9,11 +15,15 @@ Disallow: /.turbo/
 Disallow: /src/
 Disallow: /*.map$
 
-# Explicitly allow common static assets
-Allow: /fonts/
-Allow: /logo.png
-Allow: /*.css
-Allow: /*.js
+# Optional: Block query parameter crawls if not meaningful
+# Disallow: /*?*
 
-# Sitemap
+# Explicitly allow static assets
+Allow: /fonts/
+Allow: /images/
+Allow: /logo.png
+Allow: /*.css$
+Allow: /*.js$
+
+# Reference sitemap for discoverability
 Sitemap: https://resomix.com/sitemap.xml

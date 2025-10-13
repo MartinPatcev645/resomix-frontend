@@ -85,7 +85,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   id="playlist-hero-rename-button"
                 />
                 <ToggleButton
-                  text="Sonic Journey"
+                  text="Autoplay"
                   customWidth="min-w-[var(--px-100)]"
                   isOn={autoplay}
                   onToggle={setAutoplay}
