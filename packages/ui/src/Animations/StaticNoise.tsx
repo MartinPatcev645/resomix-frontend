@@ -236,25 +236,25 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         float frameIdx = mod(floor(uTime * uFps), 4096.0);
 
         // ---- DARK DOTS -----------------------------------------------------
-        //float a0D = layerGrain(pix, uSizePxD0, uDensityDark, frameIdx + 13.0, 0, uRFactorDark, uEdgeDark);
-        //float a1D = layerGrain(pix, uSizePxD1, uDensityDark, frameIdx + 37.0, 1, uRFactorDark, uEdgeDark);
-        //float a2D = layerGrain(pix, uSizePxD2, uDensityDark, frameIdx + 71.0, 2, uRFactorDark, uEdgeDark);
-        //float aDark = max(a0D, max(a1D, a2D));
-        //float alphaDark = aDark * uAlphaDark;
+        float a0D = layerGrain(pix, uSizePxD0, uDensityDark, frameIdx + 13.0, 0, uRFactorDark, uEdgeDark);
+        float a1D = layerGrain(pix, uSizePxD1, uDensityDark, frameIdx + 37.0, 1, uRFactorDark, uEdgeDark);
+        float a2D = layerGrain(pix, uSizePxD2, uDensityDark, frameIdx + 71.0, 2, uRFactorDark, uEdgeDark);
+        float aDark = max(a0D, max(a1D, a2D));
+        float alphaDark = aDark * uAlphaDark;
 
         // ---- LIGHT DOTS ----------------------------------------------------
-        //float a0G = layerGrain(pix, uSizePxL0, uDensityLight, frameIdx + 113.0, 10, uRFactorLight, uEdgeLight);
-        //float a1G = layerGrain(pix, uSizePxL1, uDensityLight, frameIdx + 137.0, 11, uRFactorLight, uEdgeLight);
-        //float a2G = layerGrain(pix, uSizePxL2, uDensityLight, frameIdx + 171.0, 12, uRFactorLight, uEdgeLight);
-        //float aGray = max(a0G, max(a1G, a2G));
-        //float alphaLight = aGray * uAlphaLight;
+        float a0G = layerGrain(pix, uSizePxL0, uDensityLight, frameIdx + 113.0, 10, uRFactorLight, uEdgeLight);
+        float a1G = layerGrain(pix, uSizePxL1, uDensityLight, frameIdx + 137.0, 11, uRFactorLight, uEdgeLight);
+        float a2G = layerGrain(pix, uSizePxL2, uDensityLight, frameIdx + 171.0, 12, uRFactorLight, uEdgeLight);
+        float aGray = max(a0G, max(a1G, a2G));
+        float alphaLight = aGray * uAlphaLight;
 
         // Composite: take whichever dot dominates at each pixel
-        //float alpha = max(alphaDark, alphaLight);
-        //if (alpha <= 0.001) discard;
+        float alpha = max(alphaDark, alphaLight);
+        if (alpha <= 0.001) discard;
 
-        //vec3 col = (alphaDark >= alphaLight) ? uDark : uGray;
-        vec3 col = vec3(pow(pow(random(pix, frameIdx),.5)*.8,2.0)*.6);
+        vec3 col = (alphaDark >= alphaLight) ? uDark : uGray;
+        //vec3 col = vec3(pow(pow(random(pix, frameIdx),.5)*.8,2.0)*.6);
         gl_FragColor = vec4(col, col.x);
       }
     `;
