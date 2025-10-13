@@ -28,8 +28,8 @@ const PlaylistTable: React.FC = () => {
     const handleTrackRating = async (trackId: string, rating: number) => {
         try {
             const playlistId = playlistData?.playlist.id || null;
-            await rateTrack(trackId, rating, playlistId);
             setTrackRating(trackId, rating);
+            await rateTrack(trackId, rating, playlistId);
             // You could add a success notification here if needed
         } catch (error) {
             console.error('Failed to rate track:', error);
