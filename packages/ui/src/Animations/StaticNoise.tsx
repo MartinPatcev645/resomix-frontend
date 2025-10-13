@@ -254,7 +254,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         //if (alpha <= 0.001) discard;
 
         //vec3 col = (alphaDark >= alphaLight) ? uDark : uGray;
-        vec3 col = vec3(pow(pow(random(pixel, uSeed),.5)*.8,2.0)*.6);
+        vec3 col = vec3(pow(pow(random(pix, frameIdx),.5)*.8,2.0)*.6);
         gl_FragColor = vec4(col, col.x);
       }
     `;
