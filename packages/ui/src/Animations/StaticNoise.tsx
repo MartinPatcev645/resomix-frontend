@@ -224,7 +224,11 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         float a = smoothstep(r, r - edge, d);
         return a;
       }
-
+      float random(vec2 st, float seed) {
+         vec3 p3 = fract(vec3(st.xyx) * 0.1031 + seed);
+         p3 += dot(p3, p3.yzx + 33.33);
+         return fract((p3.x + p3.y) * p3.z);
+      }
       void main(){
         vec2 pix = gl_FragCoord.xy;
 
@@ -250,8 +254,8 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         //if (alpha <= 0.001) discard;
 
         //vec3 col = (alphaDark >= alphaLight) ? uDark : uGray;
-        vec3 col = Vec3(1.0,1.0,1.0)*fract(uTime);
-        gl_FragColor = vec4(col, alpha);
+        vec3 col = vec3(pow(pow(random(pixel, uSeed),.5)*.8,2.0)*.6);
+        gl_FragColor = vec4(col, col.x);
       }
     `;
 
