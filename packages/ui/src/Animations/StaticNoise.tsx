@@ -14,7 +14,7 @@ export const StaticNoise: React.FC = () => {
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
     const dpr = Math.min(1.5, window.devicePixelRatio || 1);
     renderer.setPixelRatio(dpr);
-    renderer.setSize(container.clientWidth, container.clientHeight, false);
+    renderer.setSize(256, 256, false);
 
     // Transparent clear
     renderer.setClearColor(0x000000, 0);
@@ -177,7 +177,7 @@ export const StaticNoise: React.FC = () => {
     const resize = () => {
       const w = container.clientWidth || 1;
       const h = container.clientHeight || 1;
-      renderer.setSize(w, h, false);
+      renderer.setSize(265, 256, false);
       uniforms.uResolution.value.set(canvas.width, canvas.height);
     };
     const ro = new ResizeObserver(resize);
