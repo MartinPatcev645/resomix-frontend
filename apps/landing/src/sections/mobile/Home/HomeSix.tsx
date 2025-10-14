@@ -1,17 +1,19 @@
 import React from "react";
-import GridTunnelSvg from "@/assets/icons/mobile_tunnel.svg";
+// import GridTunnelSvg from "@/assets/icons/mobile_tunnel.svg";
 import AngleDownSvg from "@/assets/icons/AngleDown.svg";
+import { Tunnel } from "@resomix/ui";
 
 const HomeSix: React.FC = () => (
   <div className='mt-[var(--px-250)] relative z-15'>
-    <div className='relative w-full'>
+    <div className='relative w-full z-10'>
       {/* SVG Background - stretched to full width */}
-      <div className='w-full'>
-        <img
+      <div className='w-full h-full'>
+        <Tunnel aspectRatio={726/353} />
+        {/* <img
           src={GridTunnelSvg}
           alt="Grid Tunnel"
           className='w-full h-auto'
-        />
+        /> */}
       </div>
 
       {/* Text Overlay - positioned absolutely over the SVG */}

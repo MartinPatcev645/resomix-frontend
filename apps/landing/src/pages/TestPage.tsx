@@ -1,5 +1,5 @@
 import React from "react";
-import { StaticNoise } from "@resomix/ui";
+import { StaticNoise, Tunnel } from "@resomix/ui";
 
 /**
  * Minimal demo page that simply shows the StaticNoise overlay.
@@ -10,6 +10,7 @@ const TestPage: React.FC = () => {
   return (
     <div className="w-screen h-screen overflow-hidden bg-[var(--color-secondary)]">
       <StaticNoise className="pointer-events-none fixed inset-0" fps={20} />
+      <Tunnel />
     </div>
   );
 };
