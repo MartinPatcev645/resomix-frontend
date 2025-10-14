@@ -126,7 +126,7 @@ export const Tunnel: React.FC<TunnelProps> = ({ aspectRatio }) => {
         float invMax = 1.0/float(maxVal);
         float offset = .2;
 
-        if(isRectWidth(uv,lwp,1.0,ratio)){
+        if(isRectWidth(uv,lwp*2.0,1.0,ratio)){
           lineColVal = 1.0;
         }
 
@@ -138,7 +138,7 @@ export const Tunnel: React.FC<TunnelProps> = ({ aspectRatio }) => {
         }
 
         int totalLines = 25;
-        float feather = 0.003;
+        float feather = 0.0015*ratio;
 
         float lines = ShowConstantWidthLine(uv, lwp, feather, ratio, totalLines);
         lineColVal = max(lineColVal,lines);
