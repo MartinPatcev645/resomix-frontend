@@ -16,7 +16,7 @@ export function initRemains(container: HTMLElement): () => void {
   canvas.style.pointerEvents = "none";
   container.appendChild(canvas);
 
-  const gl = canvas.getContext("webgl2");
+  const gl = canvas.getContext("webgl2",{alpha:true});
   if (!gl) {
     console.warn("WebGL2 is not supported in this browser");
     return () => {
@@ -33,8 +33,8 @@ export function initRemains(container: HTMLElement): () => void {
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
 
-    canvas.width = width * DPR;
-    canvas.height = height * DPR;
+    canvas.width = width * DPR*0.65;
+    canvas.height = height * DPR*0.65;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
   };
@@ -88,7 +88,7 @@ export function initRemains(container: HTMLElement): () => void {
   }
 
   float rnd(float a) {
-    return fract(sin(a * 12.599) * 78.233);
+    return 1.0;//fract(sin(a * 12.599) * 78.233);
   }
 
   float curve(float t, float e) {
@@ -141,7 +141,7 @@ export function initRemains(container: HTMLElement): () => void {
 
   float vol(vec3 p, vec3 rd, vec3 ro, float maxd) {
     const float s = .2;
-    float distort = fract(sin(dot(p.xy, p.yx+vec2(234, 543)))*345678.),
+    float distort = 1.0,//fract(sin(dot(p.xy, p.yx+vec2(234, 543)))*345678.),
     d = s * distort,
     at = .0;
 
@@ -215,7 +215,7 @@ export function initRemains(container: HTMLElement): () => void {
     col = S(.0, 1., col);
     col *= exp(-125e-5*dd*dd*dd);
 
-    fragColor = vec4(col, 1);
+    fragColor = vec4(col, 0.5);
   }`;
 
   /* ------------------------------------------------------------------
