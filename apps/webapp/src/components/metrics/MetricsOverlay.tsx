@@ -98,8 +98,8 @@ export function MetricsOverlay() {
     >
       <div style={{ opacity: 0.9, marginBottom: 4, fontWeight: 600 }}>Web Vitals</div>
       <div>LCP: {fmtMs(metrics.LCP)}</div>
-      <div>INP: {fmtMs(metrics.INP)}</div>
-      <div>CLS: {fmtCls(metrics.CLS)}</div>
+      {metrics.INP && <div>INP: {fmtMs(metrics.INP)}</div>}
+      {metrics.CLS && <div>CLS: {fmtCls(metrics.CLS)}</div>}
       <div>FCP: {fmtMs(metrics.FCP)}</div>
       <div>TTFB: {fmtMs(metrics.TTFB)}</div>
       <div>TBT: {fmtMs(metrics.TBT)}</div>
