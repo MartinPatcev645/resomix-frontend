@@ -31,6 +31,7 @@ import { Remains } from "./Animations/Remains";
 import { RockRing } from "./Animations/RockRing";
 import { Terrain } from "./Animations/Terrain";
 import { StaticNoise } from "./Animations/StaticNoise";
+import { Tunnel } from "./Animations/Tunnel";
 import { MobileNavbar } from "./Layout/MobileNavbar";
 import { ToggleButton } from "./Buttons/ToggleButton";
 import { IconButton } from "./Buttons/IconButton";
@@ -83,6 +84,7 @@ export {
   RockRing,
   Terrain,
   StaticNoise,
+  Tunnel,
   MobileNavbar,
   ToggleButton,
   GlobalFooter,
