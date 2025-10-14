@@ -39,7 +39,6 @@ export const Tunnel: React.FC<TunnelProps> = ({ aspectRatio }) => {
     const ASPECT = aspectRatio ?? 1268 / 1555; // default desktop
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -177,14 +176,25 @@ export const Tunnel: React.FC<TunnelProps> = ({ aspectRatio }) => {
     // 6. Resize handling – keep canvas & uniforms in sync (container-aware)
     // ------------------------------------------------------------
     const resize = () => {
-      const w = container.clientWidth;
-      if (w === 0) return;
-      const expectedH = w * ASPECT;
-      if (container.clientHeight !== expectedH) {
-        container.style.height = `${expectedH}px`;
-      }
-      renderer.setSize(w, expectedH);
-      uniforms.resolution.value.set(w, expectedH);
+      const cw = container.clientWidth;   // sticky viewport width
+      const ch = container.clientHeight;  // sticky viewport height
+      if (cw === 0 || ch === 0) return;
+
+      // FULL-WIDTH cover: width = container width, height = width * ASPECT.
+      const rw = cw;
+      const rh = Math.round(cw * ASPECT);
+
+      // Vertically center; allow overspill above/below if rh > ch.
+      const canvas = renderer.domElement as HTMLCanvasElement;
+      canvas.style.position = "absolute";
+      canvas.style.left = "0";
+      canvas.style.top = "50%";
+      canvas.style.transform = "translateY(-50%)";
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
+
+      renderer.setSize(rw, rh, false);
+      uniforms.resolution.value.set(rw, rh);
     };
 
     // Observe the container itself – covers dynamic layouts where height is
@@ -216,7 +226,7 @@ export const Tunnel: React.FC<TunnelProps> = ({ aspectRatio }) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden pointer-events-none"
+      className="relative w-full h-full pointer-events-none"
     />
   );
 };

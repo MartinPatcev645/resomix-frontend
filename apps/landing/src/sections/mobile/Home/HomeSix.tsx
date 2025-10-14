@@ -9,8 +9,11 @@ const HomeSix: React.FC = () => {
   const [scale, setScale] = useState(0.3); // start smaller on mobile
   const ASPECT = 726 / 353; // height / width for mobile tunnel
 
-  // Section height = 3 × tunnel height, tunnel height = 100vw × aspect
-  const sectionHeightStyle = useMemo(() => `calc(100vw * ${ASPECT * 3})`, []);
+  // Section height = max(300vh, 3 × tunnel height)
+  const sectionHeightStyle = useMemo(
+    () => `max(300vh, calc(100vw * ${ASPECT * 3}))`,
+    []
+  );
 
   useEffect(() => {
     const onScroll = () => {
@@ -43,7 +46,7 @@ const HomeSix: React.FC = () => {
       <div style={{ height: "var(--px-50)" }} />
 
       {/* Sticky viewport */}
-      <div className='sticky top-0 h-screen w-full'>
+      <div className='sticky top-0 h-[100svh] w-full isolate'>
         {/* Tunnel pinned in background */}
         <div className='absolute inset-0 pointer-events-none'>
           <Tunnel aspectRatio={ASPECT} />
