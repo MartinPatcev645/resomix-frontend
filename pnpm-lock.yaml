@@ -242,6 +242,9 @@ importers:
       three:
         specifier: ^0.178.0
         version: 0.178.0
+      web-vitals:
+        specifier: ^5.1.0
+        version: 5.1.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.30.1
@@ -2818,6 +2821,9 @@ packages:
 
   web-vitals@4.2.4:
     resolution: {integrity: sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==}
+
+  web-vitals@5.1.0:
+    resolution: {integrity: sha512-ArI3kx5jI0atlTtmV0fWU3fjpLmq/nD3Zr1iFFlJLaqa5wLBkUSzINwBPySCX/8jRyjlmy1Volw1kz1g9XE4Jg==}
 
   whatwg-fetch@0.9.0:
     resolution: {integrity: sha512-DIuh7/cloHxHYwS/oRXGgkALYAntijL63nsgMQsNSnBj825AysosAqA2ZbYXGRqpPRiNH7335dTqV364euRpZw==}
@@ -5465,6 +5471,8 @@ snapshots:
   wavesurfer.js@7.10.1: {}
 
   web-vitals@4.2.4: {}
+
+  web-vitals@5.1.0: {}
 
   whatwg-fetch@0.9.0: {}
 

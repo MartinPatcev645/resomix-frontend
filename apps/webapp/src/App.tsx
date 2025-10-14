@@ -1,8 +1,9 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, TermsAcceptance } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
+import {MetricsOverlay} from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
 const UploadPage = lazy(() => import("@/pages/desktop/UploadPage.tsx").then(m => ({ default: m.UploadPage })));
@@ -42,8 +43,13 @@ function App() {
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
 
+  const location = useLocation();
+  const showMetrics = new URLSearchParams(location.search).get("metrics") === "true";
+
   return (
     <>
+      {showMetrics && <MetricsOverlay />}
+
       {/* <DevMobileConsole /> */}
       {showWelcome &&
         <WelcomeMessage
