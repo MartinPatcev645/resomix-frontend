@@ -17,8 +17,7 @@ export function HomeMobile() {
           position: "relative",
           zIndex: 30,
           maxWidth: "1023px",
-          backgroundColor: 'var(--color-primary-background)',
-          overflowX: "hidden"
+          backgroundColor: 'var(--color-primary-background)'
         }}
       >
         <div className="absolute inset-0 w-full mt-[var(--px-23)] border-t border-slate-200 border-dotted pointer-events-none z-10">
