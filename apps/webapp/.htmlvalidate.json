@@ -1,13 +1,14 @@
 {
     "$schema": "https://html-validate.org/schemas/config.json",
-    "extends": [
-        "html-validate:recommended"
-    ],
+    "extends": ["html-validate:recommended"],
     "rules": {
-        "wcag/h32": "error",
-        "wcag/alt-text": "error",
-        "element-required-attributes": "error",
-        "no-duplicate-id": "error",
-        "prefer-native-element": "warn"
+      "doctype-style": "error",
+      "void-style": ["error", { "style": "omit" }],
+      "no-dup-id": "error",
+      "no-inline-style": ["error", { "allowedProperties": ["display", "visibility"] }],
+      "wcag/h37": "error",
+      "wcag/h67": "error"
+  
     }
-}
+  }
+  

@@ -22,18 +22,18 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
         <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
           {onClose ? (
             <button onClick={onClose} aria-label="Close menu" className="menu-close-button" id="menu-close-button">
-              <img src={CrossSvg} alt="Cross" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
+              <img src={CrossSvg} alt="Cross" aria-label="Cross" loading="lazy" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </button>
           ) : (
-            <a href={BASE_LANDING_URL} className="menu-home-link" id="menu-home-link">
-              <img src={CrossSvg} alt="Cross" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
+            <a href={BASE_LANDING_URL} aria-label="Resomix home" className="menu-home-link" id="menu-home-link">
+              <img src={CrossSvg} alt="Cross" aria-label="Cross" loading="lazy" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           )}
         </div>
         <div className="flex flex-col gap-[var(--px-30)] items-center">
           <div className="">
-            <a href={BASE_LANDING_URL} className="menu-logo-link" id="menu-logo-link">
-              <img src={RIconsFooter} draggable={false} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
+            <a href={BASE_LANDING_URL} aria-label="Resomix home" className="menu-logo-link" id="menu-logo-link">
+              <img src={RIconsFooter} aria-label="RIconsFooter" loading="lazy" draggable={false} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           </div>
           <div onClick={() => {
@@ -44,7 +44,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-feedback-link">
             [{t('general.menu.feedback')}]
           </div>
-          <a href={`https://resomix.com/blog`} target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-journal-link">
+          <a href={`${BASE_LANDING_URL}/blog`} aria-label="Resomix blog" target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="menu-journal-link">
             [{t('general.menu.journal')}]
           </a>
           <div onClick={() => {
@@ -53,7 +53,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
             [{t('general.menu.waitlist')}]
           </div>
           <div className="">
-            <img src={MenuSeparator} draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
+            <img src={MenuSeparator} aria-label="MenuSeparator" loading="lazy" draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
           <div className="w-full">
             <ButtonHeavyRight className="w-[var(--px-276)] cta-button primary" text={t('general.menu.upload_your_track')} onClick={() => {

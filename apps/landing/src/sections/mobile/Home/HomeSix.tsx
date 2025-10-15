@@ -90,7 +90,7 @@ const HomeSix: React.FC = () => {
 
     {/* Arrow after the sticky section */}
     <div className="flex w-full justify-center mt-[var(--px-40)]">
-      <img src={AngleDownSvg} draggable={false} alt="Angle Down" className="w-[var(--px-67)] h-[var(--px-67)]" />
+      <img src={AngleDownSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Angle Down" className="w-[var(--px-67)] h-[var(--px-67)]" />
     </div>
     </>
   );

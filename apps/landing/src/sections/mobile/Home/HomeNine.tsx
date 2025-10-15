@@ -101,7 +101,7 @@ const HomeNine: React.FC = () => {
           <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-5)]">
             A New Era of Music
           </div>
-          <img src={SectionNineGraphic} draggable={false} className="w-[var(--px-394)] h-[var(--px-6)]" alt="Section Nine Graphic" />
+          <img src={SectionNineGraphic} draggable={false} aria-hidden="true" loading="lazy" className="w-[var(--px-394)] h-[var(--px-6)]" alt="Section Nine Graphic" />
           <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-5)]">
             Tune Into the Unknown
           </div>

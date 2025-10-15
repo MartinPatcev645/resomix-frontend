@@ -107,7 +107,7 @@ const HomeNine: React.FC = () => {
               Tune Into the Unknown
             </div>
           </div>
-          <img src={SectionNineGraphic} draggable={false} className="max-w-full h-[var(--px-4)]" alt="Section Nine Graphic" />
+          <img src={SectionNineGraphic} aria-hidden="true" loading="lazy" draggable={false} className="max-w-full h-[var(--px-4)]" alt="Section Nine Graphic" />
         </div>
       </div>
     </div>

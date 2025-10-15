@@ -12,7 +12,9 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test e2e/a11y.spec.ts",
-    "lighthouse": "lhci autorun",
+    "lighthouse:mobile": "FORM_FACTOR=mobile lhci autorun",
+    "lighthouse:desktop": "FORM_FACTOR=desktop lhci autorun",
+    "lighthouse": "pnpm lighthouse:mobile && pnpm lighthouse:desktop",
     "validate:html": "html-validate \"dist/**/*.html\""
   },
   "dependencies": {

@@ -1,0 +1,14 @@
+[
+  {
+    "url": "http://localhost:5173/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/resomix-web/apps/landing/reports/lhci-desktop-landing/localhost--2025_10_15_09_04_38.report.html",
+    "jsonPath": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/resomix-web/apps/landing/reports/lhci-desktop-landing/localhost--2025_10_15_09_04_38.report.json",
+    "summary": {
+      "performance": 0.5,
+      "accessibility": 0.95,
+      "best-practices": 0.96,
+      "seo": 1
+    }
+  }
+]

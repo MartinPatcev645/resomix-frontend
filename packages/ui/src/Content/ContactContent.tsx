@@ -39,7 +39,7 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
 
         <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
-            <a href={baseUrl} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica  hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</a>
+            <a href={baseUrl} aria-label="Resomix home" className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica  hover:text-[var(--color-primary-hover)] transition-colors">← Back to Home</a>
           </div>
 
           <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica  ">
@@ -59,7 +59,7 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
                     support team:
                   </div>
                   <div className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica  leading-[var(--px-17)]">
-                    Email: <a href="mailto:support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">support@resomix.com</a>
+                    Email: <a href="mailto:support@resomix.com" aria-label="Email support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">support@resomix.com</a>
                   </div>
                   <div className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight font-helvetica  leading-[var(--px-17)] lg:opacity-80">
                     Hours: Monday-Friday, 9AM-6PM EST
@@ -76,7 +76,7 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
                     inquiries:
                   </div>
                   <div className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-light font-helvetica  leading-[var(--px-17)]">
-                    Email: <a href="mailto:support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">support@resomix.com</a>
+                    Email: <a href="mailto:support@resomix.com" aria-label="Email support@resomix.com" className="text-[var(--color-primary-hover)] hover:text-[var(--color-primary)] cursor-pointer pointer-events-auto">support@resomix.com</a>
                   </div>
                   <div className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight font-helvetica  leading-[var(--px-17)] lg:opacity-80">
                     Hours: Monday-Friday, 9AM-6PM EST

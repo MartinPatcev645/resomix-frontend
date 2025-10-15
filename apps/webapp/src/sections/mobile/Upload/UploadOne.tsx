@@ -83,7 +83,7 @@ const UploadOne: React.FC = () => {
                                 Results Count
                             </div>
                             <div className="hover:cursor-pointer">
-                                <img src={InfoSvg} alt="Info" draggable={false} className="w-[var(--px-10)] h-[var(--px-10)]" />
+                                <img src={InfoSvg} alt="Info" aria-label="Info" draggable={false} className="w-[var(--px-10)] h-[var(--px-10)]" />
                             </div>
                         </div>
                     </Tooltip>

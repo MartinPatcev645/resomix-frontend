@@ -18,10 +18,10 @@ const AboutThree: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 {/* Graphics Overlay */}
                 <div className="absolute -top-[var(--px-190)] w-[var(--px-700)] -right-[var(--px-200)] pointer-events-none z-5">
-                    <img src={GradientFive} draggable={false} alt="gradient_five" className="w-full h-auto" />
+                    <img src={GradientFive} aria-hidden="true" loading="lazy" draggable={false} alt="gradient_five" className="w-full h-auto" />
                 </div>
                 <div className="absolute -top-[var(--px-140)] -left-[var(--px-63)] w-[var(--px-1280)] pointer-events-none z-5">
-                    <img src={GradientSix} draggable={false} alt="gradient_six" style={{ mixBlendMode: "lighten" }} className="w-full h-[var(--px-2990)]" />
+                    <img src={GradientSix} aria-hidden="true" loading="lazy" draggable={false} alt="gradient_six" style={{ mixBlendMode: "lighten" }} className="w-full h-[var(--px-2990)]" />
                 </div>
 
                 {/* Content */}
@@ -43,7 +43,7 @@ const AboutThree: React.FC = () => {
                 </div>
                 <div className="flex flex-col gap-[var(--px-100)] items-start ml-[var(--px-120)]">
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={AnalysisSvg} draggable={false} alt="analysis" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={AnalysisSvg} aria-hidden="true" loading="lazy" draggable={false} alt="analysis" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_discovery_title')}
@@ -53,7 +53,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={CraftSvg} draggable={false} alt="craft" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={CraftSvg} aria-hidden="true" loading="lazy" draggable={false} alt="craft" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_simplicity_title')}
@@ -64,7 +64,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={ReferenceSvg} draggable={false} alt="reference" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={ReferenceSvg} aria-hidden="true" loading="lazy" draggable={false} alt="reference" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_inclusion_title')}
@@ -74,7 +74,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={SpeedSvg} draggable={false} alt="speed" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={SpeedSvg} aria-hidden="true" loading="lazy" draggable={false} alt="speed" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_speed_title')}
@@ -85,7 +85,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={SoundWavesTwo} draggable={false} alt="sound waves" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={SoundWavesTwo} aria-hidden="true" loading="lazy" draggable={false} alt="sound waves" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_open_title')}
@@ -95,7 +95,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={LayersSvg} draggable={false} alt="layers" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={LayersSvg} aria-hidden="true" loading="lazy" draggable={false} alt="layers" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_quality_title')}
@@ -105,7 +105,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={MatchesSvg} draggable={false} alt="matches" className="w-[var(--px-45)] h-[var(--px-45)]" />
+                        <img src={MatchesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="matches" className="w-[var(--px-45)] h-[var(--px-45)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-16)] text-left w-full">
                                 {t('about.about_three.card_crate_title')}

@@ -134,7 +134,7 @@ const PlaylistTable: React.FC = () => {
                                 window.location.href = `${BASE_BETA_URL}/?id=${track.id}`;
                             }} id={`playlist-table-sonic-discovery-${track.id}`}>
                                 <Tooltip message="Find Similarity For this Track!">
-                                    <img src={SonicDiscoverySvg} draggable={false} alt="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
+                                    <img src={SonicDiscoverySvg} draggable={false} alt="Sonic Discovery" aria-label="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
                                 </Tooltip>
                             </div>
                         </div>

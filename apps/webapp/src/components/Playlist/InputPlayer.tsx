@@ -100,11 +100,11 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                             className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)] player-control player-control-mute-toggle"
                           >
                               {volume === 0 ? (
-                                <img src={SoundMuteSvg} draggable={false} alt="Muted" className="w-full h-full" />
+                                <img src={SoundMuteSvg} aria-label="Muted" draggable={false} alt="Muted" className="w-full h-full" />
                               ) : volume < 0.5 ? (
-                                <img src={SoundLowSvg} draggable={false} alt="Low Volume" className="w-full h-full" />
+                                <img src={SoundLowSvg} aria-label="Low Volume" draggable={false} alt="Low Volume" className="w-full h-full" />
                               ) : (
-                                <img src={SoundLoudSvg} draggable={false} alt="High Volume" className="w-full h-full" />
+                                <img src={SoundLoudSvg} aria-label="High Volume" draggable={false} alt="High Volume" className="w-full h-full" />
                               )}
                           </button>
 

@@ -43,7 +43,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                     onClick={ctl.skipBackward}
                     className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] py-[var(--px-2)] px-[var(--px-10)] lg:px-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control player-control-skip-backward"
                   >
-                      <img src={NextTrackSvg} draggable={false} alt="Previous Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
+                      <img src={NextTrackSvg} aria-label="Previous Track" draggable={false} alt="Previous Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
                       <span className="mt-[var(--px-3)]">10s</span>
                   </button>
 
@@ -53,7 +53,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                     className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] py-[var(--px-2)] px-[var(--px-10)] lg:px-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control player-control-skip-forward"
                   >
                       <span className="mt-[var(--px-3)]">10s</span>
-                      <img src={NextTrackSvg} draggable={false} alt="Next Track" className="w-[var(--px-10)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
+                      <img src={NextTrackSvg} aria-label="Next Track" draggable={false} alt="Next Track" className="w-[var(--px-10)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
                   </button>
               </div>
 
@@ -64,11 +64,11 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                     className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)] player-control player-control-mute-toggle"
                   >
                       {volume === 0 ? (
-                        <img src={SoundMuteSvg} draggable={false} alt="Muted" className="w-full h-full" />
+                        <img src={SoundMuteSvg} aria-label="Muted" draggable={false} alt="Muted" className="w-full h-full" />
                       ) : volume < 0.5 ? (
-                        <img src={SoundLowSvg} draggable={false} alt="Low Volume" className="w-full h-full" />
+                        <img src={SoundLowSvg} aria-label="Low Volume" draggable={false} alt="Low Volume" className="w-full h-full" />
                       ) : (
-                        <img src={SoundLoudSvg} draggable={false} alt="High Volume" className="w-full h-full" />
+                        <img src={SoundLoudSvg} aria-label="High Volume" draggable={false} alt="High Volume" className="w-full h-full" />
                       )}
                   </button>
 

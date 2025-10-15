@@ -43,7 +43,7 @@ const HomeSeven: React.FC = () => {
         <div className='flex flex-col justify-start items-start w-full'>
           <div className='flex flex-col items-start w-full'>
             <div className='flex items-center justify-start gap-[var(--px-12)]'>
-              <img src={ArrowBigDownSvg} draggable={false} alt="Arrow Big Down" className="w-[var(--px-26)] h-[var(--px-26)]" />
+              <img src={ArrowBigDownSvg} draggable={false} aria-hidden="true" loading="lazy" alt="Arrow Big Down" className="w-[var(--px-26)] h-[var(--px-26)]" />
               <div className='text-[length:var(--px-43)] font-helvetica uppercase font-bold leading-[var(--px-50)]'>
                 DROP
               </div>
@@ -84,7 +84,7 @@ const HomeSeven: React.FC = () => {
                 />
               </div>
               <div className="w-full my-[var(--px-4)] flex justify-end items-center">
-                <img src={LineThreeSvg} draggable={false} alt="Line Three" className="w-[var(--px-4)] h-[var(--px-45)]" />
+                <img src={LineThreeSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Line Three" className="w-[var(--px-4)] h-[var(--px-45)]" />
               </div>
               <div className=" text-[length:var(--px-10)] font-extralight font-fira tracking-[var(--px-2)]">
                 <CodeTyping

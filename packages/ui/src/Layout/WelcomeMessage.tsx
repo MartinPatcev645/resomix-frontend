@@ -39,7 +39,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ dropSvg, matchSv
                 </div>
                 <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
                     <div className="flex items-start gap-[var(--px-10)]">
-                        <img src={dropSvg} draggable={false} alt="DropTrack" className="w-[var(--px-28)] h-[var(--px-28)]" />
+                        <img src={dropSvg} aria-hidden="true" loading="lazy" draggable={false} alt="DropTrack" className="w-[var(--px-28)] h-[var(--px-28)]" />
                         <div className="flex flex-col items-start text-left">
                             <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-80 uppercase">
                                 Drop a Track
@@ -50,7 +50,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ dropSvg, matchSv
                         </div>
                     </div>
                     <div className="flex items-start gap-[var(--px-10)]">
-                        <img src={matchSvg} draggable={false} alt="matchTrack" className="w-[var(--px-28)] h-[var(--px-28)]" />
+                        <img src={matchSvg} aria-hidden="true" loading="lazy" draggable={false} alt="matchTrack" className="w-[var(--px-28)] h-[var(--px-28)]" />
                         <div className="flex flex-col items-start text-left">
                             <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-80 uppercase">
                                 Our Advanced Model Crunches Similarity
@@ -61,7 +61,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ dropSvg, matchSv
                         </div>
                     </div>
                     <div className="flex items-start gap-[var(--px-10)]">
-                        <img src={discoverSvg} draggable={false} alt="discoverTrack" className="w-[var(--px-32)] h-[var(--px-32)]" />
+                        <img src={discoverSvg} aria-hidden="true" loading="lazy" draggable={false} alt="discoverTrack" className="w-[var(--px-32)] h-[var(--px-32)]" />
                         <div className="flex flex-col items-start text-left -ml-[var(--px-4)]">
                             <div className="text-[length:var(--px-12)] font-medium font-fira leading-[var(--px-14)] opacity-80 uppercase">
                                 Discover Similar Tracks

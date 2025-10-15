@@ -6,11 +6,13 @@ interface LinkButtonProps {
   newTab?: boolean;
   id?: string;
   className?: string;
+  ariaLabel?: string;
 }
 
-export const LinkButton: React.FC<LinkButtonProps> = ({ text, path, newTab = false, id, className }) => (
+export const LinkButton: React.FC<LinkButtonProps> = ({ text, path, newTab = false, id, className, ariaLabel }) => (
   <a 
     href={path}
+    aria-label={ariaLabel || text}
     className={`p-[var(--px-8)] opacity-70 flex justify-center items-center gap-[var(--px-8)] hover:opacity-100 transition-opacity cursor-pointer font-extralight ${className}`}
     target={newTab ? "_blank" : ""}
     rel={newTab ? "noopener noreferrer" : ""}
