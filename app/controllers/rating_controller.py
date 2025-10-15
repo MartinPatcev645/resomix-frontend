@@ -55,15 +55,33 @@ class RatingController:
             if result["success"]:
                 # log success
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="RATING",
                     action="rate_track_success",
-                    message="Track rated",
-                    duration_ms=duration_ms,
+                    message="Track rated successfully",
                     correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=200,
+                    response_size=len(str(result)),
+                    duration_ms=duration_ms,
                     track_id=request_data.track_id,
                     playlist_id=request_data.playlist_id,
-                    metadata={"rating": request_data.rating}
+                    context="Track rating submission",
+                    metadata={
+                        "rating": request_data.rating,
+                        "result": result,
+                        "response": result
+                    },
+                    operation="track_rating"
                 )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
@@ -71,17 +89,35 @@ class RatingController:
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="RATING",
                     action="rate_track_failed",
                     message=result.get("error"),
-                    duration_ms=duration_ms,
                     correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=error_code.value if hasattr(error_code, 'value') else int(error_code),
+                    response_size=len(str(result)),
+                    duration_ms=duration_ms,
                     track_id=request_data.track_id,
                     playlist_id=request_data.playlist_id,
-                    metadata={"rating": request_data.rating}
+                    context="Track rating validation",
+                    metadata={
+                        "rating": request_data.rating,
+                        "error": result.get("error"),
+                        "response": result
+                    },
+                    operation="track_rating"
                 )
-                error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
                 return JSONResponse(
                     status_code=error_code,
                     content=result
@@ -90,13 +126,30 @@ class RatingController:
         except ValueError as e:
             # Handle Pydantic validation errors
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_user_action(
-                db=db,
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="RATING",
                 action="rate_track_validation_error",
-                duration_ms=duration_ms,
                 message=str(e),
-                metadata={},
-                correlation_id=self.logging_service.generate_correlation_id()
+                correlation_id=self.logging_service.generate_correlation_id(),
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=422,
+                response_size=len(str(error_response)) if 'error_response' in locals() else None,
+                duration_ms=duration_ms,
+                context="Track rating input validation",
+                metadata={
+                    "error": str(e),
+                    "validation_step": "input_validation"
+                },
+                operation="track_rating"
             )
             error_response = {
                 "success": False,
@@ -108,13 +161,30 @@ class RatingController:
             )
         except ValidationError as e:
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_user_action(
-                db=db,
-                duration_ms=duration_ms,
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="RATING",
                 action="rate_track_validation_error",
                 message=str(e),
-                metadata={},
-                correlation_id=self.logging_service.generate_correlation_id()
+                correlation_id=self.logging_service.generate_correlation_id(),
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=422,
+                response_size=len(str(error_response)) if 'error_response' in locals() else None,
+                duration_ms=duration_ms,
+                context="Track rating validation error",
+                metadata={
+                    "error": str(e),
+                    "validation_step": "service_validation"
+                },
+                operation="track_rating"
             )
             error_response = {
                 "success": False,
@@ -126,7 +196,16 @@ class RatingController:
             )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_error(db=db, error=e, context="rate_track_controller", duration_ms=duration_ms)
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="RATING",
+                action="rate_track_exception",
+                error=e,
+                context="rate_track_controller",
+                duration_ms=duration_ms,
+                correlation_id=correlation_id
+            )
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while processing the rating"
@@ -146,16 +225,29 @@ class RatingController:
             
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="RATING",
                     action="get_track_rating_success",
                     message="Track rating retrieved",
-                    duration_ms=duration_ms,
-                    status_code=200,
                     correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=200,
+                    response_size=len(str(result)),
+                    duration_ms=duration_ms,
                     track_id=track_id,
                     playlist_id=playlist_id,
-                    metadata={"rating": result.get("rating")}
+                    context="Track rating retrieval",
+                    metadata={"rating": result.get("rating"), "response": result},
+                    operation="get_track_rating"
                 )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
@@ -163,16 +255,29 @@ class RatingController:
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="RATING",
                     action="get_track_rating_failed",
                     message=result.get("error"),
-                    duration_ms=duration_ms,
-                    status_code=404,
                     correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=404,
+                    response_size=len(str(result)),
+                    duration_ms=duration_ms,
                     track_id=track_id,
                     playlist_id=playlist_id,
-                    metadata={"rating": result.get("rating")}
+                    context="Track rating lookup",
+                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result},
+                    operation="get_track_rating"
                 )
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -181,7 +286,29 @@ class RatingController:
                 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self.logging_service.log_error(db=db, error=e, context="get_track_rating", correlation_id=correlation_id, duration_ms=duration_ms)
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="RATING",
+                action="get_track_rating_exception",
+                message="Unexpected error during track rating retrieval",
+                correlation_id=correlation_id,
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=500,
+                response_size=len(str(error_response)) if 'error_response' in locals() else None,
+                duration_ms=duration_ms,
+                error=e,
+                context="get_track_rating",
+                metadata={"exception_type": type(e).__name__} if 'e' in locals() else None,
+                operation="get_track_rating"
+            )
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while retrieving the rating"
@@ -201,16 +328,29 @@ class RatingController:
             
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="RATING",
                     action="delete_track_rating_success",
                     message="Track rating deleted",
-                    duration_ms=duration_ms,
-                    status_code=200,
                     correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=200,
+                    response_size=len(str(result)),
+                    duration_ms=duration_ms,
                     track_id=track_id,
                     playlist_id=playlist_id,
-                    metadata={"rating": result.get("rating")}
+                    context="Track rating deletion",
+                    metadata={"rating": result.get("rating"), "response": result},
+                    operation="delete_track_rating"
                 )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
@@ -218,16 +358,29 @@ class RatingController:
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                self.logging_service.log_user_action(
-                    db=db,
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="RATING",
                     action="delete_track_rating_failed",
                     message=result.get("error"),
-                    duration_ms=duration_ms,
-                    status_code=404,
                     correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=404,
+                    response_size=len(str(result)),
+                    duration_ms=duration_ms,
                     track_id=track_id,
                     playlist_id=playlist_id,
-                    metadata={"rating": result.get("rating")}
+                    context="Track rating deletion lookup",
+                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result},
+                    operation="delete_track_rating"
                 )
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -235,7 +388,27 @@ class RatingController:
                 )
                 
         except Exception as e:
-            self.logging_service.log_error(db=db, error=e, context="delete_track_rating", correlation_id=correlation_id)
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="RATING",
+                action="delete_track_rating_exception",
+                message="Unexpected error during track rating deletion",
+                correlation_id=correlation_id,
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=500,
+                duration_ms=(time.time() - start_time) * 1000,
+                error=e,
+                context="delete_track_rating",
+                operation="delete_track_rating"
+            )
             error_response = {
                 "success": False,
                 "error": "Internal server error occurred while deleting the rating"
@@ -256,17 +429,64 @@ class RatingController:
         Returns:
             JSON response with rating statistics
         """
+        start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             result = await self.rating_service.get_track_rating_stats(db, track_id)
-            
+            duration_ms = None
+            try:
+                duration_ms = (time.time() - start_time) * 1000  # start_time defined earlier in similar endpoints
+            except Exception:
+                pass
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="RATING",
+                action="get_track_rating_stats_success",
+                message="Track rating statistics retrieved successfully",
+                correlation_id=correlation_id,
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=200,
+                response_size=len(str(result)),
+                duration_ms=duration_ms,
+                track_id=track_id,
+                context="Track rating statistics retrieval",
+                metadata={"statistics": result, "response": result},
+                operation="get_track_rating_stats"
+            )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=result
             )
                 
         except Exception as e:
-            self.logging_service.log_error(db=db, error=e, context="get_track_rating_stats", correlation_id=correlation_id)
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="RATING",
+                action="get_track_rating_stats_exception",
+                message="Unexpected error during track rating statistics retrieval",
+                correlation_id=correlation_id,
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=500,
+                error=e,
+                context="get_track_rating_stats",
+                operation="get_track_rating_stats"
+            )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
