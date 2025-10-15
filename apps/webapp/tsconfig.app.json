@@ -36,9 +36,11 @@
     "noUnusedParameters": true,
     // "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    // for vitest
+    "types": ["vitest/globals", "node"]
   },
-  "include": ["src", "../../packages/ui/src/Elements/StatusMessage.tsx"],
+  "include": ["src", "../../packages/ui/src/Elements/StatusMessage.tsx", "vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e", "e2e"],
   "references": [
     { "path": "../../packages/ui" },
     { "path": "../../packages/hooks" },
