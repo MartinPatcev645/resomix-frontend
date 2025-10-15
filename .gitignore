@@ -41,4 +41,5 @@ x_assets/
 .turbo/
 *.turbo
 .vscode/
+.lighthouseci/
 
