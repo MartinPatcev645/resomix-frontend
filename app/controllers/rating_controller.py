@@ -51,6 +51,11 @@ class RatingController:
                 request_data.rating, 
                 request_data.user_id
             )
+            # Resolve integer IDs for logging
+            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, request_data.track_id)
+            track_int_id = track_obj.id if track_obj else None
+            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, request_data.playlist_id)
+            playlist_int_id = playlist_obj.id if playlist_obj else None
             
             if result["success"]:
                 # log success
@@ -73,10 +78,12 @@ class RatingController:
                     status_code=200,
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
-                    track_id=request_data.track_id,
-                    playlist_id=request_data.playlist_id,
+                    track_id=track_int_id,
+                    playlist_id=playlist_int_id,
                     context="Track rating submission",
                     metadata={
+                        "track_uuid": request_data.track_id,
+                        "playlist_uuid": request_data.playlist_id,
                         "rating": request_data.rating,
                         "result": result,
                         "response": result
@@ -108,10 +115,12 @@ class RatingController:
                     status_code=error_code.value if hasattr(error_code, 'value') else int(error_code),
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
-                    track_id=request_data.track_id,
-                    playlist_id=request_data.playlist_id,
+                    track_id=track_int_id,
+                    playlist_id=playlist_int_id,
                     context="Track rating validation",
                     metadata={
+                        "track_uuid": request_data.track_id,
+                        "playlist_uuid": request_data.playlist_id,
                         "rating": request_data.rating,
                         "error": result.get("error"),
                         "response": result
@@ -222,6 +231,11 @@ class RatingController:
         try:
             
             result = await self.rating_service.get_track_rating(db, track_id, playlist_id, user_id)
+            # Resolve integer IDs for logging
+            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
+            track_int_id = track_obj.id if track_obj else None
+            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist_int_id = playlist_obj.id if playlist_obj else None
             
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
@@ -243,10 +257,10 @@ class RatingController:
                     status_code=200,
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
-                    track_id=track_id,
-                    playlist_id=playlist_id,
+                    track_id=track_int_id,
+                    playlist_id=playlist_int_id,
                     context="Track rating retrieval",
-                    metadata={"rating": result.get("rating"), "response": result},
+                    metadata={"rating": result.get("rating"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
                     operation="get_track_rating"
                 )
                 return JSONResponse(
@@ -273,10 +287,10 @@ class RatingController:
                     status_code=404,
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
-                    track_id=track_id,
-                    playlist_id=playlist_id,
+                    track_id=track_int_id,
+                    playlist_id=playlist_int_id,
                     context="Track rating lookup",
-                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result},
+                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
                     operation="get_track_rating"
                 )
                 return JSONResponse(
@@ -325,6 +339,11 @@ class RatingController:
         try:
             
             result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, user_id)
+            # Resolve integer IDs for logging
+            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
+            track_int_id = track_obj.id if track_obj else None
+            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist_int_id = playlist_obj.id if playlist_obj else None
             
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
@@ -346,10 +365,10 @@ class RatingController:
                     status_code=200,
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
-                    track_id=track_id,
-                    playlist_id=playlist_id,
+                    track_id=track_int_id,
+                    playlist_id=playlist_int_id,
                     context="Track rating deletion",
-                    metadata={"rating": result.get("rating"), "response": result},
+                    metadata={"rating": result.get("rating"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
                     operation="delete_track_rating"
                 )
                 return JSONResponse(
@@ -376,10 +395,10 @@ class RatingController:
                     status_code=404,
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
-                    track_id=track_id,
-                    playlist_id=playlist_id,
+                    track_id=track_int_id,
+                    playlist_id=playlist_int_id,
                     context="Track rating deletion lookup",
-                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result},
+                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
                     operation="delete_track_rating"
                 )
                 return JSONResponse(
@@ -456,9 +475,8 @@ class RatingController:
                 status_code=200,
                 response_size=len(str(result)),
                 duration_ms=duration_ms,
-                track_id=track_id,
                 context="Track rating statistics retrieval",
-                metadata={"statistics": result, "response": result},
+                metadata={"statistics": result, "response": result, "track_uuid": track_id},
                 operation="get_track_rating_stats"
             )
             return JSONResponse(
