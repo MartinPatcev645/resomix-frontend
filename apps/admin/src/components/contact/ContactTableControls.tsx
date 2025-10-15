@@ -82,7 +82,9 @@ function ContactTableControls({
             />
             
             {/* Search column selector */}
-            <Select
+            <Select 
+              id="search-column-select"
+              aria-label="Search column"
               value={searchColumn}
               onChange={(value) => onSearchColumnChange(value as keyof ContactItem)}
               options={searchColumns}
@@ -107,7 +109,9 @@ function ContactTableControls({
           />
           
           {/* Status filter */}
-          <Select
+          <Select 
+            id="status-filter-select"
+            aria-label="Status filter"
             value={statusFilter}
             onChange={(value) => {
               setStatusFilter(value)

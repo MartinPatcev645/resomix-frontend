@@ -47,11 +47,12 @@ const UploadOne: React.FC = () => {
                         className="relative w-[var(--px-97)] h-[var(--px-26)] border border-dotted border-slate-200 flex items-center justify-center gap-[var(--px-6)] text-[length:var(--px-11)] font-fira font-extralight text-[var(--color-primary)]"
                     >
                         {/* Invisible native select covers full area to keep accessibility & native picker */}
-                        <select
+                        <select 
+                            aria-label="Upload results count"
+                            id="upload-results-count-select"
                             value={topSk}
                             onChange={handleCountChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none upload-settings-select"
-                            id="upload-results-count-select"
                         >
                             <option value="10">10 tracks</option>
                             <option value="20">20 tracks</option>

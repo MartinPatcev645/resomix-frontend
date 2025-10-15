@@ -87,6 +87,8 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                     </Tooltip>
                                     <div className="">
                                         <select 
+                                            id="search-mode-dropdown"
+                                            aria-label="Search mode"
                                             value={searchMode}
                                             onChange={handleSearchModeChange}
                                             className="w-[var(--px-80)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)]"
