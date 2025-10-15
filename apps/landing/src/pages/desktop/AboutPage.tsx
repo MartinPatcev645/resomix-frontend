@@ -26,7 +26,7 @@ export function AboutPage() {
           <div className="">
             {/* Navbar */}
             <Navbar
-              logo={<a href={BASE_LANDING_URL} className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+              logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
               baseUrl={BASE_LANDING_URL}
               baseBetaUrl={BASE_BETA_URL}
               mode="home"

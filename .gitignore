@@ -42,4 +42,6 @@ x_assets/
 *.turbo
 .vscode/
 .lighthouseci/
+test-results/
+
 

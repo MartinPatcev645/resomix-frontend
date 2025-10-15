@@ -107,7 +107,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         track.duration,
                         track.score,
                         false)} className="absolute right-[var(--px-8)] top-[var(--px-8)] pb-[25px] select-none text-[#5C5C5C] playlist-more-button" id={`playlist-table-more-${track.id}`}>
-                        <img src={MoreSvg} draggable={false} alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
+                        <img src={MoreSvg} draggable={false} aria-label="More" alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
                     </div>
                 </div>
             ))}

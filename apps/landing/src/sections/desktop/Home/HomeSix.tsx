@@ -92,7 +92,7 @@ const HomeSix: React.FC = () => {
     </div>
     {/* Arrow indicator appears only after the sticky section has fully scrolled past */}
     <div className="flex w-full justify-center mt-[var(--px-100)]">
-      <img src={AngleDownSvg} draggable={false} alt="Angle Down" className="w-[var(--px-52)] h-[var(--px-53)]" />
+      <img src={AngleDownSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Angle Down" className="w-[var(--px-52)] h-[var(--px-53)]" />
     </div>
     </>
   );

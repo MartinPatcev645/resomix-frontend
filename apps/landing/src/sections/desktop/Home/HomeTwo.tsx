@@ -22,7 +22,7 @@ const HomeTwo: React.FC = () => (
       <div className=''></div>
       <div className='flex flex-col justify-center items-center'>
         <div className=''>
-          <img src={LayersSvg} draggable={false} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
+          <img src={LayersSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
         </div>
         <div className="text-center justify-start text-[length:var(--px-13)] font-extrabold font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-90">
           Quality-over-quantity
@@ -30,7 +30,7 @@ const HomeTwo: React.FC = () => (
         <div className="text-center justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-70">Resomix goes deeper than anyone else, carefully selecting music <br />that reflects the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
       </div>
       <div className='my-[var(--px-32)]'>
-        <img src={VerticalLineSvg} draggable={false} alt="Vertical Line" className="w-[var(--px-2)] h-[var(--px-63)]" />
+        <img src={VerticalLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Vertical Line" className="w-[var(--px-2)] h-[var(--px-63)]" />
       </div>
       <div className="opacity-80 justify-start text-[var(--color-primary)] text-[length:var(--px-7)] font-light font-fira tracking-widest min-h-[var(--px-10-5)]">
         <CodeTyping

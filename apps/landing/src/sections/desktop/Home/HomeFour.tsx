@@ -29,7 +29,7 @@ const HomeFour: React.FC = () => {
               <div className='mr-[var(--px-16)]'>
                 HOW
               </div>
-              <img className="w-[var(--px-49)] h-[var(--px-49)]" src={ArrowSmallUp} alt="Arrow Small Up" />
+              <img className="w-[var(--px-49)] h-[var(--px-49)]" aria-hidden="true" loading="lazy" draggable={false} src={ArrowSmallUp} alt="Arrow Small Up" />
             </div>
             <div className=''>
               RESOMIX<br />WORKS
@@ -100,7 +100,7 @@ const HomeFour: React.FC = () => {
         <div className='flex flex-col'>
           <div className='flex flex-col items-start'>
             <div className='flex items-end justify-start gap-[var(--px-20)] mb-[var(--px-16)]'>
-              <img src={ReferenceSvg} alt="Reference" className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-42)] h-[var(--px-42)]" />
+              <img src={ReferenceSvg} alt="Reference" aria-hidden="true" loading="lazy" draggable={false} className="mb-[var(--px-4)] mr-[var(--px-12)] w-[var(--px-42)] h-[var(--px-42)]" />
               <div className='text-[length:var(--px-22)] font-bold font-helvetica uppercase'>
                 1 — Upload Your Reference Track
               </div>
@@ -110,11 +110,11 @@ const HomeFour: React.FC = () => {
             </div>
           </div>
           <div className='mt-[var(--px-12)] mb-[var(--px-32)] opacity-70'>
-            <img className="w-[var(--px-763)] h-[var(--px-1)]" src={LineOneSvg} alt="Line One" />
+            <img className="w-[var(--px-763)] h-[var(--px-1)]" aria-hidden="true" loading="lazy" draggable={false} src={LineOneSvg} alt="Line One" />
           </div>
           <div className='flex justify-between items-start mr-[var(--px-16)]'>
             <div className='flex flex-col justify-between gap-[var(--px-8)] items-start'>
-              <img className="w-[var(--px-46)] h-[var(--px-48)]" src={AnalysisSvg} alt="Analysis" />
+              <img className="w-[var(--px-46)] h-[var(--px-48)]" aria-hidden="true" loading="lazy" draggable={false} src={AnalysisSvg} alt="Analysis" />
               <div className='text-[length:var(--px-22)] mb-[var(--px-16)] font-bold font-helvetica uppercase'>
                 2 — Deep Sound Analysis
               </div>
@@ -123,10 +123,10 @@ const HomeFour: React.FC = () => {
               </div>
             </div>
             <div className=''>
-              <img className="w-[var(--px-1)] h-[var(--px-234)]" src={LineTwoSvg} alt="Line Two" />
+              <img className="w-[var(--px-1)] h-[var(--px-234)]" aria-hidden="true" loading="lazy" draggable={false} src={LineTwoSvg} alt="Line Two" />
             </div>
             <div className='flex flex-col justify-between gap-[var(--px-8)] items-start'>
-              <img className="w-[var(--px-41)] h-[var(--px-41)]" src={MatchesSvg} alt="Matches" />
+              <img className="w-[var(--px-41)] h-[var(--px-41)]" aria-hidden="true" loading="lazy" draggable={false} src={MatchesSvg} alt="Matches" />
               <div className='text-[length:var(--px-22)] mb-[var(--px-16)] font-bold font-helvetica uppercase'>
                 3 — Get Perfect Matches
               </div>

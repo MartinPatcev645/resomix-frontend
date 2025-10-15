@@ -86,7 +86,7 @@ export function UploadMobile() {
           hero={<UploadHero />}
           mode="upload"
         >
-          <img src={AngleDown} draggable={false} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
+          <img src={AngleDown} aria-hidden="true" loading="lazy" draggable={false} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
 
           {/* Section One */}
           <div className="relative z-20 mt-[var(--px-60)]">

@@ -15,30 +15,30 @@ const AboutOne: React.FC = () => {
             {/* Section 1 A */}
             <div className="flex flex-col w-full items-center gap-[var(--px-40)]">
                 <div className="absolute w-[var(--px-700)] left-[16%] z-1">
-                    <img src={GradientTwo} draggable={false} alt="gradient_two" className="w-full h-auto" />
+                    <img src={GradientTwo} aria-hidden="true" loading="lazy" draggable={false} alt="gradient_two" className="w-full h-auto" />
                 </div>
                 <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] z-20">
                     {t('about.about_one.headline_mission')}
                 </div>
                 <div className="flex items-end w-full justify-center gap-[var(--px-20)] mr-[var(--px-50)] z-20">
-                    <img src={ArrowBigDownSvg} draggable={false} alt="arrow_big_down_stroke" className="w-[var(--px-49)] h-[var(--px-49)] transform -rotate-90" />
+                    <img src={ArrowBigDownSvg} aria-hidden="true" loading="lazy" draggable={false} alt="arrow_big_down_stroke" className="w-[var(--px-49)] h-[var(--px-49)] transform -rotate-90" />
                     <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_one.mission_paragraph') }}>
                     </div>
                 </div>
-                <img src={AboutSeparatorLineSvg} draggable={false} alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)] z-20" />
+                <img src={AboutSeparatorLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)] z-20" />
             </div>
 
             {/* Section 1 B */}
             <div className="flex flex-col w-full items-center gap-[var(--px-40)]">
                 <div className="text-[length:var(--px-58)] font-light font-helvetica uppercase leading-[var(--px-60)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_one.headline_alternative_route') }}>
                 </div>
-                <img src={AboutSeparatorLineSvg} draggable={false} alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)]" />
+                <img src={AboutSeparatorLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)]" />
                 <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_one.tech_paragraph') }}>
                 </div>
-                <img src={SoundWavesTwo} draggable={false} alt="sound_waves_two" className="w-[var(--px-31)] h-[var(--px-38)]" />
+                <img src={SoundWavesTwo} aria-hidden="true" loading="lazy" draggable={false} alt="sound_waves_two" className="w-[var(--px-31)] h-[var(--px-38)]" />
                 <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_one.result_paragraph') }}>
                 </div>
-                <img src={AboutSeparatorLineTwo} draggable={false} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                <img src={AboutSeparatorLineTwo} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
                 <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)] text-center">
                     <CodeTyping
                         text={t('about.about_one.code_text')}
@@ -46,7 +46,7 @@ const AboutOne: React.FC = () => {
                         speed={100}
                     />
                 </div>
-                <img src={AboutSeparatorLineTwo} draggable={false} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                <img src={AboutSeparatorLineTwo} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
                 <div className="w-full flex justify-center items-center">
                     <ButtonHeavyRight text={t('about.about_one.cta_find_perfect')} onClick={() => {
                         window.location.href = BASE_BETA_URL

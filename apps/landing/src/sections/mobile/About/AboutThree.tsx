@@ -16,10 +16,10 @@ const AboutThree: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 {/* Graphics Overlay */}
                 <div className="absolute -top-[var(--px-150)] w-[var(--px-622)] -right-[var(--px-170)] pointer-events-none z-5">
-                    <img src={GradientFive} draggable={false} alt="gradient_five" className="w-full h-auto" />
+                    <img src={GradientFive} draggable={false} aria-hidden="true" loading="lazy" alt="gradient_five" className="w-full h-auto" />
                 </div>
                 <div className="absolute top-[var(--px-500)] w-[var(--px-394)] -left-[var(--px-20)] pointer-events-none z-5">
-                    <img src={GradientSix} draggable={false} alt="gradient_six" className="w-full h-[var(--px-1720)]" />
+                    <img src={GradientSix} draggable={false} aria-hidden="true" loading="lazy" alt="gradient_six" className="w-full h-[var(--px-1720)]" />
                 </div>
 
                 {/* Content */}
@@ -46,7 +46,7 @@ const AboutThree: React.FC = () => {
                 </div>
                 <div className="flex flex-col gap-[var(--px-100)] items-start">
                     <div className="flex gap-[var(--px-10)] z-15">
-                        <img src={AnalysisSvg} draggable={false} alt="analysis" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={AnalysisSvg} draggable={false} aria-hidden="true" loading="lazy" alt="analysis" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 Discovery Based<br />on Sound
@@ -57,7 +57,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={CraftSvg} draggable={false} alt="craft" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={CraftSvg} draggable={false} aria-hidden="true" loading="lazy" alt="craft" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 Simplicity<br />and Efficiency
@@ -68,7 +68,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={ReferenceSvg} draggable={false} alt="reference" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={ReferenceSvg} draggable={false} aria-hidden="true" loading="lazy" alt="reference" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 Real Inclusion
@@ -79,7 +79,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={SpeedSvg} draggable={false} alt="speed" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={SpeedSvg} draggable={false} aria-hidden="true" loading="lazy" alt="speed" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 Built For Speed
@@ -90,7 +90,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={SoundWavesTwo} draggable={false} alt="sound waves" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={SoundWavesTwo} draggable={false} aria-hidden="true" loading="lazy" alt="sound waves" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 Open by Nature
@@ -101,7 +101,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={LayersSvg} draggable={false} alt="layers" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={LayersSvg} draggable={false} aria-hidden="true" loading="lazy" alt="layers" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 Quality over Quantity
@@ -112,7 +112,7 @@ const AboutThree: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={MatchesSvg} draggable={false} alt="matches" className="w-[var(--px-52)] h-[var(--px-52)]" />
+                        <img src={MatchesSvg} draggable={false} aria-hidden="true" loading="lazy" alt="matches" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
                                 The Art<br />of Crate Digging

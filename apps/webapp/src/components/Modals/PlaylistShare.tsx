@@ -182,7 +182,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
 
           <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
 
-              <img src={SuccessSvg} draggable={false}  alt="Success" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
+              <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Success" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
 
               <div className="text-center w-full">
                   <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
@@ -194,7 +194,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
               </div>
 
               <div onClick={handlePrimaryAction} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link' id="playlist-share-link">
-                  <img src={BrakesSvg} draggable={false}  alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
+                  <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
                   {link || 'Generating link...'}
               </div>
 

@@ -130,7 +130,7 @@ const UploadLoader: React.FC = () => {
                 </div>
                 <div className="flex w-full justify-between mt-[var(--px-260)] lg:mt-[var(--px-230)] min-h-[var(--px-40)]">
                     <div className="hidden lg:flex text-[length:var(--px-6)] font-light font-fira tracking-[var(--px-1)] min-w-[var(--px-203)] flex-col gap-[var(--px-10)] items-start">
-                        <img src={LoadingBubblesSvg} draggable={false} alt="Loading Bubbles" className="w-[var(--px-90)] h-[var(--px-9)]" />
+                        <img src={LoadingBubblesSvg} aria-label="Loading Bubbles" draggable={false} alt="Loading Bubbles" className="w-[var(--px-90)] h-[var(--px-9)]" />
                         <CodeTyping
                             text="[SCAN_05] → Mapping sonic DNA<|>.<|><br />[SCAN_06] → Decoding musical patterns<|>.<|><br />[SCAN_07] → Scanning frequency fingerprints<|>.<|><br />[FINAL] → Finalizing playlist blueprint<|>.<|>"
                             // Speed = 100 delay = 5000
@@ -168,7 +168,7 @@ const UploadLoader: React.FC = () => {
                             [ {Math.round(loaderProgress)}% ]
                         </div>
                     </div>
-                    <img src={ScaleSvg} draggable={false} alt="Scale" className="w-[var(--px-900)] h-[var(--px-21)]" />
+                    <img src={ScaleSvg} aria-label="Scale" draggable={false} alt="Scale" className="w-[var(--px-900)] h-[var(--px-21)]" />
                     {/* Only show progress bar for actual file uploads */}
                     {(loaderProgress < 99) && (
                         <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
@@ -193,7 +193,7 @@ const UploadLoader: React.FC = () => {
                             [ {Math.round(loaderProgress)}% ]
                         </div>
                     </div>
-                    <img src={ScaleMobileSvg} draggable={false} alt="Scale" className="w-[var(--px-393)] h-[var(--px-23)]" />
+                    <img src={ScaleMobileSvg} aria-label="Scale" draggable={false} alt="Scale" className="w-[var(--px-393)] h-[var(--px-23)]" />
                     {/* Only show progress bar for actual file uploads */}
                     {(loaderProgress < 99) && (
                         <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">

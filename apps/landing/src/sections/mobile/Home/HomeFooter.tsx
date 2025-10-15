@@ -1,6 +1,7 @@
 import React from "react";
 import { CodeTyping } from "@resomix/ui";
 import { LogoRFooter } from "@/components/LogoRFooter.tsx";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 const HomeFooter: React.FC = () => (
   <div className="mt-[var(--px-324)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
@@ -10,7 +11,7 @@ const HomeFooter: React.FC = () => (
       </div>
       <div className="flex flex-col items-start px-[var(--px-10)] min-h-[var(--px-129)] mt-[var(--px-40)]">
         <div className="flex w-full justify-start">
-          <a href="https://resomix.com" className="cursor-default">
+          <a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default">
             <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
           </a>
         </div>
@@ -42,11 +43,11 @@ const HomeFooter: React.FC = () => (
       </div>
       <div className="flex flex-col items-center text-center justify-between">
         <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)] items-center my-[var(--px-60)]">
-          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)]">
+          <a href={`${BASE_LANDING_URL}/terms`} aria-label="Resomix terms" className="hover:underline decoration-[var(--px-0-5)]">
             legal.terms()
           </a>
           <br />
-          <a href="/terms" className="hover:underline decoration-[var(--px-0-5)]">
+          <a href={`${BASE_LANDING_URL}/privacy`} aria-label="Resomix privacy" className="hover:underline decoration-[var(--px-0-5)]">
             privacy_policy()
           </a>
         </div>

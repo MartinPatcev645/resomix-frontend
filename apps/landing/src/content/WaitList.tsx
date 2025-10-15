@@ -85,7 +85,7 @@ export default function WaitListContent({ baseUrl = "https://resomix.com" }: Wai
 
         <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
-            <a href={baseUrl} className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors">
+            <a href={baseUrl} aria-label="Resomix home" className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors">
               ← {t('general.back_to_home')}
             </a>
           </div>
