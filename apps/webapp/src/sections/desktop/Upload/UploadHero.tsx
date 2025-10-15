@@ -10,6 +10,7 @@ const UploadHero: React.FC = () => {
     <div className="relative">
       {/* Hidden SVG defs for clip-path */}
       <svg
+        aria-hidden="true"
         viewBox="0 0 1152 628"
         preserveAspectRatio="none"
         className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
@@ -82,13 +83,13 @@ const UploadHero: React.FC = () => {
           </div>
           <div className='flex w-full justify-between items-center -mt-[var(--px-40)] relative z-15'>
             <div className='flex gap-[var(--px-12)]'>
-              <img className="w-[var(--px-35)] h-[var(--px-35)]" draggable={false} src={ArrowSmallDown} aria-hidden="true" loading="lazy" alt="Arrow Small Down" />
+              <img className="w-[var(--px-35)] h-[var(--px-35)]" draggable={false} src={ArrowSmallDown} aria-hidden="true" loading="lazy" alt="" />
               <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-[var(--px-20)] text-[var(--color-primary)]">Upload a reference track,<br />and unlock a universe of sounds.</div>
             </div>
             <div className="text-[length:var(--px-62)] font-semibold font-helvetica uppercase text-right">The Journey <span className="italic">Begins</span></div>
           </div>
           <div className="flex justify-center items-center w-full relative z-15">
-            <img src={LineThree} className="w-[var(--px-4)] h-[var(--px-60)]" draggable={false} aria-hidden="true" loading="lazy" alt="Line Three" />
+            <img src={LineThree} className="w-[var(--px-4)] h-[var(--px-60)]" draggable={false} aria-hidden="true" loading="lazy" alt="" />
           </div>
           <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[30px] max-h-[30px]">
             <CodeTyping
@@ -109,7 +110,7 @@ const UploadHero: React.FC = () => {
 
       {/* Text below the SVG clip path */}
       <div className='flex justify-center items-center gap-[var(--px-8)] -mt-[var(--px-30)] relative z-15'>
-        <img src={AngleDown} draggable={false} className="w-[var(--px-55)] h-[var(--px-44)]" aria-hidden="true" loading="lazy" alt="Sound Waves" />
+        <img src={AngleDown} draggable={false} className="w-[var(--px-55)] h-[var(--px-44)]" aria-hidden="true" loading="lazy" alt="" />
       </div>
     </div>
   );

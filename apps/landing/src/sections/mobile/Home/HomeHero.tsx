@@ -62,26 +62,35 @@ const HomeHero: React.FC = () => (
             window.location.href = BASE_BETA_URL
           }} className="cta-button primary" id="home-hero-upload-button" />
         </div>
-        <div className="flex gap-[var(--px-4)] mx-auto relative z-15 my-[var(--px-50)]">
+        <div className="flex gap-[var(--px-15)] mx-auto relative z-15 my-[var(--px-50)]">
           <IconComp
-            svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" aria-label="Fb" loading="lazy" draggable={false} src={FbSvg} alt="Fb" />}
-            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
+            svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" loading="lazy" draggable={false} src={FbSvg} alt="" aria-hidden="true" />}
+            className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)] social-icon"
             padding=""
-            onClick={() => window.open(FACEBOOK_URL, "_blank")}
+            href={FACEBOOK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            ariaLabel="Visit Resomix on Facebook"
             id="home-hero-facebook-icon"
           />
           <IconComp
-            svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" aria-label="Insta" loading="lazy" draggable={false} src={InstaSvg} alt="Insta" />}
-            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
+            svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" loading="lazy" draggable={false} src={InstaSvg} alt="" aria-hidden="true" />}
+            className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)] social-icon"
             padding=""
-            onClick={() => window.open(INSTAGRAM_URL, "_blank")}
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            ariaLabel="Visit Resomix on Instagram"
             id="home-hero-instagram-icon"
           />
           <IconComp
-            svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" aria-label="X" loading="lazy" draggable={false} src={XSvg} alt="X" />}
-            className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
+            svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" loading="lazy" draggable={false} src={XSvg} alt="" aria-hidden="true" />}
+            className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)] social-icon"
             padding=""
-            onClick={() => window.open(TWITTER_URL, "_blank")}
+            href={TWITTER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            ariaLabel="Visit Resomix on X (Twitter)"
             id="home-hero-twitter-icon"
           />
         </div>

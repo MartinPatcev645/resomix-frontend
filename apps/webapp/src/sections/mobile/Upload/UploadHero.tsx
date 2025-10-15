@@ -20,9 +20,9 @@ const UploadHero: React.FC = () => {
         />
       </div>
       <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
-        <div className="text-[length:var(--px-49)] font-helvetica leading-[var(--px-50)] font-bold uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></div>
+        <h1 className="text-[length:var(--px-49)] font-helvetica leading-[var(--px-50)] font-bold uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></h1>
         <div className="text-[length:var(--px-20)] font-helvetica font-extralight leading-[var(--px-24)] uppercase">upload a reference track,<br />and unlock a universe<br />of sounds</div>
-        <img src={ArrowDownRightSvg} draggable={false} alt="arrow_down_right" aria-hidden="true" loading="lazy" className="w-[var(--px-44)] h-[var(--px-44)]" />
+        <img src={ArrowDownRightSvg} draggable={false} alt="" aria-hidden="true" loading="lazy" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>
       <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] min-h-[var(--px-33)]">
         <CodeTyping
@@ -32,26 +32,35 @@ const UploadHero: React.FC = () => {
           delay={1200}
         />
       </div>
-      <div className="flex gap-[var(--px-4)] relative z-15">
+      <div className="flex gap-[var(--px-15)] relative z-15">
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" aria-label="Fb" draggable={false} src={FbSvg} alt="Fb" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
+          svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" draggable={false} src={FbSvg} alt="" aria-hidden="true" />}
+          className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)] social-icon"
           padding=""
-          onClick={() => window.open(FACEBOOK_URL, "_blank")}
+          href={FACEBOOK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          ariaLabel="Visit Resomix on Facebook"
           id="upload-hero-facebook-icon"
         />
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" aria-label="Insta" draggable={false} src={InstaSvg} alt="Insta" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
+          svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" draggable={false} src={InstaSvg} alt="" aria-hidden="true" />}
+          className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)] social-icon"
           padding=""
-          onClick={() => window.open(INSTAGRAM_URL, "_blank")}
+          href={INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          ariaLabel="Visit Resomix on Instagram"
           id="upload-hero-instagram-icon"
         />
         <IconComp
-          svg={<img className="w-[var(--px-23)] h-[var(--px-23)]" aria-label="X" draggable={false} src={XSvg} alt="X" />}
-          className="w-[var(--px-23)] h-[var(--px-23)] px-[var(--px-5)] social-icon"
+          svg={<img className="w-[var(--px-30)] h-[var(--px-30)]" draggable={false} src={XSvg} alt="" aria-hidden="true" />}
+          className="w-[var(--px-30)] h-[var(--px-30)] px-[var(--px-5)] social-icon"
           padding=""
-          onClick={() => window.open(TWITTER_URL, "_blank")}
+          href={TWITTER_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          ariaLabel="Visit Resomix on X (Twitter)"
           id="upload-hero-twitter-icon"
         />
       </div>

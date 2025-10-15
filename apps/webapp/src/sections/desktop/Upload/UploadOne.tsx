@@ -45,9 +45,12 @@ const UploadOne: React.FC = () => {
                 <div className="flex items-center gap-[var(--px-6)]">
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
-                            <div className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]">
+                            <label 
+                                htmlFor="upload-results-count-select"
+                                className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]"
+                            >
                                 Results Count
-                            </div>
+                            </label>
                             <div>
                                 <img src={InfoSvg} draggable={false} alt="Info" aria-label="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
                             </div>

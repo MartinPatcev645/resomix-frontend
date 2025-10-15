@@ -13,9 +13,11 @@ import { WaveformLoader } from "@resomix/ui";
 interface InputPlayerProps {
     trackId?: string;
     totalDuration: number;
+    // Optional metadata to attach on the play/pause button for analytics
+    playButtonDataAttributes?: Record<string, string>;
 }
 
-const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => {
+const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playButtonDataAttributes }) => {
     const volume = usePlayerStore((s) => s.volume);
     const networkError = usePlayerStore((s) => s.networkError);
 
@@ -41,6 +43,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration }) => 
                 id="input-player-play-pause"
                 className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0 player-control player-control-play-pause"
                 onClick={ctl.togglePlay}
+                {...(playButtonDataAttributes as Record<string, string> | undefined)}
               >
                   <img
                     src={ctl.isPlaying ? PauseSvg : PlaySvg}

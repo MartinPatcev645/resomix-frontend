@@ -77,20 +77,24 @@ export function UploadPage() {
           overflowX: "hidden"
         }}
       >
-        <SideLines>
-          {/* Navbar */}
-          <Navbar
-            logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-            mode="upload"
-            baseUrl={BASE_LANDING_URL}
-            baseBetaUrl={BASE_BETA_URL}
-            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-          />
+        <main>
+          <SideLines>
+            {/* Navbar */}
+            <header>
+              <Navbar
+                logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+                mode="upload"
+                baseUrl={BASE_LANDING_URL}
+                baseBetaUrl={BASE_BETA_URL}
+                customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+              />
+            </header>
 
-          <UploadHero />
-          <UploadOne />
-          <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
-        </SideLines >
+            <UploadHero />
+            <UploadOne />
+            <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
+          </SideLines >
+        </main>
       </div>
 
       {showOverlay && (

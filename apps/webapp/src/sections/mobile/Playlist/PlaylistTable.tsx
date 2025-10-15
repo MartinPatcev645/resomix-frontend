@@ -25,11 +25,12 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]">
+        <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]" role="table" aria-label="Similar tracks">
+            <h2 className="sr-only">Similar Tracks</h2>
             {tracks.map((track) => (
-                <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative">
+                <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative" role="row">
                     <div className="flex flex-col w-full">
-                        <div onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)] playlist-play-button" id={`playlist-table-play-button-${track.id}`}>
+                        <button type="button" aria-label="PlayPause" name="PlayPause" onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)] playlist-play-button" id={`playlist-table-play-button-${track.id}`} role="cell" data-track-id={track.id} data-track-artist={track.artist} data-track-title={track.title}>
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
                                 <div className="w-[var(--px-36)] h-[var(--px-36)] m-[var(--px-2)] flex items-center justify-center border-3 rounded-md border-[var(--color-light-theme)] relative z-20">
                                     <span className="text-[length:var(--px-15)] font-fira font-light text-[var(--color-primary)] relative z-0">
@@ -47,7 +48,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     />
                                 )}
                             </div>
-                            <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]">
+                            <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]" role="cell">
                                 <div className="w-full">
                                     <div className="text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
                                         {currentTrackId === track.id && isPlaying ? (
@@ -65,16 +66,16 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         )}
                                     </div>
                                 </div>
-                                <div className="w-full">
+                                <div className="w-full" role="cell">
                                     <div className="text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
                                         {track.artist}
                                     </div>
                                 </div>
                                 <div className="w-full flex items-center justify-between">
-                                    <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]">
+                                    <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]" role="cell">
                                         {track.label} {track.year ? `- ${track.year}` : ''}
                                     </div>
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between" role="cell">
                                         <div className="flex items-center">
                                             <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
                                                 {formatPercentage(track.score, 0)}
@@ -87,28 +88,28 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 ></div>
                                             </div>
                                         </div>
-                                        <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)] ml-[var(--px-60)]">
+                                        <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)] ml-[var(--px-60)]" role="cell">
                                             {formatDuration(track.duration)}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                         {currentTrackId === track.id && isPlaying && (
                             <div>
                                 <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
                             </div>
                         )}
                     </div>
-                    <div onClick={() => onMoreClick?.(
+                    <button type="button" aria-label="More" name="More" onClick={() => onMoreClick?.(
                         track.id,
                         `${track.artist} - ${track.title}`,
                         track.label,
                         track.duration,
                         track.score,
-                        false)} className="absolute right-[var(--px-8)] top-[var(--px-8)] pb-[25px] select-none text-[#5C5C5C] playlist-more-button" id={`playlist-table-more-${track.id}`}>
+                        false)} className="absolute right-[var(--px-8)] top-[var(--px-8)] pb-[25px] select-none text-[#5C5C5C] playlist-more-button" id={`playlist-table-more-${track.id}`} data-track-id={track.id} data-track-artist={track.artist} data-track-title={track.title}>
                         <img src={MoreSvg} draggable={false} aria-label="More" alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
-                    </div>
+                    </button>
                 </div>
             ))}
         </div>
