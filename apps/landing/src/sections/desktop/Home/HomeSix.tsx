@@ -9,8 +9,11 @@ const HomeSix: React.FC = () => {
   const [scale, setScale] = useState(0.6); // start small
   const ASPECT = 1268 / 1555; // keep in sync with <Tunnel aspectRatio={...}>
 
-  // Height of the section = 3 × tunnel height, where tunnel height = 100vw × aspect
-  const sectionHeightStyle = useMemo(() => `calc(100vw * ${ASPECT * 3})`, []);
+  // Height of the section = max(300vh, 3 × tunnel height)
+  const sectionHeightStyle = useMemo(
+    () => `max(300vh, calc(100vw * ${ASPECT * 3}))`,
+    []
+  );
 
   useEffect(() => {
     const onScroll = () => {
@@ -40,12 +43,12 @@ const HomeSix: React.FC = () => {
 
   return (
     <>
-    <div ref={sectionRef} className="relative z-15" style={{ height: sectionHeightStyle }}>
+    <div ref={sectionRef} className="relative mt-[var(--px-150)] z-15" style={{ height: sectionHeightStyle }}>
       {/* Top spacer (~50px via pixels.css) so pin engages near center */}
       <div style={{ height: "var(--px-50)" }} />
 
-      {/* Sticky layer pinned for the middle 200vh of the section */}
-      <div className="sticky top-0 h-screen w-full">
+      {/* Sticky layer pinned for the section; use stable viewport height */}
+      <div className="sticky top-0 h-[100svh] w-full isolate">
         {/* Tunnel background fills viewport and remains fixed during the pinned span */}
         <div className="absolute inset-0 opacity-80 pointer-events-none">
           <Tunnel aspectRatio={ASPECT} />
@@ -88,7 +91,7 @@ const HomeSix: React.FC = () => {
       <div style={{ height: "var(--px-50)" }} />
     </div>
     {/* Arrow indicator appears only after the sticky section has fully scrolled past */}
-    <div className="flex w-full justify-center">
+    <div className="flex w-full justify-center mt-[var(--px-100)]">
       <img src={AngleDownSvg} draggable={false} alt="Angle Down" className="w-[var(--px-52)] h-[var(--px-53)]" />
     </div>
     </>
