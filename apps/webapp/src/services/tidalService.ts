@@ -4,7 +4,7 @@
  * Uses server-side authentication for enhanced security
  */
 
-import { API_CONFIG } from "@resomix/api-client/config.js"
+import { API_CONFIG, TIDAL_CONFIG } from "@resomix/api-client/config.js"
 
 // Expected shape of API_CONFIG
 type Endpoints = {
@@ -133,7 +133,8 @@ export const initializeTidalAuth = async (): Promise<void> => {
   try {
     // Generate PKCE parameters
     const { codeVerifier, codeChallenge } = await generatePKCEPair();
-    const redirectUri = `${window.location.origin}/test`;
+    // const redirectUri = `${window.location.origin}/test`;
+    const redirectUri = 'https://stack.resomix.com/sonic-discovery?id=75378136-fd59-4ac5-9de9-ab414d499029';
 
     // Store code verifier for later use
     localStorage.setItem('tidal_code_verifier', codeVerifier);
@@ -142,11 +143,11 @@ export const initializeTidalAuth = async (): Promise<void> => {
       redirectUri,
       codeChallenge: codeChallenge?.substring(0, 20) + '...',
       codeVerifier: codeVerifier?.substring(0, 20) + '...',
-      endpoint: getUrl(CFG.ENDPOINTS.TIDAL_AUTH_AUTHORIZE),
+      endpoint: getUrl(TIDAL_CONFIG.AUTH_AUTHORIZE),
     });
 
     // Get authorization URL from server
-    const response = await fetch(getUrl(CFG.ENDPOINTS.TIDAL_AUTH_AUTHORIZE), {
+    const response = await fetch(getUrl(TIDAL_CONFIG.AUTH_AUTHORIZE), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

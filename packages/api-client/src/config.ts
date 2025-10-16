@@ -126,6 +126,32 @@ export const API_CONFIG: ApiConfig = {
   },
 };
 
-export const TIDAL_CONFIG: TidalConfig = {
-  REDIRECT_URI: getEnv("VITE_TIDAL_REDIRECT_URI", ""),
+export const SPOTIFY_CONFIG = {
+  CLIENT_ID: getEnv("VITE_SPOTIFY_CLIENT_ID") || '9df225a14080472c8c4ea5fc85b3eb6b',
+  // REDIRECT_URI: `${window.location.origin}/test`, // Callback URL
+  // REDIRECT_URI: 'https://beta-old.resomix.com/test',
+  REDIRECT_URI: 'https://stack.resomix.com/sonic-discovery',
+  SCOPES: 'playlist-modify-public playlist-modify-private',
+  AUTH_URL: 'https://accounts.spotify.com/authorize',
+  TOKEN_URL: 'https://accounts.spotify.com/api/token'
 };
+
+// Tidal configuration
+export const TIDAL_CONFIG = {
+  CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'AxOkLsNxSDQ8InZU',
+  // REDIRECT_URI: 'https://beta.resomix.com/test',
+  REDIRECT_URI: 'https://beta-old.resomix.com/test',
+  SCOPE: 'user.read playlists.read playlists.write',
+  AUTH_URL: 'https://login.tidal.com/authorize',
+  AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
+};
+
+/*
+export const TIDAL_CONFIG = {
+  CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'ds7LnGkxqwFXUE6s',
+  REDIRECT_URI: 'https://stack.resomix.com',
+  SCOPE: 'user.read playlists.read playlists.write',
+  AUTH_URL: 'https://login.tidal.com/authorize',
+  AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
+};
+*/

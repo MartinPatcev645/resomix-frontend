@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ButtonSleek } from '@resomix/ui';
 import { usePlaylistExport } from '@resomix/hooks';
 import SuccessSvg from "@/assets/icons/success.svg";
-import BrakesSvg from "@/assets/icons/brakes.svg";
 
-// Spotify/Tidal services
+// Spotify services
 import {
   initializeSpotifyAuth,
   handleSpotifyCallback,
@@ -13,12 +12,40 @@ import {
   clearSpotifyAuth
 } from '../../services/spotifyService.ts';
 
+// Tidal services (без initializeTidalAuth)
 import {
-  initializeTidalAuth,
   handleTidalCallback,
   checkTidalAuthentication,
-  clearTidalAuth
+  clearTidalAuth,
+  transferPlaylistToTidal
 } from '../../services/tidalService.ts';
+
+
+import { TIDAL_CONFIG } from "@resomix/api-client/config.js";
+/*
+const TIDAL_CONFIG = {
+  CLIENT_ID: 'AxOkLsNxSDQ8InZU',
+  REDIRECT_URI: 'https://stack.resomix.com',
+  SCOPE: 'user.read playlists.read playlists.write',
+  AUTH_URL: 'https://login.tidal.com/authorize',
+};
+ */
+
+function base64url(buffer: ArrayBuffer | Uint8Array) {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function sha256(plain: string) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  const hash = await window.crypto.subtle.digest('SHA-256', data);
+  return hash;
+}
 
 interface PlaylistExportWithIntegrationsProps {
   isOpen: boolean;
@@ -39,7 +66,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
   const [buttonText, setButtonText] = useState("Download");
 
   // Shared playlist info for streaming transfers
-  const [playlistId, setPlaylistId] = useState('');
+  const [playlistId, setPlaylistId] = useState(new URLSearchParams(window.location.search).get('id') || '');
   const [customName, setCustomName] = useState('');
 
   // Spotify states
@@ -56,30 +83,25 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
   const [tidalMessage, setTidalMessage] = useState<string | null>(null);
   const [tidalError, setTidalError] = useState<string | null>(null);
 
-  // Prepare export when modal opens; render the modal immediately with "Preparing ..." title.
-  // Do not trigger global success popup when preparation finishes; only update state locally.
   useEffect(() => {
     const prepareExport = async () => {
       if (!isOpen || !canExport) return;
-
       try {
         const result = await exportPlaylist();
         if (result.success) {
           setFilename(result.filename || 'resomix_playlist.txt');
           setFileContent(result.content || '');
-          setIsReady(true); // Unblocks actions and flips title to "PLAYLIST READY!"
+          setIsReady(true);
         } else {
           onStatusChange('error', result.error || 'Failed to prepare playlist for export', 'Export Error');
         }
-      } catch (error) {
+      } catch {
         onStatusChange('error', 'Unexpected error while preparing export', 'Export Error');
       }
     };
-
     prepareExport();
   }, [isOpen, canExport, exportPlaylist, onStatusChange]);
 
-  // Body scroll lock and reset state on close/unmount
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -88,7 +110,6 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     }
     return () => {
       document.body.style.overflow = 'unset';
-      // Reset state on unmount or close
       setFilename('');
       setFileContent('');
       setIsReady(false);
@@ -104,7 +125,6 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     };
   }, [isOpen]);
 
-  // Close on Escape key
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -117,14 +137,12 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     };
   }, [isOpen, onClose]);
 
-  // Check auth status on mount/open
   useEffect(() => {
     if (!isOpen) return;
     setIsSpotifyAuthenticated(checkSpotifyAuthentication());
     setIsTidalAuthenticated(checkTidalAuthentication());
   }, [isOpen]);
 
-  // Handle OAuth callbacks for Spotify and Tidal
   useEffect(() => {
     if (!isOpen) return;
 
@@ -140,9 +158,13 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
 
     if (error) {
       if (state === tidalState) {
-        setTidalError(`Tidal authorization failed: ${error}`);
+        const msg = `Tidal authorization failed: ${error}`;
+        setTidalError(msg);
+        onStatusChange('error', msg, 'Tidal Auth Error');
       } else if (state === spotifyState) {
-        setSpotifyError(`Spotify authorization failed: ${error}`);
+        const msg = `Spotify authorization failed: ${error}`;
+        setSpotifyError(msg);
+        onStatusChange('error', msg, 'Spotify Auth Error');
       }
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
@@ -158,7 +180,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
             if (res?.success) {
               setIsTidalAuthenticated(true);
               setTidalMessage('Successfully connected to Tidal!');
-              onStatusChange('success', 'Connected to Tidal');
+              onStatusChange('success', 'Connected to Tidal', 'Tidal Connected');
             } else {
               const msg = res?.error || 'Failed to connect to Tidal';
               setTidalError(msg);
@@ -181,7 +203,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
             if (res?.success) {
               setIsSpotifyAuthenticated(true);
               setSpotifyMessage('Successfully connected to Spotify!');
-              onStatusChange('success', 'Connected to Spotify');
+              onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
             } else {
               const msg = res?.error || 'Failed to connect to Spotify';
               setSpotifyError(msg);
@@ -225,7 +247,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     setSpotifyMessage(null);
     try {
       setSpotifyConnectLoading(true);
-      await initializeSpotifyAuth();
+      await initializeSpotifyAuth(playlistId);
     } catch (err: any) {
       const msg = `Failed to initialize Spotify authentication: ${err?.message || 'Unknown error'}`;
       setSpotifyError(msg);
@@ -253,9 +275,10 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     onStatusChange('loading', 'Transferring playlist to Spotify...');
     try {
       const result = await transferPlaylistToSpotify(playlistId.trim(), customName.trim() || null);
+      console.log('---spotify result', result);
       if (result?.success) {
-        const msg = result.message || 'Playlist transferred to Spotify';
-        setSpotifyMessage(msg);
+        const msg = 'Playlist transferred to Spotify';
+        setSpotifyMessage(result?.data?.spotify_playlist_url);
         onStatusChange('success', msg, 'Spotify Transfer');
       } else {
         const errMsg = result?.error || 'Failed to transfer playlist to Spotify';
@@ -274,18 +297,42 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     }
   };
 
-  // Tidal actions
   const connectTidal = async () => {
     setTidalError(null);
     setTidalMessage(null);
     try {
       setTidalConnectLoading(true);
-      await initializeTidalAuth();
+
+      // Step 1: Generate PKCE and state
+      const array = new Uint8Array(32);
+      window.crypto.getRandomValues(array);
+      const code_verifier = base64url(array);
+      const hash = await sha256(code_verifier);
+      const code_challenge = base64url(hash);
+      const state = window.crypto.randomUUID();
+
+      // Save PKCE and state
+      sessionStorage.setItem('tidal_pkce', JSON.stringify({ code_verifier, code_challenge, state }));
+      localStorage.setItem('tidal_oauth_state', state);
+
+      // Step 2: Build auth URL
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: TIDAL_CONFIG.CLIENT_ID,
+        redirect_uri: TIDAL_CONFIG.REDIRECT_URI,// +window.location.pathname + window.location.search,
+        scope: TIDAL_CONFIG.SCOPE,
+        code_challenge: code_challenge,
+        code_challenge_method: 'S256',
+        state: state,
+      });
+      const url = `${TIDAL_CONFIG.AUTH_URL}?${params.toString()}`;
+
+      // Step 2b: Redirect
+      window.location.href = url;
     } catch (err: any) {
       const msg = `Failed to initialize Tidal authentication: ${err?.message || 'Unknown error'}`;
       setTidalError(msg);
       onStatusChange('error', msg, 'Tidal Auth Error');
-    } finally {
       setTidalConnectLoading(false);
     }
   };
@@ -297,7 +344,6 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     setTidalError(null);
   };
 
-  // Note: assuming backend uses stored session tokens (no need to pass access token here)
   const doTidalTransfer = async () => {
     if (!playlistId.trim()) {
       setTidalError('Please enter a playlist ID (ResomiX UUID)');
@@ -308,14 +354,9 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     setTidalMessage(null);
     onStatusChange('loading', 'Transferring playlist to Tidal...');
     try {
-      // Your Test component used `transferPlaylistToTidal(playlistId, playlistName?)`
-      // Keep the same signature
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { transferPlaylistToTidal } = require('../services/api');
       const result = await transferPlaylistToTidal(playlistId.trim(), customName.trim() || null);
-
       if (result?.success) {
-        const msg = result.message || 'Playlist transferred to Tidal';
+        const msg = String(result.message) || 'Playlist transferred to Tidal';
         setTidalMessage(msg);
         onStatusChange('success', msg, 'Tidal Transfer');
       } else {
@@ -349,7 +390,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
       />
 
       {/* Modal */}
-      <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
+      <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-800)] w-full lg:w-[var(--px-600)]">
         {/* Header */}
         <img
           src={SuccessSvg}
@@ -370,18 +411,9 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
 
         {/* Filename indicator */}
         <div className="relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center my-[var(--px-8)]">
-          <img
-            src={BrakesSvg}
-            aria-hidden="true"
-            loading="lazy"
-            draggable={false}
-            alt="Brakes"
-            className="absolute top-0 left-0 pointer-events-none"
-          />
           <span>{filename || 'Preparing filename...'}</span>
         </div>
 
-        {/* Integrations moved to the top of the modal */}
         {/* Spotify section */}
         <div className="w-full border border-dotted border-[var(--color-primary)] rounded-xs p-[var(--px-12)] flex flex-col gap-[var(--px-10)]">
           <div className="text-[length:var(--px-12)] font-semibold font-helvetica uppercase">
@@ -417,14 +449,18 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
             )}
           </div>
 
-          {/* Status */}
           <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)]">
             Status: {isSpotifyAuthenticated ? 'Connected ✅' : 'Not Connected ❌'}
           </div>
           {spotifyMessage && (
-            <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] text-green-400">
+            <a
+              href={spotifyMessage}
+              target={'_blank'}
+              className="block text-sm font-light font-fira leading-tight text-green-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full hover:text-green-300 transition-colors"
+              title={spotifyMessage}
+            >
               {spotifyMessage}
-            </div>
+            </a>
           )}
           {spotifyError && (
             <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] text-red-400">
@@ -468,7 +504,6 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
             )}
           </div>
 
-          {/* Status */}
           <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)]">
             Status: {isTidalAuthenticated ? 'Connected ✅' : 'Not Connected ❌'}
           </div>
@@ -487,7 +522,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
         {/* Divider */}
         <div className="w-full h-px bg-[var(--color-primary)]/30 my-[var(--px-20)]" />
 
-        {/* Shared inputs for transfers */}
+        {/* Shared inputs */}
         <div className="w-full grid gap-[var(--px-10)] mt-[var(--px-10)]">
           <label className="flex flex-col gap-[var(--px-6)]">
             <span className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)]">
@@ -516,7 +551,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
           </label>
         </div>
 
-        {/* Download section */}
+        {/* Download */}
         <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
           Click download to save the playlist to your device, or connect to Spotify/Tidal above to transfer it.
         </div>

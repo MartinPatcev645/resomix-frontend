@@ -61,12 +61,12 @@ const base64encode = (input: ArrayBuffer): string => {
  * Initialize Spotify OAuth PKCE flow
  * Redirects user to Spotify authorization page
  */
-export const initializeSpotifyAuth = async (): Promise<void> => {
+export const initializeSpotifyAuth = async (id: string | null): Promise<void> => {
   try {
     // Generate code verifier and challenge
     const codeVerifier = generateRandomString(64);
     const codeChallenge = base64encode(await sha256(codeVerifier));
-    const state = generateRandomString(16);
+    const state = encodeURI(id || generateRandomString(16));
 
     // Store code verifier and state for later use
     localStorage.setItem('spotify_code_verifier', codeVerifier);
@@ -81,6 +81,7 @@ export const initializeSpotifyAuth = async (): Promise<void> => {
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
       redirect_uri: SPOTIFY_CONFIG.REDIRECT_URI,
+      // redirect_uri: 'https://stack.resomix.com/sonic-discovery?id=75378136-fd59-4ac5-9de9-ab414d499029',
       state: state,
     };
 

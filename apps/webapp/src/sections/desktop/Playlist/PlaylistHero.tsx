@@ -2,7 +2,7 @@ import React from "react";
 import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
 import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExportWithIntegrations } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -63,6 +63,13 @@ const PlaylistHero: React.FC = () => {
     }
     setShowExport(true);
   };
+
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('share') === 'true') {
+      setShowExport(true);
+    }
+  }, []);
 
   return (
     <div className="relative">
@@ -257,7 +264,7 @@ const PlaylistHero: React.FC = () => {
         onClose={handleRenameClose}
         onStatusChange={handleStatusChange}
       />
-      <PlaylistExport
+      <PlaylistExportWithIntegrations
         isOpen={showExport}
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}
