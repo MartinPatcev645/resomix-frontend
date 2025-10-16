@@ -35,9 +35,9 @@ const UploadOne: React.FC = () => {
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
             <div className="w-[var(--px-880)] h-[var(--px-61)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
                 <div className="">
-                    <div className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
+                    <h2 className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
                         Set Your Depth
-                    </div>
+                    </h2>
                     <div className="text-[length:var(--px-9)] font-fira font-light opacity-70">
                         Choose how many similar tracks Resomix will recommend.
                     </div>

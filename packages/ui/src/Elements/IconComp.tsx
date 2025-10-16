@@ -18,6 +18,8 @@ interface IconCompProps {
   ariaLabel?: string;
   // Optional data attributes to forward to the rendered element (e.g., data-track-id)
   dataAttributes?: Record<string, string>;
+  // Only for button rendering: when true, set aria-hidden and omit aria-label
+  ariaHidden?: boolean;
 }
 
 export const IconComp: React.FC<IconCompProps> = ({ 
@@ -36,6 +38,7 @@ export const IconComp: React.FC<IconCompProps> = ({
   rel,
   ariaLabel,
   dataAttributes,
+  ariaHidden,
 }) => {
   const containerStyle = {
     width: width,
@@ -66,8 +69,8 @@ export const IconComp: React.FC<IconCompProps> = ({
     ) : (
       <button 
         type="button"
-        name={ariaLabel || id || 'Icon'}
-        aria-hidden="true"
+        {...(ariaLabel && !ariaHidden ? { 'aria-label': ariaLabel } : {})}
+        {...(!ariaLabel && ariaHidden ? { 'aria-hidden': true } : {})}
         className={`relative cursor-pointer ${backgroundColor} rounded-2xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] ${borderColor} group-hover:outline-[var(--color-primary-hover)] hover:bg-[var(--color-primary-hover)] transition-colors overflow-hidden ${padding} ${className}`}
         style={containerStyle as React.CSSProperties}
         onClick={onClick}
