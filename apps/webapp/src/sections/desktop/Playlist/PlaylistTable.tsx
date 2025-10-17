@@ -160,7 +160,7 @@ const PlaylistTable: React.FC = () => {
                                 data-track-title={track.title}
                                 data-track-name={track.title}
                             >
-                                <Tooltip message="Find Similarity For this Track!">
+                                <Tooltip message="Get New Sonic Discovery Playlist For this Track!">
                                     <img src={SonicDiscoverySvg} draggable={false} alt="Sonic Discovery" aria-label="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
                                 </Tooltip>
                             </div>
