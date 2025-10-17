@@ -30,7 +30,7 @@ export function usePlaylistExport() {
       .join('\n');
     
     // Combine all parts
-    return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}`;
+    return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}\n\n\nSonic matches provided by Resomix https://resomix.com`;
   }, []);
 
   const generateFilename = useCallback((data: typeof playlistData): string => {
