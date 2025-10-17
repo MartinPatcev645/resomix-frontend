@@ -7,6 +7,7 @@ import MenuPage from './MenuPage.tsx';
 import TestPage from './TestPage.tsx';
 import TestTwo from './TestTwo.tsx';
 import PlayerPage from './PlayerPage.tsx';
+import {SpotifyRedirect} from "./redirect/SpotifyRedirect.tsx";
 
 export {
     UploadPage,
@@ -18,4 +19,5 @@ export {
     TestPage,
     TestTwo,
     PlayerPage,
+    SpotifyRedirect,
 };

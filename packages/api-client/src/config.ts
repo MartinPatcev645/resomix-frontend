@@ -130,7 +130,7 @@ export const SPOTIFY_CONFIG = {
   CLIENT_ID: getEnv("VITE_SPOTIFY_CLIENT_ID") || '9df225a14080472c8c4ea5fc85b3eb6b',
   // REDIRECT_URI: `${window.location.origin}/test`, // Callback URL
   // REDIRECT_URI: 'https://beta-old.resomix.com/test',
-  REDIRECT_URI: 'https://stack.resomix.com/sonic-discovery',
+  REDIRECT_URI: 'https://stack.resomix.com/spotify-redirect',
   SCOPES: 'playlist-modify-public playlist-modify-private',
   AUTH_URL: 'https://accounts.spotify.com/authorize',
   TOKEN_URL: 'https://accounts.spotify.com/api/token'
