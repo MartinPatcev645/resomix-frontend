@@ -146,17 +146,37 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
   useEffect(() => {
     if (!isOpen) return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const error = urlParams.get('error');
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const code = params.get('code');
+    const state = params.get('state');
+    const error = params.get('error');
 
     if (!code && !state && !error) return;
 
     const spotifyState = localStorage.getItem('spotify_auth_state');
     const tidalState = localStorage.getItem('tidal_oauth_state');
 
+    // helper: remove only oauth params, preserve others (e.g. ?id=...)
+    const stripOAuthParams = () => {
+      params.delete('code');
+      params.delete('state');
+      params.delete('error');
+      const newUrl = url.pathname + (params.toString() ? `?${params}` : '');
+      window.history.replaceState({}, document.title, newUrl);
+    };
+
+    // session guard (survives StrictMode remount)
+    const markHandled = (provider: 'spotify' | 'tidal') => {
+      if (!state) return false;
+      const key = `oauth_handled_${provider}_${state}`;
+      if (sessionStorage.getItem(key)) return true;
+      sessionStorage.setItem(key, '1');
+      return false;
+    };
+
     if (error) {
+      // Decide provider by matching state
       if (state === tidalState) {
         const msg = `Tidal authorization failed: ${error}`;
         setTidalError(msg);
@@ -166,15 +186,19 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
         setSpotifyError(msg);
         onStatusChange('error', msg, 'Spotify Auth Error');
       }
-      window.history.replaceState({}, document.title, window.location.pathname);
+      stripOAuthParams();
       return;
     }
 
     if (code && state) {
-      // Tidal callback
+      // Tidal
       if (state === tidalState) {
+        if (markHandled('tidal')) return; // early exit on second run
         setTidalError(null);
         setTidalConnectLoading(true);
+        // Important: strip params BEFORE awaiting, so a remount can’t retrigger
+        stripOAuthParams();
+
         handleTidalCallback(code, state)
           .then((res: any) => {
             if (res?.success) {
@@ -187,17 +211,18 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
               onStatusChange('error', msg, 'Tidal Connect Failed');
             }
           })
-          .finally(() => {
-            setTidalConnectLoading(false);
-            window.history.replaceState({}, document.title, window.location.pathname);
-          });
+          .finally(() => setTidalConnectLoading(false));
         return;
       }
 
-      // Spotify callback
+      // Spotify
       if (state === spotifyState) {
+        if (markHandled('spotify')) return; // early exit on second run
         setSpotifyError(null);
         setSpotifyConnectLoading(true);
+        // Important: strip params BEFORE awaiting
+        stripOAuthParams();
+
         handleSpotifyCallback(code, state)
           .then((res: any) => {
             if (res?.success) {
@@ -208,16 +233,15 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
               const msg = res?.error || 'Failed to connect to Spotify';
               setSpotifyError(msg);
               onStatusChange('error', msg, 'Spotify Connect Failed');
-              window.history.replaceState({}, document.title,`${window.location.pathname}?id=${state}`);
+              // const newParams = new URLSearchParams(window.location.search);
+              // newParams.set('id', state);
+              // window.history.replaceState({}, document.title, `${window.location.pathname}?${newParams}`);
             }
           })
-          .finally(() => {
-            setSpotifyConnectLoading(false);
-            // window.history.replaceState({}, document.title, window.location.pathname);
-          });
+          .finally(() => setSpotifyConnectLoading(false));
       }
     }
-  }, [isOpen]);
+  }, [isOpen, onStatusChange]);
 
   // Download handler
   const handleDownload = () => {
