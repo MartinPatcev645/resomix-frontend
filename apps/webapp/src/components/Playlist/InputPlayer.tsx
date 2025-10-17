@@ -43,6 +43,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
           id="input-player-play-pause"
           className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0 player-control player-control-play-pause"
           onClick={ctl.togglePlay}
+          aria-label="Play"
           {...(playButtonDataAttributes as Record<string, string> | undefined)}
         >
           <img

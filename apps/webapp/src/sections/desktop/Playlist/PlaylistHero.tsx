@@ -260,9 +260,11 @@ const PlaylistHero: React.FC = () => {
                         trackId={playlistData.queried_track.id} 
                         totalDuration={playlistData.queried_track.duration ?? 0}
                         playButtonDataAttributes={{
+                          'data-testid': 'play-button',
                           'data-track-id': playlistData?.queried_track.id,
                           'data-track-artist': playlistData?.queried_track.artist || '',
                           'data-track-title': playlistData?.queried_track.title || '',
+                          'data-track-name': playlistData?.queried_track.title || '',
                         }}
                       />
                     )}
