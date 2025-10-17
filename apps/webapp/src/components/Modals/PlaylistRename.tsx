@@ -93,23 +93,31 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="rename-dialog-title"
+        >
             {/* Backdrop with blur effect */}
             <div
                 className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
                 onClick={onClose}
                 id="playlist-rename-backdrop"
+                aria-hidden="true"
             />
 
             {/* Modal content */}
             <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
                 <div className="text-center w-full">
-                    <div className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
+                    <h2 id="rename-dialog-title" className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
                         Rename Playlist
-                    </div>
+                    </h2>
                 </div>
                 <div className="w-full">
+                    <label htmlFor="playlist-name-input" className="sr-only">New playlist name</label>
                     <input
+                        id="playlist-name-input"
                         className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica"
                         placeholder="Type new playlist name..."
                         value={newName}

@@ -20,6 +20,8 @@ interface IconCompProps {
   dataAttributes?: Record<string, string>;
   // Only for button rendering: when true, set aria-hidden and omit aria-label
   ariaHidden?: boolean;
+  // When true, render as non-interactive div (not focusable, for decorative icons within links)
+  asDiv?: boolean;
 }
 
 export const IconComp: React.FC<IconCompProps> = ({ 
@@ -39,6 +41,7 @@ export const IconComp: React.FC<IconCompProps> = ({
   ariaLabel,
   dataAttributes,
   ariaHidden,
+  asDiv = false,
 }) => {
   const containerStyle = {
     width: width,
@@ -46,6 +49,24 @@ export const IconComp: React.FC<IconCompProps> = ({
   };
 
   const dataAttrs = dataAttributes ?? undefined;
+
+  // Render as non-interactive div (decorative, not focusable)
+  if (asDiv) {
+    return (
+      <div
+        aria-hidden="true"
+        className={`relative ${backgroundColor} rounded-2xl outline outline-[var(--px-1)] outline-offset-[-var(--px-1)] ${borderColor} group-hover:outline-[var(--color-primary-hover)] overflow-hidden ${padding} ${className}`}
+        style={containerStyle as React.CSSProperties}
+        {...(dataAttrs as Record<string, string> | undefined)}
+      >
+        {React.cloneElement(svg as React.ReactElement<any>, {
+          width: width,
+          height: height,
+          style: { stroke: strokeColor }
+        })}
+      </div>
+    );
+  }
 
   return (
     href ? (

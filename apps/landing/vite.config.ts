@@ -6,14 +6,14 @@ import path from 'node:path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: {
-    allowedHosts: ['ios-dev.fluxhub.ai'],
-    hmr: {
-      protocol: 'wss',
-      host: 'ios-dev.fluxhub.ai',
-      clientPort: 443,
-    },
-  },
+  // server: {
+  //   allowedHosts: ['ios-dev.fluxhub.ai'],
+  //   hmr: {
+  //     protocol: 'wss',
+  //     host: 'ios-dev.fluxhub.ai',
+  //     clientPort: 443,
+  //   },
+  // },
   resolve: {
     alias: {
       '@':                  path.resolve(__dirname, './src'),

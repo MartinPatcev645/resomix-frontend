@@ -97,94 +97,131 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="rating-dialog-title"
+        >
             {/* Backdrop with blur effect */}
             <div
                 className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
                 onClick={onClose}
                 id="playlist-rating-backdrop"
+                aria-hidden="true"
             />
 
             {/* Modal content */}
             <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)]">
                 <div className="text-center mb-[var(--px-24)] w-full">
-                    <div className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
+                    <h2 id="rating-dialog-title" className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
                         "Rate the similarity results of this playlist"
-                    </div>
+                    </h2>
                 </div>
 
-                <div className='flex items-center w-full justify-evenly mb-[var(--px-10)]'>
-                    <div
+                <fieldset className='flex items-center w-full justify-evenly mb-[var(--px-10)]'>
+                    <legend className="sr-only">Rate the playlist</legend>
+                    
+                    <label
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
-                        onClick={() => handleRatingSelect('bad')}
+                        id="playlist-rating-bad"
                         onMouseEnter={() => setHoveredRating('bad')}
                         onMouseLeave={() => setHoveredRating(null)}
-                        id="playlist-rating-bad"
                     >
+                        <input
+                            type="radio"
+                            name="playlist-rating"
+                            value="bad"
+                            checked={selectedRating === 'bad'}
+                            onChange={() => handleRatingSelect('bad')}
+                            className="sr-only"
+                        />
                         <BadIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'bad'}
                             color={getIconColor('bad')}
                         />
-                        <div className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
+                        <span className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
                             Bad
-                        </div>
-                    </div>
-                    <div
+                        </span>
+                    </label>
+                    <label
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
-                        onClick={() => handleRatingSelect('fine')}
+                        id="playlist-rating-fine"
                         onMouseEnter={() => setHoveredRating('fine')}
                         onMouseLeave={() => setHoveredRating(null)}
-                        id="playlist-rating-fine"
                     >
+                        <input
+                            type="radio"
+                            name="playlist-rating"
+                            value="fine"
+                            checked={selectedRating === 'fine'}
+                            onChange={() => handleRatingSelect('fine')}
+                            className="sr-only"
+                        />
                         <FineIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'fine'}
                             color={getIconColor('fine')}
                         />
-                        <div className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
+                        <span className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
                             Fine
-                        </div>
-                    </div>
-                    <div
+                        </span>
+                    </label>
+                    <label
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
-                        onClick={() => handleRatingSelect('good')}
+                        id="playlist-rating-good"
                         onMouseEnter={() => setHoveredRating('good')}
                         onMouseLeave={() => setHoveredRating(null)}
-                        id="playlist-rating-good"
                     >
+                        <input
+                            type="radio"
+                            name="playlist-rating"
+                            value="good"
+                            checked={selectedRating === 'good'}
+                            onChange={() => handleRatingSelect('good')}
+                            className="sr-only"
+                        />
                         <GoodIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'good'}
                             color={getIconColor('good')}
                         />
-                        <div className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
+                        <span className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
                             Good
-                        </div>
-                    </div>
-                    <div
+                        </span>
+                    </label>
+                    <label
                         className='flex flex-col items-center gap-[var(--px-10)] group cursor-pointer rating-option'
-                        onClick={() => handleRatingSelect('fire')}
+                        id="playlist-rating-fire"
                         onMouseEnter={() => setHoveredRating('fire')}
                         onMouseLeave={() => setHoveredRating(null)}
-                        id="playlist-rating-fire"
                     >
+                        <input
+                            type="radio"
+                            name="playlist-rating"
+                            value="fire"
+                            checked={selectedRating === 'fire'}
+                            onChange={() => handleRatingSelect('fire')}
+                            className="sr-only"
+                        />
                         <FireIcon
                             className='w-[var(--px-45)] h-[var(--px-45)] transition-colors'
                             selected={selectedRating === 'fire'}
                             color={getIconColor('fire')}
                         />
-                        <div className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
+                        <span className='text-[length:var(--px-9)] font-light leading-[var(--px-12)] font-fira text-[var(--color-primary)] group-hover:text-[var(--color-primary-hover)] transition-colors'>
                             Fire
-                        </div>
-                    </div>
-                </div>
+                        </span>
+                    </label>
+                </fieldset>
 
                 <div className="flex flex-col items-start gap-[var(--px-10)] w-full">
-                    <div className="text-[length:var(--px-11)] font-medium leading-[var(--px-16)] font-fira">
+                    <label htmlFor="rating-feedback" className="text-[length:var(--px-11)] font-medium leading-[var(--px-16)] font-fira">
                         Share your experience <span className="text-[length:var(--px-10)] opacity-80 font-extralight">(optional)</span>
-                    </div>
+                    </label>
                     <textarea
+                        id="rating-feedback"
                         className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
                         rows={4}
                         placeholder="Please describe your rating or feedback in detail..."

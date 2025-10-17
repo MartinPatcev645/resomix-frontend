@@ -46,7 +46,7 @@ const UploadOne: React.FC = () => {
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
                             <label 
-                                htmlFor="upload-results-count-select"
+                                htmlFor="upload-results-count-select-desktop"
                                 className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]"
                             >
                                 Results Count
@@ -59,7 +59,7 @@ const UploadOne: React.FC = () => {
                     {/* Dropdown menu following same style */}
                     <div className="">
                         <select 
-                            id="upload-results-count-select"
+                            id="upload-results-count-select-desktop"
                             aria-label="Upload results count"
                             value={topSk}
                             onChange={handleCountChange}

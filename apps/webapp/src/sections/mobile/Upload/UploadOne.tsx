@@ -49,7 +49,7 @@ const UploadOne: React.FC = () => {
                         {/* Invisible native select covers full area to keep accessibility & native picker */}
                         <select 
                             aria-label="Upload results count"
-                            id="upload-results-count-select"
+                            id="upload-results-count-select-mobile"
                             value={topSk}
                             onChange={handleCountChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none upload-settings-select"
@@ -82,7 +82,7 @@ const UploadOne: React.FC = () => {
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)]">
                             <label 
-                                htmlFor="upload-results-count-select"
+                                htmlFor="upload-results-count-select-mobile"
                                 className="text-[length:var(--px-9)] font-fira font-light"
                             >
                                 Results Count

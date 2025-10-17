@@ -34,7 +34,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
     return (
         <div ref={sectionRef} className="relative">
             {/* Hidden SVG defs for clip-path */}
-            <svg viewBox="0 0 474 393" preserveAspectRatio="none" className="absolute inset-0 w-[length:var(--px-474)] h-[length:var(--px-383)] pointer-events-none z-10">
+            <svg viewBox="0 0 474 393" preserveAspectRatio="none" className="absolute inset-0 w-[length:var(--px-474)] h-[length:var(--px-383)] pointer-events-none z-10" aria-hidden="true">
                 <defs>
                     <clipPath id="container" clipPathUnits="objectBoundingBox">
                         <path transform="scale(0.0021097046,0.0026109660)" d="M1 382.815V0.962952H201.794L268.778 67.6297H473.593V382.815H1Z" />
@@ -56,32 +56,46 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
             <div className="relative w-[var(--px-474)] h-[var(--px-383)] mx-auto z-30">
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
-                    <div className="flex">
-                        <div className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2">
-                            <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</div>
-                            <img src={searchIcon} aria-label="search" draggable={false} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </div>
-                        <div 
+                    <div className="flex" role="tablist" aria-label="Search and upload tabs">
+                        <button
+                            id="tab-search"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="panel-search"
+                            type="button"
+                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2"
+                        >
+                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
+                            <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                        </button>
+                        <button
+                            id="tab-upload"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="panel-upload"
+                            type="button"
                             className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline search-component-upload-button"
                             onClick={onUploadClick}
-                            id="search-component-upload-button"
                         >
-                            <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
-                            <img src={uploadIcon} aria-label="upload" draggable={false} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </div>
+                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
+                            <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                        </button>
                     </div>
-                    <div className="m-[var(--px-30)]">
+                    <div id="panel-search" role="tabpanel" aria-labelledby="tab-search" className="m-[var(--px-30)]">
                         <div className="w-full h-[var(--px-265)] border border-dotted border-slate-300">
                             <div className="w-full flex justify-end p-[var(--px-12)] absolute right-[var(--px-24)]">
                                 {/* Search Mode Dropdown */}
                                 <div className="flex items-center gap-[var(--px-6)]">
                                     <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (song title only)." displayOnClick={true}>
                                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
-                                            <div className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]">
+                                            <label 
+                                                htmlFor="search-mode-dropdown"
+                                                className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]"
+                                            >
                                                 Search Mode
-                                            </div>
+                                            </label>
                                             <div>
-                                                <img src={InfoSvg} aria-label="Info" draggable={false} alt="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
+                                                <img src={InfoSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-10)] h-[var(--px-10)]" />
                                             </div>
                                         </div>
                                     </Tooltip>
@@ -113,10 +127,10 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                         onSelect={onTrackSelect}
                                     />
                                 </div>
-                                <div className="text-[length:var(--px-11)] font-fira font-light text-center mt-[var(--px-30)]">
+                                <h3 className="text-[length:var(--px-11)] font-fira font-light text-center mt-[var(--px-30)]">
                                     Do you have a song in mind?
-                                </div>
-                                <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="sound waves" className="w-[var(--px-29)] h-[var(--px-36)] my-[var(--px-10)]" />
+                                </h3>
+                                <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-29)] h-[var(--px-36)] my-[var(--px-10)]" />
                                 <div className="text-[length:var(--px-11)] font-fira font-light text-center">
                                     Let's find tunes that resonate with it!
                                 </div>

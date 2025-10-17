@@ -11,7 +11,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
   const version = useConfig((s) => s.version);
 
   return (
-    <div className="mt-[var(--px-250)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
+    <footer className="mt-[var(--px-250)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
       <div className="flex flex-col w-full">
         <div className="absolute -left-[var(--px-20)] -top-[var(--px-80)] w-[var(--px-393)] text-[length:var(--px-30)] font-benzin uppercase leading-[var(--px-40)]">
           Join the Resomix<br />Universe
@@ -71,7 +71,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
           </div>
         </div>
       </div>
-    </div>
+    </footer>
   );
 };
 

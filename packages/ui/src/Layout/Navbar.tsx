@@ -17,7 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
   const { showFeedbackForm } = useFeedbackStore();
 
   return (
-    <nav className={`${customClass ? customClass : 'flex justify-between items-center align-center pt-[var(--px-28)] px-[var(--px-65)] z-40 relative'}`}>
+    <nav className={`${customClass ? customClass : 'flex justify-between items-center align-center pt-[var(--px-28)] px-[var(--px-65)] z-40 relative'}`} aria-label="Primary">
       <div className="inline-flex justify-center items-center gap-[var(--px-16)]"
         style={{
           color: "var(--color-text-secondary)",
@@ -30,14 +30,10 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         {logo}
       </div>
       {(mode === 'home' || mode === 'contact' || mode === 'error' || mode === '404') && (
-        <ButtonHeavyRight text="Upload Your Track" onClick={() => {
-          window.location.href = baseBetaUrl
-        }} className="cta-button primary" id="navbar-upload-button" />
+        <ButtonHeavyRight text="Upload Your Track" href={baseBetaUrl} className="cta-button primary" id="navbar-upload-button" />
       )}
       {(mode === 'upload' || mode === 'terms' || mode === 'privacy') && (
-        <ButtonHeavyLeft text="Why Resomix?" onClick={() => {
-          window.location.href = `${baseUrl}/about`
-        }} transparent={true} link_arrow={true} className="cta-button secondary" id="navbar-why-resomix-button" />
+        <ButtonHeavyLeft text="Why Resomix?" href={`${baseUrl}/about`} transparent={true} link_arrow={true} className="cta-button secondary" id="navbar-why-resomix-button" />
       )}
       {mode === 'playlist' && (
         <div className="flex justify-center items-center">
