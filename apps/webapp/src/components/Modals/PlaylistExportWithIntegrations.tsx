@@ -208,11 +208,12 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
               const msg = res?.error || 'Failed to connect to Spotify';
               setSpotifyError(msg);
               onStatusChange('error', msg, 'Spotify Connect Failed');
+              window.history.replaceState({}, document.title,`${window.location.pathname}?id=${state}`);
             }
           })
           .finally(() => {
             setSpotifyConnectLoading(false);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // window.history.replaceState({}, document.title, window.location.pathname);
           });
       }
     }
