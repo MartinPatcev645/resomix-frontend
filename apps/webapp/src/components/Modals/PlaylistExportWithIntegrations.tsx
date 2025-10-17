@@ -217,7 +217,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
           });
       }
     }
-  }, [isOpen, onStatusChange]);
+  }, [isOpen]);
 
   // Download handler
   const handleDownload = () => {
