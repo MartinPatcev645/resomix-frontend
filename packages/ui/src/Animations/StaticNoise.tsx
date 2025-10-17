@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface StaticNoiseProps {
   /** Optional Tailwind/utility classes. Defaults to a fullscreen fixed overlay. */
@@ -7,6 +7,10 @@ export interface StaticNoiseProps {
   zIndex?: number;
   /** Target frames-per-second for the noise refresh. Defaults to 20 (≈ original). */
   fps?: number;
+  /** localStorage variable name to check for visibility. Defaults to 'staticNoiseVisible'. */
+  storageKey?: string;
+  /** Default visibility state if no localStorage value is found. Defaults to true. */
+  defaultVisible?: boolean;
 }
 
 /**
@@ -18,13 +22,63 @@ export interface StaticNoiseProps {
  * HTML demo, merely wrapped for convenient reuse across pages.
  */
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
-  className = "pointer-events-none fixed inset-0",
-  zIndex,
-  fps = 30,
-}) => {
+                                                          className = "pointer-events-none fixed inset-0",
+                                                          zIndex,
+                                                          fps = 30,
+                                                          storageKey = "staticNoiseVisible",
+                                                          defaultVisible = true,
+                                                        }) => {
   const boxRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState<boolean>(defaultVisible);
+
+  // Check localStorage on component mount and set up storage event listener
+  useEffect(() => {
+    const checkVisibility = () => {
+      try {
+        const storedValue = localStorage.getItem(storageKey);
+        if (storedValue !== null) {
+          setIsVisible(storedValue === "true");
+        } else {
+          // If no value exists, set the default
+          localStorage.setItem(storageKey, defaultVisible.toString());
+          setIsVisible(defaultVisible);
+        }
+      } catch (error) {
+        // Fallback if localStorage is not available
+        console.warn("localStorage not available, using default visibility:", defaultVisible);
+        setIsVisible(defaultVisible);
+      }
+    };
+
+    // Check initial value
+    checkVisibility();
+
+    // Listen for storage changes (from other tabs/windows)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === storageKey) {
+        checkVisibility();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // Optional: Also listen for custom events if you want to update from same tab
+    const handleCustomStorageChange = (e: Event) => {
+      checkVisibility();
+    };
+
+    window.addEventListener("localStorageChange", handleCustomStorageChange as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleCustomStorageChange as EventListener);
+    };
+  }, [storageKey, defaultVisible]);
 
   useEffect(() => {
+    // Don't initialize WebGL if not visible
+    if (!isVisible) return;
+
     const container = boxRef.current;
     if (!container) return;
 
@@ -152,7 +206,12 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
 
       if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, [fps]);
+  }, [fps, isVisible]); // Added isVisible as dependency
+
+  // Don't render anything if not visible
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div

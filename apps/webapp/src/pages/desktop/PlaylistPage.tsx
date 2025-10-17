@@ -1,5 +1,6 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines, StatusMessage } from "@resomix/ui";
 import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
@@ -7,6 +8,8 @@ import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
 
 export function PlaylistPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -37,6 +40,25 @@ export function PlaylistPage() {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isLoading, playlistData]);
+
+  useEffect(() => {
+    const id = searchParams.get('id');
+    const state = searchParams.get('state');
+    const code = searchParams.get('code');
+    const error = searchParams.get('error');
+
+    if (state && !id) {
+      const newParams = new URLSearchParams({
+        id: decodeURIComponent(state),
+        code: code || '',
+        state: state,
+        error: error || '',
+        share: 'true',
+      });
+
+      navigate(`?${newParams.toString()}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   const handleExpiredClose = () => {
     window.location.href = BASE_BETA_URL;
