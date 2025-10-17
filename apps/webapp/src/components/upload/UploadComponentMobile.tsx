@@ -20,7 +20,7 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
     return (
         <div ref={sectionRef} className="relative">
             {/* Hidden SVG defs for clip-path */}
-            <svg viewBox="0 0 315 383" preserveAspectRatio="none" className="absolute inset-0 w-[length:var(--px-355)] h-[length:var(--px-384)] pointer-events-none z-10">
+            <svg viewBox="0 0 315 383" preserveAspectRatio="none" className="absolute inset-0 w-[length:var(--px-355)] h-[length:var(--px-384)] pointer-events-none z-10" aria-hidden="true">
                 <defs>
                     <clipPath id="container" clipPathUnits="objectBoundingBox">
                         <path transform="scale(0.0021097046,0.0026109660)" d="M314 382.481V0.629395H181.014L136.651 67.2961H1.00195V382.481H314Z" />
@@ -51,27 +51,39 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
             <div className="relative w-[var(--px-355)] h-[var(--px-384)] mx-auto z-30">
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
-                    <div className="flex">
-                        <div
+                    <div className="flex" role="tablist" aria-label="Search and upload tabs">
+                        <button
+                            id="tab-search-mobile"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="panel-search-mobile"
+                            type="button"
                             className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline"
                             onClick={onSearchClick}
                         >
-                            <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</div>
-                            <img src={searchIcon} aria-label="search" draggable={false} alt="search" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </div>
-                        <div className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2">
-                            <div className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</div>
-                            <img src={uploadIcon} aria-label="upload" draggable={false} alt="upload" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </div>
+                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
+                            <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                        </button>
+                        <button
+                            id="tab-upload-mobile"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="panel-upload-mobile"
+                            type="button"
+                            className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2"
+                        >
+                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
+                            <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                        </button>
                     </div>
-                    <div className="m-[var(--px-20)]">
+                    <div id="panel-upload-mobile" role="tabpanel" aria-labelledby="tab-upload-mobile" className="m-[var(--px-20)]">
                         <div className="w-full h-[var(--px-300)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-[var(--px-20)]">
                             <div className="flex flex-col w-full h-full justify-center items-center">
-                                <div className="mt-[var(--px-10)] text-[length:var(--px-18)] font-helvetica font-light text-center leading-[var(--px-24)] uppercase">
+                                <h3 className="mt-[var(--px-10)] text-[length:var(--px-18)] font-helvetica font-light text-center leading-[var(--px-24)] uppercase">
                                     Discover the Power of<br />Deep Sonic Analysis
-                                </div>
+                                </h3>
                                 <div className="flex items-center justify-center gap-[var(--px-10)] mt-[var(--px-10)] ml-[var(--px-16)]">
-                                    <img src={ReferenceSvg} aria-hidden="true" loading="lazy" draggable={false} alt="sound waves" className="w-[var(--px-37)] h-[var(--px-37)] my-[var(--px-10)]" />
+                                    <img src={ReferenceSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-37)] h-[var(--px-37)] my-[var(--px-10)]" />
                                     <div className="text-[length:var(--px-12)] font-fira font-light text-left leading-[var(--px-15)] opacity-70">
                                         Drop in a reference sound.<br />It can be a released or<br />unreleased song, or just a short<br />sketch from your archive. Resomix<br />will analyze the audio and find<br />perfect matches for you.
                                     </div>

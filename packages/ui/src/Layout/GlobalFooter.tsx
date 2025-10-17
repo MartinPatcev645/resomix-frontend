@@ -12,8 +12,8 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
   const version = useConfig((s) => s.version);
 
   return (
-    <div className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
-      <div className="absolute text-[length:var(--px-63)] -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase">
+    <footer className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
+      <div aria-hidden="true" className="absolute text-[length:var(--px-63)] -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase">
         Join the Resomix Universe
       </div>
       <div className="flex flex-col gap-[var(--px-130)]">
@@ -87,7 +87,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
           </div>
         </div>
       </div>
-    </div>
+    </footer>
   );
 };
 

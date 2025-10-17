@@ -35,9 +35,9 @@ const UploadOne: React.FC = () => {
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
             <div className="w-[var(--px-880)] h-[var(--px-61)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
                 <div className="">
-                    <div className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
+                    <h2 className="text-[length:var(--px-11)] font-light font-helvetica uppercase">
                         Set Your Depth
-                    </div>
+                    </h2>
                     <div className="text-[length:var(--px-9)] font-fira font-light opacity-70">
                         Choose how many similar tracks Resomix will recommend.
                     </div>
@@ -45,9 +45,12 @@ const UploadOne: React.FC = () => {
                 <div className="flex items-center gap-[var(--px-6)]">
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
-                            <div className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]">
+                            <label 
+                                htmlFor="upload-results-count-select-desktop"
+                                className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]"
+                            >
                                 Results Count
-                            </div>
+                            </label>
                             <div>
                                 <img src={InfoSvg} draggable={false} alt="Info" aria-label="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
                             </div>
@@ -56,10 +59,11 @@ const UploadOne: React.FC = () => {
                     {/* Dropdown menu following same style */}
                     <div className="">
                         <select 
+                            id="upload-results-count-select-desktop"
+                            aria-label="Upload results count"
                             value={topSk}
                             onChange={handleCountChange}
                             className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)] upload-settings-select"
-                            id="upload-results-count-select"
                         >
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="10">10 tracks</option>
                             <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="20">20 tracks</option>

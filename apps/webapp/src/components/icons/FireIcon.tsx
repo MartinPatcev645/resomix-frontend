@@ -26,6 +26,7 @@ export function FireIcon({
       fill="none"
       className={`${className}`.trim()}
       style={{ ...(color ? { color } : {}), ...style }}
+      aria-hidden="true"
       {...rest}
     >
       {/* Background fill when selected */}

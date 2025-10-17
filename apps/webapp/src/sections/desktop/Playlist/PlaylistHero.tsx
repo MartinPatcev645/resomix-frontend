@@ -109,10 +109,15 @@ const PlaylistHero: React.FC = () => {
           <div></div>
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
-              <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline hover:cursor-pointer playlist-nav-link" id="playlist-hero-back-link">
-                <img src={AngleLeftSvg} aria-label="Back" draggable={false} alt="Angle Left" className="w-[var(--px-13)] h-[var(--px-13)]" />
+              <a 
+                aria-label="Generate track similarity"
+                href={BASE_BETA_URL} 
+                className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link" 
+                id="playlist-hero-back-link"
+              >
+                <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
                 Generate track similarity
-              </div>
+              </a>
               <div className="flex items-center gap-[var(--px-8)]">
                 <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
                   <ToggleButton
@@ -171,10 +176,19 @@ const PlaylistHero: React.FC = () => {
                       <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)]" />
                     )}
                   </div>
-                  <div onClick={() => setShowRating(true)} className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end hover:cursor-pointer playlist-rating-button" id="playlist-hero-rating-button">
-                    <img src={StarSvg} draggable={false} aria-label="Star" alt="Star" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
-                    <div className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</div>
-                  </div>
+                  <button 
+                    type="button"
+                    name="Rate this playlist"
+                    onClick={() => setShowRating(true)} 
+                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button" 
+                    id="playlist-hero-rating-button"
+                    aria-label="Rate this playlist"
+                    aria-expanded={showRating}
+                    data-playlist-id={playlistData?.playlist.id}
+                  >
+                    <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
+                    <span className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</span>
+                  </button>
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-20)] max-w-[var(--px-480)]">
                   <div className="flex flex-col gap-[var(--px-7)] min-h-[var(--px-61)]">
@@ -189,7 +203,7 @@ const PlaylistHero: React.FC = () => {
                         Loading playlist...
                       </div>
                     ) : (
-                      <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
+                      <h1 className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
                         <HoverFlow
                           text={playlistData?.playlist.name || "No playlist data"}
                           maxChars={35}
@@ -198,7 +212,7 @@ const PlaylistHero: React.FC = () => {
                           endPause={1000}
                           maxWidth="400px"
                         />
-                      </div>
+                      </h1>
                     )}
                     <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
@@ -220,7 +234,16 @@ const PlaylistHero: React.FC = () => {
                       <div>|</div>
                       <div>{playlistData?.queried_track.label}</div>
                       <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
-                        <img onClick={() => setShowMeta((v) => !v)} draggable={false} aria-label="Info" alt="Info" src={InfoSvg} className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)] hover:cursor-pointer playlist-meta-toggle" id="playlist-hero-meta-toggle" />
+                        <button
+                          type="button"
+                          onClick={() => setShowMeta((v) => !v)} 
+                          aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
+                          aria-expanded={showMeta}
+                          className="hover:cursor-pointer playlist-meta-toggle"
+                          id="playlist-hero-meta-toggle"
+                        >
+                          <img draggable={false} src={InfoSvg} alt="" aria-hidden="true" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)]" />
+                        </button>
                       </Tooltip>
                     </div>
                   </div>
@@ -240,7 +263,17 @@ const PlaylistHero: React.FC = () => {
                     <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
                     {/* The actual Input player */}
                     {playlistData?.queried_track.id && (
-                      <InputPlayer trackId={playlistData.queried_track.id} totalDuration={playlistData.queried_track.duration ?? 0} />
+                      <InputPlayer 
+                        trackId={playlistData.queried_track.id} 
+                        totalDuration={playlistData.queried_track.duration ?? 0}
+                        playButtonDataAttributes={{
+                          'data-testid': 'play-button',
+                          'data-track-id': playlistData?.queried_track.id,
+                          'data-track-artist': playlistData?.queried_track.artist || '',
+                          'data-track-title': playlistData?.queried_track.title || '',
+                          'data-track-name': playlistData?.queried_track.title || '',
+                        }}
+                      />
                     )}
                   </div>
                 </div>

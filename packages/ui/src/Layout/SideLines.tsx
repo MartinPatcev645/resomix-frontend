@@ -48,7 +48,9 @@ export const SideLines: React.FC<SideLinesProps> = ({ children, navbar, hero, mo
                     <div className="absolute right-0 top-0 bottom-0 border-r border-dotted border-slate-200" />
                 </div>
                 {/* Navbar & Hero Section */}
-                {navbar}
+                <header>
+                    {navbar}
+                </header>
                 {/* Display Hero only on About and Upload pages */}
                 {(mode === "about" || mode === "upload" || mode === "playlist") && (
                     hero

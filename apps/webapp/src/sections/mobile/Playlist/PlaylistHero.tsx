@@ -68,9 +68,14 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <div onClick={() => { window.location.href = BASE_BETA_URL }} className="flex items-center hover:cursor-pointer ml-[var(--px-10)] playlist-nav-link" id="playlist-hero-back-link">
-              <img src={AngleLeftSvg} aria-label="Back" draggable={false} alt="Angle Left" className="w-[var(--px-30)] h-[var(--px-30)]" />
-            </div>
+            <a 
+              href={BASE_BETA_URL} 
+              className="flex items-center ml-[var(--px-10)] playlist-nav-link" 
+              id="playlist-hero-back-link"
+              aria-label="Back to upload"
+            >
+              <img src={AngleLeftSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-30)] h-[var(--px-30)]" />
+            </a>
             <div className="flex flex-col items-center gap-[var(--px-15)]">
               <div className="flex items-center gap-[var(--px-22)] mr-[var(--px-5)]">
                 <IconButton
@@ -132,7 +137,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-250)]">
                   <div className="flex flex-col justify-between min-h-[var(--px-55)]">
-                    <div className="text-[length:var(--px-13)] font-light uppercase font-helvetica leading-[var(--px-14)]">
+                    <h1 className="text-[length:var(--px-13)] font-light uppercase font-helvetica leading-[var(--px-14)]">
                       <HoverFlow
                         text={playlistData?.playlist.name || ''}
                         maxChars={26}
@@ -141,7 +146,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                         endPause={1000}
                         maxWidth="210px"
                       />
-                    </div>
+                    </h1>
                     <div className={`text-[length:var(--px-9)] lg:text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
                       <HoverFlow
@@ -160,7 +165,16 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       <div>{playlistData?.queried_track.year}</div>
                       <div>|</div>
                       <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
-                      <img onClick={() => setShowMeta((v) => !v)} draggable={false} src={InfoSvg} alt="Info" aria-label="Info" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)] ml-auto hover:cursor-pointer playlist-meta-toggle" id="playlist-hero-meta-toggle" />
+                      <button
+                        type="button"
+                        onClick={() => setShowMeta((v) => !v)} 
+                        aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
+                        aria-expanded={showMeta}
+                        className="hover:cursor-pointer playlist-meta-toggle ml-auto"
+                        id="playlist-hero-meta-toggle"
+                      >
+                        <img draggable={false} src={InfoSvg} alt="" aria-hidden="true" className="w-[var(--px-18)] lg:w-[var(--px-14)] h-[var(--px-18)] lg:h-[var(--px-14)]" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -177,20 +191,36 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div>Instance: Input Track</div>
                 </div>
                 {/* The actual Input player */}
-                <InputPlayer trackId={playlistData?.queried_track.id || ''} totalDuration={playlistData?.queried_track.duration ?? 0} />
+                <InputPlayer 
+                  trackId={playlistData?.queried_track.id || ''} 
+                  totalDuration={playlistData?.queried_track.duration ?? 0}
+                  playButtonDataAttributes={{
+                    'data-testid': 'play-button',
+                    'data-track-id': playlistData?.queried_track.id || '',
+                    'data-track-artist': playlistData?.queried_track.artist || '',
+                    'data-track-title': playlistData?.queried_track.title || '',
+                    'data-track-name': playlistData?.queried_track.title || '',
+                  }}
+                />
               </div>
             </div>
             <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
-              <div onClick={() => onMoreClick?.(
+              <button
+                type="button"
+                onClick={() => onMoreClick?.(
                 playlistData?.queried_track.id || '',
                 playlistData?.playlist.name || '',
                 playlistData?.queried_track.label || '',
                 playlistData?.queried_track.duration ?? 0,
                 null,
                 true
-              )} className="cursor-pointer playlist-more-button" id={`playlist-hero-more-${playlistData?.queried_track.id || ''}`}>
-                <img src={MoreSvg} draggable={false} alt="More" aria-label="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
-              </div>
+              )}
+                className="cursor-pointer playlist-more-button" 
+                id={`playlist-hero-more-${playlistData?.queried_track.id || ''}`}
+                aria-label="More options"
+              >
+                <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-19)] h-[var(--px-14)]" />
+              </button>
             </div>
           </div>
         </div>

@@ -97,7 +97,9 @@ function PlaylistTableControls({
             />
             
             {/* Search column selector */}
-            <Select
+            <Select 
+              id="search-column-select"
+              aria-label="Search column"
               value={searchColumn}
               onChange={(value) => onSearchColumnChange(value as 'id' | 'uuid' | 'name')}
               options={searchColumns}
@@ -122,7 +124,9 @@ function PlaylistTableControls({
           />
           
           {/* Visibility filter */}
-          <Select
+          <Select 
+            id="visibility-filter-select"
+            aria-label="Visibility filter"
             value={visibilityFilter}
             onChange={(value) => {
               setVisibilityFilter(value)
@@ -134,7 +138,9 @@ function PlaylistTableControls({
           />
 
           {/* Type filter */}
-          <Select
+          <Select 
+            id="type-filter-select"
+            aria-label="Type filter"
             value={typeFilter}
             onChange={(value) => {
               setTypeFilter(value)

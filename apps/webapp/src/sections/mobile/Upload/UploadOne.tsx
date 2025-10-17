@@ -34,9 +34,9 @@ const UploadOne: React.FC = () => {
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
             <div className="w-full bg-[var(--color-primary-background)] flex justify-between py-[var(--px-14)]">
                 <div className="">
-                    <div className="text-[length:var(--px-18)] font-semibold font-helvetica uppercase">
+                    <h2 className="text-[length:var(--px-18)] font-semibold font-helvetica uppercase">
                         Set Your Depth
-                    </div>
+                    </h2>
                     <div className="text-[length:var(--px-9)] font-fira font-light leading-[var(--px-12)] opacity-70">
                         Choose how many similar tracks Resomix<br />will recommend.
                     </div>
@@ -47,11 +47,12 @@ const UploadOne: React.FC = () => {
                         className="relative w-[var(--px-97)] h-[var(--px-26)] border border-dotted border-slate-200 flex items-center justify-center gap-[var(--px-6)] text-[length:var(--px-11)] font-fira font-extralight text-[var(--color-primary)]"
                     >
                         {/* Invisible native select covers full area to keep accessibility & native picker */}
-                        <select
+                        <select 
+                            aria-label="Upload results count"
+                            id="upload-results-count-select-mobile"
                             value={topSk}
                             onChange={handleCountChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none upload-settings-select"
-                            id="upload-results-count-select"
                         >
                             <option value="10">10 tracks</option>
                             <option value="20">20 tracks</option>
@@ -63,6 +64,7 @@ const UploadOne: React.FC = () => {
                         <span className="pointer-events-none">{topSk} tracks</span>
                         {/* Inline SVG arrow */}
                         <svg
+                            aria-hidden="true"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 52 53"
                             className="w-[var(--px-10)] h-[var(--px-10)] pointer-events-none"
@@ -79,9 +81,12 @@ const UploadOne: React.FC = () => {
                     </div>
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)]">
-                            <div className="text-[length:var(--px-9)] font-fira font-light">
+                            <label 
+                                htmlFor="upload-results-count-select-mobile"
+                                className="text-[length:var(--px-9)] font-fira font-light"
+                            >
                                 Results Count
-                            </div>
+                            </label>
                             <div className="hover:cursor-pointer">
                                 <img src={InfoSvg} alt="Info" aria-label="Info" draggable={false} className="w-[var(--px-10)] h-[var(--px-10)]" />
                             </div>

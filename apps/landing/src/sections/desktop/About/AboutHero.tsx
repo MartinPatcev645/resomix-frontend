@@ -59,24 +59,33 @@ const AboutHero: React.FC = () => {
         <div className="absolute inset-0 flex flex-col justify-end items-end w-full h-full select-none py-auto z-15">
           <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} aria-label="Fb" loading="lazy" src={FbSvg} alt="Fb" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} loading="lazy" src={FbSvg} alt="" aria-hidden="true" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)] social-icon"
               padding=""
-              onClick={() => window.open(FACEBOOK_URL, "_blank")}
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              ariaLabel="Visit Resomix on Facebook"
               id="about-hero-facebook-icon"
             />
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} aria-label="Insta" loading="lazy" src={InstaSvg} alt="Insta" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} loading="lazy" src={InstaSvg} alt="" aria-hidden="true" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)] social-icon"
               padding=""
-              onClick={() => window.open(INSTAGRAM_URL, "_blank")}
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              ariaLabel="Visit Resomix on Instagram"
               id="about-hero-instagram-icon"
             />
             <IconComp
-              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} aria-label="X" loading="lazy" src={XSvg} alt="X" />}
+              svg={<img className="w-[var(--px-24)] h-[var(--px-24)]" draggable={false} loading="lazy" src={XSvg} alt="" aria-hidden="true" />}
               className="w-[var(--px-24)] h-[var(--px-24)] px-[var(--px-5)] social-icon"
               padding=""
-              onClick={() => window.open(TWITTER_URL, "_blank")}
+              href={TWITTER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              ariaLabel="Visit Resomix on X (Twitter)"
               id="about-hero-twitter-icon"
             />
           </div>

@@ -21,7 +21,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
       <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)]">
         <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
           {onClose ? (
-            <button onClick={onClose} aria-label="Close menu" className="menu-close-button" id="menu-close-button">
+            <button type="button" name="Close menu" onClick={onClose} aria-label="Close menu" className="menu-close-button" id="menu-close-button">
               <img src={CrossSvg} alt="Cross" aria-label="Cross" loading="lazy" draggable={false} className="w-[var(--px-19)] h-[var(--px-19)]" />
             </button>
           ) : (

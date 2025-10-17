@@ -75,25 +75,27 @@ export function UploadMobile() {
           overflowX: "hidden"
         }}
       >
-        <SideLines
-          navbar={
-            <MobileNavbar
-              logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-              menuIcon={<button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
-              customClass="flex justify-between items-center align-center z-50 relative"
-            />
-          }
-          hero={<UploadHero />}
-          mode="upload"
-        >
-          <img src={AngleDown} aria-hidden="true" loading="lazy" draggable={false} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
+        <main>
+          <SideLines
+            navbar={
+              <MobileNavbar
+                logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
+                menuIcon={<button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" name="Open menu" type="button" className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
+                customClass="flex justify-between items-center align-center z-50 relative"
+              />
+            }
+            hero={<UploadHero />}
+            mode="upload"
+          >
+            <img src={AngleDown} aria-hidden="true" loading="lazy" draggable={false} alt="arrow_down" className="w-[var(--px-50)] h-[var(--px-50)] w-full self-center my-[var(--px-50)]" />
 
-          {/* Section One */}
-          <div className="relative z-20 mt-[var(--px-60)]">
-            <UploadOne />
-            <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
-          </div>
-        </SideLines>
+            {/* Section One */}
+            <div className="relative z-20 mt-[var(--px-60)]">
+              <UploadOne />
+              <GlobalMobileFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
+            </div>
+          </SideLines>
+        </main>
       </div>
 
       {/* Menu Overlay */}

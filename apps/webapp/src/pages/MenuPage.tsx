@@ -19,50 +19,61 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
       <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)]">
         <div className="mt-[var(--px-30)] mr-[var(--px-30)] flex justify-end">
           {onClose ? (
-            <button onClick={onClose} aria-label="Close menu">
-              <img src={CrossSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
+            <button type="button" onClick={onClose} aria-label="Close menu">
+              <img src={CrossSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </button>
           ) : (
-            <a href={BASE_LANDING_URL} aria-label="Resomix home" className="menu-home-link" id="beta-menu-home-link">
-              <img src={CrossSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Cross" className="w-[var(--px-19)] h-[var(--px-19)]" />
+            <a href={BASE_LANDING_URL} aria-label="Go to Resomix home" className="menu-home-link" id="beta-menu-home-link">
+              <img src={CrossSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           )}
         </div>
         <div className="flex flex-col gap-[var(--px-30)] items-center">
           <div className="">
             <a href={BASE_LANDING_URL} aria-label="Resomix home" className="menu-logo-link" id="beta-menu-logo-link">
-              <img src={RIconsFooter} aria-label="Footer Icon R" draggable={false} alt="RIconsFooter" className="w-[var(--px-19)] h-[var(--px-19)]" />
+              <img src={RIconsFooter} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-19)] h-[var(--px-19)]" />
             </a>
           </div>
-          <div onClick={() => {
-            window.location.href = `${BASE_LANDING_URL}/about`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-about-link">
+          <a 
+            href={`${BASE_LANDING_URL}/about`}
+            className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+            id="beta-menu-about-link"
+            aria-label="About Us"
+          >
             [About Us]
-          </div>
-          <div onClick={showFeedbackForm} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-feedback-link">
+          </a>
+          <button 
+            type="button"
+            onClick={showFeedbackForm}
+            className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+            id="beta-menu-feedback-link"
+          >
             [Feedback]
-          </div>
-          <div onClick={() => {
-            window.location.href = `${BASE_LANDING_URL}/waitlist`
-          }} className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-waitlist-link">
+          </button>
+          <a 
+            href={`${BASE_LANDING_URL}/waitlist`}
+            className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+            id="beta-menu-waitlist-link"
+            aria-label="Waitlist"
+          >
             [Waitlist]
-          </div>
+          </a>
           <a href={`${BASE_LANDING_URL}/blog`} aria-label="Resomix blog" target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-journal-link">
             [Journal]
           </a>
           <div className="">
-            <img src={MenuSeparator} aria-hidden="true" loading="lazy" draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
+            <img src={MenuSeparator} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>
-          <div className="w-full">
+          <div className="w-full flex justify-center">
             <ButtonHeavyRight className="w-[var(--px-276)] cta-button primary" text="Upload Your Track" onClick={() => {
               window.location.href = BASE_BETA_URL
             }} id="beta-menu-upload-button" />
           </div>
         </div>
-        <div className="text-[length:var(--px-30)] font-normal font-benzin uppercase text-start">
+        <h2 className="text-[length:var(--px-30)] font-normal font-benzin uppercase text-start">
           Join the Resomix<br />
           Universe
-        </div>
+        </h2>
       </div>
     </div>
   );

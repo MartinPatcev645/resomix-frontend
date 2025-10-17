@@ -173,30 +173,42 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     if (!isOpen) return null
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center" 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="share-dialog-title"
+      >
           <div
             className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
             onClick={onClose}
             id="playlist-share-backdrop"
+            aria-hidden="true"
           />
 
           <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
 
-              <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Success" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
+              <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
 
               <div className="text-center w-full">
-                  <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+                  <h2 id="share-dialog-title" className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
                       PLAYLIST SHARED!
-                  </div>
+                  </h2>
                   <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
                       Your playlist is now publicly accessible.
                   </div>
               </div>
 
-              <div onClick={handlePrimaryAction} className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link' id="playlist-share-link">
-                  <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
+              <button 
+                type="button"
+                onClick={handlePrimaryAction} 
+                className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link' 
+                id="playlist-share-link"
+                aria-label="Copy playlist link"
+              >
+                  <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="absolute top-0 left-0 pointer-events-none" />
                   {link || 'Generating link...'}
-              </div>
+              </button>
 
               <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
                   Your playlist is now publicly accessible.
