@@ -151,11 +151,16 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
 
 
 # Create FastAPI app
+# Conditionally disable docs endpoints in production (when use_development_cors is False)
 app = FastAPI(
     title=settings.app_title,
     description=settings.app_description,
     version=settings.app_version,
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Disable docs, redoc, and openapi.json in production
+    docs_url="/docs" if settings.use_development_cors else None,
+    redoc_url="/redoc" if settings.use_development_cors else None,
+    openapi_url="/openapi.json" if settings.use_development_cors else None,
 )
 
 # Add global exception handlers
@@ -189,12 +194,15 @@ for router in all_routers:
 @app.get("/")
 async def root():
     """Root endpoint that returns API information"""
-    return {
+    response = {
         "name": settings.app_title,
         "version": settings.app_version,
-        "status": "running",
-        "docs_url": "/docs"
+        "status": "running"
     }
+    # Only include docs_url in development mode
+    if settings.use_development_cors:
+        response["docs_url"] = "/docs"
+    return response
 
 
 if __name__ == "__main__":
