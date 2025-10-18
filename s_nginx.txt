@@ -54,6 +54,21 @@ limit_conn_zone $binary_remote_addr zone=perip_conn:10m;
 # Optional: set 429 for rate-limit violations
 limit_req_status 429;
 
+# ---- CORS allowlist for browser origins (used by server blocks) ----
+map $http_origin $cors_allow_origin {
+    default "";
+    "~^https://resomix\.com$"          $http_origin;
+    "~^https://beta\.resomix\.com$"    $http_origin;
+    "~^https://stack\.resomix\.com$"   $http_origin;
+    "~^https://r-admin\.resomix\.com$" $http_origin;
+    "~^https://landing\.resomix\.com$" $http_origin;
+
+    # Dev ONLY (comment out in prod)
+    "~^http://localhost:517[2-5]$"     $http_origin;
+    "~^http://127\.0\.0\.1:5175$"      $http_origin;
+}
+
+
 
 
 ===>  /etc/nginx/sites-available/bserver
@@ -83,6 +98,12 @@ server {
     # Apply a gentle global cap to everything on this host
     limit_req zone=global_rl burst=10;      # allows short spikes, then enforces 5 rps avg
     limit_conn perip_conn 30;               # total concurrent conns per IP
+
+    # ------- Minimal CORS for NGINX-generated responses --------
+    # Let FastAPI handle CORS for successful proxied responses.
+    set $cors_methods "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+    set $cors_headers "Authorization, Content-Type, X-Requested-With, X-Api-Key";
+    set $cors_expose  "Content-Length, Content-Range, Accept-Ranges, Content-Disposition";
 
     # -----------------------
     # API + app proxy
