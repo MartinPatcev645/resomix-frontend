@@ -91,7 +91,9 @@ class SimilarityService:
         # Concurrently get duration and call similarity server
         duration_task = asyncio.to_thread(get_duration_from_bytes_sync, audio_bytes)
 
-        files_data = {"file": (original_filename, audio_bytes, "application/octet-stream")}
+        # Use secure filename instead of original filename for security
+        secure_filename = f"upload_{track_uuid}.tmp"
+        files_data = {"file": (secure_filename, audio_bytes, "application/octet-stream")}
         request_data = {"top_k": top_k, "track_uuid": track_uuid}
         similarity_response_task = self._call_similarity_server("/similarity/query-by-upload/", data=request_data, files=files_data)
 

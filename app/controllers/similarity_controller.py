@@ -27,7 +27,7 @@ from app.core.config import settings
 from app.services.similarity_service import SimilarityService
 from app.services.search_service import SearchService
 from app.services.audio_service import AudioService
-from app.services.track_upload_service import TrackUploadService
+from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
@@ -165,10 +165,13 @@ class SimilarityController:
 
         # Read audio bytes for processing
         audio_bytes = await file.read()
-        original_filename = sanitize_filename(file.filename)
+        
+        # Generate secure temporary filename for processing (NEVER trust uploaded filename)
+        track_uuid = generate_track_uuid()
+        secure_filename = f"upload_{track_uuid}.tmp"
 
         # SECURITY: Antivirus scan before any file operations
-        av_scan_result = self.antivirus_service.scan_bytes(audio_bytes, original_filename)
+        av_scan_result = self.antivirus_service.scan_bytes(audio_bytes, secure_filename)
         
         if not av_scan_result.get("success"):
             # Scan failed - log error
@@ -281,7 +284,7 @@ class SimilarityController:
         is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
         
         if is_ffmpeg_available:
-            is_valid_audio = self.audio_service.validate_audio_format(audio_bytes, original_filename)
+            is_valid_audio = self.audio_service.validate_audio_format(audio_bytes, secure_filename)
             if not is_valid_audio:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -374,7 +377,7 @@ class SimilarityController:
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
-                    original_filename=original_filename, 
+                    original_filename=secure_filename, 
                     track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold
@@ -566,7 +569,8 @@ class SimilarityController:
             
             temp_file_path = ""
             try:
-                unique_filename = f"{str(uuid.uuid4())}_{original_filename}"
+                # Use secure filename instead of original filename
+                unique_filename = f"upload_{track_uuid}.tmp"
                 temp_file_path = os.path.join(settings.temp_dir, unique_filename)
                 with open(temp_file_path, "wb") as buffer:
                     buffer.write(audio_bytes)
@@ -642,14 +646,14 @@ class SimilarityController:
                         "processing_method": "fallback",
                         "track_uuid": upload_result.get("uuid")
                     },
-                    filename=original_filename,
+                    filename=secure_filename,
                     file_size=file.size,
                     operation="similarity_upload"
                 )
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
-                    original_filename=original_filename,
+                    original_filename=secure_filename,
                     track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold

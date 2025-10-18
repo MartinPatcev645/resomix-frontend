@@ -235,9 +235,12 @@ class TrackUploadService:
             track_uuid = generate_track_uuid()
             logger.info(f"Generated UUID for track: {track_uuid}")
             
+            # Generate secure temporary filename for processing (NEVER trust uploaded filename)
+            secure_filename = f"upload_{track_uuid}.tmp"
+            
             # Extract metadata using the existing service
             file.file.seek(0)  # Reset file pointer
-            metadata = self.metadata_service.extract_metadata(file.file, file.filename, mode="limited")
+            metadata = self.metadata_service.extract_metadata(file.file, secure_filename, mode="limited")
             
             if "error" in metadata:
                 raise Exception(f"Metadata extraction failed: {metadata['error']}")
@@ -245,8 +248,8 @@ class TrackUploadService:
             # Calculate file size
             file_size = len(file_content)
             
-            # Extract basic info with defaults
-            title = metadata.get("Title", "") or file.filename or "Unknown"
+            # Extract basic info with defaults - NEVER use uploaded filename
+            title = metadata.get("Title", "") or "Uploaded Track"
             year = self._parse_year(metadata.get("Year"))
             
             # Parse artist names
@@ -260,8 +263,8 @@ class TrackUploadService:
             # Extract album
             album_title = metadata.get("Album", "").strip()
             
-            # Set file paths
-            file_path = file.filename or "unknown_file"
+            # Set file paths - use secure generated filename, NEVER trust uploaded filename
+            file_path = f"upload_{track_uuid}.tmp"
             preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
             
             # Insert into database using async session
@@ -404,9 +407,12 @@ class TrackUploadService:
         try:
             logger.info(f"Using provided UUID for track: {track_uuid}")
             
+            # Generate secure temporary filename for processing (NEVER trust uploaded filename)
+            secure_filename = f"upload_{track_uuid}.tmp"
+            
             # Extract metadata using the existing service
             file.file.seek(0)  # Reset file pointer
-            metadata = self.metadata_service.extract_metadata(file.file, file.filename, mode="limited")
+            metadata = self.metadata_service.extract_metadata(file.file, secure_filename, mode="limited")
             
             if "error" in metadata:
                 raise Exception(f"Metadata extraction failed: {metadata['error']}")
@@ -414,8 +420,8 @@ class TrackUploadService:
             # Calculate file size
             file_size = len(file_content)
             
-            # Extract basic info with defaults
-            title = metadata.get("Title", "") or file.filename or "Unknown"
+            # Extract basic info with defaults - NEVER use uploaded filename
+            title = metadata.get("Title", "") or "Uploaded Track"
             year = self._parse_year(metadata.get("Year"))
             
             # Parse artist names
@@ -429,8 +435,8 @@ class TrackUploadService:
             # Extract album
             album_title = metadata.get("Album", "").strip()
             
-            # Set file paths - use full_path if provided (for monthly pipeline), otherwise use filename
-            file_path = full_path if full_path else (file.filename or "unknown_file")
+            # Set file paths - use full_path if provided (for monthly pipeline), otherwise use secure filename
+            file_path = full_path if full_path else f"upload_{track_uuid}.tmp"
             
             # Set preview path based on track type
             if track_type == TrackType.ELECTROBUZZ:

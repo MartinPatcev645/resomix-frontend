@@ -204,9 +204,8 @@ class AntivirusService:
         
         try:
             # Create temporary file for scanning
-            # Use suffix from original filename if available
-            file_suffix = os.path.splitext(filename)[1] if filename else ".tmp"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=file_suffix) as temp_file:
+            # Use secure random filename - NEVER trust uploaded filename for security
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as temp_file:
                 temp_path = temp_file.name
                 temp_file.write(file_bytes)
             

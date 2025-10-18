@@ -79,11 +79,8 @@ class PreviewService:
         
         try:
             # Create a temporary file to pass to ffprobe
-            # ffprobe can also take input from stdin, but writing to a temp file is straightforward
-            # and aligns with how the function was structured.
-            # Adding a suffix might help ffprobe in some edge cases, though often not strictly necessary.
-            file_suffix = os.path.splitext(filename)[1] if filename else ".tmp"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=file_suffix) as temp_file:
+            # Use secure random filename - NEVER trust uploaded filename for security
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as temp_file:
                 temp_path = temp_file.name
                 temp_file.write(audio_bytes)
                 # print(f"[FFmpeg Validation] Created temp file for validation: {temp_path}") # Optional: verbose logging
