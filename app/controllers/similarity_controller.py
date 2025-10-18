@@ -28,6 +28,7 @@ from app.services.similarity_service import SimilarityService
 from app.services.search_service import SearchService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService
+from app.services.antivirus_service import AntivirusService
 from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
 from app.services.logging_service import LoggingService
@@ -41,6 +42,7 @@ class SimilarityController:
         self.search_service = SearchService()
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
+        self.antivirus_service = AntivirusService()
         self.logging_service = LoggingService()
 
     async def get_similarity_upload(self, db: AsyncSession, request: Request, file: UploadFile, top_sk: Optional[int] = None) -> JSONResponse:
@@ -164,6 +166,116 @@ class SimilarityController:
         # Read audio bytes for processing
         audio_bytes = await file.read()
         original_filename = sanitize_filename(file.filename)
+
+        # SECURITY: Antivirus scan before any file operations
+        av_scan_result = self.antivirus_service.scan_bytes(audio_bytes, original_filename)
+        
+        if not av_scan_result.get("success"):
+            # Scan failed - log error
+            duration_ms = (time.time() - start_time) * 1000
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="SECURITY",
+                action="antivirus_scan_failed",
+                message="Antivirus scan failed during similarity upload",
+                correlation_id=correlation_id,
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=500,
+                duration_ms=duration_ms,
+                context="Antivirus scan during similarity upload",
+                metadata={
+                    "error": av_scan_result.get("error"),
+                    "validation_step": "antivirus_scan",
+                    "scan_method": av_scan_result.get("method")
+                },
+                filename=file.filename,
+                file_size=file.size,
+                operation="similarity_upload"
+            )
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error=f"Antivirus scan failed: {av_scan_result.get('error', 'Unknown error')}"
+                )
+            )
+        
+        if not av_scan_result.get("clean"):
+            # Threat detected - log and reject
+            threat_name = av_scan_result.get("threat", "Unknown threat")
+            duration_ms = (time.time() - start_time) * 1000
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="SECURITY",
+                action="malware_detected",
+                message=f"Malware detected during similarity upload: {threat_name}",
+                correlation_id=correlation_id,
+                request=request,
+                method=request.method,
+                endpoint=str(request.url.path),
+                path=str(request.url),
+                query_params=dict(request.query_params),
+                client_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                referer=request.headers.get("referer"),
+                status_code=415,
+                duration_ms=duration_ms,
+                context="Malware detection during similarity upload",
+                metadata={
+                    "threat_name": threat_name,
+                    "validation_step": "antivirus_scan",
+                    "scan_method": av_scan_result.get("method"),
+                    "scan_result": av_scan_result
+                },
+                filename=file.filename,
+                file_size=file.size,
+                operation="similarity_upload"
+            )
+            return JSONResponse(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                content=format_response(
+                    success=False,
+                    error="The uploaded file contains malicious content and has been rejected for security reasons."
+                )
+            )
+        
+        # File is clean - log success and continue
+        duration_ms = (time.time() - start_time) * 1000
+        self.logging_service.log(
+            async_db=db,
+            level="INFO",
+            category="SECURITY",
+            action="antivirus_scan_passed",
+            message="File passed antivirus scan during similarity upload",
+            correlation_id=correlation_id,
+            request=request,
+            method=request.method,
+            endpoint=str(request.url.path),
+            path=str(request.url),
+            query_params=dict(request.query_params),
+            client_ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            referer=request.headers.get("referer"),
+            duration_ms=duration_ms,
+            context="Antivirus scan during similarity upload",
+            metadata={
+                "validation_step": "antivirus_scan",
+                "scan_method": av_scan_result.get("method"),
+                "scan_result": "clean"
+            },
+            filename=file.filename,
+            file_size=file.size,
+            operation="similarity_upload"
+        )
 
         # Use audio service to validate file
         is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
