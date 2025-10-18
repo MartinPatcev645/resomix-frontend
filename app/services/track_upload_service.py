@@ -23,9 +23,10 @@ import secrets
 from typing import Dict, Tuple, List, Optional, BinaryIO, Any
 from fastapi import UploadFile
 
-from sqlalchemy import text
+from sqlalchemy import text, select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.constants import TrackType
+from app.models.track import Track, TrackArtist
 from app.services.metadata_service import MetadataService
 from app.utils.sanitization import (
     sanitize_artist_name,
@@ -309,20 +310,25 @@ class TrackUploadService:
             
             logger.info(f"Inserting track: {track_data}")
             
-            track_sql = text(
-                """INSERT INTO tracks
-                   (uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                    file_path, preview_path, file_size, type)
-                   VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
-                           :duration_sec, :file_path, :preview_path, :file_size, :type)
-                """
+            # Insert track using ORM
+            track_insert = insert(Track).values(
+                uuid=track_data["uuid"],
+                album_id=track_data["album_id"],
+                label_id=track_data["label_id"],
+                genre_id=track_data["genre_id"],
+                title=track_data["title"],
+                year=track_data["year"],
+                duration_sec=track_data["duration_sec"],
+                file_path=track_data["file_path"],
+                preview_path=track_data["preview_path"],
+                file_size=track_data["file_size"],
+                type=track_data["type"]
             )
-            await db.execute(track_sql, track_data)
+            await db.execute(track_insert)
             
-            # Get the track ID
+            # Get the track ID using ORM
             track_id_result = await db.execute(
-                text("SELECT id FROM tracks WHERE uuid = :uuid"),
-                {"uuid": track_uuid}
+                select(Track.id).where(Track.uuid == track_uuid)
             )
             track_row = track_id_result.first()
             if track_row is None:
@@ -330,12 +336,13 @@ class TrackUploadService:
             
             track_id = track_row[0]
             
-            # Insert track-artist relationships
+            # Insert track-artist relationships using ORM
             for artist_id in artist_ids:
-                ta_sql = text(
-                    "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
+                ta_insert = insert(TrackArtist).values(
+                    track_id=track_id,
+                    artist_id=artist_id
                 )
-                await db.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
+                await db.execute(ta_insert)
             
             # Commit the transaction
             await db.commit()
@@ -486,20 +493,25 @@ class TrackUploadService:
             
             logger.info(f"Inserting track with type '{track_type}': {track_data}")
             
-            track_sql = text(
-                """INSERT INTO tracks
-                   (uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                    file_path, preview_path, file_size, type)
-                   VALUES (:uuid, :album_id, :label_id, :genre_id, :title, :year,
-                           :duration_sec, :file_path, :preview_path, :file_size, :type)
-                """
+            # Insert track using ORM
+            track_insert = insert(Track).values(
+                uuid=track_data["uuid"],
+                album_id=track_data["album_id"],
+                label_id=track_data["label_id"],
+                genre_id=track_data["genre_id"],
+                title=track_data["title"],
+                year=track_data["year"],
+                duration_sec=track_data["duration_sec"],
+                file_path=track_data["file_path"],
+                preview_path=track_data["preview_path"],
+                file_size=track_data["file_size"],
+                type=track_data["type"]
             )
-            await db.execute(track_sql, track_data)
+            await db.execute(track_insert)
             
-            # Get the track ID
+            # Get the track ID using ORM
             track_id_result = await db.execute(
-                text("SELECT id FROM tracks WHERE uuid = :uuid"),
-                {"uuid": track_uuid}
+                select(Track.id).where(Track.uuid == track_uuid)
             )
             track_row = track_id_result.first()
             if track_row is None:
@@ -507,12 +519,13 @@ class TrackUploadService:
             
             track_id = track_row[0]
             
-            # Insert track-artist relationships
+            # Insert track-artist relationships using ORM
             for artist_id in artist_ids:
-                ta_sql = text(
-                    "INSERT IGNORE INTO track_artists (track_id, artist_id) VALUES (:track_id, :artist_id)"
+                ta_insert = insert(TrackArtist).values(
+                    track_id=track_id,
+                    artist_id=artist_id
                 )
-                await db.execute(ta_sql, {"track_id": track_id, "artist_id": artist_id})
+                await db.execute(ta_insert)
             
             # Commit the transaction
             await db.commit()

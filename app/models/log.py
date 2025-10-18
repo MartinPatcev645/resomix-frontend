@@ -119,23 +119,3 @@ class SystemLog(Base):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
-
-# Keep the old Log class for backward compatibility during migration
-# TODO: Remove this after full migration
-class Log(Base):
-    """
-    Legacy Log model - kept for backward compatibility
-    Will be removed after migration to SystemLog is complete
-    """
-    __tablename__ = "logs_legacy"
-    
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
-    action = Column(String(50), nullable=False)
-    message = Column(String(255), nullable=True)
-    track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    
-    track = relationship("Track")
-    
-    def __repr__(self):
-        return f"<Log(id={self.id}, action={self.action})>"

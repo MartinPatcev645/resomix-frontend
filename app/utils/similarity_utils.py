@@ -329,15 +329,15 @@ def generate_playlist_name_from_seed_track(seed_track_data: Dict[str, Any]) -> s
     # Generate the final playlist name
     playlist_name = f"{artist_part} - {title}"
     
-    # Ensure the name doesn't exceed the database limit (100 characters for playlist names)
-    if len(playlist_name) > 100:
+    # Ensure the name doesn't exceed the database limit (150 characters for playlist names)
+    if len(playlist_name) > 150:
         # Truncate the title part if needed, keeping the artist part intact
-        max_title_length = 100 - len(artist_part) - 3  # 3 for " - "
+        max_title_length = 150 - len(artist_part) - 3  # 3 for " - "
         if max_title_length > 10:  # Ensure we have at least some title
             truncated_title = title[:max_title_length-3] + "..."
             playlist_name = f"{artist_part} - {truncated_title}"
         else:
             # If artist part is too long, just use a simple format
-            playlist_name = f"{artist_part[:90]}... - {title[:5]}..."
+            playlist_name = f"{artist_part[:140]}... - {title[:5]}..."
     
     return playlist_name

@@ -70,7 +70,7 @@ class Track(Base):
     
     # Fields
     title = Column(String(255), nullable=False, index=True)
-    year = Column(SmallInteger, nullable=True)  # YEAR type maps to SmallInteger
+    year = Column(Integer, nullable=True)  # YEAR type maps to Integer
     duration_sec = Column(Numeric(8, 3), nullable=True)
     bpm = Column(SmallInteger, nullable=True, index=True)
     musical_key = Column(String(5), nullable=True, index=True)

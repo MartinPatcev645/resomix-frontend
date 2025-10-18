@@ -51,7 +51,7 @@ class Playlist(Base):
     
     # Fields
     user_id = Column(String(36), nullable=True, index=True)  # Supabase UUID, nullable for anonymous
-    name = Column(String(100), nullable=False)
+    name = Column(String(150), nullable=False)
     is_public = Column(Boolean, nullable=False, default=False)
     type = Column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')
     
