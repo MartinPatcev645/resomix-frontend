@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.python-version
 
 # C extensions
 *.so
@@ -179,6 +180,7 @@ creds/
 nohup.out
 structure.txt
 test_results.txt
+timing.txt
 
 all_uuids.txt
 completed.txt

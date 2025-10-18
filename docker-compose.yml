@@ -1,0 +1,66 @@
+services:
+  mariadb:
+    image: mariadb:11.3
+    container_name: resomix-mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIA_DB_ROOT_PASS:-rootpass}
+      MARIADB_DATABASE: ${MARIA_DB_NAME:-resomix_db}
+      MARIADB_USER: ${MARIA_DB_USER:-resomix}
+      MARIADB_PASSWORD: ${MARIA_DB_PASS:-secret}
+    command: [ "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--innodb_buffer_pool_size=1G", "--max_connections=300" ]
+    ports: [ "3307:3306" ]
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./database/seed:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u root -p${MARIA_DB_ROOT_PASS:-rootpass} --silent" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Optional: Elasticsearch for search features
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: resomix-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - cluster.routing.allocation.disk.threshold_enabled=false
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports: [ "9200:9200", "9300:9300" ]
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    profiles: [ "search" ]
+
+  # Optional: run API in a container (for parity/prod)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resomix-api
+    env_file:
+      - .env
+    environment:
+      MARIA_DB_HOST: mariadb
+      MARIA_DB_PORT: 3306
+      RESOMIX_API_KEY: ${RESOMIX_API_KEY:-dev-key}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports: [ "8005:8005" ]
+    volumes:
+      - .:/app
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8005", "--reload" ]
+    profiles: [ "api" ]
+
+volumes:
+  mariadb_data:
+  elasticsearch_data:

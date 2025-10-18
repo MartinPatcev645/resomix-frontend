@@ -34,11 +34,15 @@ class DatabaseConfig:
     """Database configuration management."""
     
     def __init__(self):
+        # Load environment variables first
+        from dotenv import load_dotenv
+        load_dotenv()
+        
         # Use the existing environment variable names from the user's .env file
         self.host = os.getenv("MARIA_DB_HOST", "127.0.0.1")
-        self.port = int(os.getenv("MARIA_DB_PORT", "3306"))
-        self.username = os.getenv("MARIA_DB_USER", "root")
-        self.password = os.getenv("MARIA_DB_PASS", "")
+        self.port = int(os.getenv("MARIA_DB_PORT", "3307"))
+        self.username = os.getenv("MARIA_DB_USER", "resomix")
+        self.password = os.getenv("MARIA_DB_PASS", "secret")
         self.database = os.getenv("MARIA_DB_NAME", "resomix_db")
         self.charset = os.getenv("DB_CHARSET", "utf8mb4")
         
