@@ -1,0 +1,158 @@
+
+# 0) Prereqs (NGINX & real IPs via Cloudflare)
+
+* You already added **real IP** restoration + rate-limit zones in: `/etc/nginx/conf.d/ratelimits_realip.conf`
+* Confirm NGINX logs to: `/var/log/nginx/access.log`
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo tail -n 3 /var/log/nginx/access.log
+```
+
+---
+
+# 1) Install Fail2Ban
+
+```bash
+sudo apt-get update
+sudo apt-get install -y fail2ban
+```
+
+---
+
+# 2) Create `jail.local`
+
+> (Fix the header **[DEFAULT]**, use `backend = auto`, and point to your NGINX access log.)
+
+```bash
+sudo tee /etc/fail2ban/jail.local >/dev/null <<'EOF'
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 10
+backend  = auto
+# (optional) ignoreip = 127.0.0.1/8 ::1 YOUR.PUBLIC.IP
+
+# 4xx/5xx burst (probing/scans)
+[nginx-4xx-5xx]
+enabled  = true
+filter   = nginx-4xx-5xx
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 40
+findtime = 2m
+bantime  = 2h
+
+# Admin/login probing
+[nginx-admin-abuse]
+enabled  = true
+filter   = nginx-admin-abuse
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 6
+findtime = 5m
+bantime  = 12h
+
+# 404 storm
+[nginx-404]
+enabled  = true
+filter   = nginx-404
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 25
+findtime = 3m
+bantime  = 3h
+
+# Longer bans for repeat offenders
+[recidive]
+enabled  = true
+logpath  = /var/log/fail2ban.log
+findtime = 1d
+bantime  = 7d
+maxretry = 5
+EOF
+```
+
+---
+
+# 3) Add filters
+
+```bash
+# 4xx/5xx burst
+sudo tee /etc/fail2ban/filter.d/nginx-4xx-5xx.conf >/dev/null <<'EOF'
+[Definition]
+failregex = ^<HOST> - - .*"[^"]*" (4\d\d|5\d\d) \d+ "[^"]*"
+ignoreregex =
+EOF
+
+# admin/login probing
+sudo tee /etc/fail2ban/filter.d/nginx-admin-abuse.conf >/dev/null <<'EOF'
+[Definition]
+failregex = ^<HOST> - - .*"GET /(?:admin|r-admin|login|wp-login\.php)[^"]*" (404|401|403) \d+ "[^"]*"
+ignoreregex =
+EOF
+
+# 404 storm
+sudo tee /etc/fail2ban/filter.d/nginx-404.conf >/dev/null <<'EOF'
+[Definition]
+failregex = ^<HOST> - - .*"[^"]*" 404 \d+ "[^"]*"
+ignoreregex = robots\.txt|favicon\.ico
+EOF
+```
+
+---
+
+# 4) Start + validate
+
+```bash
+# ensure log files exist
+sudo touch /var/log/fail2ban.log
+sudo fail2ban-client -t          # config test
+sudo systemctl enable --now fail2ban
+sudo systemctl restart fail2ban
+sudo systemctl status fail2ban --no-pager -l
+sudo fail2ban-client status      # list jails
+```
+
+---
+
+# 5) Quick tests
+
+```bash
+# 404 storm → should increment counters / ban after threshold
+for i in {1..40}; do curl -s -o /dev/null -w "%{http_code}\n" https://bserver.resomix.com/nope-$i ; done
+
+# admin probing
+for i in {1..8}; do curl -s -o /dev/null -w "%{http_code}\n" https://bserver.resomix.com/r-admin$i ; done
+
+# check jail statuses
+sudo fail2ban-client status nginx-404
+sudo fail2ban-client status nginx-4xx-5xx
+sudo fail2ban-client status nginx-admin-abuse
+sudo fail2ban-client status recidive
+```
+
+---
+
+# 6) Manage bans
+
+```bash
+# see bans
+sudo fail2ban-client status nginx-404
+
+# manual ban / unban (replace IP)
+sudo fail2ban-client set nginx-404 banip 203.0.113.55
+sudo fail2ban-client set nginx-404 unbanip 203.0.113.55
+```
+
+---
+
+# 7) Troubleshooting (fast)
+
+```bash
+sudo fail2ban-client -t
+journalctl -u fail2ban -n 100 --no-pager
+sudo tail -n 20 /var/log/nginx/access.log
+```
+
+**Done.** You now have Fail2Ban installed, three NGINX jails active (404 storm, 4xx/5xx burst, admin probing), and a recidive jail for repeat abusers—matching your environment and the commands you’ve been running.

@@ -173,14 +173,65 @@ class Settings(BaseModel):
     elasticsearch_enabled: bool = Field(default=False, description="Whether to use Elasticsearch for search")
     
     # CORS Configuration
-    allowed_origin_regex_production: str = Field(
-        default=r"^https://([\w\-]+\.)*resomix\.com(:[0-9]+)?$",
-        description="CORS regex for production (HTTPS resomix.com domains only)"
+    # Production: Explicit allowed origins (no wildcards when credentials=True)
+    allowed_origins_production: List[str] = Field(
+        default=[
+            "https://resomix.com",
+            "https://beta.resomix.com",
+            "https://stack.resomix.com",
+            "https://bserver.resomix.com",
+            "https://r-admin.resomix.com",
+            "https://landing.resomix.com",
+            # Have these here temporarily for development
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5175"
+        ],
+        description="Explicit allowed origins for production"
     )
-    allowed_origin_regex_development: str = Field(
-        default=r"^https?://.*",
-        description="CORS regex for development (allows any origin)"
+    # Development: Allow localhost and common dev ports
+    allowed_origins_development: List[str] = Field(
+        default=[
+            "http://localhost:5172",
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175"
+        ],
+        description="Allowed origins for development"
     )
+    
+    # CORS Methods and Headers
+    cors_allow_methods: List[str] = Field(
+        default=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        description="Allowed HTTP methods for CORS"
+    )
+    cors_allow_headers: List[str] = Field(
+        default=["Authorization", "Content-Type", "X-Requested-With", "X-Api-Key"],
+        description="Allowed headers for CORS requests"
+    )
+    cors_expose_headers: List[str] = Field(
+        default=["Content-Length", "Content-Range", "Accept-Ranges", "Content-Disposition"],
+        description="Headers exposed to browser for HLS/media/range requests"
+    )
+    cors_max_age: int = Field(
+        default=21600,
+        description="Cache duration for CORS preflight requests in seconds (6 hours)"
+    )
+    cors_allow_credentials: bool = Field(
+        default=True,
+        description="Allow credentials (cookies/auth headers) in CORS requests"
+    )
+    
+    # Legacy regex support (optional fallback)
+    use_cors_regex: bool = Field(
+        default=False,
+        description="Use regex-based CORS instead of explicit origins (not recommended with credentials)"
+    )
+    allowed_origin_regex: str = Field(
+        default=r"^https://([a-z0-9-]+\.)*resomix\.com$",
+        description="CORS regex for wildcard subdomain matching (only if use_cors_regex=True)"
+    )
+    
     use_development_cors: bool = Field(
         default=True, 
         description="Whether to use development CORS settings"
@@ -274,12 +325,12 @@ class Settings(BaseModel):
         super().__init__(**data)
 
     @property
-    def current_origin_regex(self) -> str:
-        """Get the current CORS origin regex based on environment settings"""
+    def current_allowed_origins(self) -> List[str]:
+        """Get the current CORS allowed origins based on environment settings"""
         return (
-            self.allowed_origin_regex_development 
+            self.allowed_origins_development 
             if self.use_development_cors 
-            else self.allowed_origin_regex_production
+            else self.allowed_origins_production
         )
     
     @property

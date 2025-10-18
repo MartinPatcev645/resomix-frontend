@@ -1,0 +1,168 @@
+===>   /etc/nginx/conf.d/ratelimits_realip.conf
+
+# =======================
+# HTTP-LEVEL INCLUDE FILE
+# =======================
+# Place this inside the global http{} (e.g., /etc/nginx/nginx.conf includes /etc/nginx/conf.d/*.conf)
+
+# --- Restore real client IP when behind Cloudflare ---
+# (Cloudflare appends CF-Connecting-IP; trust CF edge ranges)
+# Source: Cloudflare docs (use the official, current list)
+# https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/
+real_ip_header CF-Connecting-IP;
+real_ip_recursive on;
+
+# (Optional) Trust CF IP ranges so NGINX accepts CF-Connecting-IP.
+# Keep this list updated from Cloudflare. https://www.cloudflare.com/ips
+set_real_ip_from 173.245.48.0/20;
+set_real_ip_from 103.21.244.0/22;
+set_real_ip_from 103.22.200.0/22;
+set_real_ip_from 103.31.4.0/22;
+set_real_ip_from 141.101.64.0/18;
+set_real_ip_from 108.162.192.0/18;
+set_real_ip_from 190.93.240.0/20;
+set_real_ip_from 188.114.96.0/20;
+set_real_ip_from 197.234.240.0/22;
+set_real_ip_from 198.41.128.0/17;
+set_real_ip_from 162.158.0.0/15;
+set_real_ip_from 104.16.0.0/13;
+set_real_ip_from 104.24.0.0/14;
+set_real_ip_from 172.64.0.0/13;
+set_real_ip_from 131.0.72.0/22;
+# IPv6 samples:
+set_real_ip_from 2400:cb00::/32;
+set_real_ip_from 2606:4700::/32;
+set_real_ip_from 2803:f800::/32;
+set_real_ip_from 2405:b500::/32;
+set_real_ip_from 2405:8100::/32;
+set_real_ip_from 2a06:98c0::/29;
+set_real_ip_from 2c0f:f248::/32;
+
+# --- Rate-limit and connection-limit ZONES (leaky-bucket) ---
+# References: limit_req/limit_req_zone; limit_conn/limit_conn_zone
+# https://nginx.org/en/docs/http/ngx_http_limit_req_module.html
+# https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html
+
+# Per-IP key; shared memory zones sized for traffic (10m ~ ~160k entries)
+limit_req_zone  $binary_remote_addr zone=api_rl:10m     rate=3r/s;   # API/search: 3 rps avg
+limit_req_zone  $binary_remote_addr zone=global_rl:10m  rate=5r/s;   # catch-all safety net
+limit_req_zone  $binary_remote_addr zone=admin_rl:2m    rate=10r/m;  # admin: 10/min strict
+
+# Track concurrent connections per IP
+limit_conn_zone $binary_remote_addr zone=perip_conn:10m;
+
+# Optional: set 429 for rate-limit violations
+limit_req_status 429;
+
+
+
+===>  /etc/nginx/sites-available/bserver
+
+
+# This server block handles HTTPS traffic and proxies to your application
+server {
+    server_name bserver.resomix.com;
+
+    # Allow large uploads (you had 105M)
+    client_max_body_size 105M;
+
+    # -----------------------
+    # Security response headers
+    # -----------------------
+    # OWASP secure headers guidance
+    # https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer-when-downgrade always;
+    # If you already force HTTPS everywhere, enable HSTS (subdomains optional)
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # -----------------------
+    # Global safety net limits
+    # -----------------------
+    # Apply a gentle global cap to everything on this host
+    limit_req zone=global_rl burst=10;      # allows short spikes, then enforces 5 rps avg
+    limit_conn perip_conn 30;               # total concurrent conns per IP
+
+    # -----------------------
+    # API + app proxy
+    # -----------------------
+    # Tighter limits for API-like paths; you can refine prefixes as needed.
+    location ~ ^/(api|search|upload|v1|v2)/ {
+        # API/search/db operations: your target is ~3 rps + short burst
+        # https://nginx.org/en/docs/http/ngx_http_limit_req_module.html
+        limit_req zone=api_rl burst=10 nodelay;
+        # Keep per-IP concurrent sockets reasonable for app endpoints
+        # https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html
+        limit_conn perip_conn 20;
+
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+
+        # WebSocket & proxy headers
+        # https://nginx.org/en/docs/http/websocket.html
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+
+        # Preserve real client details (Cloudflare real IP already restored at http-level)
+        proxy_set_header X-Real-IP       $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout  60s;
+        proxy_send_timeout    300s;
+        proxy_read_timeout    300s;
+
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Default catch-all (non-API paths). Keeps your previous behavior but benefits from global limits.
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+
+        proxy_set_header X-Real-IP       $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout  60s;
+        proxy_send_timeout    300s;
+        proxy_read_timeout    300s;
+
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # ---- TLS (Certbot-managed) ----
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/bserver.resomix.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/bserver.resomix.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+    # Optional: per-site logs
+    # access_log /var/log/nginx/bserver.resomix.com.access.log;
+    # error_log  /var/log/nginx/bserver.resomix.com.error.log;
+}
+
+# This server block handles HTTP traffic and redirects it to HTTPS
+server {
+    client_max_body_size 105M;
+
+    if ($host = bserver.resomix.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name bserver.resomix.com;
+    return 404; # managed by Certbot
+}
+
+
+
+
+
