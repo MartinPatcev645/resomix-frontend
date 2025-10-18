@@ -1,291 +1,139 @@
 # ResomiX Audio Similarity API
 
-A comprehensive FastAPI-based application for audio similarity analysis, track management, and music discovery. This API provides advanced audio processing capabilities, metadata extraction, similarity matching, and playlist management with MariaDB database integration.
-
-## 🎵 Overview
-
-ResomiX is a production-ready audio similarity API that enables:
-- **Audio Similarity Matching**: Upload audio files or query by path to find similar tracks
-- **Metadata Processing**: Extract and filter audio metadata with advanced cleaning algorithms  
-- **Track Management**: Complete track database with artists, albums, labels, and genres
-- **Playlist System**: Create and manage playlists with similarity-based track suggestions
-- **Search & Discovery**: Advanced search capabilities across the music catalog
-- **Contact & Feedback**: User engagement system with Google Sheets integration
-
-## 🏗️ Architecture
-
-The application follows a **clean layered architecture** with clear separation of concerns:
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   API Layer    │ ←→ │ Controller Layer │ ←→ │ Service Layer   │
-│   (FastAPI)    │    │ (HTTP Handlers)  │    │ (Business Logic)│
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                        ↕
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│ Schema Layer    │    │ Repository Layer │    │  Model Layer    │
-│ (Pydantic)     │    │ (Data Access)    │    │ (SQLAlchemy)    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
-
-## ✨ Core Features
-
-### 🎧 Audio Similarity
-- **Upload Similarity**: Analyze uploaded audio files against 2.2M+ track database
-- **Path-based Similarity**: Query similarity for existing server-side tracks
-- **Deduplication**: Advanced algorithms to remove duplicate results
-- **Playlist Generation**: Automatic playlist creation from similarity results
-
-### 🔍 Metadata & Search
-- **Metadata Extraction**: Multi-format support using FFmpeg and Mutagen
-- **Smart Filtering**: Remove URLs, domains, and unwanted strings from metadata
-- **Advanced Search**: Search by title, artist, album, label, genre, BPM, key
-- **Audio Validation**: Deep content analysis for security and format verification
-
-### 📊 Data Management
-- **Track Database**: 2.2M+ tracks with comprehensive metadata
-- **Artist Management**: Artist catalog with collaboration support
-- **Label & Genre**: Organized label and genre taxonomies
-- **Preview System**: Secure preview URL generation with expiration
-
-### 🎼 Playlist System
-- **Custom Playlists**: User-created playlists with track management
-- **Similarity Playlists**: Auto-generated playlists from similarity results
-- **Public/Private**: Visibility control for playlist sharing
-- **Track Scoring**: Similarity scores for playlist track ordering
-
-## 🛠️ Technology Stack
-
-- **Framework**: FastAPI 0.109.0 with async/await support
-- **Database**: MariaDB with SQLAlchemy ORM and connection pooling
-- **Audio Processing**: FFmpeg + Mutagen for metadata extraction and validation
-- **External Services**: Similarity microservice integration via HTTP
-- **Security**: API key authentication, URL signing, input validation
-- **Integration**: Google Sheets API for feedback/contact management
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-1. **Python 3.8+** installed
-2. **MariaDB** server running
-3. **FFmpeg** installed and in PATH
-4. **Similarity Server** (optional, for similarity features)
-
-### Installation
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd basic_fastapi_server_resomix
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# or
-.venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-### Configuration
-
-Key environment variables in `.env`:
-
-```env
-# API Security
-RESOMIX_API_KEY=your_secure_api_key_here
-
-# Database
-MONGODB_URI=mysql+aiomysql://user:password@localhost/resomix
-
-# External Services  
-SIMILARITY_SERVER_URL=http://localhost:8001
-RESOMIX_SERVER_URL=http://localhost:8000
-
-# Google Sheets (optional)
-SERVICE_ACCOUNT_FILE=path/to/service-account.json
-GOOGLE_SHEET_ID=your_sheet_id
-
-# Spotify Configuration (optional)
-SPOTIFY_CLIENT_ID=your_spotify_client_id_here
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
-
-# Tidal Configuration (optional)  
-TIDAL_CLIENT_ID=your_tidal_client_id_here
-TIDAL_CLIENT_SECRET=your_tidal_client_secret_here
-
-# Security
-PREVIEW_FERNET_SECRET=32-byte-secret-key
-PREVIEW_HMAC_SECRET=hmac-secret-key
-```
-
-### Running
-
-```bash
-# Development
-python run.py
-
-# Production
-uvicorn app.main:app --host 0.0.0.0 --port 8005
-```
-
-Server runs at: `http://localhost:8005` (development) or `https://bserver.resomix.com` (production)
-
-## 📖 API Documentation
-
-### Interactive Docs
-- **Swagger UI**: `http://localhost:8005/docs` (development) or `https://bserver.resomix.com/docs` (production)
-- **ReDoc**: `http://localhost:8005/redoc` (development) or `https://bserver.resomix.com/redoc` (production)
-
-### Key Endpoints
-
-#### Audio Similarity
-```http
-POST /api/similarity/upload/          # Upload audio for similarity
-POST /api/similarity/path/{path}      # Get similarity by file path
-```
-
-#### Search & Browse
-```http
-GET  /api/search/                     # Advanced track search
-GET  /api/metadata/extract/           # Extract audio metadata
-```
-
-#### Playlists
-```http
-GET  /api/playlists/similarity/{id}   # Get playlist with similarity data
-POST /api/playlists/rename/           # Rename playlist
-POST /api/playlists/visibility/       # Change playlist visibility
-```
-
-#### Preview & Content
-```http
-GET  /api/preview/audio/{uuid}        # Get secure preview URL
-GET  /api/health/                     # Health check
-```
-
-#### Feedback & Contact
-```http
-POST /api/feedback/                   # Submit feedback
-POST /api/feedback/contact/           # Contact form submission
-```
-
-### Authentication
-
-All endpoints require API key authentication:
-
-```bash
-# Development
-curl -X GET "http://localhost:8005/api/health/?api_key=YOUR_API_KEY"
-
-# Production
-curl -X GET "https://bserver.resomix.com/api/health/?api_key=YOUR_API_KEY"
-```
-
-### Response Format
-
-```json
-{
-  "success": true,
-  "data": {
-    // Response data
-  }
-}
-```
-
-## 📁 Project Structure
-
-```
-app/
-├── api/
-│   ├── routers/           # API endpoints
-│   │   ├── similarity.py  # Audio similarity endpoints
-│   │   ├── playlists.py   # Playlist management
-│   │   ├── search.py      # Search functionality
-│   │   ├── metadata.py    # Metadata extraction
-│   │   ├── preview.py     # Preview URL generation
-│   │   ├── feedback.py    # Feedback system
-│   │   ├── contact.py     # Contact form
-│   │   └── health.py      # Health checks
-│   └── middlewares/       # CORS and other middleware
-├── controllers/           # HTTP request handlers
-├── services/              # Business logic
-│   ├── similarity_service.py      # Audio similarity algorithms
-│   ├── metadata_service.py        # Metadata extraction & filtering
-│   ├── search_service.py          # Search implementation
-│   ├── audio_service.py           # FFmpeg integration
-│   ├── playlist_service.py        # Playlist management
-│   ├── track_upload_service.py    # Track upload processing
-│   └── monthly_pipeline_service.py # Monthly pipeline processing
-├── repositories/          # Data access layer
-├── models/               # SQLAlchemy ORM models
-├── schemas/              # Pydantic validation models
-├── core/                 # Configuration and utilities
-└── utils/                # Helper functions
-```
-
-## 🔧 Advanced Features
-
-### Metadata Filtering
-Automatic cleaning of metadata fields:
-- **URL/Domain Detection**: Removes URLs and domain names from metadata
-- **Title Filtering**: Removes common unwanted strings like "(Original Mix)"
-- **Stopper Strings**: Truncates metadata at specified markers
-
-### Similarity Pipeline
-- **Multi-format Support**: Handles various audio formats via FFmpeg
-- **Deduplication**: Advanced algorithms prevent duplicate results
-- **Scoring System**: Similarity scores for result ranking
-- **Playlist Integration**: Automatic playlist generation from results
-
-### Security & Performance
-- **API Key Authentication**: Secure access control
-- **Preview URL Signing**: Time-limited, signed preview URLs
-- **Async Processing**: Full async/await for high performance
-- **Connection Pooling**: Optimized database connections
-- **Input Validation**: Comprehensive request validation
-
-## 🚀 Deployment
-
-### Docker
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 8005
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8005"]
-```
-
-### Production Considerations
-- Use strong API keys and secrets
-- Configure CORS for your domain
-- Set up database backups
-- Monitor logs and health endpoints
-- Use HTTPS/TLS in production
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Follow the existing code patterns and architecture
-4. Add appropriate tests
-5. Submit a pull request
-
-## 📞 Support
-
-- **Health Check**: `GET /api/health/`
-- **Feedback API**: `POST /api/feedback/`
-- **Contact Form**: `POST /api/feedback/contact/`
-- **Documentation**: Available at `/docs` endpoint
+A production-ready FastAPI service for audio similarity analysis, metadata extraction and playlist management backed by MariaDB.
 
 ---
 
-**ResomiX Audio Similarity API** - Powering music discovery through advanced audio analysis.
+## 📁 Project Structure (High-Level)
+
+```text
+basic_fastapi_server_resomix/
+├── app/               # FastAPI application package
+│   ├── api/           # Routers, middlewares & dependencies
+│   ├── controllers/   # Thin HTTP handlers
+│   ├── services/      # Business-logic layer
+│   ├── repositories/  # Data-access layer (SQLAlchemy)
+│   ├── models/        # ORM models
+│   ├── schemas/       # Pydantic schemas (DTO / validation)
+│   └── core/          # Config, security, observability
+├── database/          # SQL migrations, CLI & helpers
+├── scripts/           # One-off & maintenance scripts
+├── tests/             # Unit & integration tests
+└── run.py             # Simple development entry-point
+```
+
+See `docs/` for deeper architecture notes.
+
+---
+
+## ✨ Core Features
+
+• **Audio similarity** (upload / server-path) with de-duplication  
+• **Metadata extraction** & cleaning using FFmpeg + Mutagen  
+• **Search & discovery** across 2.2 M+ tracks  
+• **Playlist system** with similarity-based suggestions  
+• **External integrations**: Spotify, Tidal, Google Sheets  
+• **Secure previews** with time-limited signed URLs  
+• **Full async support**, connection pooling & observability
+
+---
+
+## 🚀 Getting Started
+
+### 1 – Prerequisites
+
+* Python 3.8-3.12
+* MariaDB 10.5+ running locally (or Docker)
+* FFmpeg in `PATH`
+* (Optional) Similarity micro-service for heavy similarity calls
+
+### 2 – Installation
+
+```bash
+# Clone & enter repo
+git clone https://github.com/<you>/basic_fastapi_server_resomix.git
+cd basic_fastapi_server_resomix
+
+# Create & activate virtual environment
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+### 3 – Environment Variables
+
+Copy the sample file and fill in **at least** the starred vars:
+
+```bash
+cp .env.example .env
+```
+
+```env
+# ★ API key used by all clients
+RESOMIX_API_KEY=<your_random_key>
+
+# ★ Database connection (MariaDB)
+MARIA_DB_HOST=127.0.0.1
+MARIA_DB_USER=resomix
+MARIA_DB_PASS=secret
+MARIA_DB_NAME=resomix_db
+
+# External services (optional)
+SIMILARITY_SERVER_URL=http://localhost:8002
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+TIDAL_CLIENT_ID=
+TIDAL_CLIENT_SECRET=
+```
+
+### 4 – Database Setup
+
+```bash
+# Create database & user (adjust creds) – skip if you already have one
+mariadb -u root -p -e "CREATE DATABASE resomix_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# Run migrations & (optionally) seed sample data
+python -m database.manage setup           # schema only
+python -m database.manage setup --with-data   # + sample data
+```
+
+### 5 – Run the Server
+
+```bash
+# Development (autoreload off)
+python run.py                            # http://localhost:8001
+
+# Production example (gunicorn or uvicorn)
+uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 4
+```
+
+Interactive documentation:  
+• Swagger UI → `http://localhost:8001/docs`  
+• ReDoc     → `http://localhost:8001/redoc`
+
+### 6 – Running Tests
+
+```bash
+pytest -q                # full suite
+# or run selective route tests
+python tests/unit/test_routes/run_all_tests.py health search
+```
+
+---
+
+## 🔧 Developer Workflow & Best Practices
+
+1. **Branching**: feature/xyz or fix/xyz → PR → main  
+2. **Commit style**: Conventional Commits (e.g. `feat: add similarity dedupe`)  
+3. **Coding style**: follow `black` (PEP-8) + `isort`; run `make format` before PR  
+4. **Env safety**: *never* commit `.env` or creds. Use dotenv & secrets manager.  
+5. **Type hints + docstrings** on all public functions/classes.  
+6. **Tests**: write/extend tests for every new feature; keep coverage ≥ 80 %.  
+7. **Database migrations**: one numbered SQL file per change in `database/migrations/`; run migration CLI after review.  
+8. **Performance**: prefer async service/repository calls; avoid blocking IO.  
+9. **Logging**: use `app.utils.logging_utils`; no `print` in prod code.  
+10. **CI**: GitHub Actions (or similar) should run `format`, `lint`, `tests`.
+
+Happy hacking 🎧
