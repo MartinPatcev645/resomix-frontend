@@ -137,21 +137,23 @@ export const SPOTIFY_CONFIG = {
 };
 
 // Tidal configuration
+/*
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'AxOkLsNxSDQ8InZU',
   // REDIRECT_URI: 'https://beta.resomix.com/test',
-  REDIRECT_URI: 'https://beta-old.resomix.com/test',
+  REDIRECT_URI: 'https://stack.resomix.com/tidal-redirect',
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
   AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
 };
+ */
 
-/*
+/**/
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'ds7LnGkxqwFXUE6s',
-  REDIRECT_URI: 'https://stack.resomix.com',
+  REDIRECT_URI: 'https://stack.resomix.com/tidal-redirect',
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
   AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
 };
-*/
+/**/

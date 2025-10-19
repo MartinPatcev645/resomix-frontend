@@ -17,35 +17,9 @@ import {
   handleTidalCallback,
   checkTidalAuthentication,
   clearTidalAuth,
-  transferPlaylistToTidal
+  transferPlaylistToTidal,
+  initializeTidalAuth
 } from '../../services/tidalService.ts';
-
-
-import { TIDAL_CONFIG } from "@resomix/api-client/config.js";
-/*
-const TIDAL_CONFIG = {
-  CLIENT_ID: 'AxOkLsNxSDQ8InZU',
-  REDIRECT_URI: 'https://stack.resomix.com',
-  SCOPE: 'user.read playlists.read playlists.write',
-  AUTH_URL: 'https://login.tidal.com/authorize',
-};
- */
-
-function base64url(buffer: ArrayBuffer | Uint8Array) {
-  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sha256(plain: string) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(plain);
-  const hash = await window.crypto.subtle.digest('SHA-256', data);
-  return hash;
-}
 
 interface PlaylistExportWithIntegrationsProps {
   isOpen: boolean;
@@ -155,7 +129,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     if (!code && !state && !error) return;
 
     const spotifyState = localStorage.getItem('spotify_auth_state');
-    const tidalState = localStorage.getItem('tidal_oauth_state');
+    const tidalState = localStorage.getItem('tidal_auth_state');
 
     // helper: remove only oauth params, preserve others (e.g. ?id=...)
     const stripOAuthParams = () => {
@@ -328,32 +302,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     try {
       setTidalConnectLoading(true);
 
-      // Step 1: Generate PKCE and state
-      const array = new Uint8Array(32);
-      window.crypto.getRandomValues(array);
-      const code_verifier = base64url(array);
-      const hash = await sha256(code_verifier);
-      const code_challenge = base64url(hash);
-      const state = window.crypto.randomUUID();
-
-      // Save PKCE and state
-      sessionStorage.setItem('tidal_pkce', JSON.stringify({ code_verifier, code_challenge, state }));
-      localStorage.setItem('tidal_oauth_state', state);
-
-      // Step 2: Build auth URL
-      const params = new URLSearchParams({
-        response_type: 'code',
-        client_id: TIDAL_CONFIG.CLIENT_ID,
-        redirect_uri: TIDAL_CONFIG.REDIRECT_URI,// +window.location.pathname + window.location.search,
-        scope: TIDAL_CONFIG.SCOPE,
-        code_challenge: code_challenge,
-        code_challenge_method: 'S256',
-        state: state,
-      });
-      const url = `${TIDAL_CONFIG.AUTH_URL}?${params.toString()}`;
-
-      // Step 2b: Redirect
-      window.location.href = url;
+      await initializeTidalAuth(playlistId);
     } catch (err: any) {
       const msg = `Failed to initialize Tidal authentication: ${err?.message || 'Unknown error'}`;
       setTidalError(msg);

@@ -1,97 +1,199 @@
 /**
- * Tidal Integration Service (TypeScript)
- * Handles OAuth authentication and playlist transfer to Tidal
- * Uses server-side authentication for enhanced security
+ * Tidal Service (TypeScript)
+ * Handles Tidal OAuth PKCE flow and playlist transfer functionality
  */
 
-import { API_CONFIG, TIDAL_CONFIG } from "@resomix/api-client/config.js"
+import { TIDAL_CONFIG, API_CONFIG } from "@resomix/api-client/config.js";
 
-// Expected shape of API_CONFIG
-type Endpoints = {
-  TIDAL_AUTH_AUTHORIZE: string;
-  TIDAL_AUTH_TOKEN: string;
-  TIDAL_TRANSFER: string;
+type TidalAuthSuccess = {
+  success: true;
+  access_token: string;
+  expires_in: number;
 };
 
-interface ApiConfig {
-  BASE_URL: string;
-  API_KEY: string;
-  ENDPOINTS: Endpoints;
-}
+type TidalAuthError = {
+  success: false;
+  error: string;
+};
 
-// Cast imported config to the expected shape (adjust if your actual types differ)
-const CFG = API_CONFIG as unknown as ApiConfig;
+export type TidalAuthResult = TidalAuthSuccess | TidalAuthError;
 
-// Generic API response types
-type ApiSuccess<T> = { success: true; data: T };
-type ApiError = { success: false; error: string };
-type ApiResponse<T> = ApiSuccess<T> | ApiError;
+export type TransferResponse<T = any> = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: T;
+};
 
-// Token exchange response
-type TokenData = {
+type TidalTokenResponse = {
   access_token: string;
+  token_type?: string;
+  scope?: string;
+  expires_in: number;
   refresh_token?: string;
 };
 
-// Authorization response
-type AuthInitData = {
-  state: string;
-  authorization_url: string;
-};
-
-// Transfer response (server-defined; keep flexible)
-type TransferResponse = { success: boolean; error?: string } & Record<string, unknown>;
-
-// PKCE helper functions
+// Generate random string for code verifier and state
 const generateRandomString = (length: number): string => {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  const values = globalThis.crypto.getRandomValues(new Uint8Array(length));
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const values = window.crypto.getRandomValues(new Uint8Array(length));
   return Array.from(values).reduce((acc, x) => acc + possible[x % possible.length], '');
 };
 
+// Generate SHA256 hash
 const sha256 = async (plain: string): Promise<ArrayBuffer> => {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
-  return globalThis.crypto.subtle.digest('SHA-256', data);
+  return window.crypto.subtle.digest('SHA-256', data);
 };
 
-const base64urlEncode = (input: ArrayBuffer | Uint8Array): string => {
-  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+// Base64 encode (URL-safe)
+const base64encode = (input: ArrayBuffer): string => {
+  const bytes = new Uint8Array(input);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 };
 
 /**
- * Generate PKCE code verifier and challenge
+ * Initialize Tidal OAuth PKCE flow
+ * Redirects user to Tidal authorization page
  */
-const generatePKCEPair = async (): Promise<{ codeVerifier: string; codeChallenge: string }> => {
-  const codeVerifier = generateRandomString(64);
-  const codeChallenge = base64urlEncode(await sha256(codeVerifier));
-  return { codeVerifier, codeChallenge };
+export const initializeTidalAuth = async (id: string | null): Promise<void> => {
+  try {
+    // Generate code verifier and challenge
+    const codeVerifier = generateRandomString(64);
+    const codeChallenge = base64encode(await sha256(codeVerifier));
+    const state = encodeURI(id || generateRandomString(16));
+
+    // Store code verifier and state for later use
+    localStorage.setItem('tidal_code_verifier', codeVerifier);
+    localStorage.setItem('tidal_auth_state', state);
+
+    // Build authorization URL
+    const authUrl = new URL(TIDAL_CONFIG.AUTH_URL);
+    const params: Record<string, string> = {
+      response_type: 'code',
+      client_id: TIDAL_CONFIG.CLIENT_ID,
+      scope: TIDAL_CONFIG.SCOPE,
+      code_challenge_method: 'S256',
+      code_challenge: codeChallenge,
+      redirect_uri: TIDAL_CONFIG.REDIRECT_URI,
+      state: state,
+    };
+
+    authUrl.search = new URLSearchParams(params).toString();
+
+    // Redirect to Tidal authorization
+    window.location.href = authUrl.toString();
+  } catch (error) {
+    console.error('Error initializing Tidal auth:', error);
+    throw new Error('Failed to initialize Tidal authentication');
+  }
 };
 
 /**
- * Get stored Tidal access token
+ * Handle Tidal OAuth callback
+ * Exchange authorization code for access token via backend
  */
-export const getTidalAccessToken = (): string | null => {
-  return localStorage.getItem('tidal_access_token');
+export const handleTidalCallback = async (code: string, state: string): Promise<TidalAuthResult> => {
+  try {
+    // Verify state parameter
+    const storedState = localStorage.getItem('tidal_auth_state');
+    if (state !== storedState) {
+      throw new Error('Invalid state parameter');
+    }
+
+    const codeVerifier = localStorage.getItem('tidal_code_verifier');
+    if (!codeVerifier) {
+      throw new Error('No code verifier found');
+    }
+
+    // Exchange code for access token using backend helper endpoint
+    // This avoids CORS and client secret exposure issues.
+    const response = await fetch(TIDAL_CONFIG.AUTH_AUTHORIZE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: TIDAL_CONFIG.REDIRECT_URI,
+        client_id: TIDAL_CONFIG.CLIENT_ID,
+        code_verifier: codeVerifier,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(text || 'Failed to exchange code for token');
+    }
+
+    const data = (await response.json()) as Partial<TidalTokenResponse>;
+
+    if (data.access_token) {
+      // Store tokens
+      localStorage.setItem('tidal_access_token', data.access_token);
+      if (data.refresh_token) {
+        localStorage.setItem('tidal_refresh_token', data.refresh_token);
+      }
+
+      // Store expiry time
+      const expiresIn = data.expires_in ?? 3600; // Default to 1 hour
+      const expiryTime = Date.now() + expiresIn * 1000;
+      localStorage.setItem('tidal_token_expiry', String(expiryTime));
+
+      // Clean up temporary storage
+      localStorage.removeItem('tidal_code_verifier');
+      localStorage.removeItem('tidal_auth_state');
+
+      return {
+        success: true,
+        access_token: data.access_token,
+        expires_in: expiresIn,
+      };
+    } else {
+      throw new Error('No access token in response');
+    }
+  } catch (error: any) {
+    console.error('Error handling Tidal callback:', error);
+    return {
+      success: false,
+      error: error?.message || 'Unknown error',
+    };
+  }
 };
 
 /**
- * Get stored Tidal refresh token
- */
-export const getTidalRefreshToken = (): string | null => {
-  return localStorage.getItem('tidal_refresh_token');
-};
-
-/**
- * Check if user is authenticated with Tidal
+ * Check if user has valid Tidal access token
  */
 export const checkTidalAuthentication = (): boolean => {
-  const accessToken = getTidalAccessToken();
-  return !!accessToken;
+  const token = localStorage.getItem('tidal_access_token');
+  const expiry = localStorage.getItem('tidal_token_expiry');
+
+  if (!token || !expiry) {
+    return false;
+  }
+
+  // Check if token is expired (with 5 minute buffer)
+  const now = Date.now();
+  const expiryTime = Number(expiry);
+  const buffer = 5 * 60 * 1000; // 5 minutes
+
+  return now < expiryTime - buffer;
+};
+
+/**
+ * Get current Tidal access token
+ */
+export const getTidalAccessToken = (): string | null => {
+  if (checkTidalAuthentication()) {
+    return localStorage.getItem('tidal_access_token');
+  }
+  return null;
 };
 
 /**
@@ -100,312 +202,9 @@ export const checkTidalAuthentication = (): boolean => {
 export const clearTidalAuth = (): void => {
   localStorage.removeItem('tidal_access_token');
   localStorage.removeItem('tidal_refresh_token');
+  localStorage.removeItem('tidal_token_expiry');
   localStorage.removeItem('tidal_code_verifier');
-  localStorage.removeItem('tidal_oauth_state');
-};
-
-/**
- * Helper to construct URLs with API key
- */
-const getUrl = (
-  endpoint: string,
-  queryParams: Record<string, string | number | boolean | null | undefined> = {}
-): string => {
-  const url = new URL(`${CFG.BASE_URL}${endpoint}`);
-
-  // Add API key
-  url.searchParams.append('api_key', CFG.API_KEY);
-
-  // Add any additional query params
-  Object.entries(queryParams).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      url.searchParams.append(key, String(value));
-    }
-  });
-
-  return url.toString();
-};
-
-/**
- * Initialize Tidal OAuth PKCE authentication via server
- */
-export const initializeTidalAuth = async (): Promise<void> => {
-  try {
-    // Generate PKCE parameters
-    const { codeVerifier, codeChallenge } = await generatePKCEPair();
-    // const redirectUri = `${window.location.origin}/test`;
-    const redirectUri = 'https://stack.resomix.com/sonic-discovery?id=75378136-fd59-4ac5-9de9-ab414d499029';
-
-    // Store code verifier for later use
-    localStorage.setItem('tidal_code_verifier', codeVerifier);
-
-    console.log('🔄 Tidal Auth Debug:', {
-      redirectUri,
-      codeChallenge: codeChallenge?.substring(0, 20) + '...',
-      codeVerifier: codeVerifier?.substring(0, 20) + '...',
-      endpoint: getUrl(TIDAL_CONFIG.AUTH_AUTHORIZE),
-    });
-
-    // Get authorization URL from server
-    const response = await fetch(getUrl(TIDAL_CONFIG.AUTH_AUTHORIZE), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        redirect_uri: redirectUri,
-        code_challenge: codeChallenge,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({}))) as Partial<ApiError>;
-      throw new Error(`Server error: ${errorData.error || response.statusText}`);
-    }
-
-    const result = (await response.json()) as ApiResponse<AuthInitData>;
-
-    if (result.success) {
-      // Store state for validation
-      localStorage.setItem('tidal_oauth_state', result.data.state);
-
-      // Log the response and next steps instead of redirecting
-      console.log('Tidal authorization API response:', result);
-      console.log(
-        'Next step: Direct the user to the following URL to authorize:',
-        result.data.authorization_url
-      );
-      // window.location.href = result.data.authorization_url;
-    } else {
-      throw new Error(result.error || 'Failed to get authorization URL');
-    }
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error('Unknown error');
-    console.error('Error initializing Tidal auth:', err);
-    throw new Error(`Failed to initialize Tidal authentication: ${err.message}`);
-  }
-};
-
-/**
- * Handle Tidal OAuth callback and exchange code for access token via server
- */
-export const handleTidalCallback = async (
-  code: string,
-  state: string
-): Promise<{ success: boolean; access_token?: string; refresh_token?: string; error?: string }> => {
-  try {
-    // Add persistent debugging
-    const debugInfo = {
-      timestamp: new Date().toISOString(),
-      step: 'callback_start',
-      code: code?.substring(0, 20) + '...',
-      state: state?.substring(0, 20) + '...',
-    };
-    localStorage.setItem('tidal_debug_callback', JSON.stringify(debugInfo));
-    console.log('🔄 Tidal Callback Start:', debugInfo);
-
-    // Verify state parameter
-    const storedState = localStorage.getItem('tidal_oauth_state');
-    if (state !== storedState) {
-      const errorMsg = 'Invalid state parameter';
-      localStorage.setItem(
-        'tidal_debug_callback',
-        JSON.stringify({
-          ...debugInfo,
-          step: 'state_validation_failed',
-          error: errorMsg,
-          storedState: storedState?.substring(0, 20) + '...',
-          receivedState: state?.substring(0, 20) + '...',
-        })
-      );
-      throw new Error(errorMsg);
-    }
-
-    // Get stored code verifier
-    const codeVerifier = localStorage.getItem('tidal_code_verifier');
-    if (!codeVerifier) {
-      const errorMsg = 'Code verifier not found';
-      localStorage.setItem(
-        'tidal_debug_callback',
-        JSON.stringify({
-          ...debugInfo,
-          step: 'code_verifier_missing',
-          error: errorMsg,
-        })
-      );
-      throw new Error(errorMsg);
-    }
-
-    const redirectUri = `${window.location.origin}/test`;
-
-    localStorage.setItem(
-      'tidal_debug_callback',
-      JSON.stringify({
-        ...debugInfo,
-        step: 'token_exchange_start',
-        redirectUri,
-        codeVerifier: codeVerifier?.substring(0, 20) + '...',
-        endpoint: getUrl(CFG.ENDPOINTS.TIDAL_AUTH_TOKEN),
-      })
-    );
-
-    console.log('🔄 Tidal Token Exchange Debug:', {
-      code: code?.substring(0, 20) + '...',
-      state: state?.substring(0, 20) + '...',
-      redirectUri,
-      codeVerifier: codeVerifier?.substring(0, 20) + '...',
-      endpoint: getUrl(CFG.ENDPOINTS.TIDAL_AUTH_TOKEN),
-    });
-
-    // Exchange code for tokens using server endpoint
-    const response = await fetch(getUrl(CFG.ENDPOINTS.TIDAL_AUTH_TOKEN), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        code: code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier,
-      }),
-    });
-
-    console.log('🔄 Tidal Token Exchange Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    });
-
-    localStorage.setItem(
-      'tidal_debug_callback',
-      JSON.stringify({
-        ...debugInfo,
-        step: 'token_exchange_response',
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      })
-    );
-
-    if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({}))) as Partial<ApiError>;
-      const errorMsg = `Token exchange failed: ${errorData.error || response.statusText}`;
-
-      localStorage.setItem(
-        'tidal_debug_callback',
-        JSON.stringify({
-          ...debugInfo,
-          step: 'token_exchange_failed',
-          error: errorMsg,
-          errorData,
-          status: response.status,
-        })
-      );
-
-      throw new Error(errorMsg);
-    }
-
-    const result = (await response.json()) as ApiResponse<TokenData>;
-
-    localStorage.setItem(
-      'tidal_debug_callback',
-      JSON.stringify({
-        ...debugInfo,
-        step: 'token_exchange_success',
-        hasAccessToken: !!(result as ApiSuccess<TokenData>).data?.access_token,
-        hasRefreshToken: !!(result as ApiSuccess<TokenData>).data?.refresh_token,
-      })
-    );
-
-    if (result.success) {
-      // Store tokens
-      localStorage.setItem('tidal_access_token', result.data.access_token);
-
-      if (result.data.refresh_token) {
-        localStorage.setItem('tidal_refresh_token', result.data.refresh_token);
-      }
-
-      // Clean up temporary storage
-      localStorage.removeItem('tidal_code_verifier');
-      localStorage.removeItem('tidal_oauth_state');
-
-      localStorage.setItem(
-        'tidal_debug_callback',
-        JSON.stringify({
-          ...debugInfo,
-          step: 'callback_success_complete',
-        })
-      );
-
-      return {
-        success: true,
-        access_token: result.data.access_token,
-        refresh_token: result.data.refresh_token,
-      };
-    } else {
-      const errorMsg = result.error || 'Failed to exchange code for token';
-      localStorage.setItem(
-        'tidal_debug_callback',
-        JSON.stringify({
-          ...debugInfo,
-          step: 'callback_result_failed',
-          error: errorMsg,
-          result,
-        })
-      );
-      throw new Error(errorMsg);
-    }
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error('Failed to complete Tidal authentication');
-    console.error('Error handling Tidal callback:', err);
-
-    localStorage.setItem(
-      'tidal_debug_callback',
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        step: 'callback_error',
-        error: err.message,
-        stack: err.stack,
-      })
-    );
-
-    // Clean up on error
-    localStorage.removeItem('tidal_code_verifier');
-    localStorage.removeItem('tidal_oauth_state');
-
-    return {
-      success: false,
-      error: err.message || 'Failed to complete Tidal authentication',
-    };
-  }
-};
-
-/**
- * Refresh Tidal access token using refresh token via server
- * Note: This would require a server endpoint for token refresh
- */
-export const refreshTidalAccessToken = async (): Promise<void> => {
-  try {
-    const refreshToken = getTidalRefreshToken();
-
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    // This would need a server endpoint for token refresh
-    // For now, we'll clear auth data and require re-authentication
-    console.warn('Token refresh not implemented - requiring re-authentication');
-    clearTidalAuth();
-    throw new Error('Token expired - please re-authenticate');
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error('Unknown error refreshing Tidal token');
-    console.error('Error refreshing Tidal token:', err);
-
-    // Clear auth data on refresh failure
-    clearTidalAuth();
-
-    throw err;
-  }
+  localStorage.removeItem('tidal_auth_state');
 };
 
 /**
@@ -425,7 +224,24 @@ export const transferPlaylistToTidal = async (
       };
     }
 
-    const response = await fetch(getUrl(CFG.ENDPOINTS.TIDAL_TRANSFER), {
+    // Helper to construct URLs with API key
+    const getUrl = (endpoint: string, queryParams: Record<string, string | number | null | undefined> = {}): string => {
+      const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
+
+      // Add API key
+      url.searchParams.append('api_key', API_CONFIG.API_KEY);
+
+      // Add any additional query params
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          url.searchParams.append(key, String(value));
+        }
+      });
+
+      return url.toString();
+    };
+
+    const response = await fetch(getUrl(API_CONFIG.ENDPOINTS.TIDAL_TRANSFER), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -438,10 +254,16 @@ export const transferPlaylistToTidal = async (
     });
 
     if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({
+      let errorData: TransferResponse = {
         success: false,
         error: 'Failed to transfer playlist to Tidal',
-      }))) as TransferResponse;
+      };
+
+      try {
+        errorData = (await response.json()) as TransferResponse;
+      } catch {
+        // keep default errorData
+      }
 
       // If token expired, clear auth data
       if (response.status === 401) {
@@ -453,39 +275,11 @@ export const transferPlaylistToTidal = async (
 
     const result = (await response.json()) as TransferResponse;
     return result;
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error('Failed to transfer playlist to Tidal');
-    console.error('Error transferring playlist to Tidal:', err);
+  } catch (error: any) {
+    console.error('Error transferring playlist to Tidal:', error);
     return {
       success: false,
-      error: err.message || 'Failed to transfer playlist to Tidal',
+      error: error?.message || 'Failed to transfer playlist to Tidal',
     };
   }
 };
-
-/**
- * Debug helper - Call this in browser console to see callback debug info
- * Usage: window.getTidalDebugInfo()
- */
-export const getTidalDebugInfo = (): Record<string, unknown> | null => {
-  const debugInfo = localStorage.getItem('tidal_debug_callback');
-  if (debugInfo) {
-    const parsed = JSON.parse(debugInfo) as Record<string, unknown>;
-    console.log('🔍 Tidal Debug Info:', parsed);
-    return parsed;
-  } else {
-    console.log('🔍 No Tidal debug info found');
-    return null;
-  }
-};
-
-// Make debug function available globally for easy access
-declare global {
-  interface Window {
-    getTidalDebugInfo: typeof getTidalDebugInfo;
-  }
-}
-
-if (typeof window !== 'undefined') {
-  window.getTidalDebugInfo = getTidalDebugInfo;
-}

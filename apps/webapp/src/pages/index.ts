@@ -8,6 +8,7 @@ import TestPage from './TestPage.tsx';
 import TestTwo from './TestTwo.tsx';
 import PlayerPage from './PlayerPage.tsx';
 import {SpotifyRedirect} from "./redirect/SpotifyRedirect.tsx";
+import TidalRedirect from "./redirect/TidalRedirect.tsx";
 
 export {
     UploadPage,
@@ -20,4 +21,5 @@ export {
     TestTwo,
     PlayerPage,
     SpotifyRedirect,
+    TidalRedirect,
 };
