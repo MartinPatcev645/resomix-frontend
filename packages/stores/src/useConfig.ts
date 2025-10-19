@@ -10,7 +10,7 @@ interface ConfigStore {
  * Additional configuration values can be added here later.
  */
 export const useConfig = create<ConfigStore>(() => ({
-  version: 'alpha-0.9.17',
+  version: 'alpha-0.9.18',
 }))
 
 export default useConfig

@@ -113,7 +113,7 @@ export const handleTidalCallback = async (code: string, state: string): Promise<
 
     // Exchange code for access token using backend helper endpoint
     // This avoids CORS and client secret exposure issues.
-    const response = await fetch(TIDAL_CONFIG.AUTH_AUTHORIZE, {
+    const response = await fetch(TIDAL_CONFIG.TIDAL_AUTH_TOKEN, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

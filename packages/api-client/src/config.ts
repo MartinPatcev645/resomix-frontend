@@ -154,6 +154,7 @@ export const TIDAL_CONFIG = {
   REDIRECT_URI: 'https://stack.resomix.com/tidal-redirect',
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
-  AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
+  TIDAL_AUTH_TOKEN: '/tidal/auth/token'
+
 };
 /**/
