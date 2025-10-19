@@ -5,7 +5,6 @@ import { usePlaylistExport } from '@resomix/hooks';
 // Spotify services
 import {
   initializeSpotifyAuth,
-  handleSpotifyCallback,
   checkSpotifyAuthentication,
   transferPlaylistToSpotify,
   clearSpotifyAuth
@@ -118,78 +117,62 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
   useEffect(() => {
     if (!isOpen) return;
 
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
-    const code = params.get('code');
-    const state = params.get('state');
-    const error = params.get('error');
+    const update = () => {
+      const auth = checkSpotifyAuthentication();
+      setIsSpotifyAuthenticated(auth);
 
-    if (!code && !state && !error) return;
+      const lastError = localStorage.getItem('spotify_last_error');
+      if (lastError) {
+        setSpotifyError(lastError);
+        setSpotifyConnectLoading(false);
+        onStatusChange('error', lastError, 'Spotify Auth Error');
+        localStorage.removeItem('spotify_last_error');
+      }
 
-    const spotifyState = localStorage.getItem('spotify_auth_state');
-    const tidalState = localStorage.getItem('tidal_auth_state');
-
-    // helper: remove only oauth params, preserve others (e.g. ?id=...)
-    const stripOAuthParams = () => {
-      params.delete('code');
-      params.delete('state');
-      params.delete('error');
-      const newUrl = url.pathname + (params.toString() ? `?${params}` : '');
-      window.history.replaceState({}, document.title, newUrl);
+      if (auth) {
+        setSpotifyConnectLoading(false);
+        if (!spotifyMessage) {
+          setSpotifyMessage('Successfully connected to Spotify!');
+          onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
+        }
+      }
     };
 
-    // session guard (survives StrictMode remount)
-    const markHandled = (provider: 'spotify' | 'tidal') => {
-      if (!state) return false;
-      const key = `oauth_handled_${provider}_${state}`;
-      if (sessionStorage.getItem(key)) return true;
-      sessionStorage.setItem(key, '1');
-      return false;
+    update();
+
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key.startsWith('spotify_')) update();
     };
 
-    if (error) {
-      // Decide provider by matching state
-      if (state === tidalState) {
-        const msg = `Tidal authorization failed: ${error}`;
-        setTidalError(msg);
-        onStatusChange('error', msg, 'Tidal Auth Error');
-      } else if (state === spotifyState) {
-        const msg = `Spotify authorization failed: ${error}`;
-        setSpotifyError(msg);
-        onStatusChange('error', msg, 'Spotify Auth Error');
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const data = e.data;
+      if (data && data.type === 'SPOTIFY_AUTH_RESULT') {
+        if (data.success) {
+          setSpotifyConnectLoading(false);
+          setIsSpotifyAuthenticated(true);
+          setSpotifyMessage('Successfully connected to Spotify!');
+          onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
+        } else if (data.error) {
+          setSpotifyError(data.error);
+          setSpotifyConnectLoading(false);
+          onStatusChange('error', data.error, 'Spotify Auth Error');
+        }
       }
-      stripOAuthParams();
-      return;
-    }
+    };
 
-    if (code && state) {
-      // Spotify
-      if (state === spotifyState) {
-        if (markHandled('spotify')) return; // early exit on second run
-        setSpotifyError(null);
-        setSpotifyConnectLoading(true);
-        // Important: strip params BEFORE awaiting
-        stripOAuthParams();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('message', onMessage);
 
-        handleSpotifyCallback(code, state)
-          .then((res: any) => {
-            if (res?.success) {
-              setIsSpotifyAuthenticated(true);
-              setSpotifyMessage('Successfully connected to Spotify!');
-              onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
-            } else {
-              const msg = res?.error || 'Failed to connect to Spotify';
-              setSpotifyError(msg);
-              onStatusChange('error', msg, 'Spotify Connect Failed');
-              // const newParams = new URLSearchParams(window.location.search);
-              // newParams.set('id', state);
-              // window.history.replaceState({}, document.title, `${window.location.pathname}?${newParams}`);
-            }
-          })
-          .finally(() => setSpotifyConnectLoading(false));
-      }
-    }
-  }, [isOpen, onStatusChange]);
+    const interval = setInterval(update, 2000);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('message', onMessage);
+    };
+  }, [isOpen, onStatusChange, spotifyMessage]);
 
   // Download handler
   const handleDownload = () => {
@@ -221,11 +204,27 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     try {
       setSpotifyConnectLoading(true);
       await initializeSpotifyAuth(playlistId);
+
+      const timeoutMs = 200 * 60 * 1000;
+      const timer = setTimeout(() => {
+        if (!checkSpotifyAuthentication()) {
+          setSpotifyConnectLoading(false);
+          setSpotifyError('Spotify authentication timed out. Please try again.');
+          onStatusChange('error', 'Spotify authentication timed out', 'Spotify Auth Timeout');
+        }
+      }, timeoutMs);
+
+      const stopOnAuth = () => {
+        if (checkSpotifyAuthentication()) {
+          clearTimeout(timer);
+          window.removeEventListener('focus', stopOnAuth);
+        }
+      };
+      window.addEventListener('focus', stopOnAuth);
     } catch (err: any) {
       const msg = `Failed to initialize Spotify authentication: ${err?.message || 'Unknown error'}`;
       setSpotifyError(msg);
       onStatusChange('error', msg, 'Spotify Auth Error');
-    } finally {
       setSpotifyConnectLoading(false);
     }
   };

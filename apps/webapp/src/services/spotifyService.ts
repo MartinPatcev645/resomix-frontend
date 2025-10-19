@@ -63,32 +63,27 @@ const base64encode = (input: ArrayBuffer): string => {
  */
 export const initializeSpotifyAuth = async (id: string | null): Promise<void> => {
   try {
-    // Generate code verifier and challenge
     const codeVerifier = generateRandomString(64);
     const codeChallenge = base64encode(await sha256(codeVerifier));
     const state = encodeURI(id || generateRandomString(16));
 
-    // Store code verifier and state for later use
     localStorage.setItem('spotify_code_verifier', codeVerifier);
     localStorage.setItem('spotify_auth_state', state);
+    localStorage.setItem('spotify_auth_started_at', String(Date.now()));
 
-    // Build authorization URL
     const authUrl = new URL(SPOTIFY_CONFIG.AUTH_URL);
     const params: Record<string, string> = {
       response_type: 'code',
       client_id: SPOTIFY_CONFIG.CLIENT_ID,
-      scope: SPOTIFY_CONFIG.SCOPES, // scopes as a space-delimited string
+      scope: SPOTIFY_CONFIG.SCOPES,
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
       redirect_uri: SPOTIFY_CONFIG.REDIRECT_URI,
-      // redirect_uri: 'https://stack.resomix.com/sonic-discovery?id=75378136-fd59-4ac5-9de9-ab414d499029',
-      state: state,
+      state,
     };
-
     authUrl.search = new URLSearchParams(params).toString();
 
-    // Redirect to Spotify authorization
-    window.location.href = authUrl.toString();
+    window.open(authUrl.toString(), '_blank', 'noopener,noreferrer');
   } catch (error) {
     console.error('Error initializing Spotify auth:', error);
     throw new Error('Failed to initialize Spotify authentication');
