@@ -15,6 +15,9 @@ import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL } from "@resomix/config";
+import DownloadExportModal from "@/components/Modals/DownloadExportModal.js";
+import SpotifyExportModal from "@/components/Modals/SpotifyExportModal.js";
+import TidalExportModal from "@/components/Modals/TidalExportModal.js";
 
 const InputTrackStatus = "Loading..."
 
@@ -23,15 +26,19 @@ const PlaylistHero: React.FC = () => {
   const [showRating, setShowRating] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
-  const [showExport, setShowExport] = React.useState(false);
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
+  const [showExportMenu, setShowExportMenu] = React.useState(false);
+  const [exportProvider, setExportProvider] = React.useState<'spotify' | 'tidal' | 'download' | null>(null);
+
   const { playlistData, isLoading, error } = usePlaylistStore();
-  // const { uploadedUrl } = usePlayerStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
+
+  const exportMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const exportBtnWrapperRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -40,36 +47,63 @@ const PlaylistHero: React.FC = () => {
     setShowStatus(true);
   };
 
-  const handleRenameClose = () => {
-    setShowRename(false);
-  };
-
-  const handleRatingClose = () => {
-    setShowRating(false);
-  };
-
+  const handleRenameClose = () => setShowRename(false);
+  const handleRatingClose = () => setShowRating(false);
   const handleExportClose = () => {
-    setShowExport(false);
+    setExportProvider(null);
   };
+  const handleStatusClose = () => setShowStatus(false);
 
-  const handleStatusClose = () => {
-    setShowStatus(false);
-  };
-
-  const handleExportClick = () => {
+  const handleExportButtonClick = () => {
+    if (isExporting) return;
     if (!canExport) {
       handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
       return;
     }
-    setShowExport(true);
+    setShowExportMenu((v) => !v);
   };
+
+  const handleExportSelect = (provider: 'spotify' | 'tidal' | 'download') => {
+    setExportProvider(provider);
+    setShowExportMenu(false);
+  };
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        showExportMenu &&
+        exportMenuRef.current &&
+        exportBtnWrapperRef.current &&
+        !exportMenuRef.current.contains(target) &&
+        !exportBtnWrapperRef.current.contains(target)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [showExportMenu]);
 
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('share') === 'true') {
-      setShowExport(true);
+      if (canExport) {
+        setExportProvider('download');
+      } else {
+        handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
+      }
     }
-  }, []);
+  }, [canExport]);
 
   return (
     <div className="relative">
@@ -109,10 +143,10 @@ const PlaylistHero: React.FC = () => {
           <div></div>
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
-              <a 
+              <a
                 aria-label="Generate track similarity"
-                href={BASE_BETA_URL} 
-                className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link" 
+                href={BASE_BETA_URL}
+                className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
                 id="playlist-hero-back-link"
               >
                 <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
@@ -151,21 +185,69 @@ const PlaylistHero: React.FC = () => {
                     id="playlist-hero-share-button"
                   />
                 </Tooltip>
-                <Tooltip message="Export Playlist to TXT file">
-                  <IconButton
-                    text={isExporting ? "Exporting..." : "Export"}
-                    transparent={true}
-                    customWidth="min-w-[var(--px-100)]"
-                    onClick={handleExportClick}
-                    disabled={isExporting}
-                    icon={<img src={ExportSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={ExportBlackSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    className="playlist-action-button"
-                    id="playlist-hero-export-button"
-                  />
-                </Tooltip>
+
+                {/* Export button + dropdown */}
+                <div className="relative" ref={exportBtnWrapperRef}>
+                  <Tooltip message="Export Playlist">
+                    <IconButton
+                      text={isExporting ? "Exporting..." : "Export"}
+                      transparent={true}
+                      customWidth="min-w-[var(--px-100)]"
+                      onClick={handleExportButtonClick}
+                      disabled={isExporting}
+                      icon={<img src={ExportSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                      hoverIcon={<img src={ExportBlackSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                      className="playlist-action-button"
+                      id="playlist-hero-export-button"
+                      aria-haspopup="menu"
+                      aria-expanded={showExportMenu}
+                    />
+                  </Tooltip>
+
+                  {/* Dropdown menu */}
+                  {showExportMenu && (
+                    <div
+                      ref={exportMenuRef}
+                      role="menu"
+                      aria-label="Export options"
+                      className="absolute right-0 top-[calc(100%+var(--px-4))] z-30 w-[var(--px-180)] bg-[var(--color-secondary-background)] border border-dotted border-slate-200 shadow-sm"
+                      id="playlist-hero-export-menu"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleExportSelect('spotify')}
+                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-primary)] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-0-25)] uppercase"
+                        id="playlist-hero-export-item-spotify"
+                      >
+                        Spotify
+                      </button>
+                      <div className="border-t border-dotted border-slate-200" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleExportSelect('tidal')}
+                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-primary)] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-0-25)] uppercase"
+                        id="playlist-hero-export-item-tidal"
+                      >
+                        Tidal
+                      </button>
+                      <div className="border-t border-dotted border-slate-200" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleExportSelect('download')}
+                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-primary)] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-0-25)] uppercase"
+                        id="playlist-hero-export-item-download"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+
             <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
               <div className="flex items-start gap-[var(--px-30)]">
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
@@ -176,11 +258,11 @@ const PlaylistHero: React.FC = () => {
                       <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)]" />
                     )}
                   </div>
-                  <button 
+                  <button
                     type="button"
                     name="Rate this playlist"
-                    onClick={() => setShowRating(true)} 
-                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button" 
+                    onClick={() => setShowRating(true)}
+                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button"
                     id="playlist-hero-rating-button"
                     aria-label="Rate this playlist"
                     aria-expanded={showRating}
@@ -236,7 +318,7 @@ const PlaylistHero: React.FC = () => {
                       <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
                         <button
                           type="button"
-                          onClick={() => setShowMeta((v) => !v)} 
+                          onClick={() => setShowMeta((v) => !v)}
                           aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
                           aria-expanded={showMeta}
                           className="hover:cursor-pointer playlist-meta-toggle"
@@ -263,8 +345,8 @@ const PlaylistHero: React.FC = () => {
                     <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
                     {/* The actual Input player */}
                     {playlistData?.queried_track.id && (
-                      <InputPlayer 
-                        trackId={playlistData.queried_track.id} 
+                      <InputPlayer
+                        trackId={playlistData.queried_track.id}
                         totalDuration={playlistData.queried_track.duration ?? 0}
                         playButtonDataAttributes={{
                           'data-testid': 'play-button',
@@ -298,7 +380,25 @@ const PlaylistHero: React.FC = () => {
         onStatusChange={handleStatusChange}
       />
       <PlaylistExportWithIntegrations
-        isOpen={showExport}
+        isOpen={false}
+        onClose={handleExportClose}
+        onStatusChange={handleStatusChange}
+      />
+
+      <DownloadExportModal
+        isOpen={exportProvider === 'download'}
+        onClose={handleExportClose}
+        onStatusChange={handleStatusChange}
+      />
+
+      <SpotifyExportModal
+        isOpen={exportProvider === 'spotify'}
+        onClose={handleExportClose}
+        onStatusChange={handleStatusChange}
+      />
+
+      <TidalExportModal
+        isOpen={exportProvider === 'tidal'}
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}
       />
