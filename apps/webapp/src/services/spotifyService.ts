@@ -277,3 +277,19 @@ export const transferPlaylistToSpotify = async (
     };
   }
 };
+
+const getGuardKey = (state: string)=>{
+  return `oauth_handled_spotify_${state}`
+}
+
+export const checkGuardKey = (state: string)=>{
+    return sessionStorage.getItem(getGuardKey(state))
+}
+
+export const setGuardKey = (state: string)=>{
+  sessionStorage.setItem(getGuardKey(state), '1');
+}
+
+export const clearGuardKey = (state: string)=>{
+  sessionStorage.removeItem(getGuardKey(state));
+}

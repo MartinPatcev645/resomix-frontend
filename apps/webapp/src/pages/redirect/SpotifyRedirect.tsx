@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { handleSpotifyCallback } from '../../services/spotifyService.ts';
+import { handleSpotifyCallback, checkGuardKey, setGuardKey } from '../../services/spotifyService.ts';
 
 export function SpotifyRedirect() {
   const [canClose, setCanClose] = useState(true);
   const message = 'Finishing Spotify authentication…';
 
   useEffect(() => {
-    const run = async () => {
+    (async () => {
       const inParams = new URLSearchParams(window.location.search);
       const code = inParams.get('code') || '';
       const state = inParams.get('state') || '';
@@ -35,13 +35,12 @@ export function SpotifyRedirect() {
       }
 
       // Guard against double-processing (StrictMode/re-render)
-      const handledKey = `oauth_handled_spotify_${state}`;
-      if (sessionStorage.getItem(handledKey)) {
+      if (checkGuardKey(state)) {
         // Already handled — just navigate to the playlist page
         // window.location.replace(backUrl);
         return;
       }
-      sessionStorage.setItem(handledKey, '1');
+      setGuardKey(state);
 
 
       if (code && state) {
@@ -69,9 +68,8 @@ export function SpotifyRedirect() {
       const errMsg = 'Missing OAuth parameters';
       localStorage.setItem('spotify_last_error', errMsg);
       finish({ success: false, error: errMsg });
-    };
+    })();
 
-    run();
   }, []);
 
   if (!canClose) {

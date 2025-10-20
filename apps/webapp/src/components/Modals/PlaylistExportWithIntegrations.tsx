@@ -7,7 +7,8 @@ import {
   initializeSpotifyAuth,
   checkSpotifyAuthentication,
   transferPlaylistToSpotify,
-  clearSpotifyAuth
+  clearSpotifyAuth,
+  clearGuardKey
 } from '../../services/spotifyService.ts';
 
 // Tidal services (без initializeTidalAuth)
@@ -203,6 +204,7 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
     setSpotifyMessage(null);
     try {
       setSpotifyConnectLoading(true);
+      clearGuardKey(playlistId);
       await initializeSpotifyAuth(playlistId);
 
       const timeoutMs = 200 * 60 * 1000;
