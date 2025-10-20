@@ -57,6 +57,23 @@ const base64encode = (input: ArrayBuffer): string => {
   return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 };
 
+// Helper to construct URLs with API key
+const getUrl = (endpoint: string, queryParams: Record<string, string | number | null | undefined> = {}): string => {
+  const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
+
+  // Add API key
+  url.searchParams.append('api_key', API_CONFIG.API_KEY);
+
+  // Add any additional query params
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      url.searchParams.append(key, String(value));
+    }
+  });
+
+  return url.toString();
+};
+
 /**
  * Initialize Tidal OAuth PKCE flow
  * Redirects user to Tidal authorization page
@@ -113,7 +130,7 @@ export const handleTidalCallback = async (code: string, state: string): Promise<
 
     // Exchange code for access token using backend helper endpoint
     // This avoids CORS and client secret exposure issues.
-    const response = await fetch(TIDAL_CONFIG.TIDAL_AUTH_TOKEN, {
+    const response = await fetch(getUrl(TIDAL_CONFIG.TIDAL_AUTH_TOKEN), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -223,23 +240,6 @@ export const transferPlaylistToTidal = async (
         error: 'No valid Tidal access token. Please authenticate first.',
       };
     }
-
-    // Helper to construct URLs with API key
-    const getUrl = (endpoint: string, queryParams: Record<string, string | number | null | undefined> = {}): string => {
-      const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
-
-      // Add API key
-      url.searchParams.append('api_key', API_CONFIG.API_KEY);
-
-      // Add any additional query params
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value));
-        }
-      });
-
-      return url.toString();
-    };
 
     const response = await fetch(getUrl(API_CONFIG.ENDPOINTS.TIDAL_TRANSFER), {
       method: 'POST',
