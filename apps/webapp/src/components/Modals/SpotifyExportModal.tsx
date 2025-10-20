@@ -64,7 +64,7 @@ const SpotifyExportModal: React.FC<SpotifyExportModalProps> = ({
         setSpotifyConnectLoading(false);
         if (!spotifyMessage) {
           setSpotifyMessage('Successfully connected to Spotify!');
-          onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
+          // onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
         }
       }
     };
@@ -84,7 +84,7 @@ const SpotifyExportModal: React.FC<SpotifyExportModalProps> = ({
           setSpotifyConnectLoading(false);
           setIsSpotifyAuthenticated(true);
           setSpotifyMessage('Successfully connected to Spotify!');
-          onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
+          // onStatusChange('success', 'Connected to Spotify', 'Spotify Connected');
         } else if (data.error) {
           setSpotifyError(data.error);
           setSpotifyConnectLoading(false);
@@ -103,10 +103,10 @@ const SpotifyExportModal: React.FC<SpotifyExportModalProps> = ({
       window.removeEventListener('message', onMessage);
       setSpotifyConnectLoading(false);
       setSpotifyTransferLoading(false);
-      setSpotifyMessage(null);
-      setSpotifyError(null);
+      // setSpotifyMessage(null);
+      // setSpotifyError(null);
     };
-  }, [isOpen, onStatusChange, spotifyMessage]);
+  }, [isOpen, onStatusChange]);
 
   const connectSpotify = async () => {
     setSpotifyError(null);
