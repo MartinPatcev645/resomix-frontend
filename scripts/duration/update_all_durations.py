@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from typing import Dict, List, Set
+import csv
 from dotenv import load_dotenv
 
 from sqlalchemy import create_engine, text
@@ -25,6 +26,7 @@ SIMILARITY_SERVER_URL = os.getenv("SIMILARITY_SERVER_URL", "")
 
 # File paths
 ALL_UUIDS_FILE = "all_uuids.txt"
+ALL_UUIDS_CSV_FILE = "all_uuids.csv"
 COMPLETED_FILE = "completed.txt"
 ERROR_FILE = "error.txt"
 
@@ -61,6 +63,27 @@ def create_all_uuids_file(db_engine):
         
     except Exception as e:
         print(f"[ERROR] Failed to create {ALL_UUIDS_FILE}: {e}")
+        sys.exit(1)
+
+def create_all_uuids_csv_file(db_engine):
+    """Create all_uuids.csv with columns: uuid,type,created_at from database."""
+    print("[INFO] Creating all_uuids.csv file...")
+
+    try:
+        with db_engine.connect() as conn:
+            result = conn.execute(text("SELECT uuid, type, created_at FROM tracks ORDER BY id"))
+            rows = result.fetchall()
+
+        with open(ALL_UUIDS_CSV_FILE, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["uuid", "type", "created_at"])  # header
+            for uuid, track_type, created_at in rows:
+                writer.writerow([uuid, track_type, str(created_at) if created_at is not None else ""]) 
+
+        print(f"[INFO] Created {ALL_UUIDS_CSV_FILE} with {len(rows)} rows")
+    
+    except Exception as e:
+        print(f"[ERROR] Failed to create {ALL_UUIDS_CSV_FILE}: {e}")
         sys.exit(1)
 
 def load_uuids_from_file(filepath: str) -> Set[str]:
@@ -251,6 +274,11 @@ async def main():
     
     # Initialize database connection
     db_engine = get_db_connection()
+
+    # This is just to get uuids for alignment of files script.
+    # Comment it when need to use the remaining script
+    create_all_uuids_csv_file(db_engine)
+    quit()
     
     # Check if all_uuids.txt exists, create if not
     if not os.path.exists(ALL_UUIDS_FILE):
