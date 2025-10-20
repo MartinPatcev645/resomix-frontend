@@ -342,9 +342,15 @@ class TidalTransferService:
                     except Exception as e:
                         logger.error("Failed to parse Tidal token response as JSON: %s", e)
                         token_response = None
-                    
-                    # Validate response has required fields
-                    if not token_response.get("access_token"):
+
+                    if response.status != 200:
+                        err_detail = None
+                        if token_response and hasattr(token_response, "get"):
+                            err_detail = token_response.get("error_description") or token_response.get("error")
+                        logger.error("Tidal token error %s: %s", response.status, response_text)
+                        raise ValueError(f"Tidal token error ({response.status}): {err_detail or response_text}")
+
+                    if not token_response or not token_response.get("access_token"):
                         logger.error("Token exchange response missing access_token: %s", token_response)
                         raise ValueError("Invalid token response from Tidal")
                     
