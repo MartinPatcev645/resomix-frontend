@@ -152,6 +152,7 @@ class SpotifyTransferController:
                     "spotify_playlist_name": result.get('spotify_playlist_name'),
                     "transfer_time_seconds": result.get('transfer_time_seconds', 0),
                     "not_found_tracks_sample": result.get('not_found_tracks', [])[:5],
+                    "success_message": success_message,
                     "response": response_content
                 },
                 platform="SPOTIFY",

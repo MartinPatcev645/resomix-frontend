@@ -278,7 +278,7 @@ class TidalTransferController:
 
             # Log success with comprehensive details
             duration_ms = (time.time() - start_time) * 1000
-            response_content = format_response(success=True, data=result, message=success_message)
+            response_content = format_response(success=True, data=result)
             
             self.logging_service.log(
                 async_db=db,
@@ -313,6 +313,7 @@ class TidalTransferController:
                     "tidal_playlist_name": result.get('tidal_playlist_name'),
                     "transfer_time_seconds": result.get('transfer_time_seconds', 0),
                     "not_found_tracks_sample": result.get('not_found_tracks', [])[:5],
+                    "success_message": success_message,
                     "response": response_content
                 },
                 platform="TIDAL",
