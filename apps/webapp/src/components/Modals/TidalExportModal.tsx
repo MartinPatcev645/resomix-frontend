@@ -43,6 +43,8 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
     setPlaylistId(defaultId);
     setCustomName('');
     setIsTidalAuthenticated(checkTidalAuthentication());
+    setTidalMessage(null);
+    setTidalError(null);
   }, [isOpen, defaultId]);
 
   useEffect(() => {
@@ -62,9 +64,6 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
 
       if (auth) {
         setTidalConnectLoading(false);
-        if (!tidalMessage) {
-          setTidalMessage('Successfully connected to TIDAL!');
-        }
       }
     };
 
@@ -82,7 +81,6 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
         if (data.success) {
           setTidalConnectLoading(false);
           setIsTidalAuthenticated(true);
-          setTidalMessage('Successfully connected to TIDAL!');
         } else if (data.error) {
           setTidalError(data.error);
           setTidalConnectLoading(false);
@@ -102,11 +100,8 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
       window.removeEventListener('message', onMessage);
       setTidalConnectLoading(false);
       setTidalTransferLoading(false);
-      // setTidalMessage(null);
-      // setTidalError(null);
-
     };
-  }, [isOpen, onStatusChange, tidalMessage]);
+  }, [isOpen, onStatusChange]);
 
   const connectTidal = async () => {
     setTidalError(null);
@@ -159,9 +154,16 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
     try {
       const result = await transferPlaylistToTidal(playlistId.trim(), customName.trim() || null);
       if (result?.success) {
-        const msg = String(result.message) || 'Playlist transferred to TIDAL';
-        setTidalMessage(msg);
-        onStatusChange('success', msg, 'Tidal Transfer');
+        const url =
+          (result.data as any)?.tidal_playlist_url ??
+          (result.data as any)?.url ??
+          null;
+
+        if (url) {
+          setTidalMessage(url);
+        }
+
+        onStatusChange('success', 'Playlist transferred to TIDAL', 'Tidal Transfer');
       } else {
         const errMsg = result?.error || 'Failed to transfer playlist to TIDAL';
         setTidalError(errMsg);
@@ -221,11 +223,20 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
         <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)]">
           Status: {isTidalAuthenticated ? 'Connected ✅' : 'Not Connected ❌'}
         </div>
+
         {tidalMessage && (
-          <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] text-green-400">
+          <a
+            href={tidalMessage}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-sm font-light font-fira leading-tight text-green-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full hover:text-green-300 transition-colors"
+            title={tidalMessage}
+            id="playlist-export-tidal-link"
+          >
             {tidalMessage}
-          </div>
+          </a>
         )}
+
         {tidalError && (
           <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] text-red-400">
             {tidalError}
