@@ -124,6 +124,7 @@ const PlaylistTable: React.FC = () => {
                                                     }}
                                                     className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
                                                     id={`playlist-table-thumb-up-${track.id}`}
+                                                    innerClassName="playlist-rating-thumb-up"
                                                     data-track-id={track.id}
                                                     data-track-artist={track.artist}
                                                     data-track-title={track.title}
@@ -138,6 +139,7 @@ const PlaylistTable: React.FC = () => {
                                                     }}
                                                     className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
                                                     id={`playlist-table-thumb-down-${track.id}`}
+                                                    innerClassName="playlist-rating-thumb-down"
                                                     data-track-id={track.id}
                                                     data-track-artist={track.artist}
                                                     data-track-title={track.title}

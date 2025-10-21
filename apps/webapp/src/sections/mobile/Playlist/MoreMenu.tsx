@@ -125,6 +125,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                                         }}
                                                         className={`w-[var(--px-26)] h-[var(--px-26)] text-white ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-up`}
                                                         id={`playlist-table-thumb-up-${trackId}`}
+                                                        innerClassName="playlist-rating-thumb-up"
+                                                        data-track-id={trackId}
+                                                        data-track-name={name}
                                                     />
                                                     <ThumbIcon
                                                         onClick={() => {
@@ -133,6 +136,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                                         }}
                                                         className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 text-white ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-down`}
                                                         id={`playlist-table-thumb-down-${trackId}`}
+                                                        innerClassName="playlist-rating-thumb-down"
+                                                        data-track-id={trackId}
+                                                        data-track-name={name}
                                                     />
                                                 </>
                                             );
