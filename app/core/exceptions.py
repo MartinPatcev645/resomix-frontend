@@ -128,3 +128,32 @@ class SimilarityProcessingError(ServiceUnavailableError):
     
     def __init__(self, message: str = "Similarity processing failed.", details: Optional[Any] = None):
         super().__init__(message, details)
+
+
+class PublicHttpError(ResomixBaseException):
+    """Public-facing HTTP error for API responses.
+
+    This exception is intended to be raised deep within the service or
+    repository layers when we want to bubble up an error to the API layer
+    with a *safe* error message and optional structured details. It carries a
+    short machine-readable `code`, the HTTP status code (also exposed via the
+    `status` alias for backwards-compatibility) and arbitrary JSON-serialisable
+    `details`.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        code: str = "UNKNOWN",
+        status: int = 500,
+        details: Optional[Any] = None,
+    ) -> None:
+        # Keep the base status_code attribute for consistency with other
+        # Resomix exceptions while also exposing `status` to match existing
+        # usages inside services and routers.
+        self.code: str = code
+        self.status: int = status
+        super().__init__(message, status, details)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<PublicHttpError {self.status} {self.code}: {self.message}>"
