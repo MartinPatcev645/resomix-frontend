@@ -209,9 +209,12 @@ class TidalTransferService:
     ) -> Dict[int, str]:
         """Fetch cached Tidal IDs from DB cache table."""
         try:
-            return await self.transfer_track_repository.async_get_tidal_ids(
+            cached = await self.transfer_track_repository.async_get_tidal_ids(
                 db, track_ids
             )
+            if cached:
+                logger.info("Found %d cached Tidal IDs", len(cached))
+            return cached
         except Exception as e:
             logger.error(f"Failed to get cached Tidal IDs: {str(e)}")
             return {}
@@ -469,6 +472,7 @@ class TidalTransferService:
         Transfer a ResomiX playlist to Tidal and return stats and target playlist info.
         Raises PublicHttpError on failure with a safe message and details.
         """
+
         logger.info("Starting Tidal playlist transfer...")
         transfer_start_time = time.time()
 
@@ -519,14 +523,70 @@ class TidalTransferService:
                         (track.id, track.title or "Unknown Track", artist_names[0])
                     )
 
-            # Step 4: Create Tidal playlist
-            playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
-            async with aiohttp.ClientSession() as session:
-                user_info = await self._get_user_info(access_token)
-                user_country = (
-                    user_info.get("data", {}).get("attributes", {}).get("country", "US")
-                )
+            # Fetch user country before any Tidal write operations
+            # Reason: we now search first, then create once; we still need a valid country for API calls.
+            user_info = await self._get_user_info(access_token)
+            user_country = (
+                user_info.get("data", {}).get("attributes", {}).get("country", "US")
+            )
 
+            # Step 4: Resolve track IDs (cache + search) BEFORE creating the playlist
+            # We search first and only create the playlist once we have the track IDs to add.
+            track_ids_only = [tid for tid, _, _ in track_data]
+            cached_tidal_ids = await self._get_cached_tidal_ids(db, track_ids_only)
+
+            cached_tracks: List[Tuple[int, str]] = []
+            uncached_tracks: List[Tuple[int, str, str]] = []
+            for track_id, title, artist in track_data:
+                if track_id in cached_tidal_ids:
+                    cached_tracks.append((track_id, cached_tidal_ids[track_id]))
+                else:
+                    uncached_tracks.append((track_id, title, artist))
+
+            search_results: List[Tuple[int, Optional[str]]] = []
+            new_tidal_ids: Dict[int, str] = {}
+
+            if uncached_tracks:
+                search_results = await self._search_tracks_concurrently(
+                    access_token, uncached_tracks, user_country
+                )
+                for track_id, tidal_id in search_results:
+                    if tidal_id:
+                        new_tidal_ids[track_id] = tidal_id
+
+            if new_tidal_ids:
+                await self._update_tidal_cache(db, new_tidal_ids)
+
+            found_tracks: List[str] = []
+            not_found_tracks: List[str] = []
+
+            # Add cached
+            for _, tidal_id in cached_tracks:
+                found_tracks.append(tidal_id)
+
+            # Add searched
+            for track_id, tidal_id in search_results:
+                if tidal_id:
+                    found_tracks.append(tidal_id)
+                else:
+                    original = next((t for t in track_data if t[0] == track_id), None)
+                    if original:
+                        _, t_title, t_artist = original
+                        not_found_tracks.append(f"{t_artist} - {t_title}")
+
+            logger.info(
+                "Resolved %d Tidal track IDs (%d cached + %d searched), %d not found",
+                len(found_tracks),
+                len(cached_tracks),
+                len(new_tidal_ids),
+                len(not_found_tracks),
+            )
+
+            # Create the playlist AFTER we have the track IDs and add them immediately after creation.
+            # Benefit: only one playlist creation call, then immediate population with tracks.
+            playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
+
+            async with aiohttp.ClientSession() as session:
                 tidal_playlist = await self._create_tidal_playlist(
                     session,
                     access_token,
@@ -539,60 +599,7 @@ class TidalTransferService:
                 tidal_playlist_url = tidal_playlist["url"]
                 logger.info("Created Tidal playlist: %s", playlist_name)
 
-                # Step 5: Resolve track IDs (cache + search)
-                track_ids_only = [tid for tid, _, _ in track_data]
-                cached_tidal_ids = await self._get_cached_tidal_ids(db, track_ids_only)
-
-                cached_tracks: List[Tuple[int, str]] = []
-                uncached_tracks: List[Tuple[int, str, str]] = []
-                for track_id, title, artist in track_data:
-                    if track_id in cached_tidal_ids:
-                        cached_tracks.append((track_id, cached_tidal_ids[track_id]))
-                    else:
-                        uncached_tracks.append((track_id, title, artist))
-
-                search_results: List[Tuple[int, Optional[str]]] = []
-                new_tidal_ids: Dict[int, str] = {}
-
-                if uncached_tracks:
-                    search_results = await self._search_tracks_concurrently(
-                        access_token, uncached_tracks, user_country
-                    )
-                    for track_id, tidal_id in search_results:
-                        if tidal_id:
-                            new_tidal_ids[track_id] = tidal_id
-
-                if new_tidal_ids:
-                    await self._update_tidal_cache(db, new_tidal_ids)
-
-                found_tracks: List[str] = []
-                not_found_tracks: List[str] = []
-
-                # Add cached
-                for _, tidal_id in cached_tracks:
-                    found_tracks.append(tidal_id)
-
-                # Add searched
-                for track_id, tidal_id in search_results:
-                    if tidal_id:
-                        found_tracks.append(tidal_id)
-                    else:
-                        original = next(
-                            (t for t in track_data if t[0] == track_id), None
-                        )
-                        if original:
-                            _, t_title, t_artist = original
-                            not_found_tracks.append(f"{t_artist} - {t_title}")
-
-                logger.info(
-                    "Found %d tracks (%d cached + %d searched), %d not found",
-                    len(found_tracks),
-                    len(cached_tracks),
-                    len(new_tidal_ids),
-                    len(not_found_tracks),
-                )
-
-                # Step 6: Add tracks
+                # Add tracks right after creation (single flow).
                 tracks_added = 0
                 if found_tracks:
                     tracks_added = await self._add_tracks_to_tidal_playlist(
@@ -603,6 +610,8 @@ class TidalTransferService:
                         user_country,
                     )
                 else:
+                    # NOTE: We keep creating the playlist even if no tracks were found to match previous behavior.
+                    # If you prefer to SKIP playlist creation when no tracks resolved, move creation below inside this conditional.
                     logger.warning("No tracks found on Tidal to add to playlist")
 
             # Final response
