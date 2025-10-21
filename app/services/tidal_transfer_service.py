@@ -209,9 +209,12 @@ class TidalTransferService:
     ) -> Dict[int, str]:
         """Fetch cached Tidal IDs from DB cache table."""
         try:
-            return await self.transfer_track_repository.async_get_tidal_ids(
+            cached = await self.transfer_track_repository.async_get_tidal_ids(
                 db, track_ids
             )
+            if cached:
+                logger.info("Found %d cached Tidal IDs", len(cached))
+            return cached
         except Exception as e:
             logger.error(f"Failed to get cached Tidal IDs: {str(e)}")
             return {}

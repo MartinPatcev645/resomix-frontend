@@ -316,12 +316,17 @@ class SpotifyTransferService:
         Returns:
             Dictionary mapping track_id -> spotify_id for cached entries
         """
-        cached_ids = await self.transfer_track_repository.async_get_spotify_ids(db, track_ids)
-        
-        if cached_ids:
-            logger.info("Found %d cached Spotify IDs", len(cached_ids))
-        
-        return cached_ids
+        try:
+            cached_ids = await self.transfer_track_repository.async_get_spotify_ids(db, track_ids)
+
+            if cached_ids:
+                logger.info("Found %d cached Spotify IDs", len(cached_ids))
+
+            return cached_ids
+        except Exception as e:
+            # Align error-handling approach with the Tidal service: fail gracefully and continue transfer
+            logger.error("Failed to get cached Spotify IDs: %s", str(e))
+            return {}
 
     async def _update_spotify_cache(self, db: AsyncSession, track_spotify_map: Dict[int, str]) -> None:
         """
