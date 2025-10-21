@@ -27,29 +27,29 @@ from urllib.parse import urlencode
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
-from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
-from app.utils.playlist_transfer_utils import (
-    validate_track_data, search_tracks_concurrently,
-    format_transfer_response, batch_list, get_platform_error_message, log_transfer_progress
+from app.repositories.playlist_transfer_track_repository import (
+    PlaylistTransferTrackRepository,
 )
+from app.utils.playlist_transfer_utils import (
+    validate_track_data,
+    search_tracks_concurrently,
+    format_transfer_response,
+    batch_list,
+    get_platform_error_message,
+    log_transfer_progress,
+)
+from app.core.exceptions import PublicHttpError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 if not logger.handlers:
     handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [TIDAL_TRANSFER] %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - [TIDAL_TRANSFER] %(message)s"
+    )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-
-class PublicHttpError(Exception):
-    """Custom exception to return safe, public error details up to controller layer."""
-    def __init__(self, message: str, code: str = "UNKNOWN", status: int = 500, details: Optional[dict] = None):
-        super().__init__(message)
-        self.code = code
-        self.status = status
-        self.details = details or {}
 
 
 def _redact(value: Optional[str]) -> Optional[str]:
@@ -84,23 +84,25 @@ class TidalTransferService:
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/vnd.api+json",
             "Accept": "application/vnd.api+json",
-            "User-Agent": "ResomiX/1.0"
+            "User-Agent": "ResomiX/1.0",
         }
 
     async def _make_api_request(
-            self,
-            session: aiohttp.ClientSession,
-            method: str,
-            url: str,
-            headers: Dict[str, str],
-            **kwargs
+        self,
+        session: aiohttp.ClientSession,
+        method: str,
+        url: str,
+        headers: Dict[str, str],
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Unified HTTP call with robust handling of non-JSON and 204 No Content.
         Raises PublicHttpError with safe details on failure.
         """
         try:
-            async with session.request(method, url, headers=headers, **kwargs) as response:
+            async with session.request(
+                method, url, headers=headers, **kwargs
+            ) as response:
                 text = await response.text()
                 content_type = response.headers.get("Content-Type", "")
 
@@ -120,7 +122,10 @@ class TidalTransferService:
                     return {}
 
                 # Try to parse JSON for JSON/JSON:API content types
-                is_json = "application/json" in content_type or "application/vnd.api+json" in content_type
+                is_json = (
+                    "application/json" in content_type
+                    or "application/vnd.api+json" in content_type
+                )
                 data: Any
                 if is_json:
                     try:
@@ -151,7 +156,9 @@ class TidalTransferService:
                             "method": method,
                             "url": url,
                             "params": kwargs.get("params"),
-                            "request_json": kwargs.get("json"),  # ensure caller doesn't pass tokens here
+                            "request_json": kwargs.get(
+                                "json"
+                            ),  # ensure caller doesn't pass tokens here
                             "response_body_snippet": text[:2000],
                         },
                     )
@@ -162,16 +169,16 @@ class TidalTransferService:
                 "Network error connecting to Tidal",
                 code="NETWORK_ERROR",
                 status=502,
-                details={"reason": str(e)}
+                details={"reason": str(e)},
             )
 
     async def _search_tidal_track(
-            self,
-            session: aiohttp.ClientSession,
-            access_token: str,
-            title: str,
-            artist: str,
-            country_code: str = "US"
+        self,
+        session: aiohttp.ClientSession,
+        access_token: str,
+        title: str,
+        artist: str,
+        country_code: str = "US",
     ) -> Optional[str]:
         """
         Search for a track on Tidal using official /v2/search and return its resource id.
@@ -185,7 +192,7 @@ class TidalTransferService:
             "query": query,
             "types": "tracks",
             "countryCode": country_code,
-            "limit": 1
+            "limit": 1,
         }
         headers = self._get_headers(access_token)
         data = await self._make_api_request(session, "GET", url, headers, params=params)
@@ -197,19 +204,23 @@ class TidalTransferService:
         # JSON:API: track id is in data[0].id
         return tracks[0].get("id")
 
-    async def _get_cached_tidal_ids(self, db: AsyncSession, track_ids: List[int]) -> Dict[int, str]:
+    async def _get_cached_tidal_ids(
+        self, db: AsyncSession, track_ids: List[int]
+    ) -> Dict[int, str]:
         """Fetch cached Tidal IDs from DB cache table."""
         try:
-            return await self.transfer_track_repository.async_get_tidal_ids(db, track_ids)
+            return await self.transfer_track_repository.async_get_tidal_ids(
+                db, track_ids
+            )
         except Exception as e:
             logger.error(f"Failed to get cached Tidal IDs: {str(e)}")
             return {}
 
     async def _search_tracks_concurrently(
-            self,
-            access_token: str,
-            track_data: List[Tuple[int, str, str]],
-            country_code: str = "US"
+        self,
+        access_token: str,
+        track_data: List[Tuple[int, str, str]],
+        country_code: str = "US",
     ) -> List[Tuple[int, Optional[str]]]:
         """Search multiple tracks concurrently with throttling."""
         if not track_data:
@@ -220,20 +231,27 @@ class TidalTransferService:
             return []
 
         async with aiohttp.ClientSession() as session:
+
             async def search_function(title: str, artist: str) -> Optional[str]:
-                return await self._search_tidal_track(session, access_token, title, artist, country_code)
+                return await self._search_tidal_track(
+                    session, access_token, title, artist, country_code
+                )
 
             results = await search_tracks_concurrently(
                 search_function, valid_tracks, self.max_concurrent_searches
             )
         return results
 
-    async def _update_tidal_cache(self, db: AsyncSession, track_tidal_map: Dict[int, str]) -> None:
+    async def _update_tidal_cache(
+        self, db: AsyncSession, track_tidal_map: Dict[int, str]
+    ) -> None:
         """Upsert newly found Tidal track IDs into DB cache."""
         if not track_tidal_map:
             return
         try:
-            await self.transfer_track_repository.async_batch_upsert_tidal_ids(db, track_tidal_map)
+            await self.transfer_track_repository.async_batch_upsert_tidal_ids(
+                db, track_tidal_map
+            )
             logger.info("Cached %d new Tidal IDs", len(track_tidal_map))
         except Exception as e:
             logger.error("Failed to cache Tidal IDs: %s", str(e))
@@ -247,13 +265,13 @@ class TidalTransferService:
             return response
 
     async def _create_tidal_playlist(
-            self,
-            session: aiohttp.ClientSession,
-            access_token: str,
-            playlist_name: str,
-            description: str = "",
-            user_id: Optional[str] = None,
-            user_country: Optional[str] = None
+        self,
+        session: aiohttp.ClientSession,
+        access_token: str,
+        playlist_name: str,
+        description: str = "",
+        user_id: Optional[str] = None,
+        user_country: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Create a new playlist via official /v2/playlists with JSON:API payload.
@@ -261,12 +279,14 @@ class TidalTransferService:
         if not user_country or not user_id:
             user_info = await self._get_user_info(access_token)
             user_id = user_id or user_info.get("data", {}).get("id")
-            user_country = user_country or user_info.get("data", {}).get("attributes", {}).get("country", "US")
+            user_country = user_country or user_info.get("data", {}).get(
+                "attributes", {}
+            ).get("country", "US")
             if not user_id:
                 raise PublicHttpError(
                     "Failed to retrieve Tidal userId from /users/me.",
                     code="TIDAL_USERINFO_ERROR",
-                    status=500
+                    status=500,
                 )
 
         create_url = f"{self.api_base_url}/{self.api_version}/playlists"
@@ -277,8 +297,8 @@ class TidalTransferService:
                 "attributes": {
                     "access": "private",
                     "description": description,
-                    "name": playlist_name
-                }
+                    "name": playlist_name,
+                },
             }
         }
         headers = self._get_headers(access_token)
@@ -290,22 +310,22 @@ class TidalTransferService:
             raise PublicHttpError(
                 "Failed to create Tidal playlist: No playlist ID returned",
                 code="TIDAL_PLAYLIST_CREATE_ERROR",
-                status=502
+                status=502,
             )
 
         return {
             "id": playlist_id,
             "name": playlist_name,
-            "url": f"{self.listen_base_url}/playlist/{playlist_id}"
+            "url": f"{self.listen_base_url}/playlist/{playlist_id}",
         }
 
     async def _add_tracks_to_tidal_playlist(
-            self,
-            session: aiohttp.ClientSession,
-            access_token: str,
-            playlist_id: str,
-            track_ids: List[str],
-            user_country: str = "US"
+        self,
+        session: aiohttp.ClientSession,
+        access_token: str,
+        playlist_id: str,
+        track_ids: List[str],
+        user_country: str = "US",
     ) -> int:
         """
         Add tracks to Tidal playlist via /v2/playlists/{id}/items using JSON:API format.
@@ -315,7 +335,9 @@ class TidalTransferService:
             return 0
 
         logger.info("Adding %d tracks to Tidal playlist", len(track_ids))
-        add_url = f"{self.api_base_url}/{self.api_version}/playlists/{playlist_id}/items"
+        add_url = (
+            f"{self.api_base_url}/{self.api_version}/playlists/{playlist_id}/items"
+        )
         headers = self._get_headers(access_token)
         params = {"countryCode": user_country}
 
@@ -325,13 +347,15 @@ class TidalTransferService:
 
         for i, batch in enumerate(batches):
             try:
-                payload = {
-                    "data": [{"type": "tracks", "id": tid} for tid in batch]
-                }
+                payload = {"data": [{"type": "tracks", "id": tid} for tid in batch]}
                 # We don't need response body; _make_api_request will handle 204/no content correctly
-                await self._make_api_request(session, "POST", add_url, headers, params=params, json=payload)
+                await self._make_api_request(
+                    session, "POST", add_url, headers, params=params, json=payload
+                )
                 tracks_added += len(batch)
-                log_transfer_progress(logger, "Adding tracks to playlist", i + 1, len(batches))
+                log_transfer_progress(
+                    logger, "Adding tracks to playlist", i + 1, len(batches)
+                )
             except PublicHttpError as e:
                 logger.error(f"Failed to add batch {i + 1}: {e} | details={e.details}")
             except Exception as e:
@@ -341,17 +365,16 @@ class TidalTransferService:
         return tracks_added
 
     async def exchange_authorization_code(
-            self,
-            authorization_code: str,
-            redirect_uri: str,
-            code_verifier: str
+        self, authorization_code: str, redirect_uri: str, code_verifier: str
     ) -> Dict[str, Any]:
         """
         Exchange authorization code for access token using PKCE.
         Returns token info and user info. Raises PublicHttpError on failure.
         """
         if not self.client_id:
-            raise PublicHttpError("Tidal client ID not configured", code="CONFIG_ERROR", status=500)
+            raise PublicHttpError(
+                "Tidal client ID not configured", code="CONFIG_ERROR", status=500
+            )
 
         async with aiohttp.ClientSession() as session:
             token_url = "https://auth.tidal.com/v1/oauth2/token"
@@ -361,18 +384,20 @@ class TidalTransferService:
                 "client_id": self.client_id,
                 "code": authorization_code,
                 "redirect_uri": redirect_uri,  # must be raw, unencoded
-                "code_verifier": code_verifier
+                "code_verifier": code_verifier,
             }
             token_payload = urlencode(token_data)
 
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": "ResomiX/1.0",
-                "Accept": "application/json"
+                "Accept": "application/json",
             }
 
             try:
-                async with session.post(token_url, data=token_payload, headers=headers) as response:
+                async with session.post(
+                    token_url, data=token_payload, headers=headers
+                ) as response:
                     text = await response.text()
                     try:
                         token_response = json.loads(text)
@@ -382,24 +407,28 @@ class TidalTransferService:
                     if response.status != 200:
                         err_detail = None
                         if isinstance(token_response, dict):
-                            err_detail = token_response.get("error_description") or token_response.get("error")
+                            err_detail = token_response.get(
+                                "error_description"
+                            ) or token_response.get("error")
                         raise PublicHttpError(
                             f"Tidal token error ({response.status})",
                             code="TIDAL_TOKEN_ERROR",
                             status=response.status,
-                            details={"response_body_snippet": text[:2000]}
+                            details={"response_body_snippet": text[:2000]},
                         )
 
                     if not token_response or not token_response.get("access_token"):
                         raise PublicHttpError(
                             "Invalid token response from Tidal",
                             code="TIDAL_TOKEN_INVALID",
-                            status=502
+                            status=502,
                         )
 
                     # Fetch user info to pass back (optional subscription checks can be added)
                     try:
-                        user_info = await self._get_user_info(token_response["access_token"])
+                        user_info = await self._get_user_info(
+                            token_response["access_token"]
+                        )
                         logger.info("Tidal /users/me response fetched")
                     except PublicHttpError:
                         raise
@@ -409,7 +438,7 @@ class TidalTransferService:
                             "Failed fetching Tidal user info",
                             code="TIDAL_USERINFO_ERROR",
                             status=502,
-                            details={"cause": str(e)}
+                            details={"cause": str(e)},
                         )
 
                     return {
@@ -418,7 +447,7 @@ class TidalTransferService:
                         "expires_in": token_response.get("expires_in", 3600),
                         "refresh_token": token_response.get("refresh_token"),
                         "scope": token_response.get("scope"),
-                        "user": user_info
+                        "user": user_info,
                     }
 
             except aiohttp.ClientError as e:
@@ -426,15 +455,15 @@ class TidalTransferService:
                     "Network error connecting to Tidal",
                     code="NETWORK_ERROR",
                     status=502,
-                    details={"reason": str(e)}
+                    details={"reason": str(e)},
                 )
 
     async def transfer_playlist_to_tidal(
-            self,
-            db: AsyncSession,
-            playlist_id: str,
-            access_token: str,
-            custom_playlist_name: Optional[str] = None
+        self,
+        db: AsyncSession,
+        playlist_id: str,
+        access_token: str,
+        custom_playlist_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Transfer a ResomiX playlist to Tidal and return stats and target playlist info.
@@ -445,43 +474,66 @@ class TidalTransferService:
 
         try:
             # Step 1: Load playlist
-            playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist = await self.playlist_repository.async_get_playlist_by_uuid(
+                db, playlist_id
+            )
             if not playlist:
                 raise PublicHttpError(
                     f"Playlist with ID {playlist_id} not found",
                     code="PLAYLIST_NOT_FOUND",
-                    status=404
+                    status=404,
                 )
 
             # Step 2: Load playlist tracks
-            playlist_tracks = await self.playlist_repository.async_get_tracks_by_playlist_id(db, playlist.id)
+            playlist_tracks = (
+                await self.playlist_repository.async_get_tracks_by_playlist_id(
+                    db, playlist.id
+                )
+            )
             if not playlist_tracks:
                 raise PublicHttpError(
                     f"Playlist {playlist_id} has no tracks to transfer",
                     code="PLAYLIST_EMPTY",
-                    status=400
+                    status=400,
                 )
-            logger.info("Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name)
+            logger.info(
+                "Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name
+            )
 
             # Step 3: Build search inputs
             track_data: List[Tuple[int, str, str]] = []
             for playlist_track in playlist_tracks:
-                track = await self.track_repository.async_get_by_id(db, playlist_track.track_id)
+                track = await self.track_repository.async_get_by_id(
+                    db, playlist_track.track_id
+                )
                 if track:
-                    artists = await self.track_repository.async_get_track_artists(db, track.id)
-                    artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
-                    track_data.append((track.id, track.title or "Unknown Track", artist_names[0]))
+                    artists = await self.track_repository.async_get_track_artists(
+                        db, track.id
+                    )
+                    artist_names = (
+                        [artist.name for artist in artists]
+                        if artists
+                        else ["Unknown Artist"]
+                    )
+                    track_data.append(
+                        (track.id, track.title or "Unknown Track", artist_names[0])
+                    )
 
             # Step 4: Create Tidal playlist
             playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
             async with aiohttp.ClientSession() as session:
                 user_info = await self._get_user_info(access_token)
-                user_country = user_info.get("data", {}).get("attributes", {}).get("country", "US")
+                user_country = (
+                    user_info.get("data", {}).get("attributes", {}).get("country", "US")
+                )
 
                 tidal_playlist = await self._create_tidal_playlist(
-                    session, access_token, playlist_name,
+                    session,
+                    access_token,
+                    playlist_name,
                     f"Transferred from ResomiX playlist '{playlist.name}'",
-                    user_id=None, user_country=user_country
+                    user_id=None,
+                    user_country=user_country,
                 )
                 tidal_playlist_id = tidal_playlist["id"]
                 tidal_playlist_url = tidal_playlist["url"]
@@ -503,7 +555,9 @@ class TidalTransferService:
                 new_tidal_ids: Dict[int, str] = {}
 
                 if uncached_tracks:
-                    search_results = await self._search_tracks_concurrently(access_token, uncached_tracks, user_country)
+                    search_results = await self._search_tracks_concurrently(
+                        access_token, uncached_tracks, user_country
+                    )
                     for track_id, tidal_id in search_results:
                         if tidal_id:
                             new_tidal_ids[track_id] = tidal_id
@@ -523,38 +577,55 @@ class TidalTransferService:
                     if tidal_id:
                         found_tracks.append(tidal_id)
                     else:
-                        original = next((t for t in track_data if t[0] == track_id), None)
+                        original = next(
+                            (t for t in track_data if t[0] == track_id), None
+                        )
                         if original:
                             _, t_title, t_artist = original
                             not_found_tracks.append(f"{t_artist} - {t_title}")
 
                 logger.info(
                     "Found %d tracks (%d cached + %d searched), %d not found",
-                    len(found_tracks), len(cached_tracks), len(new_tidal_ids), len(not_found_tracks)
+                    len(found_tracks),
+                    len(cached_tracks),
+                    len(new_tidal_ids),
+                    len(not_found_tracks),
                 )
 
                 # Step 6: Add tracks
                 tracks_added = 0
                 if found_tracks:
                     tracks_added = await self._add_tracks_to_tidal_playlist(
-                        session, access_token, tidal_playlist_id, found_tracks, user_country
+                        session,
+                        access_token,
+                        tidal_playlist_id,
+                        found_tracks,
+                        user_country,
                     )
                 else:
                     logger.warning("No tracks found on Tidal to add to playlist")
 
             # Final response
             total_time = time.time() - transfer_start_time
-            playlist_data = {"id": tidal_playlist_id, "url": tidal_playlist_url, "name": playlist_name}
+            playlist_data = {
+                "id": tidal_playlist_id,
+                "url": tidal_playlist_url,
+                "name": playlist_name,
+            }
             transfer_stats = {
                 "total_tracks": len(playlist_tracks),
                 "tracks_added": tracks_added,
                 "tracks_not_found": len(not_found_tracks),
                 "not_found_tracks": not_found_tracks[:10],
-                "transfer_time_seconds": round(total_time, 2)
+                "transfer_time_seconds": round(total_time, 2),
             }
             result = format_transfer_response("Tidal", playlist_data, transfer_stats)
-            logger.info("Transfer completed successfully in %.1fs - %d/%d tracks added",
-                        total_time, tracks_added, len(playlist_tracks))
+            logger.info(
+                "Transfer completed successfully in %.1fs - %d/%d tracks added",
+                total_time,
+                tracks_added,
+                len(playlist_tracks),
+            )
             return result
 
         except PublicHttpError:
@@ -568,5 +639,5 @@ class TidalTransferService:
                 "Tidal transfer failed",
                 code="TIDAL_TRANSFER_FAILED",
                 status=500,
-                details={"cause": str(e)}
+                details={"cause": str(e)},
             )

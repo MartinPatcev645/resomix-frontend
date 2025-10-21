@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,6 +72,7 @@ spotify_transfer_controller = SpotifyTransferController()
     }
 )
 async def transfer_playlist_to_spotify_endpoint(
+    request: Request,
     request_data: SpotifyTransferRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
@@ -105,7 +106,8 @@ async def transfer_playlist_to_spotify_endpoint(
     - Error: Detailed error message and context
     """
     return await spotify_transfer_controller.transfer_playlist_to_spotify(
-        db, 
+        db,
+        request,
         request_data.playlist_id, 
         request_data.access_token,
         custom_playlist_name=request_data.playlist_name
