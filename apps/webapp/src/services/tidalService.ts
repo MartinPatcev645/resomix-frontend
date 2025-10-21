@@ -75,21 +75,18 @@ const getUrl = (endpoint: string, queryParams: Record<string, string | number | 
 };
 
 /**
- * Initialize Tidal OAuth PKCE flow
- * Redirects user to Tidal authorization page
+ * Initialize Tidal OAuth PKCE flow in a popup window (like Spotify)
  */
 export const initializeTidalAuth = async (id: string | null): Promise<void> => {
   try {
-    // Generate code verifier and challenge
     const codeVerifier = generateRandomString(64);
     const codeChallenge = base64encode(await sha256(codeVerifier));
     const state = encodeURI(id || generateRandomString(16));
 
-    // Store code verifier and state for later use
     localStorage.setItem('tidal_code_verifier', codeVerifier);
     localStorage.setItem('tidal_auth_state', state);
+    localStorage.setItem('tidal_auth_started_at', String(Date.now()));
 
-    // Build authorization URL
     const authUrl = new URL(TIDAL_CONFIG.AUTH_URL);
     const params: Record<string, string> = {
       response_type: 'code',
@@ -98,23 +95,39 @@ export const initializeTidalAuth = async (id: string | null): Promise<void> => {
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
       redirect_uri: TIDAL_CONFIG.REDIRECT_URI,
-      state: state,
+      state,
     };
-
     authUrl.search = new URLSearchParams(params).toString();
 
-    // Redirect to Tidal authorization
-    window.location.href = authUrl.toString();
+    window.open(authUrl.toString(), '_blank', 'noopener,noreferrer');
   } catch (error) {
     console.error('Error initializing Tidal auth:', error);
     throw new Error('Failed to initialize Tidal authentication');
   }
 };
 
+const getTidalGuardKey = (state: string) => `oauth_handled_tidal_${state}`;
+
+export const checkTidalGuardKey = (state: string) => {
+  return sessionStorage.getItem(getTidalGuardKey(state));
+};
+
+export const setTidalGuardKey = (state: string) => {
+  sessionStorage.setItem(getTidalGuardKey(state), '1');
+};
+
+export const clearTidalGuardKey = (state: string) => {
+  sessionStorage.removeItem(getTidalGuardKey(state));
+};
+
 /**
  * Handle Tidal OAuth callback
  * Exchange authorization code for access token via backend
  */
+type BackendTokenEnvelope =
+  | { success: true; data: TidalTokenResponse }
+  | { success: false; error?: string; message?: string };
+
 export const handleTidalCallback = async (code: string, state: string): Promise<TidalAuthResult> => {
   try {
     // Verify state parameter
@@ -128,8 +141,6 @@ export const handleTidalCallback = async (code: string, state: string): Promise<
       throw new Error('No code verifier found');
     }
 
-    // Exchange code for access token using backend helper endpoint
-    // This avoids CORS and client secret exposure issues.
     const response = await fetch(getUrl(TIDAL_CONFIG.TIDAL_AUTH_TOKEN), {
       method: 'POST',
       headers: {
@@ -149,17 +160,29 @@ export const handleTidalCallback = async (code: string, state: string): Promise<
       throw new Error(text || 'Failed to exchange code for token');
     }
 
-    const data = (await response.json()) as Partial<TidalTokenResponse>;
+    const raw = await response.json();
 
-    if (data.access_token) {
+    let tokenData: Partial<TidalTokenResponse> | undefined;
+
+    if (raw && typeof raw === 'object' && 'success' in raw) {
+      const wrapped = raw as BackendTokenEnvelope;
+      if (!wrapped.success) {
+        throw new Error(wrapped.error || wrapped.message || 'Auth failed');
+      }
+      tokenData = wrapped.data;
+    } else {
+      tokenData = raw as Partial<TidalTokenResponse>;
+    }
+
+    if (tokenData?.access_token) {
       // Store tokens
-      localStorage.setItem('tidal_access_token', data.access_token);
-      if (data.refresh_token) {
-        localStorage.setItem('tidal_refresh_token', data.refresh_token);
+      localStorage.setItem('tidal_access_token', tokenData.access_token);
+      if (tokenData.refresh_token) {
+        localStorage.setItem('tidal_refresh_token', tokenData.refresh_token);
       }
 
       // Store expiry time
-      const expiresIn = data.expires_in ?? 3600; // Default to 1 hour
+      const expiresIn = tokenData.expires_in ?? 3600; // Default to 1 hour
       const expiryTime = Date.now() + expiresIn * 1000;
       localStorage.setItem('tidal_token_expiry', String(expiryTime));
 
@@ -169,7 +192,7 @@ export const handleTidalCallback = async (code: string, state: string): Promise<
 
       return {
         success: true,
-        access_token: data.access_token,
+        access_token: tokenData.access_token,
         expires_in: expiresIn,
       };
     } else {

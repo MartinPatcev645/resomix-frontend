@@ -1,136 +1,88 @@
-import React, { useEffect, useMemo, useState } from 'react';
-// adjust the import path for your project
-import { handleTidalCallback } from '../../services/tidalService.ts';
+import React, { useEffect, useState } from 'react';
+import {
+  handleTidalCallback,
+  checkTidalGuardKey,
+  setTidalGuardKey
+} from '../../services/tidalService.ts';
 
 const TidalRedirect: React.FC = () => {
-  const [status, setStatus] = useState<'processing' | 'error' | 'done'>('processing');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const allParams = useMemo(() => Object.fromEntries(params.entries()), [params]);
-
-  const state = params.get('state') || '';
-  const code = params.get('code') || '';
-  const error = params.get('error') || '';
-  const errorDescription =
-    params.get('error_description') ||
-    params.get('errorDescription') ||
-    '';
-
-  const backUrl = useMemo(() => {
-    const url = new URL('/sonic-discovery', window.location.origin);
-    if (state) url.searchParams.set('id', state);
-    url.searchParams.set('share', 'true');
-    return url.toString();
-  }, [state]);
+  const [canClose, setCanClose] = useState(true);
+  const message = 'Finishing TIDAL authentication…';
 
   useEffect(() => {
-    // For debugging
-    console.debug('[TIDAL Redirect] params:', allParams);
-
-    // Error from TIDAL
-    if (error) {
-      setStatus('error');
-      setErrorMsg(`TIDAL returned an error: ${errorDescription || error}`);
-      return;
-    }
-
-    // Basic validation
-    if (!state) {
-      setStatus('error');
-      setErrorMsg('The TIDAL response is missing the state parameter.');
-      return;
-    }
-    if (!code) {
-      setStatus('error');
-      setErrorMsg('The TIDAL response is missing the code parameter.');
-      return;
-    }
-
-    // Check against saved state
-    const savedState = localStorage.getItem('tidal_auth_state');
-    if (!savedState) {
-      setStatus('error');
-      setErrorMsg('Saved state (tidal_auth_state) not found. Please start the authorization again.');
-      return;
-    }
-    if (savedState !== state) {
-      setStatus('error');
-      setErrorMsg('State does not match the saved value. A request tampering attempt may have occurred.');
-      return;
-    }
-
-    // Guard against double-processing (StrictMode/re-render)
-    const handledKey = `oauth_handled_tidal_${state}`;
-    if (sessionStorage.getItem(handledKey)) {
-      // Already handled — just navigate to the playlist page
-      // window.location.replace(backUrl);
-      return;
-    }
-    sessionStorage.setItem(handledKey, '1');
-
-    // Exchange code for token(s)
     (async () => {
-      try {
-        const res = await handleTidalCallback(code, state);
-        if (res?.success) {
-          // Clear one-time PKCE/state values
-          try {
-            sessionStorage.removeItem('tidal_pkce');
-            localStorage.removeItem('tidal_auth_state');
-          } catch {}
-          setStatus('done');
+      const inParams = new URLSearchParams(window.location.search);
+      const code = inParams.get('code') || '';
+      const state = inParams.get('state') || '';
+      const error = inParams.get('error') || '';
+      const errorDescription =
+        inParams.get('error_description') ||
+        inParams.get('errorDescription') ||
+        '';
 
-          // Small delay so the user sees the status
-          setTimeout(() => {
-            window.location.replace(backUrl);
-          }, 200);
-        } else {
-          const msg = res?.error || 'Failed to complete TIDAL authorization.';
-          setStatus('error');
-          setErrorMsg(String(msg));
+      const finish = (payload: any) => {
+        try {
+          window.opener?.postMessage(
+            { type: 'TIDAL_AUTH_RESULT', ...payload },
+            window.location.origin
+          );
+        } catch {}
+        try {
+          window.close();
+        } catch {
+          setCanClose(false);
         }
-      } catch (e: any) {
-        setStatus('error');
-        setErrorMsg(`Error while processing the TIDAL response: ${e?.message || 'Unknown error'}`);
+      };
+
+      if (error) {
+        const errMsg = `TIDAL authorization failed: ${errorDescription || error}`;
+        localStorage.setItem('tidal_last_error', errMsg);
+        finish({ success: false, error: errMsg });
+        return;
       }
+
+      if (checkTidalGuardKey(state)) {
+        return;
+      }
+      setTidalGuardKey(state);
+
+      if (code && state) {
+        try {
+          const res = await handleTidalCallback(code, state);
+          if (res?.success) {
+            localStorage.setItem('tidal_connected_at', String(Date.now()));
+            finish({ success: true });
+            return;
+          } else {
+            const errMsg = res?.error || 'Failed to connect to TIDAL';
+            localStorage.setItem('tidal_last_error', errMsg);
+            finish({ success: false, error: errMsg });
+            return;
+          }
+        } catch (e: any) {
+          const errMsg = e?.message || 'Unexpected error during TIDAL callback';
+          localStorage.setItem('tidal_last_error', errMsg);
+          finish({ success: false, error: errMsg });
+          return;
+        }
+      }
+
+      const errMsg = 'Missing OAuth parameters';
+      localStorage.setItem('tidal_last_error', errMsg);
+      finish({ success: false, error: errMsg });
     })();
-  }, [allParams, backUrl, code, error, errorDescription, state]);
+  }, []);
 
-  if (status === 'error') {
+  if (!canClose) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'black', color: 'white', fontFamily: 'sans-serif', padding: 20 }}>
-        <div style={{ maxWidth: 680 }}>
-          <h1 style={{ fontSize: 20, marginBottom: 12 }}>TIDAL authorization error</h1>
-          <p style={{ marginBottom: 16 }}>{errorMsg}</p>
-
-          <details style={{ marginBottom: 16 }}>
-            <summary>Show all response parameters</summary>
-            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {JSON.stringify(allParams, null, 2)}
-            </pre>
-          </details>
-
-          <a
-            href={backUrl}
-            style={{ display: 'inline-block', padding: '10px 16px', border: '1px solid #666', borderRadius: 6, color: 'white', textDecoration: 'none' }}
-          >
-            Return to playlist
-          </a>
-        </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ marginBottom: 8 }}>{message}</div>
+        <button onClick={() => window.close()}>Close this window</button>
       </div>
     );
   }
 
-  // processing | done
-  return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'black', color: 'white', fontFamily: 'sans-serif', padding: 20 }}>
-      <div style={{ maxWidth: 640, textAlign: 'center' }}>
-        <h1 style={{ fontSize: 20, marginBottom: 12 }}>Processing TIDAL response…</h1>
-        <p>Please wait, we will return you to the playlist shortly.</p>
-      </div>
-    </div>
-  );
+  return <div>Finishing…</div>;
 };
 
 export default TidalRedirect;

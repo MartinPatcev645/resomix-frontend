@@ -116,7 +116,7 @@ const SpotifyExportModal: React.FC<SpotifyExportModalProps> = ({
       clearGuardKey(playlistId);
       await initializeSpotifyAuth(playlistId);
 
-      const timeoutMs = 200 * 60 * 1000;
+      const timeoutMs = 2 * 60 * 1000;
       const timer = setTimeout(() => {
         if (!checkSpotifyAuthentication()) {
           setSpotifyConnectLoading(false);
