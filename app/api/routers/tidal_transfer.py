@@ -15,9 +15,10 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from app.controllers.tidal_transfer_controller import TidalTransferController
 from app.api.dependencies.auth import get_api_key
@@ -30,6 +31,9 @@ from app.schemas.tidal_transfer import (
     TidalTokenRequest,
     TidalTokenResponse
 )
+from app.services.tidal_transfer_service import PublicHttpError  # ensure this class exists as shown earlier
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/tidal",
@@ -68,28 +72,47 @@ tidal_transfer_controller = TidalTransferController()
     }
 )
 async def exchange_token(
-    request_data: TidalTokenRequest,
-    api_key: str = Security(get_api_key)
+        request: Request,
+        request_data: TidalTokenRequest,
+        api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
     Exchange authorization code for Tidal access token.
-    
+
     This endpoint handles the server-side token exchange using the authorization
     code received from Tidal's OAuth callback. Client credentials are managed
     server-side for security.
-    
+
     **Process:**
     1. Validates the authorization code and parameters
     2. Uses server-side client credentials for token exchange
     3. Exchanges code for access and refresh tokens
     4. Returns tokens to frontend (securely)
-    
+
     **Security:**
     - Client secret used server-side only
     - PKCE code verifier validation
     - Secure token handling
     """
-    return await tidal_transfer_controller.exchange_authorization_code(request_data)
+    debug = request.query_params.get("debug") == "1"
+    try:
+        result = await tidal_transfer_controller.exchange_authorization_code(request_data)
+        return result
+    except PublicHttpError as e:
+        payload = {
+            "success": False,
+            "error": str(e),
+            "code": e.code,
+        }
+        if debug and getattr(e, "details", None):
+            payload["details"] = e.details
+        return JSONResponse(status_code=e.status, content=payload)
+    except Exception as e:
+        logger.exception("Unhandled error in /tidal/auth/token")
+        payload = {"success": False, "error": "Unexpected server error", "code": "UNHANDLED"}
+        if debug:
+            payload["details"] = {"cause": str(e)}
+        return JSONResponse(status_code=500, content=payload)
 
 
 @router.post(
@@ -125,9 +148,10 @@ async def exchange_token(
     }
 )
 async def transfer_playlist_to_tidal_endpoint(
-    request_data: TidalTransferRequest,
-    db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+        request: Request,
+        request_data: TidalTransferRequest,
+        db: AsyncSession = Depends(get_database_session),
+        api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
     Transfer a ResomiX playlist to user's Tidal account using official Tidal API v2 endpoints.
@@ -160,9 +184,27 @@ async def transfer_playlist_to_tidal_endpoint(
     **Note:**
     This integration uses only official Tidal API v2 endpoints for all playlist operations.
     """
-    return await tidal_transfer_controller.transfer_playlist_to_tidal(
-        db, 
-        request_data.playlist_id, 
-        request_data.access_token,
-        custom_playlist_name=request_data.playlist_name
-    ) 
+    debug = request.query_params.get("debug") == "1"
+    try:
+        result = await tidal_transfer_controller.transfer_playlist_to_tidal(
+            db,
+            request_data.playlist_id,
+            request_data.access_token,
+            custom_playlist_name=request_data.playlist_name
+        )
+        return result
+    except PublicHttpError as e:
+        payload = {
+            "success": False,
+            "error": str(e),
+            "code": e.code,
+        }
+        if debug and getattr(e, "details", None):
+            payload["details"] = e.details
+        return JSONResponse(status_code=e.status, content=payload)
+    except Exception as e:
+        logger.exception("Unhandled error in /tidal/transfer-playlist")
+        payload = {"success": False, "error": "Unexpected server error", "code": "UNHANDLED"}
+        if debug:
+            payload["details"] = {"cause": str(e)}
+        return JSONResponse(status_code=500, content=payload)
