@@ -8,13 +8,12 @@ import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport } from "@resomix/hooks";
 import { getTrackRating, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
+import MobileSpotifyExportSheet from "@/components/Modals/MobileSpotifyExportSheet.js";
+import MobileTidalExportSheet from "@/components/Modals/MobileTidalExportSheet.js";
+
 interface MoreMenuProps {
     onClose?: () => void;
     trackId?: string;
-    /**
-     * Marks this track as the original input (reference) track.
-     * When true we hide actions that don't make sense for the input track (e.g. "Start Sonic Discovery on this Track").
-     */
     isInput?: boolean;
     name?: string;
     label?: string;
@@ -26,6 +25,13 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     const [exportButtonText, setExportButtonText] = React.useState("Export Playlist");
+
+    const [isSpotifyOpen, setIsSpotifyOpen] = React.useState(false);
+    const [isTidalOpen, setIsTidalOpen] = React.useState(false);
+
+    const handleStatusChange = React.useCallback((status: 'loading' | 'success' | 'error', message: string, title?: string) => {
+        console.log('[MOBILE EXPORT]', status, title, message);
+    }, []);
 
     React.useEffect(() => {
         if (!trackId) return;
@@ -78,6 +84,8 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
             window.scrollTo(0, scrollY);
         };
     }, []);
+
+    const initialPlaylistId = playlistData?.playlist?.id ?? '';
 
     return (
       <div className="w-full h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
@@ -172,17 +180,40 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         </div>
                       )}
                       {isInput && (
-                        <div className="w-full">
-                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
-                        </div>
+                        <>
+                            <div className="w-full">
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
+                            </div>
+
+                            {/* NEW: Spotify / TIDAL для мобилки */}
+                            <div className="w-full">
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />
+                            </div>
+                            <div className="w-full">
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-tidal-button" text="Export to TIDAL" customWidth="w-full" onClick={() => setIsTidalOpen(true)} id={`playlist-hero-export-tidal`} />
+                            </div>
+                        </>
                       )}
                       <div className="w-full">
                           <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] menu-link" text="Close" customWidth="w-full" onClick={onClose || (() => { })} id={`beta-menu-close-button`} />
                       </div>
                   </div>
               </div>
-
           </div>
+
+          {/* NEW: Мобильные шиты */}
+          <MobileSpotifyExportSheet
+            isOpen={isSpotifyOpen}
+            onClose={() => setIsSpotifyOpen(false)}
+            onStatusChange={handleStatusChange}
+            initialPlaylistId={initialPlaylistId}
+          />
+          <MobileTidalExportSheet
+            isOpen={isTidalOpen}
+            onClose={() => setIsTidalOpen(false)}
+            onStatusChange={handleStatusChange}
+            initialPlaylistId={initialPlaylistId}
+          />
       </div >
     );
 };

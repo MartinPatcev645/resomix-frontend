@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ButtonSleek } from '@resomix/ui';
 import { usePlaylistExport } from '@resomix/hooks';
+import SuccessSvg from "@/assets/icons/success.svg";
 
 // Spotify services
 import {
@@ -341,6 +342,14 @@ const PlaylistExportWithIntegrations: React.FC<PlaylistExportWithIntegrationsPro
       {/* Modal */}
       <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-800)] w-full lg:w-[var(--px-600)]">
         {/* Header */}
+        <img
+          src={SuccessSvg}
+          aria-hidden="true"
+          loading="lazy"
+          draggable={false}
+          alt="Success"
+          className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]"
+        />
         <div className="text-center w-full">
           <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
             {isPreparing ? 'Preparing ...' : 'PLAYLIST READY!'}
