@@ -185,13 +185,14 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                             </div>
 
-                            {/* NEW: Spotify / TIDAL для мобилки */}
+                            {/*
                             <div className="w-full">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />
                             </div>
                             <div className="w-full">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-tidal-button" text="Export to TIDAL" customWidth="w-full" onClick={() => setIsTidalOpen(true)} id={`playlist-hero-export-tidal`} />
                             </div>
+                            */}
                         </>
                       )}
                       <div className="w-full">
@@ -201,7 +202,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
               </div>
           </div>
 
-          {/* NEW: Мобильные шиты */}
           <MobileSpotifyExportSheet
             isOpen={isSpotifyOpen}
             onClose={() => setIsSpotifyOpen(false)}

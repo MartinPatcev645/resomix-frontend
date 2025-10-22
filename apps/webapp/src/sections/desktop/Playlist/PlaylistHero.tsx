@@ -2,7 +2,7 @@ import React from "react";
 import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
 import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExportWithIntegrations } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename /*, PlaylistExportWithIntegrations */} from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -16,8 +16,8 @@ import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL } from "@resomix/config";
 import DownloadExportModal from "@/components/Modals/DownloadExportModal.js";
-import SpotifyExportModal from "@/components/Modals/SpotifyExportModal.js";
-import TidalExportModal from "@/components/Modals/TidalExportModal.js";
+// import SpotifyExportModal from "@/components/Modals/SpotifyExportModal.js";
+// import TidalExportModal from "@/components/Modals/TidalExportModal.js";
 
 const InputTrackStatus = "Loading..."
 
@@ -30,15 +30,16 @@ const PlaylistHero: React.FC = () => {
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
-  const [showExportMenu, setShowExportMenu] = React.useState(false);
+  const showExportMenu = false;
+  // const [showExportMenu, setShowExportMenu] = React.useState(false); // kept for easy revert
   const [exportProvider, setExportProvider] = React.useState<'spotify' | 'tidal' | 'download' | null>(null);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
 
-  const exportMenuRef = React.useRef<HTMLDivElement | null>(null);
-  const exportBtnWrapperRef = React.useRef<HTMLDivElement | null>(null);
+  // const exportMenuRef = React.useRef<HTMLDivElement | null>(null); // kept for easy revert
+  const exportBtnWrapperRef = React.useRef<HTMLDivElement | null>(null); // kept for easy revert
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -54,20 +55,26 @@ const PlaylistHero: React.FC = () => {
   };
   const handleStatusClose = () => setShowStatus(false);
 
+  // On Export click, open Download modal immediately (dropdown and other providers temporarily disabled)
   const handleExportButtonClick = () => {
     if (isExporting) return;
     if (!canExport) {
       handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
       return;
     }
-    setShowExportMenu((v) => !v);
+    setExportProvider('download'); // Open Download popup directly
+    // setShowExportMenu((v) => !v); // Disabled: we don't use the dropdown right now
   };
 
+  /*
   const handleExportSelect = (provider: 'spotify' | 'tidal' | 'download') => {
     setExportProvider(provider);
     setShowExportMenu(false);
   };
+   */
 
+  // Temporarily disable outside click/ESC handling for the dropdown menu, since it is not used now.
+  /*
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -93,6 +100,7 @@ const PlaylistHero: React.FC = () => {
       document.removeEventListener('keydown', handleEsc);
     };
   }, [showExportMenu]);
+  */
 
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -186,7 +194,7 @@ const PlaylistHero: React.FC = () => {
                   />
                 </Tooltip>
 
-                {/* Export button + dropdown */}
+                {/* Export button (opens Download modal directly) */}
                 <div className="relative" ref={exportBtnWrapperRef}>
                   <Tooltip message="Export Playlist">
                     <IconButton
@@ -200,11 +208,12 @@ const PlaylistHero: React.FC = () => {
                       className="playlist-action-button"
                       id="playlist-hero-export-button"
                       aria-haspopup="menu"
-                      aria-expanded={showExportMenu}
+                      aria-expanded={showExportMenu} // remains false; dropdown is disabled
                     />
                   </Tooltip>
 
-                  {/* Dropdown menu */}
+                  {/* Export dropdown temporarily disabled; we open Download modal directly on button click */}
+                  {/*
                   {showExportMenu && (
                     <div
                       ref={exportMenuRef}
@@ -244,6 +253,7 @@ const PlaylistHero: React.FC = () => {
                       </button>
                     </div>
                   )}
+                  */}
                 </div>
               </div>
             </div>
@@ -379,18 +389,25 @@ const PlaylistHero: React.FC = () => {
         onClose={handleRenameClose}
         onStatusChange={handleStatusChange}
       />
+
+      {/* Temporarily disable the old export flow (integrations wrapper) */}
+      {/*
       <PlaylistExportWithIntegrations
         isOpen={false}
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}
       />
+      */}
 
+      {/* Download popup opens directly when clicking Export */}
       <DownloadExportModal
         isOpen={exportProvider === 'download'}
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}
       />
 
+      {/* Temporarily disable Spotify and Tidal export modals */}
+      {/*
       <SpotifyExportModal
         isOpen={exportProvider === 'spotify'}
         onClose={handleExportClose}
@@ -402,6 +419,7 @@ const PlaylistHero: React.FC = () => {
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}
       />
+      */}
 
       {/* Status Message */}
       <StatusMessage
