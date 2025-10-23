@@ -2,27 +2,40 @@
 Authentication Dependencies
 ===========================
 
-This module provides FastAPI dependency functions for API key authentication.
-It handles API key validation from query parameters and ensures secure access
-to protected endpoints throughout the ResomiX application.
+This module provides FastAPI dependency functions for authentication including
+API key validation and JWT token authentication.
 
-Centralizes authentication logic to provide consistent security validation
-across all API endpoints requiring authentication.
+Supports dual authentication modes:
+- API Key: For public/anonymous access (existing)
+- JWT Bearer Token: For authenticated users (new)
 
-Version: 3.0.1
-Init Date: June 11, 2025
+Version: 3.2.0
+Date: October 23, 2025
 Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-# API key authentication dependencies 
-from fastapi import HTTPException, Security
+from typing import Optional
+from fastapi import HTTPException, Security, Depends
+from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyQuery
-from starlette.status import HTTP_403_FORBIDDEN
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import settings
+from app.core.security import decode_token
+from app.models.user import User
+from app.repositories.user_repository import UserRepository, UserSessionRepository
+from app.api.dependencies.database import get_database_session
+
+
+# ============================================================================
+# API Key Authentication (Existing - for backward compatibility)
+# ============================================================================
 
 # Set up API key security - using query parameter as specified in frontend
 api_key_query = APIKeyQuery(name="api_key", auto_error=False)
+
 
 async def get_api_key(
     api_key_query: str = Security(api_key_query),
@@ -34,3 +47,184 @@ async def get_api_key(
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
         )
+
+
+# ============================================================================
+# JWT Token Authentication (New - for authenticated users)
+# ============================================================================
+
+# OAuth2 scheme for JWT tokens
+# auto_error=False allows optional authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+async def get_current_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_database_session),
+) -> User:
+    """
+    Get current authenticated user from JWT token.
+    REQUIRED auth - raises 401 if no valid token.
+
+    Args:
+        token: JWT token from Authorization header
+        db: Database session
+
+    Returns:
+        User object
+
+    Raises:
+        HTTPException: If token is invalid, expired, or user not found
+    """
+    if not token:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Decode token
+    try:
+        payload = decode_token(token)
+    except HTTPException:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Verify token type
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Get user UUID from token
+    user_uuid: str = payload.get("sub")
+    if not user_uuid:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Fetch user from database
+    user_repo = UserRepository()
+    user = await user_repo.async_get_by_uuid(db, user_uuid)
+
+    if not user:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user
+
+
+async def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_database_session),
+) -> Optional[User]:
+    """
+    Get current user if authenticated, None if anonymous.
+    OPTIONAL auth - returns None for anonymous users.
+
+    Args:
+        token: JWT token from Authorization header
+        db: Database session
+
+    Returns:
+        User object or None if not authenticated
+    """
+    if not token:
+        return None
+
+    try:
+        # Decode token
+        payload = decode_token(token)
+
+        # Verify token type
+        if payload.get("type") != "access":
+            return None
+
+        # Get user UUID
+        user_uuid: str = payload.get("sub")
+        if not user_uuid:
+            return None
+
+        # Fetch user
+        user_repo = UserRepository()
+        user = await user_repo.async_get_by_uuid(db, user_uuid)
+
+        return user
+
+    except Exception:
+        # If any error occurs, return None (treat as anonymous)
+        return None
+
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Get current user and verify email is verified.
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object with verified email
+
+    Raises:
+        HTTPException: If email is not verified
+    """
+    if not current_user.is_email_verified:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email to access this resource.",
+        )
+
+    return current_user
+
+
+async def verify_session_active(
+    token: Optional[str] = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_database_session),
+) -> User:
+    """
+    Verify that the session associated with the token is still active.
+
+    Args:
+        token: JWT refresh token
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        User object if session is active
+
+    Raises:
+        HTTPException: If session is revoked or expired
+    """
+    if not token:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="No token provided",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check if any active session exists for this user
+    session_repo = UserSessionRepository()
+    sessions = await session_repo.async_get_active_sessions(db, current_user.id)
+
+    if not sessions:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="No active sessions found. Please login again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return current_user

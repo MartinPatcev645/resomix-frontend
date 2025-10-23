@@ -18,10 +18,12 @@ Email: usman.naeem2212@gmail.com
 from fastapi import APIRouter, Security, Depends, Path, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.controllers.feedback_controller import FeedbackController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_api_key, get_current_user_optional
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.feedback import (
     FeedbackRequest, 
     FeedbackSuccessResponse, 
@@ -63,7 +65,8 @@ async def submit_feedback(
     request: Request,
     feedback_request: FeedbackRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Submit user feedback.
@@ -73,12 +76,12 @@ async def submit_feedback(
     - **recommendation**: Required - Rating from 1-10
     - **feedback**: Optional - Feedback text message
     - **category**: Optional - Feedback category
-    - **user_id**: Optional - User ID for authenticated users
+    - **user_id**: Optional - User ID for authenticated users - overridden by JWT if present
     
     Returns success confirmation or validation errors.
     """
     feedback_data = feedback_request.dict()
-    return await feedback_controller.submit_feedback(db, request, feedback_data)
+    return await feedback_controller.submit_feedback(db, request, feedback_data, current_user)
 
 
 @router.get(

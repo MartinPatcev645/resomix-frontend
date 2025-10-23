@@ -19,10 +19,12 @@ from fastapi import status, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from typing import Optional
 import time
 from app.services.playlist_service import PlaylistService
 from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
+from app.models.user import User
 
 
 class PlaylistController:
@@ -33,7 +35,7 @@ class PlaylistController:
         self.playlist_service = PlaylistService()
         self.logging_service = LoggingService()
     
-    async def rename_playlist(self, db: AsyncSession, request: Request, playlist_id: str, new_name: str) -> JSONResponse:
+    async def rename_playlist(self, db: AsyncSession, request: Request, playlist_id: str, new_name: str, current_user: Optional[User] = None) -> JSONResponse:
         """
         Rename a playlist by UUID.
         
@@ -219,7 +221,7 @@ class PlaylistController:
                 content=response_data
             )
     
-    async def change_playlist_visibility(self, db: AsyncSession, request: Request, playlist_id: str, is_public: bool) -> JSONResponse:
+    async def change_playlist_visibility(self, db: AsyncSession, request: Request, playlist_id: str, is_public: bool, current_user: Optional[User] = None) -> JSONResponse:
         """
         Change playlist visibility (public/private).
         
@@ -339,7 +341,7 @@ class PlaylistController:
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
 
-    async def get_playlist_similarity_data(self, db: AsyncSession, request: Request, playlist_id: str) -> JSONResponse:
+    async def get_playlist_similarity_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
         """
         Get playlist with similarity data.
         Only returns data for public playlists.
@@ -477,7 +479,7 @@ class PlaylistController:
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
 
-    async def get_playlist_hls_data(self, db: AsyncSession, request: Request, playlist_id: str) -> Response:
+    async def get_playlist_hls_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: Optional[User] = None) -> Response:
         """
         Get playlist as HLS M3U8 format.
         Only returns data for public playlists.

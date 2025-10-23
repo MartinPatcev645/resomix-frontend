@@ -137,6 +137,32 @@ from .waitlist import (
     WaitlistErrorResponse,
 )
 
+# Authentication schemas
+from .auth import (
+    RegisterRequest,
+    RegisterResponse,
+    LoginRequest,
+    LoginResponse,
+    TwoFactorRequiredResponse,
+    TwoFactorVerifyRequest,
+    TokenRefreshRequest,
+    TokenRefreshResponse,
+    EmailVerificationRequest,
+    ResendVerificationRequest,
+    EmailVerificationResponse,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    PasswordResetConfirmRequest,
+    ChangePasswordRequest,
+    UserProfileResponse,
+    UpdateProfileRequest,
+    UserSessionResponse,
+    Enable2FARequest,
+    Disable2FARequest,
+    MessageResponse,
+    LogoutRequest,
+)
+
 # Make all schemas available at package level
 __all__ = [
     # Common
@@ -238,4 +264,28 @@ __all__ = [
     "WaitlistResponse",
     "WaitlistSuccessResponse",
     "WaitlistErrorResponse",
+    
+    # Authentication
+    "RegisterRequest",
+    "RegisterResponse",
+    "LoginRequest",
+    "LoginResponse",
+    "TwoFactorRequiredResponse",
+    "TwoFactorVerifyRequest",
+    "TokenRefreshRequest",
+    "TokenRefreshResponse",
+    "EmailVerificationRequest",
+    "ResendVerificationRequest",
+    "EmailVerificationResponse",
+    "PasswordResetRequest",
+    "PasswordResetResponse",
+    "PasswordResetConfirmRequest",
+    "ChangePasswordRequest",
+    "UserProfileResponse",
+    "UpdateProfileRequest",
+    "UserSessionResponse",
+    "Enable2FARequest",
+    "Disable2FARequest",
+    "MessageResponse",
+    "LogoutRequest",
 ]

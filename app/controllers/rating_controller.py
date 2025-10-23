@@ -26,6 +26,7 @@ from app.utils.response_utils import format_response
 from app.schemas.rating import TrackRatingRequest, PlaylistRatingRequest
 from app.core.exceptions import ValidationError
 from app.services.playlist_service import PlaylistService
+from app.models.user import User
 
 
 class RatingController:
@@ -38,18 +39,21 @@ class RatingController:
         self.playlist_service = PlaylistService()
     
     # Track Rating Endpoints
-    async def rate_track(self, db: AsyncSession, request: Request, request_data: TrackRatingRequest) -> JSONResponse:
+    async def rate_track(self, db: AsyncSession, request: Request, request_data: TrackRatingRequest, current_user: Optional[User] = None) -> JSONResponse:
         """Rate a track endpoint handler."""
         start_time = time.time()
         try:
             correlation_id = self.logging_service.generate_correlation_id()
+            
+            # Prioritize JWT user over request body user_id
+            user_id = current_user.uuid if current_user else request_data.user_id
             
             result = await self.rating_service.rate_track(
                 db, 
                 request_data.track_id,  # Now a string UUID
                 request_data.playlist_id,  # Playlist UUID
                 request_data.rating, 
-                request_data.user_id
+                user_id
             )
             # Resolve integer IDs for logging
             track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, request_data.track_id)
@@ -224,13 +228,15 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str) -> JSONResponse:
+    async def get_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
         """Get track rating endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
+            # Prioritize JWT user over query param user_id
+            final_user_id = current_user.uuid if current_user else user_id
             
-            result = await self.rating_service.get_track_rating(db, track_id, playlist_id, user_id)
+            result = await self.rating_service.get_track_rating(db, track_id, playlist_id, final_user_id)
             # Resolve integer IDs for logging
             track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
             track_int_id = track_obj.id if track_obj else None
@@ -332,13 +338,15 @@ class RatingController:
                 content=error_response
             )
     
-    async def delete_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str) -> JSONResponse:
+    async def delete_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
         """Delete track rating endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
+            # Prioritize JWT user over query param user_id
+            final_user_id = current_user.uuid if current_user else user_id
             
-            result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, user_id)
+            result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, final_user_id)
             # Resolve integer IDs for logging
             track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
             track_int_id = track_obj.id if track_obj else None
@@ -514,7 +522,7 @@ class RatingController:
             )
     
     # Playlist Rating Endpoints
-    async def rate_playlist(self, db: AsyncSession, request: Request, request_data: PlaylistRatingRequest) -> JSONResponse:
+    async def rate_playlist(self, db: AsyncSession, request: Request, request_data: PlaylistRatingRequest, current_user: Optional[User] = None) -> JSONResponse:
         """Rate a playlist endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -523,11 +531,14 @@ class RatingController:
         playlist_int_id = playlist.id if playlist else None
         
         try:
+            # Prioritize JWT user over request body user_id
+            user_id = current_user.uuid if current_user else request_data.user_id
+            
             result = await self.rating_service.rate_playlist(
                 db, 
                 request_data.playlist_id,  # Now a string UUID
                 request_data.rating,
-                request_data.user_id,
+                user_id,
                 request_data.message
             )
             
@@ -692,7 +703,7 @@ class RatingController:
                 content=error_response
             )
     
-    async def get_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None) -> JSONResponse:
+    async def get_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None, current_user: Optional[User] = None) -> JSONResponse:
         """
         Get user's rating for a specific playlist.
         
@@ -748,7 +759,10 @@ class RatingController:
                     content=response_content
                 )
             
-            result = await self.rating_service.get_playlist_rating(db, playlist_id, user_id)
+            # Prioritize JWT user over query param user_id
+            final_user_id = current_user.uuid if current_user else user_id
+            
+            result = await self.rating_service.get_playlist_rating(db, playlist_id, final_user_id)
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
@@ -863,7 +877,7 @@ class RatingController:
                 content=response_content
             )
     
-    async def delete_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None) -> JSONResponse:
+    async def delete_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None, current_user: Optional[User] = None) -> JSONResponse:
         """
         Delete user's rating for a specific playlist.
         
@@ -919,7 +933,10 @@ class RatingController:
                     content=response_content
                 )
             
-            result = await self.rating_service.delete_playlist_rating(db, playlist_id, user_id)
+            # Prioritize JWT user over query param user_id
+            final_user_id = current_user.uuid if current_user else user_id
+            
+            result = await self.rating_service.delete_playlist_rating(db, playlist_id, final_user_id)
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000

@@ -16,9 +16,11 @@ Email: usman.naeem2212@gmail.com
 """
 
 # UserRole, Role, Permission models 
-from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Enum, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from . import Base
+from sqlalchemy.sql import func
+import uuid as uuid_lib
 
 
 class Role(Base):
@@ -126,6 +128,150 @@ class UserRole(Base):
     
     # Relationships
     role = relationship("Role", back_populates="user_roles")
+    user = relationship("User", back_populates="roles")
     
     def __repr__(self):
         return f"<UserRole(user_id={self.user_id}, role_id={self.role_id})>"
+
+
+# =========================================================================
+# User & Authentication Models (Step 3.1 - AUTH_IMPLEMENTATION_GUIDE)
+# =========================================================================
+
+class User(Base):
+    """User model representing the users table (dual ID system)"""
+    __tablename__ = "users"
+
+    # Primary keys
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    uuid = Column(String(36), nullable=False, unique=True, index=True)
+
+    # Authentication
+    username = Column(String(50), nullable=False, unique=True, index=True)
+    email = Column(String(100), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+
+    # Profile
+    name = Column(String(100), nullable=True)
+    profile_picture = Column(String(255), nullable=True)
+    language = Column(String(10), nullable=True, default='en')
+    timezone = Column(String(50), nullable=True, default='UTC')
+
+    # Security flags
+    is_email_verified = Column(Boolean, nullable=False, default=False)
+    is_two_factor_enabled = Column(Boolean, nullable=False, default=False)
+    two_factor_method = Column(
+        Enum('email', 'app', name='two_factor_method'),
+        nullable=False,
+        default='email'
+    )
+
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+
+    # Relationships (defined later to avoid circular refs)
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+    roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        if 'uuid' not in kwargs:
+            kwargs['uuid'] = str(uuid_lib.uuid4())
+        super().__init__(**kwargs)
+
+    def __repr__(self):
+        return f"<User(id={self.id}, uuid='{self.uuid}', email='{self.email}', username='{self.username}')>"
+
+
+class EmailVerificationToken(Base):
+    """Email verification tokens"""
+    __tablename__ = "email_verification_tokens"
+
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    token = Column(String(36), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<EmailVerificationToken(user_id={self.user_id}, token='{self.token[:8]}...')>"
+
+
+class PasswordResetToken(Base):
+    """Password reset tokens"""
+    __tablename__ = "password_reset_tokens"
+
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    token = Column(String(36), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    consumed_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<PasswordResetToken(user_id={self.user_id}, consumed={self.consumed_at is not None})>"
+
+
+class TwoFactorEmailCode(Base):
+    """2FA email codes"""
+    __tablename__ = "two_factor_email_codes"
+
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    code = Column(String(10), nullable=False, primary_key=True)
+    purpose = Column(
+        Enum('login', 'password_change', name='two_factor_purpose'),
+        nullable=False,
+        default='login'
+    )
+    expires_at = Column(DateTime, nullable=False)
+    consumed_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<TwoFactorEmailCode(user_id={self.user_id}, purpose='{self.purpose}')>"
+
+
+class UserSession(Base):
+    """User sessions for refresh tokens and device tracking"""
+    __tablename__ = "user_sessions"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(36), nullable=False, unique=True, index=True)
+    refresh_token_hash = Column(String(255), nullable=True)
+
+    # Device tracking
+    user_agent = Column(String(255), nullable=True)
+    ip_address = Column(String(45), nullable=True)
+
+    # Session lifecycle
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    expires_at = Column(DateTime, nullable=True, index=True)
+    revoked_at = Column(DateTime, nullable=True, index=True)
+
+    user = relationship("User", back_populates="sessions")
+
+    def __repr__(self):
+        return f"<UserSession(id={self.id}, user_id={self.user_id}, revoked={self.revoked_at is not None})>"
+
+
+class UserAuthProvider(Base):
+    """OAuth/Social login providers (future use)"""
+    __tablename__ = "user_auth_providers"
+
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    provider = Column(String(50), nullable=False, primary_key=True)
+    provider_uid = Column(String(100), nullable=False)
+
+    __table_args__ = ({"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4"},)
+
+    def __repr__(self):
+        return f"<UserAuthProvider(user_id={self.user_id}, provider='{self.provider}')>"
+
+# =========================================================================

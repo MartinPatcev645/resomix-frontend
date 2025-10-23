@@ -21,8 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.rating_controller import RatingController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_api_key, get_current_user_optional
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.rating import (
     TrackRatingRequest,
     PlaylistRatingRequest,
@@ -74,7 +75,8 @@ async def rate_track_endpoint(
     request: Request,
     request_data: TrackRatingRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Rate a track with similarity feedback within a playlist context.
@@ -82,9 +84,11 @@ async def rate_track_endpoint(
     - **track_id**: The UUID of the track to rate
     - **playlist_id**: The UUID of the playlist from which the rating is being submitted
     - **rating**: Rating value - 0 (not similar) or 1 (similar)
-    - **user_id**: Optional user ID for the rating (UUID format)
+    - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
+    
+    Note: If authenticated via JWT, the user_id from the token will be used automatically.
     """
-    return await rating_controller.rate_track(db, request, request_data)
+    return await rating_controller.rate_track(db, request, request_data, current_user)
 
 
 @router.get(
@@ -113,16 +117,17 @@ async def get_track_rating_endpoint(
     playlist_id: str = Path(..., description="Playlist UUID"),
     user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Get user's rating for a specific track within a playlist context.
     
     - **track_id**: The UUID of the track
     - **playlist_id**: The UUID of the playlist
-    - **user_id**: Optional user ID for the rating (UUID format)
+    - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
     """
-    return await rating_controller.get_track_rating(db, request, track_id, user_id, playlist_id)
+    return await rating_controller.get_track_rating(db, request, track_id, user_id, playlist_id, current_user)
 
 
 @router.delete(
@@ -151,16 +156,17 @@ async def delete_track_rating_endpoint(
     playlist_id: str = Path(..., description="Playlist UUID"),
     user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Delete user's rating for a specific track within a playlist context.
     
     - **track_id**: The UUID of the track
     - **playlist_id**: The UUID of the playlist
-    - **user_id**: Optional user ID for the rating (UUID format)
+    - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
     """
-    return await rating_controller.delete_track_rating(db, request, track_id, user_id, playlist_id)
+    return await rating_controller.delete_track_rating(db, request, track_id, user_id, playlist_id, current_user)
 
 
 @router.get(
@@ -228,7 +234,8 @@ async def rate_playlist_endpoint(
     request: Request,
     request_data: PlaylistRatingRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Rate a playlist with star rating and optional message.
@@ -236,9 +243,9 @@ async def rate_playlist_endpoint(
     - **playlist_id**: The ID of the playlist to rate (positive integer)
     - **rating**: Rating value from 0 to 3 stars
     - **message**: Optional message/feedback about the playlist (max 1000 characters)
-    - **user_id**: Optional user ID for the rating (UUID format)
+    - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
     """
-    return await rating_controller.rate_playlist(db, request, request_data)
+    return await rating_controller.rate_playlist(db, request, request_data, current_user)
 
 
 @router.get(
@@ -270,15 +277,16 @@ async def get_playlist_rating_endpoint(
     playlist_id: int,
     user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Get user's rating for a specific playlist.
     
     - **playlist_id**: The ID of the playlist
-    - **user_id**: Optional user ID (query parameter)
+    - **user_id**: Optional user ID (query parameter) - overridden by JWT if present
     """
-    return await rating_controller.get_playlist_rating(db, request, playlist_id, user_id)
+    return await rating_controller.get_playlist_rating(db, request, playlist_id, user_id, current_user)
 
 
 @router.delete(
@@ -310,15 +318,16 @@ async def delete_playlist_rating_endpoint(
     playlist_id: int,
     user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Delete user's rating for a specific playlist.
     
     - **playlist_id**: The ID of the playlist
-    - **user_id**: Optional user ID (query parameter)
+    - **user_id**: Optional user ID (query parameter) - overridden by JWT if present
     """
-    return await rating_controller.delete_playlist_rating(db, request, playlist_id, user_id)
+    return await rating_controller.delete_playlist_rating(db, request, playlist_id, user_id, current_user)
 
 
 @router.get(

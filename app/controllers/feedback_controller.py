@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi.responses import JSONResponse
 from fastapi import status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ import time
 from app.services.feedback_service import FeedbackService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.models.user import User
 
 
 class FeedbackController:
@@ -32,13 +33,14 @@ class FeedbackController:
         self.feedback_service = FeedbackService()
         self.logging_service = LoggingService()
     
-    async def submit_feedback(self, db: AsyncSession, request: Request, feedback_data: Dict[str, Any]) -> JSONResponse:
+    async def submit_feedback(self, db: AsyncSession, request: Request, feedback_data: Dict[str, Any], current_user: Optional[User] = None) -> JSONResponse:
         """
         Submit feedback.
         
         Args:
             db: Database session
             feedback_data: Feedback form data
+            current_user: Optional authenticated user from JWT
             
         Returns:
             JSON response with submission result
@@ -47,6 +49,10 @@ class FeedbackController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
+            # Prioritize JWT user over request body user_id
+            if current_user:
+                feedback_data['user_id'] = current_user.uuid
+            
             # Process feedback submission
             result = await self.feedback_service.process_feedback_submission(db, feedback_data)
 

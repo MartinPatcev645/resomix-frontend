@@ -18,10 +18,12 @@ Email: usman.naeem2212@gmail.com
 from fastapi import APIRouter, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_api_key, get_current_user_optional
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.playlist import (
     PlaylistRenameRequest,
     PlaylistVisibilityRequest,
@@ -72,15 +74,18 @@ async def rename_playlist_endpoint(
     request: Request,
     request_data: PlaylistRenameRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Rename a playlist by its UUID.
     
     - **playlist_id**: The UUID of the playlist to rename
     - **new_name**: The new name for the playlist (1-150 characters)
+    
+    Note: JWT authenticated users are automatically associated with their playlists.
     """
-    return await playlist_controller.rename_playlist(db, request, request_data.playlist_id, request_data.new_name)
+    return await playlist_controller.rename_playlist(db, request, request_data.playlist_id, request_data.new_name, current_user)
 
 
 @router.put(
@@ -111,15 +116,18 @@ async def change_playlist_visibility_endpoint(
     request: Request,
     request_data: PlaylistVisibilityRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Change playlist visibility (public/private) by its UUID.
     
     - **playlist_id**: The UUID of the playlist to modify
     - **is_public**: Whether the playlist should be public (true) or private (false)
+    
+    Note: JWT authenticated users are automatically associated with their playlists.
     """
-    return await playlist_controller.change_playlist_visibility(db, request, request_data.playlist_id, request_data.is_public)
+    return await playlist_controller.change_playlist_visibility(db, request, request_data.playlist_id, request_data.is_public, current_user)
 
 
 @router.get(
@@ -154,7 +162,8 @@ async def get_playlist_similarity_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Get playlist with similarity data formatted like similarity endpoints.
@@ -163,8 +172,10 @@ async def get_playlist_similarity_endpoint(
     similar tracks with scores, and playlist information.
     
     - **playlist_id**: The UUID of the playlist to retrieve
+    
+    Note: JWT authenticated users can access their own private playlists.
     """
-    return await playlist_controller.get_playlist_similarity_data(db, request, playlist_id)
+    return await playlist_controller.get_playlist_similarity_data(db, request, playlist_id, current_user)
 
 
 @router.get(
@@ -202,7 +213,8 @@ async def get_playlist_hls_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Get playlist as HLS M3U8 format for audio streaming.
@@ -217,11 +229,13 @@ async def get_playlist_hls_endpoint(
     - Track metadata in EXTINF tags
     
     **Security:**
-    - Only public playlists can be accessed
+    - Only public playlists can be accessed (unless JWT authenticated for own playlists)
     - All media URLs are signed with expiration
     - API key authentication required
     
     - **playlist_id**: The UUID of the playlist to convert to M3U8
+    
+    Note: JWT authenticated users can access their own private playlists.
     """
-    return await playlist_controller.get_playlist_hls_data(db, request, playlist_id)
+    return await playlist_controller.get_playlist_hls_data(db, request, playlist_id, current_user)
 

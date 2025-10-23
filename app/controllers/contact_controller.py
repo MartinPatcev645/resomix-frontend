@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi.responses import JSONResponse
 from fastapi import status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ import time
 from app.services.contact_service import ContactService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.models.user import User
 
 
 class ContactController:
@@ -32,13 +33,14 @@ class ContactController:
         self.contact_service = ContactService()
         self.logging_service = LoggingService()
     
-    async def submit_contact(self, db: AsyncSession, request: Request, contact_data: Dict[str, Any]) -> JSONResponse:
+    async def submit_contact(self, db: AsyncSession, request: Request, contact_data: Dict[str, Any], current_user: Optional[User] = None) -> JSONResponse:
         """
         Submit a contact form.
         
         Args:
             db: Database session
             contact_data: Contact form data
+            current_user: Optional authenticated user from JWT
             
         Returns:
             JSON response with submission result
@@ -47,6 +49,10 @@ class ContactController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
+            # Prioritize JWT user over request body user_id
+            if current_user:
+                contact_data['user_id'] = current_user.uuid
+            
             # Process contact submission
             result = await self.contact_service.process_contact_submission(db, contact_data)
             

@@ -32,9 +32,13 @@ from .spotify_transfer import router as spotify_transfer_router
 from .tidal_transfer import router as tidal_transfer_router
 from .waitlist import router as waitlist_router
 from .dummy import router as dummy_router
+from .auth import router as auth_router
+from .users import router as users_router
 
 # List of all routers for easy inclusion
 all_routers = [
+    auth_router,
+    users_router,
     similarity_router,
     metadata_router,
     search_router,

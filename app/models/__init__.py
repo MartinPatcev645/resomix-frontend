@@ -15,7 +15,18 @@ from .rating import TrackRating, PlaylistRating
 from .purchase import Purchase, UserSubscription
 from .feedback import Feedback
 from .contact import Contact
-from .user import Role, Permission, RolePermission, UserRole
+from .user import (
+    User, 
+    EmailVerificationToken, 
+    PasswordResetToken, 
+    TwoFactorEmailCode,
+    UserSession,
+    UserAuthProvider,
+    Role, 
+    Permission, 
+    RolePermission, 
+    UserRole
+)
 from .log import SystemLog
 from .waitlist import Waitlist
 
@@ -29,6 +40,12 @@ __all__ = [
     "TrackRating", "PlaylistRating",
     "Purchase", "UserSubscription",
     "Feedback", "Contact",
+    "User",
+    "EmailVerificationToken",
+    "PasswordResetToken", 
+    "TwoFactorEmailCode",
+    "UserSession",
+    "UserAuthProvider",
     "Role", "Permission", "RolePermission", "UserRole",
     "SystemLog", "Waitlist"
 ]

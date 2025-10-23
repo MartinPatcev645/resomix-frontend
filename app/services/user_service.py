@@ -1,1 +1,309 @@
-# User service 
+"""
+User Service
+============
+
+User profile management and updates including profile CRUD, password changes,
+and session management.
+
+Version: 3.2.0
+Author: Muhammad Usman Naeem
+Date: October 23, 2025
+"""
+
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, status
+
+from app.models.user import User, UserSession
+from app.repositories.user_repository import (
+    UserRepository,
+    UserSessionRepository,
+    TwoFactorCodeRepository,
+)
+from app.core.security import hash_password, verify_password, validate_password_strength
+
+
+class UserService:
+    """Service for user profile management"""
+
+    def __init__(self):
+        self.user_repo = UserRepository()
+        self.session_repo = UserSessionRepository()
+        self.two_fa_repo = TwoFactorCodeRepository()
+
+    async def get_user_profile(
+        self, db: AsyncSession, user_uuid: str
+    ) -> Optional[User]:
+        """
+        Get user profile by UUID (external ID).
+
+        Args:
+            db: Database session
+            user_uuid: User's external UUID
+
+        Returns:
+            User object or None
+        """
+        return await self.user_repo.async_get_by_uuid(db, user_uuid)
+
+    async def update_profile(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        name: Optional[str] = None,
+        language: Optional[str] = None,
+        timezone: Optional[str] = None,
+        profile_picture: Optional[str] = None,
+    ) -> User:
+        """
+        Update user profile information.
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+            name: Display name
+            language: Preferred language
+            timezone: User timezone
+            profile_picture: Profile picture URL
+
+        Returns:
+            Updated user
+
+        Raises:
+            HTTPException: If user not found
+        """
+        user = await self.user_repo.async_get_by_id(db, user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Update only provided fields
+        if name is not None:
+            user.name = name
+        if language is not None:
+            user.language = language
+        if timezone is not None:
+            user.timezone = timezone
+        if profile_picture is not None:
+            user.profile_picture = profile_picture
+
+        await db.commit()
+        await db.refresh(user)
+
+        return user
+
+    async def change_password(
+        self, db: AsyncSession, user_id: int, current_password: str, new_password: str
+    ) -> User:
+        """
+        Change user password (requires current password).
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+            current_password: Current password for verification
+            new_password: New password
+
+        Returns:
+            Updated user
+
+        Raises:
+            HTTPException: If validation fails
+        """
+        user = await self.user_repo.async_get_by_id(db, user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Verify current password
+        if not verify_password(current_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect",
+            )
+
+        # Validate new password strength
+        is_valid, error = validate_password_strength(new_password)
+        if not is_valid:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+
+        # Check if new password is same as current
+        if verify_password(new_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password must be different from current password",
+            )
+
+        # Update password
+        password_hash = hash_password(new_password)
+        user = await self.user_repo.async_update_password(
+            db=db, user_id=user_id, new_password_hash=password_hash
+        )
+
+        # Revoke all sessions (force re-login on all devices)
+        await self.session_repo.async_revoke_all_user_sessions(db, user_id)
+
+        return user
+
+    async def delete_account(
+        self, db: AsyncSession, user_id: int, password: str
+    ) -> bool:
+        """
+        Delete user account (requires password confirmation).
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+            password: Password for confirmation
+
+        Returns:
+            True if deleted successfully
+
+        Raises:
+            HTTPException: If password is incorrect
+        """
+        user = await self.user_repo.async_get_by_id(db, user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Verify password
+        if not verify_password(password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Password is incorrect"
+            )
+
+        # Delete user (cascade will handle related records)
+        return await self.user_repo.async_delete(db, user_id)
+
+    async def get_user_sessions(
+        self, db: AsyncSession, user_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get list of active sessions/devices for user.
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+
+        Returns:
+            List of session information
+        """
+        sessions = await self.session_repo.async_get_active_sessions(db, user_id)
+
+        return [
+            {
+                "session_id": session.session_id,
+                "user_agent": session.user_agent,
+                "ip_address": session.ip_address,
+                "created_at": (
+                    session.created_at.isoformat() if session.created_at else None
+                ),
+                "expires_at": (
+                    session.expires_at.isoformat() if session.expires_at else None
+                ),
+            }
+            for session in sessions
+        ]
+
+    async def revoke_session(
+        self, db: AsyncSession, user_id: int, session_id: str
+    ) -> bool:
+        """
+        Revoke a specific session (logout from specific device).
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+            session_id: Session ID to revoke
+
+        Returns:
+            True if revoked successfully
+
+        Raises:
+            HTTPException: If session not found or doesn't belong to user
+        """
+        session = await self.session_repo.async_get_by_session_id(db, session_id)
+
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+            )
+
+        # Verify session belongs to user
+        if session.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to revoke this session",
+            )
+
+        return await self.session_repo.async_revoke_session(db, session_id)
+
+    async def enable_2fa(
+        self, db: AsyncSession, user_id: int, method: str = "email"
+    ) -> User:
+        """
+        Enable two-factor authentication for user.
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+            method: 2FA method ('email' or 'app')
+
+        Returns:
+            Updated user
+
+        Raises:
+            HTTPException: If user not found or invalid method
+        """
+        if method not in ["email", "app"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid 2FA method. Must be 'email' or 'app'",
+            )
+
+        user = await self.user_repo.async_enable_2fa(db, user_id, method)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        return user
+
+    async def disable_2fa(self, db: AsyncSession, user_id: int, password: str) -> User:
+        """
+        Disable two-factor authentication (requires password).
+
+        Args:
+            db: Database session
+            user_id: User's internal ID
+            password: Password for confirmation
+
+        Returns:
+            Updated user
+
+        Raises:
+            HTTPException: If password is incorrect
+        """
+        user = await self.user_repo.async_get_by_id(db, user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Verify password
+        if not verify_password(password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Password is incorrect"
+            )
+
+        return await self.user_repo.async_disable_2fa(db, user_id)

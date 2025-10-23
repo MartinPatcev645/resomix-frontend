@@ -1,1 +1,273 @@
-# User management endpoints 
+"""
+Users API Router
+================
+
+FastAPI router for user profile management endpoints including profile CRUD,
+password changes, session management, and 2FA settings.
+
+Version: 3.2.0
+Author: Muhammad Usman Naeem
+Date: October 23, 2025
+"""
+
+from typing import List
+from fastapi import APIRouter, Depends, Path, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.controllers.user_controller import UserController
+from app.api.dependencies.database import get_database_session
+# Note: get_current_user will be implemented in Section 11
+# from app.api.dependencies.auth import get_current_user
+from app.schemas.auth import (
+    UserProfileResponse,
+    UpdateProfileRequest,
+    ChangePasswordRequest,
+    UserSessionResponse,
+    Enable2FARequest,
+    Disable2FARequest,
+    MessageResponse,
+)
+from app.schemas.common import ErrorResponse
+
+# Create router instance
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+)
+
+# Initialize controller
+user_controller = UserController()
+
+
+@router.get(
+    "/me",
+    response_model=UserProfileResponse,
+    status_code=200,
+    summary="Get Current User Profile",
+    description="Get authenticated user's profile information.",
+    response_description="User profile data",
+)
+async def get_my_profile(
+    request: Request,
+    user_uuid: str,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Get current user's profile.
+
+    Returns complete profile information including:
+    - UUID, email, username
+    - Display name and profile picture
+    - Language and timezone preferences
+    - Email verification status
+    - 2FA settings
+    - Account creation date
+
+    Requires authentication (JWT token).
+    """
+    return await user_controller.get_profile(db, request, user_uuid)
+
+
+@router.patch(
+    "/me",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Update User Profile",
+    description="Update authenticated user's profile information.",
+    response_description="Profile updated successfully",
+)
+async def update_my_profile(
+    request: Request,
+    profile_update: UpdateProfileRequest,
+    user_id: int,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Update current user's profile.
+
+    Allows updating:
+    - **name**: Display name
+    - **language**: Preferred language (e.g., 'en', 'es')
+    - **timezone**: User timezone (e.g., 'UTC', 'America/New_York')
+    - **profile_picture**: Profile picture URL
+
+    All fields are optional. Only provided fields will be updated.
+    Requires authentication (JWT token).
+    """
+    profile_data = profile_update.dict(exclude_unset=True)
+    return await user_controller.update_profile(db, request, user_id, profile_data)
+
+
+@router.post(
+    "/me/change-password",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Change Password",
+    description="Change authenticated user's password.",
+    response_description="Password changed successfully",
+    responses={
+        401: {"model": ErrorResponse, "description": "Current password incorrect"},
+        400: {"model": ErrorResponse, "description": "New password validation failed"},
+    },
+)
+async def change_my_password(
+    request: Request,
+    password_change: ChangePasswordRequest,
+    user_id: int,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Change user password.
+
+    Requires:
+    - **current_password**: Current password for verification
+    - **new_password**: New password (min 8 characters, strong)
+
+    After successful password change:
+    - All active sessions are revoked
+    - User must login again on all devices
+
+    Requires authentication (JWT token).
+    """
+    password_data = password_change.dict()
+    return await user_controller.change_password(db, request, user_id, password_data)
+
+
+@router.get(
+    "/me/sessions",
+    response_model=List[UserSessionResponse],
+    status_code=200,
+    summary="Get Active Sessions",
+    description="Get list of authenticated user's active sessions.",
+    response_description="List of active sessions",
+)
+async def get_my_sessions(
+    request: Request,
+    user_id: int,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Get active sessions (devices).
+
+    Returns list of active sessions with:
+    - Session ID
+    - User agent (browser/device info)
+    - IP address
+    - Creation and expiration times
+
+    Useful for viewing all logged-in devices.
+    Requires authentication (JWT token).
+    """
+    return await user_controller.get_sessions(db, request, user_id)
+
+
+@router.delete(
+    "/me/sessions/{session_id}",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Revoke Session",
+    description="Logout from specific session (device).",
+    response_description="Session revoked successfully",
+    responses={
+        403: {
+            "model": ErrorResponse,
+            "description": "Session doesn't belong to current user",
+        },
+        404: {"model": ErrorResponse, "description": "Session not found"},
+    },
+)
+async def revoke_my_session(
+    request: Request,
+    session_id: str = Path(..., description="Session ID to revoke"),
+    user_id: int = None,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Revoke specific session.
+
+    Logs out from a specific device/session:
+    - **session_id**: Session ID from sessions list
+
+    The refresh token for that session becomes invalid.
+    Useful for remote logout from lost/stolen devices.
+    Requires authentication (JWT token).
+    """
+    return await user_controller.revoke_session(db, request, user_id, session_id)
+
+
+@router.post(
+    "/me/enable-2fa",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Enable Two-Factor Authentication",
+    description="Enable 2FA for additional security.",
+    response_description="2FA enabled successfully",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid 2FA method"}
+    },
+)
+async def enable_my_2fa(
+    request: Request,
+    enable_request: Enable2FARequest,
+    user_id: int,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Enable two-factor authentication.
+
+    Adds extra security layer to login:
+    - **method**: 2FA method ('email' or 'app')
+
+    After enabling:
+    - Login will require 2FA code
+    - Code sent via email (or app in future)
+
+    Requires authentication (JWT token).
+    """
+    return await user_controller.enable_2fa(db, request, user_id, enable_request.method)
+
+
+@router.post(
+    "/me/disable-2fa",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Disable Two-Factor Authentication",
+    description="Disable 2FA (requires password confirmation).",
+    response_description="2FA disabled successfully",
+    responses={
+        401: {"model": ErrorResponse, "description": "Password incorrect"}
+    },
+)
+async def disable_my_2fa(
+    request: Request,
+    disable_request: Disable2FARequest,
+    user_id: int,  # TODO: This will come from get_current_user dependency
+    db: AsyncSession = Depends(get_database_session),
+    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+):
+    """
+    Disable two-factor authentication.
+
+    Removes 2FA requirement from login:
+    - **password**: Password for confirmation
+
+    After disabling:
+    - Login will only require email/password
+    - No 2FA code needed
+
+    Requires authentication (JWT token).
+    """
+    return await user_controller.disable_2fa(db, request, user_id, disable_request.password)

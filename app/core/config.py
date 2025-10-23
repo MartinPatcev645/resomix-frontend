@@ -253,6 +253,90 @@ class Settings(BaseModel):
     es_ca_certs: Optional[str] = Field(default=None, description="Path to CA certificates for ES TLS")
     es_request_timeout: int = Field(default=20, description="Timeout in seconds for ES requests")
     es_search_limit: int = Field(default=20, description="Default limit for ES search")
+    
+    # === NEW: JWT & Auth Configuration ===
+    # JWT Settings
+    jwt_secret_key: str = Field(
+        default="your-secret-key-change-in-production-min-32-chars",
+        description="Secret key for JWT token signing (must be 32+ chars)"
+    )
+    jwt_algorithm: str = Field(
+        default="HS256",
+        description="JWT signing algorithm"
+    )
+    jwt_access_token_expire_minutes: int = Field(
+        default=30,
+        description="Access token expiration in minutes"
+    )
+    jwt_refresh_token_expire_days: int = Field(
+        default=30,
+        description="Refresh token expiration in days"
+    )
+    
+    # Password Policy
+    password_min_length: int = Field(default=8, description="Minimum password length")
+    password_require_uppercase: bool = Field(default=False, description="Require uppercase letter")
+    password_require_lowercase: bool = Field(default=False, description="Require lowercase letter")
+    password_require_digit: bool = Field(default=True, description="Require digit")
+    password_require_special: bool = Field(default=False, description="Require special character")
+    
+    # Email Verification
+    email_verification_token_expire_hours: int = Field(
+        default=24,
+        description="Email verification token expiration in hours"
+    )
+    password_reset_token_expire_hours: int = Field(
+        default=1,
+        description="Password reset token expiration in hours"
+    )
+    
+    # 2FA Settings
+    two_factor_code_expire_minutes: int = Field(
+        default=10,
+        description="2FA code expiration in minutes"
+    )
+    two_factor_code_length: int = Field(
+        default=6,
+        description="2FA code length (digits)"
+    )
+    
+    # Rate Limiting
+    rate_limit_enabled: bool = Field(
+        default=True,
+        description="Enable rate limiting for auth endpoints"
+    )
+    login_rate_limit: str = Field(
+        default="5/minute",
+        description="Rate limit for login attempts"
+    )
+    register_rate_limit: str = Field(
+        default="3/hour",
+        description="Rate limit for registration"
+    )
+    password_reset_rate_limit: str = Field(
+        default="3/hour",
+        description="Rate limit for password reset requests"
+    )
+    
+    # Email Service (SMTP)
+    smtp_host: str = Field(default="smtp.gmail.com", description="SMTP server host")
+    smtp_port: int = Field(default=587, description="SMTP server port")
+    smtp_user: Optional[str] = Field(default=None, description="SMTP username")
+    smtp_password: Optional[str] = Field(default=None, description="SMTP password")
+    smtp_from_email: str = Field(
+        default="noreply@resomix.com",
+        description="From email address"
+    )
+    smtp_from_name: str = Field(
+        default="ResomiX",
+        description="From name"
+    )
+    
+    # Frontend URLs (for email links)
+    frontend_url: str = Field(
+        default="https://resomix.com",
+        description="Frontend URL for email verification/reset links"
+    )
 
     def __init__(self, **data):
         # Override with environment variables if they exist
@@ -286,13 +370,29 @@ class Settings(BaseModel):
             "ES_CA_CERTS": "es_ca_certs",
             "ES_REQUEST_TIMEOUT": "es_request_timeout",
             "ES_SEARCH_LIMIT": "es_search_limit",
+            # JWT & Auth
+            "JWT_SECRET_KEY": "jwt_secret_key",
+            "JWT_ALGORITHM": "jwt_algorithm",
+            "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "jwt_access_token_expire_minutes",
+            "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "jwt_refresh_token_expire_days",
+            "SMTP_HOST": "smtp_host",
+            "SMTP_PORT": "smtp_port",
+            "SMTP_USER": "smtp_user",
+            "SMTP_PASSWORD": "smtp_password",
+            "SMTP_FROM_EMAIL": "smtp_from_email",
+            "FRONTEND_URL": "frontend_url",
         }
         
         for env_key, config_key in direct_env_vars.items():
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle integer conversion
-                if config_key in ["preview_audio_url_expires_seconds", "hls_url_expires_seconds", "es_request_timeout", "es_search_limit"]:
+                if config_key in [
+                    "preview_audio_url_expires_seconds", "hls_url_expires_seconds", 
+                    "es_request_timeout", "es_search_limit",
+                    "jwt_access_token_expire_minutes", "jwt_refresh_token_expire_days",
+                    "smtp_port"
+                ]:
                     try:
                         env_overrides[config_key] = int(env_value)
                     except ValueError:

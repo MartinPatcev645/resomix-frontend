@@ -17,10 +17,12 @@ Email: usman.naeem2212@gmail.com
 
 from fastapi import APIRouter, Depends, Path, Security, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.controllers.contact_controller import ContactController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_api_key, get_current_user_optional
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.contact import (
     ContactRequest,
     ContactSuccessResponse,
@@ -62,7 +64,8 @@ async def submit_contact(
     request: Request,
     contact_request: ContactRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Submit a contact form.
@@ -73,12 +76,12 @@ async def submit_contact(
     - **message**: Required - Contact message
     - **subject**: Optional - Subject line
     - **phone**: Optional - Phone number
-    - **user_id**: Optional - User ID for authenticated users
+    - **user_id**: Optional - User ID for authenticated users - overridden by JWT if present
     
     Returns success confirmation or validation errors.
     """
     contact_data = contact_request.dict()
-    return await contact_controller.submit_contact(db, request, contact_data)
+    return await contact_controller.submit_contact(db, request, contact_data, current_user)
 
 
 @router.get(
