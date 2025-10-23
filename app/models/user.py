@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # UserRole, Role, Permission models 
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey
 from sqlalchemy.orm import relationship
 from . import Base
 
@@ -111,20 +111,21 @@ class UserRole(Base):
     
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS user_roles (
-        user_id CHAR(36) NOT NULL,                 -- Supabase UUID string
+        user_id BIGINT UNSIGNED NOT NULL,
         role_id INT UNSIGNED NOT NULL,
         PRIMARY KEY (user_id, role_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "user_roles"
     
     # Composite primary key
-    user_id = Column(String(36), primary_key=True)  # Supabase UUID
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
     
     # Relationships
     role = relationship("Role", back_populates="user_roles")
     
     def __repr__(self):
-        return f"<UserRole(user_id='{self.user_id}', role_id={self.role_id})>" 
+        return f"<UserRole(user_id={self.user_id}, role_id={self.role_id})>"

@@ -1,11 +1,105 @@
--- ResomiX Database Schema
--- Initial migration - creates all tables
+/*
+Database Schema
+===============
 
-SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS role_permissions;
-DROP TABLE IF EXISTS permissions;
-DROP TABLE IF EXISTS roles;
-SET FOREIGN_KEY_CHECKS = 1;
+MariaDB schema definitions for the ResomiX Audio Similarity API.
+
+Version: 3.2.0           -- Auth: numeric user IDs (BIGINT), UUID kept as public id
+Init Date: June 11, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
+*/
+
+/* ===========================================================
+   ResomiX – Application DB  (MariaDB 10.5+ / InnoDB)
+   Internal primary keys: BIGINT UNSIGNED.
+   Public/external user id: users.uuid (CHAR(36)) unique.
+   =========================================================== */
+
+/* ---------- 0. Users & Auth Core -------------------------- */
+
+/* Primary user profile / credentials
+   - id: internal surrogate key (fast FKs)
+   - uuid: external/public stable id (keep existing UUIDs) */
+CREATE TABLE IF NOT EXISTS users (
+    id                     BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid                   CHAR(36) NOT NULL UNIQUE,          -- public id
+    username               VARCHAR(50)  NOT NULL UNIQUE,
+    email                  VARCHAR(100) NOT NULL UNIQUE,
+    password_hash          VARCHAR(255) NOT NULL,             -- salted hash (argon2/bcrypt)
+    name                   VARCHAR(100),
+    profile_picture        VARCHAR(255),
+    language               VARCHAR(10),
+    timezone               VARCHAR(50),
+    is_email_verified      TINYINT(1) DEFAULT 0,
+    is_two_factor_enabled  TINYINT(1) DEFAULT 0,
+    two_factor_method      ENUM('email','app') DEFAULT 'email',
+    created_at             DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at             DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_users_email (email),
+    KEY idx_users_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* One-time email verification tokens */
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    user_id     BIGINT UNSIGNED NOT NULL,
+    token       CHAR(36) NOT NULL,                 -- or longer random string
+    expires_at  DATETIME NOT NULL,
+    PRIMARY KEY (user_id),
+    UNIQUE KEY uk_evt_token (token),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* One-time password reset tokens */
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    user_id     BIGINT UNSIGNED NOT NULL,
+    token       CHAR(36) NOT NULL,
+    expires_at  DATETIME NOT NULL,
+    consumed_at DATETIME DEFAULT NULL,
+    PRIMARY KEY (user_id),
+    UNIQUE KEY uk_prt_token (token),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* 2FA via email codes (short-lived) */
+CREATE TABLE IF NOT EXISTS two_factor_email_codes (
+    user_id     BIGINT UNSIGNED NOT NULL,
+    code        VARCHAR(10) NOT NULL,             -- e.g., 6-digit code
+    purpose     ENUM('login','password_change') DEFAULT 'login',
+    expires_at  DATETIME NOT NULL,
+    consumed_at DATETIME DEFAULT NULL,
+    PRIMARY KEY (user_id, code),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* Optional: sessions/refresh tokens (device tracking / revocation) */
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id                 BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id            BIGINT UNSIGNED NOT NULL,
+    session_id         CHAR(36) NOT NULL UNIQUE,     -- or opaque random id
+    refresh_token_hash VARCHAR(255) DEFAULT NULL,
+    user_agent         VARCHAR(255),
+    ip_address         VARCHAR(45),
+    created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at         DATETIME DEFAULT NULL,
+    revoked_at         DATETIME DEFAULT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    KEY idx_sessions_user (user_id),
+    KEY idx_sessions_expires (expires_at),
+    KEY idx_sessions_revoked (revoked_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* OAuth / Social login links (e.g., Google) */
+CREATE TABLE IF NOT EXISTS user_auth_providers (
+    user_id       BIGINT UNSIGNED NOT NULL,
+    provider      VARCHAR(50) NOT NULL,            -- 'google', etc.
+    provider_uid  VARCHAR(100) NOT NULL,           -- external subject/id
+    PRIMARY KEY (user_id, provider),
+    UNIQUE KEY uk_provider_uid (provider, provider_uid),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* ---------- 1. RBAC (users / roles / permissions) ---------- */
 
 CREATE TABLE IF NOT EXISTS roles (
     id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -28,11 +122,14 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id CHAR(36) NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
     role_id INT UNSIGNED NOT NULL,
     PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id)  ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* ---------- 2. Catalog tables (artists, labels, genres) ---- */
 
 CREATE TABLE IF NOT EXISTS artists (
     id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -52,6 +149,8 @@ CREATE TABLE IF NOT EXISTS genres (
     name VARCHAR(80) NOT NULL,
     UNIQUE KEY uk_genre_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* ---------- 3. Albums & Tracks ---------------------------- */
 
 CREATE TABLE IF NOT EXISTS albums (
     id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -90,6 +189,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     KEY idx_track_key    (musical_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/* Many-to-many for track ↔ artists */
 CREATE TABLE IF NOT EXISTS track_artists (
     track_id  BIGINT UNSIGNED NOT NULL,
     artist_id INT UNSIGNED    NOT NULL,
@@ -98,16 +198,19 @@ CREATE TABLE IF NOT EXISTS track_artists (
     FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/* ---------- 4. Playlists & list contents ------------------ */
+
 CREATE TABLE IF NOT EXISTS playlists (
-    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    uuid        VARCHAR(36) NOT NULL UNIQUE,
-    user_id     CHAR(36),
-    name        VARCHAR(150) NOT NULL,
-    is_public   TINYINT(1) DEFAULT 0,
-    type        ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
+    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid          VARCHAR(36) NOT NULL UNIQUE,
+    user_id       BIGINT UNSIGNED,                 -- nullable (anon)
+    name          VARCHAR(150) NOT NULL,
+    is_public     TINYINT(1) DEFAULT 0,
+    type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
     seed_track_id BIGINT UNSIGNED,
-    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
     KEY idx_playlist_user (user_id),
     KEY idx_playlist_uuid (uuid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -122,6 +225,8 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     FOREIGN KEY (track_id)    REFERENCES tracks(id)    ON DELETE CASCADE,
     KEY idx_pt_track (track_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* ---------- 4.5 Playlist Transfer Tracks (External Platform Caching) ---------- */
 
 CREATE TABLE IF NOT EXISTS playlist_transfer_tracks (
     track_id        BIGINT UNSIGNED NOT NULL,
@@ -141,48 +246,58 @@ CREATE TABLE IF NOT EXISTS playlist_transfer_tracks (
     KEY idx_ptt_tidal (tidal_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/* ---------- 5. Billing (purchases + subscriptions) -------- */
+
 CREATE TABLE IF NOT EXISTS purchases (
     id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id      CHAR(36),
+    user_id      BIGINT UNSIGNED,                 -- nullable
     track_id     BIGINT UNSIGNED,
     album_id     INT UNSIGNED,
     price_cents  INT UNSIGNED,
     purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE RESTRICT,
     FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE RESTRICT,
+    FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
     KEY idx_purchase_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS user_subscriptions (
-    user_id                CHAR(36) PRIMARY KEY,
+    user_id                BIGINT UNSIGNED PRIMARY KEY,
     stripe_subscription_id VARCHAR(255) COLLATE utf8mb4_bin NOT NULL UNIQUE,
-    subscribed_at          DATETIME DEFAULT CURRENT_TIMESTAMP
+    subscribed_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/* ---------- 6. Ratings (track & playlist) ----------------- */
+
 CREATE TABLE IF NOT EXISTS track_ratings (
-    id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id   CHAR(36),
-    track_id  BIGINT UNSIGNED NOT NULL,
-    playlist_id BIGINT UNSIGNED NULL,
-    rating    TINYINT UNSIGNED,
-    rated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
-    FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+    id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT UNSIGNED,
+    track_id     BIGINT UNSIGNED NOT NULL,
+    playlist_id  BIGINT UNSIGNED NULL,
+    rating       TINYINT UNSIGNED,      -- 0/1 "dislike/like"
+    rated_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (track_id)    REFERENCES tracks(id)     ON DELETE CASCADE,
+    FOREIGN KEY (playlist_id) REFERENCES playlists(id)  ON DELETE CASCADE,
+    FOREIGN KEY (user_id)     REFERENCES users(id)      ON DELETE CASCADE,
     KEY idx_tr_user (user_id, track_id),
     KEY idx_tr_playlist (playlist_id),
     KEY idx_tr_user_track_playlist (user_id, track_id, playlist_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS playlist_ratings (
-    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id    CHAR(36),
-    playlist_id BIGINT UNSIGNED NOT NULL,
-    rating     TINYINT UNSIGNED,
-    message    TEXT NULL,
-    rated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT UNSIGNED,
+    playlist_id  BIGINT UNSIGNED NOT NULL,
+    rating       TINYINT UNSIGNED,     -- 0-3 stars
+    message      TEXT NULL,            -- Optional user message/feedback
+    rated_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE CASCADE,
     KEY idx_pr_user (user_id, playlist_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* ---------- 7. Logs & Feedback ---------------------------- */
 
 CREATE TABLE IF NOT EXISTS system_logs (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -207,7 +322,7 @@ CREATE TABLE IF NOT EXISTS system_logs (
     playlist_id     BIGINT UNSIGNED,
     album_id        INT UNSIGNED,
     artist_id       INT UNSIGNED,
-    log_metadata    JSON DEFAULT NULL COMMENT 'Additional structured data',
+    log_metadata    JSON DEFAULT NULL,
     stack_trace     TEXT,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     KEY idx_syslog_level (level),
@@ -225,36 +340,40 @@ CREATE TABLE IF NOT EXISTS system_logs (
     KEY idx_syslog_level_created (level, created_at),
     KEY idx_syslog_category_created (category, created_at),
     KEY idx_syslog_endpoint_status (endpoint, status_code),
-    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE SET NULL,
+    FOREIGN KEY (track_id)    REFERENCES tracks(id)    ON DELETE SET NULL,
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE SET NULL,
-    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
-    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE SET NULL
+    FOREIGN KEY (album_id)    REFERENCES albums(id)    ON DELETE SET NULL,
+    FOREIGN KEY (artist_id)   REFERENCES artists(id)   ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS feedback (
-    id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id   CHAR(36),
-    category  VARCHAR(50),
-    message   TEXT,
-    satisfaction INT UNSIGNED,
+    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id       BIGINT UNSIGNED,
+    category      VARCHAR(50),
+    message       TEXT,
+    satisfaction  INT UNSIGNED,
     recommendation INT UNSIGNED,
-    status    ENUM('open','resolved') DEFAULT 'open',
-    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status        ENUM('open','resolved') DEFAULT 'open',
+    submitted_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     KEY idx_fb_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS contact (
-    id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id   CHAR(36),
-    name      VARCHAR(100),
-    email     VARCHAR(100),
-    subject   VARCHAR(150),
-    phone     VARCHAR(20),
-    message   TEXT,
-    status    ENUM('open','resolved') DEFAULT 'open',
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT UNSIGNED,
+    name        VARCHAR(100),
+    email       VARCHAR(100),
+    subject     VARCHAR(150),
+    phone       VARCHAR(20),
+    message     TEXT,
+    status      ENUM('open','resolved') DEFAULT 'open',
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     KEY idx_fb_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* ---------- 8. Waitlist ---------------------------- */
 
 CREATE TABLE IF NOT EXISTS waitlist (
     id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -265,4 +384,3 @@ CREATE TABLE IF NOT EXISTS waitlist (
     KEY idx_waitlist_email (email),
     KEY idx_waitlist_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-

@@ -28,13 +28,14 @@ class Purchase(Base):
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS purchases (
         id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id      CHAR(36),                      -- nullable
+        user_id      BIGINT UNSIGNED,                 -- nullable
         track_id     BIGINT UNSIGNED,
         album_id     INT UNSIGNED,
         price_cents  INT UNSIGNED,
         purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE RESTRICT,
         FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE RESTRICT,
+        FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
         KEY idx_purchase_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
@@ -44,7 +45,7 @@ class Purchase(Base):
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     
     # Fields
-    user_id = Column(String(36), nullable=True, index=True)  # Supabase UUID, nullable
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     price_cents = Column(Integer, nullable=True)
     
     # Foreign keys (both nullable - either track OR album purchase)
@@ -68,15 +69,16 @@ class UserSubscription(Base):
     
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS user_subscriptions (
-        user_id                CHAR(36) PRIMARY KEY,   -- must be non-NULL here
+        user_id                BIGINT UNSIGNED PRIMARY KEY,
         stripe_subscription_id VARCHAR(255) COLLATE utf8mb4_bin NOT NULL UNIQUE,
-        subscribed_at          DATETIME DEFAULT CURRENT_TIMESTAMP
+        subscribed_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "user_subscriptions"
     
     # Primary key
-    user_id = Column(String(36), primary_key=True)  # Supabase UUID, NOT NULL
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     
     # Fields
     stripe_subscription_id = Column(String(255), nullable=False, unique=True)
@@ -85,4 +87,4 @@ class UserSubscription(Base):
     subscribed_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
     
     def __repr__(self):
-        return f"<UserSubscription(user_id='{self.user_id}', stripe_subscription_id='{self.stripe_subscription_id}')>" 
+        return f"<UserSubscription(user_id={self.user_id}, stripe_subscription_id='{self.stripe_subscription_id}')>"

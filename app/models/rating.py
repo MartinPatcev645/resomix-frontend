@@ -28,15 +28,18 @@ class TrackRating(Base):
     
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS track_ratings (
-        id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id   CHAR(36),
-        track_id  BIGINT UNSIGNED NOT NULL,
-        playlist_id BIGINT UNSIGNED NULL,
-        rating    TINYINT UNSIGNED,      -- 0/1 "dislike/like"
-        rated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
-        FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
-        KEY idx_tr_user (user_id, track_id)
+        id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id      BIGINT UNSIGNED,
+        track_id     BIGINT UNSIGNED NOT NULL,
+        playlist_id  BIGINT UNSIGNED NULL,
+        rating       TINYINT UNSIGNED,      -- 0/1 "dislike/like"
+        rated_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (track_id)    REFERENCES tracks(id)     ON DELETE CASCADE,
+        FOREIGN KEY (playlist_id) REFERENCES playlists(id)  ON DELETE CASCADE,
+        FOREIGN KEY (user_id)     REFERENCES users(id)      ON DELETE CASCADE,
+        KEY idx_tr_user (user_id, track_id),
+        KEY idx_tr_playlist (playlist_id),
+        KEY idx_tr_user_track_playlist (user_id, track_id, playlist_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "track_ratings"
@@ -45,7 +48,7 @@ class TrackRating(Base):
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     
     # Fields
-    user_id = Column(String(36), nullable=True)  # Supabase UUID, nullable for anonymous
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     rating = Column(SmallInteger, nullable=True)  # 0/1 for dislike/like
     
     # Foreign keys
@@ -75,13 +78,14 @@ class PlaylistRating(Base):
     
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS playlist_ratings (
-        id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id    CHAR(36),
-        playlist_id BIGINT UNSIGNED NOT NULL,
-        rating     TINYINT UNSIGNED,     -- 0-3 stars
-        message    TEXT NULL,            -- Optional user message/feedback
-        rated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+        id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id      BIGINT UNSIGNED,
+        playlist_id  BIGINT UNSIGNED NOT NULL,
+        rating       TINYINT UNSIGNED,     -- 0-3 stars
+        message      TEXT NULL,            -- Optional user message/feedback
+        rated_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE CASCADE,
         KEY idx_pr_user (user_id, playlist_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
@@ -91,7 +95,7 @@ class PlaylistRating(Base):
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     
     # Fields
-    user_id = Column(String(36), nullable=True)  # Supabase UUID, nullable for anonymous
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     rating = Column(SmallInteger, nullable=True)  # 0-3 stars
     message = Column(Text, nullable=True)  # Optional user message/feedback
     

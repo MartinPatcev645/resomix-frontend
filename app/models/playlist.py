@@ -28,15 +28,16 @@ class Playlist(Base):
     
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS playlists (
-        id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        uuid        VARCHAR(36) NOT NULL UNIQUE,
-        user_id     CHAR(36),                         -- nullable (anon)
-        name        VARCHAR(100) NOT NULL,
-        is_public   TINYINT(1) DEFAULT 0,
-        type        ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
+        id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        uuid          VARCHAR(36) NOT NULL UNIQUE,
+        user_id       BIGINT UNSIGNED,                 -- nullable (anon)
+        name          VARCHAR(150) NOT NULL,
+        is_public     TINYINT(1) DEFAULT 0,
+        type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
         seed_track_id BIGINT UNSIGNED,
-        created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
+        FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
         KEY idx_playlist_user (user_id),
         KEY idx_playlist_uuid (uuid)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -50,7 +51,7 @@ class Playlist(Base):
     uuid = Column(String(36), nullable=False, unique=True, index=True)
     
     # Fields
-    user_id = Column(String(36), nullable=True, index=True)  # Supabase UUID, nullable for anonymous
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     name = Column(String(150), nullable=False)
     is_public = Column(Boolean, nullable=False, default=False)
     type = Column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')
