@@ -1,11 +1,10 @@
-export { API_CONFIG, TIDAL_CONFIG } from "./config";
-export type { ApiConfig, TidalConfig } from "./config";
+export { API_CONFIG } from "./config";
+export type { ApiConfig } from "./config";
 export * from "./similarity";
 export * from "./search";
 export * from "./feedback";
 export * from "./audio";
 export * from "./playlists";
-export * from "./tidal";
 export * from "./peaks";
 export * from "./waitlist";
 export * from "./admin/feedback";

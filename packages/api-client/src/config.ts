@@ -5,6 +5,7 @@ export interface ApiConfig {
   MAX_FILE_SIZE: number;
   ALLOWED_AUDIO_TYPES: string[];
   ENDPOINTS: {
+    // beta endpoints
     SIMILARITY: string;
     SELECTION_SIMILARITY: string;
     SEARCH: string;
@@ -16,9 +17,6 @@ export interface ApiConfig {
     PLAYLIST_SIMILARITY: string;
     TRACK_RATING: string;
     PLAYLIST_RATING: string;
-    SPOTIFY_TRANSFER: string;
-    TIDAL_AUTH_TOKEN: string;
-    TIDAL_TRANSFER: string;
     PLAYLIST_SIMILARITY_HLS: string;
     WAITLIST: string;
     SEGMENT_STATUS: string;
@@ -45,6 +43,10 @@ export interface ApiConfig {
     ADMIN_PLAYLIST_BATCH_DELETE: string;
     ADMIN_PLAYLIST_EXPORT: string;
     ADMIN_PLAYLIST_DETAILS: string;
+    // unused beta endpoints
+    // SPOTIFY_TRANSFER: string;
+    // TIDAL_AUTH_TOKEN: string;
+    // TIDAL_TRANSFER: string;
   };
 }
 
@@ -83,6 +85,7 @@ export const API_CONFIG: ApiConfig = {
     "audio/x-aiff",
   ],
   ENDPOINTS: {
+    // beta endpoints
     SIMILARITY: "/get_similarity/",
     SELECTION_SIMILARITY: "/get_selection_similarity/",
     SEARCH: "/search_tracks/",
@@ -94,9 +97,6 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_SIMILARITY: "/playlists/similarity/",
     TRACK_RATING: "/ratings/tracks/",
     PLAYLIST_RATING: "/ratings/playlists/",
-    SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
-    TIDAL_AUTH_TOKEN: "/tidal/auth/token", // no trailing slash
-    TIDAL_TRANSFER: "/tidal/transfer-playlist/",
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     WAITLIST: "/waitlist/",
     SEGMENT_STATUS: "/segment_status/",
@@ -123,9 +123,19 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PLAYLIST_BATCH_DELETE: "/admin/playlist/batch-delete",
     ADMIN_PLAYLIST_EXPORT: "/admin/playlist/export",
     ADMIN_PLAYLIST_DETAILS: "/admin/playlist/",
+    // Unused beta endpoints
+    // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
+    // TIDAL_AUTH_TOKEN: "/tidal/auth/token",
+    // TIDAL_TRANSFER: "/tidal/transfer-playlist/",
   },
 };
 
+
+
+
+
+/*
+// Spotify configuration
 export const SPOTIFY_CONFIG = {
   CLIENT_ID: getEnv("VITE_SPOTIFY_CLIENT_ID") || '9df225a14080472c8c4ea5fc85b3eb6b',
   // REDIRECT_URI: `${window.location.origin}/test`, // Callback URL
@@ -137,7 +147,6 @@ export const SPOTIFY_CONFIG = {
 };
 
 // Tidal configuration
-/*
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'AxOkLsNxSDQ8InZU',
   // REDIRECT_URI: 'https://beta.resomix.com/test',
@@ -146,9 +155,7 @@ export const TIDAL_CONFIG = {
   AUTH_URL: 'https://login.tidal.com/authorize',
   AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
 };
- */
 
-/**/
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'ds7LnGkxqwFXUE6s',
   REDIRECT_URI: 'https://stack.resomix.com/tidal-redirect',
@@ -157,4 +164,4 @@ export const TIDAL_CONFIG = {
   TIDAL_AUTH_TOKEN: '/tidal/auth/token'
 
 };
-/**/
+*/

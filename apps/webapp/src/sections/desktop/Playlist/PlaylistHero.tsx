@@ -2,7 +2,7 @@ import React from "react";
 import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
 import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename /*, PlaylistExportWithIntegrations */} from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -15,9 +15,6 @@ import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL } from "@resomix/config";
-import DownloadExportModal from "@/components/Modals/DownloadExportModal.js";
-// import SpotifyExportModal from "@/components/Modals/SpotifyExportModal.js";
-// import TidalExportModal from "@/components/Modals/TidalExportModal.js";
 
 const InputTrackStatus = "Loading..."
 
@@ -26,20 +23,15 @@ const PlaylistHero: React.FC = () => {
   const [showRating, setShowRating] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
+  const [showExport, setShowExport] = React.useState(false);
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
-  const showExportMenu = false;
-  // const [showExportMenu, setShowExportMenu] = React.useState(false); // kept for easy revert
-  const [exportProvider, setExportProvider] = React.useState<'spotify' | 'tidal' | 'download' | null>(null);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
-
-  // const exportMenuRef = React.useRef<HTMLDivElement | null>(null); // kept for easy revert
-  const exportBtnWrapperRef = React.useRef<HTMLDivElement | null>(null); // kept for easy revert
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -50,68 +42,17 @@ const PlaylistHero: React.FC = () => {
 
   const handleRenameClose = () => setShowRename(false);
   const handleRatingClose = () => setShowRating(false);
-  const handleExportClose = () => {
-    setExportProvider(null);
-  };
+  const handleExportClose = () => setShowExport(false);
   const handleStatusClose = () => setShowStatus(false);
 
-  // On Export click, open Download modal immediately (dropdown and other providers temporarily disabled)
-  const handleExportButtonClick = () => {
-    if (isExporting) return;
+  const handleExportClick = () => {
     if (!canExport) {
       handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
       return;
     }
-    setExportProvider('download'); // Open Download popup directly
-    // setShowExportMenu((v) => !v); // Disabled: we don't use the dropdown right now
+    setShowExport(true);
   };
 
-  /*
-  const handleExportSelect = (provider: 'spotify' | 'tidal' | 'download') => {
-    setExportProvider(provider);
-    setShowExportMenu(false);
-  };
-   */
-
-  // Temporarily disable outside click/ESC handling for the dropdown menu, since it is not used now.
-  /*
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        showExportMenu &&
-        exportMenuRef.current &&
-        exportBtnWrapperRef.current &&
-        !exportMenuRef.current.contains(target) &&
-        !exportBtnWrapperRef.current.contains(target)
-      ) {
-        setShowExportMenu(false);
-      }
-    };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowExportMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEsc);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [showExportMenu]);
-  */
-
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('share') === 'true') {
-      if (canExport) {
-        setExportProvider('download');
-      } else {
-        handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
-      }
-    }
-  }, [canExport]);
 
   return (
     <div className="relative">
@@ -194,67 +135,19 @@ const PlaylistHero: React.FC = () => {
                   />
                 </Tooltip>
 
-                {/* Export button (opens Download modal directly) */}
-                <div className="relative" ref={exportBtnWrapperRef}>
-                  <Tooltip message="Export Playlist">
-                    <IconButton
-                      text={isExporting ? "Exporting..." : "Export"}
-                      transparent={true}
-                      customWidth="min-w-[var(--px-100)]"
-                      onClick={handleExportButtonClick}
-                      disabled={isExporting}
-                      icon={<img src={ExportSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      hoverIcon={<img src={ExportBlackSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      className="playlist-action-button"
-                      id="playlist-hero-export-button"
-                      aria-haspopup="menu"
-                      aria-expanded={showExportMenu} // remains false; dropdown is disabled
-                    />
-                  </Tooltip>
-
-                  {/* Export dropdown temporarily disabled; we open Download modal directly on button click */}
-                  {/*
-                  {showExportMenu && (
-                    <div
-                      ref={exportMenuRef}
-                      role="menu"
-                      aria-label="Export options"
-                      className="absolute right-0 top-[calc(100%+var(--px-4))] z-30 w-[var(--px-180)] bg-[var(--color-secondary-background)] border border-dotted border-slate-200 shadow-sm"
-                      id="playlist-hero-export-menu"
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => handleExportSelect('spotify')}
-                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-primary)] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-0-25)] uppercase"
-                        id="playlist-hero-export-item-spotify"
-                      >
-                        Spotify
-                      </button>
-                      <div className="border-t border-dotted border-slate-200" />
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => handleExportSelect('tidal')}
-                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-primary)] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-0-25)] uppercase"
-                        id="playlist-hero-export-item-tidal"
-                      >
-                        Tidal
-                      </button>
-                      <div className="border-t border-dotted border-slate-200" />
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => handleExportSelect('download')}
-                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-primary)] text-[length:var(--px-9)] font-light font-fira tracking-[var(--px-0-25)] uppercase"
-                        id="playlist-hero-export-item-download"
-                      >
-                        Download
-                      </button>
-                    </div>
-                  )}
-                  */}
-                </div>
+                <Tooltip message="Export Playlist to TXT file">
+                  <IconButton
+                    text={isExporting ? "Exporting..." : "Export"}
+                    transparent={true}
+                    customWidth="min-w-[var(--px-100)]"
+                    onClick={handleExportClick}
+                    disabled={isExporting}
+                    icon={<img src={ExportSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    className="playlist-action-button"
+                    id="playlist-hero-export-button"
+                  />
+                </Tooltip>
               </div>
             </div>
 
@@ -390,36 +283,11 @@ const PlaylistHero: React.FC = () => {
         onStatusChange={handleStatusChange}
       />
 
-      {/* Temporarily disable the old export flow (integrations wrapper) */}
-      {/*
-      <PlaylistExportWithIntegrations
-        isOpen={false}
+      <PlaylistExport
+        isOpen={showExport}
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}
       />
-      */}
-
-      {/* Download popup opens directly when clicking Export */}
-      <DownloadExportModal
-        isOpen={exportProvider === 'download'}
-        onClose={handleExportClose}
-        onStatusChange={handleStatusChange}
-      />
-
-      {/* Temporarily disable Spotify and Tidal export modals */}
-      {/*
-      <SpotifyExportModal
-        isOpen={exportProvider === 'spotify'}
-        onClose={handleExportClose}
-        onStatusChange={handleStatusChange}
-      />
-
-      <TidalExportModal
-        isOpen={exportProvider === 'tidal'}
-        onClose={handleExportClose}
-        onStatusChange={handleStatusChange}
-      />
-      */}
 
       {/* Status Message */}
       <StatusMessage
