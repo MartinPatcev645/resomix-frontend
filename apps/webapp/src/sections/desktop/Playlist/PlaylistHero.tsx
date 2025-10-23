@@ -2,7 +2,7 @@ import React from "react";
 import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
 import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExportWithIntegrations } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -28,8 +28,8 @@ const PlaylistHero: React.FC = () => {
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
+
   const { playlistData, isLoading, error } = usePlaylistStore();
-  // const { uploadedUrl } = usePlayerStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
 
@@ -40,21 +40,10 @@ const PlaylistHero: React.FC = () => {
     setShowStatus(true);
   };
 
-  const handleRenameClose = () => {
-    setShowRename(false);
-  };
-
-  const handleRatingClose = () => {
-    setShowRating(false);
-  };
-
-  const handleExportClose = () => {
-    setShowExport(false);
-  };
-
-  const handleStatusClose = () => {
-    setShowStatus(false);
-  };
+  const handleRenameClose = () => setShowRename(false);
+  const handleRatingClose = () => setShowRating(false);
+  const handleExportClose = () => setShowExport(false);
+  const handleStatusClose = () => setShowStatus(false);
 
   const handleExportClick = () => {
     if (!canExport) {
@@ -64,12 +53,6 @@ const PlaylistHero: React.FC = () => {
     setShowExport(true);
   };
 
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('share') === 'true') {
-      setShowExport(true);
-    }
-  }, []);
 
   return (
     <div className="relative">
@@ -109,10 +92,10 @@ const PlaylistHero: React.FC = () => {
           <div></div>
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
-              <a 
+              <a
                 aria-label="Generate track similarity"
-                href={BASE_BETA_URL} 
-                className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link" 
+                href={BASE_BETA_URL}
+                className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
                 id="playlist-hero-back-link"
               >
                 <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
@@ -151,6 +134,7 @@ const PlaylistHero: React.FC = () => {
                     id="playlist-hero-share-button"
                   />
                 </Tooltip>
+
                 <Tooltip message="Export Playlist to TXT file">
                   <IconButton
                     text={isExporting ? "Exporting..." : "Export"}
@@ -158,14 +142,15 @@ const PlaylistHero: React.FC = () => {
                     customWidth="min-w-[var(--px-100)]"
                     onClick={handleExportClick}
                     disabled={isExporting}
-                    icon={<img src={ExportSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={ExportBlackSvg} draggable={false} aria-label="Export" alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    icon={<img src={ExportSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                     className="playlist-action-button"
                     id="playlist-hero-export-button"
                   />
                 </Tooltip>
               </div>
             </div>
+
             <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
               <div className="flex items-start gap-[var(--px-30)]">
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
@@ -176,11 +161,11 @@ const PlaylistHero: React.FC = () => {
                       <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)]" />
                     )}
                   </div>
-                  <button 
+                  <button
                     type="button"
                     name="Rate this playlist"
-                    onClick={() => setShowRating(true)} 
-                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button" 
+                    onClick={() => setShowRating(true)}
+                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button"
                     id="playlist-hero-rating-button"
                     aria-label="Rate this playlist"
                     aria-expanded={showRating}
@@ -236,7 +221,7 @@ const PlaylistHero: React.FC = () => {
                       <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
                         <button
                           type="button"
-                          onClick={() => setShowMeta((v) => !v)} 
+                          onClick={() => setShowMeta((v) => !v)}
                           aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
                           aria-expanded={showMeta}
                           className="hover:cursor-pointer playlist-meta-toggle"
@@ -263,8 +248,8 @@ const PlaylistHero: React.FC = () => {
                     <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
                     {/* The actual Input player */}
                     {playlistData?.queried_track.id && (
-                      <InputPlayer 
-                        trackId={playlistData.queried_track.id} 
+                      <InputPlayer
+                        trackId={playlistData.queried_track.id}
                         totalDuration={playlistData.queried_track.duration ?? 0}
                         playButtonDataAttributes={{
                           'data-testid': 'play-button',
@@ -297,7 +282,8 @@ const PlaylistHero: React.FC = () => {
         onClose={handleRenameClose}
         onStatusChange={handleStatusChange}
       />
-      <PlaylistExportWithIntegrations
+
+      <PlaylistExport
         isOpen={showExport}
         onClose={handleExportClose}
         onStatusChange={handleStatusChange}

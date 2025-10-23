@@ -106,9 +106,8 @@ class HlsPlaylistController implements AudioController {
 
     if (!this.tracks.length) this.initPlaylist();
 
-    // Ensure HLS not in error state
-    if (this.hls && (this.hls.currentLevel === -1 || this.hls.media === null)) {
-      this.scheduleRetry(false);
+    if (!navigator.onLine) {
+      this.scheduleColdRetry('offline');
     }
 
     this.ensureHlsLoaded();
@@ -188,6 +187,7 @@ class HlsPlaylistController implements AudioController {
   unload = () => {
     this.wantPlaying = false;
     this.clearRetry();
+    this.clearColdRetry();
     setNetworkErrorFlag(false);
     this.audio.pause();
 
@@ -277,6 +277,12 @@ class HlsPlaylistController implements AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
+        // only for testing
+        /*
+        maxBufferLength: 1,
+        maxMaxBufferLength: 1,
+        maxBufferSize: 1,
+        /**/
       });
       this.hls.loadSource(this.playlistUrl);
       this.hls.attachMedia(this.audio);
@@ -331,13 +337,26 @@ class HlsPlaylistController implements AudioController {
       msSetPlaybackState('playing');
     });
     this.audio.addEventListener('pause', () => {
-      // keep silent, state handled in pause()
+      // keep silent
     });
+
     this.audio.addEventListener('canplaythrough', () => {
       setNetworkErrorFlag(false);
+      this.clearColdRetry();
+      this.clearRetry();
     });
-    this.audio.addEventListener('canplay', () => setNetworkErrorFlag(false));
-    this.audio.addEventListener('playing', () => setNetworkErrorFlag(false));
+
+    this.audio.addEventListener('canplay', () => {
+      setNetworkErrorFlag(false);
+      this.clearColdRetry();
+      this.clearRetry();
+    });
+
+    this.audio.addEventListener('playing', () => {
+      setNetworkErrorFlag(false);
+      this.clearColdRetry();
+      this.clearRetry();
+    });
 
     this.audio.addEventListener('seeking', () => {
       this.isSeeking = true;

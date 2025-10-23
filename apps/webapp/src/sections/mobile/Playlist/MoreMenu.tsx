@@ -6,14 +6,11 @@ import { rateTrack } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport } from "@resomix/hooks";
+import { getTrackRating, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
 interface MoreMenuProps {
     onClose?: () => void;
     trackId?: string;
-    /**
-     * Marks this track as the original input (reference) track.  
-     * When true we hide actions that don't make sense for the input track (e.g. "Start Sonic Discovery on this Track").
-     */
     isInput?: boolean;
     name?: string;
     label?: string;
@@ -26,17 +23,24 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     const [exportButtonText, setExportButtonText] = React.useState("Export Playlist");
 
+    React.useEffect(() => {
+        if (!trackId) return;
+        const localRating = getTrackRating(trackId);
+        if (localRating !== undefined && trackRatings[trackId] === undefined) {
+            setTrackRating(trackId, localRating);
+        }
+    }, [trackId, trackRatings, setTrackRating]);
+
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
 
         try {
             const playlistId = playlistData?.playlist.id || null;
             setTrackRating(trackId, rating);
+            saveTrackRating(trackId, rating);
             await rateTrack(trackId, rating, playlistId);
-            // Success notification could go here if needed
         } catch (error) {
             console.error('Failed to rate track:', error);
-            // You could add an error notification here if needed
         }
     };
 
@@ -47,7 +51,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
             const result = await exportAndDownloadPlaylist();
 
             if (result.success) {
-                // Change button text and revert after 2 seconds
                 setExportButtonText("Downloaded!");
                 setTimeout(() => {
                     setExportButtonText("Export Playlist");
@@ -58,7 +61,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
         }
     };
 
-    // Preserve scroll position when opening menu
     React.useEffect(() => {
         const scrollY = window.scrollY;
         document.body.style.position = 'fixed';
@@ -107,7 +109,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                 </div>
                             )}
 
-                            {/* Hide Similar rating section for the input/reference track */}
                             {!isInput && (
                                 <div className="flex w-full justify-between mt-[var(--px-20)]">
                                     <div className="text-left text-[length:var(--px-14)] font-light font-fira">Similar:</div>
@@ -165,7 +166,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         </dl>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
-                        {/* Hide discovery button if this is the input/reference track */}
                         {!isInput && (
                             <div className="w-full">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
@@ -173,7 +173,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
                             </div>
                         )}
-                        {/* Hide Export button if this is not the input/reference track */}
                         {isInput && (
                             <div className="w-full">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
@@ -184,7 +183,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         </div>
                     </div>
                 </div>
-
             </div>
         </div >
     );

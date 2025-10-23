@@ -15,7 +15,6 @@ const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
-const SpotifyRedirect = lazy(()=>import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
@@ -77,7 +76,6 @@ function App() {
           <Route path="/test" element={<TestPage />} />
           <Route path="/test-two" element={<TestTwo />} />
           <Route path="/player" element={<PlayerPage />} />
-          <Route path="/spotify-redirect" element={<SpotifyRedirect />} />
           <Route path="*" element={<InfoPage mode="404" />} />
         </Routes>
       </Suspense>
