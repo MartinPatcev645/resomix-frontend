@@ -39,12 +39,12 @@ export const PopularComponentMobile: React.FC<{ onTrackSelect?: (track: SearchRe
                                 key={track.id}
                                 type="button"
                                 id={`popular-track-${track.id}`}
-                                className="group w-full h-[var(--px-70)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-auto flex justify-between items-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] transition-colors"
+                                className="group w-full h-[var(--px-70)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-auto flex justify-between items-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] transition-colors popular-track-button"
                                 onClick={() => onTrackSelect?.(track)}
                                 aria-label={`Play ${track.title} by ${track.artist}, ${track.duration}`}
                             >
                                 <div className="flex items-center gap-[var(--px-30)] ml-[var(--px-30)]">
-                                    <span className="relative w-[var(--px-12)] h-[var(--px-12)] inline-block">
+                                    <span className="relative w-[var(--px-12)] h-[var(--px-12)] inline-block popular-track-button">
                                         <img
                                             src={soundWhiteIcon}
                                             alt=""
@@ -59,15 +59,15 @@ export const PopularComponentMobile: React.FC<{ onTrackSelect?: (track: SearchRe
                                         />
                                     </span>
                                     <div className="flex flex-col items-start">
-                                        <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-15)] font-helvetica leading-[var(--px-20)] font-light tracking-[var(--px-1)] uppercase">
+                                        <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-15)] font-helvetica leading-[var(--px-20)] font-light tracking-[var(--px-1)] uppercase popular-track-button">
                                             {track.title}
                                         </div>
-                                        <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-12)] font-fira leading-[var(--px-18)] font-light tracking-[var(--px-1)]">
+                                        <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] transition-colors text-[length:var(--px-12)] font-fira leading-[var(--px-18)] font-light tracking-[var(--px-1)] popular-track-button">
                                             {track.artist}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] group-hover:opacity-100 transition-colors text-[length:var(--px-12)] font-fira font-light opacity-70 mr-[var(--px-16)]">
+                                <div className="text-[var(--color-primary)] group-hover:text-[color:var(--color-text-primary)] group-hover:opacity-100 transition-colors text-[length:var(--px-12)] font-fira font-light opacity-70 mr-[var(--px-16)] popular-track-button">
                                     {track.duration}
                                 </div>
                             </button>
