@@ -60,7 +60,7 @@ class EmailService:
             True if sent successfully
         """
         verification_url = (
-            f"{settings.frontend_url}/verify-email?token={verification_token}"
+            f"{settings.frontend_url}/auth/verify-email?token={verification_token}"
         )
 
         # Render template
@@ -100,7 +100,7 @@ class EmailService:
         Returns:
             True if sent successfully
         """
-        reset_url = f"{settings.frontend_url}/reset-password?token={reset_token}"
+        reset_url = f"{settings.frontend_url}/auth/reset-password?token={reset_token}"
 
         # Render template
         template = jinja_env.get_template("password_reset.html")
