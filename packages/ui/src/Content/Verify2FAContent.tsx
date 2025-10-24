@@ -237,7 +237,7 @@ export default function Verify2FAContent({
               </p>
             </div>
 
-            <div className="mt-[var(--px-10)]">
+            <div className="mt-[var(--px-10)] flex justify-center">
               <ButtonSleek
                 text={submitting ? "Verifying..." : "Verify Code"}
                 onClick={handleSubmit}

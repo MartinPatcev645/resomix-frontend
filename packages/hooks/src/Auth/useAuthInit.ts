@@ -1,17 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@resomix/stores';
 import { getMyProfile } from '@resomix/api-client';
 
 /**
  * Initialize authentication state on app load
- * Verifies token validity and refreshes user data
+ * Verifies token validity only when necessary
+ * Prevents redundant /me API calls
  */
 export const useAuthInit = () => {
-  const { isAuthenticated, user, setUser, logout } = useAuthStore();
+  const { isAuthenticated, user, setUser, logout, accessToken } = useAuthStore();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
+    // Prevent double initialization in React StrictMode
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     const initAuth = async () => {
       // If not authenticated, just mark as initialized immediately
       if (!isAuthenticated) {
@@ -20,18 +26,21 @@ export const useAuthInit = () => {
         return;
       }
 
-      // If we already have user data in store, show app immediately
-      // and verify token in background
+      // If we already have user data in store, trust it and show app immediately
+      // Don't make unnecessary API calls - the authClient interceptor will handle
+      // token refresh if needed when the user actually makes requests
       if (user) {
         setIsInitialized(true);
         setIsLoading(false);
         
-        // Verify token in background (non-blocking)
-        verifyTokenInBackground();
+        // Only verify token if it's close to expiration
+        if (shouldVerifyToken(accessToken)) {
+          verifyTokenInBackground();
+        }
         return;
       }
 
-      // No user data yet - fetch it (first load)
+      // No user data yet - fetch it (first load after login)
       try {
         const response = await getMyProfile();
         
@@ -46,6 +55,23 @@ export const useAuthInit = () => {
       } finally {
         setIsInitialized(true);
         setIsLoading(false);
+      }
+    };
+
+    const shouldVerifyToken = (token: string | null): boolean => {
+      if (!token) return false;
+
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Convert to milliseconds
+        const now = Date.now();
+        const timeUntilExpiry = exp - now;
+        const oneHour = 60 * 60 * 1000;
+
+        // Only verify if token expires in less than 1 hour
+        return timeUntilExpiry < oneHour && timeUntilExpiry > 0;
+      } catch {
+        return false;
       }
     };
 

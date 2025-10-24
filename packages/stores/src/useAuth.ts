@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '@resomix/api-client';
+import { hybridStorage, deleteCookie } from './cookieStorage';
 
 interface AuthState {
   // State
@@ -60,10 +61,14 @@ const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         });
-        // Clear localStorage - use the correct key from persist config
-        localStorage.removeItem('resomix-auth-storage');
-        // Also clear any email verification banner dismissal
-        localStorage.removeItem('email_verification_banner_dismissed');
+        // Clear both localStorage and cookies
+        try {
+          localStorage.removeItem('resomix-auth-storage');
+          localStorage.removeItem('email_verification_banner_dismissed');
+        } catch (e) {
+          console.warn('localStorage not available:', e);
+        }
+        deleteCookie('resomix-auth-storage');
       },
 
       // Update user fields
@@ -96,7 +101,7 @@ const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'resomix-auth-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => hybridStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
