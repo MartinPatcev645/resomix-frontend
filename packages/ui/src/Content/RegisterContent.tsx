@@ -94,7 +94,7 @@ export default function RegisterContent({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setValue(name as keyof typeof form, value);
-    
+
     // Clear confirmPassword error when either password field changes
     if (name === "password" || name === "confirmPassword") {
       setConfirmPasswordError(undefined);
@@ -120,7 +120,7 @@ export default function RegisterContent({
     // Validate terms and privacy checkboxes
     const termsResult = validateCheckbox(termsAccepted, "You must accept the Terms of Service");
     const privacyResult = validateCheckbox(privacyAccepted, "You must accept the Privacy Policy");
-    
+
     if (!termsResult.isValid || !privacyResult.isValid) {
       setTermsError("Please accept the Terms of Service and Privacy Policy");
       return false;
@@ -156,7 +156,7 @@ export default function RegisterContent({
         setStatusMessage(
           "Account created successfully! Please check your email to verify your account."
         );
-        
+
         // Clear form
         setFormValues({
           email: "",
@@ -203,7 +203,7 @@ export default function RegisterContent({
             <a
               href={baseUrl}
               aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
+              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
             >
               ← Back to Home
             </a>
@@ -307,11 +307,11 @@ export default function RegisterContent({
                     setTermsAccepted(e.target.checked);
                     if (e.target.checked && privacyAccepted) setTermsError(undefined);
                   }}
-                  className="mt-[var(--px-4)] cursor-pointer"
+                  className="mt-[var(--px-1)] cursor-pointer"
                 />
                 <label
                   htmlFor="terms"
-                  className="text-[length:var(--px-11)] font-light font-helvetica cursor-pointer"
+                  className="text-[length:var(--px-11)] font-light font-helvetica cursor-pointer leading-relaxed"
                 >
                   I agree to the{" "}
                   <a
@@ -334,11 +334,11 @@ export default function RegisterContent({
                     setPrivacyAccepted(e.target.checked);
                     if (e.target.checked && termsAccepted) setTermsError(undefined);
                   }}
-                  className="mt-[var(--px-4)] cursor-pointer"
+                  className="mt-[var(--px-1)] cursor-pointer"
                 />
                 <label
                   htmlFor="privacy"
-                  className="text-[length:var(--px-11)] font-light font-helvetica cursor-pointer"
+                  className="text-[length:var(--px-11)] font-light font-helvetica cursor-pointer leading-relaxed"
                 >
                   I agree to the{" "}
                   <a
@@ -359,7 +359,7 @@ export default function RegisterContent({
               )}
             </div>
 
-            <div className="mt-[var(--px-10)]">
+            <div className="mt-[var(--px-10)] flex justify-center">
               <ButtonSleek
                 text={submitting ? "Creating Account..." : "Create Account"}
                 onClick={handleSubmit}
@@ -373,7 +373,7 @@ export default function RegisterContent({
               <button
                 type="button"
                 onClick={onNavigateLogin}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Sign in here
               </button>

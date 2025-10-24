@@ -91,7 +91,7 @@ export default function LoginContent({
           );
           setStatusType("success");
           setStatusMessage("Login successful! Redirecting...");
-          
+
           // Call success callback
           setTimeout(() => {
             onLoginSuccess?.(result.data);
@@ -131,7 +131,7 @@ export default function LoginContent({
             <a
               href={baseUrl}
               aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
+              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
             >
               ← Back to Home
             </a>
@@ -168,13 +168,13 @@ export default function LoginContent({
               <button
                 type="button"
                 onClick={onNavigateForgotPassword}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Forgot Password?
               </button>
             </div>
 
-            <div className="mt-[var(--px-10)]">
+            <div className="mt-[var(--px-10)] flex justify-center">
               <ButtonSleek
                 text={submitting ? "Signing in..." : "Sign In"}
                 onClick={handleSubmit}
@@ -188,7 +188,7 @@ export default function LoginContent({
               <button
                 type="button"
                 onClick={onNavigateRegister}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Register here
               </button>

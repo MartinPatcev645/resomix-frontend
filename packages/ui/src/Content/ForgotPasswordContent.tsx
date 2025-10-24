@@ -98,7 +98,7 @@ export default function ForgotPasswordContent({
           <div className="mb-[var(--px-24)]">
             <button
               onClick={onNavigateLogin}
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
+              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
             >
               ← Back to Login
             </button>
@@ -124,7 +124,7 @@ export default function ForgotPasswordContent({
                 error={error}
               />
 
-              <div className="mt-[var(--px-10)]">
+              <div className="mt-[var(--px-10)] flex justify-center">
                 <ButtonSleek
                   text={submitting ? "Sending..." : "Send Reset Link"}
                   onClick={handleSubmit}
@@ -138,7 +138,7 @@ export default function ForgotPasswordContent({
                 <button
                   type="button"
                   onClick={onNavigateLogin}
-                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
                 >
                   Sign in here
                 </button>

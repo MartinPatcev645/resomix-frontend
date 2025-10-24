@@ -1,6 +1,7 @@
 import React from "react";
-import { ButtonHeavyRight } from "@resomix/ui";
+import { ButtonHeavyRight, ButtonSleek, ProfileIcon } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
+import { useAuthStore } from "@resomix/stores";
 import CrossSvg from "@/assets/icons/cross.svg";
 import RIconsFooter from "@/assets/icons/r_icon_footer.svg";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
@@ -12,6 +13,7 @@ interface MenuPageProps {
 
 const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
   const { showFeedbackForm } = useFeedbackStore();
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <div className="w-screen h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
@@ -61,6 +63,25 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           <a href={`${BASE_LANDING_URL}/blog`} aria-label="Resomix blog" target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-journal-link">
             [Journal]
           </a>
+
+          {/* Auth button */}
+          {isAuthenticated ? (
+            <ProfileIcon 
+              className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" 
+              onClick={() => {
+                window.location.href = `${BASE_BETA_URL}/profile`;
+              }}
+            />
+          ) : (
+            <ButtonSleek 
+              text="Login" 
+              href={`${BASE_BETA_URL}/auth/login`} 
+              className="auth-button" 
+              id="beta-menu-login-button"
+              customWidth="min-w-[var(--px-80)]"
+              onClick={() => {}}
+            />
+          )}
           <div className="">
             <img src={MenuSeparator} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-4)] h-[var(--px-49)]" />
           </div>

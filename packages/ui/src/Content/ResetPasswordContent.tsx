@@ -256,7 +256,7 @@ export default function ResetPasswordContent({
               error={errors.confirmPassword}
             />
 
-            <div className="mt-[var(--px-10)]">
+            <div className="mt-[var(--px-10)] flex justify-center">
               <ButtonSleek
                 text={submitting ? "Resetting Password..." : "Reset Password"}
                 onClick={handleSubmit}

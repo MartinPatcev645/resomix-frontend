@@ -4,6 +4,7 @@ import { StatusMessage } from "../Elements/StatusMessage";
 import { InputModal } from "../Modals/InputModal";
 import { FormInput } from "../Elements/FormInput";
 import { SineWaves } from "../Animations/SineWaves";
+import { ProfileIcon } from "../Vectors/ProfileIcon";
 
 interface ProfileContentProps {
   baseUrl?: string;
@@ -61,7 +62,7 @@ export default function ProfileContent({
           timezone: userData.timezone || "",
         });
         setTwoFactorEnabled(userData.is_two_factor_enabled || false);
-        
+
         // Update store with fresh user data
         useAuthStore.getState().updateUser(userData);
       }
@@ -120,7 +121,7 @@ export default function ProfileContent({
 
     try {
       const { disable2FA } = await import("@resomix/api-client");
-      
+
       const result = await disable2FA(password);
 
       if (result.success) {
@@ -151,7 +152,7 @@ export default function ProfileContent({
 
       try {
         const { enable2FA } = await import("@resomix/api-client");
-        
+
         const result = await enable2FA("email");
 
         if (result.success) {
@@ -194,7 +195,7 @@ export default function ProfileContent({
       if (result.success) {
         setStatusType("success");
         setStatusMessage("Account deleted successfully. Redirecting...");
-        
+
         // Logout after delay
         setTimeout(() => {
           useAuthStore.getState().logout();
@@ -225,7 +226,7 @@ export default function ProfileContent({
       if (refreshToken) {
         await logout(refreshToken);
       }
-      
+
       useAuthStore.getState().logout();
       onLogout?.();
     } catch (error) {
@@ -276,7 +277,7 @@ export default function ProfileContent({
             <a
               href={baseUrl}
               aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
+              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
             >
               ← Back to Home
             </a>
@@ -285,9 +286,11 @@ export default function ProfileContent({
           {/* Profile Header */}
           <div className="mb-[var(--px-20)] pb-[var(--px-20)] border-b border-slate-200 border-dotted">
             <div className="flex items-center gap-[var(--px-20)]">
-              <div className="w-[var(--px-60)] h-[var(--px-60)] bg-[var(--color-primary)] text-[var(--color-secondary)] rounded-full flex items-center justify-center text-[length:var(--px-24)] font-medium font-helvetica">
-                {user.username?.charAt(0).toUpperCase() || "U"}
-              </div>
+              <ProfileIcon
+                className="text-[var(--color-primary-hover)] transition-colors"
+                customWidth="40"
+                customHeight="40"
+              />
               <div>
                 <div className="text-[length:var(--px-18)] font-medium font-helvetica">
                   {user.username}
@@ -313,7 +316,7 @@ export default function ProfileContent({
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
                 >
                   Edit
                 </button>
@@ -405,7 +408,7 @@ export default function ProfileContent({
                 </div>
                 <button
                   onClick={handle2FAToggle}
-                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
                 >
                   {twoFactorEnabled ? "Disable" : "Enable"}
                 </button>
@@ -413,22 +416,22 @@ export default function ProfileContent({
 
               <button
                 onClick={onNavigateChangePassword}
-                className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 transition-colors"
+                className="group flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)] transition-colors cursor-pointer"
               >
                 <div className="text-[length:var(--px-11)] font-light font-helvetica text-left">
                   Change Password
                 </div>
-                <span className="text-[var(--color-primary)]">→</span>
+                <span className="text-[var(--color-primary)] group-hover:text-[var(--color-secondary)] transition-colors">→</span>
               </button>
 
               <button
                 onClick={onNavigateSessions}
-                className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 transition-colors"
+                className="group flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)] transition-colors cursor-pointer"
               >
                 <div className="text-[length:var(--px-11)] font-light font-helvetica text-left">
                   Active Sessions
                 </div>
-                <span className="text-[var(--color-primary)]">→</span>
+                <span className="text-[var(--color-primary)] group-hover:text-[var(--color-secondary)] transition-colors">→</span>
               </button>
             </div>
           </div>
@@ -438,7 +441,7 @@ export default function ProfileContent({
             <div className="flex flex-col gap-[var(--px-10)]">
               <button
                 onClick={handleLogout}
-                className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors"
+                className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 hover:text-[var(--color-secondary)] transition-colors cursor-pointer"
               >
                 Logout
               </button>
@@ -446,7 +449,7 @@ export default function ProfileContent({
               {!showDeleteConfirm ? (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 transition-colors"
+                  className="px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 hover:text-[var(--color-secondary)] transition-colors cursor-pointer"
                 >
                   Delete Account
                 </button>

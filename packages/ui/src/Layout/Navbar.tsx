@@ -32,7 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
         {logo}
       </div>
-      <div className="flex items-center gap-[var(--px-16)]">
+      <div className={`flex items-center ${isAuthenticated ? 'gap-[var(--px-30)] mr-[var(--px-20)]' : 'gap-[var(--px-16)]'}`} >
         {/* Mode-specific buttons */}
         {(mode === 'home' || mode === 'contact' || mode === 'error' || mode === '404') && (
           <ButtonHeavyRight text="Upload Your Track" href={baseBetaUrl} className="cta-button primary" id="navbar-upload-button" />
@@ -43,21 +43,28 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         {mode === 'playlist' && (
           <ButtonSleek text="Feedback" transparent={true} customWidth="min-w-[var(--px-120)]" onClick={showFeedbackForm} className="feedback-button" id="navbar-feedback-button" />
         )}
-        
+
         {/* Auth button - always on the right */}
         {isAuthenticated ? (
-          <ProfileIcon 
-            className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" 
-            onClick={onProfileClick}
-          />
+          <a href={`${baseBetaUrl}/profile`}
+            aria-label="Profile"
+            className="cursor-pointer"
+          >
+            <ProfileIcon
+              className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
+              customWidth="30"
+              customHeight="30"
+              onClick={onProfileClick}
+            />
+          </a>
         ) : (
-          <ButtonSleek 
-            text="Login" 
-            href={`${baseBetaUrl}/auth/login`} 
-            className="auth-button" 
+          <ButtonSleek
+            text="Login"
+            href={`${baseBetaUrl}/auth/login`}
+            className="auth-button"
             id="navbar-login-button"
             customWidth="min-w-[var(--px-80)]"
-            onClick={() => {}} // Empty handler for href navigation
+            onClick={() => { }} // Empty handler for href navigation
           />
         )}
       </div>
