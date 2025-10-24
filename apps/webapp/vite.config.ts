@@ -31,7 +31,6 @@ export default defineConfig({
           // Third-party libraries
           if (id.includes('node_modules')) {
             if (id.includes('react-router')) return 'router'
-            if (id.includes('posthog-js')) return 'analytics'
             if (id.includes('/three')) return 'three'
             if (id.includes('@react-three/fiber')) return 'r3f'
             if (id.includes('/react/') || id.includes('react-dom')) return 'react'
