@@ -12,3 +12,8 @@ export * from "./admin/contact";
 export * from "./admin/waitlist";
 export * from "./admin/playlist";
 export { default as apiAxiosInstance } from "./utils";
+
+// Auth exports
+export { default as authClient } from "./authClient";
+export * from "./auth";
+export * from "./types/auth";

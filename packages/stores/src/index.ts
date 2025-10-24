@@ -2,3 +2,8 @@ export * from './usePlayList'
 export { usePlayerStore } from './usePlayer'
 export { default as useFeedbackStore } from './useFeedback'
 export { default as useConfig } from './useConfig'
+
+// Auth store export
+export { useAuthStore } from './useAuth'
+export type { AuthState } from './useAuth'
+export type { User } from '@resomix/api-client'

@@ -35,6 +35,7 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 .DS_Store
+.pnpm-store/
 
 x_assets/
 .env

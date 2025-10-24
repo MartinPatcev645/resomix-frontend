@@ -25,3 +25,6 @@ export * from './useStatusModals';
 export * from './useConfirmDialog';
 // export * from './Transfer/useSpotifyTransfer';
 // export * from './Transfer/useTidalTransfer';
+
+// Auth hooks
+export * from './Auth';
