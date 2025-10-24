@@ -50,6 +50,8 @@ import { TermsAcceptance } from "./Layout/TermsAcceptance";
 import { Tooltip } from "./Layout/Tooltip";
 import { StatusMessage } from "./Elements/StatusMessage";
 import { StatusModal } from "./Modals/StatusModal";
+import { ConfirmModal } from "./Modals/ConfirmModal";
+import { InputModal } from "./Modals/InputModal";
 import { FormInput } from "./Elements/FormInput";
 import { PasswordInput } from "./Elements/PasswordInput";
 import { FormError } from "./Elements/FormError";
@@ -116,6 +118,8 @@ export {
   FeedbackForm,
   StatusMessage,
   StatusModal,
+  ConfirmModal,
+  InputModal,
   // Auth components
   FormInput,
   PasswordInput,

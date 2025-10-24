@@ -1,6 +1,7 @@
 import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
+import { InputModal } from "../Modals/InputModal";
 import { FormInput } from "../Elements/FormInput";
 
 interface ProfileContentProps {
@@ -34,6 +35,7 @@ export default function ProfileContent({
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
+  const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
 
   // Load user profile on mount
   useEffect(() => {
@@ -110,34 +112,43 @@ export default function ProfileContent({
     }
   };
 
-  const handle2FAToggle = async () => {
+  const handleDisable2FA = async (password: string) => {
     setStatusType("loading");
     setShowStatus(true);
+    setStatusMessage("Disabling 2FA...");
 
     try {
-      if (twoFactorEnabled) {
-        const { disable2FA } = await import("@resomix/api-client");
-        
-        // For security, require password to disable 2FA
-        const password = prompt("Enter your password to disable 2FA:");
-        if (!password) {
-          setShowStatus(false);
-          return;
-        }
+      const { disable2FA } = await import("@resomix/api-client");
+      
+      const result = await disable2FA(password);
 
-        const result = await disable2FA(password);
-
-        if (result.success) {
-          setTwoFactorEnabled(false);
-          setStatusType("success");
-          setStatusMessage("Two-factor authentication disabled");
-          loadProfile(); // Reload to get updated user data
-        } else {
-          const errorResult = result as { success: false; error: string };
-          setStatusType("error");
-          setStatusMessage(errorResult.error || "Failed to disable 2FA");
-        }
+      if (result.success) {
+        setTwoFactorEnabled(false);
+        setStatusType("success");
+        setStatusMessage("Two-factor authentication disabled");
+        loadProfile(); // Reload to get updated user data
       } else {
+        const errorResult = result as { success: false; error: string };
+        setStatusType("error");
+        setStatusMessage(errorResult.error || "Failed to disable 2FA");
+      }
+    } catch (error) {
+      console.error("Disable 2FA error:", error);
+      setStatusType("error");
+      setStatusMessage("Network error. Please try again.");
+    }
+  };
+
+  const handle2FAToggle = async () => {
+    if (twoFactorEnabled) {
+      // Show input modal for password
+      setShowDisable2FAModal(true);
+    } else {
+      setStatusType("loading");
+      setShowStatus(true);
+      setStatusMessage("Enabling 2FA...");
+
+      try {
         const { enable2FA } = await import("@resomix/api-client");
         
         const result = await enable2FA("email");
@@ -152,11 +163,11 @@ export default function ProfileContent({
           setStatusType("error");
           setStatusMessage(errorResult.error || "Failed to enable 2FA");
         }
+      } catch (error) {
+        console.error("2FA toggle error:", error);
+        setStatusType("error");
+        setStatusMessage("Network error. Please try again.");
       }
-    } catch (error) {
-      console.error("2FA toggle error:", error);
-      setStatusType("error");
-      setStatusMessage("Network error. Please try again.");
     }
   };
 
@@ -477,6 +488,21 @@ export default function ProfileContent({
             onClose={() => setShowStatus(false)}
             status={statusType}
             message={statusMessage}
+          />
+
+          <InputModal
+            isOpen={showDisable2FAModal}
+            onClose={() => setShowDisable2FAModal(false)}
+            onSubmit={handleDisable2FA}
+            title="Disable 2FA"
+            message="For security, please enter your password to disable two-factor authentication."
+            inputLabel="Password"
+            inputType="password"
+            inputPlaceholder="Enter your password"
+            confirmText="Disable 2FA"
+            cancelText="Cancel"
+            required={true}
+            minLength={8}
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
+import { ConfirmModal } from "../Modals/ConfirmModal";
 
 interface UserSession {
   session_id: string;
@@ -25,6 +25,7 @@ export default function SessionsContent({
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
   const [statusMessage, setStatusMessage] = useState("");
+  const [showConfirmLogoutAll, setShowConfirmLogoutAll] = useState(false);
 
   useEffect(() => {
     loadSessions();
@@ -38,13 +39,22 @@ export default function SessionsContent({
       const result = await getMySessions();
 
       if (result.success) {
-        setSessions(result.data);
+        // Handle both response formats: direct array or wrapped in {sessions: [...]}
+        if (Array.isArray(result.data)) {
+          setSessions(result.data);
+        } else if (result.data && Array.isArray(result.data.sessions)) {
+          setSessions(result.data.sessions);
+        } else {
+          console.error("Invalid sessions data format:", result);
+          setSessions([]);
+        }
       }
     } catch (error) {
       console.error("Sessions load error:", error);
       setStatusType("error");
       setShowStatus(true);
       setStatusMessage("Failed to load sessions");
+      setSessions([]); // Ensure sessions is always an array
     } finally {
       setLoading(false);
     }
@@ -78,13 +88,11 @@ export default function SessionsContent({
     }
   };
 
+  const confirmLogoutAll = () => {
+    setShowConfirmLogoutAll(true);
+  };
+
   const handleLogoutAll = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to logout from all other devices? You will need to login again on those devices."
-    );
-
-    if (!confirmed) return;
-
     setStatusType("loading");
     setShowStatus(true);
     setStatusMessage("Logging out from all devices...");
@@ -219,7 +227,7 @@ export default function SessionsContent({
           {sessions.length > 1 && (
             <div className="mt-[var(--px-20)] pt-[var(--px-20)] border-t border-slate-200 border-dotted">
               <button
-                onClick={handleLogoutAll}
+                onClick={confirmLogoutAll}
                 className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 transition-colors"
               >
                 Logout All Other Devices
@@ -235,6 +243,17 @@ export default function SessionsContent({
             onClose={() => setShowStatus(false)}
             status={statusType}
             message={statusMessage}
+          />
+
+          <ConfirmModal
+            isOpen={showConfirmLogoutAll}
+            onClose={() => setShowConfirmLogoutAll(false)}
+            onConfirm={handleLogoutAll}
+            title="Logout All Devices"
+            message="Are you sure you want to logout from all other devices? You will need to login again on those devices."
+            confirmText="Logout All"
+            cancelText="Cancel"
+            confirmDanger={true}
           />
         </div>
       </div>

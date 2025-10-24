@@ -52,13 +52,10 @@ export default function ResetPasswordContent({
     return "strong";
   };
 
-  // Password requirements
+  // Password requirements (only enforce minimum requirements)
   const passwordRequirements = [
     { label: "At least 8 characters", met: form.password.length >= 8 },
-    { label: "Contains uppercase letter", met: /[A-Z]/.test(form.password) },
-    { label: "Contains lowercase letter", met: /[a-z]/.test(form.password) },
-    { label: "Contains number", met: /[0-9]/.test(form.password) },
-    { label: "Contains special character", met: /[!@#$%^&*(),.?":{}|<>]/.test(form.password) },
+    { label: "Contains at least one digit", met: /\d/.test(form.password) },
   ];
 
   // Check if token is provided (from URL or props)
@@ -99,8 +96,8 @@ export default function ResetPasswordContent({
       newErrors.password = "Password is required";
     } else if (form.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
-    } else if (passwordStrength === "weak") {
-      newErrors.password = "Password is too weak. Please meet more requirements.";
+    } else if (!/\d/.test(form.password)) {
+      newErrors.password = "Password must contain at least one digit";
     }
 
     // Confirm password validation

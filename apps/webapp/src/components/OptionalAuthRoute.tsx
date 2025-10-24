@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuthStore } from "@resomix/stores";
-import { AuthStatusBanner } from "@resomix/ui";
+import { AuthStatusBanner, StatusMessage } from "@resomix/ui";
 import { resendVerification } from "@resomix/api-client";
 
 interface OptionalAuthRouteProps {
@@ -17,6 +17,9 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   const { isAuthenticated, user } = useAuthStore();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
+  const [showStatusMessage, setShowStatusMessage] = useState(false);
+  const [statusType, setStatusType] = useState<"success" | "error">("success");
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     // Check if banner was previously dismissed (stored in localStorage)
@@ -38,10 +41,14 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
     if (user?.email) {
       try {
         await resendVerification(user.email);
-        alert("Verification email sent! Please check your inbox.");
+        setStatusType("success");
+        setStatusMessage("Verification email sent! Please check your inbox.");
+        setShowStatusMessage(true);
       } catch (error) {
         console.error("Failed to resend verification:", error);
-        alert("Failed to send verification email. Please try again.");
+        setStatusType("error");
+        setStatusMessage("Failed to send verification email. Please try again.");
+        setShowStatusMessage(true);
       }
     }
   };
@@ -61,6 +68,13 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
         />
       )}
       {children}
+      
+      <StatusMessage
+        isOpen={showStatusMessage}
+        onClose={() => setShowStatusMessage(false)}
+        status={statusType}
+        message={statusMessage}
+      />
     </div>
   );
 };

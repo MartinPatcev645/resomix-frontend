@@ -29,7 +29,7 @@ export interface LoginResponse {
 export interface TwoFactorRequiredResponse {
   success: boolean;
   data: {
-    two_factor_required: true;
+    requires_2fa: true;
     user_id: number;
     message: string;
   };
@@ -126,7 +126,9 @@ export interface ProfileResponse {
 // Session Response Types
 export interface SessionsResponse {
   success: boolean;
-  data: UserSession[];
+  data: {
+    sessions: UserSession[];
+  };
 }
 
 // Generic Success Response

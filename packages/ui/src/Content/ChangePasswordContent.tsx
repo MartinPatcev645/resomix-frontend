@@ -48,13 +48,10 @@ export default function ChangePasswordContent({
     return "strong";
   };
 
-  // Password requirements
+  // Password requirements (only enforce minimum requirements)
   const passwordRequirements = [
     { label: "At least 8 characters", met: form.newPassword.length >= 8 },
-    { label: "Contains uppercase letter", met: /[A-Z]/.test(form.newPassword) },
-    { label: "Contains lowercase letter", met: /[a-z]/.test(form.newPassword) },
-    { label: "Contains number", met: /[0-9]/.test(form.newPassword) },
-    { label: "Contains special character", met: /[!@#$%^&*(),.?":{}|<>]/.test(form.newPassword) },
+    { label: "Contains at least one digit", met: /\d/.test(form.newPassword) },
   ];
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -85,8 +82,8 @@ export default function ChangePasswordContent({
       newErrors.newPassword = "New password is required";
     } else if (form.newPassword.length < 8) {
       newErrors.newPassword = "Password must be at least 8 characters";
-    } else if (passwordStrength === "weak") {
-      newErrors.newPassword = "Password is too weak. Please meet more requirements.";
+    } else if (!/\d/.test(form.newPassword)) {
+      newErrors.newPassword = "Password must contain at least one digit";
     } else if (form.newPassword === form.currentPassword) {
       newErrors.newPassword = "New password must be different from current password";
     }

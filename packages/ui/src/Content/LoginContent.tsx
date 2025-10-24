@@ -74,8 +74,8 @@ export default function LoginContent({
 
       if (result.success) {
         // Check if 2FA is required
-        if ("two_factor_required" in result.data && result.data.two_factor_required) {
-          const twoFAData = result.data as { two_factor_required: true; user_id: number; message: string };
+        if ("requires_2fa" in result.data && result.data.requires_2fa) {
+          const twoFAData = result.data as { requires_2fa: true; user_id: number; message: string };
           setStatusType("success");
           setStatusMessage("Please enter your 2FA code");
           setTimeout(() => {
