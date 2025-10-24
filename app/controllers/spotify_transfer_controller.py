@@ -25,7 +25,6 @@ from app.services.spotify_transfer_service import SpotifyTransferService
 from app.services.logging_service import LoggingService
 from app.services.playlist_service import PlaylistService
 from app.utils.response_utils import format_response
-from app.utils.logging_utils import log_request
 
 # Set up logger for controller
 logger = logging.getLogger(__name__)

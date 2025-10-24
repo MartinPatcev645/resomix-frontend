@@ -22,9 +22,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.similarity_controller import SimilarityController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_api_key, get_current_user_optional
 from app.api.dependencies.database import get_database_session
 from app.repositories.playlist_repository import PlaylistRepository
+from app.models.user import User
 from fastapi import HTTPException
 from app.schemas.similarity import (
     SimilarityByIdRequest,
@@ -82,7 +83,8 @@ async def get_similarity_upload_endpoint(
     file: UploadFile = File(..., description="Audio file to analyze for similarity (max 100MB)"), 
     top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Upload an audio track and find similar tracks.
@@ -95,8 +97,10 @@ async def get_similarity_upload_endpoint(
     
     - **file**: The audio file to upload and analyze (max 100MB)
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
+    
+    Note: If authenticated via JWT, user context is automatically associated with the upload.
     """
-    return await similarity_controller.get_similarity_upload(db, request, file, top_sk)
+    return await similarity_controller.get_similarity_upload(db, request, file, top_sk, current_user)
 
 
 @router.post(
@@ -127,15 +131,18 @@ async def get_similarity_by_id_endpoint(
     request: Request,
     request_data: SimilarityByIdRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Get similar tracks for a track identified by its database ID.
     
     - **track_id**: The database ID of the track to find similar tracks for.
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
+    
+    Note: If authenticated via JWT, user context is automatically associated.
     """
-    return await similarity_controller.get_similarity_by_id(db, request, request_data.track_id, request_data.top_sk)
+    return await similarity_controller.get_similarity_by_id(db, request, request_data.track_id, request_data.top_sk, current_user)
 
 
 # New endpoint to poll segment status

@@ -41,6 +41,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         track_scores: List[float] = None,
         name: str = "Playlist",
         playlist_type: str = PlaylistType.SIMILARITY,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a similarity playlist with tracks.
@@ -51,6 +52,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
             track_ids: List of track IDs to include in playlist (similar tracks)
             track_scores: List of similarity scores for each track (optional)
             name: Playlist name (defaults to "Playlist")
+            playlist_type: The type of playlist (defaults to SIMILARITY)
+            user_id: Optional user ID to associate playlist with (None for anonymous)
             
         Returns:
             Dictionary with playlist info including uuid (as id) and name
@@ -58,7 +61,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         try:
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
-                user_id=None,  # Anonymous playlist
+                user_id=user_id,  # Associate with user if logged in, otherwise anonymous
                 name=name,
                 is_public=False,  # Keep is_public as 0
                 type=playlist_type,

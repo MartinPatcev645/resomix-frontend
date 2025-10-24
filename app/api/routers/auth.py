@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.auth_controller import AuthController
 from app.api.dependencies.database import get_database_session
+from app.api.middlewares.rate_limit import limiter, auth_rate_limit
 from app.schemas.auth import (
     RegisterRequest,
     RegisterResponse,
@@ -65,6 +66,7 @@ auth_controller = AuthController()
         }
     },
 )
+@limiter.limit(auth_rate_limit("register"))
 async def register(
     request: Request,
     registration_request: RegisterRequest,
@@ -97,6 +99,7 @@ async def register(
         403: {"model": ErrorResponse, "description": "Email not verified"},
     },
 )
+@limiter.limit(auth_rate_limit("login"))
 async def login(
     request: Request,
     login_request: LoginRequest,
@@ -184,6 +187,7 @@ async def verify_email(
         404: {"model": ErrorResponse, "description": "User not found"},
     },
 )
+@limiter.limit(auth_rate_limit("password_reset"))
 async def resend_verification(
     request: Request,
     resend_request: ResendVerificationRequest,
@@ -208,6 +212,7 @@ async def resend_verification(
     description="Request password reset link via email.",
     response_description="Password reset email sent (if email exists)",
 )
+@limiter.limit(auth_rate_limit("password_reset"))
 async def request_password_reset(
     request: Request,
     reset_request: PasswordResetRequest,

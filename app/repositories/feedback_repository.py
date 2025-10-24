@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete, func, and_, or_, desc, asc, String
+from sqlalchemy import select, delete, func, and_, desc, asc, String
 from datetime import datetime
 from app.models.feedback import Feedback
 from app.repositories.base_repository import BaseRepository

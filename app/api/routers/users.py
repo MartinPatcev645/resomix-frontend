@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.user_controller import UserController
 from app.api.dependencies.database import get_database_session
-# Note: get_current_user will be implemented in Section 11
-# from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.auth import get_current_user
+from app.models.user import User
 from app.schemas.auth import (
     UserProfileResponse,
     UpdateProfileRequest,
@@ -56,9 +56,8 @@ user_controller = UserController()
 )
 async def get_my_profile(
     request: Request,
-    user_uuid: str,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get current user's profile.
@@ -73,7 +72,7 @@ async def get_my_profile(
 
     Requires authentication (JWT token).
     """
-    return await user_controller.get_profile(db, request, user_uuid)
+    return await user_controller.get_profile(db, request, current_user.uuid)
 
 
 @router.patch(
@@ -87,9 +86,8 @@ async def get_my_profile(
 async def update_my_profile(
     request: Request,
     profile_update: UpdateProfileRequest,
-    user_id: int,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update current user's profile.
@@ -104,7 +102,7 @@ async def update_my_profile(
     Requires authentication (JWT token).
     """
     profile_data = profile_update.dict(exclude_unset=True)
-    return await user_controller.update_profile(db, request, user_id, profile_data)
+    return await user_controller.update_profile(db, request, current_user.id, profile_data)
 
 
 @router.post(
@@ -122,9 +120,8 @@ async def update_my_profile(
 async def change_my_password(
     request: Request,
     password_change: ChangePasswordRequest,
-    user_id: int,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Change user password.
@@ -140,7 +137,7 @@ async def change_my_password(
     Requires authentication (JWT token).
     """
     password_data = password_change.dict()
-    return await user_controller.change_password(db, request, user_id, password_data)
+    return await user_controller.change_password(db, request, current_user.id, password_data)
 
 
 @router.get(
@@ -153,9 +150,8 @@ async def change_my_password(
 )
 async def get_my_sessions(
     request: Request,
-    user_id: int,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get active sessions (devices).
@@ -169,7 +165,7 @@ async def get_my_sessions(
     Useful for viewing all logged-in devices.
     Requires authentication (JWT token).
     """
-    return await user_controller.get_sessions(db, request, user_id)
+    return await user_controller.get_sessions(db, request, current_user.id)
 
 
 @router.delete(
@@ -190,9 +186,8 @@ async def get_my_sessions(
 async def revoke_my_session(
     request: Request,
     session_id: str = Path(..., description="Session ID to revoke"),
-    user_id: int = None,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Revoke specific session.
@@ -204,7 +199,7 @@ async def revoke_my_session(
     Useful for remote logout from lost/stolen devices.
     Requires authentication (JWT token).
     """
-    return await user_controller.revoke_session(db, request, user_id, session_id)
+    return await user_controller.revoke_session(db, request, current_user.id, session_id)
 
 
 @router.post(
@@ -221,9 +216,8 @@ async def revoke_my_session(
 async def enable_my_2fa(
     request: Request,
     enable_request: Enable2FARequest,
-    user_id: int,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Enable two-factor authentication.
@@ -237,7 +231,7 @@ async def enable_my_2fa(
 
     Requires authentication (JWT token).
     """
-    return await user_controller.enable_2fa(db, request, user_id, enable_request.method)
+    return await user_controller.enable_2fa(db, request, current_user.id, enable_request.method)
 
 
 @router.post(
@@ -254,9 +248,8 @@ async def enable_my_2fa(
 async def disable_my_2fa(
     request: Request,
     disable_request: Disable2FARequest,
-    user_id: int,  # TODO: This will come from get_current_user dependency
     db: AsyncSession = Depends(get_database_session),
-    # current_user: User = Depends(get_current_user)  # TODO: Add in Section 11
+    current_user: User = Depends(get_current_user)
 ):
     """
     Disable two-factor authentication.
@@ -270,4 +263,4 @@ async def disable_my_2fa(
 
     Requires authentication (JWT token).
     """
-    return await user_controller.disable_2fa(db, request, user_id, disable_request.password)
+    return await user_controller.disable_2fa(db, request, current_user.id, disable_request.password)

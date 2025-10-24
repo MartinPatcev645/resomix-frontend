@@ -19,10 +19,8 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
-from sqlalchemy.exc import IntegrityError
 
 from ..models.track import Track
-from ..models.playlist import Playlist
 from ..repositories.base_repository import BaseRepository
 
 

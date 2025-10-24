@@ -33,6 +33,8 @@ from app.core.config import settings
 # Import middleware setup
 from app.api.middlewares.cors import setup_cors
 from app.observability import TimingMiddleware
+from app.api.middlewares.rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Import all routers
 from app.api.routers import all_routers
@@ -167,6 +169,10 @@ app = FastAPI(
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
+
+# Add rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Setup CORS middleware
 setup_cors(app)

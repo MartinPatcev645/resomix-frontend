@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ResomiX!</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .features {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .features ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin: 10px 0;
+            color: #555;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #eee;
+        }
+        .text-muted {
+            color: #666;
+            font-size: 14px;
+        }
+        .link {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 ResomiX</h1>
+        </div>
+        <div class="content">
+            <h2 style="color: #4CAF50; margin-top: 0;">Welcome to ResomiX! 🎉</h2>
+            <p>Hi {{ username }},</p>
+            <p>Your email has been successfully verified! You now have full access to all ResomiX features.</p>
+            
+            <div class="features">
+                <h3 style="margin-top: 0; color: #555;">What you can do now:</h3>
+                <ul>
+                    <li>🔍 Discover similar tracks using our advanced audio similarity engine</li>
+                    <li>📝 Create and manage custom playlists</li>
+                    <li>⭐ Rate and organize your favorite tracks</li>
+                    <li>📤 Export playlists to Spotify, Tidal, and other platforms</li>
+                    <li>💾 Save your preferences and history across devices</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ frontend_url }}" class="button">Start Exploring</a>
+            </div>
+            
+            <p class="text-muted" style="margin-top: 30px;">
+                Need help getting started? Check out our 
+                <a href="{{ frontend_url }}/help" class="link">help center</a> 
+                or contact our support team.
+            </p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 ResomiX. All rights reserved.</p>
+            <p>Audio Similarity Engine for Music Discovery</p>
+        </div>
+    </div>
+</body>
+</html>
+

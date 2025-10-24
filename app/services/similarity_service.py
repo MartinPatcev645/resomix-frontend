@@ -69,7 +69,8 @@ class SimilarityService:
         original_filename: str, 
         track_uuid: str,
         top_k: int = 10, 
-        similarity_duplication_threshold: int = 0
+        similarity_duplication_threshold: int = 0,
+        user_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Sends uploaded audio bytes to the similarity server and returns enriched similar tracks.
@@ -81,6 +82,7 @@ class SimilarityService:
             track_uuid: The UUID of the uploaded track to send to similarity server
             top_k: Number of similar tracks to request from similarity server
             similarity_duplication_threshold: The threshold for removing duplicates before returning
+            user_id: Optional user ID (internal BIGINT) to associate playlist with logged-in user
             
         Returns:
             Dictionary containing similarity results or error information
@@ -215,6 +217,7 @@ class SimilarityService:
                               track_scores=deduplicated_track_scores,
                               name=playlist_name,
                               playlist_type=PlaylistType.WAITING_SEGMENTS,
+                              user_id=user_id
                         )
                         
                         # Send playlist peaks request (fire and forget)
@@ -261,7 +264,8 @@ class SimilarityService:
         db: AsyncSession,
         server_track_path: str, 
         top_k: int = 10, 
-        similarity_duplication_threshold: int = 0
+        similarity_duplication_threshold: int = 0,
+        user_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Gets similar tracks for a given server-side file path by calling the similarity server.
@@ -271,6 +275,7 @@ class SimilarityService:
             server_track_path: The file path to the track file (without /home/usman/data/ prefix)
             top_k: Number of similar tracks to request from similarity server
             similarity_duplication_threshold: The threshold for removing duplicates before returning
+            user_id: Optional user ID (internal BIGINT) to associate playlist with logged-in user
             
         Returns:
             Dictionary containing similarity results or error information
@@ -379,6 +384,7 @@ class SimilarityService:
                                 track_scores=deduplicated_track_scores,
                                 name=playlist_name,
                                 playlist_type=PlaylistType.WAITING_SEGMENTS,
+                                user_id=user_id
                             )
                             
                             # Send playlist peaks request (fire and forget) - COMMENTED OUT

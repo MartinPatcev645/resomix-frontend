@@ -15,7 +15,6 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-import asyncio
 from typing import Optional
 from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse

@@ -17,20 +17,18 @@ Email: usman.naeem2212@gmail.com
 
 # Similarity controller 
 import os
-import uuid
 from typing import Optional
-from fastapi import UploadFile, HTTPException, status, Request
+from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.user import User
 from app.services.playlist_service import PlaylistService
 from app.core.config import settings
 from app.services.similarity_service import SimilarityService
-from app.services.search_service import SearchService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
 from app.utils.response_utils import format_response
-from app.utils.file_utils import sanitize_filename
 from app.services.logging_service import LoggingService
 import time
 
@@ -39,13 +37,12 @@ class SimilarityController:
     def __init__(self):
         self.similarity_service = SimilarityService()
         self.playlist_service = PlaylistService()
-        self.search_service = SearchService()
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
         self.antivirus_service = AntivirusService()
         self.logging_service = LoggingService()
 
-    async def get_similarity_upload(self, db: AsyncSession, request: Request, file: UploadFile, top_sk: Optional[int] = None) -> JSONResponse:
+    async def get_similarity_upload(self, db: AsyncSession, request: Request, file: UploadFile, top_sk: Optional[int] = None, current_user: Optional[User] = None) -> JSONResponse:
         """
         Process an audio file: first upload to database, then return similar tracks.
         """
@@ -374,13 +371,17 @@ class SimilarityController:
                     )
                 
                 # STEP 2: Now perform similarity analysis
+                # Extract user_id if user is logged in
+                user_id = current_user.id if current_user else None
+                
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
                     original_filename=secure_filename, 
                     track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
-                    similarity_duplication_threshold=duplication_threshold
+                    similarity_duplication_threshold=duplication_threshold,
+                    user_id=user_id
                 )
                 
                 if similarity_results.get("success") is False:
@@ -650,13 +651,18 @@ class SimilarityController:
                     file_size=file.size,
                     operation="similarity_upload"
                 )
+                
+                # Extract user_id if user is logged in
+                user_id = current_user.id if current_user else None
+                
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
                     original_filename=secure_filename,
                     track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
-                    similarity_duplication_threshold=duplication_threshold
+                    similarity_duplication_threshold=duplication_threshold,
+                    user_id=user_id
                 )
                 
                 if similarity_results.get("success") is False:
@@ -789,7 +795,8 @@ class SimilarityController:
         db: AsyncSession,
         request: Request,
         track_id: str,
-        top_sk: Optional[int] = None
+        top_sk: Optional[int] = None,
+        current_user: Optional[User] = None
     ) -> JSONResponse:
         """
         Get similar tracks for a track identified by its UUID.
@@ -876,12 +883,16 @@ class SimilarityController:
             actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
             duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
             
+            # Extract user_id if user is logged in
+            user_id = current_user.id if current_user else None
+            
             # Call similarity service with the file path
             similarity_results = await self.similarity_service.get_similarity_by_path(
                 db=db,
                 server_track_path=server_track_path,
                 top_k=actual_top_k,
-                similarity_duplication_threshold=duplication_threshold
+                similarity_duplication_threshold=duplication_threshold,
+                user_id=user_id
             )
             duration_ms = (time.time() - start_time) * 1000
             # Check if similarity processing failed
