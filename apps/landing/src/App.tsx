@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
-import { WelcomeMessage, FeedbackForm } from "@resomix/ui";
+import { WelcomeMessage, FeedbackForm, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { ProtectedRoute, OptionalAuthRoute } from "@/components/index.ts";
 // Lazy-load pages directly for proper code-splitting
@@ -40,6 +40,7 @@ function UsedAboutPage() {
 function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
+  const { isDesktop } = useResponsive();
   
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
@@ -47,7 +48,28 @@ function App() {
 
   // Show loading during auth initialization
   if (isLoading || !isInitialized) {
-    return <div>Loading...</div>; // You can replace this with a proper loading component
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-secondary, #fff)',
+        overflow: 'hidden'
+      }}>
+        {isDesktop && <StaticNoise />}
+        <div style={{
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          maxWidth: '300px',
+          padding: '20px'
+        }}>
+          <SineWaves />
+        </div>
+      </div>
+    );
   }
 
   return (

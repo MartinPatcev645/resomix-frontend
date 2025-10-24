@@ -28,6 +28,14 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   }, []);
 
   useEffect(() => {
+    // Clear dismissed flag if email verification status changes to verified
+    if (user?.is_email_verified) {
+      localStorage.removeItem("email_verification_banner_dismissed");
+      setBannerDismissed(false);
+    }
+  }, [user?.is_email_verified]);
+
+  useEffect(() => {
     // Show banner if authenticated, email not verified, and not dismissed
     setShowBanner(
       isAuthenticated &&
@@ -40,10 +48,24 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   const handleResendVerification = async () => {
     if (user?.email) {
       try {
-        await resendVerification(user.email);
-        setStatusType("success");
-        setStatusMessage("Verification email sent! Please check your inbox.");
-        setShowStatusMessage(true);
+        const result = await resendVerification(user.email);
+        
+        if (result.success) {
+          setStatusType("success");
+          setStatusMessage("Verification email sent! Please check your inbox.");
+          setShowStatusMessage(true);
+        } else {
+          // API returned error (e.g., "Email already verified")
+          const errorResult = result as { success: false; error: string };
+          setStatusType("error");
+          setStatusMessage(errorResult.error || "Failed to send verification email.");
+          setShowStatusMessage(true);
+          
+          // If email is already verified, hide the banner
+          if (errorResult.error?.includes("already verified")) {
+            handleDismiss();
+          }
+        }
       } catch (error) {
         console.error("Failed to resend verification:", error);
         setStatusType("error");

@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
-import { WelcomeMessage, FeedbackForm, TermsAcceptance } from "@resomix/ui";
+import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { ProtectedRoute, OptionalAuthRoute } from "@/components/index.ts";
 import {MetricsOverlay} from "@/components/metrics/MetricsOverlay.js";
@@ -46,6 +46,7 @@ function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
+  const { isDesktop } = useResponsive();
   
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
@@ -54,9 +55,30 @@ function App() {
   const location = useLocation();
   const showMetrics = new URLSearchParams(location.search).get("metrics") === "true";
 
-  // Show loading during auth initialization
+  // Show loading during auth initialization (prevent flash)
   if (isLoading || !isInitialized) {
-    return <div>Loading...</div>; // You can replace this with a proper loading component
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-secondary, #fff)',
+        overflow: 'hidden'
+      }}>
+        {isDesktop && <StaticNoise />}
+        <div style={{
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          maxWidth: '300px',
+          padding: '20px'
+        }}>
+          <SineWaves />
+        </div>
+      </div>
+    );
   }
 
   return (
