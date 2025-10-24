@@ -19,7 +19,8 @@ export default function ProfileContent({
   onNavigateSessions,
   onLogout,
 }: ProfileContentProps) {
-  const [user, setUser] = useState<any>(null);
+  // Get user directly from store - no need for local state or API call
+  const [storeUser, setStoreUser] = useState<any>(null);
   const [form, setForm] = useState({
     name: "",
     language: "",
@@ -27,7 +28,6 @@ export default function ProfileContent({
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   const [showStatus, setShowStatus] = useState(false);
@@ -39,13 +39,28 @@ export default function ProfileContent({
   const [deletePassword, setDeletePassword] = useState("");
   const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
 
-  // Load user profile on mount
+  // Initialize from store on mount
   useEffect(() => {
-    loadProfile();
+    const initializeFromStore = async () => {
+      const { useAuthStore } = await import("@resomix/stores");
+      const userData = useAuthStore.getState().user;
+      
+      if (userData) {
+        setStoreUser(userData);
+        setForm({
+          name: userData.name || "",
+          language: userData.language || "",
+          timezone: userData.timezone || "",
+        });
+        setTwoFactorEnabled(userData.is_two_factor_enabled || false);
+      }
+    };
+    
+    initializeFromStore();
   }, []);
 
+  // Optional: Refresh user data from API (only when explicitly needed)
   const loadProfile = async () => {
-    setLoading(true);
     try {
       const { getMyProfile } = await import("@resomix/api-client");
       const { useAuthStore } = await import("@resomix/stores");
@@ -53,23 +68,18 @@ export default function ProfileContent({
       const result = await getMyProfile();
 
       if (result.success) {
-        // Handle both possible response structures
         const userData = "user" in result.data ? result.data.user : result.data;
-        setUser(userData);
+        setStoreUser(userData);
         setForm({
           name: userData.name || "",
           language: userData.language || "",
           timezone: userData.timezone || "",
         });
         setTwoFactorEnabled(userData.is_two_factor_enabled || false);
-
-        // Update store with fresh user data
         useAuthStore.getState().updateUser(userData);
       }
     } catch (error) {
       console.error("Profile load error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -96,7 +106,7 @@ export default function ProfileContent({
         // Handle both possible response structures
         const userData = "user" in result.data ? result.data.user : result.data;
         useAuthStore.getState().updateUser(userData);
-        setUser(userData);
+        setStoreUser(userData);
         setStatusType("success");
         setStatusMessage("Profile updated successfully!");
         setIsEditing(false);
@@ -238,19 +248,8 @@ export default function ProfileContent({
     }
   };
 
-  if (loading) {
-    return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
-            <SineWaves />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (!user) {
+  // No loading state needed - data comes from store instantly
+  if (!storeUser) {
     return (
       <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
@@ -293,11 +292,11 @@ export default function ProfileContent({
               />
               <div>
                 <div className="text-[length:var(--px-18)] font-medium font-helvetica">
-                  {user.username}
+                  {storeUser.username}
                 </div>
                 <div className="text-[length:var(--px-11)] font-light font-helvetica flex items-center gap-[var(--px-8)] mt-[var(--px-4)]">
-                  {user.email}
-                  {user.is_email_verified ? (
+                  {storeUser.email}
+                  {storeUser.is_email_verified ? (
                     <span className="text-green-500 text-[length:var(--px-10)]">✓ Verified</span>
                   ) : (
                     <span className="text-yellow-500 text-[length:var(--px-10)]">⚠ Not Verified</span>
@@ -376,9 +375,9 @@ export default function ProfileContent({
                     onClick={() => {
                       setIsEditing(false);
                       setForm({
-                        name: user.name || "",
-                        language: user.language || "",
-                        timezone: user.timezone || "",
+                        name: storeUser.name || "",
+                        language: storeUser.language || "",
+                        timezone: storeUser.timezone || "",
                       });
                     }}
                     className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors"
