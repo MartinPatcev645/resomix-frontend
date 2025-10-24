@@ -60,10 +60,10 @@ const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         });
-        // Clear localStorage
-        localStorage.removeItem('resomix_auth_token');
-        localStorage.removeItem('resomix_refresh_token');
-        localStorage.removeItem('resomix_user');
+        // Clear localStorage - use the correct key from persist config
+        localStorage.removeItem('resomix-auth-storage');
+        // Also clear any email verification banner dismissal
+        localStorage.removeItem('email_verification_banner_dismissed');
       },
 
       // Update user fields

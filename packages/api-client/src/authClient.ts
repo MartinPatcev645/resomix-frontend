@@ -57,10 +57,11 @@ authClient.interceptors.request.use(
     // Add auth token if available
     const authStore = getAuthStore();
     if (authStore) {
-      const { accessToken, isTokenExpired } = authStore.getState();
+      const { accessToken, isAuthenticated } = authStore.getState();
 
-      // Add authorization header if token exists and not expired
-      if (accessToken && !isTokenExpired()) {
+      // Add authorization header if token exists and user is authenticated
+      // Don't check isTokenExpired here - let the backend decide and use refresh interceptor
+      if (accessToken && isAuthenticated) {
         config.headers.Authorization = `Bearer ${accessToken}`;
       }
     }
