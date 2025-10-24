@@ -2,9 +2,9 @@
   "compilerOptions": {
     "composite": true,
     "declaration": true,
-    "declarationDir": "dist/src",
+    "declarationDir": "dist",
     "emitDeclarationOnly": false,
-    "outDir": "dist/src",
+    "outDir": "dist",
     "module": "ESNext",
     "target": "ES2020",
     "jsx": "react-jsx",

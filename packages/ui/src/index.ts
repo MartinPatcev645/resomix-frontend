@@ -21,6 +21,7 @@ import { IconComp } from "./Elements/IconComp";
 import { TextComp } from "./Elements/TextComp";
 import { SeparatorLine } from "./Vectors/SeparatorLine";
 import { PageExoskeleton } from "./Vectors/PageExoskeleton";
+import { ProfileIcon } from "./Vectors/ProfileIcon";
 import { StyleThree } from "./Vectors/LineContainer/StyleThree";
 import { StyleTwo } from "./Vectors/LineContainer/StyleTwo";
 import { StyleOne } from "./Vectors/LineContainer/StyleOne";
@@ -49,6 +50,21 @@ import { TermsAcceptance } from "./Layout/TermsAcceptance";
 import { Tooltip } from "./Layout/Tooltip";
 import { StatusMessage } from "./Elements/StatusMessage";
 import { StatusModal } from "./Modals/StatusModal";
+import { ConfirmModal } from "./Modals/ConfirmModal";
+import { InputModal } from "./Modals/InputModal";
+import { FormInput } from "./Elements/FormInput";
+import { PasswordInput } from "./Elements/PasswordInput";
+import { FormError } from "./Elements/FormError";
+import { AuthStatusBanner } from "./Elements/AuthStatusBanner";
+import LoginContent from "./Content/LoginContent";
+import RegisterContent from "./Content/RegisterContent";
+import ForgotPasswordContent from "./Content/ForgotPasswordContent";
+import ResetPasswordContent from "./Content/ResetPasswordContent";
+import VerifyEmailContent from "./Content/VerifyEmailContent";
+import Verify2FAContent from "./Content/Verify2FAContent";
+import ProfileContent from "./Content/ProfileContent";
+import ChangePasswordContent from "./Content/ChangePasswordContent";
+import SessionsContent from "./Content/SessionsContent";
 
 export {
   Navbar,
@@ -102,4 +118,22 @@ export {
   FeedbackForm,
   StatusMessage,
   StatusModal,
+  ConfirmModal,
+  InputModal,
+  // Auth components
+  FormInput,
+  PasswordInput,
+  FormError,
+  AuthStatusBanner,
+  LoginContent,
+  RegisterContent,
+  ForgotPasswordContent,
+  ResetPasswordContent,
+  VerifyEmailContent,
+  Verify2FAContent,
+  ProfileContent,
+  ChangePasswordContent,
+  SessionsContent,
+  // Vectors
+  ProfileIcon,
 };

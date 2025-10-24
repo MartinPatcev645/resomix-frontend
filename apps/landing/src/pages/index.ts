@@ -6,6 +6,7 @@ import { HomeMobile } from "./mobile/HomeMobile.tsx";
 import { AboutMobile } from "./mobile/AboutMobile.tsx";
 
 import InfoPage from "./InfoPage.tsx";
+import AuthPage from "./AuthPage.tsx";
 import TestPage from "./TestPage.tsx";
 import MenuPage from "./MenuPage.tsx";
 
@@ -15,6 +16,7 @@ export {
     HomeMobile,
     AboutMobile,
     InfoPage,
+    AuthPage,
     TestPage,
     MenuPage,
 }

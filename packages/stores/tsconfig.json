@@ -13,11 +13,13 @@
     "esModuleInterop": true,
     "strict": true,
     "paths": {
+      "@resomix/api-client": ["../api-client/src", "../api-client/dist/src"],
       "@resomix/config": ["../config/src", "../config/dist"]
     }
   },
   "include": ["src"],
   "references": [
+    { "path": "../api-client" },
     { "path": "../config" }
   ]
 }
