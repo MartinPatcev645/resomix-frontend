@@ -7,7 +7,7 @@ It handles HTTP requests for playlist operations including rename, visibility ch
 and similarity data retrieval with authentication and validation.
 
 Provides RESTful API endpoints for playlist management functionality
-of the ResomiX audio similarity system.
+of the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

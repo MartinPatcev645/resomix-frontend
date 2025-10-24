@@ -7,7 +7,7 @@ It handles HTTP requests for text-based track searches with authentication
 and query parameter validation.
 
 Provides RESTful API endpoints for searching tracks by title, artist,
-and other metadata fields in the ResomiX system.
+and other metadata fields in the Resomix system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

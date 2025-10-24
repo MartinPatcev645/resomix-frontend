@@ -4,7 +4,7 @@ Monthly Pipeline Routes Test Suite
 ==================================
 
 This module contains comprehensive unit tests for monthly pipeline track endpoints
-in the ResomiX Audio Similarity API. It tests track processing, embedding preview generation,
+in the Resomix Audio Similarity API. It tests track processing, embedding preview generation,
 database storage, and error handling scenarios.
 
 Provides testing for monthly pipeline track upload, validation, authentication,

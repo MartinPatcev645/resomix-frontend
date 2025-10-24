@@ -2,7 +2,7 @@
 Repository Tests Package
 ========================
 
-This package contains unit tests for repository layer classes in the ResomiX Audio Similarity API.
+This package contains unit tests for repository layer classes in the Resomix Audio Similarity API.
 It includes isolated testing for data access operations, database queries, CRUD operations,
 and data persistence logic within repository components.
 

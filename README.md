@@ -1,4 +1,4 @@
-# ResomiX Audio Similarity API
+# Resomix Audio Similarity API
 
 A production-ready FastAPI service for audio similarity analysis, metadata extraction, and playlist management backed by MariaDB with 2.3M+ tracks.
 
@@ -17,7 +17,7 @@ A production-ready FastAPI service for audio similarity analysis, metadata extra
 
 ## 🎵 Project Overview
 
-ResomiX is an advanced audio similarity API that enables music discovery through intelligent audio analysis. The system provides:
+Resomix is an advanced audio similarity API that enables music discovery through intelligent audio analysis. The system provides:
 
 - **Audio Similarity Matching**: Upload or query by path to find similar tracks from 2.2M+ database
 - **Metadata Processing**: Extract and clean audio metadata using FFmpeg + Mutagen

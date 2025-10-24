@@ -2,7 +2,7 @@
 Database Migrations Package
 ===========================
 
-This package contains database migration scripts for the ResomiX Audio Similarity API.
+This package contains database migration scripts for the Resomix Audio Similarity API.
 It includes migration utilities for schema changes, data transformations,
 and database version management across different environments.
 

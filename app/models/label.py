@@ -2,7 +2,7 @@
 Label Model
 ===========
 
-This module defines the Label SQLAlchemy model for the ResomiX application.
+This module defines the Label SQLAlchemy model for the Resomix application.
 It handles record label information storage including name, website, and contact details,
 with relationships to tracks for label-based organization and filtering.
 

@@ -2,7 +2,7 @@
 Album Model
 ===========
 
-This module defines the Album SQLAlchemy model for the ResomiX application.
+This module defines the Album SQLAlchemy model for the Resomix application.
 It handles album information storage including title, release date, and cover image,
 with relationships to artists and tracks.
 

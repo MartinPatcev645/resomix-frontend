@@ -2,7 +2,7 @@
 Database Utilities
 ==================
 
-This module provides comprehensive database utilities for the ResomiX Audio Similarity API.
+This module provides comprehensive database utilities for the Resomix Audio Similarity API.
 It includes functions for database health checks, backup and restore operations,
 maintenance tasks, and performance monitoring.
 

@@ -7,7 +7,7 @@ It handles HTTP requests for contact list, filtering, deletion, status updates,
 and export with authentication for administrative operations.
 
 Provides comprehensive admin panel endpoints for managing user contact inquiries
-in the ResomiX application.
+in the Resomix application.
 
 Version: 1.0.0
 Init Date: October 2, 2025

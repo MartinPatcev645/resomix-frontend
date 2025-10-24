@@ -3,7 +3,7 @@ Data Migration Utilities
 =========================
 
 This module contains utilities for migrating data between different database systems
-for the ResomiX Audio Similarity API. It provides functions for data transformation,
+for the Resomix Audio Similarity API. It provides functions for data transformation,
 validation, and transfer operations during system upgrades and migrations.
 
 Manages data export/import, schema mapping, data validation,

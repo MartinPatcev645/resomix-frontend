@@ -7,7 +7,7 @@ It provides CRUD operations and specialized queries for waitlist management
 using the base repository pattern with both sync and async support.
 
 Implements waitlist-specific database operations including email lookups,
-status filtering, and pagination for the ResomiX application.
+status filtering, and pagination for the Resomix application.
 
 Version: 3.0.1
 Init Date: June 11, 2025

@@ -3,7 +3,7 @@ Database Seeding Utilities
 ===========================
 
 This module contains utilities for seeding the MariaDB database with initial data
-for the ResomiX Audio Similarity API. It provides functions for populating
+for the Resomix Audio Similarity API. It provides functions for populating
 test data, reference data, and sample content for development and testing.
 
 Manages initial data creation, sample user insertion, RBAC setup,

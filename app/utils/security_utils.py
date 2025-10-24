@@ -3,7 +3,7 @@ Security Utilities
 ==================
 
 This module provides security utilities for URL signing, token generation,
-and cryptographic operations throughout the ResomiX application.
+and cryptographic operations throughout the Resomix application.
 It handles secure URL generation, HMAC signing, and encryption/decryption
 for preview download URLs and other security-sensitive operations.
 

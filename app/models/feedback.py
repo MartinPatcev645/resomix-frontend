@@ -2,7 +2,7 @@
 Feedback Model
 ==============
 
-This module defines the Feedback SQLAlchemy model for the ResomiX application.
+This module defines the Feedback SQLAlchemy model for the Resomix application.
 It handles user feedback storage including satisfaction ratings, recommendations,
 categories, and messages for application improvement and user support.
 

@@ -4,7 +4,7 @@ Similarity Routes Test Suite
 ============================
 
 This module contains comprehensive unit tests for similarity calculation endpoints
-in the ResomiX Audio Similarity API. It tests audio file similarity analysis,
+in the Resomix Audio Similarity API. It tests audio file similarity analysis,
 selection similarity functionality, and error handling scenarios.
 
 Provides testing for upload-based similarity, ID-based similarity, validation,

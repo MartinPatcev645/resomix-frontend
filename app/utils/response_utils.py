@@ -3,7 +3,7 @@ Response Utilities
 ==================
 
 This module provides utilities for formatting API responses consistently across
-the ResomiX application. It ensures standardized response structures for both
+the Resomix application. It ensures standardized response structures for both
 successful and error responses throughout all API endpoints.
 
 Centralizes response formatting logic to maintain consistency and enable

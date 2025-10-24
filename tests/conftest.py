@@ -3,7 +3,7 @@ Pytest Configuration and Fixtures
 ==================================
 
 This module contains pytest configuration, shared fixtures, and test utilities
-for the ResomiX Audio Similarity API test suite. It provides common test setup,
+for the Resomix Audio Similarity API test suite. It provides common test setup,
 database fixtures, mock configurations, and testing infrastructure.
 
 Manages test database setup, API client fixtures, authentication mocks,

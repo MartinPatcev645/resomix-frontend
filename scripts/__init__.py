@@ -2,7 +2,7 @@
 Scripts Package
 ===============
 
-This package contains utility scripts for the ResomiX Audio Similarity API.
+This package contains utility scripts for the Resomix Audio Similarity API.
 It includes database seeding, data migration, maintenance utilities,
 and administrative scripts for system management and operations.
 

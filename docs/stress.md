@@ -1,5 +1,5 @@
-# ResomiX API Documentation
-**Complete guide for calling ResomiX audio similarity and search endpoints**
+# Resomix API Documentation
+**Complete guide for calling Resomix audio similarity and search endpoints**
 
 **Base URL**: `https://bserver.resomix.com`  
 **Documentation**: `https://bserver.resomix.com/docs`
@@ -134,7 +134,7 @@ curl -X POST "https://bserver.resomix.com/get_similarity/?api_key=YOUR_API_KEY&t
 4. **Similarity Server Call**: `POST /similarity/query-by-upload/` with audio bytes
 5. **Result Processing**: Deduplication, enrichment with database metadata
 6. **Playlist Creation**: Auto-generates similarity playlist
-7. **Response Formatting**: Standard ResomiX response format
+7. **Response Formatting**: Standard Resomix response format
 
 ---
 
@@ -207,7 +207,7 @@ curl -X GET "https://bserver.resomix.com/search_tracks/?query=electronic%20music
 1. **Query Validation**: Ensures query is 1-200 characters
 2. **Database Search**: Multi-table search across tracks, artists, and metadata
 3. **Result Formatting**: Standardizes track information format
-4. **Response Assembly**: Wraps results in standard ResomiX response format
+4. **Response Assembly**: Wraps results in standard Resomix response format
 
 ---
 
@@ -328,7 +328,7 @@ curl -X POST "https://bserver.resomix.com/get_selection_similarity/?api_key=YOUR
 4. **Similarity Server Call**: `POST /similarity/query-by-path/` with file path
 5. **Result Processing**: Deduplication, enrichment with database metadata
 6. **Playlist Creation**: Auto-generates similarity playlist
-7. **Response Formatting**: Standard ResomiX response format
+7. **Response Formatting**: Standard Resomix response format
 
 ---
 
@@ -336,7 +336,7 @@ curl -X POST "https://bserver.resomix.com/get_selection_similarity/?api_key=YOUR
 
 ### Response Schema Standards
 
-All endpoints follow the ResomiX standard response format:
+All endpoints follow the Resomix standard response format:
 
 **Success Response**:
 ```json
@@ -369,7 +369,7 @@ The `top_sk` parameter controls result quantity with built-in deduplication:
 
 - **API Key**: Required for all endpoints
 - **Location**: Query parameter `?api_key=YOUR_API_KEY`
-- **Format**: String, provided by ResomiX team
+- **Format**: String, provided by Resomix team
 - **Error**: Returns 403 if missing or invalid
 
 ### Rate Limiting & Constraints

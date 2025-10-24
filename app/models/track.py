@@ -2,7 +2,7 @@
 Track Models
 ============
 
-This module defines the Track and TrackArtist SQLAlchemy models for the ResomiX application.
+This module defines the Track and TrackArtist SQLAlchemy models for the Resomix application.
 It handles track metadata storage including title, duration, BPM, musical key, and file paths,
 with support for many-to-many relationships between tracks and artists.
 

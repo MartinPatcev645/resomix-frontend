@@ -2,7 +2,7 @@
 Database Package
 ================
 
-This package provides database connectivity and management for the ResomiX Audio Similarity API.
+This package provides database connectivity and management for the Resomix Audio Similarity API.
 It includes MariaDB connection setup, session management, schema definitions,
 and migration utilities for database operations and maintenance.
 

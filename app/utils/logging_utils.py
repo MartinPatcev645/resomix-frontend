@@ -3,7 +3,7 @@ Logging Utilities
 =================
 
 This module provides utilities for request logging and system monitoring
-throughout the ResomiX application. It handles request tracking, parameter logging,
+throughout the Resomix application. It handles request tracking, parameter logging,
 and debugging information for API endpoints.
 
 Centralizes logging functionality to provide consistent monitoring capabilities

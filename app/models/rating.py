@@ -2,7 +2,7 @@
 Rating Models
 =============
 
-This module defines the TrackRating and PlaylistRating SQLAlchemy models for the ResomiX application.
+This module defines the TrackRating and PlaylistRating SQLAlchemy models for the Resomix application.
 It handles user rating storage for tracks and playlists with support for like/dislike functionality
 and user-based rating tracking.
 

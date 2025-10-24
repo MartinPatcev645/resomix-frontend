@@ -7,7 +7,7 @@ It handles HTTP requests for playlist list, filtering, deletion, and export
 with authentication for administrative operations.
 
 Provides comprehensive admin panel endpoints for managing playlists
-in the ResomiX application.
+in the Resomix application.
 
 Version: 1.0.0
 Init Date: October 2, 2025

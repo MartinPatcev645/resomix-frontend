@@ -2,7 +2,7 @@
 Custom Exceptions
 =================
 
-This module defines custom exception classes for the ResomiX application.
+This module defines custom exception classes for the Resomix application.
 It provides specialized exceptions for different error scenarios including
 authentication, validation, file handling, and external service failures.
 

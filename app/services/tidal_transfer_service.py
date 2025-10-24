@@ -2,7 +2,7 @@
 Tidal Transfer Service
 ======================
 
-This service handles the transfer of ResomiX playlists to Tidal.
+This service handles the transfer of Resomix playlists to Tidal.
 It manages authentication, track searching on Tidal, and playlist creation
 using unofficial Tidal API endpoints with proper OAuth2 PKCE flow.
 
@@ -62,7 +62,7 @@ def _redact(value: Optional[str]) -> Optional[str]:
 
 
 class TidalTransferService:
-    """Service for transferring ResomiX playlists to Tidal."""
+    """Service for transferring Resomix playlists to Tidal."""
 
     def __init__(self):
         self.playlist_repository = PlaylistRepository()
@@ -84,7 +84,7 @@ class TidalTransferService:
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/vnd.api+json",
             "Accept": "application/vnd.api+json",
-            "User-Agent": "ResomiX/1.0",
+            "User-Agent": "Resomix/1.0",
         }
 
     async def _make_api_request(
@@ -393,7 +393,7 @@ class TidalTransferService:
 
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "ResomiX/1.0",
+                "User-Agent": "Resomix/1.0",
                 "Accept": "application/json",
             }
 
@@ -469,7 +469,7 @@ class TidalTransferService:
         custom_playlist_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Transfer a ResomiX playlist to Tidal and return stats and target playlist info.
+        Transfer a Resomix playlist to Tidal and return stats and target playlist info.
         Raises PublicHttpError on failure with a safe message and details.
         """
 
@@ -584,14 +584,14 @@ class TidalTransferService:
 
             # Create the playlist AFTER we have the track IDs and add them immediately after creation.
             # Benefit: only one playlist creation call, then immediate population with tracks.
-            playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
+            playlist_name = custom_playlist_name or f"Resomix - {playlist.name}"
 
             async with aiohttp.ClientSession() as session:
                 tidal_playlist = await self._create_tidal_playlist(
                     session,
                     access_token,
                     playlist_name,
-                    f"Transferred from ResomiX playlist '{playlist.name}'",
+                    f"Transferred from Resomix playlist '{playlist.name}'",
                     user_id=None,
                     user_country=user_country,
                 )

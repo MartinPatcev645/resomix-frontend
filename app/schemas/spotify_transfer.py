@@ -3,7 +3,7 @@ Spotify Transfer Schemas
 ========================
 
 This module contains Pydantic schemas for Spotify playlist transfer operations.
-It defines request and response models for transferring ResomiX playlists to Spotify
+It defines request and response models for transferring Resomix playlists to Spotify
 with comprehensive validation and error handling.
 
 Provides schemas for Spotify OAuth integration, playlist transfer requests,
@@ -55,7 +55,7 @@ class SpotifyTransferRequest(BaseModel):
             "example": {
                 "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
                 "access_token": "BQC4YqJ...",
-                "playlist_name": "My ResomiX Playlist"
+                "playlist_name": "My Resomix Playlist"
             }
         }
 
@@ -73,7 +73,7 @@ class SpotifyTransferResponse(BaseModel):
                 "data": {
                     "spotify_playlist_id": "37i9dQZF1DX0XUsuxWHRQd",
                     "spotify_playlist_url": "https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd",
-                    "spotify_playlist_name": "My ResomiX Playlist",
+                    "spotify_playlist_name": "My Resomix Playlist",
                     "total_tracks": 25,
                     "tracks_added": 22,
                     "tracks_not_found": 3,

@@ -2,7 +2,7 @@
 Route Tests Package
 ===================
 
-This package contains unit tests for API route handlers in the ResomiX Audio Similarity API.
+This package contains unit tests for API route handlers in the Resomix Audio Similarity API.
 It includes comprehensive testing for all HTTP endpoints, request validation,
 response formatting, error handling, and authentication/authorization.
 

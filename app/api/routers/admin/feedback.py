@@ -7,7 +7,7 @@ It handles HTTP requests for feedback list, filtering, deletion, status updates,
 and statistics with authentication for administrative operations.
 
 Provides comprehensive admin panel endpoints for managing user feedback
-and support requests in the ResomiX application.
+and support requests in the Resomix application.
 
 Version: 1.0.0
 Init Date: October 1, 2025

@@ -2,7 +2,7 @@
 Playlist Models
 ===============
 
-This module defines the Playlist and PlaylistTrack SQLAlchemy models for the ResomiX application.
+This module defines the Playlist and PlaylistTrack SQLAlchemy models for the Resomix application.
 It handles playlist creation and management with support for track ordering and user associations.
 
 Provides playlist data modeling with many-to-many relationships between playlists

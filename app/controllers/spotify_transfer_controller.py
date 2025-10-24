@@ -54,7 +54,7 @@ class SpotifyTransferController:
         Args:
             db: Database session
             request: FastAPI Request object
-            playlist_id: ResomiX playlist UUID
+            playlist_id: Resomix playlist UUID
             access_token: Spotify OAuth access token
             custom_playlist_name: Optional custom name for Spotify playlist
             

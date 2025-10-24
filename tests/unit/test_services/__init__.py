@@ -2,7 +2,7 @@
 Service Tests Package
 =====================
 
-This package contains unit tests for service layer classes in the ResomiX Audio Similarity API.
+This package contains unit tests for service layer classes in the Resomix Audio Similarity API.
 It includes isolated testing for business logic, data processing, external integrations,
 and core functionality within service components.
 

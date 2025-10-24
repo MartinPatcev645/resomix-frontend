@@ -3,7 +3,7 @@ Validation Utilities
 ====================
 
 This module provides utilities for data validation and input sanitization
-throughout the ResomiX application. It handles request validation, parameter checking,
+throughout the Resomix application. It handles request validation, parameter checking,
 and data integrity verification for API endpoints.
 
 Centralizes validation logic to ensure consistent data validation and security

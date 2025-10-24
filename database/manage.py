@@ -3,7 +3,7 @@
 Database Management CLI
 ========================
 
-Comprehensive database management command-line interface for the ResomiX Audio Similarity API.
+Comprehensive database management command-line interface for the Resomix Audio Similarity API.
 This script provides a unified interface for database operations including migrations,
 seeding, backups, maintenance, and monitoring.
 
@@ -227,7 +227,7 @@ class DatabaseManager:
 def main():
     """Main CLI interface."""
     parser = argparse.ArgumentParser(
-        description="ResomiX Database Management CLI",
+        description="Resomix Database Management CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

@@ -72,7 +72,7 @@ class EmailService:
         )
 
         message = MessageSchema(
-            subject="Verify your ResomiX email address",
+            subject="Verify your Resomix email address",
             recipients=[email],
             body=html,
             subtype=MessageType.html,
@@ -111,7 +111,7 @@ class EmailService:
         )
 
         message = MessageSchema(
-            subject="Reset your ResomiX password",
+            subject="Reset your Resomix password",
             recipients=[email],
             body=html,
             subtype=MessageType.html,
@@ -153,7 +153,7 @@ class EmailService:
         )
 
         message = MessageSchema(
-            subject="Your ResomiX verification code",
+            subject="Your Resomix verification code",
             recipients=[email],
             body=html,
             subtype=MessageType.html,
@@ -185,7 +185,7 @@ class EmailService:
         )
 
         message = MessageSchema(
-            subject="Welcome to ResomiX!",
+            subject="Welcome to Resomix!",
             recipients=[email],
             body=html,
             subtype=MessageType.html,

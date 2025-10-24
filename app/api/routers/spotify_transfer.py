@@ -3,11 +3,11 @@ Spotify Transfer API Router
 ============================
 
 This module defines the FastAPI router for Spotify playlist transfer endpoints.
-It handles HTTP requests for transferring ResomiX playlists to Spotify
+It handles HTTP requests for transferring Resomix playlists to Spotify
 with OAuth authentication and comprehensive validation.
 
 Provides RESTful API endpoints for Spotify integration functionality
-of the ResomiX audio similarity system.
+of the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -47,7 +47,7 @@ spotify_transfer_controller = SpotifyTransferController()
     "/transfer-playlist/",
     response_model=SpotifyTransferResponse,
     summary="Transfer Playlist to Spotify",
-    description="Transfer a ResomiX playlist to user's Spotify account. Requires OAuth access token from frontend.",
+    description="Transfer a Resomix playlist to user's Spotify account. Requires OAuth access token from frontend.",
     responses={
         200: {
             "model": SpotifyTransferResponse,
@@ -78,9 +78,9 @@ async def transfer_playlist_to_spotify_endpoint(
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     """
-    Transfer a ResomiX playlist to user's Spotify account.
+    Transfer a Resomix playlist to user's Spotify account.
     
-    This endpoint takes a ResomiX playlist and creates an equivalent playlist
+    This endpoint takes a Resomix playlist and creates an equivalent playlist
     in the user's Spotify account. It searches for each track on Spotify
     and adds the best matches to the new playlist.
     
@@ -97,7 +97,7 @@ async def transfer_playlist_to_spotify_endpoint(
     Required Spotify scopes: `playlist-modify-public` or `playlist-modify-private`
     
     **Parameters:**
-    - **playlist_id**: The UUID of the ResomiX playlist to transfer
+    - **playlist_id**: The UUID of the Resomix playlist to transfer
     - **access_token**: Valid Spotify OAuth access token from user
     - **playlist_name**: Optional custom name for the Spotify playlist
     

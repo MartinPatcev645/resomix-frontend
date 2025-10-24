@@ -2,7 +2,7 @@
 Genre Model
 ===========
 
-This module defines the Genre SQLAlchemy model for the ResomiX application.
+This module defines the Genre SQLAlchemy model for the Resomix application.
 It handles music genre classification with relationships to tracks
 for categorization and filtering purposes.
 

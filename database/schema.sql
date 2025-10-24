@@ -2,7 +2,7 @@
 Database Schema
 ===============
 
-MariaDB schema definitions for the ResomiX Audio Similarity API.
+MariaDB schema definitions for the Resomix Audio Similarity API.
 
 Version: 3.2.0           -- Auth: numeric user IDs (BIGINT), UUID kept as public id
 Init Date: June 11, 2025
@@ -11,7 +11,7 @@ Email: usman.naeem2212@gmail.com
 */
 
 /* ===========================================================
-   ResomiX – Application DB  (MariaDB 10.5+ / InnoDB)
+   Resomix – Application DB  (MariaDB 10.5+ / InnoDB)
    Internal primary keys: BIGINT UNSIGNED.
    Public/external user id: users.uuid (CHAR(36)) unique.
    =========================================================== */

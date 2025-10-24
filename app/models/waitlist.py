@@ -2,7 +2,7 @@
 Waitlist Model
 ==============
 
-This module defines the Waitlist SQLAlchemy model for the ResomiX application.
+This module defines the Waitlist SQLAlchemy model for the Resomix application.
 It handles waitlist email submissions including email storage, status tracking,
 and timestamp management for user waitlist management.
 

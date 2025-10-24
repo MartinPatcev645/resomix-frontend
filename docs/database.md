@@ -1,4 +1,4 @@
-# ResomiX Database Documentation
+# Resomix Database Documentation
 
 **Comprehensive database schema and operations guide for MariaDB 10.5+**
 
@@ -506,4 +506,4 @@ python database/migration_manager.py rollback
 
 ---
 
-**ResomiX Database v3.0.1** - High-performance music metadata storage with MariaDB 10.5+
+**Resomix Database v3.0.1** - High-performance music metadata storage with MariaDB 10.5+

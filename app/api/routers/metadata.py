@@ -7,7 +7,7 @@ It handles HTTP requests for extracting metadata from uploaded audio files
 including artist, album, genre, and technical information.
 
 Provides RESTful API endpoints for metadata extraction functionality
-in the ResomiX audio analysis system.
+in the Resomix audio analysis system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

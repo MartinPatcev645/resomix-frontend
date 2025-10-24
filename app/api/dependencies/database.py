@@ -7,7 +7,7 @@ It handles async MariaDB session creation, cleanup, and connection lifecycle
 for all API endpoints requiring database access.
 
 Centralizes database session management to ensure proper connection handling
-and resource cleanup across the ResomiX application.
+and resource cleanup across the Resomix application.
 
 Version: 3.0.1
 Init Date: June 11, 2025

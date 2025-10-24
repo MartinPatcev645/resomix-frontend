@@ -3,7 +3,7 @@ User Role Models
 ================
 
 This module defines the Role, Permission, RolePermission, and UserRole SQLAlchemy models
-for the ResomiX application. It handles user authorization and access control through
+for the Resomix application. It handles user authorization and access control through
 role-based permissions and user role assignments.
 
 Provides comprehensive user access control modeling with many-to-many relationships

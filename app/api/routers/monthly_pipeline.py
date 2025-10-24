@@ -7,7 +7,7 @@ It handles HTTP requests for monthly pipeline track processing including file up
 metadata extraction, embedding preview generation, and database storage.
 
 Provides RESTful API endpoints for monthly pipeline track functionality
-in the ResomiX audio similarity system.
+in the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

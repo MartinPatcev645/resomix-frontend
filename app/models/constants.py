@@ -2,7 +2,7 @@
 Model Constants
 ===============
 
-This module defines constants used across the ResomiX models.
+This module defines constants used across the Resomix models.
 It provides standardized values for track types, status values,
 and other enumerated fields to ensure consistency throughout the application.
 

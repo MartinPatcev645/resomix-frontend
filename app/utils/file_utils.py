@@ -3,7 +3,7 @@ File Utilities
 ==============
 
 This module provides utilities for file operations and filename handling
-throughout the ResomiX application. It handles filename sanitization,
+throughout the Resomix application. It handles filename sanitization,
 security validation, and file path processing.
 
 Centralizes file-related utility functions to ensure consistent and secure

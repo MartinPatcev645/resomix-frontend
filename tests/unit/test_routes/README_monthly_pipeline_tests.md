@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains comprehensive tests for the Monthly Pipeline functionality in the ResomiX API. The monthly pipeline endpoint processes audio files by:
+This directory contains comprehensive tests for the Monthly Pipeline functionality in the Resomix API. The monthly pipeline endpoint processes audio files by:
 
 1. **Extracting metadata** and generating a UUID
 2. **Sending to similarity server** for embedding preview generation  

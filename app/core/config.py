@@ -2,7 +2,7 @@
 Application Configuration
 =========================
 
-This module defines the application configuration settings for the ResomiX API.
+This module defines the application configuration settings for the Resomix API.
 It handles environment variable loading, API configuration, file handling settings,
 CORS configuration, and similarity search parameters.
 
@@ -60,7 +60,7 @@ class Settings(BaseModel):
     )
     resomix_server_url: str = Field(
         default="http://localhost:8000",
-        description="URL of the ResomiX server"
+        description="URL of the Resomix server"
     )
     
     # Google Sheets Configuration
@@ -328,7 +328,7 @@ class Settings(BaseModel):
         description="From email address"
     )
     smtp_from_name: str = Field(
-        default="ResomiX",
+        default="Resomix",
         description="From name"
     )
     

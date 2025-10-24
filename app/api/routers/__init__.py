@@ -6,7 +6,7 @@ This module aggregates all API routers and exposes them for the main FastAPI app
 It provides a centralized way to manage all API endpoints and their routing.
 
 Manages authentication, database dependencies, and route organization
-for the ResomiX audio similarity API system.
+for the Resomix audio similarity API system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

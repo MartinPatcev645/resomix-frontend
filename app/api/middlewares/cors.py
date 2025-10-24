@@ -3,7 +3,7 @@ CORS Middleware
 ===============
 
 This module provides CORS (Cross-Origin Resource Sharing) middleware configuration
-for the ResomiX FastAPI application. It handles cross-origin request policies
+for the Resomix FastAPI application. It handles cross-origin request policies
 and security settings for web browser access.
 
 Configures CORS policies based on environment settings to allow secure

@@ -1,8 +1,8 @@
 """
-ResomiX Audio Similarity API - Application Entry Point
+Resomix Audio Similarity API - Application Entry Point
 ======================================================
 
-This module serves as the main entry point for the ResomiX Audio Similarity API.
+This module serves as the main entry point for the Resomix Audio Similarity API.
 It configures and starts the FastAPI application using Uvicorn ASGI server
 with production-ready settings for host binding and port configuration.
 

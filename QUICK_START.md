@@ -1,6 +1,6 @@
-# ResomiX Quick Start Guide
+# Resomix Quick Start Guide
 
-Complete step-by-step instructions to get ResomiX running locally from scratch.
+Complete step-by-step instructions to get Resomix running locally from scratch.
 
 ---
 
@@ -10,7 +10,7 @@ Complete step-by-step instructions to get ResomiX running locally from scratch.
 - Python 3.12 virtual environment
 - FFmpeg for audio processing
 - MariaDB Connector/C for Python
-- ResomiX API server with hot-reload
+- Resomix API server with hot-reload
 
 ---
 

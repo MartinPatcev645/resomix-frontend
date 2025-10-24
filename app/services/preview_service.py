@@ -4,7 +4,7 @@ Preview Service
 
 This service provides preview file validation, processing functionality, and download URL generation.
 It handles audio format validation using FFmpeg, file type checking, audio stream analysis,
-and communication with the ResomiX server for secure preview file access.
+and communication with the Resomix server for secure preview file access.
 
 Manages FFmpeg availability detection, provides fallback validation methods,
 and handles track validation and UUID resolution for preview downloads.

@@ -2,7 +2,7 @@
 Log Model
 =========
 
-This module defines the SystemLog SQLAlchemy model for the ResomiX application.
+This module defines the SystemLog SQLAlchemy model for the Resomix application.
 It handles comprehensive system logging and audit trail storage with support for 
 request tracking, error logging, user actions, and system events.
 

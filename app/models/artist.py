@@ -2,7 +2,7 @@
 Artist Model
 ============
 
-This module defines the Artist SQLAlchemy model for the ResomiX application.
+This module defines the Artist SQLAlchemy model for the Resomix application.
 It handles artist information storage with support for relationships to albums
 and tracks through many-to-many associations.
 

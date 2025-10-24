@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ResomiX server now provides secure server-side Tidal OAuth authentication endpoints. This approach keeps client secrets secure on the server while providing a simple integration path for the frontend.
+The Resomix server now provides secure server-side Tidal OAuth authentication endpoints. This approach keeps client secrets secure on the server while providing a simple integration path for the frontend.
 
 ## 🔐 Security Benefits
 

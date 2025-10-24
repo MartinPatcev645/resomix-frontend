@@ -215,7 +215,7 @@ class TidalTransferController:
         
         Args:
             db: Database session
-            playlist_id: ResomiX playlist UUID
+            playlist_id: Resomix playlist UUID
             access_token: Tidal OAuth access token
             custom_playlist_name: Optional custom name for Tidal playlist
             

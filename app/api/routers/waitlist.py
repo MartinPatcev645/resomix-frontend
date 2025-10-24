@@ -7,7 +7,7 @@ It handles HTTP requests for waitlist operations including email submission,
 status checking, and waitlist management with authentication and validation.
 
 Provides RESTful API endpoints for waitlist functionality
-of the ResomiX audio similarity system.
+of the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -46,7 +46,7 @@ waitlist_controller = WaitlistController()
     "/",
     response_model=WaitlistSuccessResponse,
     summary="Join Waitlist",
-    description="Add an email address to the waitlist for early access to ResomiX features.",
+    description="Add an email address to the waitlist for early access to Resomix features.",
     responses={
         200: {
             "model": WaitlistSuccessResponse,

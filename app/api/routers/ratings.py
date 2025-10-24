@@ -7,7 +7,7 @@ It handles HTTP requests for track and playlist rating operations including
 create, read, update, delete and statistics retrieval with authentication and validation.
 
 Provides RESTful API endpoints for rating functionality
-of the ResomiX audio similarity system.
+of the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

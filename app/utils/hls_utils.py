@@ -7,7 +7,7 @@ It handles URL signing for secure media access and M3U8 playlist creation with p
 HLS formatting including EXTINF tags and discontinuity markers.
 
 Provides secure URL generation and M3U8 playlist formatting for audio streaming
-in the ResomiX application.
+in the Resomix application.
 
 Version: 3.0.1
 Init Date: September 16, 2025

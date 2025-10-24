@@ -6,7 +6,7 @@ This module defines the FastAPI router for health check and status endpoints.
 It provides system health monitoring and basic API information endpoints
 for service monitoring and uptime verification.
 
-Provides essential health check endpoints for monitoring the ResomiX
+Provides essential health check endpoints for monitoring the Resomix
 application status and availability.
 
 Version: 3.0.1
@@ -32,7 +32,7 @@ router = APIRouter(tags=["health"])
 async def root() -> HealthCheckResponse:
     """Root endpoint that returns API information"""
     return HealthCheckResponse(
-        name="ResomiX API",
+        name="Resomix API",
         version="3.0.1",
         status="running",
         docs_url="/docs"
@@ -48,5 +48,5 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "service": "ResomiX API"
+        "service": "Resomix API"
     } 

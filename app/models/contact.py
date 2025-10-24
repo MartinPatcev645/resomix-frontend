@@ -2,7 +2,7 @@
 Contact Model
 =============
 
-This module defines the Contact SQLAlchemy model for the ResomiX application.
+This module defines the Contact SQLAlchemy model for the Resomix application.
 It handles user contact form submissions including name, email, subject, phone,
 and message for customer support and communication management.
 

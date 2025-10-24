@@ -2,7 +2,7 @@
 Controller Tests Package
 ========================
 
-This package contains unit tests for controller classes in the ResomiX Audio Similarity API.
+This package contains unit tests for controller classes in the Resomix Audio Similarity API.
 It includes isolated testing for business logic, request processing, service coordination,
 and response handling within controller components.
 

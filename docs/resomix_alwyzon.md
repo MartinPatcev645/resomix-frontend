@@ -1,4 +1,4 @@
-# ResomiX API Reference - Alwyzon
+# Resomix API Reference - Alwyzon
 
 **Comprehensive API endpoint documentation with input, processing, and output summaries**
 
@@ -168,7 +168,7 @@ curl -X GET "https://bserver.resomix.com/api/health/?api_key=YOUR_API_KEY"
 ## 🔗 External Service Integration
 
 ### Similarity Microservice
-The ResomiX API integrates with an external similarity microservice for audio similarity calculations:
+The Resomix API integrates with an external similarity microservice for audio similarity calculations:
 
 - **Service URL**: Configurable via `SIMILARITY_SERVER_URL` environment variable
 - **Endpoints Used**:
@@ -208,4 +208,4 @@ Feedback and contact endpoints can optionally integrate with Google Sheets for d
 
 ---
 
-**ResomiX API v3.0.1** - Advanced audio similarity and music discovery platform
+**Resomix API v3.0.1** - Advanced audio similarity and music discovery platform

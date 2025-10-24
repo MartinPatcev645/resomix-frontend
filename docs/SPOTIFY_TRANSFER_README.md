@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Spotify Transfer feature allows users to transfer their ResomiX playlists to their personal Spotify accounts. This feature integrates with the Spotify Web API to search for tracks and create playlists in the user's Spotify library.
+The Spotify Transfer feature allows users to transfer their Resomix playlists to their personal Spotify accounts. This feature integrates with the Spotify Web API to search for tracks and create playlists in the user's Spotify library.
 
 ## Features
 
@@ -16,7 +16,7 @@ The Spotify Transfer feature allows users to transfer their ResomiX playlists to
 
 ### POST `/spotify/transfer-playlist/`
 
-Transfer a ResomiX playlist to user's Spotify account.
+Transfer a Resomix playlist to user's Spotify account.
 
 #### Request Body
 
@@ -24,13 +24,13 @@ Transfer a ResomiX playlist to user's Spotify account.
 {
   "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
   "access_token": "BQC4YqJ...",
-  "playlist_name": "My ResomiX Playlist"
+  "playlist_name": "My Resomix Playlist"
 }
 ```
 
 #### Parameters
 
-- **playlist_id** (required): UUID of the ResomiX playlist to transfer
+- **playlist_id** (required): UUID of the Resomix playlist to transfer
 - **access_token** (required): Valid Spotify OAuth access token
 - **playlist_name** (optional): Custom name for the Spotify playlist
 
@@ -43,7 +43,7 @@ Transfer a ResomiX playlist to user's Spotify account.
   "data": {
     "spotify_playlist_id": "37i9dQZF1DX0XUsuxWHRQd",
     "spotify_playlist_url": "https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd",
-    "spotify_playlist_name": "My ResomiX Playlist",
+    "spotify_playlist_name": "My Resomix Playlist",
     "total_tracks": 25,
     "tracks_added": 22,
     "tracks_not_found": 3,
@@ -288,7 +288,7 @@ const getAccessToken = async (code) => {
 }
 ```
 
-#### Step 5: Call ResomiX Transfer API
+#### Step 5: Call Resomix Transfer API
 
 ```javascript
 const transferPlaylistToSpotify = async (playlistId, customName = null) => {
@@ -302,7 +302,7 @@ const transferPlaylistToSpotify = async (playlistId, customName = null) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${YOUR_RESOMIX_API_KEY}` // Your ResomiX API key
+      'Authorization': `Bearer ${YOUR_RESOMIX_API_KEY}` // Your Resomix API key
     },
     body: JSON.stringify({
       playlist_id: playlistId,
@@ -500,7 +500,7 @@ const SpotifyPlaylistTransfer = ({ playlistId, playlistName }) => {
         body: JSON.stringify({
           playlist_id: playlistId,
           access_token: spotifyAccessToken,
-          playlist_name: `ResomiX - ${playlistName}`
+          playlist_name: `Resomix - ${playlistName}`
         })
       });
       
@@ -640,7 +640,7 @@ Check the application logs for detailed error information.
 Potential improvements for future versions:
 
 - **Batch Transfer**: Transfer multiple playlists at once
-- **Sync Feature**: Keep ResomiX and Spotify playlists synchronized
+- **Sync Feature**: Keep Resomix and Spotify playlists synchronized
 - **Advanced Matching**: Use audio features for better track matching
 - **User Preferences**: Allow users to configure matching preferences
 - **Transfer History**: Track previous transfers and prevent duplicates

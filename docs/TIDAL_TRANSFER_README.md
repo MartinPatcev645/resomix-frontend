@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Tidal Transfer feature allows users to transfer their ResomiX playlists to their personal Tidal accounts. This feature integrates with the latest Tidal API (OAuth 2.1 PKCE and Playlist API v2) to search for tracks and create playlists in the user's Tidal library.
+The Tidal Transfer feature allows users to transfer their Resomix playlists to their personal Tidal accounts. This feature integrates with the latest Tidal API (OAuth 2.1 PKCE and Playlist API v2) to search for tracks and create playlists in the user's Tidal library.
 
 ## Features
 
@@ -17,7 +17,7 @@ The Tidal Transfer feature allows users to transfer their ResomiX playlists to t
 
 ### POST `/tidal/transfer-playlist/`
 
-Transfer a ResomiX playlist to user's Tidal account.
+Transfer a Resomix playlist to user's Tidal account.
 
 #### Request Body
 
@@ -25,13 +25,13 @@ Transfer a ResomiX playlist to user's Tidal account.
 {
   "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
   "access_token": "BQC4YqJ...",
-  "playlist_name": "My ResomiX Playlist"
+  "playlist_name": "My Resomix Playlist"
 }
 ```
 
 #### Parameters
 
-- **playlist_id** (required): UUID of the ResomiX playlist to transfer
+- **playlist_id** (required): UUID of the Resomix playlist to transfer
 - **access_token** (required): Valid Tidal OAuth access token
 - **playlist_name** (optional): Custom name for the Tidal playlist
 
@@ -44,7 +44,7 @@ Transfer a ResomiX playlist to user's Tidal account.
   "data": {
     "tidal_playlist_id": "37i9dQZF1DX0XUsuxWHRQd",
     "tidal_playlist_url": "https://listen.tidal.com/playlist/37i9dQZF1DX0XUsuxWHRQd",
-    "tidal_playlist_name": "My ResomiX Playlist",
+    "tidal_playlist_name": "My Resomix Playlist",
     "total_tracks": 25,
     "tracks_added": 22,
     "tracks_not_found": 3,
@@ -329,7 +329,7 @@ logging.getLogger('app.services.tidal_transfer_service').setLevel(logging.DEBUG)
 1. **Batch Operations**: Improve batch processing for large playlists
 2. **Advanced Matching**: Implement more sophisticated track matching algorithms
 3. **User Preferences**: Allow users to configure transfer preferences
-4. **Sync Features**: Implement two-way sync between ResomiX and Tidal
+4. **Sync Features**: Implement two-way sync between Resomix and Tidal
 
 ## Support
 
@@ -360,7 +360,7 @@ This server implements a secure, robust, and fully compliant Tidal integration f
   - All backend endpoints are protected by an API key, which must be provided as a query parameter (`api_key`).
 
 - **Playlist Transfer:**
-  - The backend exposes `/tidal/transfer-playlist/`, which takes a ResomiX playlist and a Tidal access token.
+  - The backend exposes `/tidal/transfer-playlist/`, which takes a Resomix playlist and a Tidal access token.
   - It creates a new playlist in the user's Tidal account using the official API v2 endpoint, searches for each track, and adds found tracks in batches (up to 100 per call).
   - Caching is used to avoid redundant Tidal searches for the same tracks.
 
@@ -373,7 +373,7 @@ This server implements a secure, robust, and fully compliant Tidal integration f
   - All sensitive operations (token exchange, playlist creation) are performed server-side.
   - Only official Tidal API v2 endpoints are used for all playlist and track operations.
 
-This architecture ensures a secure, maintainable, and future-proof Tidal integration for ResomiX users.
+This architecture ensures a secure, maintainable, and future-proof Tidal integration for Resomix users.
 
 
 
@@ -391,7 +391,7 @@ This architecture ensures a secure, maintainable, and future-proof Tidal integra
 This section documents the exact sequence of Tidal API calls made by the backend when a user requests a playlist transfer via `/tidal/transfer-playlist/`. Internal processing steps are summarized; all external (Tidal) API calls are shown in detail with method, endpoint, query parameters, and payload.
 
 ### 1. Internal: Fetch Playlist and Tracks
-- Fetch playlist metadata and track list from the ResomiX database using the provided `playlist_id`.
+- Fetch playlist metadata and track list from the Resomix database using the provided `playlist_id`.
 
 ### 2. Tidal API: Get User Info (Country Code)
 - **Method:** `GET`
@@ -399,7 +399,7 @@ This section documents the exact sequence of Tidal API calls made by the backend
 - **Headers:**
   - `Authorization: Bearer <access_token>`
   - `Content-Type: application/json`
-  - `User-Agent: ResomiX/1.0`
+  - `User-Agent: Resomix/1.0`
 - **Query Parameters:** _None_
 - **Payload:** _None_
 - **Purpose:** Retrieve the user's Tidal country code (e.g., `"country": "GR"`).
@@ -410,7 +410,7 @@ This section documents the exact sequence of Tidal API calls made by the backend
 - **Headers:**
   - `Authorization: Bearer <access_token>`
   - `Content-Type: application/json`
-  - `User-Agent: ResomiX/1.0`
+  - `User-Agent: Resomix/1.0`
 - **Query Parameters:**
   - `countryCode=<user_country>` (e.g., `countryCode=GR`)
 - **Payload Example:**
@@ -419,7 +419,7 @@ This section documents the exact sequence of Tidal API calls made by the backend
   "data": {
     "attributes": {
       "accessType": "PRIVATE", // or "PUBLIC" if public playlist is desired
-      "description": "Transferred from ResomiX playlist 'Playlist Name'",
+      "description": "Transferred from Resomix playlist 'Playlist Name'",
       "name": "<playlist_name>"
     },
     "type": "playlists"
@@ -438,7 +438,7 @@ This section documents the exact sequence of Tidal API calls made by the backend
 - **Headers:**
   - `Authorization: Bearer <access_token>`
   - `Content-Type: application/json`
-  - `User-Agent: ResomiX/1.0`
+  - `User-Agent: Resomix/1.0`
 - **Query Parameters:**
   - `query=<artist and title>` (e.g., `query=Daft Punk One More Time`)
   - `type=track`
@@ -454,7 +454,7 @@ This section documents the exact sequence of Tidal API calls made by the backend
 - **Headers:**
   - `Authorization: Bearer <access_token>`
   - `Content-Type: application/json`
-  - `User-Agent: ResomiX/1.0`
+  - `User-Agent: Resomix/1.0`
 - **Query Parameters:** _None_
 - **Payload Example (batch of up to 100 track IDs):**
 ```json

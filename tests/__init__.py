@@ -2,7 +2,7 @@
 Tests Package
 =============
 
-This package contains comprehensive test suites for the ResomiX Audio Similarity API.
+This package contains comprehensive test suites for the Resomix Audio Similarity API.
 It includes unit tests, integration tests, and end-to-end testing utilities
 for validating API functionality, data integrity, and system performance.
 

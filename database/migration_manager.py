@@ -2,7 +2,7 @@
 Database Migration Manager
 ==========================
 
-This module provides comprehensive database migration management for the ResomiX Audio Similarity API.
+This module provides comprehensive database migration management for the Resomix Audio Similarity API.
 It handles migration execution, rollback, status tracking, and validation with proper error handling
 and transaction management for safe database schema evolution.
 

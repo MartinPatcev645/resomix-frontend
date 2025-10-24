@@ -2,7 +2,7 @@
 Unit Tests Package
 ==================
 
-This package contains unit tests for individual components of the ResomiX Audio Similarity API.
+This package contains unit tests for individual components of the Resomix Audio Similarity API.
 It includes isolated tests for controllers, services, repositories, utilities,
 and other application components with comprehensive mocking and validation.
 

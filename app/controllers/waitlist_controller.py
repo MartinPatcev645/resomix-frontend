@@ -7,7 +7,7 @@ It processes waitlist email submissions, validates inputs, and coordinates
 with services to manage waitlist entries with proper error handling.
 
 Manages waitlist operations including email submission, status checking,
-and response formatting for the ResomiX audio similarity system.
+and response formatting for the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

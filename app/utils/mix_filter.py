@@ -7,7 +7,7 @@ from track uploads. It validates audio files based on duration, file size, and
 file extension to identify and reject tracks that are likely to be mixes.
 
 Implements filtering rules to maintain track quality and prevent mix uploads
-in the ResomiX audio similarity system.
+in the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025

@@ -2,7 +2,7 @@
 Schemas Package
 ===============
 
-This package contains all Pydantic schemas for the ResomiX Audio Similarity API,
+This package contains all Pydantic schemas for the Resomix Audio Similarity API,
 organized by domain for clear separation of concerns. Provides request/response models,
 validation schemas, and data transfer objects for all API endpoints.
 

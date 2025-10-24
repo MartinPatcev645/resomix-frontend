@@ -2,7 +2,7 @@
 FastAPI Application Entry Point
 ===============================
 
-This is the main FastAPI application entry point for the ResomiX Audio Similarity API.
+This is the main FastAPI application entry point for the Resomix Audio Similarity API.
 It configures the FastAPI app, sets up global exception handlers for standardized responses,
 includes all API routers, and handles CORS middleware for cross-origin requests.
 

@@ -3,11 +3,11 @@ Tidal Transfer API Router
 =========================
 
 This module defines the FastAPI router for Tidal playlist transfer endpoints.
-It handles HTTP requests for transferring ResomiX playlists to Tidal
+It handles HTTP requests for transferring Resomix playlists to Tidal
 with OAuth authentication and comprehensive validation.
 
 Provides RESTful API endpoints for Tidal integration functionality
-of the ResomiX audio similarity system.
+of the Resomix audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -123,7 +123,7 @@ async def exchange_token(
     "/transfer-playlist/",
     response_model=TidalTransferResponse,
     summary="Transfer Playlist to Tidal",
-    description="Transfer a ResomiX playlist to user's Tidal account. Requires OAuth access token from frontend.",
+    description="Transfer a Resomix playlist to user's Tidal account. Requires OAuth access token from frontend.",
     responses={
         200: {
             "model": TidalTransferResponse,
@@ -155,9 +155,9 @@ async def transfer_playlist_to_tidal_endpoint(
     api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     """
-    Transfer a ResomiX playlist to user's Tidal account using official Tidal API v2 endpoints.
+    Transfer a Resomix playlist to user's Tidal account using official Tidal API v2 endpoints.
 
-    This endpoint takes a ResomiX playlist and creates an equivalent playlist
+    This endpoint takes a Resomix playlist and creates an equivalent playlist
     in the user's Tidal account. It searches for each track on Tidal
     and adds the best matches to the new playlist using only official endpoints.
 
@@ -174,7 +174,7 @@ async def transfer_playlist_to_tidal_endpoint(
     Required Tidal scopes: `user.read playlists.read playlists.write`
 
     **Parameters:**
-    - **playlist_id**: The UUID of the ResomiX playlist to transfer
+    - **playlist_id**: The UUID of the Resomix playlist to transfer
     - **access_token**: Valid Tidal OAuth access token from user
     - **playlist_name**: Optional custom name for the Tidal playlist
 

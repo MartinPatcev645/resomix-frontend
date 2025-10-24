@@ -4,7 +4,7 @@ Preview Controller
 
 This controller handles HTTP requests for preview-related functionality.
 It processes preview download URL requests and coordinates with preview service
-to communicate with the ResomiX server for secure preview file access.
+to communicate with the Resomix server for secure preview file access.
 
 Manages request validation, preview service coordination, and response formatting
 for preview-related API endpoints.

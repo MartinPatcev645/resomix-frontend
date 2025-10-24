@@ -2,7 +2,7 @@
 Database Connection Management
 ==============================
 
-This module manages database connections for the ResomiX Audio Similarity API.
+This module manages database connections for the Resomix Audio Similarity API.
 It provides SQLAlchemy engine configuration, connection pooling, session management,
 and database URL construction with proper error handling and logging.
 

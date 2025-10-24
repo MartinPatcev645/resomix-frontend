@@ -7,7 +7,7 @@ It handles HTTP requests for feedback submissions, retrieval, and status updates
 with authentication and validation for customer satisfaction tracking.
 
 Provides RESTful API endpoints for managing user feedback and support
-requests in the ResomiX application.
+requests in the Resomix application.
 
 Version: 3.0.1
 Init Date: June 11, 2025

@@ -31,7 +31,7 @@ lint:
 	ruff check .
 
 help:
-	@echo "ResomiX Development Commands:"
+	@echo "Resomix Development Commands:"
 	@echo "  make up       - Start MariaDB in Docker"
 	@echo "  make down     - Stop all Docker services"
 	@echo "  make logs     - View Docker logs"

@@ -2,7 +2,7 @@
 Spotify Transfer Service
 ========================
 
-This service handles the transfer of ResomiX playlists to Spotify.
+This service handles the transfer of Resomix playlists to Spotify.
 It manages OAuth authentication, track searching on Spotify, and playlist creation
 using the Spotify Web API through the spotipy library.
 
@@ -46,7 +46,7 @@ if not logger.handlers:
 
 
 class SpotifyTransferService:
-    """Service for transferring ResomiX playlists to Spotify"""
+    """Service for transferring Resomix playlists to Spotify"""
     
     def __init__(self):
         """Initialize the Spotify transfer service"""
@@ -381,11 +381,11 @@ class SpotifyTransferService:
     async def transfer_playlist_to_spotify(self, db: AsyncSession, playlist_id: str, 
                                          access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
         """
-        Transfer a ResomiX playlist to Spotify
+        Transfer a Resomix playlist to Spotify
         
         Args:
             db: Database session
-            playlist_id: ResomiX playlist UUID
+            playlist_id: Resomix playlist UUID
             access_token: Spotify OAuth access token
             custom_playlist_name: Optional custom name for Spotify playlist
             
@@ -429,7 +429,7 @@ class SpotifyTransferService:
             
             # Step 5: Create Spotify playlist
             logger.info("Creating Spotify playlist...")
-            playlist_name = custom_playlist_name or f"ResomiX - {playlist.name}"
+            playlist_name = custom_playlist_name or f"Resomix - {playlist.name}"
             user_info = spotify_client.me()
             user_id = user_info['id']
             
@@ -437,7 +437,7 @@ class SpotifyTransferService:
                 user=user_id,
                 name=playlist_name,
                 public=False,  # Create as private by default
-                description=f"Transferred from ResomiX playlist '{playlist.name}'"
+                description=f"Transferred from Resomix playlist '{playlist.name}'"
             )
             
             spotify_playlist_id = spotify_playlist['id']

@@ -2,7 +2,7 @@
 Integration Tests Package
 =========================
 
-This package contains integration tests for the ResomiX Audio Similarity API.
+This package contains integration tests for the Resomix Audio Similarity API.
 It includes end-to-end testing scenarios, API endpoint validation, database integration,
 and cross-component interaction testing with real dependencies.
 

@@ -2,7 +2,7 @@
 Purchase Models
 ===============
 
-This module defines the Purchase and UserSubscription SQLAlchemy models for the ResomiX application.
+This module defines the Purchase and UserSubscription SQLAlchemy models for the Resomix application.
 It handles purchase transactions and subscription management with support for payment tracking
 and user subscription status monitoring.
 

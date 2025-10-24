@@ -1,4 +1,4 @@
-# ResomiX User Authentication Implementation Guide
+# Resomix User Authentication Implementation Guide
 
 **Version**: 3.2.0  
 **Date**: October 23, 2025  
@@ -404,7 +404,7 @@ class Settings(BaseModel):
         description="From email address"
     )
     smtp_from_name: str = Field(
-        default="ResomiX",
+        default="Resomix",
         description="From name"
     )
     
@@ -1840,7 +1840,7 @@ app/templates/emails/
 
 **Use Jinja2**: Variable interpolation, conditional blocks  
 **Include**: Plain text versions for email clients that don't support HTML  
-**Branding**: Match ResomiX branding, include logo, social links  
+**Branding**: Match Resomix branding, include logo, social links  
 **Links**: Use `settings.frontend_url` for all links
 
 ---

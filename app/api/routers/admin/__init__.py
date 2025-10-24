@@ -2,7 +2,7 @@
 Admin API Routers Package
 =========================
 
-This package contains admin-specific API routers for ResomiX.
+This package contains admin-specific API routers for Resomix.
 Admin endpoints require API key authentication and provide
 management functionality for the application.
 

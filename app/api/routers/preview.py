@@ -6,7 +6,7 @@ This module defines FastAPI routes for preview-related operations.
 It handles preview download URL generation requests with proper validation,
 authentication, and response formatting.
 
-Provides endpoints for secure preview file access through ResomiX server integration
+Provides endpoints for secure preview file access through Resomix server integration
 with comprehensive error handling and API documentation.
 
 Version: 3.0.1
@@ -54,7 +54,7 @@ preview_controller = PreviewController()
         },
         503: {
             "model": PreviewErrorResponse,
-            "description": "ResomiX service unavailable"
+            "description": "Resomix service unavailable"
         }
     }
 )

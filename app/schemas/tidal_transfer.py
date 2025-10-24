@@ -3,7 +3,7 @@ Tidal Transfer Schemas
 ======================
 
 This module contains Pydantic schemas for Tidal playlist transfer operations.
-It defines request and response models for transferring ResomiX playlists to Tidal
+It defines request and response models for transferring Resomix playlists to Tidal
 with comprehensive validation and error handling.
 
 Provides schemas for Tidal OAuth integration, playlist transfer requests,
@@ -55,7 +55,7 @@ class TidalTransferRequest(BaseModel):
             "example": {
                 "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
                 "access_token": "BQC4YqJ...",
-                "playlist_name": "My ResomiX Playlist"
+                "playlist_name": "My Resomix Playlist"
             }
         }
 
@@ -73,7 +73,7 @@ class TidalTransferResponse(BaseModel):
                 "data": {
                     "tidal_playlist_id": "37i9dQZF1DX0XUsuxWHRQd",
                     "tidal_playlist_url": "https://listen.tidal.com/playlist/37i9dQZF1DX0XUsuxWHRQd",
-                    "tidal_playlist_name": "My ResomiX Playlist",
+                    "tidal_playlist_name": "My Resomix Playlist",
                     "total_tracks": 25,
                     "tracks_added": 22,
                     "tracks_not_found": 3,
@@ -184,8 +184,8 @@ class TidalPlaylistInfo(BaseModel):
         json_schema_extra = {
             "example": {
                 "id": "37i9dQZF1DX0XUsuxWHRQd",
-                "name": "My ResomiX Playlist",
-                "description": "Transferred from ResomiX",
+                "name": "My Resomix Playlist",
+                "description": "Transferred from Resomix",
                 "url": "https://listen.tidal.com/playlist/37i9dQZF1DX0XUsuxWHRQd",
                 "public": False,
                 "track_count": 25

@@ -7,7 +7,7 @@ It defines request and response models for preview download URL generation
 with comprehensive validation and error handling.
 
 Provides schemas for preview download requests, URL responses,
-and integration with the ResomiX server for preview file access.
+and integration with the Resomix server for preview file access.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -79,12 +79,12 @@ class PreviewErrorResponse(BaseModel):
 
 # Internal schemas for service layer
 class ResomixServerRequest(BaseModel):
-    """Internal schema for ResomiX server requests."""
-    track_uuid: str = Field(..., description="Track UUID for ResomiX server")
+    """Internal schema for Resomix server requests."""
+    track_uuid: str = Field(..., description="Track UUID for Resomix server")
 
 
 class ResomixServerResponse(BaseModel):
-    """Internal schema for ResomiX server responses."""
-    status: str = Field(..., description="Response status from ResomiX server")
+    """Internal schema for Resomix server responses."""
+    status: str = Field(..., description="Response status from Resomix server")
     message: Optional[str] = Field(None, description="Response message")
     download_url: Optional[str] = Field(None, description="Generated download URL")

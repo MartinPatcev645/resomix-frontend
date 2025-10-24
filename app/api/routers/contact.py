@@ -7,7 +7,7 @@ It handles HTTP requests for contact form submissions, retrieval, and status upd
 with authentication and validation for customer support management.
 
 Provides RESTful API endpoints for managing user inquiries and contact
-requests in the ResomiX application.
+requests in the Resomix application.
 
 Version: 3.0.1
 Init Date: June 11, 2025
