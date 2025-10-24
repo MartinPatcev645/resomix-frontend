@@ -24,7 +24,7 @@ export const getMyProfile = async () => {
 export const updateProfile = async (updates: ProfileUpdateRequest) => {
   try {
     const response = await axiosWrapper<ProfileResponse>(
-      authClient.put('/users/me', updates)
+      authClient.patch('/users/me', updates)
     );
     return response;
   } catch (error) {

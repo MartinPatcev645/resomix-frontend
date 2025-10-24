@@ -1,6 +1,7 @@
 import { InfoPageLayout, MobileNavbar, Navbar, ContactContent, ErrorContent, Error404 } from "@resomix/ui";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MenuPage } from "./index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
@@ -11,6 +12,7 @@ interface InfoPageProps {
 
 export default function InfoPage({ mode }: InfoPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const navbar = (
     <>
@@ -21,6 +23,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
           baseUrl={BASE_LANDING_URL}
           baseBetaUrl={BASE_BETA_URL}
           customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+          onProfileClick={() => navigate('/profile')}
         />
       </div>
       <div className="block lg:hidden">

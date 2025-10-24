@@ -21,6 +21,8 @@ import PlaylistExport from "./Modals/PlaylistExport.tsx";
 import StatusMessage from  "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
+import { ProtectedRoute } from "./ProtectedRoute.tsx";
+import { OptionalAuthRoute } from "./OptionalAuthRoute.tsx";
 
 export {
     LogoHeader,
@@ -46,4 +48,6 @@ export {
     StatusMessage,
     UploadLoader,
     ThumbIcon,
+    ProtectedRoute,
+    OptionalAuthRoute,
 }

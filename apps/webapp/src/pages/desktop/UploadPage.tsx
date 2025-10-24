@@ -87,6 +87,7 @@ export function UploadPage() {
                 baseUrl={BASE_LANDING_URL}
                 baseBetaUrl={BASE_BETA_URL}
                 customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+                onProfileClick={() => navigate('/profile')}
               />
             </header>
 

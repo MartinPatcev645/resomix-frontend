@@ -16,7 +16,7 @@ export const logout = async (refreshToken: string) => {
 export const logoutAll = async (userId: number) => {
   try {
     const response = await axiosWrapper<SuccessResponse>(
-      authClient.post(`/auth/logout-all?user_id=${userId}`)
+      authClient.post('/auth/logout-all', { user_id: userId })
     );
     return response;
   } catch (error) {

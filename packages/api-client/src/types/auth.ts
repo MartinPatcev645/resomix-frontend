@@ -1,18 +1,17 @@
 // User Types
 export interface User {
-  id: number;
+  id?: number; // Optional - only available in some contexts
   uuid: string;
   email: string;
   username: string;
   name: string | null;
-  email_verified: boolean;
-  two_factor_enabled: boolean;
-  two_factor_method: '2fa_email' | null;
+  is_email_verified: boolean;
+  is_two_factor_enabled: boolean;
+  two_factor_method: 'email' | null;
   language: string | null;
   timezone: string | null;
   profile_picture: string | null;
   created_at: string;
-  last_login: string | null;
 }
 
 // Authentication Responses
@@ -30,9 +29,8 @@ export interface LoginResponse {
 export interface TwoFactorRequiredResponse {
   success: boolean;
   data: {
-    requires_2fa: true;
+    two_factor_required: true;
     user_id: number;
-    method: '2fa_email';
     message: string;
   };
 }
@@ -81,6 +79,14 @@ export interface PasswordResetConfirmRequest {
   new_password: string;
 }
 
+export interface VerifyEmailResponse {
+  success: boolean;
+  data: {
+    message: string;
+    email: string;
+  };
+}
+
 export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
@@ -89,11 +95,10 @@ export interface ChangePasswordRequest {
 // Session Types
 export interface UserSession {
   session_id: string;
-  device_name: string | null;
-  ip_address: string | null;
-  last_active: string;
+  user_agent: string;
+  ip_address: string;
   created_at: string;
-  is_current: boolean;
+  expires_at: string;
 }
 
 // Error Response
@@ -112,7 +117,7 @@ export interface ProfileUpdateRequest {
 
 export interface ProfileResponse {
   success: boolean;
-  data: {
+  data: User | {
     user: User;
     message?: string;
   };
@@ -121,9 +126,7 @@ export interface ProfileResponse {
 // Session Response Types
 export interface SessionsResponse {
   success: boolean;
-  data: {
-    sessions: UserSession[];
-  };
+  data: UserSession[];
 }
 
 // Generic Success Response
@@ -136,7 +139,24 @@ export interface SuccessResponse {
 
 // 2FA Types
 export interface Enable2FARequest {
-  method: '2fa_email';
+  method: 'email' | 'app';
+}
+
+export interface Enable2FAResponse {
+  success: boolean;
+  data: {
+    message: string;
+    is_two_factor_enabled: boolean;
+    two_factor_method: string;
+  };
+}
+
+export interface Disable2FAResponse {
+  success: boolean;
+  data: {
+    message: string;
+    is_two_factor_enabled: boolean;
+  };
 }
 
 export interface Disable2FARequest {

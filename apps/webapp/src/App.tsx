@@ -1,8 +1,9 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useFirstVisit, useResponsive, useTermsAcceptance } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, TermsAcceptance } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
+import { ProtectedRoute, OptionalAuthRoute } from "@/components/index.ts";
 import {MetricsOverlay} from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
@@ -11,6 +12,7 @@ const UploadMobile = lazy(() => import("@/pages/mobile/UploadMobile.tsx").then(m
 const PlaylistPage = lazy(() => import("@/pages/desktop/PlaylistPage.tsx").then(m => ({ default: m.PlaylistPage })));
 const PlaylistMobile = lazy(() => import("@/pages/mobile/PlaylistMobile.tsx").then(m => ({ default: m.PlaylistMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
+const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
@@ -44,9 +46,18 @@ function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
+  
+  // Initialize authentication
+  const { isInitialized, isLoading } = useAuthInit();
+  useCrossTabAuth();
 
   const location = useLocation();
   const showMetrics = new URLSearchParams(location.search).get("metrics") === "true";
+
+  // Show loading during auth initialization
+  if (isLoading || !isInitialized) {
+    return <div>Loading...</div>; // You can replace this with a proper loading component
+  }
 
   return (
     <>
@@ -67,10 +78,28 @@ function App() {
 
       <Suspense fallback={null}>
         <Routes>
-          <Route path="/" element={<UploadLanding />} />
-          <Route path="/loader" element={<UploadLoader />} />
-          <Route path="/playlist" element={<PlaylistLanding />} />
-          <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+          {/* Public Auth Routes */}
+          <Route path="/auth/login" element={<AuthPage mode="login" />} />
+          <Route path="/auth/register" element={<AuthPage mode="register" />} />
+          <Route path="/auth/forgot-password" element={<AuthPage mode="forgot-password" />} />
+          <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
+          <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
+          <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />
+
+          {/* Protected Auth Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<AuthPage mode="profile" />} />
+            <Route path="/sessions" element={<AuthPage mode="sessions" />} />
+            <Route path="/change-password" element={<AuthPage mode="change-password" />} />
+          </Route>
+
+          {/* Optional Auth Routes (work with or without login) */}
+          <Route path="/" element={<OptionalAuthRoute><UploadLanding /></OptionalAuthRoute>} />
+          <Route path="/loader" element={<OptionalAuthRoute><UploadLoader /></OptionalAuthRoute>} />
+          <Route path="/playlist" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
+          <Route path="/sonic-discovery" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
+
+          {/* Info Pages */}
           <Route path="/contact" element={<InfoPage mode="contact" />} />
           <Route path="/error" element={<InfoPage mode="error" />} />
           <Route path="/test" element={<TestPage />} />

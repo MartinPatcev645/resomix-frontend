@@ -1,10 +1,10 @@
 import authClient from '../authClient';
 import { axiosWrapper, handleApiError } from '../utils';
-import type { SuccessResponse } from '../types/auth';
+import type { VerifyEmailResponse, SuccessResponse } from '../types/auth';
 
 export const verifyEmail = async (token: string) => {
   try {
-    const response = await axiosWrapper<SuccessResponse>(
+    const response = await axiosWrapper<VerifyEmailResponse>(
       authClient.get(`/auth/verify-email?token=${token}`)
     );
     return response;
