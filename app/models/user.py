@@ -193,7 +193,7 @@ class EmailVerificationToken(Base):
     __tablename__ = "email_verification_tokens"
 
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    token = Column(String(36), nullable=False, unique=True, index=True)
+    token = Column(String(64), nullable=False, unique=True, index=True)  # Increased from 36 to 64 for token_urlsafe(32)
     expires_at = Column(DateTime, nullable=False)
 
     user = relationship("User", foreign_keys=[user_id])
@@ -207,7 +207,7 @@ class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    token = Column(String(36), nullable=False, unique=True, index=True)
+    token = Column(String(64), nullable=False, unique=True, index=True)  # Increased from 36 to 64 for token_urlsafe(32)
     expires_at = Column(DateTime, nullable=False)
     consumed_at = Column(DateTime, nullable=True)
 

@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS users (
 /* One-time email verification tokens */
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
     user_id     BIGINT UNSIGNED NOT NULL,
-    token       CHAR(36) NOT NULL,                 -- or longer random string
+    token       VARCHAR(64) NOT NULL,              -- 64 chars for token_urlsafe(32) which generates ~43 chars
     expires_at  DATETIME NOT NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_evt_token (token),
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
 /* One-time password reset tokens */
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     user_id     BIGINT UNSIGNED NOT NULL,
-    token       CHAR(36) NOT NULL,
+    token       VARCHAR(64) NOT NULL,              -- 64 chars for token_urlsafe(32) which generates ~43 chars
     expires_at  DATETIME NOT NULL,
     consumed_at DATETIME DEFAULT NULL,
     PRIMARY KEY (user_id),
