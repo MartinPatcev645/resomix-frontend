@@ -2,6 +2,7 @@ import { useState, useEffect, ChangeEvent } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
+import { SineWaves } from "../Animations/SineWaves";
 
 interface VerifyEmailContentProps {
   baseUrl?: string;
@@ -217,7 +218,9 @@ export default function VerifyEmailContent({
 
           <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
             <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <div className="animate-spin text-[length:var(--px-60)]">⟳</div>
+              <div className="w-full max-w-[var(--px-300)] h-[150px]">
+                <SineWaves />
+              </div>
               <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
                 Please wait while we verify your email...
               </p>

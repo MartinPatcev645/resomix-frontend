@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { ConfirmModal } from "../Modals/ConfirmModal";
+import { SineWaves } from "../Animations/SineWaves";
 
 interface UserSession {
   session_id: string;
@@ -146,8 +147,8 @@ export default function SessionsContent({
     return (
       <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <div className="flex justify-center items-center h-[200px]">
-            <div className="animate-spin text-[length:var(--px-60)]">⟳</div>
+          <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
+            <SineWaves />
           </div>
         </div>
       </section>
