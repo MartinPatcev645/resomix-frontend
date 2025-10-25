@@ -92,13 +92,25 @@ authClient.interceptors.response.use(
 
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log(`[authClient] 401 error for ${originalRequest.url}, attempting token refresh...`);
+      
       const authStore = getAuthStore();
-      if (!authStore) return Promise.reject(error);
+      if (!authStore) {
+        console.log('[authClient] Auth store not available, cannot refresh token');
+        return Promise.reject(error);
+      }
 
-      const { setAccessToken, logout } = authStore.getState();
+      const { setAccessToken, logout, accessToken } = authStore.getState();
+      
+      // Only attempt refresh if we actually sent an Authorization header
+      if (!accessToken) {
+        console.log('[authClient] No access token in store, skipping refresh');
+        return Promise.reject(error);
+      }
 
       if (isRefreshing) {
         // If already refreshing, queue this request
+        console.log(`[authClient] Token refresh in progress, queueing request for ${originalRequest.url}`);
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -113,6 +125,7 @@ authClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        console.log('[authClient] Refreshing access token...');
         // Attempt to refresh token - no body needed, server reads from HttpOnly cookie
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
@@ -125,6 +138,7 @@ authClient.interceptors.response.use(
 
         if (response.data.success) {
           const newAccessToken = response.data.data.access_token;
+          console.log(`[authClient] Token refresh successful, retrying ${originalRequest.url}`);
           setAccessToken(newAccessToken);
 
           // Update authorization header
@@ -137,8 +151,12 @@ authClient.interceptors.response.use(
 
           // Retry original request
           return authClient(originalRequest);
+        } else {
+          console.error('[authClient] Token refresh failed - invalid response');
+          throw new Error('Token refresh failed');
         }
       } catch (refreshError) {
+        console.error('[authClient] Token refresh failed, logging out user', refreshError);
         processQueue(refreshError, null);
         logout();
         isRefreshing = false;
