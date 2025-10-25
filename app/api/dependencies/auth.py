@@ -130,40 +130,68 @@ async def get_current_user_optional(
 ) -> Optional[User]:
     """
     Get current user if authenticated, None if anonymous.
-    OPTIONAL auth - returns None for anonymous users.
+    OPTIONAL auth - returns None only when NO token is provided.
+    
+    Returns 401 if token is provided but invalid/expired.
 
     Args:
         token: JWT token from Authorization header
         db: Database session
 
     Returns:
-        User object or None if not authenticated
+        User object or None if not authenticated (no token provided)
+        
+    Raises:
+        HTTPException: 401 if token is provided but invalid/expired
     """
+    # No token provided - treat as anonymous (this is OK)
     if not token:
         return None
 
     try:
-        # Decode token
+        # Decode token - will raise HTTPException if expired/invalid
         payload = decode_token(token)
 
         # Verify token type
         if payload.get("type") != "access":
-            return None
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type. Expected access token.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         # Get user UUID
         user_uuid: str = payload.get("sub")
         if not user_uuid:
-            return None
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: missing user identifier",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         # Fetch user
         user_repo = UserRepository()
         user = await user_repo.async_get_by_uuid(db, user_uuid)
 
+        if not user:
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         return user
 
-    except Exception:
-        # If any error occurs, return None (treat as anonymous)
-        return None
+    except HTTPException:
+        # Re-raise HTTPException (401 errors from decode_token or above)
+        raise
+    except Exception as e:
+        # Unexpected error - treat as invalid token
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 async def get_current_active_user(
