@@ -32,6 +32,10 @@ export const useContactSubmit = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  const setFormValues = (values: Partial<ContactFormState>) => {
+    setForm(prev => ({ ...prev, ...values }));
+  };
+
   const handleSubmit = async (): Promise<{ success: boolean; message?: string }> => {
     const error = validate();
     if (error) {
@@ -60,5 +64,5 @@ export const useContactSubmit = () => {
     }
   };
 
-  return { form, handleChange, handleSubmit, submitting };
+  return { form, handleChange, handleSubmit, submitting, setFormValues };
 }; 

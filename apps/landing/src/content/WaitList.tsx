@@ -1,7 +1,8 @@
 import { ButtonSleek } from "@resomix/ui";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useWaitlist } from "@resomix/hooks";
+import { useAuthStore } from "@resomix/stores";
 
 interface WaitListContentProps {
   baseUrl?: string;
@@ -9,9 +10,17 @@ interface WaitListContentProps {
 
 export default function WaitListContent({ baseUrl = "https://resomix.com" }: WaitListContentProps) {
   const { t } = useTranslation();
+  const { user, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
   const [showStatus, setShowStatus] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+
+  // Pre-fill email if user is logged in
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      setEmail(user.email);
+    }
+  }, [isAuthenticated, user]);
   
   const { 
     isLoading, 
