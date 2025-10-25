@@ -78,7 +78,7 @@ export function PlaylistPage() {
           isOpen={true}
           onClose={handleExpiredClose}
           status="error"
-          message="Playlist expired. Redirecting..."
+          message="Playlist Private. Share to make it public to view"
         />
       ) : (
         // color-noise-background
