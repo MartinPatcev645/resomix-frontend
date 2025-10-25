@@ -20,10 +20,13 @@ from fastapi.responses import JSONResponse
 from fastapi import status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 import time
+import logging
 from app.services.feedback_service import FeedbackService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 class FeedbackController:
@@ -49,6 +52,12 @@ class FeedbackController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
+            # Log authentication status for debugging
+            if current_user:
+                logger.info(f"FEEDBACK AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
+            else:
+                logger.info(f"FEEDBACK AUTH: User NOT authenticated (anonymous) - Request user_id={feedback_data.get('user_id')}")
+            
             # Prioritize JWT user over request body user_id
             if current_user:
                 feedback_data['user_id'] = current_user.id  # Use integer ID, not UUID

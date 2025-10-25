@@ -21,6 +21,7 @@ from typing import Optional
 from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 from app.models.user import User
 from app.services.playlist_service import PlaylistService
 from app.core.config import settings
@@ -31,6 +32,8 @@ from app.services.antivirus_service import AntivirusService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class SimilarityController:
@@ -48,6 +51,12 @@ class SimilarityController:
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        # Log authentication status for debugging
+        if current_user:
+            logger.info(f"SIMILARITY UPLOAD AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
+        else:
+            logger.info(f"SIMILARITY UPLOAD AUTH: User NOT authenticated (anonymous)")
 
         # Validate and get the TOP_SK value using global settings
         validated_top_sk = settings.validate_and_get_top_sk(top_sk)
@@ -811,6 +820,12 @@ class SimilarityController:
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        # Log authentication status for debugging
+        if current_user:
+            logger.info(f"SIMILARITY BY ID AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
+        else:
+            logger.info(f"SIMILARITY BY ID AUTH: User NOT authenticated (anonymous)")
 
         track = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
         track_int_id = track.id if track else None
