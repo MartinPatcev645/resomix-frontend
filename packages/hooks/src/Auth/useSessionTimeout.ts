@@ -7,7 +7,7 @@ import { refreshAccessToken } from '@resomix/api-client';
  * Automatically refresh token when it's about to expire
  */
 export const useSessionTimeout = () => {
-  const { accessToken, refreshToken, logout } = useAuthStore();
+  const { accessToken, logout } = useAuthStore();
   const [showWarning, setShowWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
@@ -57,13 +57,8 @@ export const useSessionTimeout = () => {
    * Extend the session by refreshing the access token
    */
   const extendSession = async () => {
-    if (!refreshToken) {
-      logout();
-      return false;
-    }
-
     try {
-      const response = await refreshAccessToken(refreshToken);
+      const response = await refreshAccessToken();
       
       if (response.success && 'access_token' in response.data) {
         const { setAccessToken } = useAuthStore.getState();

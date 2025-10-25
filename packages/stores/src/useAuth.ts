@@ -7,12 +7,11 @@ interface AuthState {
   // State
   user: User | null;
   accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   
   // Actions
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User, accessToken: string) => void;
   setAccessToken: (token: string) => void;
   setUser: (user: User) => void;
   logout: () => void;
@@ -29,16 +28,14 @@ const useAuthStore = create<AuthState>()(
       // Initial State
       user: null,
       accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
 
       // Set full authentication
-      setAuth: (user, accessToken, refreshToken) => {
+      setAuth: (user, accessToken) => {
         set({
           user,
           accessToken,
-          refreshToken,
           isAuthenticated: true,
         });
       },
@@ -58,7 +55,6 @@ const useAuthStore = create<AuthState>()(
         set({
           user: null,
           accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
         });
         // Clear both localStorage and cookies
@@ -105,7 +101,6 @@ const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

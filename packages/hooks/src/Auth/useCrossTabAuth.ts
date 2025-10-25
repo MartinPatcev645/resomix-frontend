@@ -20,9 +20,9 @@ export const useCrossTabAuth = () => {
           try {
             const newState = JSON.parse(e.newValue);
             if (newState.state) {
-              const { user, accessToken, refreshToken } = newState.state;
-              if (user && accessToken && refreshToken) {
-                setAuth(user, accessToken, refreshToken);
+              const { user, accessToken } = newState.state;
+              if (user && accessToken) {
+                setAuth(user, accessToken);
               }
             }
           } catch (error) {

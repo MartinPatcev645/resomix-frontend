@@ -232,10 +232,8 @@ export default function ProfileContent({
       const { logout } = await import("@resomix/api-client");
       const { useAuthStore } = await import("@resomix/stores");
 
-      const refreshToken = useAuthStore.getState().refreshToken;
-      if (refreshToken) {
-        await logout(refreshToken);
-      }
+      // Server reads refresh token from HttpOnly cookie
+      await logout();
 
       useAuthStore.getState().logout();
       onLogout?.();

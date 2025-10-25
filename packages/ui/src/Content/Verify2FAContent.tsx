@@ -103,8 +103,7 @@ export default function Verify2FAContent({
         // Set auth state
         useAuthStore.getState().setAuth(
           loginData.user,
-          loginData.access_token,
-          loginData.refresh_token
+          loginData.access_token
         );
 
         setStatusType("success");

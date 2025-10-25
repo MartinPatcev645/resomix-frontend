@@ -1,5 +1,6 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "./utils";
+import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
+import authClient from "./authClient";
 
 interface FeedbackData {
   satisfaction: number;
@@ -13,7 +14,7 @@ export const submitFeedback = async (feedbackData: FeedbackData) => {
   try {
     const dataWithCategory = { ...feedbackData, category: feedbackData.category || "general" };
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.FEEDBACK, dataWithCategory),
+      authClient.post(API_CONFIG.ENDPOINTS.FEEDBACK, dataWithCategory),
     );
 
     if (data.success === true) return data;
@@ -39,7 +40,7 @@ interface ContactData {
 export const submitContactForm = async (contactData: ContactData) => {
   try {
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.CONTACT, contactData),
+      authClient.post(API_CONFIG.ENDPOINTS.CONTACT, contactData),
     );
 
     if (data.success === true) return data;
@@ -51,4 +52,4 @@ export const submitContactForm = async (contactData: ContactData) => {
   } catch (error) {
     return handleApiError(error as any);
   }
-}; 
+};

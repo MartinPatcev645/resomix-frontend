@@ -90,13 +90,7 @@ authClient.interceptors.response.use(
       const authStore = getAuthStore();
       if (!authStore) return Promise.reject(error);
 
-      const { refreshToken, setAccessToken, logout } = authStore.getState();
-
-      // If no refresh token, logout
-      if (!refreshToken) {
-        logout();
-        return Promise.reject(error);
-      }
+      const { setAccessToken, logout } = authStore.getState();
 
       if (isRefreshing) {
         // If already refreshing, queue this request
@@ -114,12 +108,12 @@ authClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Attempt to refresh token
+        // Attempt to refresh token - no body needed, server reads from HttpOnly cookie
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
-          { refresh_token: refreshToken },
+          {}, // Empty body - server manages refresh token via HttpOnly cookie
           { 
-            withCredentials: true,
+            withCredentials: true, // Include cookies
             params: { api_key: API_CONFIG.API_KEY } // Include api_key for auth endpoints
           }
         );
