@@ -63,7 +63,12 @@ authClient.interceptors.request.use(
       // Don't check isTokenExpired here - let the backend decide and use refresh interceptor
       if (accessToken && isAuthenticated) {
         config.headers.Authorization = `Bearer ${accessToken}`;
+        console.log(`[authClient] Added Authorization header for ${config.url}`);
+      } else {
+        console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}`);
       }
+    } else {
+      console.log(`[authClient] Auth store not available for ${config.url}`);
     }
 
     return config;
