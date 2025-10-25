@@ -472,16 +472,16 @@ class AuthService:
 
     async def refresh_access_token(
         self, db: AsyncSession, refresh_token: str
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
-        Refresh access token using refresh token.
+        Refresh access token using refresh token with token rotation.
 
         Args:
             db: Database session
             refresh_token: Valid refresh token
 
         Returns:
-            Dictionary with new access_token and token_type
+            Dictionary with new access_token, new refresh_token, and token_type
 
         Raises:
             HTTPException: If refresh token is invalid or revoked
@@ -529,7 +529,28 @@ class AuthService:
         # Generate new access token
         access_token = create_access_token(data={"sub": user.uuid, "email": user.email})
 
-        return {"access_token": access_token, "token_type": "bearer"}
+        # Generate new refresh token (token rotation)
+        new_refresh_token = create_refresh_token(data={"sub": user.uuid})
+
+        # Hash new refresh token for storage
+        new_refresh_token_hash = hash_password(new_refresh_token)
+
+        # Calculate new expiration
+        from datetime import datetime, timedelta
+        expires_at = datetime.utcnow() + timedelta(
+            days=settings.jwt_refresh_token_expire_days
+        )
+
+        # Update session with new refresh token hash
+        valid_session.refresh_token_hash = new_refresh_token_hash
+        valid_session.expires_at = expires_at
+        await db.commit()
+
+        return {
+            "access_token": access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer"
+        }
 
     async def logout(self, db: AsyncSession, refresh_token: str) -> bool:
         """

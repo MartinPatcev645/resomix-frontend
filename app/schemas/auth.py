@@ -90,10 +90,9 @@ class LoginRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    """Successful login response"""
+    """Successful login response (refresh token set in HttpOnly cookie)"""
 
     access_token: str = Field(..., description="JWT access token")
-    refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     user: dict = Field(..., description="User information")
 
@@ -101,7 +100,6 @@ class LoginResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
                 "user": {
                     "uuid": "550e8400-e29b-41d4-a716-446655440000",
@@ -151,7 +149,7 @@ class TwoFactorVerifyRequest(BaseModel):
 
 
 class TokenRefreshRequest(BaseModel):
-    """Token refresh request"""
+    """Token refresh request (DEPRECATED - now uses HttpOnly cookie)"""
 
     refresh_token: str = Field(..., description="Valid refresh token")
 
@@ -162,7 +160,7 @@ class TokenRefreshRequest(BaseModel):
 
 
 class TokenRefreshResponse(BaseModel):
-    """Token refresh response"""
+    """Token refresh response (new refresh token set in HttpOnly cookie)"""
 
     access_token: str = Field(..., description="New JWT access token")
     token_type: str = Field(default="bearer", description="Token type")
@@ -399,7 +397,7 @@ class MessageResponse(BaseModel):
 
 
 class LogoutRequest(BaseModel):
-    """Logout request"""
+    """Logout request (DEPRECATED - now uses HttpOnly cookie)"""
 
     refresh_token: str = Field(..., description="Refresh token to revoke")
 

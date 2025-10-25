@@ -10,7 +10,7 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.auth_controller import AuthController
@@ -267,26 +267,33 @@ async def reset_password(
     response_model=TokenRefreshResponse,
     status_code=200,
     summary="Refresh Access Token",
-    description="Get new access token using refresh token.",
-    response_description="New access token issued",
+    description="Get new access token using refresh token from HttpOnly cookie.",
+    response_description="New access token issued and new refresh token set in cookie",
     responses={
         401: {"model": ErrorResponse, "description": "Invalid or expired refresh token"}
     },
 )
 async def refresh_token(
     request: Request,
-    refresh_request: TokenRefreshRequest,
     db: AsyncSession = Depends(get_database_session),
+    refresh_token: str = Cookie(None),
 ):
     """
-    Refresh access token.
+    Refresh access token with token rotation.
 
-    This endpoint issues a new access token:
-    - **refresh_token**: Valid refresh token
+    This endpoint reads the refresh token from HttpOnly cookie and issues:
+    - New access token (returned in JSON)
+    - New refresh token (set in HttpOnly cookie)
 
-    Returns new access token. Refresh token remains valid.
+    No request body required - refresh token automatically read from cookie.
     """
-    return await auth_controller.refresh_token(db, request, refresh_request.refresh_token)
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found in cookie"
+        )
+    
+    return await auth_controller.refresh_token(db, request, refresh_token)
 
 
 @router.post(
@@ -294,23 +301,31 @@ async def refresh_token(
     response_model=MessageResponse,
     status_code=200,
     summary="Logout",
-    description="Logout from current session (revoke refresh token).",
-    response_description="Logged out successfully",
+    description="Logout from current session (revoke refresh token from cookie).",
+    response_description="Logged out successfully and cookie cleared",
 )
 async def logout(
     request: Request,
-    logout_request: LogoutRequest,
     db: AsyncSession = Depends(get_database_session),
+    refresh_token: str = Cookie(None),
 ):
     """
     Logout user by revoking session.
 
-    This endpoint revokes the current session:
-    - **refresh_token**: Refresh token to revoke
+    This endpoint reads the refresh token from HttpOnly cookie and:
+    - Revokes the session in the database
+    - Clears the refresh token cookie
 
-    Invalidates the refresh token. Access token remains valid until expiry.
+    No request body required - refresh token automatically read from cookie.
+    Access token remains valid until expiry.
     """
-    return await auth_controller.logout(db, request, logout_request.refresh_token)
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found in cookie"
+        )
+    
+    return await auth_controller.logout(db, request, refresh_token)
 
 
 @router.post(

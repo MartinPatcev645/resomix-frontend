@@ -20,6 +20,7 @@ from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.core.config import settings
 
 
 class AuthController:
@@ -180,6 +181,11 @@ class AuthController:
 
             # Successful login
             duration_ms = (time.time() - start_time) * 1000
+            
+            # Extract refresh token from result
+            refresh_token = result.pop("refresh_token")
+            
+            # Prepare response data without refresh token
             response_data = format_response(success=True, data=result)
 
             self.logging_service.log(
@@ -195,7 +201,20 @@ class AuthController:
                 metadata={"user_uuid": result["user"]["uuid"], "email": result["user"]["email"]},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            # Create response and set refresh token cookie
+            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,  # Convert days to seconds
+                httponly=True,
+                secure=settings.cookie_secure,
+                samesite=settings.cookie_samesite,
+                domain=settings.cookie_domain,
+                path="/"
+            )
+            
+            return response
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -244,6 +263,11 @@ class AuthController:
             )
 
             duration_ms = (time.time() - start_time) * 1000
+            
+            # Extract refresh token from result
+            refresh_token = result.pop("refresh_token")
+            
+            # Prepare response data without refresh token
             response_data = format_response(success=True, data=result)
 
             self.logging_service.log(
@@ -259,7 +283,20 @@ class AuthController:
                 metadata={"user_uuid": result["user"]["uuid"]},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            # Create response and set refresh token cookie
+            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,
+                httponly=True,
+                secure=settings.cookie_secure,
+                samesite=settings.cookie_samesite,
+                domain=settings.cookie_domain,
+                path="/"
+            )
+            
+            return response
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -550,15 +587,15 @@ class AuthController:
         self, db: AsyncSession, request: Request, refresh_token: str
     ) -> JSONResponse:
         """
-        Handle token refresh.
+        Handle token refresh with token rotation.
 
         Args:
             db: Database session
             request: FastAPI request object
-            refresh_token: Refresh token
+            refresh_token: Refresh token from cookie
 
         Returns:
-            JSON response with new access token
+            JSON response with new access token and sets new refresh token cookie
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -567,6 +604,11 @@ class AuthController:
             result = await self.auth_service.refresh_access_token(db=db, refresh_token=refresh_token)
 
             duration_ms = (time.time() - start_time) * 1000
+            
+            # Extract new refresh token from result
+            new_refresh_token = result.pop("refresh_token")
+            
+            # Prepare response data without refresh token
             response_data = format_response(success=True, data=result)
 
             self.logging_service.log(
@@ -581,7 +623,20 @@ class AuthController:
                 duration_ms=duration_ms,
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            # Create response and set new refresh token cookie (token rotation)
+            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response.set_cookie(
+                key="refresh_token",
+                value=new_refresh_token,
+                max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,
+                httponly=True,
+                secure=settings.cookie_secure,
+                samesite=settings.cookie_samesite,
+                domain=settings.cookie_domain,
+                path="/"
+            )
+            
+            return response
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -639,7 +694,15 @@ class AuthController:
                 duration_ms=duration_ms,
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            # Create response and clear refresh token cookie
+            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response.delete_cookie(
+                key="refresh_token",
+                domain=settings.cookie_domain,
+                path="/"
+            )
+            
+            return response
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -660,7 +723,15 @@ class AuthController:
                 metadata={"error": str(e)},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            # Clear cookie even if logout fails
+            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response.delete_cookie(
+                key="refresh_token",
+                domain=settings.cookie_domain,
+                path="/"
+            )
+            
+            return response
 
     async def logout_all(
         self, db: AsyncSession, request: Request, user_id: int

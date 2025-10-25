@@ -273,6 +273,20 @@ class Settings(BaseModel):
         description="Refresh token expiration in days"
     )
     
+    # Cookie Configuration
+    cookie_domain: str = Field(
+        default=".resomix.com",
+        description="Cookie domain for refresh token (allows all subdomains)"
+    )
+    cookie_secure: bool = Field(
+        default=True,
+        description="Secure flag for cookies (HTTPS only)"
+    )
+    cookie_samesite: str = Field(
+        default="lax",
+        description="SameSite attribute for cookies (strict, lax, or none)"
+    )
+    
     # Password Policy
     password_min_length: int = Field(default=8, description="Minimum password length")
     password_require_uppercase: bool = Field(default=False, description="Require uppercase letter")
@@ -375,6 +389,9 @@ class Settings(BaseModel):
             "JWT_ALGORITHM": "jwt_algorithm",
             "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "jwt_access_token_expire_minutes",
             "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "jwt_refresh_token_expire_days",
+            "COOKIE_DOMAIN": "cookie_domain",
+            "COOKIE_SECURE": "cookie_secure",
+            "COOKIE_SAMESITE": "cookie_samesite",
             "SMTP_HOST": "smtp_host",
             "SMTP_PORT": "smtp_port",
             "SMTP_USER": "smtp_user",
