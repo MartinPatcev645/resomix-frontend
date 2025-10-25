@@ -108,6 +108,13 @@ class LoginResponse(BaseModel):
                     "email": "user@example.com",
                     "username": "johndoe",
                     "name": "John Doe",
+                    "profile_picture": "https://example.com/avatar.jpg",
+                    "language": "en",
+                    "timezone": "UTC",
+                    "is_email_verified": True,
+                    "is_two_factor_enabled": False,
+                    "two_factor_method": "email",
+                    "created_at": "2025-10-23T10:30:00Z",
                 },
             }
         }

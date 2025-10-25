@@ -287,6 +287,13 @@ class AuthService:
                 "email": user.email,
                 "username": user.username,
                 "name": user.name,
+                "profile_picture": user.profile_picture,
+                "language": user.language,
+                "timezone": user.timezone,
+                "is_email_verified": user.is_email_verified,
+                "is_two_factor_enabled": user.is_two_factor_enabled,
+                "two_factor_method": user.two_factor_method,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
             },
         }
 
