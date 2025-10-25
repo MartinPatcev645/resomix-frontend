@@ -51,7 +51,7 @@ class ContactController:
         try:
             # Prioritize JWT user over request body user_id
             if current_user:
-                contact_data['user_id'] = current_user.uuid
+                contact_data['user_id'] = current_user.id  # Use integer ID, not UUID
             
             # Process contact submission
             result = await self.contact_service.process_contact_submission(db, contact_data)

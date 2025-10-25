@@ -51,7 +51,7 @@ class FeedbackController:
         try:
             # Prioritize JWT user over request body user_id
             if current_user:
-                feedback_data['user_id'] = current_user.uuid
+                feedback_data['user_id'] = current_user.id  # Use integer ID, not UUID
             
             # Process feedback submission
             result = await self.feedback_service.process_feedback_submission(db, feedback_data)

@@ -46,7 +46,7 @@ class RatingController:
             correlation_id = self.logging_service.generate_correlation_id()
             
             # Prioritize JWT user over request body user_id
-            user_id = current_user.uuid if current_user else request_data.user_id
+            user_id = current_user.id if current_user else request_data.user_id
             
             result = await self.rating_service.rate_track(
                 db, 
@@ -234,7 +234,7 @@ class RatingController:
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             # Prioritize JWT user over query param user_id
-            final_user_id = current_user.uuid if current_user else user_id
+            final_user_id = current_user.id if current_user else user_id
             
             result = await self.rating_service.get_track_rating(db, track_id, playlist_id, final_user_id)
             # Resolve integer IDs for logging
@@ -344,7 +344,7 @@ class RatingController:
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             # Prioritize JWT user over query param user_id
-            final_user_id = current_user.uuid if current_user else user_id
+            final_user_id = current_user.id if current_user else user_id
             
             result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, final_user_id)
             # Resolve integer IDs for logging
@@ -532,7 +532,7 @@ class RatingController:
         
         try:
             # Prioritize JWT user over request body user_id
-            user_id = current_user.uuid if current_user else request_data.user_id
+            user_id = current_user.id if current_user else request_data.user_id
             
             result = await self.rating_service.rate_playlist(
                 db, 
@@ -760,7 +760,7 @@ class RatingController:
                 )
             
             # Prioritize JWT user over query param user_id
-            final_user_id = current_user.uuid if current_user else user_id
+            final_user_id = current_user.id if current_user else user_id
             
             result = await self.rating_service.get_playlist_rating(db, playlist_id, final_user_id)
             
@@ -934,7 +934,7 @@ class RatingController:
                 )
             
             # Prioritize JWT user over query param user_id
-            final_user_id = current_user.uuid if current_user else user_id
+            final_user_id = current_user.id if current_user else user_id
             
             result = await self.rating_service.delete_playlist_rating(db, playlist_id, final_user_id)
             
