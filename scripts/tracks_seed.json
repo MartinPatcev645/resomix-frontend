@@ -37386,7 +37386,7 @@
       "name": "Morning Vibes",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 1,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37398,7 +37398,7 @@
       "name": "Workout Energy",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 2,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37410,7 +37410,7 @@
       "name": "Chill Evening",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 3,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37422,7 +37422,7 @@
       "name": "Focus Flow",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 4,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37434,7 +37434,7 @@
       "name": "Party Mix",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 5,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37446,7 +37446,7 @@
       "name": "Deep House Collection",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 6,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37458,7 +37458,7 @@
       "name": "Techno Essentials",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 7,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37470,7 +37470,7 @@
       "name": "Electronic Favorites",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 8,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37482,7 +37482,7 @@
       "name": "Progressive Journey",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 9,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37494,7 +37494,7 @@
       "name": "Underground Hits",
       "is_public": 1,
       "type": "custom",
-      "seed_track_id": null,
+      "seed_track_id": 10,
       "fork_id": null,
       "forked_at": null,
       "fork_count": 0
@@ -37505,7 +37505,7 @@
       "playlist_id": 1,
       "track_id": 880,
       "position": 906.980809,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 1,
@@ -37517,7 +37517,7 @@
       "playlist_id": 1,
       "track_id": 649,
       "position": 3056.356715,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 1,
@@ -37529,7 +37529,7 @@
       "playlist_id": 1,
       "track_id": 496,
       "position": 5025.822574,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 1,
@@ -37577,13 +37577,13 @@
       "playlist_id": 1,
       "track_id": 138,
       "position": 13029.09893,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 1,
       "track_id": 898,
       "position": 13931.99642,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 1,
@@ -37607,7 +37607,7 @@
       "playlist_id": 1,
       "track_id": 588,
       "position": 17924.39345,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 1,
@@ -37631,7 +37631,7 @@
       "playlist_id": 2,
       "track_id": 479,
       "position": 1955.488852,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37643,7 +37643,7 @@
       "playlist_id": 2,
       "track_id": 678,
       "position": 3914.75042,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37661,7 +37661,7 @@
       "playlist_id": 2,
       "track_id": 6,
       "position": 6922.218526,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37673,7 +37673,7 @@
       "playlist_id": 2,
       "track_id": 688,
       "position": 8957.987262,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37697,7 +37697,7 @@
       "playlist_id": 2,
       "track_id": 377,
       "position": 12907.239621,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37709,7 +37709,7 @@
       "playlist_id": 2,
       "track_id": 317,
       "position": 15067.090635,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37733,7 +37733,7 @@
       "playlist_id": 2,
       "track_id": 975,
       "position": 18914.39283,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 2,
@@ -37751,7 +37751,7 @@
       "playlist_id": 3,
       "track_id": 837,
       "position": 1907.887018,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
@@ -37769,13 +37769,13 @@
       "playlist_id": 3,
       "track_id": 387,
       "position": 5028.552294,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
       "track_id": 106,
       "position": 6032.968275,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
@@ -37793,7 +37793,7 @@
       "playlist_id": 3,
       "track_id": 351,
       "position": 8991.007484,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
@@ -37823,13 +37823,13 @@
       "playlist_id": 3,
       "track_id": 925,
       "position": 14036.63723,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
       "track_id": 512,
       "position": 15088.320764,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
@@ -37853,7 +37853,7 @@
       "playlist_id": 3,
       "track_id": 776,
       "position": 19029.273595,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 3,
@@ -37877,13 +37877,13 @@
       "playlist_id": 4,
       "track_id": 813,
       "position": 3009.285671,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
       "track_id": 911,
       "position": 4070.752661,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
@@ -37901,7 +37901,7 @@
       "playlist_id": 4,
       "track_id": 169,
       "position": 6933.524884,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
@@ -37913,7 +37913,7 @@
       "playlist_id": 4,
       "track_id": 197,
       "position": 8999.332679,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
@@ -37925,19 +37925,19 @@
       "playlist_id": 4,
       "track_id": 129,
       "position": 10995.255003,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
       "track_id": 194,
       "position": 11985.732521,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
       "track_id": 691,
       "position": 12907.579272,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
@@ -37949,7 +37949,7 @@
       "playlist_id": 4,
       "track_id": 309,
       "position": 14946.350201,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
@@ -37973,13 +37973,13 @@
       "playlist_id": 4,
       "track_id": 743,
       "position": 19037.834787,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 4,
       "track_id": 692,
       "position": 19958.203892,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
@@ -37991,13 +37991,13 @@
       "playlist_id": 5,
       "track_id": 90,
       "position": 2000.260441,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
       "track_id": 288,
       "position": 2972.69878,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
@@ -38027,13 +38027,13 @@
       "playlist_id": 5,
       "track_id": 499,
       "position": 8091.700415,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
       "track_id": 59,
       "position": 8999.184245,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
@@ -38057,7 +38057,7 @@
       "playlist_id": 5,
       "track_id": 735,
       "position": 13034.91937,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
@@ -38087,7 +38087,7 @@
       "playlist_id": 5,
       "track_id": 468,
       "position": 17959.738364,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 5,
@@ -38105,31 +38105,31 @@
       "playlist_id": 6,
       "track_id": 99,
       "position": 1098.224277,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 553,
       "position": 2038.312389,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 733,
       "position": 2963.716008,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 885,
       "position": 4019.467227,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 636,
       "position": 5059.289026,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38165,7 +38165,7 @@
       "playlist_id": 6,
       "track_id": 819,
       "position": 10910.512838,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38219,13 +38219,13 @@
       "playlist_id": 6,
       "track_id": 861,
       "position": 20026.978547,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 248,
       "position": 20924.450246,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38291,7 +38291,7 @@
       "playlist_id": 6,
       "track_id": 203,
       "position": 31912.97817,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38303,7 +38303,7 @@
       "playlist_id": 6,
       "track_id": 16,
       "position": 33979.529969,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38327,7 +38327,7 @@
       "playlist_id": 6,
       "track_id": 569,
       "position": 37985.184764,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38345,7 +38345,7 @@
       "playlist_id": 6,
       "track_id": 721,
       "position": 40924.414408,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38357,7 +38357,7 @@
       "playlist_id": 6,
       "track_id": 937,
       "position": 43040.250387,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38369,13 +38369,13 @@
       "playlist_id": 6,
       "track_id": 37,
       "position": 45074.480968,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 981,
       "position": 46063.143005,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38393,7 +38393,7 @@
       "playlist_id": 6,
       "track_id": 27,
       "position": 48962.403534,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38411,7 +38411,7 @@
       "playlist_id": 6,
       "track_id": 852,
       "position": 51925.205795,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38429,7 +38429,7 @@
       "playlist_id": 6,
       "track_id": 56,
       "position": 54973.142201,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38441,13 +38441,13 @@
       "playlist_id": 6,
       "track_id": 715,
       "position": 56986.047506,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 87,
       "position": 58044.376596,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38459,7 +38459,7 @@
       "playlist_id": 6,
       "track_id": 758,
       "position": 59967.502314,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38489,7 +38489,7 @@
       "playlist_id": 6,
       "track_id": 119,
       "position": 65075.60882,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38501,13 +38501,13 @@
       "playlist_id": 6,
       "track_id": 174,
       "position": 67028.399635,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 516,
       "position": 68012.564585,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38519,7 +38519,7 @@
       "playlist_id": 6,
       "track_id": 500,
       "position": 69986.130555,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38543,13 +38543,13 @@
       "playlist_id": 6,
       "track_id": 909,
       "position": 74090.234401,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 873,
       "position": 74914.559707,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38579,7 +38579,7 @@
       "playlist_id": 6,
       "track_id": 642,
       "position": 79994.222217,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38591,19 +38591,19 @@
       "playlist_id": 6,
       "track_id": 131,
       "position": 82055.339166,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 988,
       "position": 83053.750493,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 818,
       "position": 83964.447312,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38615,7 +38615,7 @@
       "playlist_id": 6,
       "track_id": 872,
       "position": 85900.631208,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38639,7 +38639,7 @@
       "playlist_id": 6,
       "track_id": 417,
       "position": 89928.178414,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38651,7 +38651,7 @@
       "playlist_id": 6,
       "track_id": 879,
       "position": 91964.311207,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38669,13 +38669,13 @@
       "playlist_id": 6,
       "track_id": 881,
       "position": 95059.865977,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
       "track_id": 111,
       "position": 95912.650092,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 6,
@@ -38747,13 +38747,13 @@
       "playlist_id": 7,
       "track_id": 57,
       "position": 8097.135821,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 713,
       "position": 9034.464002,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38777,7 +38777,7 @@
       "playlist_id": 7,
       "track_id": 754,
       "position": 13070.070555,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38789,19 +38789,19 @@
       "playlist_id": 7,
       "track_id": 979,
       "position": 15047.462238,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 130,
       "position": 15970.342507,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 945,
       "position": 17028.288668,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38831,7 +38831,7 @@
       "playlist_id": 7,
       "track_id": 630,
       "position": 21953.801298,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38843,13 +38843,13 @@
       "playlist_id": 7,
       "track_id": 162,
       "position": 23924.22708,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 388,
       "position": 24931.898234,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38861,7 +38861,7 @@
       "playlist_id": 7,
       "track_id": 205,
       "position": 27015.667249,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38903,7 +38903,7 @@
       "playlist_id": 7,
       "track_id": 549,
       "position": 33925.100712,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38921,13 +38921,13 @@
       "playlist_id": 7,
       "track_id": 324,
       "position": 37000.114935,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 641,
       "position": 38027.272124,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38939,7 +38939,7 @@
       "playlist_id": 7,
       "track_id": 121,
       "position": 40094.158651,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38951,7 +38951,7 @@
       "playlist_id": 7,
       "track_id": 331,
       "position": 42060.490447,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38963,7 +38963,7 @@
       "playlist_id": 7,
       "track_id": 764,
       "position": 43958.335839,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -38981,19 +38981,19 @@
       "playlist_id": 7,
       "track_id": 683,
       "position": 46910.849021,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 146,
       "position": 48036.094549,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 928,
       "position": 48986.322478,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39005,13 +39005,13 @@
       "playlist_id": 7,
       "track_id": 742,
       "position": 51076.537138,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 370,
       "position": 52081.896135,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39071,13 +39071,13 @@
       "playlist_id": 7,
       "track_id": 476,
       "position": 61906.903936,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 21,
       "position": 63016.413357,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39101,7 +39101,7 @@
       "playlist_id": 7,
       "track_id": 800,
       "position": 67081.641986,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39113,7 +39113,7 @@
       "playlist_id": 7,
       "track_id": 547,
       "position": 68955.200353,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39125,19 +39125,19 @@
       "playlist_id": 7,
       "track_id": 568,
       "position": 70992.568196,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 467,
       "position": 71967.008041,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
       "track_id": 159,
       "position": 73007.720997,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39149,7 +39149,7 @@
       "playlist_id": 7,
       "track_id": 677,
       "position": 75096.934404,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39185,7 +39185,7 @@
       "playlist_id": 7,
       "track_id": 180,
       "position": 80951.301744,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39197,7 +39197,7 @@
       "playlist_id": 7,
       "track_id": 706,
       "position": 83020.600199,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39221,7 +39221,7 @@
       "playlist_id": 7,
       "track_id": 101,
       "position": 86996.746939,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39263,7 +39263,7 @@
       "playlist_id": 7,
       "track_id": 828,
       "position": 93969.799153,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39287,7 +39287,7 @@
       "playlist_id": 7,
       "track_id": 497,
       "position": 98006.382094,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 7,
@@ -39299,7 +39299,7 @@
       "playlist_id": 7,
       "track_id": 424,
       "position": 100005.240482,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39311,7 +39311,7 @@
       "playlist_id": 8,
       "track_id": 108,
       "position": 2044.865278,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39329,7 +39329,7 @@
       "playlist_id": 8,
       "track_id": 595,
       "position": 4960.479413,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39353,7 +39353,7 @@
       "playlist_id": 8,
       "track_id": 64,
       "position": 9078.381577,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39407,7 +39407,7 @@
       "playlist_id": 8,
       "track_id": 23,
       "position": 18052.134936,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39425,7 +39425,7 @@
       "playlist_id": 8,
       "track_id": 306,
       "position": 21072.083792,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39449,13 +39449,13 @@
       "playlist_id": 8,
       "track_id": 999,
       "position": 24943.027876,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 361,
       "position": 26096.43231,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39467,7 +39467,7 @@
       "playlist_id": 8,
       "track_id": 504,
       "position": 27931.057289,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39479,7 +39479,7 @@
       "playlist_id": 8,
       "track_id": 944,
       "position": 29925.415661,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39491,13 +39491,13 @@
       "playlist_id": 8,
       "track_id": 241,
       "position": 31967.408531,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 45,
       "position": 33010.607662,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39515,7 +39515,7 @@
       "playlist_id": 8,
       "track_id": 160,
       "position": 36097.712715,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39545,13 +39545,13 @@
       "playlist_id": 8,
       "track_id": 686,
       "position": 41044.623467,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 145,
       "position": 42048.315074,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39581,7 +39581,7 @@
       "playlist_id": 8,
       "track_id": 728,
       "position": 46990.60386,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39623,13 +39623,13 @@
       "playlist_id": 8,
       "track_id": 221,
       "position": 53983.535443,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 835,
       "position": 55093.221295,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39665,7 +39665,7 @@
       "playlist_id": 8,
       "track_id": 53,
       "position": 60916.041024,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39677,7 +39677,7 @@
       "playlist_id": 8,
       "track_id": 273,
       "position": 62923.542895,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39701,7 +39701,7 @@
       "playlist_id": 8,
       "track_id": 656,
       "position": 67059.723108,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39743,7 +39743,7 @@
       "playlist_id": 8,
       "track_id": 598,
       "position": 74012.817981,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39761,7 +39761,7 @@
       "playlist_id": 8,
       "track_id": 378,
       "position": 76912.935733,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39779,19 +39779,19 @@
       "playlist_id": 8,
       "track_id": 254,
       "position": 80069.256098,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 653,
       "position": 80976.030499,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 218,
       "position": 82073.80398,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39803,7 +39803,7 @@
       "playlist_id": 8,
       "track_id": 77,
       "position": 83975.251569,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39821,7 +39821,7 @@
       "playlist_id": 8,
       "track_id": 112,
       "position": 87040.773005,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39833,7 +39833,7 @@
       "playlist_id": 8,
       "track_id": 960,
       "position": 89063.958308,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39851,19 +39851,19 @@
       "playlist_id": 8,
       "track_id": 96,
       "position": 91921.115259,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 601,
       "position": 93089.253634,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
       "track_id": 947,
       "position": 93973.726018,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 8,
@@ -39923,7 +39923,7 @@
       "playlist_id": 9,
       "track_id": 173,
       "position": 4049.615814,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -39935,7 +39935,7 @@
       "playlist_id": 9,
       "track_id": 812,
       "position": 5948.832122,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40001,13 +40001,13 @@
       "playlist_id": 9,
       "track_id": 780,
       "position": 17056.471206,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
       "track_id": 217,
       "position": 17951.667832,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40019,7 +40019,7 @@
       "playlist_id": 9,
       "track_id": 5,
       "position": 20071.734122,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40031,7 +40031,7 @@
       "playlist_id": 9,
       "track_id": 567,
       "position": 21917.177529,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40043,7 +40043,7 @@
       "playlist_id": 9,
       "track_id": 712,
       "position": 24015.893472,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40079,7 +40079,7 @@
       "playlist_id": 9,
       "track_id": 614,
       "position": 30051.715273,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40139,7 +40139,7 @@
       "playlist_id": 9,
       "track_id": 474,
       "position": 40016.314046,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40157,13 +40157,13 @@
       "playlist_id": 9,
       "track_id": 963,
       "position": 42987.426339,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
       "track_id": 373,
       "position": 43942.16683,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40175,7 +40175,7 @@
       "playlist_id": 9,
       "track_id": 725,
       "position": 45992.428958,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40205,7 +40205,7 @@
       "playlist_id": 9,
       "track_id": 440,
       "position": 50914.462302,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40223,7 +40223,7 @@
       "playlist_id": 9,
       "track_id": 29,
       "position": 53914.394707,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40253,7 +40253,7 @@
       "playlist_id": 9,
       "track_id": 673,
       "position": 58991.60387,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40271,13 +40271,13 @@
       "playlist_id": 9,
       "track_id": 105,
       "position": 61945.835745,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
       "track_id": 652,
       "position": 63027.248903,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40289,7 +40289,7 @@
       "playlist_id": 9,
       "track_id": 486,
       "position": 64939.947855,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40397,7 +40397,7 @@
       "playlist_id": 9,
       "track_id": 788,
       "position": 83045.568563,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40427,7 +40427,7 @@
       "playlist_id": 9,
       "track_id": 300,
       "position": 88010.324301,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40445,7 +40445,7 @@
       "playlist_id": 9,
       "track_id": 406,
       "position": 91033.463698,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40457,13 +40457,13 @@
       "playlist_id": 9,
       "track_id": 265,
       "position": 93080.823085,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
       "track_id": 795,
       "position": 93908.004284,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40487,7 +40487,7 @@
       "playlist_id": 9,
       "track_id": 679,
       "position": 98053.337088,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 9,
@@ -40505,7 +40505,7 @@
       "playlist_id": 10,
       "track_id": 298,
       "position": 933.311965,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40517,7 +40517,7 @@
       "playlist_id": 10,
       "track_id": 746,
       "position": 2910.602667,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40529,7 +40529,7 @@
       "playlist_id": 10,
       "track_id": 857,
       "position": 4963.718869,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40541,7 +40541,7 @@
       "playlist_id": 10,
       "track_id": 202,
       "position": 6917.918551,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40583,7 +40583,7 @@
       "playlist_id": 10,
       "track_id": 718,
       "position": 14023.811443,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40607,7 +40607,7 @@
       "playlist_id": 10,
       "track_id": 76,
       "position": 18056.360444,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40631,7 +40631,7 @@
       "playlist_id": 10,
       "track_id": 563,
       "position": 22011.543956,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40679,7 +40679,7 @@
       "playlist_id": 10,
       "track_id": 542,
       "position": 29959.584726,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40697,7 +40697,7 @@
       "playlist_id": 10,
       "track_id": 22,
       "position": 33013.346934,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40739,19 +40739,19 @@
       "playlist_id": 10,
       "track_id": 667,
       "position": 39919.411756,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 313,
       "position": 41094.25618,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 284,
       "position": 42088.020289,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40763,13 +40763,13 @@
       "playlist_id": 10,
       "track_id": 546,
       "position": 43925.151018,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 124,
       "position": 44952.299904,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40793,13 +40793,13 @@
       "playlist_id": 10,
       "track_id": 376,
       "position": 48982.853251,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 38,
       "position": 50094.16409,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40811,7 +40811,7 @@
       "playlist_id": 10,
       "track_id": 74,
       "position": 52009.996362,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40823,7 +40823,7 @@
       "playlist_id": 10,
       "track_id": 808,
       "position": 53949.139832,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40841,7 +40841,7 @@
       "playlist_id": 10,
       "track_id": 281,
       "position": 56914.720939,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40865,7 +40865,7 @@
       "playlist_id": 10,
       "track_id": 14,
       "position": 61046.593631,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40883,13 +40883,13 @@
       "playlist_id": 10,
       "track_id": 7,
       "position": 63981.193815,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 514,
       "position": 64968.912782,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40925,7 +40925,7 @@
       "playlist_id": 10,
       "track_id": 408,
       "position": 70936.829473,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -40937,19 +40937,19 @@
       "playlist_id": 10,
       "track_id": 89,
       "position": 73086.430263,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 386,
       "position": 73911.932383,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 345,
       "position": 75041.96346,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -41009,7 +41009,7 @@
       "playlist_id": 10,
       "track_id": 599,
       "position": 85061.069564,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -41033,25 +41033,25 @@
       "playlist_id": 10,
       "track_id": 751,
       "position": 89084.605231,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 908,
       "position": 90041.501612,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 806,
       "position": 91011.370251,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 12,
       "position": 92082.504981,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -41075,7 +41075,7 @@
       "playlist_id": 10,
       "track_id": 342,
       "position": 96049.280292,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
@@ -41087,13 +41087,13 @@
       "playlist_id": 10,
       "track_id": 995,
       "position": 98080.835095,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
       "track_id": 970,
       "position": 99038.015241,
-      "score": null
+      "score": 0.69626503
     },
     {
       "playlist_id": 10,
