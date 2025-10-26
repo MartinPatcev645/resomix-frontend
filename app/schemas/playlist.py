@@ -19,6 +19,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
 from app.schemas.similarity import SimilarityByIdResponse
 import re
+from decimal import Decimal
 
 
 # Request Schemas
@@ -169,6 +170,9 @@ class PlaylistEntity(BaseModel):
     is_public: bool
     type: str
     seed_track_id: Optional[int]
+    fork_id: Optional[str] = None
+    forked_at: Optional[str] = None
+    fork_count: int = 0
     created_at: str
 
     class Config:
@@ -277,7 +281,7 @@ class TrackDetail(BaseModel):
 
 class PlaylistTrackDetail(BaseModel):
     """Schema for track with position in playlist."""
-    position: int
+    position: Decimal  # DECIMAL(12,6) for high precision reordering
     score: Optional[float]
     track: TrackDetail
 
@@ -291,6 +295,9 @@ class PlaylistDetailInfo(BaseModel):
     is_public: bool
     type: str
     seed_track_id: Optional[int]
+    fork_id: Optional[str] = None
+    forked_at: Optional[str] = None
+    fork_count: int = 0
     created_at: str
     track_count: int
 

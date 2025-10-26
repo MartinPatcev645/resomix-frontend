@@ -413,7 +413,7 @@ class PlaylistService:
                 # Write header
                 writer.writerow([
                     'ID', 'UUID', 'User ID', 'Name', 
-                    'Visibility', 'Type', 'Seed Track ID', 'Created At'
+                    'Visibility', 'Type', 'Seed Track ID', 'Fork ID', 'Forked At', 'Fork Count', 'Created At'
                 ])
                 
                 # Write data
@@ -426,6 +426,9 @@ class PlaylistService:
                         playlist.get('is_public', ''),
                         playlist.get('type', ''),
                         playlist.get('seed_track_id', ''),
+                        playlist.get('fork_id', ''),
+                        playlist.get('forked_at', ''),
+                        playlist.get('fork_count', ''),
                         playlist.get('created_at', '')
                     ])
             

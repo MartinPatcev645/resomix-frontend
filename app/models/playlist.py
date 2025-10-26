@@ -35,9 +35,13 @@ class Playlist(Base):
         is_public     TINYINT(1) DEFAULT 0,
         type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
         seed_track_id BIGINT UNSIGNED,
+        fork_id       VARCHAR(36) NULL,                -- UUID of original playlist if forked
+        forked_at     DATETIME NULL,                   -- when the fork was created
+        fork_count    INT UNSIGNED NOT NULL DEFAULT 0, -- how many times this playlist has been forked
         created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (fork_id)      REFERENCES playlists(uuid) ON DELETE SET NULL,
         KEY idx_playlist_user (user_id),
         KEY idx_playlist_uuid (uuid)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -58,12 +62,16 @@ class Playlist(Base):
     
     # Foreign keys
     seed_track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True)
+    fork_id = Column(String(36), ForeignKey("playlists.uuid", ondelete="SET NULL"), nullable=True)
+    forked_at = Column(DateTime, nullable=True)
+    fork_count = Column(Integer, nullable=False, default=0)
     
     # Timestamps
     created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
     
     # Relationships
     seed_track = relationship("Track", foreign_keys=[seed_track_id])
+    fork = relationship("Playlist", foreign_keys=[fork_id])
     playlist_tracks = relationship("PlaylistTrack", back_populates="playlist", cascade="all, delete-orphan")
     tracks = relationship("Track", secondary="playlist_tracks", viewonly=True)
     
@@ -85,7 +93,7 @@ class PlaylistTrack(Base):
     CREATE TABLE IF NOT EXISTS playlist_tracks (
         playlist_id BIGINT UNSIGNED NOT NULL,
         track_id    BIGINT UNSIGNED NOT NULL,
-        position    INT UNSIGNED NOT NULL,
+        position    DECIMAL(12,6) NOT NULL,            -- high precision for efficient reordering
         score       DECIMAL(10, 8) NULL,
         PRIMARY KEY (playlist_id, track_id),
         FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
@@ -100,7 +108,7 @@ class PlaylistTrack(Base):
     track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True, index=True)
     
     # Fields
-    position = Column(Integer, nullable=False)
+    position = Column(DECIMAL(12, 6), nullable=False)  # High precision for efficient reordering
     score = Column(DECIMAL(10, 8), nullable=True)  # Store similarity scores as decimal values
     
     # Relationships

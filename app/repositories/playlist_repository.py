@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
-
+from decimal import Decimal
 from app.models.playlist import Playlist, PlaylistTrack
 from app.models.constants import PlaylistType
 from app.repositories.base_repository import BaseRepository
@@ -81,7 +81,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 playlist_track = PlaylistTrack(
                     playlist_id=playlist.id,
                     track_id=track_id,
-                    position=position,
+                    position= Decimal(str(position)),  # Convert to Decimal for DECIMAL(12,6)
                     score=score
                 )
                 playlist_tracks.append(playlist_track)
@@ -177,7 +177,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 playlist_track = PlaylistTrack(
                     playlist_id=playlist.id,
                     track_id=track_id,
-                    position=position
+                    position= Decimal(str(position)),  # Convert to Decimal for DECIMAL(12,6)
                 )
                 playlist_tracks.append(playlist_track)
             
@@ -712,6 +712,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "is_public": playlist.is_public,
                     "type": playlist.type,
                     "seed_track_id": playlist.seed_track_id,
+                    "fork_id": playlist.fork_id,
+                    "forked_at": playlist.forked_at.isoformat() if playlist.forked_at else None,
+                    "fork_count": playlist.fork_count,
                     "created_at": playlist.created_at.isoformat() if playlist.created_at else None
                 })
             
@@ -895,6 +898,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "is_public": "Public" if playlist.is_public else "Private",
                     "type": playlist.type.replace('_', ' ').title() if playlist.type else "",
                     "seed_track_id": playlist.seed_track_id or "",
+                    "fork_id": playlist.fork_id or "",
+                    "forked_at": playlist.forked_at.strftime("%Y-%m-%d %H:%M:%S") if playlist.forked_at else "",
+                    "fork_count": playlist.fork_count,
                     "created_at": playlist.created_at.strftime("%Y-%m-%d %H:%M:%S") if playlist.created_at else ""
                 })
             
@@ -1059,6 +1065,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "is_public": playlist.is_public,
                     "type": playlist.type,
                     "seed_track_id": playlist.seed_track_id,
+                    "fork_id": playlist.fork_id,
+                    "forked_at": playlist.forked_at.isoformat() if playlist.forked_at else None,
+                    "fork_count": playlist.fork_count,
                     "created_at": playlist.created_at.isoformat() if playlist.created_at else None,
                     "track_count": track_count
                 },
