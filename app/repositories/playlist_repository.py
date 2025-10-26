@@ -128,13 +128,12 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if not original_playlist:
                 return None
             
-            # Verify playlist is public
-            if not original_playlist.is_public:
+            # Verify playlist is public OR user owns it (users can fork their own playlists)
+            if not original_playlist.is_public and original_playlist.user_id != user_id:
                 return {"error": "not_public"}
             
-            # Check if user already owns this playlist
-            if original_playlist.user_id == user_id:
-                return {"error": "already_owner"}
+            # Note: We allow users to fork their own playlists (both public and private)
+            # This allows users to create copies/duplicates of their own playlists
             
             # 2. Generate New UUID
             new_uuid = str(uuid.uuid4())
