@@ -171,7 +171,7 @@ export default function RegisterContent({
           </p>
         </header>
 
-        <div className="w-full max-w-[var(--px-550)] lg:max-w-[var(--px-840)] lg:border-2 lg:border-[#222222] rounded-[var(--px-10)] p-5 md:p-[var(--px-20)]">
+        <div className="w-full max-w-[var(--px-550)] lg:max-w-[var(--px-840)] rounded-[var(--px-10)] p-5 md:p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
             <a
               href={baseUrl}
