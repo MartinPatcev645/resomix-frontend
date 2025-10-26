@@ -19,12 +19,20 @@ const ErrorIcon = () => (
 
 type StatusType = 'loading' | 'success' | 'error';
 
+interface AdditionalButtonProps {
+    text: string
+    transparent?: boolean
+    onClick: () => void
+    disabled?: boolean
+}
+
 interface StatusMessageProps {
     isOpen: boolean
     onClose: () => void
     status: StatusType
     title?: string
     message?: string
+    additionalButton?: AdditionalButtonProps
 }
 
 export const StatusMessage: React.FC<StatusMessageProps> = ({
@@ -32,7 +40,8 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     onClose,
     status,
     title,
-    message
+    message,
+    additionalButton
 }) => {
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -70,15 +79,15 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Loading state
     if (status === 'loading') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-primary-background)]">
-                {/* Backdrop with blur effect */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                {/* Backdrop with blur effect only */}
                 <div
-                    className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                    className="absolute inset-0 backdrop-blur-md pointer-events-auto"
                     onClick={onClose}
                 />
 
                 {/* Loading content */}
-                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-390)] w-full lg:w-[var(--px-393)]">
+                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-390)] w-full lg:w-[var(--px-393)] pointer-events-auto">
                     <SineWaves />
                 </div>
             </div>
@@ -88,15 +97,15 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Error state
     if (status === 'error') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-primary-background)]">
-                {/* Backdrop with blur effect */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                {/* Backdrop with blur effect only */}
                 <div
-                    className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                    className="absolute inset-0 backdrop-blur-md pointer-events-auto"
                     onClick={onClose}
                 />
 
                 {/* Error content */}
-                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-390)] w-full lg:w-[var(--px-393)]">
+                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-390)] w-full lg:w-[var(--px-393)] pointer-events-auto">
 
                     <ErrorIcon />
 
@@ -111,6 +120,14 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
 
                     <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
                         <ButtonSleek text="Close" onClick={onClose} transparent={true} />
+                        {additionalButton && (
+                            <ButtonSleek 
+                                text={additionalButton.text} 
+                                onClick={additionalButton.onClick} 
+                                transparent={additionalButton.transparent}
+                                disabled={additionalButton.disabled}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
@@ -119,15 +136,15 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
 
     // Success state (default)
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-primary-background)]">
-            {/* Backdrop with blur effect */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            {/* Backdrop with blur effect only */}
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                className="absolute inset-0 backdrop-blur-md pointer-events-auto"
                 onClick={onClose}
             />
 
             {/* Success content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
+            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)] pointer-events-auto">
 
                 <SuccessIcon />
 
@@ -144,6 +161,14 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
 
                 <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
                     <ButtonSleek text="Close" onClick={onClose} transparent={true} />
+                    {additionalButton && (
+                        <ButtonSleek 
+                            text={additionalButton.text} 
+                            onClick={additionalButton.onClick} 
+                            transparent={additionalButton.transparent}
+                            disabled={additionalButton.disabled}
+                        />
+                    )}
                 </div>
             </div>
         </div>

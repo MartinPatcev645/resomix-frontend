@@ -24,6 +24,8 @@ import { PageExoskeleton } from "./Vectors/PageExoskeleton";
 import { ProfileIcon } from "./Vectors/ProfileIcon";
 import { PublicIcon } from "./Vectors/PublicIcon";
 import { PrivateIcon } from "./Vectors/PrivateIcon";
+import { HeartFilledIcon } from "./Vectors/HeartFilledIcon";
+import { HeartStrokeIcon } from "./Vectors/HeartStrokeIcon";
 import { StyleThree } from "./Vectors/LineContainer/StyleThree";
 import { StyleTwo } from "./Vectors/LineContainer/StyleTwo";
 import { StyleOne } from "./Vectors/LineContainer/StyleOne";
@@ -140,4 +142,6 @@ export {
   ProfileIcon,
   PublicIcon,
   PrivateIcon,
+  HeartFilledIcon,
+  HeartStrokeIcon,
 };

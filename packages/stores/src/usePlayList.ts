@@ -16,6 +16,7 @@ export interface Playlist {
   id: string
   name: string
   is_public: boolean
+  fork_id?: string
 }
 
 export interface PlaylistData {

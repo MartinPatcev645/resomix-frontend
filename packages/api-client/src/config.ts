@@ -18,6 +18,7 @@ export interface ApiConfig {
     TRACK_RATING: string;
     PLAYLIST_RATING: string;
     PLAYLIST_SIMILARITY_HLS: string;
+    PLAYLIST_FORK: string;
     WAITLIST: string;
     SEGMENT_STATUS: string;
     // Admin endpoints
@@ -98,6 +99,7 @@ export const API_CONFIG: ApiConfig = {
     TRACK_RATING: "/ratings/tracks/",
     PLAYLIST_RATING: "/ratings/playlists/",
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
+    PLAYLIST_FORK: "/playlists/fork/",
     WAITLIST: "/waitlist/",
     SEGMENT_STATUS: "/segment_status/",
     // Admin endpoints

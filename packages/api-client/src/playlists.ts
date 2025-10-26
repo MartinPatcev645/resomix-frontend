@@ -106,3 +106,20 @@ export const ratePlaylist = async (
     return handleApiError(error as any);
   }
 };
+
+export const forkPlaylist = async (playlistId: string) => {
+  try {
+    const data = await axiosWrapper<any>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_FORK}${playlistId}`),
+    );
+
+    if (data.success === true) return data;
+    return {
+      success: false,
+      error: data.error || "Failed to fork playlist.",
+      details: data.details ?? null,
+    };
+  } catch (error) {
+    return handleApiError(error as any);
+  }
+};

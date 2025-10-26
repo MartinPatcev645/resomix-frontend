@@ -12,6 +12,7 @@ export interface PlaylistItem {
   type: 'custom' | 'similarity' | 'waiting_segments';
   seed_track_id: number | null;
   created_at: string; // ISO datetime string
+  fork_id?: string;
 }
 
 export interface PlaylistListParams {
@@ -72,6 +73,7 @@ export interface PlaylistDetailsResponse {
       seed_track_id: number | null;
       created_at: string;
       track_count: number;
+      fork_id?: string;
     };
     seed_track: {
       id: number;

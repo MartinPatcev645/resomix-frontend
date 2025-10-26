@@ -1,7 +1,8 @@
 import React from "react";
-import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon } from "@resomix/ui";
-import { formatDuration, usePlaylistExport } from "@resomix/hooks";
+import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
+import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { useNavigate } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -28,10 +29,12 @@ const PlaylistHero: React.FC = () => {
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
+  const [showLoginButton, setShowLoginButton] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
+  const navigate = useNavigate();
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -52,6 +55,35 @@ const PlaylistHero: React.FC = () => {
     }
     setShowExport(true);
   };
+
+  // Fork functionality with StatusMessage
+  const { fork, forking } = usePlaylistFork({
+    onError: (title, message) => {
+      // Check if the error is authentication related
+      const isAuthError = message.toLowerCase().includes('not authenticated') ||
+        message.toLowerCase().includes('log in');
+      setShowLoginButton(isAuthError);
+      handleStatusChange('error', message, title);
+    },
+    onSuccess: (title, message) => {
+      setShowLoginButton(false);
+      handleStatusChange('success', message, title);
+    },
+  });
+
+  const handleForkClick = async () => {
+    if (!playlistData?.playlist.id || forking) return;
+    await fork(playlistData.playlist.id);
+  };
+
+  const handleLoginClick = () => {
+    setShowLoginButton(false);
+    setShowStatus(false);
+    navigate('/auth/login');
+  };
+
+  // Check if playlist is already forked
+  const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '';
 
 
   return (
@@ -263,7 +295,14 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="absolute right-[var(--px-10)] top-[var(--px-10)]">
+              <div className="absolute right-[var(--px-10)] top-[var(--px-10)] flex items-center gap-[var(--px-8)]">
+                {isForked ? (
+                  <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
+                ) : (
+                  <Tooltip message="Fork this playlist as your own">
+                    <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white mt-[var(--px-6)]" onClick={handleForkClick} />
+                  </Tooltip>
+                )}
                 <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private! Share to make it public"}>
                   <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
                     {playlistData?.playlist.is_public ? (
@@ -312,6 +351,12 @@ const PlaylistHero: React.FC = () => {
         status={statusType}
         message={statusMessage}
         title={statusTitle}
+        additionalButton={showLoginButton ? {
+          text: 'Log In',
+          transparent: false,
+          onClick: handleLoginClick,
+          disabled: false,
+        } : undefined}
       />
     </div>
   );
