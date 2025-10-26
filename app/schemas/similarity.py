@@ -97,12 +97,14 @@ class PlaylistInfo(BaseModel):
     """Schema for playlist information returned with similarity results."""
     id: str = Field(..., description="Playlist UUID (for external use)")
     name: str = Field(..., description="Playlist name")
+    is_public: bool = Field(..., description="Whether the playlist is public")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
-                "name": "Playlist"
+                "name": "Playlist",
+                "is_public": False
             }
         }
 
@@ -140,7 +142,8 @@ class SimilarityUploadResponse(BaseModel):
                 ],
                 "playlist": {
                     "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "Playlist"
+                    "name": "Playlist",
+                    "is_public": False
                 }
             }
         }
@@ -179,7 +182,8 @@ class SimilarityByIdResponse(BaseModel):
                 ],
                 "playlist": {
                     "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "Playlist"
+                    "name": "Playlist",
+                    "is_public": False
                 }
             }
         }
@@ -233,7 +237,8 @@ class SimilarityUploadSuccessResponse(BaseModel):
                     ],
                     "playlist": {
                         "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "name": "Playlist"
+                        "name": "Playlist",
+                        "is_public": False
                     }
                 }
             }
@@ -274,7 +279,8 @@ class SimilarityByIdSuccessResponse(BaseModel):
                     ],
                     "playlist": {
                         "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "name": "Playlist"
+                        "name": "Playlist",
+                        "is_public": False
                     }
                 }
             }

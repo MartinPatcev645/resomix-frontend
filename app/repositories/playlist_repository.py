@@ -93,6 +93,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 "id": playlist.uuid,  # UUID for external use
                 "pk": playlist.id,    # Primary key for internal DB ops
                 "name": playlist.name,
+                "is_public": playlist.is_public,
             }
             
         except Exception as e:
@@ -462,7 +463,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 "similar_tracks": similar_tracks,
                 "playlist": {
                     "id": playlist.uuid,
-                    "name": playlist.name
+                    "name": playlist.name,
+                    "is_public": playlist.is_public
                 }
             }
             
