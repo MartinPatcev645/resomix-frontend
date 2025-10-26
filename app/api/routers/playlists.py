@@ -15,13 +15,13 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Request
+from fastapi import APIRouter, Security, Depends, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
-from app.api.dependencies.auth import get_api_key, get_current_user_optional
+from app.api.dependencies.auth import get_api_key, get_current_user_optional, get_current_user
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.playlist import (
@@ -29,7 +29,8 @@ from app.schemas.playlist import (
     PlaylistVisibilityRequest,
     PlaylistOperationResponse,
     PlaylistErrorResponse,
-    PlaylistSimilarityResponse
+    PlaylistSimilarityResponse,
+    PlaylistForkResponse
 )
 
 router = APIRouter(
@@ -176,6 +177,77 @@ async def get_playlist_similarity_endpoint(
     Note: JWT authenticated users can access their own private playlists.
     """
     return await playlist_controller.get_playlist_similarity_data(db, request, playlist_id, current_user)
+
+
+@router.post(
+    "/fork/{playlist_id}",
+    response_model=PlaylistForkResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Fork a Public Playlist",
+    description="Create a copy of a public playlist. Requires authentication.",
+    responses={
+        201: {
+            "model": PlaylistForkResponse,
+            "description": "Playlist forked successfully"
+        },
+        400: {
+            "model": PlaylistErrorResponse,
+            "description": "User already owns this playlist"
+        },
+        401: {
+            "model": PlaylistErrorResponse,
+            "description": "Authentication required"
+        },
+        403: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist is private and cannot be forked"
+        },
+        404: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist not found"
+        },
+        422: {
+            "model": PlaylistErrorResponse,
+            "description": "Invalid playlist ID"
+        },
+        500: {
+            "model": PlaylistErrorResponse,
+            "description": "Internal server error"
+        }
+    }
+)
+async def fork_playlist_endpoint(
+    request: Request,
+    playlist_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
+) -> JSONResponse:
+    """
+    Fork (copy) a public playlist to your account.
+    
+    Creates a new playlist with:
+    - Same name, tracks, and seed track as original
+    - Owned by the authenticated user
+    - Private visibility by default
+    - Reset track positions (1.0, 2.0, 3.0, etc.)
+    - Links back to original via fork_id
+    
+    **Requirements**:
+    - User must be authenticated (JWT token required)
+    - Original playlist must be public
+    - User cannot fork their own playlists
+    
+    **Notes**:
+    - Forked playlists maintain same track order but reset decimal positions
+    - Original playlist's fork_count is incremented
+    - created_at timestamp preserved from original
+    
+    - **playlist_id**: The UUID of the public playlist to fork
+    
+    Returns the forked playlist in the same format as the similarity endpoint.
+    """
+    return await playlist_controller.fork_playlist(db, request, playlist_id, current_user)
 
 
 @router.get(

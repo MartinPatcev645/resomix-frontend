@@ -21,6 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
+import uuid
+from datetime import datetime, timezone
 from app.models.playlist import Playlist, PlaylistTrack
 from app.models.constants import PlaylistType
 from app.repositories.base_repository import BaseRepository
@@ -100,6 +102,93 @@ class PlaylistRepository(BaseRepository[Playlist]):
             await db.rollback()
             print(f"Error creating similarity playlist: {e}")
             raise e
+    
+    async def async_fork_playlist(
+        self,
+        db: AsyncSession,
+        original_playlist_uuid: str,
+        user_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fork (copy) a public playlist for a user.
+        
+        Args:
+            db: Database session
+            original_playlist_uuid: UUID of the playlist to fork
+            user_id: ID of the user forking the playlist
+            
+        Returns:
+            Dictionary with forked playlist data in similarity format, or None if not found,
+            or dict with error key for business logic failures
+        """
+        try:
+            # 1. Fetch Original Playlist
+            original_playlist = await self.async_get_playlist_by_uuid(db, original_playlist_uuid)
+            if not original_playlist:
+                return None
+            
+            # Verify playlist is public
+            if not original_playlist.is_public:
+                return {"error": "not_public"}
+            
+            # Check if user already owns this playlist
+            if original_playlist.user_id == user_id:
+                return {"error": "already_owner"}
+            
+            # 2. Generate New UUID
+            new_uuid = str(uuid.uuid4())
+            
+            # 3. Create New Playlist Record
+            forked_playlist = Playlist(
+                uuid=new_uuid,
+                user_id=user_id,
+                name=original_playlist.name,
+                is_public=False,  # Forked playlists default to private
+                type=original_playlist.type,
+                seed_track_id=original_playlist.seed_track_id,
+                fork_id=original_playlist_uuid,  # Link back to original
+                forked_at=datetime.now(timezone.utc),
+                fork_count=0  # New playlist starts with 0 forks
+                # created_at is automatically set by database with current timestamp
+            )
+            
+            db.add(forked_playlist)
+            await db.flush()  # Flush to get the new playlist ID
+            
+            # 4. Fetch Original Playlist Tracks
+            stmt = select(PlaylistTrack).where(
+                PlaylistTrack.playlist_id == original_playlist.id
+            ).order_by(PlaylistTrack.position.asc())
+            
+            result = await db.execute(stmt)
+            original_tracks = result.scalars().all()
+            
+            # 5. Create Forked Playlist Tracks with Reset Positions
+            forked_tracks = []
+            for i, original_track in enumerate(original_tracks):
+                forked_track = PlaylistTrack(
+                    playlist_id=forked_playlist.id,
+                    track_id=original_track.track_id,
+                    position=Decimal(str(i + 1)),  # Reset to 1.0, 2.0, 3.0, etc.
+                    score=original_track.score  # Keep same score
+                )
+                forked_tracks.append(forked_track)
+            
+            db.add_all(forked_tracks)
+            
+            # 6. Increment Original Playlist Fork Count
+            original_playlist.fork_count += 1
+            
+            # 7. Commit Transaction
+            await db.commit()
+            
+            # 8. Return Success Data
+            return await self.async_get_playlist_similarity_data(db, new_uuid)
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error forking playlist: {e}")
+            return None
     
     async def async_get_playlist_with_tracks(self, db: AsyncSession, playlist_id: int) -> Optional[Playlist]:
         """

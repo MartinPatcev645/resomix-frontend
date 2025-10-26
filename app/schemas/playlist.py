@@ -78,6 +78,25 @@ class PlaylistByIdRequest(BaseModel):
         }
 
 
+class PlaylistForkRequest(BaseModel):
+    """Request schema for forking a playlist."""
+    playlist_id: str = Field(..., description="UUID of the playlist to fork")
+    
+    @validator('playlist_id')
+    def validate_playlist_id(cls, v):
+        """Validate that playlist_id is not empty."""
+        if not v or not v.strip():
+            raise ValueError('Playlist ID cannot be empty')
+        return v.strip()
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "playlist_id": "550e8400-e29b-41d4-a716-446655440000"
+            }
+        }
+
+
 # Response Schemas
 class PlaylistOperationResponse(BaseModel):
     """Response schema for playlist operations (rename, visibility change)."""
@@ -142,6 +161,37 @@ class PlaylistSimilarityResponse(BaseModel):
                     "playlist": {
                         "id": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Playlist",
+                        "is_public": False
+                    }
+                }
+            }
+        }
+
+
+class PlaylistForkResponse(BaseModel):
+    """Response schema for playlist fork operation."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: SimilarityByIdResponse = Field(..., description="Forked playlist data in similarity format")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "queried_track": {
+                        "rank": 0,
+                        "score": 1.0,
+                        "id": "67addcb39387d00fbdc3acdf",
+                        "label": "Global Underground",
+                        "duration": 491,
+                        "artist": "Oxia",
+                        "title": "Whole Life (Original Mix)",
+                        "year": 2010
+                    },
+                    "similar_tracks": [...],
+                    "playlist": {
+                        "id": "new-playlist-uuid",
+                        "name": "Playlist Name",
                         "is_public": False
                     }
                 }

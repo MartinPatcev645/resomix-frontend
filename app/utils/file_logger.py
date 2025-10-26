@@ -22,7 +22,7 @@ class FileLogger:
             open(self.filename, "w").close()
 
     def _write(self, level: LogLevel, message: str) -> None:
-        timestamp = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        timestamp = datetime.now(timezone.utc)().isoformat(sep=" ", timespec="seconds")
         with open(self.filename, "a", encoding="utf-8") as fp:
             fp.write(f"{timestamp} {level} {message}\n")
 

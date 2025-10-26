@@ -222,6 +222,58 @@ class PlaylistService:
                 "error": "An error occurred while retrieving playlist data"
             }
     
+    async def fork_playlist(
+        self,
+        db: AsyncSession,
+        playlist_uuid: str,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """
+        Fork (copy) a public playlist for a user.
+        
+        Args:
+            db: Database session
+            playlist_uuid: UUID of the playlist to fork
+            user_id: ID of the user forking the playlist
+            
+        Returns:
+            Dictionary with success status and forked playlist data or error message
+        """
+        try:
+            # Call repository method
+            result = await self.playlist_repository.async_fork_playlist(db, playlist_uuid, user_id)
+            
+            # Handle response cases
+            if result is None:
+                return {
+                    "success": False,
+                    "error": "Playlist not found"
+                }
+            elif isinstance(result, dict) and result.get("error") == "not_public":
+                return {
+                    "success": False,
+                    "error": "Cannot fork private playlists. Only public playlists can be forked."
+                }
+            elif isinstance(result, dict) and result.get("error") == "already_owner":
+                return {
+                    "success": False,
+                    "error": "You already own this playlist. No need to fork it."
+                }
+            else:
+                # Valid data returned - apply metadata filtering
+                filtered_data = self._apply_playlist_response_filtering(result)
+                return {
+                    "success": True,
+                    "data": filtered_data
+                }
+                
+        except Exception as e:
+            print(f"Error in playlist service fork playlist: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while forking the playlist"
+            }
+    
     async def get_playlist_hls_data(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
         """
         Get playlist as HLS M3U8 format by calling media server.

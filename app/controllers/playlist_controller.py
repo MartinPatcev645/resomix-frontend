@@ -611,6 +611,225 @@ class PlaylistController:
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
     
+    async def fork_playlist(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        current_user: User
+    ) -> JSONResponse:
+        """
+        Fork (copy) a public playlist for a user.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            playlist_id: UUID of the playlist to fork
+            current_user: Authenticated user object
+            
+        Returns:
+            JSON response with forked playlist data or error message
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        # Validate input
+        if not playlist_id or not playlist_id.strip():
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error="playlist_id cannot be empty")
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="USER_ACTION",
+                action="fork_playlist_validation_failed",
+                message="Fork playlist failed: playlist_id cannot be empty",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=422,
+                duration_ms=duration_ms,
+                user_id=current_user.id,
+                metadata={
+                    "user_uuid": current_user.uuid,
+                    "original_playlist_uuid": playlist_id,
+                    "error": "playlist_id cannot be empty",
+                    "validation_step": "playlist_id_check",
+                    "response": response_data,
+                    "operation": "playlist_fork"
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
+        
+        try:
+            # Call service layer
+            result = await self.playlist_service.fork_playlist(
+                db, 
+                playlist_id, 
+                current_user.id
+            )
+            
+            duration_ms = (time.time() - start_time) * 1000
+            
+            # Handle success response
+            if result.get("success"):
+                # Extract playlist integer ID from result data for logging
+                new_playlist_uuid = result.get("data", {}).get("playlist", {}).get("id")
+                track_count = len(result.get("data", {}).get("similar_tracks", []))
+                
+                # Get new playlist integer ID for logging
+                new_playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, new_playlist_uuid)
+                new_playlist_int_id = new_playlist.id if new_playlist else None
+                
+                # Get original playlist integer ID for logging
+                original_playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+                original_playlist_int_id = original_playlist.id if original_playlist else None
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="USER_ACTION",
+                    action="fork_playlist_success",
+                    message=f"User forked playlist successfully: {playlist_id} -> {new_playlist_uuid}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=201,
+                    user_id=current_user.id,
+                    playlist_id=new_playlist_int_id,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "original_playlist_uuid": playlist_id,
+                        "new_playlist_uuid": new_playlist_uuid,
+                        "original_playlist_int_id": original_playlist_int_id,
+                        "new_playlist_int_id": new_playlist_int_id,
+                        "track_count": track_count,
+                        "operation": "playlist_fork",
+                        "response": result
+                    }
+                )
+                return JSONResponse(status_code=status.HTTP_201_CREATED, content=result)
+            
+            # Handle error responses
+            error_message = result.get("error", "")
+            
+            if "not found" in error_message.lower():
+                response_data = format_response(success=False, error=error_message)
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
+                    action="fork_playlist_not_found",
+                    message=f"Fork playlist failed: playlist not found: {playlist_id}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=404,
+                    user_id=current_user.id,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "original_playlist_uuid": playlist_id,
+                        "error": error_message,
+                        "response": response_data,
+                        "operation": "playlist_fork"
+                    }
+                )
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=response_data)
+            
+            elif "private" in error_message.lower() or "public" in error_message.lower():
+                response_data = format_response(success=False, error=error_message)
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
+                    action="fork_playlist_forbidden",
+                    message=f"Fork playlist failed: private playlist: {playlist_id}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=403,
+                    user_id=current_user.id,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "original_playlist_uuid": playlist_id,
+                        "error": error_message,
+                        "response": response_data,
+                        "operation": "playlist_fork"
+                    }
+                )
+                return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=response_data)
+            
+            elif "already own" in error_message.lower():
+                response_data = format_response(success=False, error=error_message)
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="USER_ACTION",
+                    action="fork_playlist_already_owner",
+                    message=f"Fork playlist failed: user already owns playlist: {playlist_id}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=400,
+                    user_id=current_user.id,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "original_playlist_uuid": playlist_id,
+                        "error": error_message,
+                        "response": response_data,
+                        "operation": "playlist_fork"
+                    }
+                )
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response_data)
+            
+            else:
+                # Generic error
+                response_data = format_response(success=False, error=error_message)
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="ERROR",
+                    action="fork_playlist_failed",
+                    message=f"Fork playlist failed: {error_message}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    user_id=current_user.id,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "original_playlist_uuid": playlist_id,
+                        "error": error_message,
+                        "response": response_data,
+                        "operation": "playlist_fork"
+                    }
+                )
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error="An internal server error occurred while forking the playlist")
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="fork_playlist_exception",
+                message="Exception occurred while forking playlist",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="fork playlist",
+                user_id=current_user.id,
+                metadata={
+                    "user_uuid": current_user.uuid,
+                    "original_playlist_uuid": playlist_id,
+                    "error_type": type(e).__name__,
+                    "response": response_data,
+                    "operation": "playlist_fork"
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
+    
     # ============================================================================
     # Admin Methods
     # ============================================================================

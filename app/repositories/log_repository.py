@@ -136,7 +136,7 @@ class LogRepository(BaseRepository[SystemLog]):
         limit: int = 100
     ) -> List[SystemLog]:
         """Get recent error logs"""
-        since = datetime.utcnow() - timedelta(hours=hours)
+        since = datetime.now(timezone.utc)() - timedelta(hours=hours)
         return db.query(SystemLog)\
             .filter(and_(
                 SystemLog.level.in_(['ERROR', 'CRITICAL']),
@@ -169,7 +169,7 @@ class LogRepository(BaseRepository[SystemLog]):
         limit: int = 100
     ) -> List[SystemLog]:
         """Get slow requests above threshold"""
-        since = datetime.utcnow() - timedelta(hours=hours)
+        since = datetime.now(timezone.utc)() - timedelta(hours=hours)
         return db.query(SystemLog)\
             .filter(and_(
                 SystemLog.duration_ms >= min_duration_ms,
@@ -228,7 +228,7 @@ class LogRepository(BaseRepository[SystemLog]):
     
     def get_log_stats(self, db: Session, hours: int = 24) -> Dict[str, Any]:
         """Get logging statistics for dashboard"""
-        since = datetime.utcnow() - timedelta(hours=hours)
+        since = datetime.now(timezone.utc)() - timedelta(hours=hours)
         
         try:
             # Count by level
@@ -288,7 +288,7 @@ class LogRepository(BaseRepository[SystemLog]):
     
     def cleanup_old_logs(self, db: Session, days_to_keep: int = 365) -> int:
         """Clean up old log entries"""
-        cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+        cutoff_date = datetime.now(timezone.utc)() - timedelta(days=days_to_keep)
         
         try:
             deleted_count = db.query(SystemLog)\
@@ -368,7 +368,7 @@ class LogRepository(BaseRepository[SystemLog]):
     
     async def async_get_log_stats(self, db: AsyncSession, hours: int = 24) -> Dict[str, Any]:
         """Async version of get_log_stats"""
-        since = datetime.utcnow() - timedelta(hours=hours)
+        since = datetime.now(timezone.utc)() - timedelta(hours=hours)
         
         try:
             # Count by level
@@ -516,7 +516,7 @@ class LogRepository(BaseRepository[SystemLog]):
         if 'correlation_id' in kwargs and kwargs['correlation_id']:
             # Look for logs with same correlation_id within last minute
             from datetime import datetime, timedelta
-            recent_time = datetime.utcnow() - timedelta(minutes=1)
+            recent_time = datetime.now(timezone.utc)() - timedelta(minutes=1)
             
             return db.query(SystemLog)\
                 .filter(and_(
@@ -534,7 +534,7 @@ class LogRepository(BaseRepository[SystemLog]):
         """
         if 'correlation_id' in kwargs and kwargs['correlation_id']:
             from datetime import datetime, timedelta
-            recent_time = datetime.utcnow() - timedelta(minutes=1)
+            recent_time = datetime.now(timezone.utc)() - timedelta(minutes=1)
             
             query = select(SystemLog).where(and_(
                 SystemLog.correlation_id == kwargs['correlation_id'],

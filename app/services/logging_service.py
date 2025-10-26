@@ -389,7 +389,7 @@ class LoggingService:
                 'success': True,
                 'deleted_count': deleted_count,
                 'days_kept': days_to_keep,
-                'cleanup_date': datetime.utcnow().isoformat()
+                'cleanup_date': datetime.now(timezone.utc)().isoformat()
             }
             
         except Exception as e:
