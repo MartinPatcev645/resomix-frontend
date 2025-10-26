@@ -6,13 +6,14 @@ import { UploadLoader } from "@/components/index.ts";
 import { StatusMessage } from "@resomix/ui";
 import { useUploadStore, useTrackSimilarity } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import React from "react";
 
 export function UploadPage() {
   const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const processedId = React.useRef<string | null>(null);
 
   const { handleSelectTrack } = useTrackSimilarity();
@@ -88,6 +89,7 @@ export function UploadPage() {
                 baseBetaUrl={BASE_BETA_URL}
                 customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
                 onProfileClick={() => navigate('/profile')}
+                currentPath={location.pathname}
               />
             </header>
 

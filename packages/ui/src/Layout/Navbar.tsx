@@ -13,9 +13,10 @@ interface NavbarProps {
   baseUrl?: string;
   baseBetaUrl?: string;
   onProfileClick?: () => void;
+  currentPath?: string; // Current page path for redirect after login
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath }) => {
   const { showFeedbackForm } = useFeedbackStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -60,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         ) : (
           <ButtonSleek
             text="Login"
-            href={`${baseBetaUrl}/auth/login`}
+            href={`${baseBetaUrl}/auth/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
             className="auth-button"
             id="navbar-login-button"
             customWidth="min-w-[var(--px-80)]"

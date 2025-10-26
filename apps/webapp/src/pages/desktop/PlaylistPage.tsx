@@ -1,6 +1,6 @@
 import { Navbar, StaticNoise, GlobalFooter, SideLines, StatusMessage } from "@resomix/ui";
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
@@ -10,6 +10,7 @@ import { usePlaylistStore } from "@resomix/stores";
 export function PlaylistPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -109,6 +110,7 @@ export function PlaylistPage() {
                   baseBetaUrl={BASE_BETA_URL}
                   customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
                   onProfileClick={() => navigate('/profile')}
+                  currentPath={location.pathname}
                 />
               </header>
 

@@ -1,6 +1,7 @@
 import { InfoPageLayout, MobileNavbar, Navbar, ContactContent, ErrorContent, Error404 } from "@resomix/ui";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { MenuPage } from "./index.ts";
 import TermsContent from "@/content/TermsContent.tsx";
 import PrivacyContent from "@/content/PrivacyContent.tsx";
@@ -13,6 +14,7 @@ interface InfoPageProps {
 
 export default function InfoPage({ mode }: InfoPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   const navbar = (
     <>
@@ -23,6 +25,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
           baseUrl={BASE_LANDING_URL}
           baseBetaUrl={BASE_BETA_URL}
           customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+          currentPath={location.pathname}
         />
       </div>
       <div className="block lg:hidden">

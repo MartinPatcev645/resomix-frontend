@@ -2,8 +2,11 @@ import { Navbar, StaticNoise, GlobalFooter, SideLines } from "@resomix/ui";
 import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections/desktop/index.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
+import { useLocation } from "react-router-dom";
 
 export function AboutPage() {
+  const location = useLocation();
+  
   return (
     <div className="bg-[var(--color-secondary)]">
       {/* Static noise background */}
@@ -31,6 +34,7 @@ export function AboutPage() {
               baseBetaUrl={BASE_BETA_URL}
               mode="home"
               customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
+              currentPath={location.pathname}
             />
 
             <AboutHero />

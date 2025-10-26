@@ -3,7 +3,7 @@ import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIco
 import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -37,6 +37,7 @@ const PlaylistHero: React.FC = () => {
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Reset fork state when playlist changes
   useEffect(() => {
@@ -96,7 +97,7 @@ const PlaylistHero: React.FC = () => {
   const handleLoginClick = () => {
     setShowLoginButton(false);
     setShowStatus(false);
-    navigate('/auth/login');
+    navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`);
   };
 
   const handleOpenYourCopyClick = () => {
