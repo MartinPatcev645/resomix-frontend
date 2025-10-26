@@ -167,7 +167,10 @@ export default function LoginContent({
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={onNavigateForgotPassword}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevents focus change (and blur)
+                  onNavigateForgotPassword?.();
+                }}
                 className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Forgot Password?
@@ -187,7 +190,10 @@ export default function LoginContent({
               </span>
               <button
                 type="button"
-                onClick={onNavigateRegister}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevents focus change (and blur)
+                  onNavigateRegister?.();
+                }}
                 className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Register here

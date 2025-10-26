@@ -1,4 +1,5 @@
 import { useState, FormEvent, ChangeEvent } from "react";
+import { validateEmail } from "@resomix/hooks";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
@@ -10,12 +11,12 @@ interface ForgotPasswordContentProps {
 }
 
 export default function ForgotPasswordContent({
-  baseUrl = "https://resomix.com",
-  onNavigateLogin,
-  onSuccess,
-}: ForgotPasswordContentProps) {
+                                                baseUrl = "https://resomix.com",
+                                                onNavigateLogin,
+                                                onSuccess,
+                                              }: ForgotPasswordContentProps) {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
   const [submitted, setSubmitted] = useState(false);
 
   const [showStatus, setShowStatus] = useState(false);
@@ -23,49 +24,67 @@ export default function ForgotPasswordContent({
   const [statusMessage, setStatusMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const runEmailValidation = (value: string) => {
+    const trimmed = value.trim();
+    const result = validateEmail(trimmed);
+    if (!result.isValid) {
+      setError(result.error || "Please enter a valid email address");
+      return false;
+    }
+    setError("");
+    return true;
+  };
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    if (error) {
+    const next = e.target.value;
+    setEmail(next);
+
+    // If the field has been touched, live-validate on change
+    if (emailTouched) {
+      runEmailValidation(next);
+    } else if (error) {
+      // Clear any prior error until blur/submit
       setError("");
     }
   };
 
+  const handleBlur = () => {
+    if (!emailTouched) setEmailTouched(true);
+    runEmailValidation(email);
+  };
+
   const validate = (): boolean => {
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      setError("Email is required");
-      return false;
-    } else if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
-      return false;
-    }
-    return true;
+    // Validate using the shared hook util
+    return runEmailValidation(email);
   };
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
 
+    // Mark as touched to show errors if not already
+    if (!emailTouched) setEmailTouched(true);
+
     if (!validate()) return;
+
+    const trimmedEmail = email.trim();
 
     setSubmitting(true);
     setStatusType("loading");
     setShowStatus(true);
 
     try {
-      // Import dynamically to avoid circular dependencies
       const { requestPasswordReset } = await import("@resomix/api-client");
+      await requestPasswordReset(trimmedEmail);
 
-      await requestPasswordReset(email);
-
-      // Always show success message for security (don't reveal if email exists)
+      // Always show success message for security
       setStatusType("success");
       setStatusMessage(
         "If an account exists with this email, you will receive a password reset link shortly."
       );
       setSubmitted(true);
 
-      // Call success callback after delay
       setTimeout(() => {
         onSuccess?.();
       }, 3000);
@@ -117,6 +136,7 @@ export default function ForgotPasswordContent({
                 type="email"
                 value={email}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="your@email.com"
                 required
                 autoFocus
@@ -137,7 +157,10 @@ export default function ForgotPasswordContent({
                 </span>
                 <button
                   type="button"
-                  onClick={onNavigateLogin}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // prevents focus change (and blur)
+                    onNavigateLogin?.();
+                  }}
                   className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
                 >
                   Sign in here
@@ -168,4 +191,3 @@ export default function ForgotPasswordContent({
     </section>
   );
 }
-
