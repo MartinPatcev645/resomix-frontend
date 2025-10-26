@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { BASE_BETA_URL } from "@resomix/config";
 import { useNavigate } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
@@ -15,7 +16,6 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import { BASE_BETA_URL } from "@resomix/config";
 
 const InputTrackStatus = "Loading..."
 
@@ -30,11 +30,19 @@ const PlaylistHero: React.FC = () => {
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
   const [showLoginButton, setShowLoginButton] = React.useState(false);
+  const [forkedPlaylistId, setForkedPlaylistId] = React.useState<string | null>(null);
+  const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   const navigate = useNavigate();
+
+  // Reset fork state when playlist changes
+  useEffect(() => {
+    setHasForkedThisPlaylist(false);
+    setForkedPlaylistId(null);
+  }, [playlistData?.playlist.id]);
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -46,7 +54,10 @@ const PlaylistHero: React.FC = () => {
   const handleRenameClose = () => setShowRename(false);
   const handleRatingClose = () => setShowRating(false);
   const handleExportClose = () => setShowExport(false);
-  const handleStatusClose = () => setShowStatus(false);
+  const handleStatusClose = () => {
+    setShowStatus(false);
+    // Don't clear forkedPlaylistId or hasForkedThisPlaylist here - keep them for the button to work
+  };
 
   const handleExportClick = () => {
     if (!canExport) {
@@ -63,10 +74,16 @@ const PlaylistHero: React.FC = () => {
       const isAuthError = message.toLowerCase().includes('not authenticated') ||
         message.toLowerCase().includes('log in');
       setShowLoginButton(isAuthError);
+      setForkedPlaylistId(null); // Clear forked playlist ID on error
       handleStatusChange('error', message, title);
     },
-    onSuccess: (title, message) => {
+    onSuccess: (title, message, response) => {
       setShowLoginButton(false);
+      setHasForkedThisPlaylist(true); // Mark as forked locally
+      // Store the forked playlist ID from the response
+      if (response?.data?.playlist?.id) {
+        setForkedPlaylistId(response.data.playlist.id);
+      }
       handleStatusChange('success', message, title);
     },
   });
@@ -82,8 +99,16 @@ const PlaylistHero: React.FC = () => {
     navigate('/auth/login');
   };
 
-  // Check if playlist is already forked
-  const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '';
+  const handleOpenYourCopyClick = () => {
+    if (forkedPlaylistId) {
+      setShowStatus(false);
+      setForkedPlaylistId(null);
+      window.location.href = `${BASE_BETA_URL}/playlist?id=${forkedPlaylistId}`;
+    }
+  };
+
+  // Check if playlist is already forked (either from server or locally)
+  const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '' || hasForkedThisPlaylist;
 
 
   return (
@@ -355,6 +380,11 @@ const PlaylistHero: React.FC = () => {
           text: 'Log In',
           transparent: false,
           onClick: handleLoginClick,
+          disabled: false,
+        } : forkedPlaylistId ? {
+          text: 'Open Your Own Copy',
+          transparent: false,
+          onClick: handleOpenYourCopyClick,
           disabled: false,
         } : undefined}
       />

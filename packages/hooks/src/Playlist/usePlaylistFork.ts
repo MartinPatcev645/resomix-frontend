@@ -18,7 +18,7 @@ export interface ForkPlaylistResponse {
 
 interface UsePlaylistForkOptions {
   onError?: (title: string, message: string) => void;
-  onSuccess?: (title: string, message: string) => void;
+  onSuccess?: (title: string, message: string, response: ForkPlaylistResponse) => void;
 }
 
 export const usePlaylistFork = (options?: UsePlaylistForkOptions) => {
@@ -56,7 +56,8 @@ export const usePlaylistFork = (options?: UsePlaylistForkOptions) => {
         if (onSuccess) {
           onSuccess(
             'Playlist Forked!',
-            `Successfully forked "${response.data.playlist?.name || 'the playlist'}". You now have your own copy.`
+            `Successfully forked "${response.data.playlist?.name || 'the playlist'}". You now have your own copy.`,
+            response as ForkPlaylistResponse
           );
         }
         return response as ForkPlaylistResponse;
