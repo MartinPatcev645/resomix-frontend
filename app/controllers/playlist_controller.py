@@ -647,7 +647,6 @@ class PlaylistController:
                 request=request,
                 status_code=422,
                 duration_ms=duration_ms,
-                user_id=current_user.id,
                 metadata={
                     "user_uuid": current_user.uuid,
                     "original_playlist_uuid": playlist_id,
@@ -692,7 +691,6 @@ class PlaylistController:
                     correlation_id=correlation_id,
                     request=request,
                     status_code=201,
-                    user_id=current_user.id,
                     playlist_id=new_playlist_int_id,
                     duration_ms=duration_ms,
                     metadata={
@@ -722,7 +720,6 @@ class PlaylistController:
                     correlation_id=correlation_id,
                     request=request,
                     status_code=404,
-                    user_id=current_user.id,
                     duration_ms=duration_ms,
                     metadata={
                         "user_uuid": current_user.uuid,
@@ -745,7 +742,6 @@ class PlaylistController:
                     correlation_id=correlation_id,
                     request=request,
                     status_code=403,
-                    user_id=current_user.id,
                     duration_ms=duration_ms,
                     metadata={
                         "user_uuid": current_user.uuid,
@@ -768,7 +764,6 @@ class PlaylistController:
                     correlation_id=correlation_id,
                     request=request,
                     status_code=400,
-                    user_id=current_user.id,
                     duration_ms=duration_ms,
                     metadata={
                         "user_uuid": current_user.uuid,
@@ -792,7 +787,6 @@ class PlaylistController:
                     correlation_id=correlation_id,
                     request=request,
                     status_code=500,
-                    user_id=current_user.id,
                     duration_ms=duration_ms,
                     metadata={
                         "user_uuid": current_user.uuid,
@@ -819,8 +813,8 @@ class PlaylistController:
                 duration_ms=duration_ms,
                 error=e,
                 context="fork playlist",
-                user_id=current_user.id,
                 metadata={
+                    "user_id": current_user.id,
                     "user_uuid": current_user.uuid,
                     "original_playlist_uuid": playlist_id,
                     "error_type": type(e).__name__,
