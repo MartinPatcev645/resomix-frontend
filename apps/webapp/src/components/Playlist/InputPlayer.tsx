@@ -7,7 +7,7 @@ import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
 import NetworkSvg from "@/assets/icons/network-aleft.svg";
 import { useWaveformControls, formatTime } from "@resomix/hooks";
-import { usePlayerStore, useConfig } from "@resomix/stores";
+import { usePlayerStore } from "@resomix/stores";
 import { WaveformLoader } from "@resomix/ui";
 
 interface InputPlayerProps {
