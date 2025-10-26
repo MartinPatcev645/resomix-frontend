@@ -689,11 +689,18 @@ class SeedDataManager:
             json_file: Path to JSON file with exported production data
         """
         try:
-            # Make path absolute if relative (check in project root)
+            # Make path absolute if relative (check in scripts directory first, then project root)
             if not os.path.isabs(json_file):
-                # Get project root (2 levels up from scripts/seed_data.py)
-                project_root = Path(__file__).parent.parent
-                json_file = str(project_root / json_file)
+                # First try in scripts directory (where extract script puts it)
+                scripts_dir = Path(__file__).parent
+                scripts_json_file = str(scripts_dir / json_file)
+                
+                if os.path.exists(scripts_json_file):
+                    json_file = scripts_json_file
+                else:
+                    # Fallback to project root
+                    project_root = Path(__file__).parent.parent
+                    json_file = str(project_root / json_file)
             
             # Check if file exists
             if not os.path.exists(json_file):

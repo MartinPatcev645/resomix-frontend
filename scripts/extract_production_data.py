@@ -512,7 +512,7 @@ Examples:
     parser.add_argument('--password', default='secret', help='Database password')
     parser.add_argument('--database', default='resomix_db', help='Database name')
     parser.add_argument('--tracks', type=int, default=1000, help='Number of tracks to extract')
-    parser.add_argument('--output', default='tracks_seed.json', help='Output JSON file')
+    parser.add_argument('--output', default='scripts/tracks_seed.json', help='Output JSON file')
     
     args = parser.parse_args()
     
