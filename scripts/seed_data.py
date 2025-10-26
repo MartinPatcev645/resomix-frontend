@@ -875,6 +875,19 @@ class SeedDataManager:
                 if data.get('playlists'):
                     logger.info(f"Seeding {len(data['playlists'])} playlists...")
                     
+                    # Check if fork columns exist in the playlists table
+                    result = conn.execute(text("""
+                        SELECT COLUMN_NAME 
+                        FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'playlists' 
+                        AND COLUMN_NAME IN ('fork_id', 'forked_at', 'fork_count')
+                    """))
+                    existing_columns = {row[0] for row in result.fetchall()}
+                    has_fork_columns = 'fork_id' in existing_columns
+                    
+                    if not has_fork_columns:
+                        logger.warning("⚠️  Fork columns not found in playlists table. Using basic playlist structure.")
+                    
                     # Get some user IDs to assign playlists
                     result = conn.execute(text("SELECT id FROM users LIMIT 5"))
                     user_ids = [row.id for row in result]
@@ -883,26 +896,45 @@ class SeedDataManager:
                         # Assign to random user or leave null
                         user_id = user_ids[idx % len(user_ids)] if user_ids else None
                         
-                        result = conn.execute(text("""
-                            INSERT INTO playlists (
-                                uuid, user_id, name, is_public, type, seed_track_id,
-                                fork_id, forked_at, fork_count
-                            )
-                            VALUES (
-                                :uuid, :user_id, :name, :is_public, :type, :seed_track_id,
-                                :fork_id, :forked_at, :fork_count
-                            )
-                        """), {
-                            'uuid': playlist['uuid'],
-                            'user_id': user_id,
-                            'name': playlist['name'],
-                            'is_public': playlist['is_public'],
-                            'type': playlist['type'],
-                            'seed_track_id': None,  # Not mapping seed tracks
-                            'fork_id': playlist.get('fork_id'),
-                            'forked_at': playlist.get('forked_at'),
-                            'fork_count': playlist.get('fork_count', 0)
-                        })
+                        if has_fork_columns:
+                            # Use full schema with fork columns
+                            result = conn.execute(text("""
+                                INSERT INTO playlists (
+                                    uuid, user_id, name, is_public, type, seed_track_id,
+                                    fork_id, forked_at, fork_count
+                                )
+                                VALUES (
+                                    :uuid, :user_id, :name, :is_public, :type, :seed_track_id,
+                                    :fork_id, :forked_at, :fork_count
+                                )
+                            """), {
+                                'uuid': playlist['uuid'],
+                                'user_id': user_id,
+                                'name': playlist['name'],
+                                'is_public': playlist['is_public'],
+                                'type': playlist['type'],
+                                'seed_track_id': None,  # Not mapping seed tracks
+                                'fork_id': playlist.get('fork_id'),
+                                'forked_at': playlist.get('forked_at'),
+                                'fork_count': playlist.get('fork_count', 0)
+                            })
+                        else:
+                            # Use basic schema without fork columns
+                            result = conn.execute(text("""
+                                INSERT INTO playlists (
+                                    uuid, user_id, name, is_public, type, seed_track_id
+                                )
+                                VALUES (
+                                    :uuid, :user_id, :name, :is_public, :type, :seed_track_id
+                                )
+                            """), {
+                                'uuid': playlist['uuid'],
+                                'user_id': user_id,
+                                'name': playlist['name'],
+                                'is_public': playlist['is_public'],
+                                'type': playlist['type'],
+                                'seed_track_id': None  # Not mapping seed tracks
+                            })
                         playlist_json_id_to_db_id[playlist['id']] = result.lastrowid
                     
                     logger.info(f"✓ Seeded {len(data['playlists'])} playlists")
@@ -910,18 +942,38 @@ class SeedDataManager:
                 # 8. Seed Playlist Tracks
                 if data.get('playlist_tracks'):
                     logger.info(f"Seeding {len(data['playlist_tracks'])} playlist tracks...")
+                    
+                    # Check if position column is DECIMAL(12,6) or INT
+                    result = conn.execute(text("""
+                        SELECT DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
+                        FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'playlist_tracks' 
+                        AND COLUMN_NAME = 'position'
+                    """))
+                    position_info = result.fetchone()
+                    is_decimal_position = position_info and position_info[0] == 'decimal'
+                    
                     for pt in data['playlist_tracks']:
                         playlist_id = playlist_json_id_to_db_id.get(pt['playlist_id'])
                         track_id = track_json_id_to_db_id.get(pt['track_id'])
                         
                         if playlist_id and track_id:
+                            # Convert position based on column type
+                            position_value = pt['position']
+                            if is_decimal_position:
+                                # Ensure it's a proper decimal value
+                                position_value = float(position_value)
+                            else:
+                                # Convert to integer for old INT column
+                                position_value = int(float(position_value))
+                            
                             conn.execute(text("""
                                 INSERT INTO playlist_tracks (playlist_id, track_id, position, score)
                                 VALUES (:playlist_id, :track_id, :position, :score)
                             """), {
                                 'playlist_id': playlist_id,
                                 'track_id': track_id,
-                                'position': pt['position'],
+                                'position': position_value,
                                 'score': pt.get('score')
                             })
                     logger.info(f"✓ Seeded {len(data['playlist_tracks'])} playlist tracks")

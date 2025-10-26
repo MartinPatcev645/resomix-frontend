@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS users (
 /* One-time email verification tokens */
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
     user_id     BIGINT UNSIGNED NOT NULL,
-    token       CHAR(36) NOT NULL,                 -- or longer random string
+    token       VARCHAR(64) NOT NULL,              -- 64 chars for token_urlsafe(32) which generates ~43 chars
     expires_at  DATETIME NOT NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_evt_token (token),
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
 /* One-time password reset tokens */
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     user_id     BIGINT UNSIGNED NOT NULL,
-    token       CHAR(36) NOT NULL,
+    token       VARCHAR(64) NOT NULL,              -- 64 chars for token_urlsafe(32) which generates ~43 chars
     expires_at  DATETIME NOT NULL,
     consumed_at DATETIME DEFAULT NULL,
     PRIMARY KEY (user_id),
@@ -208,17 +208,22 @@ CREATE TABLE IF NOT EXISTS playlists (
     is_public     TINYINT(1) DEFAULT 0,
     type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
     seed_track_id BIGINT UNSIGNED,
+    fork_id       VARCHAR(36) NULL,                -- UUID of original playlist if forked
+    forked_at     DATETIME NULL,                   -- when the fork was created
+    fork_count    INT UNSIGNED NOT NULL DEFAULT 0, -- how many times this playlist has been forked
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
     FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (fork_id)      REFERENCES playlists(uuid) ON DELETE SET NULL,
     KEY idx_playlist_user (user_id),
-    KEY idx_playlist_uuid (uuid)
+    KEY idx_playlist_uuid (uuid),
+    KEY idx_playlist_fork (fork_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS playlist_tracks (
     playlist_id BIGINT UNSIGNED NOT NULL,
     track_id    BIGINT UNSIGNED NOT NULL,
-    position    INT UNSIGNED NOT NULL,
+    position    DECIMAL(12,6) NOT NULL,            -- high precision for efficient reordering
     score       DECIMAL(10, 8) NULL,
     PRIMARY KEY (playlist_id, track_id),
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
