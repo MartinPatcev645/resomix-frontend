@@ -159,9 +159,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
           </div>
         </div>
       </div>
-      <div className="text-sm text-gray-500 text-right -my-2">
-        Version: {useConfig((s) => s.version)}
-      </div>
     </>
   );
 };

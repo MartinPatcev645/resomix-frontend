@@ -22,6 +22,8 @@ import { TextComp } from "./Elements/TextComp";
 import { SeparatorLine } from "./Vectors/SeparatorLine";
 import { PageExoskeleton } from "./Vectors/PageExoskeleton";
 import { ProfileIcon } from "./Vectors/ProfileIcon";
+import { PublicIcon } from "./Vectors/PublicIcon";
+import { PrivateIcon } from "./Vectors/PrivateIcon";
 import { StyleThree } from "./Vectors/LineContainer/StyleThree";
 import { StyleTwo } from "./Vectors/LineContainer/StyleTwo";
 import { StyleOne } from "./Vectors/LineContainer/StyleOne";
@@ -136,4 +138,6 @@ export {
   SessionsContent,
   // Vectors
   ProfileIcon,
+  PublicIcon,
+  PrivateIcon,
 };

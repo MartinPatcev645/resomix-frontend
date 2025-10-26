@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
+import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon } from "@resomix/ui";
 import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
@@ -263,7 +263,23 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="absolute right-[var(--px-10)] top-[var(--px-10)] px-[var(--px-16)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
+              <div className="absolute right-[var(--px-10)] top-[var(--px-10)]">
+                <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private! Share to make it public"}>
+                  <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
+                    {playlistData?.playlist.is_public ? (
+                      <>
+                        <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
+                        Private
+                      </>
+                    )}
+                  </div>
+                </Tooltip>
+              </div>
             </div>
           </div>
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>

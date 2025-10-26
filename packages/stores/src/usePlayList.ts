@@ -15,6 +15,7 @@ export interface Track {
 export interface Playlist {
   id: string
   name: string
+  is_public: boolean
 }
 
 export interface PlaylistData {

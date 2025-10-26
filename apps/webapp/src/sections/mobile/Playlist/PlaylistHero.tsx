@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton, ToggleButton, HoverFlow, StatusMessage } from "@resomix/ui";
+import { IconButton, ToggleButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
@@ -68,9 +68,9 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <a 
-              href={BASE_BETA_URL} 
-              className="flex items-center ml-[var(--px-10)] playlist-nav-link" 
+            <a
+              href={BASE_BETA_URL}
+              className="flex items-center ml-[var(--px-10)] playlist-nav-link"
               id="playlist-hero-back-link"
               aria-label="Back to upload"
             >
@@ -125,7 +125,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
           <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
             <div className="flex flex-col">
               <div className="flex items-start gap-[var(--px-10)]">
-                <div className="flex flex-col items-center gap-[var(--px-10)]">
+                <div className="flex flex-col items-start gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
                     {uploadedCoverArt ? (
                       <img src={uploadedCoverArt} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
@@ -133,7 +133,6 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)]" />
                     )}
                   </div>
-                  <div className={`py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C] ${showMeta ? 'inline-flex' : 'hidden'}`}>Input Track</div>
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-250)]">
                   <div className="flex flex-col justify-between min-h-[var(--px-55)]">
@@ -167,7 +166,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
                       <button
                         type="button"
-                        onClick={() => setShowMeta((v) => !v)} 
+                        onClick={() => setShowMeta((v) => !v)}
                         aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
                         aria-expanded={showMeta}
                         className="hover:cursor-pointer playlist-meta-toggle ml-auto"
@@ -179,6 +178,22 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   </div>
                 </div>
               </div>
+                <div className={`gap-[var(--px-8)] mt-[var(--px-6)] ${showMeta ? 'flex' : 'hidden'}`}>
+                  <div className="inline-flex py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
+                  <div className="py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white">
+                    {playlistData?.playlist.is_public ? (
+                      <>
+                        <PublicIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <PrivateIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
+                        Private
+                      </>
+                    )}
+                  </div>
+                </div>
               <div className="flex flex-col gap-[var(--px-10)]">
                 {/* Hidden Meta Info */}
                 <div className={`flex gap-[var(--px-2)] text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] my-[var(--px-5)] font-light font-fira leading-[var(--px-7)] items-center ${showMeta ? '' : 'hidden'}`}>
@@ -191,8 +206,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div>Instance: Input Track</div>
                 </div>
                 {/* The actual Input player */}
-                <InputPlayer 
-                  trackId={playlistData?.queried_track.id || ''} 
+                <InputPlayer
+                  trackId={playlistData?.queried_track.id || ''}
                   totalDuration={playlistData?.queried_track.duration ?? 0}
                   playButtonDataAttributes={{
                     'data-testid': 'play-button',
@@ -208,14 +223,14 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <button
                 type="button"
                 onClick={() => onMoreClick?.(
-                playlistData?.queried_track.id || '',
-                playlistData?.playlist.name || '',
-                playlistData?.queried_track.label || '',
-                playlistData?.queried_track.duration ?? 0,
-                null,
-                true
-              )}
-                className="cursor-pointer playlist-more-button" 
+                  playlistData?.queried_track.id || '',
+                  playlistData?.playlist.name || '',
+                  playlistData?.queried_track.label || '',
+                  playlistData?.queried_track.duration ?? 0,
+                  null,
+                  true
+                )}
+                className="cursor-pointer playlist-more-button"
                 id={`playlist-hero-more-${playlistData?.queried_track.id || ''}`}
                 aria-label="More options"
               >

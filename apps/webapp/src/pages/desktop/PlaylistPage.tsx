@@ -29,7 +29,7 @@ export function PlaylistPage() {
       setExpired(true);
       timeoutId = setTimeout(() => {
         handleExpiredClose();
-      }, 3000);
+      }, 5000);
     } else {
       // Data arrived or still loading – ensure expired flag reset
       setExpired(false);
