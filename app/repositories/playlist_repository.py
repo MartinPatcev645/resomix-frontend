@@ -444,7 +444,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     track_data = tracks_data.get(pt.track_id)
                     if track_data:
                         track_info = {
-                            "rank": pt.position,
+                            "rank": float(pt.position),
                             "score": float(pt.score) if pt.score else 0.0,
                             "id": track_data.id,
                             "title": track_data.title or "Unknown",
@@ -1033,7 +1033,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 artist_names = [a[0] for a in artists_result.fetchall()]
                 
                 tracks_data.append({
-                    "position": row.position,
+                    "position": float(row.position),  # Convert Decimal to float for JSON serialization
                     "score": float(row.score) if row.score else None,
                     "track": {
                         "id": row.id,
