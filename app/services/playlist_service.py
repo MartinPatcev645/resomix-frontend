@@ -183,20 +183,21 @@ class PlaylistService:
                 print(f"Generic error calling media server {signed_url}: {e}")
                 raise ValueError(f"An unexpected error occurred: {e}")
 
-    async def get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
+    async def get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str, user_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Get playlist with similarity data formatted like similarity endpoints.
-        Only returns data for public playlists.
+        Only returns data for public playlists, or private playlists if user is the owner.
         
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
+            user_id: Optional user ID - if provided, allows access to user's own private playlists
             
         Returns:
             Dictionary with similarity-formatted data or error
         """
         try:
-            similarity_data = await self.playlist_repository.async_get_playlist_similarity_data(db, playlist_uuid)
+            similarity_data = await self.playlist_repository.async_get_playlist_similarity_data(db, playlist_uuid, user_id=user_id)
             
             if similarity_data is None:
                 return {

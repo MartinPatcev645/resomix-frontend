@@ -381,7 +381,7 @@ class PlaylistController:
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
         
         try:
-            result = await self.playlist_service.get_playlist_similarity_data(db, playlist_id)
+            result = await self.playlist_service.get_playlist_similarity_data(db, playlist_id, current_user.id if current_user else None)
             duration_ms = (time.time() - start_time) * 1000
             
             if result.get("success"):

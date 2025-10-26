@@ -184,7 +184,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             await db.commit()
             
             # 8. Return Success Data
-            return await self.async_get_playlist_similarity_data(db, new_uuid)
+            return await self.async_get_playlist_similarity_data(db, new_uuid, allow_private=True, user_id=user_id)
             
         except Exception as e:
             await db.rollback()
@@ -434,17 +434,19 @@ class PlaylistRepository(BaseRepository[Playlist]):
             print(f"Error updating playlist visibility: {e}")
             raise e
 
-    async def async_get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str) -> Optional[Dict[str, Any]]:
+    async def async_get_playlist_similarity_data(self, db: AsyncSession, playlist_uuid: str, allow_private: bool = False, user_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """
         Get playlist with all tracks and similarity data formatted like similarity response.
-        Only returns data for public playlists (is_public = 1).
+        Only returns data for public playlists (is_public = 1) unless allow_private is True or user is the owner.
         
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
+            allow_private: If True, allows access to private playlists (used for fork operations)
+            user_id: Optional user ID - if provided, allows access to user's own private playlists
             
         Returns:
-            Dictionary with similarity-formatted data or None if not found or not public
+            Dictionary with similarity-formatted data or None if not found or not accessible
         """
         try:
             from sqlalchemy.orm import selectinload
@@ -462,8 +464,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if not playlist:
                 return None
             
-            # Check if playlist is public
-            if not playlist.is_public:
+            # Check if playlist is public (unless allow_private is True or user is the owner)
+            is_owner = user_id is not None and playlist.user_id == user_id
+            if not playlist.is_public and not allow_private and not is_owner:
                 return {"error": "playlist_not_public"}
             
             # Get seed track details if it exists
