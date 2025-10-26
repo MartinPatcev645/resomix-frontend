@@ -102,9 +102,9 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     if (!gl) return;
 
     // --- Resize handling ------------------------------------------------------
-    const scale = 0.4;
+    const scale = 1;
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1);
+      const dpr = window.devicePixelRatio || 1;
       const w = Math.max(1, Math.floor(container.clientWidth * dpr * scale));
       const h = Math.max(1, Math.floor(container.clientHeight * dpr * scale));
       if (canvas.width !== w || canvas.height !== h) {
