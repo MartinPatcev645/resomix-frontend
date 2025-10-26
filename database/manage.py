@@ -267,8 +267,9 @@ Examples:
     seed_group.add_argument('--all', action='store_true', help='Seed all data')
     seed_group.add_argument('--rbac', action='store_true', help='Seed RBAC data only')
     seed_group.add_argument('--catalog', action='store_true', help='Seed catalog data only')
-    seed_group.add_argument('--tracks', action='store_true', help='Seed sample tracks only')
+    seed_group.add_argument('--tracks', action='store_true', help='Seed production tracks from JSON')
     seed_group.add_argument('--feedback', action='store_true', help='Seed feedback data only')
+    seed_parser.add_argument('--tracks-file', default='tracks_seed.json', help='JSON file with production tracks')
     
     # Backup commands
     backup_parser = subparsers.add_parser('backup', help='Create database backup')
@@ -329,7 +330,7 @@ Examples:
             elif args.catalog:
                 success = db_manager.seed_manager.seed_catalog_data()
             elif args.tracks:
-                success = db_manager.seed_manager.seed_sample_tracks()
+                success = db_manager.seed_manager.seed_production_tracks(args.tracks_file)
             elif args.feedback:
                 success = db_manager.seed_manager.seed_sample_feedback()
         

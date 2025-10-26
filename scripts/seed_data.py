@@ -18,6 +18,9 @@ Email: usman.naeem2212@gmail.com
 import uuid
 import logging
 import hashlib
+import json
+import os
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from sqlalchemy import text
@@ -54,8 +57,8 @@ class SeedDataManager:
                         'language': 'en',
                         'timezone': 'UTC',
                         'is_email_verified': 1,
-                        'is_two_factor_enabled': 1,
-                        'two_factor_method': 'app'
+                        'is_two_factor_enabled': 0,  # Disabled for dev environment
+                        'two_factor_method': 'email'
                     },
                     {
                         'uuid': str(uuid.uuid4()),
@@ -80,7 +83,7 @@ class SeedDataManager:
                         'language': 'en',
                         'timezone': 'America/Los_Angeles',
                         'is_email_verified': 1,
-                        'is_two_factor_enabled': 1,
+                        'is_two_factor_enabled': 0,  # Disabled for dev environment
                         'two_factor_method': 'email'
                     },
                     {
@@ -93,8 +96,8 @@ class SeedDataManager:
                         'language': 'en',
                         'timezone': 'Europe/London',
                         'is_email_verified': 1,
-                        'is_two_factor_enabled': 1,
-                        'two_factor_method': 'app'
+                        'is_two_factor_enabled': 0,  # Disabled for dev environment
+                        'two_factor_method': 'email'
                     },
                     {
                         'uuid': str(uuid.uuid4()),
@@ -119,7 +122,7 @@ class SeedDataManager:
                         'language': 'en',
                         'timezone': 'Asia/Tokyo',
                         'is_email_verified': 1,
-                        'is_two_factor_enabled': 1,
+                        'is_two_factor_enabled': 0,  # Disabled for dev environment
                         'two_factor_method': 'email'
                     },
                     {
@@ -144,7 +147,7 @@ class SeedDataManager:
                         'profile_picture': '/avatars/emma.png',
                         'language': 'en',
                         'timezone': 'Australia/Sydney',
-                        'is_email_verified': 0,
+                        'is_email_verified': 1,  # Changed to verified for easier dev testing
                         'is_two_factor_enabled': 0,
                         'two_factor_method': 'email'
                     }
@@ -188,7 +191,7 @@ class SeedDataManager:
                         ON DUPLICATE KEY UPDATE token=VALUES(token), expires_at=VALUES(expires_at)
                     """), {
                         'user_id': unverified_user[0],
-                        'token': str(uuid.uuid4()),
+                        'token': uuid.uuid4().hex[:43],  # VARCHAR(64) supports up to 43 chars
                         'expires_at': datetime.now() + timedelta(hours=24)
                     })
                 
@@ -205,7 +208,7 @@ class SeedDataManager:
                         ON DUPLICATE KEY UPDATE token=VALUES(token)
                     """), {
                         'user_id': user[0],
-                        'token': str(uuid.uuid4()),
+                        'token': uuid.uuid4().hex[:43],  # VARCHAR(64) supports up to 43 chars
                         'expires_at': datetime.now() - timedelta(hours=1),  # Expired
                         'consumed_at': None
                     })
@@ -678,6 +681,255 @@ class SeedDataManager:
             logger.error(f"Failed to seed feedback data: {e}")
             return False
     
+    def seed_production_tracks(self, json_file: str = "tracks_seed.json") -> bool:
+        """
+        Seed tracks and related data from production export.
+        
+        Args:
+            json_file: Path to JSON file with exported production data
+        """
+        try:
+            # Make path absolute if relative (check in project root)
+            if not os.path.isabs(json_file):
+                # Get project root (2 levels up from scripts/seed_data.py)
+                project_root = Path(__file__).parent.parent
+                json_file = str(project_root / json_file)
+            
+            # Check if file exists
+            if not os.path.exists(json_file):
+                logger.warning(f"❌ Production data file not found: {json_file}")
+                logger.info("ℹ️  To extract production data, run:")
+                logger.info("   python scripts/extract_production_data.py --output tracks_seed.json")
+                logger.info("📝 Skipping production track seeding (this is optional)")
+                return True
+            
+            logger.info(f"Loading production data from {json_file}...")
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            with self.engine.begin() as conn:
+                # 1. Seed Artists
+                if data.get('artists'):
+                    logger.info(f"Seeding {len(data['artists'])} artists...")
+                    for artist in data['artists']:
+                        conn.execute(text("""
+                            INSERT INTO artists (name)
+                            VALUES (:name)
+                            ON DUPLICATE KEY UPDATE name=VALUES(name)
+                        """), {'name': artist['name']})
+                    logger.info(f"✓ Seeded {len(data['artists'])} artists")
+                
+                # 2. Seed Labels
+                if data.get('labels'):
+                    logger.info(f"Seeding {len(data['labels'])} labels...")
+                    for label in data['labels']:
+                        conn.execute(text("""
+                            INSERT INTO labels (name, website)
+                            VALUES (:name, :website)
+                            ON DUPLICATE KEY UPDATE website=VALUES(website)
+                        """), {
+                            'name': label['name'],
+                            'website': label.get('website')
+                        })
+                    logger.info(f"✓ Seeded {len(data['labels'])} labels")
+                
+                # 3. Seed Genres
+                if data.get('genres'):
+                    logger.info(f"Seeding {len(data['genres'])} genres...")
+                    for genre in data['genres']:
+                        conn.execute(text("""
+                            INSERT INTO genres (name)
+                            VALUES (:name)
+                            ON DUPLICATE KEY UPDATE name=VALUES(name)
+                        """), {'name': genre['name']})
+                    logger.info(f"✓ Seeded {len(data['genres'])} genres")
+                
+                # Now we need to fetch the actual IDs that were assigned
+                # Build mappings from names to IDs
+                artist_name_to_id = {}
+                label_name_to_id = {}
+                genre_name_to_id = {}
+                
+                if data.get('artists'):
+                    result = conn.execute(text("SELECT id, name FROM artists"))
+                    for row in result:
+                        artist_name_to_id[row.name] = row.id
+                
+                if data.get('labels'):
+                    result = conn.execute(text("SELECT id, name FROM labels"))
+                    for row in result:
+                        label_name_to_id[row.name] = row.id
+                
+                if data.get('genres'):
+                    result = conn.execute(text("SELECT id, name FROM genres"))
+                    for row in result:
+                        genre_name_to_id[row.name] = row.id
+                
+                # 4. Seed Albums (need to map artist IDs)
+                album_json_id_to_db_id = {}
+                if data.get('albums'):
+                    logger.info(f"Seeding {len(data['albums'])} albums...")
+                    for album in data['albums']:
+                        # Find artist by name
+                        artist_name = next(
+                            (a['name'] for a in data['artists'] if a['id'] == album['artist_id']),
+                            None
+                        )
+                        artist_id = artist_name_to_id.get(artist_name) if artist_name else None
+                        
+                        result = conn.execute(text("""
+                            INSERT INTO albums (artist_id, title, release_date, cover_image)
+                            VALUES (:artist_id, :title, :release_date, :cover_image)
+                        """), {
+                            'artist_id': artist_id,
+                            'title': album['title'],
+                            'release_date': album.get('release_date'),
+                            'cover_image': album.get('cover_image')
+                        })
+                        album_json_id_to_db_id[album['id']] = result.lastrowid
+                    logger.info(f"✓ Seeded {len(data['albums'])} albums")
+                
+                # 5. Seed Tracks (need to map album, label, genre IDs)
+                track_json_id_to_db_id = {}
+                if data.get('tracks'):
+                    logger.info(f"Seeding {len(data['tracks'])} tracks...")
+                    for idx, track in enumerate(data['tracks'], 1):
+                        # Map foreign keys
+                        album_id = album_json_id_to_db_id.get(track['album_id']) if track.get('album_id') else None
+                        
+                        label_name = next(
+                            (l['name'] for l in data.get('labels', []) if l['id'] == track.get('label_id')),
+                            None
+                        )
+                        label_id = label_name_to_id.get(label_name) if label_name else None
+                        
+                        genre_name = next(
+                            (g['name'] for g in data.get('genres', []) if g['id'] == track.get('genre_id')),
+                            None
+                        )
+                        genre_id = genre_name_to_id.get(genre_name) if genre_name else None
+                        
+                        result = conn.execute(text("""
+                            INSERT INTO tracks (
+                                uuid, album_id, label_id, genre_id, title, year, duration_sec,
+                                bpm, musical_key, file_path, preview_path, file_size, type
+                            )
+                            VALUES (
+                                :uuid, :album_id, :label_id, :genre_id, :title, :year, :duration_sec,
+                                :bpm, :musical_key, :file_path, :preview_path, :file_size, :type
+                            )
+                        """), {
+                            'uuid': track['uuid'],
+                            'album_id': album_id,
+                            'label_id': label_id,
+                            'genre_id': genre_id,
+                            'title': track['title'],
+                            'year': track.get('year'),
+                            'duration_sec': track.get('duration_sec'),
+                            'bpm': track.get('bpm'),
+                            'musical_key': track.get('musical_key'),
+                            'file_path': track['file_path'],
+                            'preview_path': track.get('preview_path'),
+                            'file_size': track.get('file_size'),
+                            'type': track.get('type', 'electrobuzz')
+                        })
+                        track_json_id_to_db_id[track['id']] = result.lastrowid
+                        
+                        if idx % 100 == 0:
+                            logger.info(f"  Processed {idx}/{len(data['tracks'])} tracks")
+                    
+                    logger.info(f"✓ Seeded {len(data['tracks'])} tracks")
+                
+                # 6. Seed Track-Artist relationships
+                if data.get('track_artists'):
+                    logger.info(f"Seeding {len(data['track_artists'])} track-artist relationships...")
+                    for ta in data['track_artists']:
+                        track_id = track_json_id_to_db_id.get(ta['track_id'])
+                        
+                        # Find artist by name
+                        artist_name = next(
+                            (a['name'] for a in data.get('artists', []) if a['id'] == ta['artist_id']),
+                            None
+                        )
+                        artist_id = artist_name_to_id.get(artist_name) if artist_name else None
+                        
+                        if track_id and artist_id:
+                            conn.execute(text("""
+                                INSERT IGNORE INTO track_artists (track_id, artist_id)
+                                VALUES (:track_id, :artist_id)
+                            """), {
+                                'track_id': track_id,
+                                'artist_id': artist_id
+                            })
+                    logger.info(f"✓ Seeded {len(data['track_artists'])} track-artist relationships")
+                
+                # 7. Seed Playlists (assign to random users)
+                playlist_json_id_to_db_id = {}
+                if data.get('playlists'):
+                    logger.info(f"Seeding {len(data['playlists'])} playlists...")
+                    
+                    # Get some user IDs to assign playlists
+                    result = conn.execute(text("SELECT id FROM users LIMIT 5"))
+                    user_ids = [row.id for row in result]
+                    
+                    for idx, playlist in enumerate(data['playlists']):
+                        # Assign to random user or leave null
+                        user_id = user_ids[idx % len(user_ids)] if user_ids else None
+                        
+                        result = conn.execute(text("""
+                            INSERT INTO playlists (
+                                uuid, user_id, name, is_public, type, seed_track_id,
+                                fork_id, forked_at, fork_count
+                            )
+                            VALUES (
+                                :uuid, :user_id, :name, :is_public, :type, :seed_track_id,
+                                :fork_id, :forked_at, :fork_count
+                            )
+                        """), {
+                            'uuid': playlist['uuid'],
+                            'user_id': user_id,
+                            'name': playlist['name'],
+                            'is_public': playlist['is_public'],
+                            'type': playlist['type'],
+                            'seed_track_id': None,  # Not mapping seed tracks
+                            'fork_id': playlist.get('fork_id'),
+                            'forked_at': playlist.get('forked_at'),
+                            'fork_count': playlist.get('fork_count', 0)
+                        })
+                        playlist_json_id_to_db_id[playlist['id']] = result.lastrowid
+                    
+                    logger.info(f"✓ Seeded {len(data['playlists'])} playlists")
+                
+                # 8. Seed Playlist Tracks
+                if data.get('playlist_tracks'):
+                    logger.info(f"Seeding {len(data['playlist_tracks'])} playlist tracks...")
+                    for pt in data['playlist_tracks']:
+                        playlist_id = playlist_json_id_to_db_id.get(pt['playlist_id'])
+                        track_id = track_json_id_to_db_id.get(pt['track_id'])
+                        
+                        if playlist_id and track_id:
+                            conn.execute(text("""
+                                INSERT INTO playlist_tracks (playlist_id, track_id, position, score)
+                                VALUES (:playlist_id, :track_id, :position, :score)
+                            """), {
+                                'playlist_id': playlist_id,
+                                'track_id': track_id,
+                                'position': pt['position'],
+                                'score': pt.get('score')
+                            })
+                    logger.info(f"✓ Seeded {len(data['playlist_tracks'])} playlist tracks")
+            
+            logger.info("=" * 60)
+            logger.info("✓ Production track data seeded successfully!")
+            logger.info("=" * 60)
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to seed production tracks: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
     def seed_contact(self) -> bool:
         """Seed contact message entries."""
         try:
@@ -789,10 +1041,13 @@ class SeedDataManager:
         logger.info("Step 8: Seeding waitlist...")
         success &= self.seed_waitlist()
         
-        logger.info("Step 9: Seeding feedback...")
+        logger.info("Step 9: Seeding production tracks and playlists...")
+        success &= self.seed_production_tracks()
+        
+        logger.info("Step 10: Seeding feedback...")
         success &= self.seed_feedback()
         
-        logger.info("Step 10: Seeding contact messages...")
+        logger.info("Step 11: Seeding contact messages...")
         success &= self.seed_contact()
         
         if success:
@@ -853,7 +1108,7 @@ def main():
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python seed_data.py <command>")
+        print("Usage: python seed_data.py <command> [options]")
         print("\nCommands:")
         print("  seed-all         - Seed all sample data (recommended)")
         print("  seed-users       - Seed users only")
@@ -863,6 +1118,7 @@ def main():
         print("  seed-oauth       - Seed OAuth providers only")
         print("  seed-subscriptions - Seed subscriptions only")
         print("  seed-waitlist    - Seed waitlist only")
+        print("  seed-tracks      - Seed production tracks only")
         print("  seed-feedback    - Seed feedback only")
         print("  seed-contact     - Seed contact messages only")
         print("  clear-all        - Clear all data (WARNING: destructive)")
@@ -888,6 +1144,9 @@ def main():
             success = seeder.seed_subscriptions()
         elif command == "seed-waitlist":
             success = seeder.seed_waitlist()
+        elif command == "seed-tracks":
+            json_file = sys.argv[2] if len(sys.argv) > 2 else "tracks_seed.json"
+            success = seeder.seed_production_tracks(json_file)
         elif command == "seed-feedback":
             success = seeder.seed_feedback()
         elif command == "seed-contact":
