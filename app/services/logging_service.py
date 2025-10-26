@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 import traceback
 import uuid
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from fastapi import Request
@@ -389,7 +389,7 @@ class LoggingService:
                 'success': True,
                 'deleted_count': deleted_count,
                 'days_kept': days_to_keep,
-                'cleanup_date': datetime.now(timezone.utc)().isoformat()
+                'cleanup_date': datetime.now(timezone.utc).isoformat()
             }
             
         except Exception as e:

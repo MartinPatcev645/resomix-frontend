@@ -75,13 +75,13 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.now(timezone.utc)() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc)() + timedelta(minutes=settings.jwt_access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
     
     to_encode.update({
         "exp": expire,
-        "iat": datetime.now(timezone.utc)(),
+        "iat": datetime.now(timezone.utc),
         "type": "access"
     })
     
@@ -107,13 +107,13 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.now(timezone.utc)() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc)() + timedelta(days=settings.jwt_refresh_token_expire_days)
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_token_expire_days)
     
     to_encode.update({
         "exp": expire,
-        "iat": datetime.now(timezone.utc)(),
+        "iat": datetime.now(timezone.utc),
         "type": "refresh"
     })
     
