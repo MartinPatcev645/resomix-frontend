@@ -127,7 +127,7 @@ export default function VerifyEmailContent({
   // Success state
   if (mode === "success") {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
           <header className="mb-[var(--px-28)] text-center">
             <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -135,7 +135,7 @@ export default function VerifyEmailContent({
             </h1>
           </header>
 
-          <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
+          <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
             <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
               <div className="text-[length:var(--px-60)] text-green-500">✓</div>
               <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
@@ -154,7 +154,7 @@ export default function VerifyEmailContent({
   // Error state
   if (mode === "error") {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
           <header className="mb-[var(--px-28)] text-center">
             <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -162,7 +162,7 @@ export default function VerifyEmailContent({
             </h1>
           </header>
 
-          <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
+          <div className="max-w-[var(--px-550)]  p-[var(--px-20)] w-full">
             <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
               <div className="text-[length:var(--px-60)] text-red-500">✕</div>
               <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">

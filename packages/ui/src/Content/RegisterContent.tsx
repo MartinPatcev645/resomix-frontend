@@ -20,6 +20,7 @@ interface RegisterContentProps {
   onNavigateLogin?: () => void;
 }
 
+// Define form type
 type RegisterForm = {
   email: string;
   username: string;
@@ -33,6 +34,7 @@ export default function RegisterContent({
                                           onRegisterSuccess,
                                           onNavigateLogin,
                                         }: RegisterContentProps) {
+  // Form validation hook
   const initialValues: RegisterForm = {
     email: "",
     username: "",
@@ -57,6 +59,8 @@ export default function RegisterContent({
   });
 
   const [confirmPasswordError, setConfirmPasswordError] = useState<string>();
+
+  // Validate confirm password on blur
   const handleConfirmPasswordBlur = () => {
     const result = validatePasswordConfirmation(form.password, form.confirmPassword);
     setConfirmPasswordError(result.isValid ? undefined : result.error);
@@ -72,11 +76,13 @@ export default function RegisterContent({
   const [statusMessage, setStatusMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Password requirements (simplified based on user requirements)
   const passwordRequirements = [
     { label: "At least 8 characters", met: form.password.length >= 8 },
     { label: "Contains at least one digit", met: /\d/.test(form.password) },
   ];
 
+  // Update password strength when password changes
   useEffect(() => {
     if (form.password) {
       setPasswordStrength(calculatePasswordStrength(form.password));
@@ -85,6 +91,7 @@ export default function RegisterContent({
     }
   }, [form.password]);
 
+  // Clear confirmPassword error when either password field changes
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setValue(name as keyof typeof form, value);
@@ -98,13 +105,18 @@ export default function RegisterContent({
   };
 
   const validate = (): boolean => {
+    // Validate form fields using the validation hook
     const isFormValid = validateForm();
+
+    // Validate confirm password
     const confirmResult = validatePasswordConfirmation(form.password, form.confirmPassword);
     if (!confirmResult.isValid) {
       setConfirmPasswordError(confirmResult.error);
     } else {
       setConfirmPasswordError(undefined);
     }
+
+    // Validate terms and privacy checkboxes
     const termsResult = validateCheckbox(termsAccepted, "You must accept the Terms of Service");
     const privacyResult = validateCheckbox(privacyAccepted, "You must accept the Privacy Policy");
     if (!termsResult.isValid || !privacyResult.isValid) {
@@ -122,7 +134,9 @@ export default function RegisterContent({
     setSubmitting(true);
     setStatusType("loading");
     setShowStatus(true);
+
     try {
+      // Import dynamically to avoid circular dependencies
       const { register } = await import("@resomix/api-client");
       const result = await register({
         email: form.email,
@@ -132,7 +146,11 @@ export default function RegisterContent({
       });
       if (result.success) {
         setStatusType("success");
-        setStatusMessage("Account created successfully! Please check your email to verify your account.");
+        setStatusMessage(
+          "Account created successfully! Please check your email to verify your account."
+        );
+
+        // Clear form
         setFormValues({
           email: "",
           username: "",
@@ -142,6 +160,8 @@ export default function RegisterContent({
         });
         setTermsAccepted(false);
         setPrivacyAccepted(false);
+
+        // Call success callback after delay
         setTimeout(() => {
           onRegisterSuccess?.();
         }, 2000);
@@ -160,7 +180,7 @@ export default function RegisterContent({
   };
 
   return (
-    <section className="pt-16 md:pt-24 lg:pt-[var(--px-120)] px-0 md:px-0 tracking-[var(--px-1)]">
+    <section className="pt-16 md:pt-24 lg:pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
         <header className="mb-7 md:mb-[var(--px-28)] text-center">
           <h1 className="text-4xl md:text-[length:var(--px-52)] leading-tight md:leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -171,7 +191,7 @@ export default function RegisterContent({
           </p>
         </header>
 
-        <div className="w-full max-w-[var(--px-550)] lg:max-w-[var(--px-840)] rounded-[var(--px-10)] p-5 md:p-[var(--px-20)]">
+        <div className="w-full max-w-[var(--px-550)] lg:max-w-[var(--px-840)] p-5 md:p-[var(--px-20)]">
           <div className="mb-[var(--px-24)]">
             <a
               href={baseUrl}
