@@ -216,7 +216,7 @@ class SimilarityService:
                               track_ids=deduplicated_track_ids,
                               track_scores=deduplicated_track_scores,
                               name=playlist_name,
-                              playlist_type=PlaylistType.WAITING_SEGMENTS,
+                              playlist_type=PlaylistType.SIMILARITY,
                               user_id=user_id
                         )
                         
@@ -243,16 +243,16 @@ class SimilarityService:
                     response_data["queried_track"] = filtered_queried_tracks[0]
             
             # TEMPORARY FEATURE: Handle segment preview workflow (after step 8)
-            if playlist_info and len(deduplicated_enriched_tracks) > 0:
-                # Collect all UUIDs: queried track first, then similar tracks
-                all_uuids = [uploaded_track_details.get("id")]  # Reference track first
-                all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
-                all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
+            # if playlist_info and len(deduplicated_enriched_tracks) > 0:
+            #     # Collect all UUIDs: queried track first, then similar tracks
+            #     all_uuids = [uploaded_track_details.get("id")]  # Reference track first
+            #     all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
+            #     all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
                 
-                if all_uuids:
-                    # Launch segment preview in background and return immediately
-                    asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
-             
+            #     if all_uuids:
+            #         # Launch segment preview in background and return immediately
+            #         asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
+            
             return response_data
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
@@ -383,7 +383,7 @@ class SimilarityService:
                                 track_ids=deduplicated_track_ids,
                                 track_scores=deduplicated_track_scores,
                                 name=playlist_name,
-                                playlist_type=PlaylistType.WAITING_SEGMENTS,
+                                playlist_type=PlaylistType.SIMILARITY,
                                 user_id=user_id
                             )
                             
@@ -411,15 +411,15 @@ class SimilarityService:
                     response_data["queried_track"] = filtered_queried_tracks[0]
             
             # TEMPORARY FEATURE: Handle segment preview workflow (after step 8)
-            if playlist_info and len(deduplicated_enriched_tracks) > 0:
-                # Collect all UUIDs: queried track first, then similar tracks
-                all_uuids = [queried_track_data.get("id")]  # Reference track first
-                all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
-                all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
+            # if playlist_info and len(deduplicated_enriched_tracks) > 0:
+            #     # Collect all UUIDs: queried track first, then similar tracks
+            #     all_uuids = [queried_track_data.get("id")]  # Reference track first
+            #     all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
+            #     all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
                 
-                if all_uuids:
-                    # Launch segment workflow in background
-                    asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
+            #     if all_uuids:
+            #         # Launch segment workflow in background
+            #         asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
             
             return response_data
         elif similarity_response.get("status") == "not_found":

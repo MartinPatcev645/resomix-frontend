@@ -870,7 +870,7 @@ class SeedDataManager:
                             })
                     logger.info(f"✓ Seeded {len(data['track_artists'])} track-artist relationships")
                 
-                # 7. Seed Playlists (assign to random users)
+                # 7. Seed Playlists (respect JSON user_id and seed_track_id)
                 playlist_json_id_to_db_id = {}
                 if data.get('playlists'):
                     logger.info(f"Seeding {len(data['playlists'])} playlists...")
@@ -888,13 +888,14 @@ class SeedDataManager:
                     if not has_fork_columns:
                         logger.warning("⚠️  Fork columns not found in playlists table. Using basic playlist structure.")
                     
-                    # Get some user IDs to assign playlists
-                    result = conn.execute(text("SELECT id FROM users LIMIT 5"))
-                    user_ids = [row.id for row in result]
-                    
                     for idx, playlist in enumerate(data['playlists']):
-                        # Assign to random user or leave null
-                        user_id = user_ids[idx % len(user_ids)] if user_ids else None
+                        # Use user_id from JSON as-is (may be None)
+                        user_id = playlist.get('user_id')
+
+                        # Map seed_track_id from JSON track id to inserted DB id (should not be null)
+                        mapped_seed_track_id = None
+                        if playlist.get('seed_track_id') is not None:
+                            mapped_seed_track_id = track_json_id_to_db_id.get(playlist['seed_track_id'])
                         
                         if has_fork_columns:
                             # Use full schema with fork columns
@@ -913,7 +914,7 @@ class SeedDataManager:
                                 'name': playlist['name'],
                                 'is_public': playlist['is_public'],
                                 'type': playlist['type'],
-                                'seed_track_id': None,  # Not mapping seed tracks
+                                'seed_track_id': mapped_seed_track_id,
                                 'fork_id': playlist.get('fork_id'),
                                 'forked_at': playlist.get('forked_at'),
                                 'fork_count': playlist.get('fork_count', 0)
@@ -933,7 +934,7 @@ class SeedDataManager:
                                 'name': playlist['name'],
                                 'is_public': playlist['is_public'],
                                 'type': playlist['type'],
-                                'seed_track_id': None  # Not mapping seed tracks
+                                'seed_track_id': mapped_seed_track_id
                             })
                         playlist_json_id_to_db_id[playlist['id']] = result.lastrowid
                     
