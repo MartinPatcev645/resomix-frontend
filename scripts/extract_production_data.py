@@ -814,10 +814,18 @@ def main():
     
     # Define playlist UUIDs here
     playlists100_uuids: List[str] = [
-        # "uuid-1", "uuid-2", ...
+        "216918df-363f-4430-9dc0-24ddbaa1291f",
+        "4716369e-7ec4-4843-ba1b-6b54557bf29a",
+        "85f15b97-6549-4a2e-ac56-e79528f5757e",
+        "47e55b8d-9a71-4e1f-826d-56d02488d47b",
+        "ec16db02-7217-4c3a-ac05-cdd7ad7a467d"
     ]
     playlists20_uuids: List[str] = [
-        # "uuid-a", "uuid-b", ...
+        "bdd2ecf5-f27c-437f-bc59-9769bae96224",
+        "90f92a2e-e0db-4cab-957d-4bb53f7eded5",
+        "d26a86b1-ffa6-4d7d-aaf7-776a358d38ae",
+        "75378136-fd59-4ac5-9de9-ab414d499029",
+        "cc853068-a196-4018-8730-fcb5c79fbc90"
     ]
 
     try:
