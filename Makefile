@@ -1,4 +1,4 @@
-.PHONY: up down logs db migrate seed api test fmt lint help
+.PHONY: up down logs db migrate seed clear-db api test fmt lint help
 
 up:
 	docker compose up -d mariadb
@@ -17,6 +17,9 @@ migrate:
 
 seed:
 	python -m database.manage setup --with-data
+
+clear-db:
+	python -m scripts.seed_data clear-all
 
 api:
 	uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
@@ -38,6 +41,7 @@ help:
 	@echo "  make db       - Connect to MariaDB CLI"
 	@echo "  make migrate  - Run database migrations"
 	@echo "  make seed     - Run migrations + seed sample data"
+	@echo "  make clear-db - Clear all data from database (WARNING: destructive)"
 	@echo "  make api      - Start API server with hot-reload"
 	@echo "  make test     - Run test suite"
 	@echo "  make fmt      - Format code (black + isort)"

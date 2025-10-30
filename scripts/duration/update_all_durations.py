@@ -121,7 +121,7 @@ async def call_similarity_api(uuids: List[str]) -> Dict:
     async with httpx.AsyncClient(timeout=300.0) as client:
         response = await client.post(
             url,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "Origin": "https://bserver.resomix.com"},
             json=payload
         )
         response.raise_for_status()

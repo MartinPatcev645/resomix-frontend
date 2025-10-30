@@ -17,7 +17,6 @@ Email: usman.naeem2212@gmail.com
 
 import uuid
 import logging
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,6 +25,7 @@ from typing import List, Dict, Any
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from database.connection import engine
+from app.core.security import hash_password
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,8 +39,8 @@ class SeedDataManager:
         self.engine = engine
     
     def _hash_password(self, password: str) -> str:
-        """Simple hash for demo purposes. In production, use bcrypt/argon2."""
-        return hashlib.sha256(password.encode()).hexdigest()
+        """Hash password using application security context (bcrypt)."""
+        return hash_password(password)
     
     def seed_users(self) -> bool:
         """Seed sample users with various profiles."""
@@ -57,97 +57,19 @@ class SeedDataManager:
                         'language': 'en',
                         'timezone': 'UTC',
                         'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,  # Disabled for dev environment
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'john_doe',
-                        'email': 'john.doe@example.com',
-                        'password_hash': self._hash_password('User@123'),
-                        'name': 'John Doe',
-                        'profile_picture': '/avatars/john.png',
-                        'language': 'en',
-                        'timezone': 'America/New_York',
-                        'is_email_verified': 1,
                         'is_two_factor_enabled': 0,
                         'two_factor_method': 'email'
                     },
                     {
                         'uuid': str(uuid.uuid4()),
-                        'username': 'jane_smith',
-                        'email': 'jane.smith@example.com',
+                        'username': 'user',
+                        'email': 'user@resomix.com',
                         'password_hash': self._hash_password('User@123'),
-                        'name': 'Jane Smith',
-                        'profile_picture': '/avatars/jane.png',
+                        'name': 'Resomix User',
+                        'profile_picture': '/avatars/user.png',
                         'language': 'en',
-                        'timezone': 'America/Los_Angeles',
+                        'timezone': 'UTC',
                         'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,  # Disabled for dev environment
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'dj_mike',
-                        'email': 'mike@example.com',
-                        'password_hash': self._hash_password('Premium@123'),
-                        'name': 'Mike DJ',
-                        'profile_picture': '/avatars/mike.png',
-                        'language': 'en',
-                        'timezone': 'Europe/London',
-                        'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,  # Disabled for dev environment
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'sarah_producer',
-                        'email': 'sarah@musicstudio.com',
-                        'password_hash': self._hash_password('Premium@123'),
-                        'name': 'Sarah Producer',
-                        'profile_picture': '/avatars/sarah.png',
-                        'language': 'en',
-                        'timezone': 'Europe/Berlin',
-                        'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'moderator_alex',
-                        'email': 'alex@resomix.com',
-                        'password_hash': self._hash_password('Mod@123'),
-                        'name': 'Alex Moderator',
-                        'profile_picture': '/avatars/alex.png',
-                        'language': 'en',
-                        'timezone': 'Asia/Tokyo',
-                        'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,  # Disabled for dev environment
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'carlos_musician',
-                        'email': 'carlos@musician.com',
-                        'password_hash': self._hash_password('User@123'),
-                        'name': 'Carlos Musician',
-                        'profile_picture': '/avatars/carlos.png',
-                        'language': 'es',
-                        'timezone': 'America/Mexico_City',
-                        'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'emma_listener',
-                        'email': 'emma@listener.com',
-                        'password_hash': self._hash_password('User@123'),
-                        'name': 'Emma Listener',
-                        'profile_picture': '/avatars/emma.png',
-                        'language': 'en',
-                        'timezone': 'Australia/Sydney',
-                        'is_email_verified': 1,  # Changed to verified for easier dev testing
                         'is_two_factor_enabled': 0,
                         'two_factor_method': 'email'
                     }
@@ -260,7 +182,7 @@ class SeedDataManager:
                     """), {
                         'user_id': user[0],
                         'session_id': str(uuid.uuid4()),
-                        'refresh_token_hash': self._hash_password(f'refresh_token_{idx}'),
+                        'refresh_token_hash': hash_password(f'refresh_token_{idx}'),
                         'user_agent': user_agents[idx % len(user_agents)],
                         'ip_address': ip_addresses[idx % len(ip_addresses)],
                         'expires_at': datetime.now() + timedelta(days=30),
@@ -280,7 +202,7 @@ class SeedDataManager:
                     """), {
                         'user_id': user[0],
                         'session_id': str(uuid.uuid4()),
-                        'refresh_token_hash': self._hash_password(f'old_refresh_token_{idx}'),
+                        'refresh_token_hash': hash_password(f'old_refresh_token_{idx}'),
                         'user_agent': user_agents[idx % len(user_agents)],
                         'ip_address': ip_addresses[idx % len(ip_addresses)],
                         'expires_at': datetime.now() + timedelta(days=30),
@@ -517,13 +439,7 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 user_role_assignments = [
                     ('admin', 'admin'),
-                    ('john_doe', 'user'),
-                    ('jane_smith', 'premium'),
-                    ('dj_mike', 'premium'),
-                    ('sarah_producer', 'content_creator'),
-                    ('moderator_alex', 'moderator'),
-                    ('carlos_musician', 'user'),
-                    ('emma_listener', 'user'),
+                    ('user', 'user'),
                 ]
                 
                 for username, role_name in user_role_assignments:
@@ -605,7 +521,7 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 # Get user IDs
                 result = conn.execute(text("""
-                    SELECT id FROM users WHERE username IN ('john_doe', 'jane_smith', 'dj_mike', 'carlos_musician')
+                    SELECT id FROM users WHERE username IN ('admin', 'user')
                 """))
                 users = result.fetchall()
                 
@@ -715,250 +631,228 @@ class SeedDataManager:
                 data = json.load(f)
             
             with self.engine.begin() as conn:
-                # 1. Seed Artists
-                if data.get('artists'):
-                    logger.info(f"Seeding {len(data['artists'])} artists...")
-                    for artist in data['artists']:
-                        conn.execute(text("""
-                            INSERT INTO artists (name)
-                            VALUES (:name)
-                            ON DUPLICATE KEY UPDATE name=VALUES(name)
-                        """), {'name': artist['name']})
-                    logger.info(f"✓ Seeded {len(data['artists'])} artists")
+                # Disable foreign key checks to allow inserting in any order with custom IDs
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
                 
-                # 2. Seed Labels
-                if data.get('labels'):
-                    logger.info(f"Seeding {len(data['labels'])} labels...")
-                    for label in data['labels']:
-                        conn.execute(text("""
-                            INSERT INTO labels (name, website)
-                            VALUES (:name, :website)
-                            ON DUPLICATE KEY UPDATE website=VALUES(website)
-                        """), {
-                            'name': label['name'],
-                            'website': label.get('website')
-                        })
-                    logger.info(f"✓ Seeded {len(data['labels'])} labels")
-                
-                # 3. Seed Genres
-                if data.get('genres'):
-                    logger.info(f"Seeding {len(data['genres'])} genres...")
-                    for genre in data['genres']:
-                        conn.execute(text("""
-                            INSERT INTO genres (name)
-                            VALUES (:name)
-                            ON DUPLICATE KEY UPDATE name=VALUES(name)
-                        """), {'name': genre['name']})
-                    logger.info(f"✓ Seeded {len(data['genres'])} genres")
-                
-                # Now we need to fetch the actual IDs that were assigned
-                # Build mappings from names to IDs
-                artist_name_to_id = {}
-                label_name_to_id = {}
-                genre_name_to_id = {}
-                
-                if data.get('artists'):
-                    result = conn.execute(text("SELECT id, name FROM artists"))
-                    for row in result:
-                        artist_name_to_id[row.name] = row.id
-                
-                if data.get('labels'):
-                    result = conn.execute(text("SELECT id, name FROM labels"))
-                    for row in result:
-                        label_name_to_id[row.name] = row.id
-                
-                if data.get('genres'):
-                    result = conn.execute(text("SELECT id, name FROM genres"))
-                    for row in result:
-                        genre_name_to_id[row.name] = row.id
-                
-                # 4. Seed Albums (need to map artist IDs)
-                album_json_id_to_db_id = {}
-                if data.get('albums'):
-                    logger.info(f"Seeding {len(data['albums'])} albums...")
-                    for album in data['albums']:
-                        # Find artist by name
-                        artist_name = next(
-                            (a['name'] for a in data['artists'] if a['id'] == album['artist_id']),
-                            None
-                        )
-                        artist_id = artist_name_to_id.get(artist_name) if artist_name else None
-                        
-                        result = conn.execute(text("""
-                            INSERT INTO albums (artist_id, title, release_date, cover_image)
-                            VALUES (:artist_id, :title, :release_date, :cover_image)
-                        """), {
-                            'artist_id': artist_id,
-                            'title': album['title'],
-                            'release_date': album.get('release_date'),
-                            'cover_image': album.get('cover_image')
-                        })
-                        album_json_id_to_db_id[album['id']] = result.lastrowid
-                    logger.info(f"✓ Seeded {len(data['albums'])} albums")
-                
-                # 5. Seed Tracks (need to map album, label, genre IDs)
-                track_json_id_to_db_id = {}
-                if data.get('tracks'):
-                    logger.info(f"Seeding {len(data['tracks'])} tracks...")
-                    for idx, track in enumerate(data['tracks'], 1):
-                        # Map foreign keys
-                        album_id = album_json_id_to_db_id.get(track['album_id']) if track.get('album_id') else None
-                        
-                        label_name = next(
-                            (l['name'] for l in data.get('labels', []) if l['id'] == track.get('label_id')),
-                            None
-                        )
-                        label_id = label_name_to_id.get(label_name) if label_name else None
-                        
-                        genre_name = next(
-                            (g['name'] for g in data.get('genres', []) if g['id'] == track.get('genre_id')),
-                            None
-                        )
-                        genre_id = genre_name_to_id.get(genre_name) if genre_name else None
-                        
-                        result = conn.execute(text("""
-                            INSERT INTO tracks (
-                                uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                                bpm, musical_key, file_path, preview_path, file_size, type
-                            )
-                            VALUES (
-                                :uuid, :album_id, :label_id, :genre_id, :title, :year, :duration_sec,
-                                :bpm, :musical_key, :file_path, :preview_path, :file_size, :type
-                            )
-                        """), {
-                            'uuid': track['uuid'],
-                            'album_id': album_id,
-                            'label_id': label_id,
-                            'genre_id': genre_id,
-                            'title': track['title'],
-                            'year': track.get('year'),
-                            'duration_sec': track.get('duration_sec'),
-                            'bpm': track.get('bpm'),
-                            'musical_key': track.get('musical_key'),
-                            'file_path': track['file_path'],
-                            'preview_path': track.get('preview_path'),
-                            'file_size': track.get('file_size'),
-                            'type': track.get('type', 'electrobuzz')
-                        })
-                        track_json_id_to_db_id[track['id']] = result.lastrowid
-                        
-                        if idx % 100 == 0:
-                            logger.info(f"  Processed {idx}/{len(data['tracks'])} tracks")
+                try:
+                    # 1. Seed Artists (preserve IDs from JSON)
+                    if data.get('artists'):
+                        logger.info(f"Seeding {len(data['artists'])} artists...")
+                        for artist in data['artists']:
+                            conn.execute(text("""
+                                INSERT INTO artists (id, name)
+                                VALUES (:id, :name)
+                                ON DUPLICATE KEY UPDATE name=VALUES(name)
+                            """), {'id': artist['id'], 'name': artist['name']})
+                        logger.info(f"✓ Seeded {len(data['artists'])} artists")
                     
-                    logger.info(f"✓ Seeded {len(data['tracks'])} tracks")
-                
-                # 6. Seed Track-Artist relationships
-                if data.get('track_artists'):
-                    logger.info(f"Seeding {len(data['track_artists'])} track-artist relationships...")
-                    for ta in data['track_artists']:
-                        track_id = track_json_id_to_db_id.get(ta['track_id'])
+                    # 2. Seed Labels (preserve IDs from JSON)
+                    if data.get('labels'):
+                        logger.info(f"Seeding {len(data['labels'])} labels...")
+                        for label in data['labels']:
+                            conn.execute(text("""
+                                INSERT INTO labels (id, name, website)
+                                VALUES (:id, :name, :website)
+                                ON DUPLICATE KEY UPDATE name=VALUES(name), website=VALUES(website)
+                            """), {
+                                'id': label['id'],
+                                'name': label['name'],
+                                'website': label.get('website')
+                            })
+                        logger.info(f"✓ Seeded {len(data['labels'])} labels")
+                    
+                    # 3. Seed Genres (preserve IDs from JSON)
+                    if data.get('genres'):
+                        logger.info(f"Seeding {len(data['genres'])} genres...")
+                        for genre in data['genres']:
+                            conn.execute(text("""
+                                INSERT INTO genres (id, name)
+                                VALUES (:id, :name)
+                                ON DUPLICATE KEY UPDATE name=VALUES(name)
+                            """), {'id': genre['id'], 'name': genre['name']})
+                        logger.info(f"✓ Seeded {len(data['genres'])} genres")
+                    
+                    # 4. Seed Albums (preserve IDs from JSON, use artist_id directly from JSON)
+                    if data.get('albums'):
+                        logger.info(f"Seeding {len(data['albums'])} albums...")
+                        for album in data['albums']:
+                            conn.execute(text("""
+                                INSERT INTO albums (id, artist_id, title, release_date, cover_image)
+                                VALUES (:id, :artist_id, :title, :release_date, :cover_image)
+                                ON DUPLICATE KEY UPDATE 
+                                    artist_id=VALUES(artist_id),
+                                    title=VALUES(title),
+                                    release_date=VALUES(release_date),
+                                    cover_image=VALUES(cover_image)
+                            """), {
+                                'id': album['id'],
+                                'artist_id': album.get('artist_id'),
+                                'title': album['title'],
+                                'release_date': album.get('release_date'),
+                                'cover_image': album.get('cover_image')
+                            })
+                        logger.info(f"✓ Seeded {len(data['albums'])} albums")
+                    
+                    # 5. Seed Tracks (preserve IDs from JSON, use foreign keys directly from JSON)
+                    if data.get('tracks'):
+                        logger.info(f"Seeding {len(data['tracks'])} tracks...")
+                        for idx, track in enumerate(data['tracks'], 1):
+                            conn.execute(text("""
+                                INSERT INTO tracks (
+                                    id, uuid, album_id, label_id, genre_id, title, year, duration_sec,
+                                    bpm, musical_key, file_path, preview_path, file_size, type
+                                )
+                                VALUES (
+                                    :id, :uuid, :album_id, :label_id, :genre_id, :title, :year, :duration_sec,
+                                    :bpm, :musical_key, :file_path, :preview_path, :file_size, :type
+                                )
+                                ON DUPLICATE KEY UPDATE
+                                    uuid=VALUES(uuid),
+                                    album_id=VALUES(album_id),
+                                    label_id=VALUES(label_id),
+                                    genre_id=VALUES(genre_id),
+                                    title=VALUES(title),
+                                    year=VALUES(year),
+                                    duration_sec=VALUES(duration_sec),
+                                    bpm=VALUES(bpm),
+                                    musical_key=VALUES(musical_key),
+                                    file_path=VALUES(file_path),
+                                    preview_path=VALUES(preview_path),
+                                    file_size=VALUES(file_size),
+                                    type=VALUES(type)
+                            """), {
+                                'id': track['id'],
+                                'uuid': track['uuid'],
+                                'album_id': track.get('album_id'),
+                                'label_id': track.get('label_id'),
+                                'genre_id': track.get('genre_id'),
+                                'title': track['title'],
+                                'year': track.get('year'),
+                                'duration_sec': track.get('duration_sec'),
+                                'bpm': track.get('bpm'),
+                                'musical_key': track.get('musical_key'),
+                                'file_path': track['file_path'],
+                                'preview_path': track.get('preview_path'),
+                                'file_size': track.get('file_size'),
+                                'type': track.get('type', 'electrobuzz')
+                            })
+                            
+                            if idx % 100 == 0:
+                                logger.info(f"  Processed {idx}/{len(data['tracks'])} tracks")
                         
-                        # Find artist by name
-                        artist_name = next(
-                            (a['name'] for a in data.get('artists', []) if a['id'] == ta['artist_id']),
-                            None
-                        )
-                        artist_id = artist_name_to_id.get(artist_name) if artist_name else None
-                        
-                        if track_id and artist_id:
+                        logger.info(f"✓ Seeded {len(data['tracks'])} tracks")
+                    
+                    # 6. Seed Track-Artist relationships (use IDs directly from JSON)
+                    if data.get('track_artists'):
+                        logger.info(f"Seeding {len(data['track_artists'])} track-artist relationships...")
+                        for ta in data['track_artists']:
                             conn.execute(text("""
                                 INSERT IGNORE INTO track_artists (track_id, artist_id)
                                 VALUES (:track_id, :artist_id)
                             """), {
-                                'track_id': track_id,
-                                'artist_id': artist_id
+                                'track_id': ta['track_id'],
+                                'artist_id': ta['artist_id']
                             })
-                    logger.info(f"✓ Seeded {len(data['track_artists'])} track-artist relationships")
-                
-                # 7. Seed Playlists (respect JSON user_id and seed_track_id)
-                playlist_json_id_to_db_id = {}
-                if data.get('playlists'):
-                    logger.info(f"Seeding {len(data['playlists'])} playlists...")
+                        logger.info(f"✓ Seeded {len(data['track_artists'])} track-artist relationships")
                     
-                    # Check if fork columns exist in the playlists table
-                    result = conn.execute(text("""
-                        SELECT COLUMN_NAME 
-                        FROM INFORMATION_SCHEMA.COLUMNS 
-                        WHERE TABLE_NAME = 'playlists' 
-                        AND COLUMN_NAME IN ('fork_id', 'forked_at', 'fork_count')
-                    """))
-                    existing_columns = {row[0] for row in result.fetchall()}
-                    has_fork_columns = 'fork_id' in existing_columns
-                    
-                    if not has_fork_columns:
-                        logger.warning("⚠️  Fork columns not found in playlists table. Using basic playlist structure.")
-                    
-                    for idx, playlist in enumerate(data['playlists']):
-                        # Use user_id from JSON as-is (may be None)
-                        user_id = playlist.get('user_id')
-
-                        # Map seed_track_id from JSON track id to inserted DB id (should not be null)
-                        mapped_seed_track_id = None
-                        if playlist.get('seed_track_id') is not None:
-                            mapped_seed_track_id = track_json_id_to_db_id.get(playlist['seed_track_id'])
+                    # 7. Seed Playlists (preserve IDs from JSON, use seed_track_id directly from JSON)
+                    if data.get('playlists'):
+                        logger.info(f"Seeding {len(data['playlists'])} playlists...")
                         
-                        if has_fork_columns:
-                            # Use full schema with fork columns
-                            result = conn.execute(text("""
-                                INSERT INTO playlists (
-                                    uuid, user_id, name, is_public, type, seed_track_id,
-                                    fork_id, forked_at, fork_count
-                                )
-                                VALUES (
-                                    :uuid, :user_id, :name, :is_public, :type, :seed_track_id,
-                                    :fork_id, :forked_at, :fork_count
-                                )
-                            """), {
-                                'uuid': playlist['uuid'],
-                                'user_id': user_id,
-                                'name': playlist['name'],
-                                'is_public': playlist['is_public'],
-                                'type': playlist['type'],
-                                'seed_track_id': mapped_seed_track_id,
-                                'fork_id': playlist.get('fork_id'),
-                                'forked_at': playlist.get('forked_at'),
-                                'fork_count': playlist.get('fork_count', 0)
-                            })
-                        else:
-                            # Use basic schema without fork columns
-                            result = conn.execute(text("""
-                                INSERT INTO playlists (
-                                    uuid, user_id, name, is_public, type, seed_track_id
-                                )
-                                VALUES (
-                                    :uuid, :user_id, :name, :is_public, :type, :seed_track_id
-                                )
-                            """), {
-                                'uuid': playlist['uuid'],
-                                'user_id': user_id,
-                                'name': playlist['name'],
-                                'is_public': playlist['is_public'],
-                                'type': playlist['type'],
-                                'seed_track_id': mapped_seed_track_id
-                            })
-                        playlist_json_id_to_db_id[playlist['id']] = result.lastrowid
-                    
-                    logger.info(f"✓ Seeded {len(data['playlists'])} playlists")
-                
-                # 8. Seed Playlist Tracks
-                if data.get('playlist_tracks'):
-                    logger.info(f"Seeding {len(data['playlist_tracks'])} playlist tracks...")
-                    
-                    # Check if position column is DECIMAL(12,6) or INT
-                    result = conn.execute(text("""
-                        SELECT DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
-                        FROM INFORMATION_SCHEMA.COLUMNS 
-                        WHERE TABLE_NAME = 'playlist_tracks' 
-                        AND COLUMN_NAME = 'position'
-                    """))
-                    position_info = result.fetchone()
-                    is_decimal_position = position_info and position_info[0] == 'decimal'
-                    
-                    for pt in data['playlist_tracks']:
-                        playlist_id = playlist_json_id_to_db_id.get(pt['playlist_id'])
-                        track_id = track_json_id_to_db_id.get(pt['track_id'])
+                        # Check if fork columns exist in the playlists table
+                        result = conn.execute(text("""
+                            SELECT COLUMN_NAME 
+                            FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_NAME = 'playlists' 
+                            AND COLUMN_NAME IN ('fork_id', 'forked_at', 'fork_count')
+                        """))
+                        existing_columns = {row[0] for row in result.fetchall()}
+                        has_fork_columns = 'fork_id' in existing_columns
                         
-                        if playlist_id and track_id:
+                        if not has_fork_columns:
+                            logger.warning("⚠️  Fork columns not found in playlists table. Using basic playlist structure.")
+                        
+                        for playlist in data['playlists']:
+                            # Use user_id and seed_track_id directly from JSON
+                            user_id = playlist.get('user_id')
+                            seed_track_id = playlist.get('seed_track_id')
+                            
+                            if has_fork_columns:
+                                # Use full schema with fork columns
+                                conn.execute(text("""
+                                    INSERT INTO playlists (
+                                        id, uuid, user_id, name, is_public, type, seed_track_id,
+                                        fork_id, forked_at, fork_count
+                                    )
+                                    VALUES (
+                                        :id, :uuid, :user_id, :name, :is_public, :type, :seed_track_id,
+                                        :fork_id, :forked_at, :fork_count
+                                    )
+                                    ON DUPLICATE KEY UPDATE
+                                        uuid=VALUES(uuid),
+                                        user_id=VALUES(user_id),
+                                        name=VALUES(name),
+                                        is_public=VALUES(is_public),
+                                        type=VALUES(type),
+                                        seed_track_id=VALUES(seed_track_id),
+                                        fork_id=VALUES(fork_id),
+                                        forked_at=VALUES(forked_at),
+                                        fork_count=VALUES(fork_count)
+                                """), {
+                                    'id': playlist['id'],
+                                    'uuid': playlist['uuid'],
+                                    'user_id': user_id,
+                                    'name': playlist['name'],
+                                    'is_public': playlist['is_public'],
+                                    'type': playlist['type'],
+                                    'seed_track_id': seed_track_id,
+                                    'fork_id': playlist.get('fork_id'),
+                                    'forked_at': playlist.get('forked_at'),
+                                    'fork_count': playlist.get('fork_count', 0)
+                                })
+                            else:
+                                # Use basic schema without fork columns
+                                conn.execute(text("""
+                                    INSERT INTO playlists (
+                                        id, uuid, user_id, name, is_public, type, seed_track_id
+                                    )
+                                    VALUES (
+                                        :id, :uuid, :user_id, :name, :is_public, :type, :seed_track_id
+                                    )
+                                    ON DUPLICATE KEY UPDATE
+                                        uuid=VALUES(uuid),
+                                        user_id=VALUES(user_id),
+                                        name=VALUES(name),
+                                        is_public=VALUES(is_public),
+                                        type=VALUES(type),
+                                        seed_track_id=VALUES(seed_track_id)
+                                """), {
+                                    'id': playlist['id'],
+                                    'uuid': playlist['uuid'],
+                                    'user_id': user_id,
+                                    'name': playlist['name'],
+                                    'is_public': playlist['is_public'],
+                                    'type': playlist['type'],
+                                    'seed_track_id': seed_track_id
+                                })
+                        
+                        logger.info(f"✓ Seeded {len(data['playlists'])} playlists")
+                    
+                    # 8. Seed Playlist Tracks (use IDs directly from JSON)
+                    if data.get('playlist_tracks'):
+                        logger.info(f"Seeding {len(data['playlist_tracks'])} playlist tracks...")
+                        
+                        # Check if position column is DECIMAL(12,6) or INT
+                        result = conn.execute(text("""
+                            SELECT DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
+                            FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_NAME = 'playlist_tracks' 
+                            AND COLUMN_NAME = 'position'
+                        """))
+                        position_info = result.fetchone()
+                        is_decimal_position = position_info and position_info[0] == 'decimal'
+                        
+                        for pt in data['playlist_tracks']:
                             # Convert position based on column type
                             position_value = pt['position']
                             if is_decimal_position:
@@ -971,13 +865,20 @@ class SeedDataManager:
                             conn.execute(text("""
                                 INSERT INTO playlist_tracks (playlist_id, track_id, position, score)
                                 VALUES (:playlist_id, :track_id, :position, :score)
+                                ON DUPLICATE KEY UPDATE
+                                    position=VALUES(position),
+                                    score=VALUES(score)
                             """), {
-                                'playlist_id': playlist_id,
-                                'track_id': track_id,
+                                'playlist_id': pt['playlist_id'],
+                                'track_id': pt['track_id'],
                                 'position': position_value,
                                 'score': pt.get('score')
                             })
-                    logger.info(f"✓ Seeded {len(data['playlist_tracks'])} playlist tracks")
+                        logger.info(f"✓ Seeded {len(data['playlist_tracks'])} playlist tracks")
+                
+                finally:
+                    # Re-enable foreign key checks
+                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
             
             logger.info("=" * 60)
             logger.info("✓ Production track data seeded successfully!")
@@ -1116,8 +1017,7 @@ class SeedDataManager:
             logger.info("=" * 60)
             logger.info("\nSample Credentials:")
             logger.info("  Admin: admin@resomix.com / Admin@123")
-            logger.info("  User: john.doe@example.com / User@123")
-            logger.info("  Premium: jane.smith@example.com / User@123")
+            logger.info("  User: user@resomix.com / User@123")
             logger.info("=" * 60)
         else:
             logger.error("Some seeding operations failed")

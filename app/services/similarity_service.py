@@ -58,7 +58,8 @@ class SimilarityService:
         self.track_repository = TrackRepository()
         self.playlist_repository = PlaylistRepository()
         self.similarity_repository = SimilarityRepository()
-        self.similarity_server_url = os.getenv("SIMILARITY_SERVER_URL")
+        # Use centralized config (env already loaded & normalized in settings)
+        self.similarity_server_url = settings.similarity_server_url
         self.similarity_segment_service = SimilaritySegmentService(self.similarity_server_url)
         self.path_prefix_to_remove = "/home/usman/data/"  # Ensured this is the exact prefix.
 
@@ -445,7 +446,7 @@ class SimilarityService:
         target_url = f"{self.similarity_server_url.rstrip('/')}{endpoint}"
         print(f"Calling similarity server: {target_url} with data: {data}")
 
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=300.0, headers={"Origin": "https://bserver.resomix.com"}) as client:
             try:
                 if files:
                     response = await client.post(target_url, files=files, data=data)

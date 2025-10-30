@@ -168,6 +168,7 @@ class PlaylistService:
                     headers={
                         "Content-Type": "application/json",
                         "Accept": "application/vnd.apple.mpegurl",
+                        "Origin": "https://bserver.resomix.com",
                     },
                     content=json.dumps(data) if data else None,
                 )
