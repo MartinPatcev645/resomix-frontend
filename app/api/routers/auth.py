@@ -95,8 +95,7 @@ async def register(
     description="Authenticate user with email/username and password.",
     response_description="Login successful, returns tokens or 2FA requirement",
     responses={
-        401: {"model": ErrorResponse, "description": "Invalid credentials"},
-        403: {"model": ErrorResponse, "description": "Email not verified"},
+        401: {"model": ErrorResponse, "description": "Invalid credentials"}
     },
 )
 @limiter.limit(auth_rate_limit("login"))
