@@ -241,7 +241,7 @@ export default function VerifyEmailContent({
           </h1>
         </header>
 
-        <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
+        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
           <div className="mb-[var(--px-24)]">
             <a
               href={baseUrl}
