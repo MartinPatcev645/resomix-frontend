@@ -114,7 +114,8 @@ class AuthService:
 
         # Generate verification token
         token = generate_verification_token()
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        # Store UTC-naive in DB for consistency with timezone-naive columns
+        expires_at = datetime.utcnow() + timedelta(
             hours=settings.email_verification_token_expire_hours
         )
 
@@ -175,7 +176,7 @@ class AuthService:
         if user.is_two_factor_enabled:
             # Generate 2FA code
             code = generate_2fa_code(settings.two_factor_code_length)
-            expires_at = datetime.now(timezone.utc) + timedelta(
+            expires_at = datetime.utcnow() + timedelta(
                 minutes=settings.two_factor_code_expire_minutes
             )
 
@@ -264,7 +265,7 @@ class AuthService:
         refresh_token_hash = hash_password(refresh_token)
 
         # Calculate expiration
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        expires_at = datetime.utcnow() + timedelta(
             days=settings.jwt_refresh_token_expire_days
         )
 
@@ -322,8 +323,14 @@ class AuthService:
                 detail="Invalid verification token",
             )
 
-        # Check expiration
-        if verification_token.expires_at < datetime.now(timezone.utc):
+        # Check expiration (DB stores naive UTC; normalize to aware UTC before compare)
+        expires_at_db = verification_token.expires_at
+        if expires_at_db.tzinfo is None:
+            expires_at_utc = expires_at_db.replace(tzinfo=timezone.utc)
+        else:
+            expires_at_utc = expires_at_db.astimezone(timezone.utc)
+
+        if expires_at_utc < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Verification token has expired",
@@ -371,7 +378,8 @@ class AuthService:
 
         # Generate new token
         token = generate_verification_token()
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        # Store UTC-naive in DB for consistency with timezone-naive columns
+        expires_at = datetime.utcnow() + timedelta(
             hours=settings.email_verification_token_expire_hours
         )
 
@@ -402,7 +410,7 @@ class AuthService:
 
         # Generate reset token
         token = generate_reset_token()
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        expires_at = datetime.utcnow() + timedelta(
             hours=settings.password_reset_token_expire_hours
         )
 
@@ -450,7 +458,13 @@ class AuthService:
             )
 
         # Check expiration
-        if reset_token.expires_at < datetime.now(timezone.utc):
+        expires_at_db = reset_token.expires_at
+        if expires_at_db.tzinfo is None:
+            reset_expires_at_utc = expires_at_db.replace(tzinfo=timezone.utc)
+        else:
+            reset_expires_at_utc = expires_at_db.astimezone(timezone.utc)
+
+        if reset_expires_at_utc < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Reset token has expired",
@@ -537,7 +551,7 @@ class AuthService:
 
         # Calculate new expiration
         from datetime import datetime, timedelta, timezone
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        expires_at = datetime.utcnow() + timedelta(
             days=settings.jwt_refresh_token_expire_days
         )
 

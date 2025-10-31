@@ -22,7 +22,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from app.models.playlist import Playlist, PlaylistTrack
 from app.models.constants import PlaylistType
 from app.repositories.base_repository import BaseRepository
@@ -147,7 +147,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 type=original_playlist.type,
                 seed_track_id=original_playlist.seed_track_id,
                 fork_id=original_playlist_uuid,  # Link back to original
-                forked_at=datetime.now(timezone.utc),
+                forked_at=datetime.utcnow(),
                 fork_count=0  # New playlist starts with 0 forks
                 # created_at is automatically set by database with current timestamp
             )

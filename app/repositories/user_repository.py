@@ -11,7 +11,7 @@ Date: October 23, 2025
 """
 
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from sqlalchemy import select, and_, or_, delete, update
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -247,7 +247,7 @@ class PasswordResetTokenRepository:
         """Mark token as consumed"""
         reset_token = await self.async_get_by_token(db, token)
         if reset_token:
-            reset_token.consumed_at = datetime.now(timezone.utc)
+            reset_token.consumed_at = datetime.utcnow()
             await db.commit()
             await db.refresh(reset_token)
         return reset_token
@@ -309,14 +309,14 @@ class TwoFactorCodeRepository:
                 TwoFactorEmailCode.code == code,
                 TwoFactorEmailCode.purpose == purpose,
                 TwoFactorEmailCode.consumed_at.is_(None),
-                TwoFactorEmailCode.expires_at > datetime.now(timezone.utc)
+                TwoFactorEmailCode.expires_at > datetime.utcnow()
             )
         )
         result = await db.execute(stmt)
         two_fa_code = result.scalar_one_or_none()
         
         if two_fa_code:
-            two_fa_code.consumed_at = datetime.now(timezone.utc)
+            two_fa_code.consumed_at = datetime.utcnow()
             await db.commit()
             return True
         
@@ -325,7 +325,7 @@ class TwoFactorCodeRepository:
     async def async_cleanup_expired(self, db: AsyncSession) -> int:
         """Delete expired codes"""
         stmt = delete(TwoFactorEmailCode).where(
-            TwoFactorEmailCode.expires_at < datetime.now(timezone.utc)
+            TwoFactorEmailCode.expires_at < datetime.utcnow()
         )
         result = await db.execute(stmt)
         await db.commit()
@@ -382,7 +382,7 @@ class UserSessionRepository:
                 UserSession.revoked_at.is_(None),
                 or_(
                     UserSession.expires_at.is_(None),
-                    UserSession.expires_at > datetime.now(timezone.utc)
+                    UserSession.expires_at > datetime.utcnow()
                 )
             )
         )
@@ -397,7 +397,7 @@ class UserSessionRepository:
         """Revoke a specific session"""
         session = await self.async_get_by_session_id(db, session_id)
         if session:
-            session.revoked_at = datetime.now(timezone.utc)
+            session.revoked_at = datetime.utcnow()
             await db.commit()
             return True
         return False
@@ -416,7 +416,7 @@ class UserSessionRepository:
                     UserSession.revoked_at.is_(None)
                 )
             )
-            .values(revoked_at=datetime.now(timezone.utc))
+            .values(revoked_at=datetime.utcnow())
         )
         result = await db.execute(stmt)
         await db.commit()
@@ -427,7 +427,7 @@ class UserSessionRepository:
         stmt = delete(UserSession).where(
             and_(
                 UserSession.expires_at.isnot(None),
-                UserSession.expires_at < datetime.now(timezone.utc)
+                UserSession.expires_at < datetime.utcnow()
             )
         )
         result = await db.execute(stmt)
