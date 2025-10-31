@@ -324,11 +324,11 @@ class Settings(BaseModel):
         description="Rate limit for login attempts"
     )
     register_rate_limit: str = Field(
-        default="3/hour",
+        default="5/hour",
         description="Rate limit for registration"
     )
     password_reset_rate_limit: str = Field(
-        default="3/hour",
+        default="4/hour",
         description="Rate limit for password reset requests"
     )
     
