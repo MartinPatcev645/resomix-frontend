@@ -5,6 +5,7 @@ import { API_CONFIG } from "./config";
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: 300_000, // 5 minutes
+  withCredentials: true, // Include cookies with all requests
 });
 
 // Interceptor to append `api_key` as query parameter for every request

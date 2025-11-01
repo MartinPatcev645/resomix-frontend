@@ -253,7 +253,11 @@ export default function VerifyEmailContent({
           </div>
 
           <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-            <div className="text-[length:var(--px-60)]">✉</div>
+            <img 
+              src="https://resomix.com/letter.png" 
+              alt="Email icon" 
+              className="w-[var(--px-60)] h-auto"
+            />
             <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
               We've sent a verification link to your email address. Please check your inbox and
               click the link to verify your account.

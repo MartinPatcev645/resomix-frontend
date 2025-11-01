@@ -86,8 +86,7 @@ export default function LoginContent({
           const loginData = result.data as { access_token: string; refresh_token: string; user: any };
           useAuthStore.getState().setAuth(
             loginData.user,
-            loginData.access_token,
-            loginData.refresh_token
+            loginData.access_token
           );
           setStatusType("success");
           setStatusMessage("Login successful! Redirecting...");

@@ -2,10 +2,11 @@ import authClient from '../authClient';
 import { axiosWrapper, handleApiError } from '../utils';
 import type { SuccessResponse } from '../types/auth';
 
-export const logout = async (refreshToken: string) => {
+export const logout = async () => {
   try {
+    // Empty body - server reads refresh token from HttpOnly cookie
     const response = await axiosWrapper<SuccessResponse>(
-      authClient.post('/auth/logout', { refresh_token: refreshToken })
+      authClient.post('/auth/logout', {})
     );
     return response;
   } catch (error) {

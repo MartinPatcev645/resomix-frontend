@@ -1,11 +1,12 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "./utils";
+import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
+import authClient from "./authClient";
 
 export const renamePlaylist = async (playlistId: string, newName: string) => {
   try {
     const payload = { playlist_id: playlistId, new_name: newName };
     const data = await axiosWrapper<any>(
-      axiosInstance.put(API_CONFIG.ENDPOINTS.PLAYLIST_RENAME, payload),
+      authClient.put(API_CONFIG.ENDPOINTS.PLAYLIST_RENAME, payload),
     );
 
     if (data.success === true) return data;
@@ -23,7 +24,7 @@ export const changePlaylistVisibility = async (playlistId: string, isPublic = tr
   try {
     const payload = { playlist_id: playlistId, is_public: isPublic };
     const data = await axiosWrapper<any>(
-      axiosInstance.put(API_CONFIG.ENDPOINTS.PLAYLIST_VISIBILITY, payload),
+      authClient.put(API_CONFIG.ENDPOINTS.PLAYLIST_VISIBILITY, payload),
     );
 
     if (data.success === true) return data;
@@ -40,7 +41,7 @@ export const changePlaylistVisibility = async (playlistId: string, isPublic = tr
 export const getPlaylistSimilarity = async (playlistId: string) => {
   try {
     const data = await axiosWrapper<any>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY}${playlistId}`),
+      authClient.get(`${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY}${playlistId}`),
     );
 
     if (data.success === true) return data;
@@ -66,7 +67,7 @@ export const rateTrack = async (
     }
 
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.TRACK_RATING, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.TRACK_RATING, payload),
     );
 
     if (data.success === true) return data;
@@ -92,7 +93,7 @@ export const ratePlaylist = async (
     }
 
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.PLAYLIST_RATING, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.PLAYLIST_RATING, payload),
     );
 
     if (data.success === true) return data;
@@ -104,4 +105,21 @@ export const ratePlaylist = async (
   } catch (error) {
     return handleApiError(error as any);
   }
-}; 
+};
+
+export const forkPlaylist = async (playlistId: string) => {
+  try {
+    const data = await axiosWrapper<any>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_FORK}${playlistId}`),
+    );
+
+    if (data.success === true) return data;
+    return {
+      success: false,
+      error: data.error || "Failed to fork playlist.",
+      details: data.details ?? null,
+    };
+  } catch (error) {
+    return handleApiError(error as any);
+  }
+};

@@ -103,8 +103,7 @@ export default function Verify2FAContent({
         // Set auth state
         useAuthStore.getState().setAuth(
           loginData.user,
-          loginData.access_token,
-          loginData.refresh_token
+          loginData.access_token
         );
 
         setStatusType("success");
@@ -237,7 +236,7 @@ export default function Verify2FAContent({
               </p>
             </div>
 
-            <div className="mt-[var(--px-10)]">
+            <div className="mt-[var(--px-10)] flex justify-center">
               <ButtonSleek
                 text={submitting ? "Verifying..." : "Verify Code"}
                 onClick={handleSubmit}

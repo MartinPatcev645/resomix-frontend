@@ -1,14 +1,26 @@
 import { ButtonSleek } from "../index";
 import { useContactSubmit } from "@resomix/hooks";
 import { StatusMessage } from "../Elements/StatusMessage";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuthStore } from "@resomix/stores";
 
 interface ContactContentProps {
   baseUrl?: string;
 }
 
 export default function ContactContent({ baseUrl = "https://resomix.com" }: ContactContentProps) {
-  const { form, handleChange, handleSubmit, submitting } = useContactSubmit();
+  const { user, isAuthenticated } = useAuthStore();
+  const { form, handleChange, handleSubmit, submitting, setFormValues } = useContactSubmit();
+
+  // Pre-fill form with user data if logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormValues({
+        name: user.name || '',
+        email: user.email || '',
+      });
+    }
+  }, [isAuthenticated, user, setFormValues]);
 
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<'loading' | 'success' | 'error'>('loading');

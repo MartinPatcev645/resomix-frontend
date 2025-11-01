@@ -69,15 +69,21 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
 
         const updateVisibilityAndLink = async () => {
             try {
-                const response = await changePlaylistVisibility(playlistData.playlist.id, true);
+                // Only change visibility if the playlist is not already public
+                if (!playlistData.playlist.is_public) {
+                    const response = await changePlaylistVisibility(playlistData.playlist.id, true);
 
-                if (response.success) {
-                    const generated =
-                      response?.details?.share_url ||
-                      response?.details?.link ||
-                      (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
-                    setLink(generated);
+                    if (response.success) {
+                        const generated =
+                          response?.details?.share_url ||
+                          response?.details?.link ||
+                          (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                        setLink(generated);
+                    } else {
+                        setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                    }
                 } else {
+                    // Playlist is already public, just generate the link
                     setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                 }
             } catch (err) {
@@ -195,7 +201,10 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                       PLAYLIST SHARED!
                   </h2>
                   <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                      Your playlist is now publicly accessible.
+                      {playlistData?.playlist.is_public 
+                        ? "Your playlist is publicly accessible." 
+                        : "Your playlist is now publicly accessible."
+                      }
                   </div>
               </div>
 
@@ -211,7 +220,10 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
               </button>
 
               <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                  Your playlist is now publicly accessible.
+                  {playlistData?.playlist.is_public 
+                    ? "Your playlist is publicly accessible." 
+                    : "Your playlist is now publicly accessible."
+                  }
               </div>
 
               <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">

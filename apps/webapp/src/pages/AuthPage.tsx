@@ -37,27 +37,88 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const location = useLocation();
 
   // Navigation handlers
-  const handleNavigateLogin = () => navigate("/auth/login");
-  const handleNavigateRegister = () => navigate("/auth/register");
-  const handleNavigateForgotPassword = () => navigate("/auth/forgot-password");
+  const handleNavigateLogin = () => {
+    // Preserve redirect information when navigating to login
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    if (redirectTo) {
+      navigate("/auth/login", { 
+        state: { from: redirectTo },
+        replace: true 
+      });
+    } else {
+      navigate("/auth/login", { replace: true });
+    }
+  };
+  const handleNavigateRegister = () => {
+    // Preserve redirect information when navigating to register
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    navigate("/auth/register", { 
+      state: redirectTo ? { from: redirectTo } : undefined,
+      replace: true 
+    });
+  };
+  
+  const handleNavigateForgotPassword = () => {
+    // Preserve redirect information when navigating to forgot password
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    navigate("/auth/forgot-password", { 
+      state: redirectTo ? { from: redirectTo } : undefined,
+      replace: true 
+    });
+  };
   const handleNavigateProfile = () => navigate("/profile");
   const handleNavigateSessions = () => navigate("/sessions");
   const handleNavigateChangePassword = () => navigate("/change-password");
 
   // Success handlers
   const handleLoginSuccess = () => {
-    // Redirect to intended page or home
-    const from = (location.state as any)?.from || "/";
+    // Check for redirect destination from multiple sources:
+    // 1. React Router state (for protected routes)
+    // 2. URL query parameter (for public page logins)
+    // 3. Default to home page
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const from = fromState || fromQuery || "/";
+    
+    // Clean up the URL by removing query parameters
     navigate(from, { replace: true });
   };
 
   const handleRegisterSuccess = () => {
-    // Show email verification page
-    navigate("/auth/verify-email?mode=sent", { replace: true });
+    // Preserve redirect information for email verification
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    navigate("/auth/verify-email", { 
+      state: redirectTo ? { from: redirectTo } : undefined,
+      replace: true 
+    });
   };
 
   const handleVerifyEmailSuccess = () => {
-    navigate("/auth/login", { replace: true });
+    // Preserve redirect information when going back to login
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    if (redirectTo) {
+      navigate("/auth/login", { 
+        state: { from: redirectTo },
+        replace: true 
+      });
+    } else {
+      navigate("/auth/login", { replace: true });
+    }
   };
 
   const handleForgotPasswordSuccess = () => {
@@ -65,16 +126,43 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
 
   const handleResetPasswordSuccess = () => {
-    navigate("/auth/login", { replace: true });
+    // Preserve redirect information when going back to login
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    if (redirectTo) {
+      navigate("/auth/login", { 
+        state: { from: redirectTo },
+        replace: true 
+      });
+    } else {
+      navigate("/auth/login", { replace: true });
+    }
   };
 
   const handle2FASuccess = () => {
-    const from = (location.state as any)?.from || "/";
+    // Use same redirect logic as login success
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const from = fromState || fromQuery || "/";
+    
     navigate(from, { replace: true });
   };
 
   const handleNavigate2FA = (userId: number) => {
-    navigate("/auth/verify-2fa", { state: { userId }, replace: true });
+    // Preserve redirect information for 2FA flow
+    const fromState = (location.state as any)?.from;
+    const fromQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectTo = fromState || fromQuery;
+    
+    navigate("/auth/verify-2fa", { 
+      state: { 
+        userId, 
+        ...(redirectTo && { from: redirectTo })
+      }, 
+      replace: true 
+    });
   };
 
   const handleChangePasswordSuccess = () => {

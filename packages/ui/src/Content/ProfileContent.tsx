@@ -70,19 +70,19 @@ function buildTimezones(): TimezoneOption[] {
 }
 
 export default function ProfileContent({
-                                         baseUrl = "https://resomix.com",
-                                         onNavigateChangePassword,
-                                         onNavigateSessions,
-                                         onLogout,
-                                       }: ProfileContentProps) {
-  const [user, setUser] = useState<any>(null);
+  baseUrl = "https://resomix.com",
+  onNavigateChangePassword,
+  onNavigateSessions,
+  onLogout,
+}: ProfileContentProps) {
+  // Get user directly from store - no need for local state or API call
+  const [storeUser, setStoreUser] = useState<any>(null);
   const [form, setForm] = useState({
     name: "",
     language: "",
     timezone: "",
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
@@ -97,12 +97,28 @@ export default function ProfileContent({
     setTimezones(buildTimezones());
   }, []);
 
+  // Initialize from store on mount
   useEffect(() => {
-    loadProfile();
+    const initializeFromStore = async () => {
+      const { useAuthStore } = await import("@resomix/stores");
+      const userData = useAuthStore.getState().user;
+      
+      if (userData) {
+        setStoreUser(userData);
+        setForm({
+          name: userData.name || "",
+          language: userData.language || "",
+          timezone: userData.timezone || "",
+        });
+        setTwoFactorEnabled(userData.is_two_factor_enabled || false);
+      }
+    };
+    
+    initializeFromStore();
   }, []);
 
+  // Optional: Refresh user data from API (only when explicitly needed)
   const loadProfile = async () => {
-    setLoading(true);
     try {
       const { useAuthStore } = await import("@resomix/stores");
       const cached = useAuthStore.getState().user;
@@ -123,7 +139,7 @@ export default function ProfileContent({
 
       if (result.success) {
         const userData = "user" in result.data ? result.data.user : result.data;
-        setUser(userData);
+        setStoreUser(userData);
         setForm({
           name: userData.name || "",
           language: userData.language || "",
@@ -134,8 +150,6 @@ export default function ProfileContent({
       }
     } catch (error) {
       console.error("Profile load error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -160,7 +174,7 @@ export default function ProfileContent({
       if (result.success) {
         const userData = "user" in result.data ? result.data.user : result.data;
         useAuthStore.getState().updateUser(userData);
-        setUser(userData);
+        setStoreUser(userData);
         setStatusType("success");
         setStatusMessage("Profile updated successfully!");
         setIsEditing(false);
@@ -293,10 +307,8 @@ export default function ProfileContent({
       const { logout } = await import("@resomix/api-client");
       const { useAuthStore } = await import("@resomix/stores");
 
-      const refreshToken = useAuthStore.getState().refreshToken;
-      if (refreshToken) {
-        await logout(refreshToken);
-      }
+      // Server reads refresh token from HttpOnly cookie
+      await logout();
 
       useAuthStore.getState().logout();
       onLogout?.();

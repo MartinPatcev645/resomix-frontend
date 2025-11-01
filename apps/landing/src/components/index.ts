@@ -4,6 +4,7 @@ import { MenuIcon } from "./MenuIcon.tsx";
 import { BackgroundNoise } from "./BackgroundNoise.tsx";
 import { OptionalAuthRoute } from "./OptionalAuthRoute.tsx";
 import { ProtectedRoute } from "./ProtectedRoute.tsx";
+import { GuestRoute } from "./GuestRoute.tsx";
 
 export {
     LogoHeader,
@@ -11,5 +12,6 @@ export {
     MenuIcon,
     BackgroundNoise,
     OptionalAuthRoute,
-    ProtectedRoute
+    ProtectedRoute,
+    GuestRoute
 }

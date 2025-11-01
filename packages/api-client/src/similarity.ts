@@ -1,5 +1,6 @@
 import axiosInstance, { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
 import { API_CONFIG } from "./config";
+import authClient from "./authClient";
 
 /**
  * Get track similarity based on uploaded audio file
@@ -21,8 +22,9 @@ export const getSimilarTracks = async (
     const formData = new FormData();
     formData.append("file", file);
 
+    // Use authClient to include Authorization header if user is logged in
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.SIMILARITY, formData, {
+      authClient.post(API_CONFIG.ENDPOINTS.SIMILARITY, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         params: { top_sk: TOPSK },
         onUploadProgress: (evt) => {
@@ -56,8 +58,9 @@ export const getSimilarityForSelectedTrack = async (
   try {
     const payload = { track_id: trackId, top_sk: TOPSK };
 
+    // Use authClient instead of axiosInstance to include credentials and Authorization header
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload),
     );
 
     if (data.success === true) return data;

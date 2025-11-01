@@ -1,7 +1,9 @@
-import React from "react";
-import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip } from "@resomix/ui";
-import { formatDuration, usePlaylistExport } from "@resomix/hooks";
+import React, { useEffect } from "react";
+import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
+import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { BASE_BETA_URL } from "@resomix/config";
+import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -14,7 +16,6 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import { BASE_BETA_URL } from "@resomix/config";
 
 const InputTrackStatus = "Loading..."
 
@@ -28,10 +29,21 @@ const PlaylistHero: React.FC = () => {
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [statusTitle, setStatusTitle] = React.useState('');
+  const [showLoginButton, setShowLoginButton] = React.useState(false);
+  const [forkedPlaylistId, setForkedPlaylistId] = React.useState<string | null>(null);
+  const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Reset fork state when playlist changes
+  useEffect(() => {
+    setHasForkedThisPlaylist(false);
+    setForkedPlaylistId(null);
+  }, [playlistData?.playlist.id]);
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -43,7 +55,10 @@ const PlaylistHero: React.FC = () => {
   const handleRenameClose = () => setShowRename(false);
   const handleRatingClose = () => setShowRating(false);
   const handleExportClose = () => setShowExport(false);
-  const handleStatusClose = () => setShowStatus(false);
+  const handleStatusClose = () => {
+    setShowStatus(false);
+    // Don't clear forkedPlaylistId or hasForkedThisPlaylist here - keep them for the button to work
+  };
 
   const handleExportClick = () => {
     if (!canExport) {
@@ -52,6 +67,49 @@ const PlaylistHero: React.FC = () => {
     }
     setShowExport(true);
   };
+
+  // Fork functionality with StatusMessage
+  const { fork, forking } = usePlaylistFork({
+    onError: (title, message) => {
+      // Check if the error is authentication related
+      const isAuthError = message.toLowerCase().includes('not authenticated') ||
+        message.toLowerCase().includes('log in');
+      setShowLoginButton(isAuthError);
+      setForkedPlaylistId(null); // Clear forked playlist ID on error
+      handleStatusChange('error', message, title);
+    },
+    onSuccess: (title, message, response) => {
+      setShowLoginButton(false);
+      setHasForkedThisPlaylist(true); // Mark as forked locally
+      // Store the forked playlist ID from the response
+      if (response?.data?.playlist?.id) {
+        setForkedPlaylistId(response.data.playlist.id);
+      }
+      handleStatusChange('success', message, title);
+    },
+  });
+
+  const handleForkClick = async () => {
+    if (!playlistData?.playlist.id || forking) return;
+    await fork(playlistData.playlist.id);
+  };
+
+  const handleLoginClick = () => {
+    setShowLoginButton(false);
+    setShowStatus(false);
+    navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`);
+  };
+
+  const handleOpenYourCopyClick = () => {
+    if (forkedPlaylistId) {
+      setShowStatus(false);
+      setForkedPlaylistId(null);
+      window.location.href = `${BASE_BETA_URL}/playlist?id=${forkedPlaylistId}`;
+    }
+  };
+
+  // Check if playlist is already forked (either from server or locally)
+  const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '' || hasForkedThisPlaylist;
 
 
   return (
@@ -263,7 +321,30 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="absolute right-[var(--px-10)] top-[var(--px-10)] px-[var(--px-16)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
+              <div className="absolute right-[var(--px-10)] top-[var(--px-10)] flex items-center gap-[var(--px-8)]">
+                {isForked ? (
+                  <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
+                ) : (
+                  <Tooltip message="Fork this playlist as your own">
+                    <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white mt-[var(--px-6)]" onClick={handleForkClick} />
+                  </Tooltip>
+                )}
+                <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private! Share to make it public"}>
+                  <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
+                    {playlistData?.playlist.is_public ? (
+                      <>
+                        <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
+                        Private
+                      </>
+                    )}
+                  </div>
+                </Tooltip>
+              </div>
             </div>
           </div>
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
@@ -296,6 +377,17 @@ const PlaylistHero: React.FC = () => {
         status={statusType}
         message={statusMessage}
         title={statusTitle}
+        additionalButton={showLoginButton ? {
+          text: 'Log In',
+          transparent: false,
+          onClick: handleLoginClick,
+          disabled: false,
+        } : forkedPlaylistId ? {
+          text: 'Open Your Own Copy',
+          transparent: false,
+          onClick: handleOpenYourCopyClick,
+          disabled: false,
+        } : undefined}
       />
     </div>
   );

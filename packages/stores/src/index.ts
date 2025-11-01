@@ -7,3 +7,6 @@ export { default as useConfig } from './useConfig'
 export { useAuthStore } from './useAuth'
 export type { AuthState } from './useAuth'
 export type { User } from '@resomix/api-client'
+
+// Cookie storage utilities
+export { setCookie, getCookie, deleteCookie, cookieStorage, hybridStorage } from './cookieStorage'

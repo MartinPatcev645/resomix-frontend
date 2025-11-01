@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { ProtectedRoute, OptionalAuthRoute } from "@/components/index.ts";
+import { ProtectedRoute, OptionalAuthRoute, GuestRoute } from "@/components/index.ts";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/desktop/HomePage.tsx").then(m => ({ default: m.HomePage })));
 const HomeMobile = lazy(() => import("@/pages/mobile/HomeMobile.tsx").then(m => ({ default: m.HomeMobile })));
@@ -86,10 +86,12 @@ function App() {
 
       <Suspense fallback={null}>
         <Routes>
-          {/* Public Auth Routes */}
-          <Route path="/auth/login" element={<AuthPage mode="login" />} />
-          <Route path="/auth/register" element={<AuthPage mode="register" />} />
-          <Route path="/auth/forgot-password" element={<AuthPage mode="forgot-password" />} />
+          {/* Guest-Only Auth Routes (redirect to home if logged in) */}
+          <Route path="/auth/login" element={<GuestRoute><AuthPage mode="login" /></GuestRoute>} />
+          <Route path="/auth/register" element={<GuestRoute><AuthPage mode="register" /></GuestRoute>} />
+          <Route path="/auth/forgot-password" element={<GuestRoute><AuthPage mode="forgot-password" /></GuestRoute>} />
+          
+          {/* Auth Routes that work regardless of login state */}
           <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
           <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
           <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />

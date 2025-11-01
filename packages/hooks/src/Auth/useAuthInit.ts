@@ -1,54 +1,104 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@resomix/stores';
 import { getMyProfile } from '@resomix/api-client';
 
 /**
  * Initialize authentication state on app load
- * Verifies token validity and refreshes user data
+ * Verifies token validity only when necessary
+ * Prevents redundant /me API calls
  */
 export const useAuthInit = () => {
-  const { isAuthenticated, setUser, logout } = useAuthStore();
+  const { isAuthenticated, user, setUser, logout, accessToken } = useAuthStore();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
+    // Prevent double initialization in React StrictMode
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     const initAuth = async () => {
-      // If not authenticated, just mark as initialized
+      // If not authenticated, just mark as initialized immediately
       if (!isAuthenticated) {
         setIsInitialized(true);
         setIsLoading(false);
         return;
       }
 
+      // If we already have user data in store, trust it and show app immediately
+      // Don't make unnecessary API calls - the authClient interceptor will handle
+      // token refresh if needed when the user actually makes requests
+      if (user) {
+        setIsInitialized(true);
+        setIsLoading(false);
+        
+        // Only verify token if it's close to expiration
+        if (shouldVerifyToken(accessToken)) {
+          verifyTokenInBackground();
+        }
+        return;
+      }
+
+      // No user data yet - fetch it (first load after login)
       try {
-        // Verify token and refresh user data
         const response = await getMyProfile();
         
         if (response.success) {
-          // Handle both response formats: direct user or nested user
           const userData = 'user' in response.data ? response.data.user : response.data;
           setUser(userData);
         } else {
-          // Only logout if it's actually an auth error (401)
-          // Don't logout on network errors or server errors
-          const errorResult = response as { success: false; error: string };
-          if (errorResult.error?.includes('Authentication') || 
-              errorResult.error?.includes('token') || 
-              errorResult.error?.includes('Unauthorized')) {
-            console.warn('Token invalid or expired, logging out');
-            logout();
-          } else {
-            // Network or server error - keep user logged in
-            console.warn('Failed to verify auth, but keeping session:', errorResult.error);
-          }
+          handleAuthError(response);
         }
       } catch (error) {
-        // Network error - don't logout, just log warning
         console.warn('Network error during auth init, keeping session:', error);
-        // Keep the user logged in - they might just have a temporary connection issue
       } finally {
         setIsInitialized(true);
         setIsLoading(false);
+      }
+    };
+
+    const shouldVerifyToken = (token: string | null): boolean => {
+      if (!token) return false;
+
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Convert to milliseconds
+        const now = Date.now();
+        const timeUntilExpiry = exp - now;
+        const oneHour = 60 * 60 * 1000;
+
+        // Only verify if token expires in less than 1 hour
+        return timeUntilExpiry < oneHour && timeUntilExpiry > 0;
+      } catch {
+        return false;
+      }
+    };
+
+    const verifyTokenInBackground = async () => {
+      try {
+        const response = await getMyProfile();
+        
+        if (response.success) {
+          const userData = 'user' in response.data ? response.data.user : response.data;
+          setUser(userData);
+        } else {
+          handleAuthError(response);
+        }
+      } catch (error) {
+        console.warn('Background token verification failed:', error);
+      }
+    };
+
+    const handleAuthError = (response: any) => {
+      const errorResult = response as { success: false; error: string };
+      if (errorResult.error?.includes('Authentication') || 
+          errorResult.error?.includes('token') || 
+          errorResult.error?.includes('Unauthorized')) {
+        console.warn('Token invalid or expired, logging out');
+        logout();
+      } else {
+        console.warn('Failed to verify auth, but keeping session:', errorResult.error);
       }
     };
 

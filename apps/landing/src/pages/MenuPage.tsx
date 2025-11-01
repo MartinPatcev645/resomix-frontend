@@ -65,7 +65,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           ) : (
             <ButtonSleek 
               text="Login" 
-              href={`${BASE_BETA_URL}/auth/login`} 
+              href={`${BASE_BETA_URL}/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`} 
               className="auth-button" 
               id="menu-login-button"
               customWidth="min-w-[var(--px-80)]"

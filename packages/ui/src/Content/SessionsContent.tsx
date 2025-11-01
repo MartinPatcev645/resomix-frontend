@@ -22,6 +22,7 @@ export default function SessionsContent({
 }: SessionsContentProps) {
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingRef, setIsLoadingRef] = useState(false);
 
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
@@ -29,11 +30,22 @@ export default function SessionsContent({
   const [showConfirmLogoutAll, setShowConfirmLogoutAll] = useState(false);
 
   useEffect(() => {
-    loadSessions();
+    // Prevent duplicate requests on mount
+    if (!isLoadingRef) {
+      loadSessions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadSessions = async () => {
+    // Prevent duplicate requests
+    if (isLoadingRef) {
+      console.log('[SessionsContent] Request already in progress, skipping');
+      return;
+    }
+    
     setLoading(true);
+    setIsLoadingRef(true);
     try {
       const { getMySessions } = await import("@resomix/api-client");
 
@@ -58,6 +70,7 @@ export default function SessionsContent({
       setSessions([]); // Ensure sessions is always an array
     } finally {
       setLoading(false);
+      setIsLoadingRef(false);
     }
   };
 

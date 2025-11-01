@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '@resomix/api-client';
+import { hybridStorage, deleteCookie } from './cookieStorage';
 
 interface AuthState {
   // State
   user: User | null;
   accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   
   // Actions
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User, accessToken: string) => void;
   setAccessToken: (token: string) => void;
   setUser: (user: User) => void;
   logout: () => void;
@@ -28,16 +28,14 @@ const useAuthStore = create<AuthState>()(
       // Initial State
       user: null,
       accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
 
       // Set full authentication
-      setAuth: (user, accessToken, refreshToken) => {
+      setAuth: (user, accessToken) => {
         set({
           user,
           accessToken,
-          refreshToken,
           isAuthenticated: true,
         });
       },
@@ -57,13 +55,16 @@ const useAuthStore = create<AuthState>()(
         set({
           user: null,
           accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
         });
-        // Clear localStorage - use the correct key from persist config
-        localStorage.removeItem('resomix-auth-storage');
-        // Also clear any email verification banner dismissal
-        localStorage.removeItem('email_verification_banner_dismissed');
+        // Clear both localStorage and cookies
+        try {
+          localStorage.removeItem('resomix-auth-storage');
+          localStorage.removeItem('email_verification_banner_dismissed');
+        } catch (e) {
+          console.warn('localStorage not available:', e);
+        }
+        deleteCookie('resomix-auth-storage');
       },
 
       // Update user fields
@@ -96,11 +97,10 @@ const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'resomix-auth-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => hybridStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

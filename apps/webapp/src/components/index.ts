@@ -23,6 +23,7 @@ import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
 import { ProtectedRoute } from "./ProtectedRoute.tsx";
 import { OptionalAuthRoute } from "./OptionalAuthRoute.tsx";
+import { GuestRoute } from "./GuestRoute.tsx";
 
 export {
     LogoHeader,
@@ -50,4 +51,5 @@ export {
     ThumbIcon,
     ProtectedRoute,
     OptionalAuthRoute,
+    GuestRoute,
 }
