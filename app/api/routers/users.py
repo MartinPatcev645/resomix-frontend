@@ -25,6 +25,7 @@ from app.schemas.auth import (
     UserSessionResponse,
     Enable2FARequest,
     Disable2FARequest,
+    DeleteAccountRequest,
     MessageResponse,
 )
 from app.schemas.common import ErrorResponse
@@ -264,3 +265,37 @@ async def disable_my_2fa(
     Requires authentication (JWT token).
     """
     return await user_controller.disable_2fa(db, request, current_user.id, disable_request.password)
+
+
+@router.delete(
+    "/me",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Delete User Account",
+    description="Permanently delete authenticated user's account (requires password confirmation).",
+    response_description="Account deleted successfully",
+    responses={
+        401: {"model": ErrorResponse, "description": "Password incorrect"},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
+async def delete_my_account(
+    request: Request,
+    delete_request: DeleteAccountRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete user account permanently.
+
+    This action:
+    - **password**: Password for confirmation (required)
+    - Permanently deletes the user account
+    - Deletes all related data (cascade delete)
+    - Invalidates all active sessions
+
+    **Warning**: This action cannot be undone.
+
+    Requires authentication (JWT token).
+    """
+    return await user_controller.delete_account(db, request, current_user.id, delete_request.password)

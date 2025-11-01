@@ -383,6 +383,15 @@ class Disable2FARequest(BaseModel):
         json_schema_extra = {"example": {"password": "SecurePass123"}}
 
 
+class DeleteAccountRequest(BaseModel):
+    """Delete account request"""
+
+    password: str = Field(..., description="Password for confirmation")
+
+    class Config:
+        json_schema_extra = {"example": {"password": "SecurePass123"}}
+
+
 # ============================================================================
 # Generic Response Schemas
 # ============================================================================

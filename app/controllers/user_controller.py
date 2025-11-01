@@ -497,4 +497,67 @@ class UserController:
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
+
+    async def delete_account(
+        self, db: AsyncSession, request: Request, user_id: int, password: str
+    ) -> JSONResponse:
+        """
+        Delete user account.
+
+        Args:
+            db: Database session
+            request: FastAPI request object
+            user_id: User's internal ID
+            password: Password for confirmation
+
+        Returns:
+            JSON response with result
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+
+        try:
+            await self.user_service.delete_account(db=db, user_id=user_id, password=password)
+
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=True,
+                data={
+                    "message": "Account deleted successfully"
+                },
+            )
+
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="USER_ACTION",
+                action="delete_account_success",
+                message=f"Account deleted for user {user_id}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                metadata={"user_id": user_id},
+            )
+
+            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+
+        except HTTPException as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error=e.detail)
+
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="USER_ACTION",
+                action="delete_account_failed",
+                message=f"Account deletion failed: {e.detail}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=e.status_code,
+                duration_ms=duration_ms,
+                metadata={"user_id": user_id, "error": e.detail},
+            )
+
+            return JSONResponse(status_code=e.status_code, content=response_data)
  
