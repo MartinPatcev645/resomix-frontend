@@ -107,8 +107,39 @@ export default function ProfileContent({
     try {
       const { useAuthStore } = await import("@resomix/stores");
       const store = useAuthStore.getState();
-      // Check if user exists and is authenticated - only make API call if missing
+      const { getMyProfile } = await import("@resomix/api-client");
+      
+      // Check if user exists and is authenticated
       if (store.user && store.isAuthenticated) {
+        // If email is not verified, fetch latest data to check verification status
+        if (!store.user.is_email_verified) {
+          const result = await getMyProfile();
+          
+          if (result.success) {
+            const userData = "user" in result.data ? result.data.user : result.data;
+            setUser(userData);
+            setForm({
+              name: userData.name || "",
+              language: userData.language || "",
+              timezone: userData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+            });
+            setTwoFactorEnabled(userData.is_two_factor_enabled || false);
+            useAuthStore.getState().updateUser(userData);
+          } else {
+            // If API call fails, still use store data
+            setUser(store.user);
+            setForm({
+              name: store.user.name || "",
+              language: store.user.language || "",
+              timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+            });
+            setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
+          }
+          setLoading(false);
+          return;
+        }
+        
+        // Email is verified - use store data without API call
         setUser(store.user);
         setForm({
           name: store.user.name || "",
@@ -120,7 +151,7 @@ export default function ProfileContent({
         return;
       }
 
-      const { getMyProfile } = await import("@resomix/api-client");
+      // No user data in store - fetch it
       const result = await getMyProfile();
 
       if (result.success) {

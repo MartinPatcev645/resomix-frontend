@@ -8,7 +8,7 @@ import { getMyProfile } from '@resomix/api-client';
  * Prevents redundant /me API calls
  */
 export const useAuthInit = () => {
-  const { isAuthenticated, user, setUser, logout, accessToken } = useAuthStore();
+  const { isAuthenticated, user, setUser, logout } = useAuthStore();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const hasInitialized = useRef(false);
@@ -32,11 +32,7 @@ export const useAuthInit = () => {
       if (user) {
         setIsInitialized(true);
         setIsLoading(false);
-        
-        // Only verify token if it's close to expiration
-        if (shouldVerifyToken(accessToken)) {
-          verifyTokenInBackground();
-        }
+        // No background verification needed - interceptor handles token refresh on-demand
         return;
       }
 
@@ -58,37 +54,6 @@ export const useAuthInit = () => {
       }
     };
 
-    const shouldVerifyToken = (token: string | null): boolean => {
-      if (!token) return false;
-
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const exp = payload.exp * 1000; // Convert to milliseconds
-        const now = Date.now();
-        const timeUntilExpiry = exp - now;
-        const oneHour = 60 * 60 * 1000;
-
-        // Only verify if token expires in less than 1 hour
-        return timeUntilExpiry < oneHour && timeUntilExpiry > 0;
-      } catch {
-        return false;
-      }
-    };
-
-    const verifyTokenInBackground = async () => {
-      try {
-        const response = await getMyProfile();
-        
-        if (response.success) {
-          const userData = 'user' in response.data ? response.data.user : response.data;
-          setUser(userData);
-        } else {
-          handleAuthError(response);
-        }
-      } catch (error) {
-        console.warn('Background token verification failed:', error);
-      }
-    };
 
     const handleAuthError = (response: any) => {
       const errorResult = response as { success: false; error: string };
