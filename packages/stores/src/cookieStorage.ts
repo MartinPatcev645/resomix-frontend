@@ -127,42 +127,69 @@ export const cookieStorage = {
  */
 export const hybridStorage = {
   getItem: (name: string): string | null => {
-    // Try localStorage first (faster)
+    // Read cookie first to check if we have cross-domain data
+    const cookieValue = getCookie(name);
+    
+    // Try localStorage (faster, same domain)
     try {
       const localValue = localStorage.getItem(name);
-      if (localValue) return localValue;
+      if (localValue) {
+        // If both exist, prefer localStorage but ensure cookie is in sync
+        // Only sync if cookie is missing or different (prevents loops)
+        if (!cookieValue || cookieValue !== localValue) {
+          // Silently update cookie in background without triggering re-reads
+          setCookie(name, localValue, {
+            maxAge: 30 * 24 * 60 * 60,
+            secure: window.location.protocol === 'https:',
+            sameSite: 'lax'
+          });
+        }
+        return localValue;
+      }
     } catch (e) {
       console.warn('localStorage not available:', e);
     }
     
-    // Fallback to cookies
-    return getCookie(name);
+    // Fallback to cookies (cross-domain support)
+    if (cookieValue) {
+      // Cookie exists but localStorage doesn't - sync localStorage in background
+      try {
+        localStorage.setItem(name, cookieValue);
+      } catch (e) {
+        // localStorage might not be available, that's okay
+      }
+      return cookieValue;
+    }
+    
+    return null;
   },
   
   setItem: (name: string, value: string): void => {
-    // Write to both storage mechanisms
-    try {
-      localStorage.setItem(name, value);
-    } catch (e) {
-      console.warn('localStorage not available:', e);
-    }
-    
+    // Write to cookie first (ensures cross-domain availability)
     setCookie(name, value, {
       maxAge: 30 * 24 * 60 * 60, // 30 days
       secure: window.location.protocol === 'https:',
       sameSite: 'lax'
     });
+    
+    // Then write to localStorage (for faster future reads)
+    try {
+      localStorage.setItem(name, value);
+    } catch (e) {
+      console.warn('localStorage not available:', e);
+    }
   },
   
   removeItem: (name: string): void => {
-    // Remove from both storage mechanisms
+    // Remove from cookie first
+    deleteCookie(name);
+    
+    // Then remove from localStorage
     try {
       localStorage.removeItem(name);
     } catch (e) {
       console.warn('localStorage not available:', e);
     }
-    
-    deleteCookie(name);
   }
 };
 

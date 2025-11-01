@@ -91,10 +91,11 @@ export default function LoginContent({
           setStatusType("success");
           setStatusMessage("Login successful! Redirecting...");
 
-          // Call success callback
+          // Wait a bit longer to ensure cookie is persisted before cross-domain redirect
+          // This prevents localStorage flashing when redirecting between subdomains
           setTimeout(() => {
             onLoginSuccess?.(result.data);
-          }, 1000);
+          }, 2000);
         } else {
           setStatusType("error");
           setStatusMessage("Unexpected response from server");
