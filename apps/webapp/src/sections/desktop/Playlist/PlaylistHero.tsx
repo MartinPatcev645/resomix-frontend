@@ -166,6 +166,7 @@ const PlaylistHero: React.FC = () => {
                     customWidth="min-w-[var(--px-120)]"
                     isOn={autoplay}
                     onToggle={setAutoplay}
+                    id="Autoplay-toggle-button"
                   />
                 </Tooltip>
                 <Tooltip message="Rename your Playlist">
