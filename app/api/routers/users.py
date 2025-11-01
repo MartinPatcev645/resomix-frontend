@@ -211,7 +211,7 @@ async def revoke_my_session(
     description="Enable 2FA for additional security.",
     response_description="2FA enabled successfully",
     responses={
-        400: {"model": ErrorResponse, "description": "Invalid 2FA method"}
+        400: {"model": ErrorResponse, "description": "Invalid 2FA method or email not verified"}
     },
 )
 async def enable_my_2fa(
@@ -226,11 +226,13 @@ async def enable_my_2fa(
     Adds extra security layer to login:
     - **method**: 2FA method ('email' or 'app')
 
+    **Requirements:**
+    - Email must be verified before enabling 2FA
+    - Valid authentication (JWT token)
+
     After enabling:
     - Login will require 2FA code
     - Code sent via email (or app in future)
-
-    Requires authentication (JWT token).
     """
     return await user_controller.enable_2fa(db, request, current_user.id, enable_request.method)
 

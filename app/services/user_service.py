@@ -261,7 +261,7 @@ class UserService:
             Updated user
 
         Raises:
-            HTTPException: If user not found or invalid method
+            HTTPException: If user not found, invalid method, or email not verified
         """
         if method not in ["email", "app"]:
             raise HTTPException(
@@ -269,12 +269,22 @@ class UserService:
                 detail="Invalid 2FA method. Must be 'email' or 'app'",
             )
 
-        user = await self.user_repo.async_enable_2fa(db, user_id, method)
+        # Get user first to check email verification status
+        user = await self.user_repo.async_get_by_id(db, user_id)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
+
+        # Verify email is verified before enabling 2FA
+        if not user.is_email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email must be verified before enabling two-factor authentication",
+            )
+
+        user = await self.user_repo.async_enable_2fa(db, user_id, method)
 
         return user
 
