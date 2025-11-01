@@ -70,19 +70,19 @@ function buildTimezones(): TimezoneOption[] {
 }
 
 export default function ProfileContent({
-  baseUrl = "https://resomix.com",
-  onNavigateChangePassword,
-  onNavigateSessions,
-  onLogout,
-}: ProfileContentProps) {
-  // Get user directly from store - no need for local state or API call
-  const [storeUser, setStoreUser] = useState<any>(null);
+                                         baseUrl = "https://resomix.com",
+                                         onNavigateChangePassword,
+                                         onNavigateSessions,
+                                         onLogout,
+                                       }: ProfileContentProps) {
+  const [user, setUser] = useState<any>(null);
   const [form, setForm] = useState({
     name: "",
     language: "",
     timezone: "",
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
@@ -97,39 +97,24 @@ export default function ProfileContent({
     setTimezones(buildTimezones());
   }, []);
 
-  // Initialize from store on mount
   useEffect(() => {
-    const initializeFromStore = async () => {
-      const { useAuthStore } = await import("@resomix/stores");
-      const userData = useAuthStore.getState().user;
-      
-      if (userData) {
-        setStoreUser(userData);
-        setForm({
-          name: userData.name || "",
-          language: userData.language || "",
-          timezone: userData.timezone || "",
-        });
-        setTwoFactorEnabled(userData.is_two_factor_enabled || false);
-      }
-    };
-    
-    initializeFromStore();
+    loadProfile();
   }, []);
 
-  // Optional: Refresh user data from API (only when explicitly needed)
   const loadProfile = async () => {
+    setLoading(true);
     try {
       const { useAuthStore } = await import("@resomix/stores");
-      const cached = useAuthStore.getState().user;
-      if (cached) {
-        setUser(cached);
+      const store = useAuthStore.getState();
+      // Check if user exists and is authenticated - only make API call if missing
+      if (store.user && store.isAuthenticated) {
+        setUser(store.user);
         setForm({
-          name: cached.name || "",
-          language: cached.language || "",
-          timezone: cached.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+          name: store.user.name || "",
+          language: store.user.language || "",
+          timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
         });
-        setTwoFactorEnabled(cached.is_two_factor_enabled || false);
+        setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
         setLoading(false);
         return;
       }
@@ -139,7 +124,7 @@ export default function ProfileContent({
 
       if (result.success) {
         const userData = "user" in result.data ? result.data.user : result.data;
-        setStoreUser(userData);
+        setUser(userData);
         setForm({
           name: userData.name || "",
           language: userData.language || "",
@@ -150,6 +135,8 @@ export default function ProfileContent({
       }
     } catch (error) {
       console.error("Profile load error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,9 +159,29 @@ export default function ProfileContent({
       const result = await updateProfile(form);
 
       if (result.success) {
-        const userData = "user" in result.data ? result.data.user : result.data;
-        useAuthStore.getState().updateUser(userData);
-        setStoreUser(userData);
+        // Handle both possible response structures
+        const responseData = "user" in result.data ? result.data.user : result.data;
+        
+        // Extract only the fields that should be updated (exclude 'message' and other non-user fields)
+        const fieldsToUpdate: Partial<typeof user> = {};
+        
+        // Only update fields that are present in the response and are part of the user object
+        if (responseData.email !== undefined) fieldsToUpdate.email = responseData.email;
+        if (responseData.username !== undefined) fieldsToUpdate.username = responseData.username;
+        if (responseData.name !== undefined) fieldsToUpdate.name = responseData.name;
+        if (responseData.profile_picture !== undefined) fieldsToUpdate.profile_picture = responseData.profile_picture;
+        if (responseData.language !== undefined) fieldsToUpdate.language = responseData.language;
+        if (responseData.timezone !== undefined) fieldsToUpdate.timezone = responseData.timezone;
+        
+        // Update only the specified fields in the store (preserves other fields like is_email_verified, etc.)
+        useAuthStore.getState().updateUser(fieldsToUpdate);
+        
+        // Update local state with merged data from store
+        const updatedUser = useAuthStore.getState().user;
+        if (updatedUser) {
+          setUser(updatedUser);
+        }
+        
         setStatusType("success");
         setStatusMessage("Profile updated successfully!");
         setIsEditing(false);
@@ -314,6 +321,7 @@ export default function ProfileContent({
       onLogout?.();
     } catch (error) {
       console.error("Logout error:", error);
+      // Logout locally anyway
       const { useAuthStore } = await import("@resomix/stores");
       useAuthStore.getState().logout();
       onLogout?.();
