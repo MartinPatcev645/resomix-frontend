@@ -114,7 +114,7 @@ export default function LoginContent({
   };
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+    <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -125,7 +125,7 @@ export default function LoginContent({
           </p>
         </header>
 
-        <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
+        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
           <div className="mb-[var(--px-24)]">
             <a
               href={baseUrl}
@@ -166,7 +166,10 @@ export default function LoginContent({
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={onNavigateForgotPassword}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevents focus change (and blur)
+                  onNavigateForgotPassword?.();
+                }}
                 className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Forgot Password?
@@ -186,7 +189,10 @@ export default function LoginContent({
               </span>
               <button
                 type="button"
-                onClick={onNavigateRegister}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevents focus change (and blur)
+                  onNavigateRegister?.();
+                }}
                 className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
               >
                 Register here

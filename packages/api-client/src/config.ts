@@ -48,6 +48,7 @@ export interface ApiConfig {
     // SPOTIFY_TRANSFER: string;
     // TIDAL_AUTH_TOKEN: string;
     // TIDAL_TRANSFER: string;
+    // APPLE_TRANSFER: string;
   };
 }
 
@@ -133,7 +134,15 @@ export const API_CONFIG: ApiConfig = {
 };
 
 
-
+export const APPLE_CONFIG = {
+  MUSIC_KIT_SRC: 'https://js-cdn.music.apple.com/musickit/v1/musickit.js',
+  GUARD_PREFIX: 'apple_auth_guard_',
+  REDIRECT_URI: 'https://stack.resomix.com/apple-redirect',
+  APPLE_AUTH_TOKEN: '/apple/auth/token',
+  APPLE_TRANSFER: "/apple/transfer-playlist/",
+  APP_NAME:  "ResomiX",
+  APP_BUILD: "1.0.0",
+};
 
 
 /*
@@ -147,6 +156,7 @@ export const SPOTIFY_CONFIG = {
   AUTH_URL: 'https://accounts.spotify.com/authorize',
   TOKEN_URL: 'https://accounts.spotify.com/api/token'
 };
+
 
 // Tidal configuration
 export const TIDAL_CONFIG = {

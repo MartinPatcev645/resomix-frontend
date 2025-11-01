@@ -24,7 +24,7 @@ export interface StaticNoiseProps {
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
                                                           className = "pointer-events-none fixed inset-0",
                                                           zIndex,
-                                                          fps = 30,
+                                                          fps = 20,
                                                           storageKey = "staticNoiseVisible",
                                                           defaultVisible = true,
                                                         }) => {
@@ -63,7 +63,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     window.addEventListener("storage", handleStorageChange);
 
     // Optional: Also listen for custom events if you want to update from same tab
-    const handleCustomStorageChange = (e: Event) => {
+    const handleCustomStorageChange = () => {
       checkVisibility();
     };
 
@@ -93,14 +93,25 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     const gl = canvas.getContext("webgl", {
       alpha: true,
       premultipliedAlpha: false,
+      powerPreference: "low-power",
+      antialias: false,
+      depth: false,
+      stencil: false,
+      preserveDrawingBuffer: false,
     });
     if (!gl) return;
 
     // --- Resize handling ------------------------------------------------------
+    const scale = 1;
     const resize = () => {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, Math.floor(container.clientWidth * dpr * scale));
+      const h = Math.max(1, Math.floor(container.clientHeight * dpr * scale));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      }
     };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
@@ -130,24 +141,17 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     const FRAGMENT_SRC = `
       precision mediump float;
 
+      uniform sampler2D uNoise;
       uniform vec2 uResolution;
-      uniform float uSeed;
+      uniform vec2 uTexelScale;
+      uniform vec2 uOffset;
       varying vec2 vUv;
 
-      // Improved random hash (no visible patterns)
-      float random(vec2 st, float seed) {
-        vec3 p3 = fract(vec3(st.xyx) * 0.1031 + seed);
-        p3 += dot(p3, p3.yzx + 33.33);
-        return min(fract((p3.x + p3.y) * p3.z) * 2.0, 1.0);
-      }
-
       void main() {
-        // Use pixel coordinates for per-pixel randomization
-        vec2 pixel = floor(gl_FragCoord.xy);
-        float val = random(pixel, uSeed);
-        float alpha = val;
-        val = ceil(val - 0.01) * 0.15;
-        if (val < 0.02) discard;
+        vec2 uv = fract(gl_FragCoord.xy * uTexelScale + uOffset);
+        float n = texture2D(uNoise, uv).r;
+        float alpha = n * step(0.02, n);
+        float val = 0.15 * step(0.01, n);
         gl_FragColor = vec4(vec3(val, val, val * 0.95), alpha);
       }
     `;
@@ -181,28 +185,73 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
     const uResolution = gl.getUniformLocation(prog, "uResolution");
-    const uSeed = gl.getUniformLocation(prog, "uSeed");
+    const uTexelScale = gl.getUniformLocation(prog, "uTexelScale");
+    const uOffset = gl.getUniformLocation(prog, "uOffset");
+    const uNoise = gl.getUniformLocation(prog, "uNoise");
+
+    const TEX_SIZE = 256;
+    const data = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
+    for (let p = 0; p < data.length; p += 4) {
+      const v = (Math.random() * 255) | 0;
+      data[p] = v;
+      data[p + 1] = v;
+      data[p + 2] = v;
+      data[p + 3] = 255;
+    }
+    const tex = gl.createTexture()!;
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, TEX_SIZE, TEX_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    gl.uniform1i(uNoise, 0);
+    gl.uniform2f(uTexelScale, 1.0 / TEX_SIZE, 1.0 / TEX_SIZE);
 
     // --- Render loop ----------------------------------------------------------
-    let timer = 0;
-    const render = () => {
+    let raf = 0;
+    let last = 0;
+    const interval = 1000 / Math.max(1, fps);
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      if (document.hidden) return;
+      if (now - last < interval) return;
+      last = now;
       gl.uniform2f(uResolution, canvas.width, canvas.height);
-      gl.uniform1f(uSeed, Math.random() * 1000.0);
+      gl.uniform2f(uOffset, Math.random(), Math.random());
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-      timer = window.setTimeout(render, 1000 / fps);
     };
-    render();
+    const start = () => {
+      if (!document.hidden && !raf) raf = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const onVis = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        last = 0;
+        start();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    start();
 
     // --- Cleanup --------------------------------------------------------------
     return () => {
-      clearTimeout(timer);
+      stop();
       ro.disconnect();
+
+      document.removeEventListener("visibilitychange", onVis);
 
       gl.deleteProgram(prog);
       gl.deleteShader(vert);
       gl.deleteShader(frag);
       gl.deleteBuffer(buf);
+      gl.deleteTexture(tex);
 
       if (container.contains(canvas)) container.removeChild(canvas);
     };

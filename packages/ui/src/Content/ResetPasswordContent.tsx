@@ -158,7 +158,7 @@ export default function ResetPasswordContent({
   // If token is invalid, show error state
   if (!tokenValid) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
           <header className="mb-[var(--px-28)] text-center">
             <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -166,7 +166,7 @@ export default function ResetPasswordContent({
             </h1>
           </header>
 
-          <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
+          <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
             <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
               <div className="text-[length:var(--px-60)] text-red-500">✕</div>
               <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
@@ -187,7 +187,7 @@ export default function ResetPasswordContent({
   }
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+    <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -198,7 +198,7 @@ export default function ResetPasswordContent({
           </p>
         </header>
 
-        <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
+        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
           <div className="mb-[var(--px-24)]">
             <a
               href={baseUrl}
