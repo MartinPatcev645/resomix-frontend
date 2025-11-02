@@ -22,6 +22,16 @@ export const getSimilarTracks = async (
     const formData = new FormData();
     formData.append("file", file);
 
+    // Pre-emptively refresh token if expired by calling /me
+    // This prevents token refresh from happening during the large file upload
+    try {
+      const { getMyProfile } = await import("./auth");
+      await getMyProfile();
+    } catch (e) {
+      // Ignore errors - if token refresh fails, the upload request will handle it
+      console.warn("Pre-upload token check failed:", e);
+    }
+
     // Use authClient to include Authorization header if user is logged in
     const data = await axiosWrapper<any>(
       authClient.post(API_CONFIG.ENDPOINTS.SIMILARITY, formData, {
