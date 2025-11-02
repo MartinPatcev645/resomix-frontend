@@ -247,7 +247,7 @@ async def export_playlist(
 async def change_playlist_visibility(
     request: Request,
     id: int = Path(..., description="Playlist ID", ge=1),
-    visibility_request: AdminPlaylistVisibilityRequest = ...,
+    visibility_request: Optional[AdminPlaylistVisibilityRequest] = None,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -260,6 +260,16 @@ async def change_playlist_visibility(
     
     Returns success message with visibility status.
     """
+    # Handle CORS preflight OPTIONS request
+    if request.method == "OPTIONS":
+        return JSONResponse(status_code=200, content={})
+    
+    # Validate request body is provided
+    if visibility_request is None:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Request body is required."
+        })
+    
     # Validate is_public is a boolean (should be handled by Pydantic, but double-check)
     if not isinstance(visibility_request.is_public, bool):
         return JSONResponse(status_code=400, content={
@@ -286,7 +296,7 @@ async def change_playlist_visibility(
 )
 async def batch_change_playlist_visibility(
     request: Request,
-    visibility_request: AdminBatchVisibilityRequest,
+    visibility_request: Optional[AdminBatchVisibilityRequest] = None,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -299,6 +309,16 @@ async def batch_change_playlist_visibility(
     
     Returns count of updated playlists and success message.
     """
+    # Handle CORS preflight OPTIONS request
+    if request.method == "OPTIONS":
+        return JSONResponse(status_code=200, content={})
+    
+    # Validate request body is provided
+    if visibility_request is None:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Request body is required."
+        })
+    
     # Validate ids is a non-empty array
     if not visibility_request.ids or len(visibility_request.ids) == 0:
         return JSONResponse(status_code=400, content={
