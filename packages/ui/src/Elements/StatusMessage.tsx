@@ -113,7 +113,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
                         <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
                             Oops! Something<br />went wrong
                         </div>
-                        <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
+                        <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-[var(--color-neon-orange)]">
                             {message}
                         </div>
                     </div>

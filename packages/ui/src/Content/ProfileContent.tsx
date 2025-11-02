@@ -53,9 +53,9 @@ function getOffsetMinutes(timeZone: string, date = new Date()): number {
 
 function buildTimezones(): TimezoneOption[] {
   const zones =
-      typeof (Intl as any).supportedValuesOf === "function"
-          ? ((Intl as any).supportedValuesOf("timeZone") as string[])
-          : COMMON_TIMEZONES;
+    typeof (Intl as any).supportedValuesOf === "function"
+      ? ((Intl as any).supportedValuesOf("timeZone") as string[])
+      : COMMON_TIMEZONES;
   const now = new Date();
   const options = zones.map((tz) => {
     const offset = getOffsetMinutes(tz, now);
@@ -70,11 +70,11 @@ function buildTimezones(): TimezoneOption[] {
 }
 
 export default function ProfileContent({
-                                         baseUrl = "https://resomix.com",
-                                         onNavigateChangePassword,
-                                         onNavigateSessions,
-                                         onLogout,
-                                       }: ProfileContentProps) {
+  baseUrl = "https://resomix.com",
+  onNavigateChangePassword,
+  onNavigateSessions,
+  onLogout,
+}: ProfileContentProps) {
   const [user, setUser] = useState<any>(null);
   const [form, setForm] = useState({
     name: "",
@@ -92,6 +92,7 @@ export default function ProfileContent({
   const [deletePassword, setDeletePassword] = useState("");
   const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
   const [timezones, setTimezones] = useState<TimezoneOption[]>([]);
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   useEffect(() => {
     setTimezones(buildTimezones());
@@ -106,8 +107,39 @@ export default function ProfileContent({
     try {
       const { useAuthStore } = await import("@resomix/stores");
       const store = useAuthStore.getState();
-      // Check if user exists and is authenticated - only make API call if missing
+      const { getMyProfile } = await import("@resomix/api-client");
+      
+      // Check if user exists and is authenticated
       if (store.user && store.isAuthenticated) {
+        // If email is not verified, fetch latest data to check verification status
+        if (!store.user.is_email_verified) {
+          const result = await getMyProfile();
+          
+          if (result.success) {
+            const userData = "user" in result.data ? result.data.user : result.data;
+            setUser(userData);
+            setForm({
+              name: userData.name || "",
+              language: userData.language || "",
+              timezone: userData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+            });
+            setTwoFactorEnabled(userData.is_two_factor_enabled || false);
+            useAuthStore.getState().updateUser(userData);
+          } else {
+            // If API call fails, still use store data
+            setUser(store.user);
+            setForm({
+              name: store.user.name || "",
+              language: store.user.language || "",
+              timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+            });
+            setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
+          }
+          setLoading(false);
+          return;
+        }
+        
+        // Email is verified - use store data without API call
         setUser(store.user);
         setForm({
           name: store.user.name || "",
@@ -119,7 +151,7 @@ export default function ProfileContent({
         return;
       }
 
-      const { getMyProfile } = await import("@resomix/api-client");
+      // No user data in store - fetch it
       const result = await getMyProfile();
 
       if (result.success) {
@@ -161,10 +193,10 @@ export default function ProfileContent({
       if (result.success) {
         // Handle both possible response structures
         const responseData = "user" in result.data ? result.data.user : result.data;
-        
+
         // Extract only the fields that should be updated (exclude 'message' and other non-user fields)
         const fieldsToUpdate: Partial<typeof user> = {};
-        
+
         // Only update fields that are present in the response and are part of the user object
         if (responseData.email !== undefined) fieldsToUpdate.email = responseData.email;
         if (responseData.username !== undefined) fieldsToUpdate.username = responseData.username;
@@ -172,16 +204,16 @@ export default function ProfileContent({
         if (responseData.profile_picture !== undefined) fieldsToUpdate.profile_picture = responseData.profile_picture;
         if (responseData.language !== undefined) fieldsToUpdate.language = responseData.language;
         if (responseData.timezone !== undefined) fieldsToUpdate.timezone = responseData.timezone;
-        
+
         // Update only the specified fields in the store (preserves other fields like is_email_verified, etc.)
         useAuthStore.getState().updateUser(fieldsToUpdate);
-        
+
         // Update local state with merged data from store
         const updatedUser = useAuthStore.getState().user;
         if (updatedUser) {
           setUser(updatedUser);
         }
-        
+
         setStatusType("success");
         setStatusMessage("Profile updated successfully!");
         setIsEditing(false);
@@ -235,13 +267,24 @@ export default function ProfileContent({
     if (twoFactorEnabled) {
       setShowDisable2FAModal(true);
     } else {
+      // Check email verification before enabling 2FA
+      const { useAuthStore } = await import("@resomix/stores");
+      const store = useAuthStore.getState();
+      const currentUser = store.user || user;
+
+      if (!currentUser?.is_email_verified) {
+        setStatusType("error");
+        setShowStatus(true);
+        setStatusMessage("Please verify your email address before enabling two-factor authentication.");
+        return;
+      }
+
       setStatusType("loading");
       setShowStatus(true);
       setStatusMessage("Enabling 2FA...");
 
       try {
         const { enable2FA } = await import("@resomix/api-client");
-        const { useAuthStore } = await import("@resomix/stores");
 
         const result = await enable2FA("email");
 
@@ -253,7 +296,7 @@ export default function ProfileContent({
             return updated;
           });
           setStatusType("success");
-          setStatusMessage("Two-factor authentication enabled! Check your email for verification.");
+          setStatusMessage("Two-factor authentication enabled!");
         } else {
           const errorResult = result as { success: false; error: string };
           setStatusType("error");
@@ -309,6 +352,40 @@ export default function ProfileContent({
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!user?.email) {
+      setStatusType("error");
+      setShowStatus(true);
+      setStatusMessage("Email address not found.");
+      return;
+    }
+
+    setResendingVerification(true);
+    setStatusType("loading");
+    setShowStatus(true);
+    setStatusMessage("Sending verification email...");
+
+    try {
+      const { resendVerification } = await import("@resomix/api-client");
+      const result = await resendVerification(user.email);
+
+      if (result.success) {
+        setStatusType("success");
+        setStatusMessage("Verification email sent! Please check your inbox.");
+      } else {
+        const errorResult = result as { success: false; error: string };
+        setStatusType("error");
+        setStatusMessage(errorResult.error || "Failed to send verification email.");
+      }
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      setStatusType("error");
+      setStatusMessage("Network error. Please try again.");
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const { logout } = await import("@resomix/api-client");
@@ -330,285 +407,295 @@ export default function ProfileContent({
 
   if (loading) {
     return (
-        <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
-          <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-            <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
-              <SineWaves />
-            </div>
+      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
+          <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
+            <SineWaves />
           </div>
-        </section>
+        </div>
+      </section>
     );
   }
 
   if (!user) {
     return (
-        <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
-          <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-            <p>Unable to load profile. Please try again.</p>
-          </div>
-        </section>
+      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
+          <p>Unable to load profile. Please try again.</p>
+        </div>
+      </section>
     );
   }
 
   return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
-        <div className="w-full text-[var(--color-primary)]">
-          <header className="mb-[var(--px-28)] text-center">
-            <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-              Profile Settings
-            </h1>
-            <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-              Manage your account settings and preferences
-            </p>
-          </header>
+    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <div className="w-full text-[var(--color-primary)]">
+        <header className="mb-[var(--px-28)] text-center">
+          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
+            Profile Settings
+          </h1>
+          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
+            Manage your account settings and preferences
+          </p>
+        </header>
 
-          <div className="mx-auto w-full max-w-6xl">
-            <div className="mb-[var(--px-24)] px-[var(--px-20)] lg:px-0">
-              <a
-                  href={baseUrl}
-                  aria-label="Resomix home"
-                  className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-              >
-                ← Back to Home
-              </a>
-            </div>
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="mb-[var(--px-24)] px-[var(--px-20)] lg:px-0">
+            <a
+              href={baseUrl}
+              aria-label="Resomix home"
+              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+            >
+              ← Back to Home
+            </a>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[clamp(320px,26vw,480px)_1fr] gap-[var(--px-20)] px-[var(--px-20)] lg:px-0">
-              <aside className="space-y-[var(--px-20)] lg:sticky lg:top-[var(--px-120)] h-max">
-                <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                  <div className="flex items-center gap-[var(--px-12)]">
-                    <ProfileIcon
-                        className="text-[var(--color-primary-hover)]"
-                        customWidth="40"
-                        customHeight="40"
-                    />
-                    <div>
-                      <div className="text-[length:var(--px-18)] font-medium font-helvetica">
-                        {user.username}
-                      </div>
-                      <div className="text-[length:var(--px-11)] font-light font-helvetica flex items-center gap-[var(--px-8)] mt-[var(--px-4)]">
-                        {user.email}
-                        {user.is_email_verified ? (
-                            <span className="text-green-500 text-[length:var(--px-10)]">✓ Verified</span>
-                        ) : (
-                            <span className="text-yellow-500 text-[length:var(--px-10)]">⚠ Not Verified</span>
-                        )}
-                      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[clamp(320px,26vw,480px)_1fr] gap-[var(--px-20)] px-[var(--px-20)] lg:px-0">
+            <aside className="space-y-[var(--px-20)] lg:sticky lg:top-[var(--px-120)] h-max">
+              <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
+                <div className="flex items-center gap-[var(--px-12)]">
+                  <ProfileIcon
+                    className="text-[var(--color-primary-hover)]"
+                    customWidth="40"
+                    customHeight="40"
+                  />
+                  <div className="w-full">
+                    <div className="text-[length:var(--px-18)] font-medium font-helvetica">
+                      {user.username}
                     </div>
+                    <div className="text-[length:var(--px-11)] font-light font-helvetica flex items-center gap-[var(--px-8)] mt-[var(--px-4)]">
+                      {user.email}
+                      {user.is_email_verified && (
+                        <span className="text-green-500 text-[length:var(--px-10)]">✓ Verified</span>
+                      )}
+                    </div>
+                    {!user.is_email_verified && (
+                      <div className="flex items-center gap-[var(--px-8)] w-full justify-between">
+                        <span className="text-yellow-500 text-[length:var(--px-10)]">⚠ Not Verified</span>
+                        <ButtonSleek
+                          text={resendingVerification ? "Sending..." : "Verify"}
+                          onClick={handleResendVerification}
+                          customWidth="min-w-[var(--px-60)]"
+                          transparent={true}
+                          disabled={resendingVerification}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <nav className="space-y-[var(--px-10)] p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                  <button
-                      onClick={onNavigateChangePassword}
-                      className="group w-full flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
-                  >
+              <nav className="space-y-[var(--px-10)] p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
+                <button
+                  onClick={onNavigateChangePassword}
+                  className="group w-full flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
+                >
                   <span className="text-[length:var(--px-11)] font-light font-helvetica text-left">
                     Change Password
                   </span>
-                    <span className="text-[var(--color-primary)] group-hover:text-[var(--color-secondary)] transition-colors">→</span>
-                  </button>
+                  <span className="text-[var(--color-primary)] group-hover:text-[var(--color-secondary)] transition-colors">→</span>
+                </button>
 
-                  <button
-                      onClick={handleLogout}
-                      className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
-                  >
-                    Logout
-                  </button>
-                </nav>
-              </aside>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
+                >
+                  Logout
+                </button>
+              </nav>
+            </aside>
 
-              <main className="space-y-[var(--px-20)]">
-                <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                  <div className="flex justify-between items-center mb-[var(--px-10)]">
-                    <h2 className="text-[length:var(--px-14)] font-medium font-helvetica">
-                      Personal Information
-                    </h2>
-                    {!isEditing && (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                        >
-                          Edit
-                        </button>
-                    )}
+            <main className="space-y-[var(--px-20)]">
+              <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
+                <div className="flex justify-between items-center mb-[var(--px-10)]">
+                  <h2 className="text-[length:var(--px-14)] font-medium font-helvetica">
+                    Personal Information
+                  </h2>
+                  {!isEditing && (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+
+                <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--px-12)]">
+                  <FormInput
+                    label="Name"
+                    name="name"
+                    type="text"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="Your full name"
+                    optional
+                    disabled={!isEditing}
+                  />
+
+                  <div className="flex flex-col gap-[var(--px-10)]">
+                    <label className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
+                      Language <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
+                    </label>
+                    <select
+                      name="language"
+                      value={form.language}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-white text-slate-900 dark:bg-black dark:text-slate-100"
+                    >
+                      <option value="">Select language</option>
+                      <option value="en">English</option>
+                      <option value="es">Español</option>
+                      <option value="fr">Français</option>
+                      <option value="de">Deutsch</option>
+                    </select>
                   </div>
 
-                  <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--px-12)]">
-                    <FormInput
-                        label="Name"
-                        name="name"
-                        type="text"
-                        value={form.name}
-                        onChange={handleChange}
-                        placeholder="Your full name"
-                        optional
-                        disabled={!isEditing}
-                    />
-
+                  <div className="lg:col-span-2">
                     <div className="flex flex-col gap-[var(--px-10)]">
                       <label className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
-                        Language <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
+                        Timezone
                       </label>
                       <select
-                          name="language"
-                          value={form.language}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-white text-slate-900 dark:bg-black dark:text-slate-100"
+                        name="timezone"
+                        value={form.timezone}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-white text-slate-900 dark:bg-black dark:text-slate-100"
                       >
-                        <option value="">Select language</option>
-                        <option value="en">English</option>
-                        <option value="es">Español</option>
-                        <option value="fr">Français</option>
-                        <option value="de">Deutsch</option>
+                        <option value="">Select timezone</option>
+                        {timezones.map((tz) => (
+                          <option key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
+                  </div>
 
-                    <div className="lg:col-span-2">
-                      <div className="flex flex-col gap-[var(--px-10)]">
-                        <label className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
-                          Timezone
-                        </label>
-                        <select
-                            name="timezone"
-                            value={form.timezone}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-white text-slate-900 dark:bg-black dark:text-slate-100"
-                        >
-                          <option value="">Select timezone</option>
-                          {timezones.map((tz) => (
-                              <option key={tz.value} value={tz.value}>
-                                {tz.label}
-                              </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                        <div className="lg:col-span-2 flex gap-[var(--px-10)] mt-[var(--px-10)] justify-end">
-                          <ButtonSleek
-                              text={submitting ? "Saving..." : "Save Changes"}
-                              onClick={handleUpdate}
-                          />
-                          <button
-                              type="button"
-                              onClick={() => {
-                                setIsEditing(false);
-                                setForm({
-                                  name: user.name || "",
-                                  language: user.language || "",
-                                  timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-                                });
-                              }}
-                              className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                    )}
-                  </form>
-                </div>
-
-                <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                  <h2 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)]">
-                    Security
-                  </h2>
-
-                  <div className="flex flex-col gap-[var(--px-10)]">
-                    <div className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted rounded">
-                      <div>
-                        <div className="text-[length:var(--px-11)] font-light font-helvetica">
-                          Two-Factor Authentication
-                        </div>
-                        <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
-                          {twoFactorEnabled ? "Enabled" : "Disabled"}
-                        </div>
-                      </div>
+                  {isEditing && (
+                    <div className="lg:col-span-2 flex gap-[var(--px-10)] mt-[var(--px-10)] justify-end">
+                      <ButtonSleek
+                        text={submitting ? "Saving..." : "Save Changes"}
+                        onClick={handleUpdate}
+                      />
                       <button
-                          onClick={handle2FAToggle}
-                          className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setForm({
+                            name: user.name || "",
+                            language: user.language || "",
+                            timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+                          });
+                        }}
+                        className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors"
                       >
-                        {twoFactorEnabled ? "Disable" : "Enable"}
+                        Cancel
                       </button>
                     </div>
+                  )}
+                </form>
+              </div>
+
+              <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
+                <h2 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)]">
+                  Security
+                </h2>
+
+                <div className="flex flex-col gap-[var(--px-10)]">
+                  <div className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted rounded">
+                    <div>
+                      <div className="text-[length:var(--px-11)] font-light font-helvetica">
+                        Two-Factor Authentication
+                      </div>
+                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
+                        {twoFactorEnabled ? "Enabled" : "Disabled"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={handle2FAToggle}
+                      className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                    >
+                      {twoFactorEnabled ? "Disable" : "Enable"}
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                <div className="p-[var(--px-16)] border border-red-300/70 dark:border-red-800 border-dotted rounded-lg bg-red-50/40 dark:bg-red-950/10">
-                  <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-red-600">
-                    Danger Zone
-                  </h3>
+              <div className="p-[var(--px-16)] border border-red-300/70 dark:border-red-800 border-dotted rounded-lg bg-red-50/40 dark:bg-red-950/10">
+                <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-red-600">
+                  Danger Zone
+                </h3>
 
-                  <div className="flex flex-col gap-[var(--px-10)]">
-                    {!showDeleteConfirm ? (
+                <div className="flex flex-col gap-[var(--px-10)]">
+                  {!showDeleteConfirm ? (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 transition-colors cursor-pointer rounded"
+                    >
+                      Delete Account
+                    </button>
+                  ) : (
+                    <div className="border border-red-500 p-[var(--px-10)] rounded">
+                      <p className="text-[length:var(--px-11)] font-light font-helvetica text-red-500 mb-[var(--px-10)]">
+                        This action cannot be undone. Enter your password to confirm:
+                      </p>
+                      <input
+                        type="password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-11)] font-light font-helvetica mb-[var(--px-10)] rounded"
+                      />
+                      <div className="flex gap-[var(--px-10)]">
                         <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className="px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 transition-colors cursor-pointer rounded"
+                          onClick={handleDeleteAccount}
+                          className="px-[var(--px-20)] py-[var(--px-10)] bg-red-500 text-white text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-600 transition-colors rounded"
                         >
-                          Delete Account
+                          Confirm Delete
                         </button>
-                    ) : (
-                        <div className="border border-red-500 p-[var(--px-10)] rounded">
-                          <p className="text-[length:var(--px-11)] font-light font-helvetica text-red-500 mb-[var(--px-10)]">
-                            This action cannot be undone. Enter your password to confirm:
-                          </p>
-                          <input
-                              type="password"
-                              value={deletePassword}
-                              onChange={(e) => setDeletePassword(e.target.value)}
-                              placeholder="Enter your password"
-                              className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-11)] font-light font-helvetica mb-[var(--px-10)] rounded"
-                          />
-                          <div className="flex gap-[var(--px-10)]">
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="px-[var(--px-20)] py-[var(--px-10)] bg-red-500 text-white text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-600 transition-colors rounded"
-                            >
-                              Confirm Delete
-                            </button>
-                            <button
-                                onClick={() => {
-                                  setShowDeleteConfirm(false);
-                                  setDeletePassword("");
-                                }}
-                                className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors rounded"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                    )}
-                  </div>
+                        <button
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setDeletePassword("");
+                          }}
+                          className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors rounded"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </main>
-            </div>
+              </div>
+            </main>
           </div>
-
-          <StatusMessage
-              isOpen={showStatus}
-              onClose={() => setShowStatus(false)}
-              status={statusType}
-              message={statusMessage}
-          />
-
-          <InputModal
-              isOpen={showDisable2FAModal}
-              onClose={() => setShowDisable2FAModal(false)}
-              onSubmit={handleDisable2FA}
-              title="Disable 2FA"
-              message="For security, please enter your password to disable two-factor authentication."
-              inputLabel="Password"
-              inputType="password"
-              inputPlaceholder="Enter your password"
-              confirmText="Disable 2FA"
-              cancelText="Cancel"
-              required={true}
-              minLength={8}
-          />
         </div>
-      </section>
+
+        <StatusMessage
+          isOpen={showStatus}
+          onClose={() => setShowStatus(false)}
+          status={statusType}
+          message={statusMessage}
+        />
+
+        <InputModal
+          isOpen={showDisable2FAModal}
+          onClose={() => setShowDisable2FAModal(false)}
+          onSubmit={handleDisable2FA}
+          title="Disable 2FA"
+          message="For security, please enter your password to disable two-factor authentication."
+          inputLabel="Password"
+          inputType="password"
+          inputPlaceholder="Enter your password"
+          confirmText="Disable 2FA"
+          cancelText="Cancel"
+          required={true}
+          minLength={8}
+        />
+      </div>
+    </section>
   );
 }
