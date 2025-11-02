@@ -19,7 +19,7 @@ from fastapi import status, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 import time
 from app.services.playlist_service import PlaylistService
 from app.services.logging_service import LoggingService
@@ -1132,6 +1132,220 @@ class PlaylistController:
                 context="admin playlist batch delete",
                 metadata={
                     "playlist_ids": playlist_ids,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def change_playlist_visibility_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: int,
+        is_public: bool
+    ) -> JSONResponse:
+        """
+        Change playlist visibility (admin).
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            playlist_id: Playlist ID
+            is_public: Whether to make the playlist public
+            
+        Returns:
+            JSON response with visibility change result
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.change_playlist_visibility_admin(db, playlist_id, is_public)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "message": result.get("message", "Playlist visibility changed successfully")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="change_playlist_visibility_admin",
+                    message=f"Admin changed visibility of playlist ID {playlist_id} to {'public' if is_public else 'private'}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist visibility change",
+                    playlist_id=playlist_id,
+                    metadata={
+                        "playlist_id": playlist_id,
+                        "is_public": is_public
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                # Playlist not found
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=result.get("error", "Playlist not found"))
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="ADMIN",
+                    action="change_playlist_visibility_admin_not_found",
+                    message=f"Playlist ID {playlist_id} not found for visibility change",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=404,
+                    duration_ms=duration_ms,
+                    context="admin playlist visibility change",
+                    metadata={"playlist_id": playlist_id, "is_public": is_public}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while changing playlist visibility"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="change_playlist_visibility_admin_exception",
+                message="Exception occurred while changing playlist visibility",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist visibility change",
+                metadata={
+                    "playlist_id": playlist_id,
+                    "is_public": is_public,
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def batch_change_playlist_visibility_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_ids: List[int],
+        is_public: bool
+    ) -> JSONResponse:
+        """
+        Change visibility for multiple playlists (admin).
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            playlist_ids: List of playlist IDs to update
+            is_public: Whether to make the playlists public
+            
+        Returns:
+            JSON response with batch visibility change result
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.batch_change_playlist_visibility_admin(db, playlist_ids, is_public)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                response_content = {
+                    "success": True,
+                    "updated_count": result.get("updated_count", 0),
+                    "message": result.get("message", "Playlists updated successfully")
+                }
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="ADMIN",
+                    action="batch_change_playlist_visibility_admin",
+                    message=f"Admin batch changed visibility of {result.get('updated_count', 0)} playlists to {'public' if is_public else 'private'}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    context="admin playlist batch visibility change",
+                    metadata={
+                        "playlist_ids": playlist_ids,
+                        "updated_count": result.get("updated_count", 0),
+                        "is_public": is_public
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_content
+                )
+            else:
+                duration_ms = (time.time() - start_time) * 1000
+                response_content = format_response(success=False, error=result.get("error"))
+                
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="ADMIN",
+                    action="batch_change_playlist_visibility_admin_failed",
+                    message="Failed to batch change playlist visibility",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    context="admin playlist batch visibility change",
+                    metadata={"playlist_ids": playlist_ids, "is_public": is_public, "error": result.get("error")}
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_content
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            import traceback
+            response_content = format_response(
+                success=False,
+                error="An internal server error occurred while batch changing playlist visibility"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="batch_change_playlist_visibility_admin_exception",
+                message="Exception occurred while batch changing playlist visibility",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="admin playlist batch visibility change",
+                metadata={
+                    "playlist_ids": playlist_ids,
+                    "is_public": is_public,
                     "error_type": type(e).__name__,
                     "traceback": traceback.format_exc()
                 }

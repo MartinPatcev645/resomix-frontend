@@ -365,3 +365,59 @@ class AdminPlaylistDetailResponse(BaseModel):
     """Response schema for admin playlist detail."""
     success: bool = Field(True, description="Always true for successful responses")
     data: PlaylistDetailData = Field(..., description="Complete playlist details")
+
+
+class AdminPlaylistVisibilityRequest(BaseModel):
+    """Request schema for changing single playlist visibility."""
+    is_public: bool = Field(..., description="true for public, false for private")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "is_public": True
+            }
+        }
+
+
+class AdminBatchVisibilityRequest(BaseModel):
+    """Request schema for batch visibility change."""
+    ids: List[int] = Field(..., description="Array of playlist IDs to update", min_length=1)
+    is_public: bool = Field(..., description="true for public, false for private")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "ids": [123, 456, 789],
+                "is_public": False
+            }
+        }
+
+
+class AdminPlaylistVisibilityResponse(BaseModel):
+    """Response schema for single playlist visibility change."""
+    success: bool = Field(..., description="Operation success status")
+    message: str = Field(..., description="Success message")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "message": "Playlist made public successfully"
+            }
+        }
+
+
+class AdminBatchVisibilityResponse(BaseModel):
+    """Response schema for batch visibility change."""
+    success: bool = Field(True, description="Always true for successful responses")
+    updated_count: int = Field(..., description="Number of playlists updated")
+    message: str = Field(..., description="Success message")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "updated_count": 3,
+                "message": "Successfully updated 3 playlists"
+            }
+        }

@@ -31,7 +31,11 @@ from app.schemas.playlist import (
     AdminPlaylistExportRequest,
     AdminPlaylistExportResponse,
     PlaylistErrorResponse,
-    AdminPlaylistDetailResponse
+    AdminPlaylistDetailResponse,
+    AdminPlaylistVisibilityRequest,
+    AdminPlaylistVisibilityResponse,
+    AdminBatchVisibilityRequest,
+    AdminBatchVisibilityResponse
 )
 
 # Create router instance
@@ -220,4 +224,99 @@ async def export_playlist(
         })
     
     filters = export_request.dict()
-    return await playlist_controller.export_playlist_csv_admin(db, request, filters) 
+    return await playlist_controller.export_playlist_csv_admin(db, request, filters)
+
+
+@router.put(
+    "/visibility/{id}",
+    response_model=AdminPlaylistVisibilityResponse,
+    status_code=200,
+    summary="Change Single Playlist Visibility",
+    description="Change the visibility (public/private) of a single playlist by ID.",
+    responses={
+        400: {
+            "model": PlaylistErrorResponse,
+            "description": "Invalid is_public value or request format"
+        },
+        404: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist not found"
+        }
+    }
+)
+async def change_playlist_visibility(
+    request: Request,
+    id: int = Path(..., description="Playlist ID", ge=1),
+    visibility_request: AdminPlaylistVisibilityRequest = ...,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Change playlist visibility by ID.
+    
+    This endpoint changes the visibility of a single playlist.
+    - **id**: The ID of the playlist to modify (path parameter)
+    - **is_public**: Whether the playlist should be public (true) or private (false) (request body)
+    
+    Returns success message with visibility status.
+    """
+    # Validate is_public is a boolean (should be handled by Pydantic, but double-check)
+    if not isinstance(visibility_request.is_public, bool):
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid is_public value. Must be a boolean."
+        })
+    
+    return await playlist_controller.change_playlist_visibility_admin(
+        db, request, id, visibility_request.is_public
+    )
+
+
+@router.post(
+    "/batch-visibility",
+    response_model=AdminBatchVisibilityResponse,
+    status_code=200,
+    summary="Batch Change Playlist Visibility",
+    description="Change the visibility (public/private) of multiple playlists in a single operation.",
+    responses={
+        400: {
+            "model": PlaylistErrorResponse,
+            "description": "Invalid request format"
+        }
+    }
+)
+async def batch_change_playlist_visibility(
+    request: Request,
+    visibility_request: AdminBatchVisibilityRequest,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Change visibility for multiple playlists.
+    
+    This endpoint allows changing the visibility of multiple playlists at once.
+    - **ids**: Array of playlist IDs to update (must be non-empty)
+    - **is_public**: Whether the playlists should be public (true) or private (false)
+    
+    Returns count of updated playlists and success message.
+    """
+    # Validate ids is a non-empty array
+    if not visibility_request.ids or len(visibility_request.ids) == 0:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid request. 'ids' must be a non-empty array of integers."
+        })
+    
+    # Validate all IDs are integers
+    if not all(isinstance(id, int) for id in visibility_request.ids):
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid request. 'ids' must be a non-empty array of integers."
+        })
+    
+    # Validate is_public is a boolean
+    if not isinstance(visibility_request.is_public, bool):
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid is_public value. Must be a boolean."
+        })
+    
+    return await playlist_controller.batch_change_playlist_visibility_admin(
+        db, request, visibility_request.ids, visibility_request.is_public
+    )

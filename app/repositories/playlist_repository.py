@@ -895,6 +895,76 @@ class PlaylistRepository(BaseRepository[Playlist]):
             print(f"Error batch deleting playlists: {e}")
             raise e
     
+    async def async_change_playlist_visibility_by_id(
+        self,
+        db: AsyncSession,
+        playlist_id: int,
+        is_public: bool
+    ) -> bool:
+        """
+        Change playlist visibility by ID.
+        
+        Args:
+            db: Database session
+            playlist_id: Playlist ID
+            is_public: Whether to make the playlist public
+            
+        Returns:
+            True if successful, False if playlist not found
+        """
+        try:
+            stmt = select(Playlist).where(Playlist.id == playlist_id)
+            result = await db.execute(stmt)
+            playlist = result.scalar_one_or_none()
+            
+            if not playlist:
+                return False
+            
+            playlist.is_public = is_public
+            await db.commit()
+            return True
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error updating playlist visibility: {e}")
+            raise e
+    
+    async def async_batch_change_playlist_visibility(
+        self,
+        db: AsyncSession,
+        playlist_ids: List[int],
+        is_public: bool
+    ) -> int:
+        """
+        Change visibility for multiple playlists by IDs.
+        
+        Args:
+            db: Database session
+            playlist_ids: List of playlist IDs to update
+            is_public: Whether to make the playlists public
+            
+        Returns:
+            Number of playlists updated
+        """
+        try:
+            from sqlalchemy import update
+            
+            # Update playlists
+            stmt = (
+                update(Playlist)
+                .where(Playlist.id.in_(playlist_ids))
+                .values(is_public=is_public)
+            )
+            result = await db.execute(stmt)
+            await db.commit()
+            
+            return result.rowcount
+            
+        except Exception as e:
+            await db.rollback()
+            print(f"Error batch updating playlist visibility: {e}")
+            raise e
+    
     async def async_get_all_playlists_for_export(
         self,
         db: AsyncSession,

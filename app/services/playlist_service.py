@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 import httpx
 import json
 import urllib.parse
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
@@ -423,6 +423,92 @@ class PlaylistService:
             return {
                 "success": False,
                 "error": "An error occurred while batch deleting playlists"
+            }
+    
+    async def change_playlist_visibility_admin(
+        self,
+        db: AsyncSession,
+        playlist_id: int,
+        is_public: bool
+    ) -> Dict[str, Any]:
+        """
+        Change playlist visibility by ID (admin).
+        
+        Args:
+            db: Database session
+            playlist_id: Playlist ID
+            is_public: Whether to make the playlist public
+            
+        Returns:
+            Dictionary with success status and message
+        """
+        try:
+            success = await self.playlist_repository.async_change_playlist_visibility_by_id(
+                db, playlist_id, is_public
+            )
+            
+            if success:
+                visibility = "public" if is_public else "private"
+                return {
+                    "success": True,
+                    "message": f"Playlist made {visibility} successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Playlist not found"
+                }
+                
+        except Exception as e:
+            print(f"Error changing playlist visibility: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while changing playlist visibility"
+            }
+    
+    async def batch_change_playlist_visibility_admin(
+        self,
+        db: AsyncSession,
+        playlist_ids: List[int],
+        is_public: bool
+    ) -> Dict[str, Any]:
+        """
+        Change visibility for multiple playlists (admin).
+        
+        Args:
+            db: Database session
+            playlist_ids: List of playlist IDs to update
+            is_public: Whether to make the playlists public
+            
+        Returns:
+            Dictionary with success status, updated count, and message
+        """
+        try:
+            updated_count = await self.playlist_repository.async_batch_change_playlist_visibility(
+                db, playlist_ids, is_public
+            )
+            
+            total_requested = len(playlist_ids)
+            
+            if updated_count == total_requested:
+                message = f"Successfully updated {updated_count} playlist{'s' if updated_count > 1 else ''}"
+            elif updated_count > 0:
+                message = f"Updated {updated_count} out of {total_requested} playlists. {total_requested - updated_count} not found."
+            else:
+                message = "No playlists were updated. None of the provided IDs were found."
+            
+            return {
+                "success": True,
+                "updated_count": updated_count,
+                "message": message
+            }
+            
+        except Exception as e:
+            print(f"Error batch changing playlist visibility: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while batch changing playlist visibility",
+                "updated_count": 0
             }
     
     async def export_playlists_csv_admin(
