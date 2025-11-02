@@ -4,6 +4,8 @@ import {
   deletePlaylist as apiDeletePlaylist,
   batchDeletePlaylist as apiBatchDeletePlaylist,
   exportPlaylist,
+  adminChangePlaylistVisibility,
+  adminBatchChangePlaylistVisibility,
   apiAxiosInstance,
   type PlaylistItem as ApiPlaylistItem,
   type PlaylistListParams
@@ -319,6 +321,59 @@ export function usePlaylist(options?: UsePlaylistOptions) {
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
+  const handleChangeVisibility = async (ids: string[], isPublic: boolean) => {
+    try {
+      const numericIds = ids.map(id => Number(id))
+      
+      if (numericIds.length === 0) {
+        if (onError) {
+          onError('No Playlists Selected', 'Please select playlists to change visibility.')
+        } else {
+          message.error('No playlists selected')
+        }
+        return
+      }
+
+      // Use batch endpoint for multiple playlists, single endpoint for one
+      let result
+      if (numericIds.length === 1) {
+        result = await adminChangePlaylistVisibility(numericIds[0], isPublic)
+      } else {
+        result = await adminBatchChangePlaylistVisibility(numericIds, isPublic)
+      }
+
+      if (result.success) {
+        setSelectedRowKeys([])
+        await fetchData()
+        const visibilityText = isPublic ? 'public' : 'private'
+        const updatedCount = (result as any).updated_count || numericIds.length
+        if (onSuccess) {
+          onSuccess(
+            'Visibility Updated',
+            `Successfully changed ${updatedCount} playlist${updatedCount === 1 ? '' : 's'} to ${visibilityText}.`
+          )
+        } else {
+          message.success(`${updatedCount} playlist${updatedCount === 1 ? '' : 's'} changed to ${visibilityText}`)
+        }
+      } else {
+        const errorMsg = (result as any).error || 'Failed to change playlist visibility'
+        if (onError) {
+          onError('Update Failed', errorMsg)
+        } else {
+          message.error(errorMsg)
+        }
+      }
+    } catch (error) {
+      console.error('Error changing playlist visibility:', error)
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred while changing visibility'
+      if (onError) {
+        onError('Visibility Change Error', errorMsg)
+      } else {
+        message.error(errorMsg)
+      }
+    }
+  }
+
   return {
     data,
     loading,
@@ -344,5 +399,6 @@ export function usePlaylist(options?: UsePlaylistOptions) {
     handlePageChange,
     handleExport,
     handleSortChange,
+    handleChangeVisibility,
   }
 }

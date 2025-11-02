@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS playlists (
 | DELETE | `/admin/playlist/delete/:id` | Delete single playlist | ✅ Admin |
 | POST | `/admin/playlist/batch-delete` | Delete multiple playlists | ✅ Admin |
 | POST | `/admin/playlist/export` | Export playlists to CSV | ✅ Admin |
+| POST | `/admin/playlist/visibility/:id` | Change visibility of single playlist | ✅ Admin |
+| POST | `/admin/playlist/batch-visibility` | Change visibility of multiple playlists | ✅ Admin |
 
 ---
 
@@ -605,6 +607,269 @@ All endpoints should return consistent error responses:
   - `"Too many requests. Please try again later."`
   - `"Export rate limit exceeded. Please wait before requesting another export."`
   - `"Batch delete rate limit exceeded. Maximum 5 batch operations per minute."`
+
+- **Business Logic:**
+  - `"Cannot delete playlist: contains user-generated content"`
+  - `"Playlist is currently being processed. Try again later."`
+
+---
+
+### 5. Change Single Playlist Visibility
+
+**POST** `/admin/playlist/visibility/:id`
+
+Changes the visibility (public/private) of a single playlist by ID.
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | ✅ | Playlist ID |
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `is_public` | boolean | ✅ | `true` for public, `false` for private |
+
+#### Request Example
+
+```http
+POST /admin/playlist/visibility/123?api_key=your-api-key
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "is_public": true
+}
+```
+
+#### Response Format
+
+**Success (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Playlist made public successfully"
+}
+```
+
+**Error (404 Not Found):**
+
+```json
+{
+  "success": false,
+  "error": "Playlist not found"
+}
+```
+
+**Error (400 Bad Request):**
+
+```json
+{
+  "success": false,
+  "error": "Invalid is_public value. Must be a boolean."
+}
+```
+
+#### Backend Implementation Notes
+
+1. **Validation:**
+   - Verify ID exists before update
+   - Return 404 if not found
+   - Validate ID is a positive integer
+   - Validate `is_public` is a boolean (not string "0"/"1")
+   - Require `api_key` as query parameter
+
+2. **Update Logic:**
+   - Update `is_public` field directly
+   - No cascade operations needed (visibility doesn't affect related records)
+   - Use database transaction for consistency
+
+3. **Audit Log:**
+   - Log admin action with timestamp and admin user ID
+   - Store playlist metadata (id, uuid, name) and old/new visibility state
+   - Track reason for visibility change if applicable
+
+4. **Example SQL:**
+   ```sql
+   -- Check existence
+   SELECT id, uuid, name, is_public FROM playlists WHERE id = ?
+   
+   -- Update visibility
+   UPDATE playlists 
+   SET is_public = ? 
+   WHERE id = ?
+   ```
+
+---
+
+### 6. Batch Change Playlist Visibility
+
+**POST** `/admin/playlist/batch-visibility`
+
+Changes the visibility (public/private) of multiple playlists in a single operation.
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ids` | array[integer] | ✅ | Array of playlist IDs to update |
+| `is_public` | boolean | ✅ | `true` for public, `false` for private |
+
+#### Request Example
+
+```http
+POST /admin/playlist/batch-visibility?api_key=your-api-key
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "ids": [123, 456, 789],
+  "is_public": false
+}
+```
+
+#### Response Format
+
+**Success (200 OK):**
+
+```json
+{
+  "success": true,
+  "updated_count": 3,
+  "message": "Successfully updated 3 playlists"
+}
+```
+
+**Partial Success (200 OK):**
+
+```json
+{
+  "success": true,
+  "updated_count": 2,
+  "message": "Updated 2 out of 3 playlists. 1 not found."
+}
+```
+
+**Error (400 Bad Request):**
+
+```json
+{
+  "success": false,
+  "error": "Invalid request. 'ids' must be a non-empty array of integers."
+}
+```
+
+#### Backend Implementation Notes
+
+1. **Validation:**
+   - Validate `ids` is an array
+   - Validate array is not empty
+   - Validate all items are positive integers
+   - Validate `is_public` is a boolean
+   - Limit maximum batch size (e.g., 100 items) to prevent abuse
+
+2. **Transaction:**
+   - Use database transaction for atomic operation
+   - Ensure all updates complete successfully
+   - Commit if all operations succeed
+   - Rollback only if critical error occurs
+
+3. **Performance:**
+   - Use `WHERE id IN (...)` for efficient update
+   - Return count of actually updated items
+   - Don't fail if some IDs don't exist
+   - Consider background job for very large batches (>100)
+
+4. **Audit Log:**
+   - Log batch update with all IDs and count
+   - Store admin user ID and timestamp
+   - Track which playlists were actually updated vs. not found
+   - Store old and new visibility state for each playlist
+
+5. **Example SQL:**
+   ```sql
+   -- Start transaction
+   START TRANSACTION;
+   
+   -- Get existing IDs and their current visibility for logging
+   SELECT id, uuid, name, is_public 
+   FROM playlists 
+   WHERE id IN (?, ?, ?)
+   
+   -- Update visibility
+   UPDATE playlists 
+   SET is_public = ? 
+   WHERE id IN (?, ?, ?)
+   
+   -- Get affected rows count
+   SELECT ROW_COUNT() as updated_count
+   
+   COMMIT;
+   ```
+
+---
+
+## ⚠️ Error Handling
+
+### Standard Error Response Format
+
+All endpoints should return consistent error responses:
+
+```json
+{
+  "success": false,
+  "error": "Human-readable error message"
+}
+```
+
+### HTTP Status Codes
+
+| Code | Usage |
+|------|-------|
+| 200 | Success |
+| 400 | Bad Request (validation error) |
+| 401 | Unauthorized (missing/invalid token) |
+| 403 | Forbidden (not admin) |
+| 404 | Not Found (resource doesn't exist) |
+| 409 | Conflict (duplicate UUID on insert) |
+| 429 | Too Many Requests (rate limiting) |
+| 500 | Internal Server Error |
+
+### Common Error Messages
+
+- **Authentication:**
+  - `"Authentication required"`
+  - `"Invalid or expired token"`
+  - `"Admin privileges required"`
+
+- **Validation:**
+  - `"Invalid parameter: {param_name}"`
+  - `"Missing required field: {field_name}"`
+  - `"Invalid date format. Use YYYY-MM-DD"`
+  - `"Invalid type. Must be 'custom', 'similarity', or 'waiting_segments'"`
+  - `"Invalid is_public value. Must be boolean (true or false)"`
+  - `"Invalid sort_by column. Allowed: id, created_at"`
+  - `"Invalid sort_order. Must be 'asc' or 'desc'"`
+  - `"page_size must be between 1 and 100"`
+  - `"Invalid UUID format"`
+  - `"Invalid playlist ID. Must be a positive integer"`
+  - `"Batch size exceeds maximum of 100 items"`
+
+- **Not Found:**
+  - `"Playlist not found"`
+  - `"No playlists found matching criteria"`
+
+- **Conflict:**
+  - `"Playlist UUID already exists"` (if manually creating playlists)
+
+- **Rate Limiting:**
+  - `"Too many requests. Please try again later."`
+  - `"Export rate limit exceeded. Please wait before requesting another export."`
+  - `"Batch delete rate limit exceeded. Maximum 5 batch operations per minute."`
+  - `"Batch visibility update rate limit exceeded. Maximum 5 batch operations per minute."`
 
 - **Business Logic:**
   - `"Cannot delete playlist: contains user-generated content"`

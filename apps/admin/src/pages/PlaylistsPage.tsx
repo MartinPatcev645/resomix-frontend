@@ -43,6 +43,7 @@ function PlaylistsPage() {
     handlePageChange,
     handleExport,
     handleSortChange,
+    handleChangeVisibility,
   } = usePlaylist({
     onError: showErrorModal,
     onSuccess: showSuccessModal
@@ -78,6 +79,8 @@ function PlaylistsPage() {
           selectedCount={selectedRowKeys.length}
           totalCount={pagination.total}
           exportLoading={exportLoading}
+          data={data}
+          selectedRowKeys={selectedRowKeys}
           onSearch={handleSearch}
           onSearchColumnChange={handleSearchColumnChange}
           onDateRangeChange={handleDateRangeChange}
@@ -87,6 +90,7 @@ function PlaylistsPage() {
           onClearFilters={handleClearFilters}
           onExport={handleExport}
           onDeleteSelected={handleDeleteSelected}
+          onChangeVisibility={handleChangeVisibility}
         />
 
         {/* Data Table */}
@@ -101,6 +105,7 @@ function PlaylistsPage() {
           onDelete={handleDelete}
           onPageChange={handlePageChange}
           onSortChange={handleSortChange}
+          onChangeVisibility={handleChangeVisibility}
         />
       </div>
 

@@ -60,6 +60,19 @@ export interface PlaylistExportResponse {
   error?: string;
 }
 
+export interface PlaylistVisibilityResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface PlaylistBatchVisibilityResponse {
+  success: boolean;
+  updated_count: number;
+  message?: string;
+  error?: string;
+}
+
 export interface PlaylistDetailsResponse {
   success: boolean;
   data?: {
@@ -280,5 +293,69 @@ export const getPlaylistDetails = async (playlistUuid: string) => {
     };
   } catch (error) {
     return handleApiError(error as any);
+  }
+};
+
+/**
+ * Change visibility of a single playlist by ID (Admin)
+ * @param playlistId - The numeric ID of the playlist
+ * @param isPublic - Whether the playlist should be public (true) or private (false)
+ */
+export const adminChangePlaylistVisibility = async (playlistId: number, isPublic: boolean) => {
+  try {
+    const data = await axiosWrapper<PlaylistVisibilityResponse>(
+      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}`, {
+        is_public: isPublic,
+      })
+    );
+
+    if (data.success) {
+      return {
+        success: true,
+        message: data.message || "Playlist visibility updated successfully",
+      };
+    }
+    
+    return {
+      success: false,
+      error: (data as any).error || "Failed to change playlist visibility.",
+    };
+  } catch (error) {
+    return handleApiError(error as any);
+  }
+};
+
+/**
+ * Change visibility of multiple playlists in a batch (Admin)
+ * @param playlistIds - Array of playlist numeric IDs
+ * @param isPublic - Whether the playlists should be public (true) or private (false)
+ */
+export const adminBatchChangePlaylistVisibility = async (playlistIds: number[], isPublic: boolean) => {
+  try {
+    const data = await axiosWrapper<PlaylistBatchVisibilityResponse>(
+      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_VISIBILITY, {
+        ids: playlistIds,
+        is_public: isPublic,
+      })
+    );
+
+    if (data.success) {
+      return {
+        success: true,
+        updated_count: data.updated_count,
+        message: data.message || `Successfully updated ${data.updated_count} playlist${data.updated_count === 1 ? '' : 's'}`,
+      };
+    }
+    
+    return {
+      success: false,
+      updated_count: 0,
+      error: (data as any).error || "Failed to change playlist visibility.",
+    };
+  } catch (error) {
+    return {
+      ...handleApiError(error as any),
+      updated_count: 0,
+    };
   }
 };

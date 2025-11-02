@@ -2,6 +2,7 @@ import React from 'react'
 import { Input, Select, DatePicker, Button, Space, Tag } from 'antd'
 import { RefreshCw, Search, Download, Trash2, FilterX, Lock, Unlock } from 'lucide-react'
 import dayjs from 'dayjs'
+import type { PlaylistItem } from '@/hooks/usePlaylist.ts'
 
 const { RangePicker } = DatePicker
 
@@ -12,6 +13,8 @@ interface PlaylistTableControlsProps {
   selectedCount: number
   totalCount: number
   exportLoading: boolean
+  data: PlaylistItem[]
+  selectedRowKeys: string[]
   onSearch: (value: string, column: 'id' | 'uuid' | 'name') => void
   onSearchColumnChange: (column: 'id' | 'uuid' | 'name') => void
   onDateRangeChange: (dates: [string, string] | null) => void
@@ -21,6 +24,7 @@ interface PlaylistTableControlsProps {
   onClearFilters: () => void
   onExport: (format: 'csv') => void
   onDeleteSelected: () => void
+  onChangeVisibility: (ids: string[], isPublic: boolean) => void
 }
 
 function PlaylistTableControls({
@@ -30,6 +34,8 @@ function PlaylistTableControls({
   selectedCount,
   totalCount,
   exportLoading,
+  data,
+  selectedRowKeys,
   onSearch,
   onSearchColumnChange,
   onDateRangeChange,
@@ -39,11 +45,35 @@ function PlaylistTableControls({
   onClearFilters,
   onExport,
   onDeleteSelected,
+  onChangeVisibility,
 }: PlaylistTableControlsProps) {
   const [visibilityFilter, setVisibilityFilter] = React.useState<'all' | 'public' | 'private'>('all')
   const [typeFilter, setTypeFilter] = React.useState<'all' | 'custom' | 'similarity' | 'waiting_segments'>('all')
   
   const hasActiveFilters = searchText.trim() !== '' || dateRange !== null || visibilityFilter !== 'all' || typeFilter !== 'all'
+  
+  // Determine visibility state of selected playlists
+  const selectedPlaylists = React.useMemo(() => {
+    return data.filter(p => selectedRowKeys.includes(p.id))
+  }, [data, selectedRowKeys])
+  
+  const allSelectedArePrivate = React.useMemo(() => {
+    if (selectedPlaylists.length === 0) return false
+    return selectedPlaylists.every(p => !p.is_public)
+  }, [selectedPlaylists])
+  
+  const allSelectedArePublic = React.useMemo(() => {
+    if (selectedPlaylists.length === 0) return false
+    return selectedPlaylists.every(p => p.is_public)
+  }, [selectedPlaylists])
+  
+  const handleChangeVisibility = () => {
+    if (selectedRowKeys.length === 0) return
+    
+    // If all are private, make them public. Otherwise, make them private.
+    const makePublic = allSelectedArePrivate
+    onChangeVisibility(selectedRowKeys, makePublic)
+  }
   
   const searchColumns = [
     { label: 'Name', value: 'name' },
@@ -164,6 +194,17 @@ function PlaylistTableControls({
         <div className="flex-1" />
         
         <Space wrap size="middle">
+          {/* Change visibility */}
+          {selectedCount > 0 && (allSelectedArePrivate || allSelectedArePublic) && (
+            <Button
+              icon={allSelectedArePrivate ? <Unlock size={16} /> : <Lock size={16} />}
+              onClick={handleChangeVisibility}
+            >
+              <span className="hidden sm:inline">{allSelectedArePrivate ? 'Make Public' : 'Make Private'}</span>
+              <span className="sm:hidden">{allSelectedArePrivate ? 'Public' : 'Private'}</span>
+            </Button>
+          )}
+
           {/* Delete selected */}
           {selectedCount > 0 && (
             <Button

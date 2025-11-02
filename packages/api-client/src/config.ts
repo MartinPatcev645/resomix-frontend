@@ -44,6 +44,8 @@ export interface ApiConfig {
     ADMIN_PLAYLIST_BATCH_DELETE: string;
     ADMIN_PLAYLIST_EXPORT: string;
     ADMIN_PLAYLIST_DETAILS: string;
+    ADMIN_PLAYLIST_VISIBILITY: string;
+    ADMIN_PLAYLIST_BATCH_VISIBILITY: string;
     // unused beta endpoints
     // SPOTIFY_TRANSFER: string;
     // TIDAL_AUTH_TOKEN: string;
@@ -126,6 +128,8 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PLAYLIST_BATCH_DELETE: "/admin/playlist/batch-delete",
     ADMIN_PLAYLIST_EXPORT: "/admin/playlist/export",
     ADMIN_PLAYLIST_DETAILS: "/admin/playlist/",
+    ADMIN_PLAYLIST_VISIBILITY: "/admin/playlist/visibility/",
+    ADMIN_PLAYLIST_BATCH_VISIBILITY: "/admin/playlist/batch-visibility",
     // Unused beta endpoints
     // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
     // TIDAL_AUTH_TOKEN: "/tidal/auth/token",

@@ -20,6 +20,7 @@ interface PlaylistTableProps {
   onDelete: (ids: string[]) => void
   onPageChange: (page: number, pageSize: number) => void
   onSortChange: (sortBy: 'id' | 'created_at' | undefined, sortOrder: 'asc' | 'desc' | undefined) => void
+  onChangeVisibility: (ids: string[], isPublic: boolean) => void
 }
 
 function PlaylistTable({
@@ -33,6 +34,7 @@ function PlaylistTable({
   onDelete,
   onPageChange,
   onSortChange,
+  onChangeVisibility,
 }: PlaylistTableProps) {
   const { confirmDelete } = useConfirmDialog()
   const [viewingPlaylist, setViewingPlaylist] = useState<PlaylistItem | null>(null)
@@ -66,6 +68,11 @@ function PlaylistTable({
     setViewingPlaylist(null)
   }
 
+  const handleChangeVisibilitySingle = (record: PlaylistItem) => {
+    const newVisibility = !record.is_public
+    onChangeVisibility([record.id], newVisibility)
+  }
+
   const getActionMenu = (record: PlaylistItem): MenuProps['items'] => [
     {
       key: 'view-playlist',
@@ -80,6 +87,15 @@ function PlaylistTable({
       onClick: () => {
         window.open(`/playlists/${record.uuid}`, '_blank')
       },
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'change-visibility',
+      label: record.is_public ? 'Make Private' : 'Make Public',
+      icon: record.is_public ? <Lock size={16} /> : <Unlock size={16} />,
+      onClick: () => handleChangeVisibilitySingle(record),
     },
     {
       type: 'divider',
