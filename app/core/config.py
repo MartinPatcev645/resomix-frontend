@@ -101,6 +101,32 @@ class Settings(BaseModel):
         description="Tidal client secret for API access"
     )
     
+    # Apple Music Configuration
+    apple_team_id: str = Field(
+        default="",
+        description="Apple Developer Team ID for MusicKit"
+    )
+    apple_key_id: str = Field(
+        default="",
+        description="Apple MusicKit Key ID"
+    )
+    apple_private_key_path: str = Field(
+        default="creds/AuthKey_G8UJ487ML5.p8",
+        description="Path to Apple MusicKit private key file (AuthKey_*.p8)"
+    )
+    apple_private_key_pem: Optional[str] = Field(
+        default=None,
+        description="Raw PEM content of Apple private key (alternative to path)"
+    )
+    apple_token_ttl: int = Field(
+        default=15552000,
+        description="Apple Music developer token TTL in seconds (default: 180 days)"
+    )
+    apple_storefront: str = Field(
+        default="us",
+        description="Apple Music catalog storefront (e.g., 'us', 'gb', 'jp')"
+    )
+    
     # HLS Configuration
     hls_media_base_url: str = Field(
         default="https://media.resomix.com/signed-audio/",
@@ -372,6 +398,13 @@ class Settings(BaseModel):
             "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
             "TIDAL_CLIENT_ID": "tidal_client_id",
             "TIDAL_CLIENT_SECRET": "tidal_client_secret",
+            # Apple Music
+            "APPLE_TEAM_ID": "apple_team_id",
+            "APPLE_KEY_ID": "apple_key_id",
+            "APPLE_PRIVATE_KEY_PATH": "apple_private_key_path",
+            "APPLE_PRIVATE_KEY_PEM": "apple_private_key_pem",
+            "APPLE_TOKEN_TTL": "apple_token_ttl",
+            "APPLE_STOREFRONT": "apple_storefront",
             # HLS
             "HLS_MEDIA_BASE_URL": "hls_media_base_url",
             "HLS_SIGNING_SECRET": "hls_signing_secret",
@@ -408,7 +441,7 @@ class Settings(BaseModel):
                     "preview_audio_url_expires_seconds", "hls_url_expires_seconds", 
                     "es_request_timeout", "es_search_limit",
                     "jwt_access_token_expire_minutes", "jwt_refresh_token_expire_days",
-                    "smtp_port"
+                    "smtp_port", "apple_token_ttl"
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)

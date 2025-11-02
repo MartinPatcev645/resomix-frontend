@@ -157,6 +157,12 @@ class LoggingService:
                         'net_recv': metrics.get('net_bytes_recv')
                     })
             
+            # Always include context in metadata if provided
+            if context:
+                if metadata is None:
+                    metadata = {}
+                metadata['context'] = context
+            
             # Auto-extract error information
             if error:
                 stack_trace = stack_trace or traceback.format_exc()
@@ -167,8 +173,7 @@ class LoggingService:
                 if metadata is None:
                     metadata = {}
                 metadata.update({
-                    'error_type': type(error).__name__,
-                    'context': context
+                    'error_type': type(error).__name__
                 })
                 
                 # Build error message

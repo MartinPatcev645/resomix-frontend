@@ -346,6 +346,154 @@ class PlaylistTransferTrackRepository(BaseRepository[PlaylistTransferTrack]):
         track_ids = list(track_tidal_map.keys())
         return await self.async_get_by_track_ids(db, track_ids)
     
+    # --- Apple Music-specific methods ---
+    
+    async def async_get_apple_music_ids(self, db: AsyncSession, track_ids: List[int]) -> Dict[int, str]:
+        """
+        Get cached Apple Music IDs for multiple tracks
+        
+        Args:
+            db: Database session
+            track_ids: List of track IDs to look up
+            
+        Returns:
+            Dictionary mapping track_id -> apple_music_id for found entries
+        """
+        if not track_ids:
+            return {}
+            
+        stmt = select(self.model.track_id, self.model.apple_music_id).where(
+            and_(
+                self.model.track_id.in_(track_ids),
+                self.model.apple_music_id.isnot(None)
+            )
+        )
+        result = await db.execute(stmt)
+        
+        return {track_id: apple_music_id for track_id, apple_music_id in result.fetchall()}
+    
+    def get_apple_music_ids(self, db: Session, track_ids: List[int]) -> Dict[int, str]:
+        """
+        Sync version of get_apple_music_ids
+        
+        Args:
+            db: Database session
+            track_ids: List of track IDs to look up
+            
+        Returns:
+            Dictionary mapping track_id -> apple_music_id for found entries
+        """
+        if not track_ids:
+            return {}
+            
+        results = (
+            db.query(self.model.track_id, self.model.apple_music_id)
+            .filter(
+                and_(
+                    self.model.track_id.in_(track_ids),
+                    self.model.apple_music_id.isnot(None)
+                )
+            )
+            .all()
+        )
+        
+        return {track_id: apple_music_id for track_id, apple_music_id in results}
+    
+    async def async_upsert_apple_music_id(self, db: AsyncSession, track_id: int, apple_music_id: str) -> PlaylistTransferTrack:
+        """
+        Insert or update Apple Music ID for a track
+        
+        Args:
+            db: Database session
+            track_id: Track ID
+            apple_music_id: Apple Music catalog song ID
+            
+        Returns:
+            PlaylistTransferTrack instance
+        """
+        # Use MySQL's ON DUPLICATE KEY UPDATE for upsert
+        stmt = insert(PlaylistTransferTrack).values(
+            track_id=track_id,
+            apple_music_id=apple_music_id
+        )
+        
+        # Update apple_music_id if record already exists
+        stmt = stmt.on_duplicate_key_update(
+            apple_music_id=stmt.inserted.apple_music_id,
+            updated_at=stmt.inserted.updated_at
+        )
+        
+        await db.execute(stmt)
+        await db.commit()
+        
+        # Return the created/updated record
+        return await self.async_get_by_track_id(db, track_id)
+    
+    def upsert_apple_music_id(self, db: Session, track_id: int, apple_music_id: str) -> PlaylistTransferTrack:
+        """
+        Sync version of upsert_apple_music_id
+        
+        Args:
+            db: Database session
+            track_id: Track ID
+            apple_music_id: Apple Music catalog song ID
+            
+        Returns:
+            PlaylistTransferTrack instance
+        """
+        existing = self._find_existing(db, track_id=track_id)
+        
+        if existing:
+            existing.apple_music_id = apple_music_id
+            db.commit()
+            db.refresh(existing)
+            return existing
+        else:
+            new_record = PlaylistTransferTrack(
+                track_id=track_id,
+                apple_music_id=apple_music_id
+            )
+            db.add(new_record)
+            db.commit()
+            db.refresh(new_record)
+            return new_record
+    
+    async def async_batch_upsert_apple_music_ids(self, db: AsyncSession, track_apple_music_map: Dict[int, str]) -> List[PlaylistTransferTrack]:
+        """
+        Batch insert/update multiple Apple Music IDs
+        
+        Args:
+            db: Database session
+            track_apple_music_map: Dictionary mapping track_id -> apple_music_id
+            
+        Returns:
+            List of PlaylistTransferTrack instances
+        """
+        if not track_apple_music_map:
+            return []
+        
+        # Prepare batch insert/update
+        values = [
+            {
+                'track_id': track_id,
+                'apple_music_id': apple_music_id
+            }
+            for track_id, apple_music_id in track_apple_music_map.items()
+        ]
+        
+        stmt = insert(PlaylistTransferTrack).values(values)
+        stmt = stmt.on_duplicate_key_update(
+            apple_music_id=stmt.inserted.apple_music_id,
+            updated_at=stmt.inserted.updated_at
+        )
+        
+        await db.execute(stmt)
+        await db.commit()
+        
+        # Return the updated records
+        track_ids = list(track_apple_music_map.keys())
+        return await self.async_get_by_track_ids(db, track_ids)
+    
     # --- General utility methods ---
     
     async def async_get_by_track_id(self, db: AsyncSession, track_id: int) -> Optional[PlaylistTransferTrack]:
