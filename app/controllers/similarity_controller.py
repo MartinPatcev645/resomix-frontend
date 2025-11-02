@@ -383,10 +383,13 @@ class SimilarityController:
                 # Extract user_id if user is logged in
                 user_id = current_user.id if current_user else None
                 
+                # Pass original filename (not secure_filename) so similarity service can extract proper extension
+                original_filename = file.filename if file.filename else "upload.mp3"
+                
                 similarity_results = await self.similarity_service.calculate_similarity_for_upload(
                     db=db,
                     audio_bytes=audio_bytes, 
-                    original_filename=secure_filename, 
+                    original_filename=original_filename, 
                     track_uuid=upload_result["uuid"],
                     top_k=actual_top_k,
                     similarity_duplication_threshold=duplication_threshold,
