@@ -247,7 +247,6 @@ async def export_playlist(
 async def change_playlist_visibility(
     request: Request,
     id: int = Path(..., description="Playlist ID", ge=1),
-    visibility_request: Optional[AdminPlaylistVisibilityRequest] = None,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -264,20 +263,28 @@ async def change_playlist_visibility(
     if request.method == "OPTIONS":
         return JSONResponse(status_code=200, content={})
     
-    # Validate request body is provided
-    if visibility_request is None:
+    # Parse request body manually to avoid validation errors on OPTIONS
+    try:
+        body = await request.json()
+    except Exception:
         return JSONResponse(status_code=400, content={
-            "success": False, "error": "Request body is required."
+            "success": False, "error": "Request body is required and must be valid JSON."
         })
     
-    # Validate is_public is a boolean (should be handled by Pydantic, but double-check)
-    if not isinstance(visibility_request.is_public, bool):
+    # Validate is_public is provided and is a boolean
+    if "is_public" not in body:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Missing required field: 'is_public'."
+        })
+    
+    is_public = body.get("is_public")
+    if not isinstance(is_public, bool):
         return JSONResponse(status_code=400, content={
             "success": False, "error": "Invalid is_public value. Must be a boolean."
         })
     
     return await playlist_controller.change_playlist_visibility_admin(
-        db, request, id, visibility_request.is_public
+        db, request, id, is_public
     )
 
 
@@ -296,7 +303,6 @@ async def change_playlist_visibility(
 )
 async def batch_change_playlist_visibility(
     request: Request,
-    visibility_request: Optional[AdminBatchVisibilityRequest] = None,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
@@ -313,30 +319,46 @@ async def batch_change_playlist_visibility(
     if request.method == "OPTIONS":
         return JSONResponse(status_code=200, content={})
     
-    # Validate request body is provided
-    if visibility_request is None:
+    # Parse request body manually to avoid validation errors on OPTIONS
+    try:
+        body = await request.json()
+    except Exception:
         return JSONResponse(status_code=400, content={
-            "success": False, "error": "Request body is required."
+            "success": False, "error": "Request body is required and must be valid JSON."
         })
     
+    # Validate required fields
+    if "ids" not in body:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Missing required field: 'ids'."
+        })
+    
+    if "is_public" not in body:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Missing required field: 'is_public'."
+        })
+    
+    ids = body.get("ids")
+    is_public = body.get("is_public")
+    
     # Validate ids is a non-empty array
-    if not visibility_request.ids or len(visibility_request.ids) == 0:
+    if not isinstance(ids, list) or len(ids) == 0:
         return JSONResponse(status_code=400, content={
             "success": False, "error": "Invalid request. 'ids' must be a non-empty array of integers."
         })
     
     # Validate all IDs are integers
-    if not all(isinstance(id, int) for id in visibility_request.ids):
+    if not all(isinstance(id, int) for id in ids):
         return JSONResponse(status_code=400, content={
             "success": False, "error": "Invalid request. 'ids' must be a non-empty array of integers."
         })
     
     # Validate is_public is a boolean
-    if not isinstance(visibility_request.is_public, bool):
+    if not isinstance(is_public, bool):
         return JSONResponse(status_code=400, content={
             "success": False, "error": "Invalid is_public value. Must be a boolean."
         })
     
     return await playlist_controller.batch_change_playlist_visibility_admin(
-        db, request, visibility_request.ids, visibility_request.is_public
+        db, request, ids, is_public
     )
