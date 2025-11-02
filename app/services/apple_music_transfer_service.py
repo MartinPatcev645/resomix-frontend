@@ -386,7 +386,6 @@ class AppleMusicTransferService:
     
     async def transfer_playlist_to_apple_music(self, db: AsyncSession, playlist_id: str, 
                                                music_user_token: str, 
-                                               developer_token: Optional[str] = None,
                                                custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Transfer a Resomix playlist to Apple Music
@@ -395,7 +394,6 @@ class AppleMusicTransferService:
             db: Database session
             playlist_id: Resomix playlist UUID
             music_user_token: Apple Music User Token
-            developer_token: Optional developer token (will generate if not provided)
             custom_playlist_name: Optional custom name for Apple Music playlist
             
         Returns:
@@ -406,11 +404,8 @@ class AppleMusicTransferService:
         transfer_start_time = time.time()
         
         try:
-            # Step 1: Get or generate developer token
-            if developer_token:
-                dev_token = developer_token
-            else:
-                dev_token, _ = self.get_or_create_dev_token()
+            # Step 1: Generate developer token (always generated server-side, never from client)
+            dev_token, _ = self.get_or_create_dev_token()
             
             # Step 2: Get playlist from database
             logger.info("Fetching playlist from database...")

@@ -116,13 +116,12 @@ async def transfer_playlist_to_apple_music_endpoint(
     6. Returns summary of transfer results
     
     **Authentication:**
-    - Developer token: Generated automatically if not provided
+    - Developer token: Generated automatically by backend (never provided by frontend)
     - User token: Required from frontend (MusicKit.authorize())
     
     **Parameters:**
     - **playlist_id**: The UUID of the Resomix playlist to transfer
     - **music_user_token**: Apple Music User Token from MusicKit
-    - **developer_token**: Optional (backend will generate if missing)
     - **playlist_name**: Optional custom name for the Apple Music playlist
     
     **Returns:**
@@ -134,6 +133,5 @@ async def transfer_playlist_to_apple_music_endpoint(
         request,
         request_data.playlist_id, 
         request_data.music_user_token,
-        developer_token=request_data.developer_token,
         custom_playlist_name=request_data.playlist_name
     )

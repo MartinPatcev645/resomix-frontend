@@ -66,7 +66,6 @@ class AppleMusicTransferController:
         request: Request,
         playlist_id: str,
         music_user_token: str,
-        developer_token: str = None,
         custom_playlist_name: str = None
     ) -> JSONResponse:
         """
@@ -77,7 +76,6 @@ class AppleMusicTransferController:
             request: FastAPI Request object
             playlist_id: Resomix playlist UUID
             music_user_token: Apple Music User Token
-            developer_token: Optional developer token
             custom_playlist_name: Optional custom name for Apple Music playlist
             
         Returns:
@@ -125,7 +123,6 @@ class AppleMusicTransferController:
                 db=db,
                 playlist_id=playlist_id,
                 music_user_token=music_user_token,
-                developer_token=developer_token,
                 custom_playlist_name=custom_playlist_name
             )
             

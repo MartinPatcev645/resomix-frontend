@@ -26,7 +26,6 @@ class AppleMusicTransferRequest(BaseModel):
     """Request schema for transferring a playlist to Apple Music."""
     playlist_id: str = Field(..., description="Resomix playlist UUID to transfer")
     music_user_token: str = Field(..., description="Apple Music User Token from MusicKit.authorize()")
-    developer_token: Optional[str] = Field(None, description="Developer token (optional, backend will generate if missing)")
     playlist_name: Optional[str] = Field(None, description="Custom name for the Apple Music playlist")
 
     @validator('playlist_id')
@@ -59,7 +58,6 @@ class AppleMusicTransferRequest(BaseModel):
             "example": {
                 "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
                 "music_user_token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ij...",
-                "developer_token": None,
                 "playlist_name": "My Resomix Playlist"
             }
         }
