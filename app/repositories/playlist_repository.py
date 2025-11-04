@@ -91,12 +91,17 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db.add_all(playlist_tracks)
             await db.commit()
             
+            # Only show fork_id if the user owns this forked playlist
+            fork_id_value = ""
+            if user_id and playlist.user_id == user_id and playlist.fork_id:
+                fork_id_value = playlist.fork_id
+            
             return {
                 "id": playlist.uuid,  # UUID for external use
                 "pk": playlist.id,    # Primary key for internal DB ops
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": playlist.fork_id or "",
+                "fork_id": fork_id_value,
                 "is_favorite": False,  # Will be enriched by service layer if user logged in
                 "is_following": False  # Will be enriched by service layer if user logged in
             }
@@ -275,11 +280,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db.add_all(playlist_tracks)
             db.commit()
             
+            # Sync method - no user context, so fork_id is always empty (privacy)
+            # Also, this method creates new playlists, not forks, so fork_id will be None anyway
             return {
                 "id": playlist.uuid,  # Return UUID as 'id' field
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": playlist.fork_id or "",
+                "fork_id": "",  # Always empty in sync context (no user to check ownership)
                 "is_favorite": False,  # Sync method - engagement not available in sync context
                 "is_following": False  # Sync method - engagement not available in sync context
             }
@@ -556,11 +563,16 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 similar_tracks = []
             
             # Format response like similarity endpoints
+            # Only show fork_id if the logged-in user owns this forked playlist
+            fork_id_value = ""
+            if user_id and playlist.user_id == user_id and playlist.fork_id:
+                fork_id_value = playlist.fork_id
+            
             playlist_dict = {
                 "id": playlist.uuid,
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": playlist.fork_id or "",
+                "fork_id": fork_id_value,
                 "is_favorite": False,
                 "is_following": False
             }
