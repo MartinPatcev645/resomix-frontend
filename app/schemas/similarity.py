@@ -99,6 +99,8 @@ class PlaylistInfo(BaseModel):
     name: str = Field(..., description="Playlist name")
     is_public: bool = Field(..., description="Whether the playlist is public")
     fork_id: str = Field("", description="UUID of the original playlist if this is a fork, empty string if not a fork")
+    is_favorite: bool = Field(False, description="Whether the playlist is in user's favorites (False if user not logged in)")
+    is_following: bool = Field(False, description="Whether the user is following the playlist (False if user not logged in)")
 
     class Config:
         json_schema_extra = {
@@ -106,7 +108,9 @@ class PlaylistInfo(BaseModel):
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "name": "Playlist",
                 "is_public": False,
-                "fork_id": "original-playlist-uuid"
+                "fork_id": "original-playlist-uuid",
+                "is_favorite": False,
+                "is_following": False
             }
         }
 
@@ -146,7 +150,9 @@ class SimilarityUploadResponse(BaseModel):
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "name": "Playlist",
                     "is_public": False,
-                    "fork_id": "original-playlist-uuid"
+                    "fork_id": "original-playlist-uuid",
+                    "is_favorite": False,
+                    "is_following": False
                 }
             }
         }
@@ -187,7 +193,9 @@ class SimilarityByIdResponse(BaseModel):
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "name": "Playlist",
                     "is_public": False,
-                    "fork_id": "original-playlist-uuid"
+                    "fork_id": "original-playlist-uuid",
+                    "is_favorite": False,
+                    "is_following": False
                 }
             }
         }

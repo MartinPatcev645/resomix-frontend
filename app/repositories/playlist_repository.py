@@ -96,7 +96,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 "pk": playlist.id,    # Primary key for internal DB ops
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": playlist.fork_id or ""
+                "fork_id": playlist.fork_id or "",
+                "is_favorite": False,  # Will be enriched by service layer if user logged in
+                "is_following": False  # Will be enriched by service layer if user logged in
             }
             
         except Exception as e:
@@ -277,7 +279,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 "id": playlist.uuid,  # Return UUID as 'id' field
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": playlist.fork_id or ""
+                "fork_id": playlist.fork_id or "",
+                "is_favorite": False,  # Sync method - engagement not available in sync context
+                "is_following": False  # Sync method - engagement not available in sync context
             }
             
         except Exception as e:
@@ -552,15 +556,32 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 similar_tracks = []
             
             # Format response like similarity endpoints
+            playlist_dict = {
+                "id": playlist.uuid,
+                "name": playlist.name,
+                "is_public": playlist.is_public,
+                "fork_id": playlist.fork_id or "",
+                "is_favorite": False,
+                "is_following": False
+            }
+            
+            # Enrich with engagement data if user is logged in
+            if user_id:
+                try:
+                    from app.repositories.playlist_engagement_repository import PlaylistEngagementRepository
+                    engagement_repo = PlaylistEngagementRepository()
+                    engagement = await engagement_repo.async_get_engagement(db, user_id, playlist.id)
+                    if engagement:
+                        playlist_dict["is_favorite"] = engagement.is_favorite
+                        playlist_dict["is_following"] = engagement.is_following
+                except Exception as e:
+                    # If engagement lookup fails, just use defaults (False)
+                    print(f"Error enriching playlist with engagement: {e}")
+            
             response_data = {
                 "queried_track": queried_track,
                 "similar_tracks": similar_tracks,
-                "playlist": {
-                    "id": playlist.uuid,
-                    "name": playlist.name,
-                    "is_public": playlist.is_public,
-                    "fork_id": playlist.fork_id or ""
-                }
+                "playlist": playlist_dict
             }
             
             return response_data

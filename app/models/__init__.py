@@ -10,6 +10,7 @@ from .genre import Genre
 from .album import Album
 from .track import Track, TrackArtist
 from .playlist import Playlist, PlaylistTrack
+from .playlist_engagement import UserPlaylistEngagement
 from .playlist_transfer_track import PlaylistTransferTrack
 from .rating import TrackRating, PlaylistRating
 from .purchase import Purchase, UserSubscription
@@ -36,6 +37,7 @@ __all__ = [
     "Artist", "Label", "Genre", "Album", 
     "Track", "TrackArtist",
     "Playlist", "PlaylistTrack",
+    "UserPlaylistEngagement",
     "PlaylistTransferTrack",
     "TrackRating", "PlaylistRating",
     "Purchase", "UserSubscription",

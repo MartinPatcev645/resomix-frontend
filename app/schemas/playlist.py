@@ -162,7 +162,9 @@ class PlaylistSimilarityResponse(BaseModel):
                         "id": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Playlist",
                         "is_public": False,
-                        "fork_id": "original-playlist-uuid"
+                        "fork_id": "original-playlist-uuid",
+                        "is_favorite": False,
+                        "is_following": False
                     }
                 }
             }
@@ -194,7 +196,9 @@ class PlaylistForkResponse(BaseModel):
                         "id": "new-playlist-uuid",
                         "name": "Playlist Name",
                         "is_public": False,
-                        "fork_id": "original-playlist-uuid"
+                        "fork_id": "original-playlist-uuid",
+                        "is_favorite": False,
+                        "is_following": False
                     }
                 }
             }

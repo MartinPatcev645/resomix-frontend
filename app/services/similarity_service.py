@@ -240,6 +240,18 @@ class SimilarityService:
             
             # Add playlist info if created
             if playlist_info:
+                # Enrich playlist with engagement data
+                try:
+                    from app.services.playlist_engagement_service import PlaylistEngagementService
+                    engagement_service = PlaylistEngagementService()
+                    playlist_info = await engagement_service.enrich_playlist_with_engagement(
+                        db, playlist_info, user_id
+                    )
+                except Exception as e:
+                    # If enrichment fails, ensure defaults are set
+                    playlist_info.setdefault("is_favorite", False)
+                    playlist_info.setdefault("is_following", False)
+                    print(f"Error enriching playlist with engagement: {e}")
                 response_data["playlist"] = playlist_info
             
             # Apply filtering to queried track as well
@@ -408,6 +420,18 @@ class SimilarityService:
             
             # Add playlist info if created
             if playlist_info:
+                # Enrich playlist with engagement data
+                try:
+                    from app.services.playlist_engagement_service import PlaylistEngagementService
+                    engagement_service = PlaylistEngagementService()
+                    playlist_info = await engagement_service.enrich_playlist_with_engagement(
+                        db, playlist_info, user_id
+                    )
+                except Exception as e:
+                    # If enrichment fails, ensure defaults are set
+                    playlist_info.setdefault("is_favorite", False)
+                    playlist_info.setdefault("is_following", False)
+                    print(f"Error enriching playlist with engagement: {e}")
                 response_data["playlist"] = playlist_info
             
             # Apply filtering to queried track as well
