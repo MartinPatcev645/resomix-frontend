@@ -61,13 +61,40 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Dictionary with playlist info including uuid (as id) and name
         """
         try:
+            from app.models.track import Track
+            
+            # Fetch track durations for all tracks (playlist tracks + seed track)
+            all_track_ids = list(track_ids)
+            if seed_track_id:
+                all_track_ids.append(seed_track_id)
+            
+            # Calculate num_tracks (number of tracks in playlist_tracks, excluding seed track)
+            num_tracks = len(track_ids)
+            
+            # Calculate play_time (sum of all track durations including seed track)
+            play_time = 0
+            if all_track_ids:
+                # Fetch durations for all tracks in one query
+                stmt = select(Track.id, Track.duration_sec).where(Track.id.in_(all_track_ids))
+                result = await db.execute(stmt)
+                track_durations = {row.id: row.duration_sec for row in result.fetchall()}
+                
+                # Sum up all durations (including seed track)
+                for track_id in all_track_ids:
+                    duration = track_durations.get(track_id)
+                    if duration is not None:
+                        # duration_sec is Numeric(8,3), convert to int for play_time
+                        play_time += int(float(duration))
+            
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
                 user_id=user_id,  # Associate with user if logged in, otherwise anonymous
                 name=name,
                 is_public=False,  # Keep is_public as 0
                 type=playlist_type,
-                seed_track_id=seed_track_id
+                seed_track_id=seed_track_id,
+                num_tracks=num_tracks,
+                play_time=play_time
             )
             
             db.add(playlist)
@@ -170,7 +197,34 @@ class PlaylistRepository(BaseRepository[Playlist]):
             result = await db.execute(stmt)
             original_tracks = result.scalars().all()
             
-            # 5. Create Forked Playlist Tracks with Reset Positions
+            # 5. Calculate num_tracks and play_time for the forked playlist
+            num_tracks = len(original_tracks)
+            
+            # Fetch track durations for all tracks (playlist tracks + seed track)
+            from app.models.track import Track
+            all_track_ids = [pt.track_id for pt in original_tracks]
+            if original_playlist.seed_track_id:
+                all_track_ids.append(original_playlist.seed_track_id)
+            
+            play_time = 0
+            if all_track_ids:
+                # Fetch durations for all tracks in one query
+                duration_stmt = select(Track.id, Track.duration_sec).where(Track.id.in_(all_track_ids))
+                duration_result = await db.execute(duration_stmt)
+                track_durations = {row.id: row.duration_sec for row in duration_result.fetchall()}
+                
+                # Sum up all durations (including seed track)
+                for track_id in all_track_ids:
+                    duration = track_durations.get(track_id)
+                    if duration is not None:
+                        # duration_sec is Numeric(8,3), convert to int for play_time
+                        play_time += int(float(duration))
+            
+            # Update forked playlist with calculated values
+            forked_playlist.num_tracks = num_tracks
+            forked_playlist.play_time = play_time
+            
+            # 6. Create Forked Playlist Tracks with Reset Positions
             forked_tracks = []
             for i, original_track in enumerate(original_tracks):
                 forked_track = PlaylistTrack(
@@ -183,13 +237,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
             
             db.add_all(forked_tracks)
             
-            # 6. Increment Original Playlist Fork Count
+            # 7. Increment Original Playlist Fork Count
             original_playlist.fork_count += 1
             
-            # 7. Commit Transaction
+            # 8. Commit Transaction
             await db.commit()
             
-            # 8. Return Success Data
+            # 9. Return Success Data
             return await self.async_get_playlist_similarity_data(db, new_uuid, allow_private=True, user_id=user_id)
             
         except Exception as e:
@@ -255,13 +309,39 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Dictionary with playlist info including uuid (as id) and name
         """
         try:
+            from app.models.track import Track
+            
+            # Fetch track durations for all tracks (playlist tracks + seed track)
+            all_track_ids = list(track_ids)
+            if seed_track_id:
+                all_track_ids.append(seed_track_id)
+            
+            # Calculate num_tracks (number of tracks in playlist_tracks, excluding seed track)
+            num_tracks = len(track_ids)
+            
+            # Calculate play_time (sum of all track durations including seed track)
+            play_time = 0
+            if all_track_ids:
+                # Fetch durations for all tracks in one query
+                tracks = db.query(Track.id, Track.duration_sec).filter(Track.id.in_(all_track_ids)).all()
+                track_durations = {track.id: track.duration_sec for track in tracks}
+                
+                # Sum up all durations (including seed track)
+                for track_id in all_track_ids:
+                    duration = track_durations.get(track_id)
+                    if duration is not None:
+                        # duration_sec is Numeric(8,3), convert to int for play_time
+                        play_time += int(float(duration))
+            
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
                 user_id=None,  # Anonymous playlist
                 name=name,
                 is_public=False,  # Keep is_public as 0
                 type=playlist_type,
-                seed_track_id=seed_track_id
+                seed_track_id=seed_track_id,
+                num_tracks=num_tracks,
+                play_time=play_time
             )
             
             db.add(playlist)
@@ -1275,4 +1355,106 @@ class PlaylistRepository(BaseRepository[Playlist]):
             
         except Exception as e:
             print(f"Error getting playlist detail by UUID: {e}")
+            raise e
+    
+    async def async_get_all_user_playlists(
+        self,
+        db: AsyncSession,
+        user_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all playlists owned by a user with all required information.
+        
+        Args:
+            db: Database session
+            user_id: User ID to get playlists for
+            
+        Returns:
+            List of playlist dictionaries with all required fields
+        """
+        try:
+            from sqlalchemy import text
+            
+            # Get all playlists for the user
+            stmt = (
+                select(Playlist)
+                .where(Playlist.user_id == user_id)
+                .order_by(Playlist.created_at.desc())
+            )
+            result = await db.execute(stmt)
+            playlists = result.scalars().all()
+            
+            if not playlists:
+                return []
+            
+            # Get all playlist IDs for engagement lookup
+            playlist_ids = [p.id for p in playlists]
+            
+            # Get engagement data for all playlists in one query
+            from app.repositories.playlist_engagement_repository import PlaylistEngagementRepository
+            engagement_repo = PlaylistEngagementRepository()
+            engagement_map = {}
+            
+            # Fetch engagement for all playlists
+            for playlist_id in playlist_ids:
+                engagement = await engagement_repo.async_get_engagement(db, user_id, playlist_id)
+                if engagement:
+                    engagement_map[playlist_id] = {
+                        "is_favorite": engagement.is_favorite,
+                        "is_following": engagement.is_following
+                    }
+                else:
+                    engagement_map[playlist_id] = {
+                        "is_favorite": False,
+                        "is_following": False
+                    }
+            
+            # Get seed track IDs that need titles
+            seed_track_ids = [p.seed_track_id for p in playlists if p.seed_track_id]
+            seed_track_titles = {}
+            
+            if seed_track_ids:
+                # Fetch seed track titles in one query
+                seed_query = text("""
+                    SELECT id, title
+                    FROM tracks
+                    WHERE id IN :track_ids
+                """)
+                seed_result = await db.execute(seed_query, {"track_ids": tuple(seed_track_ids)})
+                for row in seed_result.fetchall():
+                    seed_track_titles[row.id] = row.title or None
+            
+            # Build response
+            playlist_list = []
+            for playlist in playlists:
+                # Get fork_id only if user owns this playlist (which they do, since we're filtering by user_id)
+                fork_id_value = playlist.fork_id or ""
+                
+                # Get seed track title
+                seed_track_title = None
+                if playlist.seed_track_id:
+                    seed_track_title = seed_track_titles.get(playlist.seed_track_id)
+                
+                # Get engagement data
+                engagement = engagement_map.get(playlist.id, {"is_favorite": False, "is_following": False})
+                
+                playlist_dict = {
+                    "id": playlist.uuid,  # UUID as id for compatibility
+                    "uuid": playlist.uuid,
+                    "name": playlist.name,
+                    "is_public": playlist.is_public,
+                    "seed_track_title": seed_track_title,
+                    "fork_id": fork_id_value,
+                    "num_tracks": playlist.num_tracks or 0,
+                    "play_time": playlist.play_time or 0,
+                    "created_at": playlist.created_at.isoformat() if playlist.created_at else None,
+                    "is_favorite": engagement["is_favorite"],
+                    "is_following": engagement["is_following"]
+                }
+                playlist_list.append(playlist_dict)
+            
+            return playlist_list
+            
+        except Exception as e:
+            print(f"Error getting all user playlists: {e}")
             raise e

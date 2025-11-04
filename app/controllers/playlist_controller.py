@@ -1559,3 +1559,107 @@ class PlaylistController:
                 }
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
+    
+    async def get_all_user_playlists(
+        self,
+        db: AsyncSession,
+        request: Request,
+        current_user: User
+    ) -> JSONResponse:
+        """
+        Get all playlists owned by the authenticated user.
+        
+        Args:
+            db: Database session
+            request: FastAPI Request object
+            current_user: Authenticated user object
+            
+        Returns:
+            JSON response with list of user's playlists
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        
+        try:
+            result = await self.playlist_service.get_all_user_playlists(db, current_user.id)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="USER_ACTION",
+                    action="get_all_user_playlists_success",
+                    message=f"User retrieved all playlists: {len(result.get('data', []))} playlists",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "user_id": current_user.id,
+                        "playlist_count": len(result.get("data", [])),
+                        "operation": "get_all_user_playlists"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=result
+                )
+            else:
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="ERROR",
+                    action="get_all_user_playlists_failed",
+                    message="Failed to retrieve user playlists",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    metadata={
+                        "user_uuid": current_user.uuid,
+                        "user_id": current_user.id,
+                        "error": result.get("error"),
+                        "operation": "get_all_user_playlists"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=result
+                )
+                
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while retrieving playlists"
+            )
+            
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action="get_all_user_playlists_exception",
+                message="Exception occurred while retrieving user playlists",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+                context="get all user playlists",
+                metadata={
+                    "user_uuid": current_user.uuid,
+                    "user_id": current_user.id,
+                    "error_type": type(e).__name__,
+                    "response": response_data,
+                    "operation": "get_all_user_playlists"
+                }
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_data
+            )

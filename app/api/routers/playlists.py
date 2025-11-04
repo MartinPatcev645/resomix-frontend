@@ -30,7 +30,8 @@ from app.schemas.playlist import (
     PlaylistOperationResponse,
     PlaylistErrorResponse,
     PlaylistSimilarityResponse,
-    PlaylistForkResponse
+    PlaylistForkResponse,
+    UserPlaylistsResponse
 )
 
 router = APIRouter(
@@ -310,4 +311,48 @@ async def get_playlist_hls_endpoint(
     Note: JWT authenticated users can access their own private playlists.
     """
     return await playlist_controller.get_playlist_hls_data(db, request, playlist_id, current_user)
+
+
+@router.get(
+    "/get-all-playlists/",
+    response_model=UserPlaylistsResponse,
+    summary="Get All User Playlists",
+    description="Get a list of all playlists owned by the authenticated user.",
+    responses={
+        200: {
+            "model": UserPlaylistsResponse,
+            "description": "User playlists retrieved successfully"
+        },
+        401: {
+            "model": PlaylistErrorResponse,
+            "description": "Authentication required"
+        },
+        500: {
+            "model": PlaylistErrorResponse,
+            "description": "Internal server error"
+        }
+    }
+)
+async def get_all_user_playlists_endpoint(
+    request: Request,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
+) -> JSONResponse:
+    """
+    Get a list of all playlists owned by the authenticated user.
+    
+    Returns all playlists (both public and private) that belong to the authenticated user.
+    Each playlist includes basic information and engagement status.
+    
+    **Requirements**:
+    - User must be authenticated (JWT token required)
+    
+    **Returns**:
+    - List of playlists with:
+      - Playlist UUID, name, and visibility status
+      - Fork information (if user owns a forked playlist)
+      - Favorite and following status
+    """
+    return await playlist_controller.get_all_user_playlists(db, request, current_user)
 

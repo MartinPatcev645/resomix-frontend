@@ -636,3 +636,32 @@ class PlaylistService:
                 "success": False,
                 "error": "An error occurred while retrieving playlist details"
             }
+    
+    async def get_all_user_playlists(
+        self,
+        db: AsyncSession,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """
+        Get all playlists owned by a user.
+        
+        Args:
+            db: Database session
+            user_id: User ID to get playlists for
+            
+        Returns:
+            Dictionary with success status and list of playlists
+        """
+        try:
+            playlists = await self.playlist_repository.async_get_all_user_playlists(db, user_id)
+            return {
+                "success": True,
+                "data": playlists
+            }
+        except Exception as e:
+            print(f"Error getting all user playlists: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving playlists",
+                "data": []
+            }

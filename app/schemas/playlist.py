@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
-from app.schemas.similarity import SimilarityByIdResponse
+from app.schemas.similarity import SimilarityByIdResponse, PlaylistInfo
 import re
 from decimal import Decimal
 
@@ -201,6 +201,37 @@ class PlaylistForkResponse(BaseModel):
                         "is_following": False
                     }
                 }
+            }
+        }
+
+
+class UserPlaylistsResponse(BaseModel):
+    """Response schema for user's playlists list."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: List[PlaylistInfo] = Field(..., description="List of user's playlists")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "name": "My Playlist",
+                        "is_public": False,
+                        "fork_id": "",
+                        "is_favorite": False,
+                        "is_following": False
+                    },
+                    {
+                        "id": "660e8400-e29b-41d4-a716-446655440001",
+                        "name": "Public Playlist",
+                        "is_public": True,
+                        "fork_id": "original-playlist-uuid",
+                        "is_favorite": False,
+                        "is_following": False
+                    }
+                ]
             }
         }
 

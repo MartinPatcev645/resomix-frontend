@@ -65,6 +65,8 @@ class Playlist(Base):
     fork_id = Column(String(36), ForeignKey("playlists.uuid", ondelete="SET NULL"), nullable=True)
     forked_at = Column(DateTime, nullable=True)
     fork_count = Column(Integer, nullable=False, default=0)
+    num_tracks = Column(Integer, nullable=False, default=0)  # number of tracks in playlist_tracks
+    play_time = Column(Integer, nullable=False, default=0)  # total play time in seconds (sum of track durations)
     
     # Timestamps
     created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())

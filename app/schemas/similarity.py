@@ -96,9 +96,14 @@ class QueriedTrackInfo(BaseModel):
 class PlaylistInfo(BaseModel):
     """Schema for playlist information returned with similarity results."""
     id: str = Field(..., description="Playlist UUID (for external use)")
+    uuid: str = Field(..., description="Playlist UUID (alias for id)")
     name: str = Field(..., description="Playlist name")
     is_public: bool = Field(..., description="Whether the playlist is public")
+    seed_track_title: Optional[str] = Field(None, description="Title of the seed track if available")
     fork_id: str = Field("", description="UUID of the original playlist if this is a fork, empty string if not a fork")
+    num_tracks: int = Field(0, description="Number of tracks in playlist_tracks")
+    play_time: int = Field(0, description="Total play time in seconds (sum of track durations including seed track)")
+    created_at: Optional[str] = Field(None, description="Playlist creation timestamp (ISO format)")
     is_favorite: bool = Field(False, description="Whether the playlist is in user's favorites (False if user not logged in)")
     is_following: bool = Field(False, description="Whether the user is following the playlist (False if user not logged in)")
 
@@ -106,9 +111,14 @@ class PlaylistInfo(BaseModel):
         json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
+                "uuid": "550e8400-e29b-41d4-a716-446655440000",
                 "name": "Playlist",
                 "is_public": False,
+                "seed_track_title": "Whole Life (Original Mix)",
                 "fork_id": "original-playlist-uuid",
+                "num_tracks": 10,
+                "play_time": 3600,
+                "created_at": "2025-01-15T10:30:00",
                 "is_favorite": False,
                 "is_following": False
             }
