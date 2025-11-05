@@ -72,7 +72,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             num_tracks = len(track_ids)
             
             # Calculate play_time (sum of all track durations including seed track)
-            play_time = 0
+            play_time_float = 0.0
             if all_track_ids:
                 # Fetch durations for all tracks in one query
                 stmt = select(Track.id, Track.duration_sec).where(Track.id.in_(all_track_ids))
@@ -83,8 +83,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 for track_id in all_track_ids:
                     duration = track_durations.get(track_id)
                     if duration is not None:
-                        # duration_sec is Numeric(8,3), convert to int for play_time
-                        play_time += int(float(duration))
+                        # Accumulate as float to preserve fractional seconds during summation
+                        play_time_float += float(duration)
+            play_time = int(play_time_float)
             
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
@@ -206,7 +207,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if original_playlist.seed_track_id:
                 all_track_ids.append(original_playlist.seed_track_id)
             
-            play_time = 0
+            play_time_float = 0.0
             if all_track_ids:
                 # Fetch durations for all tracks in one query
                 duration_stmt = select(Track.id, Track.duration_sec).where(Track.id.in_(all_track_ids))
@@ -217,8 +218,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 for track_id in all_track_ids:
                     duration = track_durations.get(track_id)
                     if duration is not None:
-                        # duration_sec is Numeric(8,3), convert to int for play_time
-                        play_time += int(float(duration))
+                        # Accumulate as float to preserve fractional seconds during summation
+                        play_time_float += float(duration)
+            play_time = int(play_time_float)
             
             # Update forked playlist with calculated values
             forked_playlist.num_tracks = num_tracks
@@ -320,7 +322,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             num_tracks = len(track_ids)
             
             # Calculate play_time (sum of all track durations including seed track)
-            play_time = 0
+            play_time_float = 0.0
             if all_track_ids:
                 # Fetch durations for all tracks in one query
                 tracks = db.query(Track.id, Track.duration_sec).filter(Track.id.in_(all_track_ids)).all()
@@ -330,8 +332,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 for track_id in all_track_ids:
                     duration = track_durations.get(track_id)
                     if duration is not None:
-                        # duration_sec is Numeric(8,3), convert to int for play_time
-                        play_time += int(float(duration))
+                        # Accumulate as float to preserve fractional seconds during summation
+                        play_time_float += float(duration)
+            play_time = int(play_time_float)
             
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
