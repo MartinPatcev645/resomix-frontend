@@ -1564,7 +1564,9 @@ class PlaylistController:
         self,
         db: AsyncSession,
         request: Request,
-        current_user: User
+        current_user: User,
+        page: int = 1,
+        page_size: int = 20
     ) -> JSONResponse:
         """
         Get all playlists owned by the authenticated user.
@@ -1581,7 +1583,7 @@ class PlaylistController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.playlist_service.get_all_user_playlists(db, current_user.id)
+            result = await self.playlist_service.get_all_user_playlists(db, current_user.id, page, page_size)
             duration_ms = (time.time() - start_time) * 1000
             
             if result.get("success"):
@@ -1599,6 +1601,8 @@ class PlaylistController:
                         "user_uuid": current_user.uuid,
                         "user_id": current_user.id,
                         "playlist_count": len(result.get("data", [])),
+                        "page": page,
+                        "page_size": page_size,
                         "operation": "get_all_user_playlists"
                     }
                 )

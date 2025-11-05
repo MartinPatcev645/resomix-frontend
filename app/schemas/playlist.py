@@ -209,6 +209,7 @@ class UserPlaylistsResponse(BaseModel):
     """Response schema for user's playlists list."""
     success: bool = Field(True, description="Always true for successful responses")
     data: List[PlaylistInfo] = Field(..., description="List of user's playlists")
+    total: int = Field(0, description="Total number of playlists owned by the user")
     
     class Config:
         json_schema_extra = {
@@ -231,7 +232,8 @@ class UserPlaylistsResponse(BaseModel):
                         "is_favorite": False,
                         "is_following": False
                     }
-                ]
+                ],
+                "total": 123
             }
         }
 

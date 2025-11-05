@@ -337,7 +337,9 @@ async def get_all_user_playlists_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: User = Depends(get_current_user)  # REQUIRED auth
+    current_user: User = Depends(get_current_user),  # REQUIRED auth
+    page: int = 1,
+    page_size: int = 20
 ) -> JSONResponse:
     """
     Get a list of all playlists owned by the authenticated user.
@@ -354,5 +356,5 @@ async def get_all_user_playlists_endpoint(
       - Fork information (if user owns a forked playlist)
       - Favorite and following status
     """
-    return await playlist_controller.get_all_user_playlists(db, request, current_user)
+    return await playlist_controller.get_all_user_playlists(db, request, current_user, page, page_size)
 

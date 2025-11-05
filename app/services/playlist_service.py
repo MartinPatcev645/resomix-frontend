@@ -640,7 +640,9 @@ class PlaylistService:
     async def get_all_user_playlists(
         self,
         db: AsyncSession,
-        user_id: int
+        user_id: int,
+        page: int = 1,
+        page_size: int = 20
     ) -> Dict[str, Any]:
         """
         Get all playlists owned by a user.
@@ -653,15 +655,17 @@ class PlaylistService:
             Dictionary with success status and list of playlists
         """
         try:
-            playlists = await self.playlist_repository.async_get_all_user_playlists(db, user_id)
+            playlists, total = await self.playlist_repository.async_get_all_user_playlists(db, user_id, page, page_size)
             return {
                 "success": True,
-                "data": playlists
+                "data": playlists,
+                "total": total
             }
         except Exception as e:
             print(f"Error getting all user playlists: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving playlists",
-                "data": []
+                "data": [],
+                "total": 0
             }

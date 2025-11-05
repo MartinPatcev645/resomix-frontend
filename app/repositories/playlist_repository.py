@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -1360,8 +1360,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
     async def async_get_all_user_playlists(
         self,
         db: AsyncSession,
-        user_id: int
-    ) -> List[Dict[str, Any]]:
+        user_id: int,
+        page: int = 1,
+        page_size: int = 20
+    ) -> Tuple[List[Dict[str, Any]], int]:
         """
         Get all playlists owned by a user with all required information.
         
@@ -1373,19 +1375,27 @@ class PlaylistRepository(BaseRepository[Playlist]):
             List of playlist dictionaries with all required fields
         """
         try:
-            from sqlalchemy import text
+            from sqlalchemy import text, func
             
-            # Get all playlists for the user
+            # Count total
+            count_query = select(func.count()).select_from(Playlist).where(Playlist.user_id == user_id)
+            total_result = await db.execute(count_query)
+            total = total_result.scalar() or 0
+
+            # Get page of playlists for the user
+            offset = max(0, (page - 1) * page_size)
             stmt = (
                 select(Playlist)
                 .where(Playlist.user_id == user_id)
                 .order_by(Playlist.created_at.desc())
+                .offset(offset)
+                .limit(page_size)
             )
             result = await db.execute(stmt)
             playlists = result.scalars().all()
             
             if not playlists:
-                return []
+                return [], total
             
             # Get all playlist IDs for engagement lookup
             playlist_ids = [p.id for p in playlists]
@@ -1453,7 +1463,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 }
                 playlist_list.append(playlist_dict)
             
-            return playlist_list
+            return playlist_list, total
             
         except Exception as e:
             print(f"Error getting all user playlists: {e}")
