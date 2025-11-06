@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Request, status
+from fastapi import APIRouter, Security, Depends, Request, status, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -31,7 +31,8 @@ from app.schemas.playlist import (
     PlaylistErrorResponse,
     PlaylistSimilarityResponse,
     PlaylistForkResponse,
-    UserPlaylistsResponse
+    UserPlaylistsResponse,
+    UserPlaylistsFilters
 )
 
 router = APIRouter(
@@ -338,11 +339,18 @@ async def get_all_user_playlists_endpoint(
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
     current_user: User = Depends(get_current_user),  # REQUIRED auth
-    page: int = 1,
-    page_size: int = 20
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    play_time: Optional[str] = Query(None, description="Play time filter: 'lt1h', '1-3h', '3-6h', '6-9h', 'gt9h'"),
+    num_tracks: Optional[int] = Query(None, description="Number of tracks filter: 10, 20, 50, or 100"),
+    start_date: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
+    is_public: Optional[bool] = Query(None, description="Visibility filter: true for public, false for private"),
+    own_favorites: Optional[bool] = Query(None, description="Show only favorites owned by user"),
+    all_favorites: Optional[bool] = Query(None, description="Show all favorited playlists including ones user doesn't own")
 ) -> JSONResponse:
     """
-    Get a list of all playlists owned by the authenticated user.
+    Get a list of all playlists owned by the authenticated user with optional filters.
     
     Returns all playlists (both public and private) that belong to the authenticated user.
     Each playlist includes basic information and engagement status.
@@ -350,11 +358,29 @@ async def get_all_user_playlists_endpoint(
     **Requirements**:
     - User must be authenticated (JWT token required)
     
+    **Filters** (all optional, can be stacked):
+    - **play_time**: Filter by total play time ('lt1h', '1-3h', '3-6h', '6-9h', 'gt9h')
+    - **num_tracks**: Filter by number of tracks (10, 20, 50, 100)
+    - **start_date**: Filter playlists created on or after this date (YYYY-MM-DD)
+    - **end_date**: Filter playlists created on or before this date (YYYY-MM-DD)
+    - **is_public**: Filter by visibility (true for public, false for private)
+    - **own_favorites**: If true, only return playlists user owns AND has favorited
+    - **all_favorites**: If true, return all playlists user has favorited (including ones they don't own)
+    
     **Returns**:
     - List of playlists with:
       - Playlist UUID, name, and visibility status
       - Fork information (if user owns a forked playlist)
       - Favorite and following status
     """
-    return await playlist_controller.get_all_user_playlists(db, request, current_user, page, page_size)
+    filters = UserPlaylistsFilters(
+        play_time=play_time,
+        num_tracks=num_tracks,
+        start_date=start_date,
+        end_date=end_date,
+        is_public=is_public,
+        own_favorites=own_favorites,
+        all_favorites=all_favorites
+    )
+    return await playlist_controller.get_all_user_playlists(db, request, current_user, page, page_size, filters)
 

@@ -205,6 +205,53 @@ class PlaylistForkResponse(BaseModel):
         }
 
 
+class UserPlaylistsFilters(BaseModel):
+    """Filter schema for user playlists query."""
+    play_time: Optional[str] = Field(None, description="Play time filter: 'lt1h', '1-3h', '3-6h', '6-9h', 'gt9h'")
+    num_tracks: Optional[int] = Field(None, description="Number of tracks filter: 10, 20, 50, or 100")
+    start_date: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
+    is_public: Optional[bool] = Field(None, description="Visibility filter: true for public, false for private")
+    own_favorites: Optional[bool] = Field(None, description="Show only favorites owned by user (true/false)")
+    all_favorites: Optional[bool] = Field(None, description="Show all favorited playlists including ones user doesn't own (true/false)")
+    
+    @validator('play_time')
+    def validate_play_time(cls, v):
+        """Validate play_time filter value."""
+        if v is not None and v not in ['lt1h', '1-3h', '3-6h', '6-9h', 'gt9h']:
+            raise ValueError("play_time must be one of: 'lt1h', '1-3h', '3-6h', '6-9h', 'gt9h'")
+        return v
+    
+    @validator('num_tracks')
+    def validate_num_tracks(cls, v):
+        """Validate num_tracks filter value."""
+        if v is not None and v not in [10, 20, 50, 100]:
+            raise ValueError("num_tracks must be one of: 10, 20, 50, 100")
+        return v
+    
+    @validator('start_date', 'end_date')
+    def validate_date(cls, v):
+        """Validate date format (YYYY-MM-DD)."""
+        if v is not None:
+            import re
+            if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
+                raise ValueError("Date must be in YYYY-MM-DD format")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "play_time": "1-3h",
+                "num_tracks": 20,
+                "start_date": "2025-01-01",
+                "end_date": "2025-12-31",
+                "is_public": True,
+                "own_favorites": False,
+                "all_favorites": False
+            }
+        }
+
+
 class UserPlaylistsResponse(BaseModel):
     """Response schema for user's playlists list."""
     success: bool = Field(True, description="Always true for successful responses")

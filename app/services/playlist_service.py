@@ -642,20 +642,24 @@ class PlaylistService:
         db: AsyncSession,
         user_id: int,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        filters = None
     ) -> Dict[str, Any]:
         """
-        Get all playlists owned by a user.
+        Get all playlists owned by a user with optional filters.
         
         Args:
             db: Database session
             user_id: User ID to get playlists for
+            page: Page number
+            page_size: Items per page
+            filters: Optional UserPlaylistsFilters object
             
         Returns:
             Dictionary with success status and list of playlists
         """
         try:
-            playlists, total = await self.playlist_repository.async_get_all_user_playlists(db, user_id, page, page_size)
+            playlists, total = await self.playlist_repository.async_get_all_user_playlists(db, user_id, page, page_size, filters)
             return {
                 "success": True,
                 "data": playlists,
