@@ -1,5 +1,6 @@
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
-import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { formatDuration, formatPercentage /*, useGlobalAudioController */ } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
@@ -12,17 +13,29 @@ interface PlaylistTableProps {
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
-    const hlsController = useGlobalAudioController();
+    // const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
+    const [hintFor, setHintFor] = useState<string | null>(null);
+    const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handlePlayPause = (trackId: string) => {
-        if (currentTrackId === trackId && isPlaying) {
-            hlsController.stop();
-        } else {
-            hlsController.load(trackId, true);
+    const handlePlayPauseWithHint = useCallback((trackId: string) => {
+        // handlePlayPause(trackId);
+
+        setHintFor(trackId);
+        if (hintTimerRef.current) {
+            clearTimeout(hintTimerRef.current);
         }
-    };
+        hintTimerRef.current = setTimeout(() => {
+            setHintFor(null);
+        }, 3000);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+        };
+    }, []);
 
     return (
         <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]" role="table" aria-label="Similar tracks">
@@ -30,8 +43,34 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             {tracks.map((track) => (
                 <div key={track.id} className="w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative" role="row">
                     <div className="flex flex-col w-full">
-                        <button type="button" aria-label="PlayPause" name="PlayPause" onClick={() => handlePlayPause(track.id)} className="flex items-center gap-[var(--px-7)] playlist-play-button" id={`playlist-table-play-button-${track.id}`} role="cell" data-track-id={track.id} data-track-artist={track.artist} data-track-title={track.title}>
+                        <button
+                            type="button"
+                            aria-label="PlayPause"
+                            name="PlayPause"
+                            onClick={() => handlePlayPauseWithHint(track.id)}
+                            className="flex items-center gap-[var(--px-7)] playlist-play-button"
+                            id={`playlist-table-play-button-${track.id}`}
+                            role="cell"
+                            data-track-id={track.id}
+                            data-track-artist={track.artist}
+                            data-track-title={track.title}
+                        >
+                            {hintFor === track.id && (
+                                <div
+                                    role="status"
+                                    aria-live="polite"
+                                    className="pointer-events-none absolute -top-6 left-2 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10 z-20"
+                                >
+                                    Demo mode - Audio playback limited while we complete licensing
+                                </div>
+                            )}
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
+                                {hintFor === track.id && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute -inset-1 rounded-md ring-2 ring-[#FFCC00] animate-pulse z-10"
+                                    />
+                                )}
                                 <div className="w-[var(--px-36)] h-[var(--px-36)] m-[var(--px-2)] flex items-center justify-center border-3 rounded-md border-[var(--color-light-theme)] relative z-20">
                                     <span className="text-[length:var(--px-15)] font-fira font-light text-[var(--color-primary)] relative z-0">
                                         {track.rank}

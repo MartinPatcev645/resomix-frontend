@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { formatDuration, formatPercentage /*, useGlobalAudioController */ } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
@@ -12,17 +12,29 @@ import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorag
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    const hlsController = useGlobalAudioController();
+    // const hlsController = useGlobalAudioController();
+    const [hintFor, setHintFor] = useState<string | null>(null);
+    const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
-    const handlePlayPause = (trackId: string) => {
-        if (currentTrackId === trackId && isPlaying) {
-            hlsController.stop();
-        } else {
-            hlsController.load(trackId, true);
+    const handlePlayPauseWithHint = useCallback((trackId: string) => {
+        // handlePlayPause(trackId);
+
+        setHintFor(trackId);
+        if (hintTimerRef.current) {
+            clearTimeout(hintTimerRef.current);
         }
-    };
+        hintTimerRef.current = setTimeout(() => {
+            setHintFor(null);
+        }, 3000);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+        };
+    }, []);
 
     const tracks = playlistData?.similar_tracks ?? [];
 
@@ -74,16 +86,31 @@ const PlaylistTable: React.FC = () => {
                         <div className="text-[length:var(--px-10)] font-fira font-light mr-[var(--px-5)]" role="cell">
                             {track.rank}
                         </div>
-                        <div role="cell">
+                        <div role="cell" className="relative inline-block">
+                            {hintFor === track.id && (
+                                <div
+                                  role="status"
+                                  aria-live="polite"
+                                  className="absolute -top-8 -left-2 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10 z-20"
+                                >
+                                    Demo mode - Audio playback limited while we complete licensing
+                                </div>
+                            )}
+                            {hintFor === track.id && (
+                                <span
+                                  aria-hidden="true"
+                                  className="pointer-events-none absolute -inset-1 rounded-md ring-2 ring-[#FFCC00] animate-pulse z-10"
+                                />
+                            )}
                             <IconComp
-                              className="mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)] playlist-play-button"
+                              className="relative z-20 mx-[var(--px-10)] w-[var(--px-16)] h-[var(--px-16)] px-[var(--px-1)] playlist-play-button"
                               svg={<img
                                 src={currentTrackId === track.id && isPlaying ? PauseSvg : PlaySvg}
                                 alt={currentTrackId === track.id && isPlaying ? "Pause" : "Play"}
                                 className='w-[var(--px-10)] h-[var(--px-10)]'
                               />}
                               padding='py-[var(--px-3)] px-[var(--px-4)]'
-                              onClick={() => handlePlayPause(track.id)}
+                              onClick={() => handlePlayPauseWithHint(track.id)}
                               id={`playlist-table-play-button-${track.id}`}
                               dataAttributes={{
                                   'data-testid': 'table-play-button',

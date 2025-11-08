@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
@@ -24,6 +24,20 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
   const effectiveId = trackId ?? "uploaded-local";
 
   const ctl = useWaveformControls({ id: effectiveId, totalDuration, withPlayPause: true });
+  const [showPreviewHint, setShowPreviewHint] = useState(false);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePlayClick = useCallback(() => {
+    // ctl.togglePlay();
+    setShowPreviewHint(true);
+
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current);
+    }
+    hintTimerRef.current = setTimeout(() => {
+      setShowPreviewHint(false);
+    }, 3000);
+  }, []);
 
   // Initialize Peaks by attaching the overview element (matches previous behavior)
   useEffect(() => {
@@ -32,26 +46,48 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
     }
   }, [ctl.attachOverviewElement, ctl.containerRef]);
 
+  useEffect(() => {
+    return () => {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    };
+  }, []);
 
 
   return (
     <>
       <div className="flex items-center gap-2 w-full">
         {/* Play / Pause */}
-        <button
-          type="button"
-          id="input-player-play-pause"
-          className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0 player-control player-control-play-pause"
-          onClick={ctl.togglePlay}
-          aria-label="Play"
-          {...(playButtonDataAttributes as Record<string, string> | undefined)}
-        >
-          <img
-            src={ctl.isPlaying ? PauseSvg : PlaySvg}
-            alt={ctl.isPlaying ? "Pause" : "Play"}
-            className="w-[var(--px-16)] h-[var(--px-16)]"
-          />
-        </button>
+        <div className="relative flex-shrink-0">
+          {showPreviewHint && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-1 rounded-full ring-2 ring-[#FFCC00] animate-pulse"
+            />
+          )}
+          {showPreviewHint && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="absolute -top-9 left-2 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10 z-20"
+            >
+              Demo mode - Audio playback limited while we complete licensing
+            </div>
+          )}
+          <button
+            type="button"
+            id="input-player-play-pause"
+            className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0 player-control player-control-play-pause"
+            onClick={handlePlayClick}
+            aria-label="Play"
+            {...(playButtonDataAttributes as Record<string, string> | undefined)}
+          >
+            <img
+              src={ctl.isPlaying ? PauseSvg : PlaySvg}
+              alt={ctl.isPlaying ? "Pause" : "Play"}
+              className="w-[var(--px-16)] h-[var(--px-16)]"
+            />
+          </button>
+        </div>
 
         <div className="flex flex-col w-full gap-[var(--px-5)]">
           <div
