@@ -30,6 +30,7 @@ from .user import (
 )
 from .log import SystemLog
 from .waitlist import Waitlist
+from .operation_limit import OperationType, UserOperationLimit
 
 # Make models available at package level
 __all__ = [
@@ -49,5 +50,6 @@ __all__ = [
     "UserSession",
     "UserAuthProvider",
     "Role", "Permission", "RolePermission", "UserRole",
-    "SystemLog", "Waitlist"
+    "SystemLog", "Waitlist",
+    "OperationType", "UserOperationLimit"
 ]

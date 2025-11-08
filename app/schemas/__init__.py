@@ -137,6 +137,18 @@ from .waitlist import (
     WaitlistErrorResponse,
 )
 
+# Operation limit schemas
+from .operation_limit import (
+    OperationTypeResponse,
+    AdminOperationTypeListResponse,
+    UserOperationLimitResponse,
+    UserOperationLimitListFilters,
+    UserOperationLimitListResponse,
+    UserOperationLimitDetailResponse,
+    UserOperationLimitUpsertRequest,
+    UserOperationLimitDeleteResponse,
+)
+
 # Authentication schemas
 from .auth import (
     RegisterRequest,
@@ -264,6 +276,16 @@ __all__ = [
     "WaitlistResponse",
     "WaitlistSuccessResponse",
     "WaitlistErrorResponse",
+
+    # Operation limits
+    "OperationTypeResponse",
+    "AdminOperationTypeListResponse",
+    "UserOperationLimitResponse",
+    "UserOperationLimitListFilters",
+    "UserOperationLimitListResponse",
+    "UserOperationLimitDetailResponse",
+    "UserOperationLimitUpsertRequest",
+    "UserOperationLimitDeleteResponse",
     
     # Authentication
     "RegisterRequest",
