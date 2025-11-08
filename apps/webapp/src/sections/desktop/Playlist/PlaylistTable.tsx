@@ -107,7 +107,7 @@ const PlaylistTable: React.FC = () => {
                                 Only 20 tracks accessible in Demo Mode.
                             </div>
                         )}
-                        <div className={isRestricted ? "blur-sm" : ""}>
+                        <div className={isRestricted ? "blur-xs" : ""}>
                         <div key={track.id} className="w-full border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
                             <div className="flex flex-col w-full">
                                 <div key={track.id} className="flex items-center" role="row">
