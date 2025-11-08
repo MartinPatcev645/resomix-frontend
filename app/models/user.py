@@ -178,7 +178,12 @@ class User(Base):
     # Relationships (defined later to avoid circular refs)
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
-    operation_limits = relationship("UserOperationLimit", back_populates="user", cascade="all, delete-orphan")
+    operation_limits = relationship(
+        "UserOperationLimit",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="UserOperationLimit.user_id"
+    )
 
     def __init__(self, **kwargs):
         if 'uuid' not in kwargs:
