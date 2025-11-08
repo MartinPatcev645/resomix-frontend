@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
-import { formatDuration, formatPercentage /*, useGlobalAudioController */ } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
+import { DEMO_MODE } from "@resomix/config";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
@@ -13,14 +14,27 @@ interface PlaylistTableProps {
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
-    // const hlsController = useGlobalAudioController();
+    const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
     const [hintFor, setHintFor] = useState<string | null>(null);
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handlePlayPauseWithHint = useCallback((trackId: string) => {
-        // handlePlayPause(trackId);
+    const handlePlayButtonClick = useCallback((trackId: string) => {
+        if (!DEMO_MODE) {
+            if (hintTimerRef.current) {
+                clearTimeout(hintTimerRef.current);
+                hintTimerRef.current = null;
+            }
+            setHintFor(null);
+
+            if (currentTrackId === trackId && isPlaying) {
+                hlsController.stop();
+            } else {
+                hlsController.load(trackId, true);
+            }
+            return;
+        }
 
         setHintFor(trackId);
         if (hintTimerRef.current) {
@@ -29,9 +43,12 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         hintTimerRef.current = setTimeout(() => {
             setHintFor(null);
         }, 3000);
-    }, []);
+    }, [currentTrackId, hlsController, isPlaying]);
 
     useEffect(() => {
+        if (!DEMO_MODE) {
+            return;
+        }
         return () => {
             if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
         };
@@ -47,7 +64,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             type="button"
                             aria-label="PlayPause"
                             name="PlayPause"
-                            onClick={() => handlePlayPauseWithHint(track.id)}
+                            onClick={() => handlePlayButtonClick(track.id)}
                             className="flex items-center gap-[var(--px-7)] playlist-play-button"
                             id={`playlist-table-play-button-${track.id}`}
                             role="cell"
@@ -55,7 +72,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             data-track-artist={track.artist}
                             data-track-title={track.title}
                         >
-                            {hintFor === track.id && (
+                            {DEMO_MODE && hintFor === track.id && (
                                 <div
                                     role="status"
                                     aria-live="polite"
@@ -65,7 +82,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </div>
                             )}
                             <div className="min-w-[var(--px-40)] h-[var(--px-40)] relative">
-                                {hintFor === track.id && (
+                                {DEMO_MODE && hintFor === track.id && (
                                     <span
                                         aria-hidden="true"
                                         className="pointer-events-none absolute -inset-1 rounded-md ring-2 ring-[#FFCC00] animate-pulse z-10"

@@ -1,25 +1,38 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage /*, useGlobalAudioController */ } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
-import { BASE_BETA_URL } from "@resomix/config";
+import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
-    // const hlsController = useGlobalAudioController();
+    const hlsController = useGlobalAudioController();
     const [hintFor, setHintFor] = useState<string | null>(null);
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
-    const handlePlayPauseWithHint = useCallback((trackId: string) => {
-        // handlePlayPause(trackId);
+    const handlePlayButtonClick = useCallback((trackId: string) => {
+        if (!DEMO_MODE) {
+            if (hintTimerRef.current) {
+                clearTimeout(hintTimerRef.current);
+                hintTimerRef.current = null;
+            }
+            setHintFor(null);
+
+            if (currentTrackId === trackId && isPlaying) {
+                hlsController.stop();
+            } else {
+                hlsController.load(trackId, true);
+            }
+            return;
+        }
 
         setHintFor(trackId);
         if (hintTimerRef.current) {
@@ -28,9 +41,12 @@ const PlaylistTable: React.FC = () => {
         hintTimerRef.current = setTimeout(() => {
             setHintFor(null);
         }, 3000);
-    }, []);
+    }, [currentTrackId, hlsController, isPlaying]);
 
     useEffect(() => {
+        if (!DEMO_MODE) {
+            return;
+        }
         return () => {
             if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
         };
@@ -87,7 +103,7 @@ const PlaylistTable: React.FC = () => {
                             {track.rank}
                         </div>
                         <div role="cell" className="relative inline-block">
-                            {hintFor === track.id && (
+                            {DEMO_MODE && hintFor === track.id && (
                                 <div
                                   role="status"
                                   aria-live="polite"
@@ -96,7 +112,7 @@ const PlaylistTable: React.FC = () => {
                                     Demo mode - Audio playback limited while we complete licensing
                                 </div>
                             )}
-                            {hintFor === track.id && (
+                            {DEMO_MODE && hintFor === track.id && (
                                 <span
                                   aria-hidden="true"
                                   className="pointer-events-none absolute -inset-1 rounded-md ring-2 ring-[#FFCC00] animate-pulse z-10"
@@ -110,7 +126,7 @@ const PlaylistTable: React.FC = () => {
                                 className='w-[var(--px-10)] h-[var(--px-10)]'
                               />}
                               padding='py-[var(--px-3)] px-[var(--px-4)]'
-                              onClick={() => handlePlayPauseWithHint(track.id)}
+                              onClick={() => handlePlayButtonClick(track.id)}
                               id={`playlist-table-play-button-${track.id}`}
                               dataAttributes={{
                                   'data-testid': 'table-play-button',

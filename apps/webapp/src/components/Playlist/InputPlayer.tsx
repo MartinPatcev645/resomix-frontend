@@ -9,6 +9,7 @@ import NetworkSvg from "@/assets/icons/network-aleft.svg";
 import { useWaveformControls, formatTime } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { WaveformLoader } from "@resomix/ui";
+import { DEMO_MODE } from "@resomix/config";
 
 interface InputPlayerProps {
   trackId?: string;
@@ -28,7 +29,11 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlayClick = useCallback(() => {
-    // ctl.togglePlay();
+    if (!DEMO_MODE) {
+      ctl.togglePlay?.();
+      return;
+    }
+
     setShowPreviewHint(true);
 
     if (hintTimerRef.current) {
@@ -37,7 +42,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
     hintTimerRef.current = setTimeout(() => {
       setShowPreviewHint(false);
     }, 3000);
-  }, []);
+  }, [ctl.togglePlay]);
 
   // Initialize Peaks by attaching the overview element (matches previous behavior)
   useEffect(() => {
@@ -47,6 +52,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
   }, [ctl.attachOverviewElement, ctl.containerRef]);
 
   useEffect(() => {
+    if (!DEMO_MODE) {
+      return;
+    }
     return () => {
       if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
     };
@@ -56,15 +64,16 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
   return (
     <>
       <div className="flex items-center gap-2 w-full">
+        DEMO MODE: {DEMO_MODE ? 'true' : 'false'}
         {/* Play / Pause */}
         <div className="relative flex-shrink-0">
-          {showPreviewHint && (
+          {DEMO_MODE && showPreviewHint && (
             <span
               aria-hidden="true"
               className="pointer-events-none absolute -inset-1 rounded-full ring-2 ring-[#FFCC00] animate-pulse"
             />
           )}
-          {showPreviewHint && (
+          {DEMO_MODE && showPreviewHint && (
             <div
               role="status"
               aria-live="polite"

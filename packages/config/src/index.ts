@@ -8,6 +8,7 @@ export interface AppConfig {
   serverBackend: string
   serverMedia: string
   mode: string
+  demoMode: boolean
 }
 
 const env = (import.meta as unknown as { env: Record<string, string | undefined> }).env
@@ -21,7 +22,8 @@ export const CONFIG: AppConfig = {
   soundcloudUrl: env.VITE_SOUNDCLOUD_URL ?? '',
   serverBackend: env.VITE_SERVER_BACKEND ?? '',
   serverMedia: env.VITE_SERVER_MEDIA ?? '',
-  mode: env.MODE ?? 'development'
+  mode: env.MODE ?? 'development',
+  demoMode: (env.VITE_DEMO_MODE ?? 'false').toLowerCase() === 'true'
 }
 
 export const BASE_LANDING_URL = CONFIG.baseLandingUrl
@@ -32,3 +34,4 @@ export const TWITTER_URL = CONFIG.twitterUrl
 export const SOUNDCLOUD_URL = CONFIG.soundcloudUrl
 export const SERVER_BACKEND = CONFIG.serverBackend
 export const SERVER_MEDIA = CONFIG.serverMedia
+export const DEMO_MODE = CONFIG.demoMode
