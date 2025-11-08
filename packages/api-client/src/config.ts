@@ -46,6 +46,9 @@ export interface ApiConfig {
     ADMIN_PLAYLIST_DETAILS: string;
     ADMIN_PLAYLIST_VISIBILITY: string;
     ADMIN_PLAYLIST_BATCH_VISIBILITY: string;
+    ADMIN_OPERATION_TYPES: string;
+    ADMIN_OPERATION_LIMITS: string;
+    ADMIN_OPERATION_LIMIT_DETAIL: string;
     // unused beta endpoints
     // SPOTIFY_TRANSFER: string;
     // TIDAL_AUTH_TOKEN: string;
@@ -130,6 +133,9 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PLAYLIST_DETAILS: "/admin/playlist/",
     ADMIN_PLAYLIST_VISIBILITY: "/admin/playlist/visibility/",
     ADMIN_PLAYLIST_BATCH_VISIBILITY: "/admin/playlist/batch-visibility",
+    ADMIN_OPERATION_TYPES: "/admin/operation-limits/operation-types",
+    ADMIN_OPERATION_LIMITS: "/admin/operation-limits",
+    ADMIN_OPERATION_LIMIT_DETAIL: "/admin/operation-limits/",
     // Unused beta endpoints
     // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
     // TIDAL_AUTH_TOKEN: "/tidal/auth/token",
