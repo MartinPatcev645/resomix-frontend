@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { usePlaylistStore } from '@resomix/stores';
+import { DEMO_MODE } from '@resomix/config';
 
 /**
  * Hook for exporting playlist data to a TXT file
@@ -22,7 +23,9 @@ export function usePlaylistExport() {
     const inputTrack = `INPUT TRACK: ${queried_track.artist} - ${queried_track.title}${inputTrackLabel}`;
     
     // Format similar tracks
-    const similarTracksFormatted = similar_tracks
+    const tracksToExport = DEMO_MODE ? similar_tracks.slice(0, 10) : similar_tracks;
+
+    const similarTracksFormatted = tracksToExport
       .map(track => {
         const trackLabel = track.label ? ` [${track.label}]` : '';
         return `${track.rank}. ${track.artist} - ${track.title}${trackLabel}`;
@@ -30,7 +33,7 @@ export function usePlaylistExport() {
       .join('\n');
     
     // Combine all parts
-    return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}\n\n\nSonic matches provided by Resomix https://resomix.com`;
+    return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}\n\n\nRestricted to 10 tracks in demo mode.\nSonic matches provided by Resomix https://resomix.com`;
   }, []);
 
   const generateFilename = useCallback((data: typeof playlistData): string => {
