@@ -64,7 +64,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
   return (
     <>
       <div className="flex items-center gap-2 w-full">
-        DEMO MODE: {DEMO_MODE ? 'true' : 'false'}
         {/* Play / Pause */}
         <div className="relative flex-shrink-0">
           {DEMO_MODE && showPreviewHint && (
