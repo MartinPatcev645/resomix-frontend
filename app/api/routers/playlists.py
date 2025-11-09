@@ -120,7 +120,7 @@ async def change_playlist_visibility_endpoint(
     request_data: PlaylistVisibilityRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Change playlist visibility (public/private) by its UUID.
