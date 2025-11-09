@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Button,
   Form,
@@ -19,7 +19,9 @@ import { useUserOperationLimits } from '@/hooks/useUserOperationLimits.ts'
 import type {
   AdminOperationType,
   AdminUserOperationLimit,
+  AdminUserSearchItem,
 } from '@resomix/api-client'
+import { searchAdminUsers } from '@resomix/api-client'
 
 const { Text } = Typography
 
@@ -43,7 +45,7 @@ interface UpsertFormValues {
 }
 
 const defaultFormValues: Partial<UpsertFormValues> = {
-  user_identifier: '',
+  user_identifier: undefined,
   operation_code: undefined,
   limit_value: undefined,
 }
@@ -84,14 +86,60 @@ function UserOperationLimitsTab({
   const [submitLoading, setSubmitLoading] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
+  const [userOptions, setUserOptions] = useState<
+    { value: string; label: ReactNode; raw: AdminUserSearchItem }[]
+  >([])
+  const [userSearchLoading, setUserSearchLoading] = useState(false)
+  const [userSearchError, setUserSearchError] = useState<string | null>(null)
+  const [userQuery, setUserQuery] = useState('')
+  const userSearchTimeout = useRef<NodeJS.Timeout | null>(null)
+  const selectedUserIdentifier = Form.useWatch('user_identifier', form)
+  const isMountedRef = useRef(true)
+  const currentUserSearchQuery = useRef('')
+  const isUserSelected =
+    typeof selectedUserIdentifier === 'string' && selectedUserIdentifier.trim().length > 0
+
+const buildUserOption = useCallback((user: AdminUserSearchItem) => {
+  const primary = user.email || user.username || (user.uuid ? `UUID: ${user.uuid}` : `ID: ${user.id}`)
+  const secondaryParts: string[] = []
+  if (user.username) secondaryParts.push(`Username: ${user.username}`)
+  if (user.uuid) secondaryParts.push(`UUID: ${user.uuid}`)
+  secondaryParts.push(`ID: ${user.id}`)
+
+  return {
+    value: user.email ?? '',
+    label: (
+      <div className="flex flex-col">
+        <span className="font-medium text-primary break-all">{primary}</span>
+        <span className="text-xs text-secondary">
+          {secondaryParts.join(' • ')}
+        </span>
+      </div>
+    ),
+    displayLabel: user.email ?? primary,
+    raw: user,
+  }
+}, [])
+
+  const resetUserSearchState = useCallback(() => {
+    if (userSearchTimeout.current) {
+      clearTimeout(userSearchTimeout.current)
+      userSearchTimeout.current = null
+    }
+    setUserOptions([])
+    setUserSearchError(null)
+    setUserSearchLoading(false)
+    setUserQuery('')
+    currentUserSearchQuery.current = ''
+  }, [])
 
   const { confirmDelete } = useConfirmDialog()
 
   const operationTypeOptions = useMemo(
     () =>
       operationTypes.map((operation) => ({
-      label: operation.code,
-      value: operation.code,
+        label: operation.code,
+        value: operation.code,
       })),
     [operationTypes]
   )
@@ -99,6 +147,16 @@ function UserOperationLimitsTab({
   useEffect(() => {
     setSearchInput(search)
   }, [search])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (userSearchTimeout.current) {
+        clearTimeout(userSearchTimeout.current)
+      }
+    }
+  }, [])
 
   const resetForm = () => {
     form.resetFields()
@@ -109,6 +167,7 @@ function UserOperationLimitsTab({
     setIsEditing(false)
     setEditingContext(null)
     resetForm()
+    resetUserSearchState()
     if (operationCode) {
       form.setFieldsValue({
         operation_code: operationCode,
@@ -124,6 +183,7 @@ function UserOperationLimitsTab({
       userIdentifier,
       operationCode: record.operation_code,
     })
+    resetUserSearchState()
     setModalVisible(true)
     setFormLoading(true)
 
@@ -143,6 +203,22 @@ function UserOperationLimitsTab({
       limit_value: existing.limit_value,
     })
 
+    if (existing.user_email) {
+      const option = buildUserOption({
+        id: existing.user_id,
+        uuid: existing.user_uuid,
+        email: existing.user_email,
+        username: existing.user_username,
+        name: null,
+        is_email_verified: null,
+        created_at: existing.created_at,
+      })
+      setUserOptions([option])
+      setUserSearchError(null)
+    } else {
+      resetUserSearchState()
+    }
+
     setFormLoading(false)
   }
 
@@ -151,6 +227,7 @@ function UserOperationLimitsTab({
     setIsEditing(false)
     setEditingContext(null)
     resetForm()
+    resetUserSearchState()
   }
 
   const handleSubmit = async () => {
@@ -209,6 +286,63 @@ function UserOperationLimitsTab({
       setSearch('')
     }
   }
+
+  const handleUserSearch = useCallback((value: string) => {
+    const trimmed = value.trim()
+    setUserQuery(value)
+    currentUserSearchQuery.current = trimmed
+    if (userSearchTimeout.current) {
+      clearTimeout(userSearchTimeout.current)
+      userSearchTimeout.current = null
+    }
+
+    if (!trimmed) {
+      resetUserSearchState()
+      return
+    }
+
+    if (trimmed.length < 2) {
+      setUserOptions([])
+      setUserSearchError('Enter at least 2 characters to search')
+      return
+    }
+
+    setUserSearchLoading(true)
+    setUserSearchError(null)
+    setUserOptions([])
+
+    const requestQuery = trimmed
+    userSearchTimeout.current = setTimeout(async () => {
+      try {
+        const response = await searchAdminUsers(requestQuery, 10)
+        if (!isMountedRef.current || currentUserSearchQuery.current !== requestQuery) return
+
+        if (response.success && response.data) {
+          const validUsers = response.data.filter((user) => Boolean(user.email))
+          if (validUsers.length === 0) {
+            setUserOptions([])
+            setUserSearchError('No users found')
+            return
+          }
+          setUserOptions(validUsers.map(buildUserOption))
+          setUserSearchError(null)
+        } else {
+          setUserOptions([])
+          setUserSearchError(response.error || 'Failed to search users')
+        }
+      } catch (error) {
+        if (!isMountedRef.current) return
+        setUserOptions([])
+        setUserSearchError(
+          error instanceof Error ? error.message : 'Unable to fetch users'
+        )
+      } finally {
+        if (isMountedRef.current) {
+          setUserSearchLoading(false)
+        }
+      }
+    }, 300)
+  }, [buildUserOption, resetUserSearchState])
 
   const handleOperationCodeChange = (value?: string) => {
     setOperationCode(value)
@@ -325,9 +459,6 @@ function UserOperationLimitsTab({
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-primary">User Operation Limits</h2>
-            <p className="text-secondary text-sm">
-              Manage per-user limits for specific operations.
-            </p>
           </div>
           <Space wrap>
             <Tooltip title="Refresh user limits">
@@ -409,6 +540,9 @@ function UserOperationLimitsTab({
         onOk={handleSubmit}
         okText={isEditing ? 'Save Changes' : 'Create Limit'}
         confirmLoading={submitLoading}
+        okButtonProps={{
+          disabled: !isUserSelected || userSearchLoading || formLoading,
+        }}
         destroyOnClose
       >
         {formLoading ? (
@@ -422,23 +556,55 @@ function UserOperationLimitsTab({
             initialValues={defaultFormValues}
           >
             <Form.Item
-              label="User Identifier"
+              label="User"
               name="user_identifier"
-              rules={[
-                { required: true, message: 'User identifier is required' },
-                {
-                  validator: (_, value) => {
-                    if (typeof value === 'string' && value.trim().length > 0) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(
-                      new Error('Please enter an email, username, or UUID')
-                    )
-                  },
-                },
-              ]}
+              rules={[{ required: true, message: 'Please select a user' }]}
             >
-              <Input placeholder="Email, username, or UUID" />
+              <Select
+                showSearch
+                placeholder="Type to search users"
+                options={userOptions}
+                loading={userSearchLoading}
+                filterOption={false}
+                onSearch={(value) => {
+                  if (!isEditing) {
+                    handleUserSearch(value)
+                  }
+                }}
+                onBlur={() => {
+                  if (!isEditing && !selectedUserIdentifier) {
+                    setUserOptions([])
+                  }
+                }}
+                notFoundContent={
+                  userSearchLoading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Spin size="small" />
+                    </div>
+                  ) : userQuery.trim().length === 0 ? (
+                    <span className="text-secondary text-sm">Type to search users</span>
+                  ) : userSearchError ? (
+                    <span className="text-secondary text-sm">{userSearchError}</span>
+                  ) : (
+                    <span className="text-secondary text-sm">No users found</span>
+                  )
+                }
+                optionLabelProp="displayLabel"
+                onSelect={(_value, option) => {
+                  const defaultOption = option as { raw?: AdminUserSearchItem }
+                  if (defaultOption.raw) {
+                    setUserOptions([buildUserOption(defaultOption.raw)])
+                  }
+                  setUserSearchError(null)
+                  setUserQuery('')
+                }}
+                disabled={isEditing}
+                allowClear={!isEditing}
+                onClear={() => {
+                  form.setFieldsValue({ user_identifier: undefined })
+                  resetUserSearchState()
+                }}
+              />
             </Form.Item>
 
             <Form.Item
