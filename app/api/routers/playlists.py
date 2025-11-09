@@ -166,7 +166,7 @@ async def get_playlist_similarity_endpoint(
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Get playlist with similarity data formatted like similarity endpoints.
