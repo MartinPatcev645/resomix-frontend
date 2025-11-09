@@ -136,7 +136,7 @@ class HlsPlaylistController implements AudioController {
   };
 
   play = () => {
-    if (!DEMO_MODE) return;
+    if (DEMO_MODE) return;
     if (!this.currentTrackId && this.tracksIds.length) {
       this.wantPlaying = true;
       this.load(this.tracksIds[0], true);
@@ -167,7 +167,7 @@ class HlsPlaylistController implements AudioController {
   };
 
   seek = (seconds: number, trackId?: string) => {
-    if (!DEMO_MODE) return;
+    if (DEMO_MODE) return;
     const id = trackId || this.currentTrackId;
     if (!id) return;
 
