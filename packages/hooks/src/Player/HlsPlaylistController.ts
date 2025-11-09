@@ -9,6 +9,7 @@ import {
   msReset,
 } from './mediaSessionActions';
 import { getSimilarityPlaylistHlsUrl } from "@resomix/api-client";
+import {DEMO_MODE} from "@resomix/config";
 
 // ================== Config ==================
 const RETRY_EVERY = 8000;
@@ -101,6 +102,7 @@ class HlsPlaylistController implements AudioController {
   // =============== Public API ===============
 
   load = (trackId: string, isPlayAfter: boolean = false) => {
+    if (DEMO_MODE) return;
     setNetworkErrorFlag(false);
     this.clearRetry();
 
@@ -134,6 +136,7 @@ class HlsPlaylistController implements AudioController {
   };
 
   play = () => {
+    if (!DEMO_MODE) return;
     if (!this.currentTrackId && this.tracksIds.length) {
       this.wantPlaying = true;
       this.load(this.tracksIds[0], true);
@@ -164,6 +167,7 @@ class HlsPlaylistController implements AudioController {
   };
 
   seek = (seconds: number, trackId?: string) => {
+    if (!DEMO_MODE) return;
     const id = trackId || this.currentTrackId;
     if (!id) return;
 
