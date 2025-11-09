@@ -21,7 +21,7 @@ import type {
   AdminUserOperationLimit,
 } from '@resomix/api-client'
 
-const { Paragraph, Text } = Typography
+const { Text } = Typography
 
 interface UserOperationLimitsTabProps {
   operationTypes: AdminOperationType[]
@@ -90,19 +90,11 @@ function UserOperationLimitsTab({
   const operationTypeOptions = useMemo(
     () =>
       operationTypes.map((operation) => ({
-        label: `${operation.code} — ${operation.description}`,
-        value: operation.code,
+      label: operation.code,
+      value: operation.code,
       })),
     [operationTypes]
   )
-
-  const operationDescriptionMap = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const operation of operationTypes) {
-      map.set(operation.code, operation.description)
-    }
-    return map
-  }, [operationTypes])
 
   useEffect(() => {
     setSearchInput(search)
@@ -239,21 +231,27 @@ function UserOperationLimitsTab({
       dataIndex: 'user_email',
       key: 'user',
       render: (_: unknown, record) => {
+        const email = record.user_email
+        const uuid = record.user_uuid
+        const username = record.user_username
         const primary =
-          record.user_email ||
-          record.user_username ||
-          record.user_uuid ||
-          `ID ${record.user_id}`
+          email ||
+          (uuid ? `UUID: ${uuid}` : username ? `Username: ${username}` : `ID: ${record.user_id}`)
 
         return (
           <div className="space-y-1">
-            <span className="font-medium text-primary">{primary}</span>
-            <div className="text-xs text-secondary space-x-3">
-              {record.user_email && <span>Email: {record.user_email}</span>}
-              {record.user_username && <span>Username: {record.user_username}</span>}
-              {record.user_uuid && <span>UUID: {record.user_uuid}</span>}
-              <span>ID: {record.user_id}</span>
-            </div>
+            <span className="font-medium text-primary break-all">{primary}</span>
+            {uuid && (
+              <div className="text-xs text-secondary">
+                <span>UUID: {uuid}</span>
+              </div>
+            )}
+            {(username || record.user_id) && (
+              <div className="text-xs text-secondary flex flex-wrap gap-3">
+                {username && <span>Username: {username}</span>}
+                <span>ID: {record.user_id}</span>
+              </div>
+            )}
           </div>
         )
       },
@@ -264,12 +262,7 @@ function UserOperationLimitsTab({
       key: 'operation',
       width: 220,
       render: (code: string) => (
-        <div className="space-y-1">
-          <span className="font-medium text-primary uppercase tracking-wide">{code}</span>
-          <span className="text-xs text-secondary">
-            {operationDescriptionMap.get(code) || '—'}
-          </span>
-        </div>
+        <span className="font-medium text-primary uppercase tracking-wide">{code}</span>
       ),
     },
     {
@@ -367,7 +360,7 @@ function UserOperationLimitsTab({
 
         <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_minmax(200px,280px)_auto] md:items-center">
           <Input.Search
-            placeholder="Search by user (email, username, UUID, ID)"
+            placeholder="Search by user (email, username, or UUID)"
             allowClear
             value={searchInput}
             onChange={(event) => handleSearchChange(event.target.value)}
@@ -386,10 +379,6 @@ function UserOperationLimitsTab({
           <Button onClick={handleClearFilters}>Clear Filters</Button>
         </div>
 
-        <Paragraph type="secondary" className="text-sm">
-          Use the operation list to understand available codes. When creating limits, provide a
-          unique user identifier (email, username, UUID, or numeric ID).
-        </Paragraph>
       </div>
 
       <Table
@@ -443,13 +432,13 @@ function UserOperationLimitsTab({
                       return Promise.resolve()
                     }
                     return Promise.reject(
-                      new Error('Please enter an email, username, UUID, or numeric ID')
+                      new Error('Please enter an email, username, or UUID')
                     )
                   },
                 },
               ]}
             >
-              <Input placeholder="Email, username, UUID, or numeric ID" />
+              <Input placeholder="Email, username, or UUID" />
             </Form.Item>
 
             <Form.Item
