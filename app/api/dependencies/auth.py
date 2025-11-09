@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional
-from fastapi import HTTPException, Security, Depends
+from fastapi import HTTPException, Security, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyQuery
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
@@ -38,15 +38,23 @@ api_key_query = APIKeyQuery(name="api_key", auto_error=False)
 
 
 async def get_api_key(
+    request: Request,
     api_key_query: str = Security(api_key_query),
 ):
-    """Validate API key for endpoint security (from query parameter)"""
+    """
+    Validate API key for admin endpoints.
+
+    Allows CORS preflight (OPTIONS) to pass through without credentials.
+    """
+    if request.method == "OPTIONS":
+        return api_key_query
+
     if api_key_query == settings.api_key:
         return api_key_query
-    else:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
-        )
+
+    raise HTTPException(
+        status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
+    )
 
 
 # ============================================================================
