@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { forkPlaylist } from '@resomix/api-client';
+import { mapPlaylistErrorMessage } from './errorMessages';
 
 export interface ForkPlaylistResponse {
   success: boolean;
@@ -25,15 +26,22 @@ export const usePlaylistFork = (options?: UsePlaylistForkOptions) => {
   const { onError, onSuccess } = options || {};
   const [forking, setForking] = useState(false);
 
-  const getErrorMessage = (error: string): string => {
-    const errorMap: Record<string, string> = {
-      'You already own this playlist. No need to fork it.': 'You already own this playlist',
-      'Cannot fork private playlists. Only public playlists can be forked.': 'This playlist is private and cannot be forked',
-      'Playlist not found': 'Playlist not found',
-      'Authentication required': 'Please log in to fork playlists',
+  const getErrorMessage = (rawError: string): string => {
+    const overrides: Record<string, string> = {
+      'you already own this playlist. no need to fork it.': 'You already own this playlist',
+      'cannot fork private playlists. only public playlists can be forked.': 'This playlist is private and cannot be forked',
+      'playlist not found': 'Playlist not found',
+      'authentication required': 'Please log in to fork playlists',
       'playlist_id cannot be empty': 'Invalid playlist ID',
     };
-    return errorMap[error] || error || 'Failed to fork playlist';
+
+    const normalizedKey = rawError.replace(/\s+/g, ' ').trim().toLowerCase();
+
+    if (overrides[normalizedKey]) {
+      return overrides[normalizedKey];
+    }
+
+    return mapPlaylistErrorMessage(rawError, 'Failed to fork playlist');
   };
 
   const fork = async (playlistId: string): Promise<ForkPlaylistResponse> => {

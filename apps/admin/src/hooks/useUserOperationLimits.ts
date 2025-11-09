@@ -31,7 +31,14 @@ interface UseUserOperationLimitsResult {
   setSearch: (value: string) => void
   setOperationCode: (code?: string) => void
   clearFilters: () => void
-  upsertLimit: (payload: AdminUserOperationLimitUpsertRequest) => Promise<boolean>
+  upsertLimit: (
+    payload: AdminUserOperationLimitUpsertRequest,
+    options?: { force?: boolean }
+  ) => Promise<{
+    ok: boolean
+    conflict?: AdminUserOperationLimit
+    error?: string
+  }>
   deleteLimit: (userIdentifier: string, operationCode: string) => Promise<boolean>
   loadLimit: (
     userIdentifier: string,
@@ -157,8 +164,11 @@ export function useUserOperationLimits(
     setPageSizeState(30)
   }
 
-  const upsertLimit = async (payload: AdminUserOperationLimitUpsertRequest) => {
-    const result = await upsertUserOperationLimit(payload)
+  const upsertLimit = async (
+    payload: AdminUserOperationLimitUpsertRequest,
+    options?: { force?: boolean }
+  ) => {
+    const result = await upsertUserOperationLimit(payload, options)
 
     if (result.success) {
       notifySuccess(
@@ -166,12 +176,25 @@ export function useUserOperationLimits(
         `Successfully saved limit for ${payload.operation_code}.`
       )
       await fetchData()
-      return true
+      return { ok: true as const }
     }
 
+    const conflictData = result.data
     const errorMsg = result.error || 'Failed to save operation limit'
+
+    if (conflictData) {
+      return {
+        ok: false as const,
+        conflict: conflictData,
+        error: errorMsg,
+      }
+    }
+
     notifyError('Save Failed', errorMsg)
-    return false
+    return {
+      ok: false as const,
+      error: errorMsg,
+    }
   }
 
   const deleteLimit = async (userIdentifier: string, code: string) => {

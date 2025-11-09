@@ -1,4 +1,5 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import type { AxiosError } from "axios";
 import { API_CONFIG } from "../config";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -55,6 +56,7 @@ export interface AdminUserOperationLimitResponse {
   success: boolean;
   data?: AdminUserOperationLimit;
   error?: string;
+  error_code?: string;
 }
 
 export interface AdminUserOperationLimitUpsertRequest {
@@ -68,6 +70,7 @@ export interface AdminUserOperationLimitUpsertResponse {
   success: boolean;
   data?: AdminUserOperationLimit;
   error?: string;
+  error_code?: string;
 }
 
 export interface AdminUserOperationLimitDeleteResponse {
@@ -188,10 +191,13 @@ export const getUserOperationLimit = async (
 
 export const upsertUserOperationLimit = async (
   payload: AdminUserOperationLimitUpsertRequest,
+  options?: { force?: boolean },
 ): Promise<AdminUserOperationLimitUpsertResponse> => {
   try {
     const response = await axiosWrapper<AdminUserOperationLimitUpsertResponse>(
-      axiosInstance.put(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LIMITS, payload),
+      axiosInstance.put(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LIMITS, payload, {
+        params: options?.force ? { force: true } : undefined,
+      }),
     );
 
     if (response.success) {
@@ -203,6 +209,16 @@ export const upsertUserOperationLimit = async (
       error: response.error || "Failed to save user operation limit.",
     };
   } catch (error) {
+    if ((error as AxiosError).isAxiosError && (error as AxiosError).response?.data) {
+      const data = (error as AxiosError).response?.data as AdminUserOperationLimitUpsertResponse;
+      if (data && typeof data === "object") {
+        return {
+          success: false,
+          error: data.error || "Failed to save user operation limit.",
+          data: data.data,
+        };
+      }
+    }
     return handleApiError(error as any);
   }
 };

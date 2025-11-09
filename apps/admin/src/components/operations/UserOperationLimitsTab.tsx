@@ -25,6 +25,13 @@ import { searchAdminUsers } from '@resomix/api-client'
 
 const { Text } = Typography
 
+type UserOption = {
+  value: string
+  label: ReactNode
+  displayLabel: string
+  raw: AdminUserSearchItem
+}
+
 interface UserOperationLimitsTabProps {
   operationTypes: AdminOperationType[]
   operationTypesLoading: boolean
@@ -86,9 +93,7 @@ function UserOperationLimitsTab({
   const [submitLoading, setSubmitLoading] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
-  const [userOptions, setUserOptions] = useState<
-    { value: string; label: ReactNode; raw: AdminUserSearchItem }[]
-  >([])
+  const [userOptions, setUserOptions] = useState<UserOption[]>([])
   const [userSearchLoading, setUserSearchLoading] = useState(false)
   const [userSearchError, setUserSearchError] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState('')
@@ -107,7 +112,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
   secondaryParts.push(`ID: ${user.id}`)
 
   return {
-    value: user.email ?? '',
+    value: user.email || user.username || (user.uuid ?? String(user.id)),
     label: (
       <div className="flex flex-col">
         <span className="font-medium text-primary break-all">{primary}</span>
@@ -241,11 +246,58 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
         limit_value: Number(values.limit_value),
       }
 
-      const success = await upsertLimit(payload)
+      const result = await upsertLimit(payload, isEditing ? { force: true } : undefined)
 
-      if (success) {
+      if (result.ok) {
         handleCloseModal()
+        return
       }
+
+      if (!result.ok) {
+        const errorMessage = result.error || 'Failed to save operation limit.'
+
+        if (result.conflict) {
+          const existing = result.conflict
+          const conflictEmail =
+            existing.user_email ||
+            payload.user_identifier
+          const existingLimit =
+            existing.limit_value !== null && existing.limit_value !== undefined
+              ? existing.limit_value
+              : 'N/A'
+
+          Modal.warning({
+            title: 'Limit Already Exists',
+            content: (
+              <div className="space-y-2">
+                <p>{errorMessage}</p>
+                <p className="text-sm text-secondary">
+                  Operation: <strong>{existing.operation_code}</strong>
+                </p>
+                <p className="text-sm text-secondary">
+                  Current user limit for <strong>{conflictEmail}</strong>: <strong>{existingLimit}</strong>
+                </p>
+                <p className="text-sm text-secondary">
+                  Search for this user and edit or delete the existing limit instead of creating a duplicate.
+                </p>
+              </div>
+            ),
+            centered: true,
+            zIndex: 3000,
+            getContainer: () => document.body,
+          })
+        } else {
+          Modal.error({
+            title: 'Unable to Save Limit',
+            content: errorMessage,
+            centered: true,
+            zIndex: 3000,
+            getContainer: () => document.body,
+          })
+        }
+        return
+      }
+
     } finally {
       setSubmitLoading(false)
     }
@@ -566,6 +618,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
                 options={userOptions}
                 loading={userSearchLoading}
                 filterOption={false}
+                optionLabelProp="displayLabel"
                 onSearch={(value) => {
                   if (!isEditing) {
                     handleUserSearch(value)
@@ -589,7 +642,6 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
                     <span className="text-secondary text-sm">No users found</span>
                   )
                 }
-                optionLabelProp="displayLabel"
                 onSelect={(_value, option) => {
                   const defaultOption = option as { raw?: AdminUserSearchItem }
                   if (defaultOption.raw) {
