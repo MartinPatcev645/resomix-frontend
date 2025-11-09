@@ -1,4 +1,4 @@
-export { API_CONFIG, APPLE_CONFIG } from "./config";
+export { API_CONFIG, APPLE_CONFIG, TIDAL_CONFIG, SPOTIFY_CONFIG } from "./config";
 export type { ApiConfig } from "./config";
 export * from "./similarity";
 export * from "./search";
