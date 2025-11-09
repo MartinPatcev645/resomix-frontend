@@ -9,9 +9,9 @@ using unofficial Tidal API endpoints with proper OAuth2 PKCE flow.
 Provides functionality to search for tracks on Tidal, create playlists,
 and handle the complete playlist transfer workflow.
 
-Version: 3.0.1
+Version: 3.0.2
 Init Date: June 11, 2025
-Author: Muhammad Usman Naeem
+Author: Muhammad Usman Naeem (patched)
 Email: usman.naeem2212@gmail.com
 """
 
@@ -22,7 +22,7 @@ import aiohttp
 import json
 import logging
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote_plus
 
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
@@ -97,18 +97,68 @@ class TidalTransferService:
     ) -> Dict[str, Any]:
         """
         Unified HTTP call with robust handling of non-JSON and 204 No Content.
+        Adds light retry for 429/5xx.
         Raises PublicHttpError with safe details on failure.
         """
-        try:
-            async with session.request(
-                method, url, headers=headers, **kwargs
-            ) as response:
-                text = await response.text()
-                content_type = response.headers.get("Content-Type", "")
+        max_retries = 3
+        attempt = 0
+        backoff = 0.6
 
-                # 204 No Content or empty response body
-                if response.status == 204 or not text.strip():
+        while True:
+            try:
+                async with session.request(
+                    method, url, headers=headers, **kwargs
+                ) as response:
+                    text = await response.text()
+                    content_type = response.headers.get("Content-Type", "") or ""
+
+                    # 204/202 No Content or empty response body: treat <400 as success
+                    if response.status in (202, 204) or not text.strip():
+                        if response.status >= 400:
+                            raise PublicHttpError(
+                                f"Tidal API error {response.status}",
+                                code="TIDAL_HTTP_ERROR",
+                                status=response.status,
+                                details={
+                                    "method": method,
+                                    "url": url,
+                                    "params": kwargs.get("params"),
+                                },
+                            )
+                        return {}
+
+                    # Parse JSON for JSON:API types
+                    is_json = (
+                        "application/json" in content_type
+                        or "application/vnd.api+json" in content_type
+                    )
+                    if is_json:
+                        try:
+                            data: Any = json.loads(text)
+                        except Exception:
+                            raise PublicHttpError(
+                                f"Tidal returned non-parseable JSON (status {response.status})",
+                                code="TIDAL_BAD_JSON",
+                                status=response.status,
+                                details={
+                                    "method": method,
+                                    "url": url,
+                                    "params": kwargs.get("params"),
+                                    "body_snippet": text[:2000],
+                                },
+                            )
+                    else:
+                        data = {"raw": text[:2000], "content_type": content_type}
+
                     if response.status >= 400:
+                        # Retry on 429 and 5xx
+                        if response.status == 429 or 500 <= response.status < 600:
+                            attempt += 1
+                            if attempt <= max_retries:
+                                retry_after = response.headers.get("Retry-After")
+                                delay = float(retry_after) if retry_after else backoff * attempt
+                                await asyncio.sleep(delay)
+                                continue
                         raise PublicHttpError(
                             f"Tidal API error {response.status}",
                             code="TIDAL_HTTP_ERROR",
@@ -117,60 +167,23 @@ class TidalTransferService:
                                 "method": method,
                                 "url": url,
                                 "params": kwargs.get("params"),
+                                "request_json": kwargs.get("json"),
+                                "response_body_snippet": text[:2000],
                             },
                         )
-                    return {}
 
-                # Try to parse JSON for JSON/JSON:API content types
-                is_json = (
-                    "application/json" in content_type
-                    or "application/vnd.api+json" in content_type
+                    return data
+            except aiohttp.ClientError as e:
+                attempt += 1
+                if attempt <= max_retries:
+                    await asyncio.sleep(backoff * attempt)
+                    continue
+                raise PublicHttpError(
+                    "Network error connecting to Tidal",
+                    code="NETWORK_ERROR",
+                    status=502,
+                    details={"reason": str(e)},
                 )
-                data: Any
-                if is_json:
-                    try:
-                        data = json.loads(text)
-                    except Exception:
-                        raise PublicHttpError(
-                            f"Tidal returned non-parseable JSON (status {response.status})",
-                            code="TIDAL_BAD_JSON",
-                            status=response.status,
-                            details={
-                                "method": method,
-                                "url": url,
-                                "params": kwargs.get("params"),
-                                "body_snippet": text[:2000],
-                            },
-                        )
-                else:
-                    # Unexpected content type: return raw for debugging (safe snippet)
-                    data = {"raw": text[:2000], "content_type": content_type}
-
-                # If status indicates error, wrap and throw with details
-                if response.status >= 400:
-                    raise PublicHttpError(
-                        f"Tidal API error {response.status}",
-                        code="TIDAL_HTTP_ERROR",
-                        status=response.status,
-                        details={
-                            "method": method,
-                            "url": url,
-                            "params": kwargs.get("params"),
-                            "request_json": kwargs.get(
-                                "json"
-                            ),  # ensure caller doesn't pass tokens here
-                            "response_body_snippet": text[:2000],
-                        },
-                    )
-
-                return data
-        except aiohttp.ClientError as e:
-            raise PublicHttpError(
-                "Network error connecting to Tidal",
-                code="NETWORK_ERROR",
-                status=502,
-                details={"reason": str(e)},
-            )
 
     async def _search_tidal_track(
         self,
@@ -181,28 +194,36 @@ class TidalTransferService:
         country_code: str = "US",
     ) -> Optional[str]:
         """
-        Search for a track on Tidal using official /v2/search and return its resource id.
+        Search for a track on Tidal using /v2/searchResults/{query}?include=tracks&countryCode=XX
+        Return the first track id if found.
         """
         query = f"{artist} {title}".strip()
         if not query:
             return None
 
-        url = f"{self.api_base_url}/{self.api_version}/search"
-        params = {
-            "query": query,
-            "types": "tracks",
-            "countryCode": country_code,
-            "limit": 1,
-        }
+        encoded = quote_plus(query, safe="")
+        url = f"{self.api_base_url}/{self.api_version}/searchResults/{encoded}"
+        params = {"include": "tracks", "countryCode": country_code}
         headers = self._get_headers(access_token)
+
         data = await self._make_api_request(session, "GET", url, headers, params=params)
 
-        tracks = data.get("data", [])
-        if not tracks:
-            return None
+        # JSON:API: look into "included" for type == "tracks"
+        included = data.get("included") or []
+        tracks = [it for it in included if isinstance(it, dict) and it.get("type") == "tracks"]
 
-        # JSON:API: track id is in data[0].id
-        return tracks[0].get("id")
+        if tracks:
+            first = tracks[0]
+            tid = str(first.get("id", "")).strip()
+            return tid or None
+
+        # Fallback: relationships.tracks.data[0].id
+        rel_tracks = (((data.get("data") or {}).get("relationships") or {}).get("tracks") or {}).get("data") or []
+        if rel_tracks:
+            tid = str(rel_tracks[0].get("id", "")).strip()
+            return tid or None
+
+        return None
 
     async def _get_cached_tidal_ids(
         self, db: AsyncSession, track_ids: List[int]
@@ -331,16 +352,14 @@ class TidalTransferService:
         user_country: str = "US",
     ) -> int:
         """
-        Add tracks to Tidal playlist via /v2/playlists/{id}/items using JSON:API format.
+        Add tracks to Tidal playlist via /v2/playlists/{id}/relationships/items (JSON:API).
         Tidal might respond 202/204 with no body; this is OK.
         """
         if not track_ids:
             return 0
 
         logger.info("Adding %d tracks to Tidal playlist", len(track_ids))
-        add_url = (
-            f"{self.api_base_url}/{self.api_version}/playlists/{playlist_id}/items"
-        )
+        add_url = f"{self.api_base_url}/{self.api_version}/playlists/{playlist_id}/relationships/items"
         headers = self._get_headers(access_token)
         params = {"countryCode": user_country}
 
@@ -351,7 +370,6 @@ class TidalTransferService:
         for i, batch in enumerate(batches):
             try:
                 payload = {"data": [{"type": "tracks", "id": tid} for tid in batch]}
-                # We don't need response body; _make_api_request will handle 204/no content correctly
                 await self._make_api_request(
                     session, "POST", add_url, headers, params=params, json=payload
                 )
@@ -360,7 +378,7 @@ class TidalTransferService:
                     logger, "Adding tracks to playlist", i + 1, len(batches)
                 )
             except PublicHttpError as e:
-                logger.error(f"Failed to add batch {i + 1}: {e} | details={e.details}")
+                logger.error(f"Failed to add batch {i + 1}: {e} | details={getattr(e, 'details', {})}")
             except Exception as e:
                 logger.error(f"Failed to add batch {i + 1}: {str(e)}")
 
@@ -417,7 +435,7 @@ class TidalTransferService:
                             f"Tidal token error ({response.status})",
                             code="TIDAL_TOKEN_ERROR",
                             status=response.status,
-                            details={"response_body_snippet": text[:2000]},
+                            details={"response_body_snippet": text[:2000], "error": err_detail},
                         )
 
                     if not token_response or not token_response.get("access_token"):
@@ -427,7 +445,7 @@ class TidalTransferService:
                             status=502,
                         )
 
-                    # Fetch user info to pass back (optional subscription checks can be added)
+                    # Fetch user info
                     try:
                         user_info = await self._get_user_info(
                             token_response["access_token"]
@@ -523,15 +541,13 @@ class TidalTransferService:
                         (track.id, track.title or "Unknown Track", artist_names[0])
                     )
 
-            # Fetch user country before any Tidal write operations
-            # Reason: we now search first, then create once; we still need a valid country for API calls.
+            # Fetch user country
             user_info = await self._get_user_info(access_token)
             user_country = (
                 user_info.get("data", {}).get("attributes", {}).get("country", "US")
             )
 
-            # Step 4: Resolve track IDs (cache + search) BEFORE creating the playlist
-            # We search first and only create the playlist once we have the track IDs to add.
+            # Step 4: Resolve track IDs (cache + search)
             track_ids_only = [tid for tid, _, _ in track_data]
             cached_tidal_ids = await self._get_cached_tidal_ids(db, track_ids_only)
 
@@ -582,8 +598,7 @@ class TidalTransferService:
                 len(not_found_tracks),
             )
 
-            # Create the playlist AFTER we have the track IDs and add them immediately after creation.
-            # Benefit: only one playlist creation call, then immediate population with tracks.
+            # Create the playlist AFTER we have the track IDs
             playlist_name = custom_playlist_name or f"Resomix - {playlist.name}"
 
             async with aiohttp.ClientSession() as session:
@@ -599,19 +614,24 @@ class TidalTransferService:
                 tidal_playlist_url = tidal_playlist["url"]
                 logger.info("Created Tidal playlist: %s", playlist_name)
 
-                # Add tracks right after creation (single flow).
+                # Add tracks
                 tracks_added = 0
                 if found_tracks:
+                    seen = set()
+                    ordered_unique = []
+                    for tid in found_tracks:
+                        if tid not in seen:
+                            seen.add(tid)
+                            ordered_unique.append(tid)
+
                     tracks_added = await self._add_tracks_to_tidal_playlist(
                         session,
                         access_token,
                         tidal_playlist_id,
-                        found_tracks,
+                        ordered_unique,
                         user_country,
                     )
                 else:
-                    # NOTE: We keep creating the playlist even if no tracks were found to match previous behavior.
-                    # If you prefer to SKIP playlist creation when no tracks resolved, move creation below inside this conditional.
                     logger.warning("No tracks found on Tidal to add to playlist")
 
             # Final response
@@ -638,10 +658,8 @@ class TidalTransferService:
             return result
 
         except PublicHttpError:
-            # Re-raise public errors as-is (will be handled by controller)
             raise
         except Exception as e:
-            # Convert any unexpected error into a public, safe error
             total_time = time.time() - transfer_start_time
             logger.exception("Transfer failed after %.1fs", total_time)
             raise PublicHttpError(
