@@ -47,7 +47,6 @@ const TidalExportModal: React.FC<TidalExportModalProps> = ({
         onConnect={t.connect}
         onTransfer={t.transfer}
         onDisconnect={t.disconnect}
-        showFields
         playlistId={t.playlistId}
         setPlaylistId={t.setPlaylistId}
         customName={t.customName}
