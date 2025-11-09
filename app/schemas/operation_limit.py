@@ -121,6 +121,49 @@ class UserOperationLimitDetailResponse(APIResponse):
         None, description="User operation limit details"
     )
 
+    class Config:
+        json_schema_extra = {
+            "examples": [
+                {
+                    "success": True,
+                    "data": {
+                        "user_id": 42,
+                        "user_uuid": "8f94a086-1a24-4f9d-9c0c-2f7fed746c5b",
+                        "user_email": "dj@example.com",
+                        "user_username": "dj42",
+                        "operation_id": 1,
+                        "operation_code": "playlist_create",
+                        "operation_description": "Maximum playlists the user can create",
+                        "limit_value": 20,
+                        "window_seconds": None,
+                        "playlist_count": 7,
+                        "created_by": 1,
+                        "created_at": "2025-11-08T12:30:15",
+                        "updated_at": "2025-11-08T12:30:15",
+                    },
+                },
+                {
+                    "success": False,
+                    "error": "User already has a limit for this operation",
+                    "data": {
+                        "user_id": 42,
+                        "user_uuid": "8f94a086-1a24-4f9d-9c0c-2f7fed746c5b",
+                        "user_email": "dj@example.com",
+                        "user_username": "dj42",
+                        "operation_id": 1,
+                        "operation_code": "playlist_create",
+                        "operation_description": "Maximum playlists the user can create",
+                        "limit_value": 20,
+                        "window_seconds": None,
+                        "playlist_count": 7,
+                        "created_by": 1,
+                        "created_at": "2025-11-08T12:30:15",
+                        "updated_at": "2025-11-08T12:30:15",
+                    },
+                },
+            ]
+        }
+
 
 class UserOperationLimitUpsertRequest(BaseModel):
     """Request payload for creating/updating a user operation limit."""

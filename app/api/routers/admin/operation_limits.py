@@ -119,6 +119,7 @@ async def upsert_user_operation_limit(
     payload: UserOperationLimitUpsertRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
+    force: bool = Query(False, description="Force update if limit already exists"),
 ) -> JSONResponse:
     return await controller.upsert_user_operation_limit(
         db=db,
@@ -128,6 +129,7 @@ async def upsert_user_operation_limit(
         limit_value=payload.limit_value,
         window_seconds=payload.window_seconds,
         created_by=None,
+        force=force,
     )
 
 

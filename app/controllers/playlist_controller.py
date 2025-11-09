@@ -22,9 +22,11 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 import time
 from app.services.playlist_service import PlaylistService
+from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
 from app.models.user import User
+from app.core.config import settings
 
 
 class PlaylistController:
@@ -34,6 +36,7 @@ class PlaylistController:
         """Initialize playlist controller."""
         self.playlist_service = PlaylistService()
         self.logging_service = LoggingService()
+        self.operation_limit_evaluator = OperationLimitEvaluator()
     
     async def rename_playlist(self, db: AsyncSession, request: Request, playlist_id: str, new_name: str, current_user: Optional[User] = None) -> JSONResponse:
         """
@@ -341,7 +344,7 @@ class PlaylistController:
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
 
-    async def get_playlist_similarity_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
+    async def get_playlist_similarity_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: User) -> JSONResponse:
         """
         Get playlist with similarity data.
         Only returns data for public playlists.
@@ -381,7 +384,23 @@ class PlaylistController:
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
         
         try:
-            result = await self.playlist_service.get_playlist_similarity_data(db, playlist_id, current_user.id if current_user else None)
+            if settings.demo_mode:
+                limit_check = await self.operation_limit_evaluator.check(
+                    db,
+                    user_id=current_user.id,
+                    operation_code="playlist_create",
+                )
+                if not limit_check.allowed:
+                    response_data = format_response(
+                        success=False,
+                        error=limit_check.message or "Operation not permitted",
+                    )
+                    return JSONResponse(
+                        status_code=limit_check.status_code,
+                        content=response_data,
+                    )
+
+            result = await self.playlist_service.get_playlist_similarity_data(db, playlist_id, current_user.id)
             duration_ms = (time.time() - start_time) * 1000
             
             if result.get("success"):
@@ -479,7 +498,7 @@ class PlaylistController:
             )
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
 
-    async def get_playlist_hls_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: Optional[User] = None) -> Response:
+    async def get_playlist_hls_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: User) -> Response:
         """
         Get playlist as HLS M3U8 format.
         Only returns data for public playlists.
@@ -509,6 +528,22 @@ class PlaylistController:
             )
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
         try:
+            if settings.demo_mode:
+                limit_check = await self.operation_limit_evaluator.check(
+                    db,
+                    user_id=current_user.id,
+                    operation_code="playlist_create",
+                )
+                if not limit_check.allowed:
+                    response_data = format_response(
+                        success=False,
+                        error=limit_check.message or "Operation not permitted",
+                    )
+                    return JSONResponse(
+                        status_code=limit_check.status_code,
+                        content=response_data,
+                    )
+
             result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
@@ -657,6 +692,22 @@ class PlaylistController:
                 }
             )
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
+        
+        if settings.demo_mode:
+            limit_check = await self.operation_limit_evaluator.check(
+                db,
+                user_id=current_user.id,
+                operation_code="playlist_create",
+            )
+            if not limit_check.allowed:
+                response_data = format_response(
+                    success=False,
+                    error=limit_check.message or "Operation not permitted",
+                )
+                return JSONResponse(
+                    status_code=limit_check.status_code,
+                    content=response_data,
+                )
         
         try:
             # Call service layer

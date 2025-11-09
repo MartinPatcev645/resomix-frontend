@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from app.models.user import User
 from app.services.playlist_service import PlaylistService
+from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.core.config import settings
 from app.services.similarity_service import SimilarityService
 from app.services.audio_service import AudioService
@@ -44,8 +45,16 @@ class SimilarityController:
         self.track_upload_service = TrackUploadService()
         self.antivirus_service = AntivirusService()
         self.logging_service = LoggingService()
+        self.operation_limit_evaluator = OperationLimitEvaluator()
 
-    async def get_similarity_upload(self, db: AsyncSession, request: Request, file: UploadFile, top_sk: Optional[int] = None, current_user: Optional[User] = None) -> JSONResponse:
+    async def get_similarity_upload(
+        self,
+        db: AsyncSession,
+        request: Request,
+        file: UploadFile,
+        current_user: User,
+        top_sk: Optional[int] = None,
+    ) -> JSONResponse:
         """
         Process an audio file: first upload to database, then return similar tracks.
         """
@@ -53,10 +62,23 @@ class SimilarityController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         # Log authentication status for debugging
-        if current_user:
-            logger.info(f"SIMILARITY UPLOAD AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
-        else:
-            logger.info(f"SIMILARITY UPLOAD AUTH: User NOT authenticated (anonymous)")
+        logger.info(f"SIMILARITY UPLOAD AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
+
+        if settings.demo_mode:
+            limit_check = await self.operation_limit_evaluator.check(
+                db,
+                user_id=current_user.id,
+                operation_code="playlist_create",
+            )
+            if not limit_check.allowed:
+                response_content = format_response(
+                    success=False,
+                    error=limit_check.message or "Operation not permitted",
+                )
+                return JSONResponse(
+                    status_code=limit_check.status_code,
+                    content=response_content,
+                )
 
         # Validate and get the TOP_SK value using global settings
         validated_top_sk = settings.validate_and_get_top_sk(top_sk)
@@ -807,8 +829,8 @@ class SimilarityController:
         db: AsyncSession,
         request: Request,
         track_id: str,
+        current_user: User,
         top_sk: Optional[int] = None,
-        current_user: Optional[User] = None
     ) -> JSONResponse:
         """
         Get similar tracks for a track identified by its UUID.
@@ -825,10 +847,23 @@ class SimilarityController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         # Log authentication status for debugging
-        if current_user:
-            logger.info(f"SIMILARITY BY ID AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
-        else:
-            logger.info(f"SIMILARITY BY ID AUTH: User NOT authenticated (anonymous)")
+        logger.info(f"SIMILARITY BY ID AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
+
+        if settings.demo_mode:
+            limit_check = await self.operation_limit_evaluator.check(
+                db,
+                user_id=current_user.id,
+                operation_code="playlist_create",
+            )
+            if not limit_check.allowed:
+                response_content = format_response(
+                    success=False,
+                    error=limit_check.message or "Operation not permitted",
+                )
+                return JSONResponse(
+                    status_code=limit_check.status_code,
+                    content=response_content,
+                )
 
         track = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
         track_int_id = track.id if track else None

@@ -32,6 +32,10 @@ class Settings(BaseModel):
         default="bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ",
         description="API key for authentication (should be set via environment variable in production)"
     )
+    demo_mode: bool = Field(
+        default=False,
+        description="When enabled, limits write operations for demo/testing environments"
+    )
     
     # Security Configuration (URL Signing)
     preview_fernet_secret: str = Field(
@@ -387,6 +391,7 @@ class Settings(BaseModel):
             "MONGODB_URI": "mongodb_uri",
             "SIMILARITY_SERVER_URL": "similarity_server_url",
             "RESOMIX_SERVER_URL": "resomix_server_url",
+            "DEMO_MODE": "demo_mode",
             "SERVICE_ACCOUNT_FILE": "service_account_file",
             "GOOGLE_SHEET_ID": "google_sheet_id",
             "FEEDBACK_WORKSHEET_NAME": "feedback_worksheet_name",

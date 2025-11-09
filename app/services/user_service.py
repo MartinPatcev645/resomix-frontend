@@ -246,6 +246,35 @@ class UserService:
 
         return await self.session_repo.async_revoke_session(db, session_id)
 
+    async def search_users(
+        self,
+        db: AsyncSession,
+        query: str,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Search users by email, username, UUID, or numeric ID.
+
+        Returns a lightweight representation suitable for admin lookups.
+        """
+        users = await self.user_repo.async_search_users(db, query=query, limit=limit)
+        results: List[Dict[str, Any]] = []
+
+        for user in users:
+            results.append(
+                {
+                    "id": user.id,
+                    "uuid": user.uuid,
+                    "email": user.email,
+                    "username": user.username,
+                    "name": user.name,
+                    "is_email_verified": user.is_email_verified,
+                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                }
+            )
+
+        return results
+
     async def enable_2fa(
         self, db: AsyncSession, user_id: int, method: str = "email"
     ) -> User:

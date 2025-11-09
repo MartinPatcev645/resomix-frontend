@@ -11,12 +11,12 @@ Date: October 23, 2025
 """
 
 from typing import List
-from fastapi import APIRouter, Depends, Path, Request
+from fastapi import APIRouter, Depends, Path, Query, Request, Security
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.user_controller import UserController
 from app.api.dependencies.database import get_database_session
-from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.auth import get_current_user, get_api_key
 from app.models.user import User
 from app.schemas.auth import (
     UserProfileResponse,
@@ -29,6 +29,7 @@ from app.schemas.auth import (
     MessageResponse,
 )
 from app.schemas.common import ErrorResponse
+from app.schemas.user import UserSearchResultsResponse
 
 # Create router instance
 router = APIRouter(
@@ -45,6 +46,23 @@ router = APIRouter(
 
 # Initialize controller
 user_controller = UserController()
+
+
+@router.get(
+    "/search",
+    response_model=UserSearchResultsResponse,
+    status_code=200,
+    summary="Search users by email, username, or UUID",
+    description="Admin-focused user search endpoint for lookup by email, username, UUID, or numeric ID.",
+)
+async def search_users(
+    request: Request,
+    q: str = Query(..., min_length=1, max_length=100, description="Search query"),
+    limit: int = Query(20, ge=1, le=50, description="Maximum number of results to return"),
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+):
+    return await user_controller.search_users(db, request, q, limit)
 
 
 @router.get(

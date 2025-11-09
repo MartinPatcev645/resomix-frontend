@@ -18,7 +18,12 @@ Email: usman.naeem2212@gmail.com
 from typing import Dict, Any, Optional
 
 
-def format_response(success: bool, data: Optional[Any] = None, error: Optional[str] = None) -> Dict[str, Any]:
+def format_response(
+    success: bool,
+    data: Optional[Any] = None,
+    error: Optional[str] = None,
+    **extra: Any,
+) -> Dict[str, Any]:
     """
     Format API responses in a consistent structure.
     
@@ -32,9 +37,12 @@ def format_response(success: bool, data: Optional[Any] = None, error: Optional[s
     """
     response = {"success": success}
     
-    if success and data is not None:
+    if data is not None:
         response["data"] = data
-    elif not success and error is not None:
+    if not success and error is not None:
         response["error"] = error
+
+    if extra:
+        response.update({k: v for k, v in extra.items() if v is not None})
     
     return response 

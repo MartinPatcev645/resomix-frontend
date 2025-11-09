@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.similarity_controller import SimilarityController
-from app.api.dependencies.auth import get_api_key, get_current_user_optional
+from app.api.dependencies.auth import get_api_key, get_current_user
 from app.api.dependencies.database import get_database_session
 from app.repositories.playlist_repository import PlaylistRepository
 from app.models.user import User
@@ -84,7 +84,7 @@ async def get_similarity_upload_endpoint(
     top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user)
 ) -> JSONResponse:
     """
     Upload an audio track and find similar tracks.
@@ -100,7 +100,13 @@ async def get_similarity_upload_endpoint(
     
     Note: If authenticated via JWT, user context is automatically associated with the upload.
     """
-    return await similarity_controller.get_similarity_upload(db, request, file, top_sk, current_user)
+    return await similarity_controller.get_similarity_upload(
+        db=db,
+        request=request,
+        file=file,
+        current_user=current_user,
+        top_sk=top_sk,
+    )
 
 
 @router.post(
@@ -132,7 +138,7 @@ async def get_similarity_by_id_endpoint(
     request_data: SimilarityByIdRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user)
 ) -> JSONResponse:
     """
     Get similar tracks for a track identified by its database ID.
@@ -142,7 +148,13 @@ async def get_similarity_by_id_endpoint(
     
     Note: If authenticated via JWT, user context is automatically associated.
     """
-    return await similarity_controller.get_similarity_by_id(db, request, request_data.track_id, request_data.top_sk, current_user)
+    return await similarity_controller.get_similarity_by_id(
+        db=db,
+        request=request,
+        track_id=request_data.track_id,
+        current_user=current_user,
+        top_sk=request_data.top_sk,
+    )
 
 
 # New endpoint to poll segment status

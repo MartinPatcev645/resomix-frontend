@@ -129,6 +129,7 @@ class OperationLimitService:
         limit_value: int,
         window_seconds: Optional[int],
         created_by: Optional[int],
+        force: bool = False,
     ) -> Dict[str, object]:
         user = await self._resolve_user(db, user_identifier)
         if not user:
@@ -142,6 +143,15 @@ class OperationLimitService:
             return {
                 "success": False,
                 "error": f"Operation type '{operation_code}' not found",
+            }
+
+        existing_limit = await self.operation_limit_repository.async_get_limit(
+            db, user.id, operation.id
+        )
+        if existing_limit and not force:
+            return {
+                "success": False,
+                "error": "User already has a limit for this operation",
             }
 
         limit = await self.operation_limit_repository.async_upsert_limit(

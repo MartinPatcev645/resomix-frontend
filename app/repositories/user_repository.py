@@ -12,7 +12,7 @@ Date: October 23, 2025
 
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from sqlalchemy import select, and_, or_, delete, update
+from sqlalchemy import select, and_, or_, delete, update, func
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -79,6 +79,42 @@ class UserRepository(BaseRepository[User]):
         stmt = select(User).where(User.uuid == user_uuid)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def async_search_users(
+        self,
+        db: AsyncSession,
+        query: str,
+        limit: int = 20
+    ) -> List[User]:
+        """Search users by email, username, or UUID (partial match)."""
+        search = (query or "").strip()
+        if not search:
+            return []
+
+        filters = []
+        lowered = search.lower()
+        like_pattern = f"%{lowered}%"
+
+        filters.append(func.lower(User.email).like(like_pattern))
+        filters.append(func.lower(User.username).like(like_pattern))
+
+        if len(search) == 36 and search.count("-") == 4:
+            filters.append(User.uuid == search)
+        else:
+            filters.append(func.lower(User.uuid).like(like_pattern))
+
+        if search.isdigit():
+            filters.append(User.id == int(search))
+
+        stmt = (
+            select(User)
+            .where(or_(*filters))
+            .order_by(User.created_at.desc())
+            .limit(limit)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
     
     async def async_create_user(
         self,

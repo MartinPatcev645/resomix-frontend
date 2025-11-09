@@ -101,6 +101,14 @@
 - Fetch operation types on admin settings load via `GET /admin/operation-limits/operation-types` to drive select options.
 - Populate the management table with `GET /admin/operation-limits`, wiring pagination/search inputs to the API parameters.
 - Use the upsert endpoint (`PUT /admin/operation-limits`) for create/update flows; send `user_identifier`, selected `operation_code`, numeric `limit_value`, and optional `window_seconds`.
+- Treat duplicate submissions gracefully: by default the API responds `409` when a limit already exists for the same user+operation (even if values differ). To overwrite, call `PUT /admin/operation-limits?force=true`. Without `force` the response is:
+  ```json
+  {
+    "success": false,
+    "error": "User already has a limit for this operation"
+  }
+  ```
+  Use the embedded `data` to show existing settings or prompt for delete/update.
 - Remove limits through `DELETE /admin/operation-limits/{user_identifier}/{operation_code}` and optimistic UI updates.
 - Show API error strings when `success` is false to mirror backend validation feedback.
 

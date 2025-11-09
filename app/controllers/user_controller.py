@@ -28,6 +28,69 @@ class UserController:
         self.user_service = UserService()
         self.logging_service = LoggingService()
 
+    async def search_users(
+        self,
+        db: AsyncSession,
+        request: Request,
+        query: str,
+        limit: int = 20,
+    ) -> JSONResponse:
+        """Search users by email, username, UUID, or ID."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+
+        trimmed_query = (query or "").strip()
+        if not trimmed_query:
+            response_data = format_response(success=False, error="Query parameter cannot be empty")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response_data)
+
+        try:
+            results = await self.user_service.search_users(
+                db=db,
+                query=trimmed_query,
+                limit=limit,
+            )
+
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=True, data=results)
+
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="ADMIN_USER",
+                action="search_users_success",
+                message=f"User search matched {len(results)} records",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                metadata={"query": trimmed_query, "limit": limit, "result_count": len(results)},
+            )
+
+            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+
+        except Exception as exc:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error="Failed to search users")
+
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ADMIN_USER",
+                action="search_users_failed",
+                message=f"User search failed: {exc}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                metadata={"query": trimmed_query, "limit": limit},
+                error=exc,
+            )
+
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            )
+
     async def get_profile(
         self, db: AsyncSession, request: Request, user_uuid: str
     ) -> JSONResponse:

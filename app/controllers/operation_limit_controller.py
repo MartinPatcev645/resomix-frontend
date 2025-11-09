@@ -267,6 +267,7 @@ class OperationLimitController:
         limit_value: int,
         window_seconds: Optional[int],
         created_by: Optional[int],
+        force: bool = False,
     ) -> JSONResponse:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -285,6 +286,7 @@ class OperationLimitController:
                 limit_value=limit_value,
                 window_seconds=window_seconds,
                 created_by=created_by,
+                force=force,
             )
             duration_ms = (time.time() - start_time) * 1000
 
@@ -306,11 +308,13 @@ class OperationLimitController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "Failed to save user operation limit")
-            status_code = (
-                status.HTTP_404_NOT_FOUND
-                if "not found" in error_message.lower()
-                else status.HTTP_400_BAD_REQUEST
-            )
+            lowered_error = error_message.lower()
+            if "already has a limit" in lowered_error:
+                status_code = status.HTTP_409_CONFLICT
+            elif "not found" in lowered_error:
+                status_code = status.HTTP_404_NOT_FOUND
+            else:
+                status_code = status.HTTP_400_BAD_REQUEST
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -323,10 +327,11 @@ class OperationLimitController:
                 duration_ms=duration_ms,
                 metadata={**metadata, "error": error_message},
             )
-            return JSONResponse(
-                status_code=status_code,
-                content=format_response(success=False, error=error_message),
+            response_content = format_response(
+                success=False,
+                error=error_message,
             )
+            return JSONResponse(status_code=status_code, content=response_content)
         except Exception as exc:
             self.logging_service.log(
                 async_db=db,

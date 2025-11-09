@@ -85,6 +85,12 @@ from .contact import (
     ContactUpdateRequest,
 )
 
+# User search schemas
+from .user import (
+    UserSearchItem,
+    UserSearchResultsResponse,
+)
+
 # Search schemas
 from .search import (
     SearchRequest,
@@ -236,6 +242,10 @@ __all__ = [
     "ContactErrorResponse",
     "ContactEntity",
     "ContactUpdateRequest",
+
+    # User search
+    "UserSearchItem",
+    "UserSearchResultsResponse",
     
     # Search
     "SearchRequest",
