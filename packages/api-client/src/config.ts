@@ -157,7 +157,6 @@ export const APPLE_CONFIG = {
 };
 
 
-/*
 // Spotify configuration
 export const SPOTIFY_CONFIG = {
   CLIENT_ID: getEnv("VITE_SPOTIFY_CLIENT_ID") || '9df225a14080472c8c4ea5fc85b3eb6b',
@@ -166,10 +165,11 @@ export const SPOTIFY_CONFIG = {
   REDIRECT_URI: 'https://stack.resomix.com/spotify-redirect',
   SCOPES: 'playlist-modify-public playlist-modify-private',
   AUTH_URL: 'https://accounts.spotify.com/authorize',
-  TOKEN_URL: 'https://accounts.spotify.com/api/token'
+  TOKEN_URL: 'https://accounts.spotify.com/api/token',
+  SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
 };
 
-
+/*
 // Tidal configuration
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'AxOkLsNxSDQ8InZU',
@@ -179,13 +179,13 @@ export const TIDAL_CONFIG = {
   AUTH_URL: 'https://login.tidal.com/authorize',
   AUTH_AUTHORIZE: 'https://beta-old.resomix.com/tidal/auth/authorize',
 };
+*/
 
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'ds7LnGkxqwFXUE6s',
   REDIRECT_URI: 'https://stack.resomix.com/tidal-redirect',
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
-  TIDAL_AUTH_TOKEN: '/tidal/auth/token'
-
+  TIDAL_AUTH_TOKEN: '/tidal/auth/token',
+  TIDAL_TRANSFER: "/tidal/transfer-playlist/",
 };
-*/
