@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.services.metadata_service import MetadataService
+from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.hls_utils import generate_m3u8_playlist
 from app.core.config import settings
 
@@ -212,6 +213,8 @@ class PlaylistService:
                 }
             else:
                 filtered_data = self._apply_playlist_response_filtering(similarity_data)
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(filtered_data)
                 return {
                     "success": True,
                     "data": filtered_data
@@ -264,6 +267,8 @@ class PlaylistService:
             else:
                 # Valid data returned - apply metadata filtering
                 filtered_data = self._apply_playlist_response_filtering(result)
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(filtered_data)
                 return {
                     "success": True,
                     "data": filtered_data

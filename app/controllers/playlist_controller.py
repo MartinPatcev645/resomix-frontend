@@ -24,6 +24,7 @@ import time
 from app.services.playlist_service import PlaylistService
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.logging_service import LoggingService
+from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.response_utils import format_response
 from app.models.user import User
 from app.core.config import settings
@@ -404,6 +405,8 @@ class PlaylistController:
             duration_ms = (time.time() - start_time) * 1000
             
             if result.get("success"):
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(result)
                 # Extract playlist integer ID if available
                 playlist_int_id = None
                 try:
@@ -547,6 +550,8 @@ class PlaylistController:
             result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(result)
                 # Extract playlist integer ID if available
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
                 playlist_int_id = playlist.id if playlist else None

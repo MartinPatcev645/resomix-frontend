@@ -30,6 +30,7 @@ from app.services.similarity_service import SimilarityService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
+from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 import time
@@ -464,6 +465,8 @@ class SimilarityController:
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(similarity_results)
                 response_content = format_response(success=True, data=similarity_results)
                 self.logging_service.log(
                     async_db=db,
@@ -745,6 +748,8 @@ class SimilarityController:
                 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(similarity_results)
                 response_content = format_response(success=True, data=similarity_results)
                 self.logging_service.log(
                     async_db=db,
@@ -999,6 +1004,8 @@ class SimilarityController:
             playlist_int_id = playlist.id if playlist else None
 
             duration_ms = (time.time() - start_time) * 1000            
+            if settings.demo_mode:
+                apply_demo_mode_redaction(similarity_results)
             response_content = format_response(success=True, data=similarity_results)
             self.logging_service.log(
                 async_db=db,

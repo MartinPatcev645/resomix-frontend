@@ -31,6 +31,7 @@ from app.repositories.similarity_repository import SimilarityRepository
 from app.services.similarity_segment import SimilaritySegmentService
 from app.core.config import settings
 from app.services.metadata_service import MetadataService
+from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.similarity_utils import (
     get_duration_from_bytes_sync,
     normalize_artist_name,
@@ -271,6 +272,9 @@ class SimilarityService:
             #         # Launch segment preview in background and return immediately
             #         asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
             
+            if settings.demo_mode:
+                apply_demo_mode_redaction(response_data)
+
             return response_data
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
@@ -451,6 +455,9 @@ class SimilarityService:
             #         # Launch segment workflow in background
             #         asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
             
+            if settings.demo_mode:
+                apply_demo_mode_redaction(response_data)
+
             return response_data
         elif similarity_response.get("status") == "not_found":
             # Path not found on similarity server, but we might still have its duration from our DB.
