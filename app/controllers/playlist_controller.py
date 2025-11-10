@@ -520,20 +520,14 @@ class PlaylistController:
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
         try:
             if settings.demo_mode:
-                limit_check = await self.operation_limit_evaluator.check(
-                    db,
-                    user_id=current_user.id,
-                    operation_code="playlist_create",
+                response_data = format_response(
+                    success=False,
+                    error="Playlist playback is disabled in demo mode.",
                 )
-                if not limit_check.allowed:
-                    response_data = format_response(
-                        success=False,
-                        error=limit_check.message or "Operation not permitted",
-                    )
-                    return JSONResponse(
-                        status_code=limit_check.status_code,
-                        content=response_data,
-                    )
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content=response_data,
+                )
 
             result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
