@@ -183,7 +183,7 @@ export const TIDAL_CONFIG = {
 
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'ds7LnGkxqwFXUE6s',
-  REDIRECT_URI: 'https://stack.resomix.com/tidal-redirect',
+  REDIRECT_URI: 'https://beta.resomix.com/tidal-redirect',
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
   TIDAL_AUTH_TOKEN: '/tidal/auth/token',
