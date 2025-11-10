@@ -288,7 +288,7 @@ async def get_playlist_hls_endpoint(
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Get playlist as HLS M3U8 format for audio streaming.
