@@ -24,6 +24,7 @@ from typing import Optional, Literal
 from app.services.search_service import SearchService
 from app.utils.response_utils import format_response
 from app.utils.logging_utils import log_request
+from app.core.config import settings
 
 
 class SearchController:
@@ -39,6 +40,11 @@ class SearchController:
         try:
             # Call the search function with mode parameter
             search_results = await self.search_service.search_tracks(db, query, mode)
+
+            if settings.demo_mode and isinstance(search_results, dict):
+                tracks = search_results.get("tracks")
+                if isinstance(tracks, list):
+                    search_results["tracks"] = tracks[:10]
             
             # Return success response with the search results
             return JSONResponse(
