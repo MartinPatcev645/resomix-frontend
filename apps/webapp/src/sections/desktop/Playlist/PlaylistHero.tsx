@@ -145,7 +145,7 @@ const PlaylistHero: React.FC = () => {
   });
 
   const handleForkClick = async () => {
-    if (!playlistData?.playlist.id || forking) return;
+    if (DEMO_MODE || !playlistData?.playlist.id || forking) return;
     await fork(playlistData.playlist.id);
   };
 
@@ -419,7 +419,15 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </div>
                 <div className="absolute right-[var(--px-10)] top-[var(--px-10)] flex items-center gap-[var(--px-8)]">
-                  {isForked ? (
+                  {DEMO_MODE ? (
+                      <Tooltip message="Add to favorites coming soon!">
+                        <HeartStrokeIcon
+                            customWidth="24"
+                            customHeight="24"
+                            className="text-white/60 mt-[var(--px-6)] cursor-not-allowed"
+                        />
+                      </Tooltip>
+                  ) : isForked ? (
                       <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
                   ) : (
                       <Tooltip message="Fork this playlist as your own">
