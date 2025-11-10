@@ -520,10 +520,10 @@ class PlaylistController:
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
         try:
             if settings.demo_mode:
-                response_data = format_response(
-                    success=False,
-                    error="Playlist playback is disabled in demo mode.",
-                )
+                # response_data = format_response(
+                #     success=False,
+                #     error="Playlist playback is disabled in demo mode.",
+                # )
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,
                     content=response_data,
@@ -532,8 +532,6 @@ class PlaylistController:
             result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(result)
                 # Extract playlist integer ID if available
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
                 playlist_int_id = playlist.id if playlist else None
