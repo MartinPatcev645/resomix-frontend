@@ -520,10 +520,10 @@ class PlaylistController:
             return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
         try:
             if settings.demo_mode:
-                # response_data = format_response(
-                #     success=False,
-                #     error="Playlist playback is disabled in demo mode.",
-                # )
+                response_data = format_response(
+                    success=False,
+                    error="Playlist playback is disabled in demo mode.",
+                )
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,
                     content=response_data,
