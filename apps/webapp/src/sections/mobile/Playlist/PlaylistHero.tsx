@@ -15,7 +15,7 @@ import MoreSvg from "@/assets/icons/more.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import { BASE_BETA_URL } from "@resomix/config";
+import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 
 const InputTrackStatus = "Loading..."
 
@@ -127,7 +127,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <div className="flex items-start gap-[var(--px-10)]">
                 <div className="flex flex-col items-start gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
-                    {uploadedCoverArt ? (
+                    {!DEMO_MODE && uploadedCoverArt ? (
                       <img src={uploadedCoverArt} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     ) : (
                       <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)]" />

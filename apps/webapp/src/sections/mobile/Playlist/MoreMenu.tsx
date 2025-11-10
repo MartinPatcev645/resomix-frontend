@@ -23,7 +23,7 @@ interface MoreMenuProps {
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
-    const [exportButtonText, setExportButtonText] = React.useState("Export Playlist");
+    const [exportButtonText, setExportButtonText] = React.useState("Export to TXT");
     const [isSpotifyOpen, setIsSpotifyOpen] = React.useState(false);
     const [isTidalOpen, setIsTidalOpen] = React.useState(false);
 
@@ -59,9 +59,9 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
             const result = await exportAndDownloadPlaylist();
 
             if (result.success) {
-                setExportButtonText("Downloaded!");
+                setExportButtonText("Exported!");
                 setTimeout(() => {
-                    setExportButtonText("Export Playlist");
+                    setExportButtonText("Export to TXT");
                 }, 2000);
             }
         } catch (error) {
@@ -175,7 +175,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
                         {!isInput && (
-                            <div className="w-full">
+                            <div className="w-full flex flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
                                     window.location.href = `${BASE_BETA_URL}/?id=${trackId}`;
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
@@ -184,11 +184,11 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         {isInput && (
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-tidal-button" text="Export to TIDAL" customWidth="w-full" onClick={() => setIsTidalOpen(true)} id={`playlist-hero-export-tidal`} />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-tidal-button opacity-50" text="Export to TIDAL" customWidth="w-full" onClick={() => setIsTidalOpen(true)} id={`playlist-hero-export-tidal`} disabled aria-disabled="true" />
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />                        
                             </div>
                         )}
-                        <div className="w-full">
+                        <div className="w-full flex flex-col">
                             <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] menu-link" text="Close" customWidth="w-full" onClick={onClose || (() => { })} id={`beta-menu-close-button`} />
                         </div>
                     </div>

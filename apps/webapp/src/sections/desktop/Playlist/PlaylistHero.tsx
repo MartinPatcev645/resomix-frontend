@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { BASE_BETA_URL } from "@resomix/config";
+import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
@@ -276,17 +276,21 @@ const PlaylistHero: React.FC = () => {
                               onClick={handleDownloadExportClick}
                               id="export-menu-download"
                           >
-                            Download
+                            Export to TXT
                           </button>
                           <div className="h-[1px] bg-slate-200/50" />
-                          <button
-                              role="menuitem"
-                              className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)]"
-                              onClick={handleSelectTidalExport}
-                              id="export-menu-apple"
-                          >
-                            Export to Tidal
-                          </button>
+                          <Tooltip message="Coming soon!">
+                            <button
+                                role="menuitem"
+                                className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] opacity-50 cursor-not-allowed"
+                                onClick={handleSelectTidalExport}
+                                id="export-menu-tidal"
+                                disabled
+                                aria-disabled="true"
+                            >
+                              Export to Tidal
+                            </button>
+                          </Tooltip>
                           <div className="h-[1px] bg-slate-200/50" />
                           <button
                               role="menuitem"
@@ -306,7 +310,7 @@ const PlaylistHero: React.FC = () => {
                 <div className="flex items-start gap-[var(--px-30)]">
                   <div className="flex flex-col items-center gap-[var(--px-10)]">
                     <div className="border border-dotted border-slate-200 p-[var(--px-20)]">
-                      {uploadedCoverArt ? (
+                      {!DEMO_MODE && uploadedCoverArt ? (
                           <img src={uploadedCoverArt} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
                       ) : (
                           <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)]" />
