@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { IconButton, HoverFlow, ToggleButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
+import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
@@ -42,6 +42,8 @@ const PlaylistHero: React.FC = () => {
 
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
+  void autoplay;
+  void setAutoplay;
   const { canExport, isExporting } = usePlaylistExport();
   const navigate = useNavigate();
   const location = useLocation();
@@ -215,15 +217,6 @@ const PlaylistHero: React.FC = () => {
                   Generate track similarity
                 </a>
                 <div className="flex items-center gap-[var(--px-8)]">
-                  <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
-                    <ToggleButton
-                        text="Autoplay"
-                        customWidth="min-w-[var(--px-120)]"
-                        isOn={autoplay}
-                        onToggle={setAutoplay}
-                        id="Autoplay-toggle-button"
-                    />
-                  </Tooltip>
                   <Tooltip message="Rename your Playlist">
                     <IconButton
                         text="Rename"
