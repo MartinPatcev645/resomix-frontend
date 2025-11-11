@@ -60,6 +60,7 @@ import { FormInput } from "./Elements/FormInput";
 import { PasswordInput } from "./Elements/PasswordInput";
 import { FormError } from "./Elements/FormError";
 import { AuthStatusBanner } from "./Elements/AuthStatusBanner";
+import { DemoStageBanner } from "./Elements/DemoStageBanner";
 import LoginContent from "./Content/LoginContent";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
@@ -129,6 +130,7 @@ export {
   PasswordInput,
   FormError,
   AuthStatusBanner,
+  DemoStageBanner,
   LoginContent,
   RegisterContent,
   ForgotPasswordContent,

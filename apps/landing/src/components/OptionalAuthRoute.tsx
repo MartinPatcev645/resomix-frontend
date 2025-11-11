@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuthStore } from "@resomix/stores";
-import { AuthStatusBanner, StatusMessage } from "@resomix/ui";
+import { AuthStatusBanner, DemoStageBanner, StatusMessage } from "@resomix/ui";
 import { resendVerification } from "@resomix/api-client";
 
 interface OptionalAuthRouteProps {
@@ -17,6 +17,7 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   const { isAuthenticated, user } = useAuthStore();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
+  const [showDemoBanner, setShowDemoBanner] = useState(false);
   const [showStatusMessage, setShowStatusMessage] = useState(false);
   const [statusType, setStatusType] = useState<"success" | "error">("success");
   const [statusMessage, setStatusMessage] = useState("");
@@ -25,6 +26,11 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
     // Check if banner was previously dismissed (stored in localStorage)
     const dismissed = localStorage.getItem("email_verification_banner_dismissed");
     setBannerDismissed(dismissed === "true");
+  }, []);
+
+  useEffect(() => {
+    const demoDismissed = localStorage.getItem("demo_stage_notice_dismissed");
+    setShowDemoBanner(demoDismissed !== "true");
   }, []);
 
   useEffect(() => {
@@ -81,8 +87,16 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
     setShowBanner(false);
   };
 
+  const handleDemoDismiss = () => {
+    localStorage.setItem("demo_stage_notice_dismissed", "true");
+    setShowDemoBanner(false);
+  };
+
   return (
     <div data-authenticated={isAuthenticated}>
+      {showDemoBanner && (
+        <DemoStageBanner onDismiss={handleDemoDismiss} />
+      )}
       {showBanner && (
         <AuthStatusBanner
           onResendVerification={handleResendVerification}
