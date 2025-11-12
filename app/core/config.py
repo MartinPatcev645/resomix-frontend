@@ -209,6 +209,7 @@ class Settings(BaseModel):
             "https://resomix.com",
             "https://beta.resomix.com",
             "https://stack.resomix.com",
+            "https://demo-stack.resomix.com",
             "https://bserver.resomix.com",
             "https://r-admin.resomix.com",
             "https://landing.resomix.com",
