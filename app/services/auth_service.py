@@ -165,12 +165,12 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
 
-        # Remove check for now whether email is verified or not
-        # if not user.is_email_verified:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_403_FORBIDDEN,
-        #         detail="Email not verified. Please verify your email before logging in.",
-        #     )
+        # Require verified email before issuing tokens
+        if not user.is_email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email not verified. Please verify your email before logging in.",
+            )
 
         # Check if 2FA is enabled
         if user.is_two_factor_enabled:
@@ -535,9 +535,11 @@ class AuthService:
                 break
 
         if not valid_session:
+            # Treat mismatched refresh token as potential replay attack: revoke all sessions
+            await self.session_repo.async_revoke_all_user_sessions(db, user.id)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token revoked or invalid",
+                detail="Refresh token reuse detected. All sessions have been revoked.",
             )
 
         # Generate new access token

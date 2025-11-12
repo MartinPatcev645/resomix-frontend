@@ -129,6 +129,7 @@ async def login(
         401: {"model": ErrorResponse, "description": "Invalid or expired 2FA code"}
     },
 )
+@limiter.limit("5/minute")
 async def verify_2fa(
     request: Request,
     verification_request: TwoFactorVerifyRequest,
@@ -242,7 +243,8 @@ async def request_password_reset(
             "description": "Invalid/expired token or weak password",
         }
     },
-)
+) 
+@limiter.limit("5/minute")
 async def reset_password(
     request: Request,
     reset_confirm: PasswordResetConfirmRequest,

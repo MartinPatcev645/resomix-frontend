@@ -18,6 +18,7 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from pydantic import EmailStr
 
 from app.core.config import settings
+from app.services.logging_service import LoggingService
 
 # Setup Jinja2 template environment
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates" / "emails"
@@ -44,6 +45,7 @@ class EmailService:
 
     def __init__(self):
         self.fast_mail = FastMail(email_conf)
+        self.logging_service = LoggingService()
 
     async def send_verification_email(
         self, email: EmailStr, username: str, verification_token: str
@@ -82,8 +84,17 @@ class EmailService:
             await self.fast_mail.send_message(message)
             return True
         except Exception as e:
-            # Log error but don't expose details
-            print(f"Error sending verification email: {e}")
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="verification_email_send_failed",
+                message="Failed to send verification email",
+                metadata={
+                    "email": str(email),
+                    "username": username,
+                },
+                error=e,
+            )
             return False
 
     async def send_password_reset_email(
@@ -121,7 +132,17 @@ class EmailService:
             await self.fast_mail.send_message(message)
             return True
         except Exception as e:
-            print(f"Error sending password reset email: {e}")
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="password_reset_email_send_failed",
+                message="Failed to send password reset email",
+                metadata={
+                    "email": str(email),
+                    "username": username,
+                },
+                error=e,
+            )
             return False
 
     async def send_2fa_code_email(
@@ -163,7 +184,18 @@ class EmailService:
             await self.fast_mail.send_message(message)
             return True
         except Exception as e:
-            print(f"Error sending 2FA code email: {e}")
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="two_factor_email_send_failed",
+                message="Failed to send 2FA code email",
+                metadata={
+                    "email": str(email),
+                    "username": username,
+                    "purpose": purpose,
+                },
+                error=e,
+            )
             return False
 
     async def send_welcome_email(self, email: EmailStr, username: str) -> bool:
@@ -195,5 +227,15 @@ class EmailService:
             await self.fast_mail.send_message(message)
             return True
         except Exception as e:
-            print(f"Error sending welcome email: {e}")
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="welcome_email_send_failed",
+                message="Failed to send welcome email",
+                metadata={
+                    "email": str(email),
+                    "username": username,
+                },
+                error=e,
+            )
             return False
