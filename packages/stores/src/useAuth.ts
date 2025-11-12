@@ -3,6 +3,10 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '@resomix/api-client';
 import { hybridStorage, deleteCookie } from './cookieStorage';
 
+interface LogoutOptions {
+    broadcast?: boolean;
+}
+
 interface AuthState {
     // State
     user: User | null;
@@ -14,7 +18,7 @@ interface AuthState {
     setAuth: (user: User, accessToken: string) => void;
     setAccessToken: (token: string) => void;
     setUser: (user: User) => void;
-    logout: () => void;
+    logout: (options?: LogoutOptions) => void;
     updateUser: (updates: Partial<User>) => void;
 
     // Utility
@@ -51,7 +55,7 @@ const useAuthStore = create<AuthState>()(
             },
 
             // Logout
-            logout: () => {
+      logout: (options?: LogoutOptions) => {
                 set({
                     user: null,
                     accessToken: null,
@@ -63,6 +67,13 @@ const useAuthStore = create<AuthState>()(
                     localStorage.removeItem('email_verification_banner_dismissed');
                 } catch (e) {
                     console.warn('localStorage not available:', e);
+                }
+        if (options?.broadcast !== false) {
+          try {
+            localStorage.setItem('resomix-logout', String(Date.now()));
+          } catch (e) {
+            console.warn('Unable to broadcast logout:', e);
+          }
                 }
                 deleteCookie('resomix-auth-storage');
             },
@@ -100,9 +111,16 @@ const useAuthStore = create<AuthState>()(
             storage: createJSONStorage(() => hybridStorage),
             partialize: (state) => ({
                 user: state.user,
-                accessToken: state.accessToken,
                 isAuthenticated: state.isAuthenticated,
             }),
+            version: 1,
+            migrate: (persistedState: any, version) => {
+                if (version < 1 && persistedState) {
+                    const { accessToken: _removed, ...rest } = persistedState;
+                    return rest;
+                }
+                return persistedState;
+            },
         }
     )
 );
@@ -111,6 +129,24 @@ const useAuthStore = create<AuthState>()(
 // This avoids circular dependency issues
 if (typeof globalThis !== 'undefined') {
     (globalThis as any).__RESOMIX_AUTH_STORE__ = useAuthStore;
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+        if (event.storageArea !== window.localStorage) return;
+
+        if (event.key === 'resomix-logout' && event.newValue) {
+            useAuthStore.getState().logout({ broadcast: false });
+            return;
+        }
+
+        if (event.key === 'resomix-auth-storage' && event.newValue) {
+            const persistApi = (useAuthStore as any).persist;
+            if (persistApi?.rehydrate) {
+                persistApi.rehydrate();
+            }
+        }
+    });
 }
 
 export { useAuthStore };

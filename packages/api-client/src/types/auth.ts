@@ -105,6 +105,7 @@ export interface UserSession {
 export interface ErrorResponse {
   success: false;
   error: string;
+  status?: number;
 }
 
 // Profile Update Types

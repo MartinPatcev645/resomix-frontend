@@ -23,6 +23,7 @@ export default function Verify2FAContent({
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusTitle, setStatusTitle] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   // Get userId from state/props on mount
@@ -83,6 +84,7 @@ export default function Verify2FAContent({
 
     setSubmitting(true);
     setStatusType("loading");
+    setStatusTitle(undefined);
     setShowStatus(true);
     setStatusMessage("Verifying code...");
 
@@ -107,6 +109,7 @@ export default function Verify2FAContent({
         );
 
         setStatusType("success");
+        setStatusTitle("Code verified");
         setStatusMessage("Verification successful! Redirecting...");
 
         // Call success callback
@@ -114,14 +117,22 @@ export default function Verify2FAContent({
           onSuccess?.(result.data);
         }, 1000);
       } else {
-        const errorResult = result as { success: false; error: string };
+        const errorResult = result as { success: false; error: string; status?: number };
+        const message = errorResult.error || "Invalid or expired code. Please try again.";
         setStatusType("error");
-        setStatusMessage(errorResult.error || "Invalid or expired code. Please try again.");
+        setStatusMessage(message);
+        const lowerMessage = message.toLowerCase();
+        if (errorResult.status === 429 || lowerMessage.includes("rate limit")) {
+          setStatusTitle("Too many attempts");
+        } else {
+          setStatusTitle("Verification failed");
+        }
         setCode(""); // Clear code on error
       }
     } catch (error) {
       console.error("2FA verification error:", error);
       setStatusType("error");
+      setStatusTitle("Network error");
       setStatusMessage("Network error. Please check your connection and try again.");
       setCode(""); // Clear code on error
     } finally {
@@ -133,6 +144,7 @@ export default function Verify2FAContent({
     if (resendCountdown > 0 || !userId) return;
 
     setStatusType("loading");
+    setStatusTitle(undefined);
     setShowStatus(true);
     setStatusMessage("Sending new code...");
 
@@ -140,11 +152,13 @@ export default function Verify2FAContent({
       // Note: Backend should handle resending 2FA code
       // For now, we'll show a success message
       setStatusType("success");
+      setStatusTitle("New code sent");
       setStatusMessage("A new verification code has been sent to your email.");
       setResendCountdown(60); // 60 second cooldown
     } catch (error) {
       console.error("Resend 2FA error:", error);
       setStatusType("error");
+      setStatusTitle("Unable to resend");
       setStatusMessage("Failed to resend code. Please try again.");
     }
   };
@@ -266,6 +280,7 @@ export default function Verify2FAContent({
             isOpen={showStatus}
             onClose={() => setShowStatus(false)}
             status={statusType}
+            title={statusTitle}
             message={statusMessage}
           />
         </div>

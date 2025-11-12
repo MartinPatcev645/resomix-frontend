@@ -127,69 +127,150 @@ export const cookieStorage = {
  */
 export const hybridStorage = {
   getItem: (name: string): string | null => {
-    // Read cookie first to check if we have cross-domain data
-    const cookieValue = getCookie(name);
-    
-    // Try localStorage (faster, same domain)
+    const resolveEnvelope = (raw: string | null): Envelope | null => {
+      if (!raw) return null;
+      const envelope = unwrapEnvelope(raw);
+      if (envelope) return envelope;
+      return { ts: 0, tabId: 'legacy', payload: raw };
+    };
+
+    let candidate: Envelope | null = null;
+
     try {
       const localValue = localStorage.getItem(name);
-      if (localValue) {
-        // If both exist, prefer localStorage but ensure cookie is in sync
-        // Only sync if cookie is missing or different (prevents loops)
-        if (!cookieValue || cookieValue !== localValue) {
-          // Silently update cookie in background without triggering re-reads
-          setCookie(name, localValue, {
-            maxAge: 30 * 24 * 60 * 60,
-            secure: window.location.protocol === 'https:',
-            sameSite: 'lax'
-          });
-        }
-        return localValue;
-      }
+      candidate = resolveEnvelope(localValue);
     } catch (e) {
       console.warn('localStorage not available:', e);
     }
     
-    // Fallback to cookies (cross-domain support)
-    if (cookieValue) {
-      // Cookie exists but localStorage doesn't - sync localStorage in background
-      try {
-        localStorage.setItem(name, cookieValue);
-      } catch (e) {
-        // localStorage might not be available, that's okay
-      }
-      return cookieValue;
+    if (!candidate) {
+      const cookieValue = getCookie(name);
+      candidate = resolveEnvelope(cookieValue);
     }
-    
-    return null;
+
+    return candidate ? candidate.payload : null;
   },
   
   setItem: (name: string, value: string): void => {
-    // Write to cookie first (ensures cross-domain availability)
-    setCookie(name, value, {
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      secure: window.location.protocol === 'https:',
-      sameSite: 'lax'
-    });
-    
-    // Then write to localStorage (for faster future reads)
-    try {
-      localStorage.setItem(name, value);
-    } catch (e) {
-      console.warn('localStorage not available:', e);
+    if (typeof window === 'undefined') {
+      performWrite(name, value);
+      return;
     }
+
+    const existingTimer = pendingWrites.get(name);
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+
+    const timer = window.setTimeout(() => {
+      performWrite(name, value);
+      pendingWrites.delete(name);
+    }, WRITE_DEBOUNCE_MS);
+
+    pendingWrites.set(name, timer);
   },
   
   removeItem: (name: string): void => {
-    // Remove from cookie first
     deleteCookie(name);
-    
-    // Then remove from localStorage
     try {
       localStorage.removeItem(name);
     } catch (e) {
       console.warn('localStorage not available:', e);
     }
+  }
+};
+
+interface Envelope {
+  ts: number;
+  tabId: string;
+  payload: string;
+}
+
+const TAB_ID = (() => {
+  const generate = () => `${Math.random().toString(36).slice(2)}${Date.now()}`;
+  if (typeof window === 'undefined') return generate();
+  try {
+    const existing = window.sessionStorage.getItem('resomix-tab-id');
+    if (existing) return existing;
+    const fresh = generate();
+    window.sessionStorage.setItem('resomix-tab-id', fresh);
+    return fresh;
+  } catch {
+    return generate();
+  }
+})();
+
+const wrapEnvelope = (payload: string): string =>
+  JSON.stringify({ ts: Date.now(), tabId: TAB_ID, payload });
+
+const unwrapEnvelope = (raw: string): Envelope | null => {
+  try {
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      typeof parsed.payload === 'string' &&
+      typeof parsed.ts === 'number'
+    ) {
+      return {
+        ts: parsed.ts,
+        tabId: typeof parsed.tabId === 'string' ? parsed.tabId : 'unknown',
+        payload: parsed.payload
+      };
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return null;
+};
+
+const sanitisePayloadForCookie = (payload: string): string => {
+  try {
+    const parsed = JSON.parse(payload);
+    if (!parsed || typeof parsed !== 'object') return payload;
+
+    const state = (parsed as any).state;
+    if (!state || typeof state !== 'object') return payload;
+
+    const safeState: Record<string, unknown> = { ...state };
+
+    if (state.user && typeof state.user === 'object') {
+      const { id, uuid, email, username, is_email_verified } = state.user as Record<string, unknown>;
+      safeState.user = { id, uuid, email, username, is_email_verified };
+    }
+
+    safeState.isAuthenticated = !!state.isAuthenticated;
+
+    return JSON.stringify({ ...parsed, state: safeState });
+  } catch {
+    return payload;
+  }
+};
+
+const WRITE_DEBOUNCE_MS = 100;
+const pendingWrites = typeof window === 'undefined' ? new Map<string, number>() : new Map<string, number>();
+
+const performWrite = (name: string, value: string) => {
+  const envelope = wrapEnvelope(value);
+
+  try {
+    const existing = localStorage.getItem(name);
+    if (existing !== envelope) {
+      localStorage.setItem(name, envelope);
+    }
+  } catch (e) {
+    console.warn('localStorage not available:', e);
+  }
+
+  const cookieEnvelope = wrapEnvelope(sanitisePayloadForCookie(value));
+  const existingCookie = getCookie(name);
+
+  if (existingCookie !== cookieEnvelope) {
+    setCookie(name, cookieEnvelope, {
+      maxAge: 30 * 24 * 60 * 60,
+      secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+      sameSite: 'lax'
+    });
   }
 };
 
