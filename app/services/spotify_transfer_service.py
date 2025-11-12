@@ -24,11 +24,13 @@ import re
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
+import unicodedata
 
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
+from spotipy.exceptions import SpotifyException
 from app.utils.logging_utils import log_request
 
 # Set up logger specifically for Spotify transfer
@@ -62,10 +64,10 @@ class SpotifyTransferService:
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
         """
         Create Spotify client with user's access token
-        
+
         Args:
             access_token: Valid Spotify OAuth access token
-            
+
         Returns:
             Configured Spotify client
         """
@@ -75,7 +77,7 @@ class SpotifyTransferService:
             # Test the token by getting user info
             user_info = client.me()
             logger.info("Successfully authenticated with Spotify for user: %s",
-                       user_info.get('display_name', 'Unknown'))
+                        user_info.get('display_name', 'Unknown'))
             return client
         except Exception as e:
             error_msg = str(e)
@@ -83,7 +85,8 @@ class SpotifyTransferService:
 
             # Provide specific error message for 403 errors
             if "403" in error_msg and "not be registered" in error_msg:
-                raise ValueError("This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list.")
+                raise ValueError(
+                    "This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list.")
             elif "403" in error_msg:
                 raise ValueError("Spotify access denied. Please check your access token permissions.")
             elif "401" in error_msg:
@@ -94,10 +97,10 @@ class SpotifyTransferService:
     def _clean_track_title(self, title: str) -> str:
         """
         Clean track title for better Spotify search results
-        
+
         Args:
             title: Raw track title
-            
+
         Returns:
             Cleaned track title
         """
@@ -126,11 +129,11 @@ class SpotifyTransferService:
     def _clean_search_query(self, title: str, artist: str) -> str:
         """
         Clean and format the search query for Spotify.
-        
+
         Args:
             title: Track title
             artist: Track artist
-            
+
         Returns:
             Cleaned search query string
         """
@@ -174,114 +177,114 @@ class SpotifyTransferService:
         return query[:100]  # Limit query length
 
     def _normalize_text(self, text: str) -> str:
-            if not text:
-                return ""
-            text = unicodedata.normalize("NFKD", text)
-            text = "".join(ch for ch in text if not unicodedata.combining(ch))
-            text = text.lower()
-            text = text.replace("&", " and ")
-            text = re.sub(r"[^\w\s\-\(\)]", " ", text)
-            text = re.sub(r"\s+", " ", text).strip()
-            return text
+        if not text:
+            return ""
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+        text = text.lower()
+        text = text.replace("&", " and ")
+        text = re.sub(r"[^\w\s\-\(\)]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
 
-        def _strip_parentheses(self, text: str) -> str:
-            return re.sub(r"\([^)]*\)", " ", text).strip()
+    def _strip_parentheses(self, text: str) -> str:
+        return re.sub(r"\([^)]*\)", " ", text).strip()
 
-        def _tokenize(self, text: str) -> List[str]:
-            if not text:
-                return []
-            return [t for t in re.split(r"[\s\-]+", text) if t]
+    def _tokenize(self, text: str) -> List[str]:
+        if not text:
+            return []
+        return [t for t in re.split(r"[\s\-]+", text) if t]
 
-        def _dice_coefficient(self, tokens_a: List[str], tokens_b: List[str]) -> float:
-            if not tokens_a or not tokens_b:
-                return 0.0
-            set_a = set(tokens_a)
-            set_b = set(tokens_b)
-            inter = len(set_a.intersection(set_b))
-            return (2.0 * inter) / (len(set_a) + len(set_b))
+    def _dice_coefficient(self, tokens_a: List[str], tokens_b: List[str]) -> float:
+        if not tokens_a or not tokens_b:
+            return 0.0
+        set_a = set(tokens_a)
+        set_b = set(tokens_b)
+        inter = len(set_a.intersection(set_b))
+        return (2.0 * inter) / (len(set_a) + len(set_b))
 
-        def _best_name_similarity(self, name: str, candidates: List[str]) -> float:
-            if not name or not candidates:
-                return 0.0
-            n_name = self._normalize_text(name)
-            t_name = self._tokenize(n_name)
-            best = 0.0
-            for cand in candidates:
-                n_c = self._normalize_text(cand)
-                t_c = self._tokenize(n_c)
-                best = max(best, self._dice_coefficient(t_name, t_c))
-            return best
+    def _best_name_similarity(self, name: str, candidates: List[str]) -> float:
+        if not name or not candidates:
+            return 0.0
+        n_name = self._normalize_text(name)
+        t_name = self._tokenize(n_name)
+        best = 0.0
+        for cand in candidates:
+            n_c = self._normalize_text(cand)
+            t_c = self._tokenize(n_c)
+            best = max(best, self._dice_coefficient(t_name, t_c))
+        return best
 
-        def _extract_parenthetical_tags(self, title: str) -> List[str]:
-            tags = re.findall(r"\(([^)]{2,64})\)", title or "", flags=re.IGNORECASE)
-            return [self._normalize_text(t) for t in tags]
+    def _extract_parenthetical_tags(self, title: str) -> List[str]:
+        tags = re.findall(r"\(([^)]{2,64})\)", title or "", flags=re.IGNORECASE)
+        return [self._normalize_text(t) for t in tags]
 
-        def _remix_signal_from_tags(self, tags: List[str]) -> Dict[str, Any]:
-            info = {
-                "has_remix": False,
-                "has_original": False,
-                "has_edit": False,
-                "remixer_tokens": set(),
-            }
-            for tag in tags:
-                if "remix" in tag:
-                    info["has_remix"] = True
-                    tokens = [t for t in self._tokenize(tag) if t not in {"remix", "mix", "edit", "version", "original"}]
-                    info["remixer_tokens"].update(tokens)
-                if "original" in tag:
-                    info["has_original"] = True
-                if "edit" in tag:
-                    info["has_edit"] = True
-            return info
+    def _remix_signal_from_tags(self, tags: List[str]) -> Dict[str, Any]:
+        info = {
+            "has_remix": False,
+            "has_original": False,
+            "has_edit": False,
+            "remixer_tokens": set(),
+        }
+        for tag in tags:
+            if "remix" in tag:
+                info["has_remix"] = True
+                tokens = [t for t in self._tokenize(tag) if t not in {"remix", "mix", "edit", "version", "original"}]
+                info["remixer_tokens"].update(tokens)
+            if "original" in tag:
+                info["has_original"] = True
+            if "edit" in tag:
+                info["has_edit"] = True
+        return info
 
-        def _build_search_queries(self, title: str, artists: List[str]) -> List[str]:
-            queries = []
-            main_artist = artists[0] if artists else ""
-            title_no_paren = self._strip_parentheses(title)
+    def _build_search_queries(self, title: str, artists: List[str]) -> List[str]:
+        queries = []
+        main_artist = artists[0] if artists else ""
+        title_no_paren = self._strip_parentheses(title)
 
-            if title and main_artist:
-                queries.append(f'track:"{title}" artist:"{main_artist}"')
-                if title_no_paren != title:
-                    queries.append(f'track:"{title_no_paren}" artist:"{main_artist}"')
-                queries.append(f'"{title}" {main_artist}')
+        if title and main_artist:
+            queries.append(f'track:"{title}" artist:"{main_artist}"')
+            if title_no_paren != title:
+                queries.append(f'track:"{title_no_paren}" artist:"{main_artist}"')
+            queries.append(f'"{title}" {main_artist}')
 
-            if title:
-                queries.append(f'"{title}"')
-                if title_no_paren != title:
-                    queries.append(f'"{title_no_paren}"')
+        if title:
+            queries.append(f'"{title}"')
+            if title_no_paren != title:
+                queries.append(f'"{title_no_paren}"')
 
-            if main_artist and title_no_paren:
-                queries.append(f'{title_no_paren} {main_artist}')
+        if main_artist and title_no_paren:
+            queries.append(f'{title_no_paren} {main_artist}')
 
-            seen = set()
-            out = []
-            for q in queries:
-                if q not in seen:
-                    seen.add(q)
-                    out.append(q)
-            return out
+        seen = set()
+        out = []
+        for q in queries:
+            if q not in seen:
+                seen.add(q)
+                out.append(q)
+        return out
 
-        def _search_api(self, sp: spotipy.Spotify, query: str, limit: int = 20, retries: int = 2) -> Dict[str, Any]:
-            for attempt in range(retries + 1):
-                try:
-                    return sp.search(q=query, type="track", limit=limit)
-                except SpotifyException as e:
-                    if e.http_status == 429:
-                        retry_after = 2
-                        try:
-                            retry_after = int(getattr(e, "headers", {}).get("Retry-After", "2"))
-                        except Exception:
-                            pass
-                        time.sleep(retry_after)
-                    else:
-                        if attempt >= retries:
-                            raise
-                        time.sleep(1 + attempt)
-                except Exception:
+    def _search_api(self, sp: spotipy.Spotify, query: str, limit: int = 20, retries: int = 2) -> Dict[str, Any]:
+        for attempt in range(retries + 1):
+            try:
+                return sp.search(q=query, type="track", limit=limit)
+            except SpotifyException as e:
+                if e.http_status == 429:
+                    retry_after = 2
+                    try:
+                        retry_after = int(getattr(e, "headers", {}).get("Retry-After", "2"))
+                    except Exception:
+                        pass
+                    time.sleep(retry_after)
+                else:
                     if attempt >= retries:
                         raise
                     time.sleep(1 + attempt)
-            return {"tracks": {"items": []}}
+            except Exception:
+                if attempt >= retries:
+                    raise
+                time.sleep(1 + attempt)
+        return {"tracks": {"items": []}}
 
     async def _search_spotify_track(self, sp: spotipy.Spotify, title: str, artist_or_artists) -> Optional[str]:
         try:
@@ -373,47 +376,47 @@ class SpotifyTransferService:
             logger.warning("Search failed for '%s' by '%s': %s", title, artist_or_artists, str(e))
             return None
 
+    async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
+                                          track_data: List[Tuple[int, str, List[str]]]
+                                          ) -> List[Tuple[int, Optional[str]]]:
+        logger.info("Searching %d tracks concurrently", len(track_data))
+        start_time = time.time()
 
-async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
-                                      track_data: List[Tuple[int, str, List[str]]]) -> List[Tuple[int, Optional[str]]]:
-    logger.info("Searching %d tracks concurrently", len(track_data))
-
-    start_time = time.time()
-
-    def search_single_track(track_info):
-        track_id, title, artists = track_info
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            result = loop.run_until_complete(
-                self._search_spotify_track(spotify_client, title, artists)
-            )
-            return (track_id, result)
-        finally:
-            loop.close()
-
-    with ThreadPoolExecutor(max_workers=self.max_concurrent_searches) as executor:
-        future_to_track = {
-            executor.submit(search_single_track, track_info): track_info[0]
-            for track_info in track_data
-        }
+        def search_single_track(track_info):
+            track_id, title, artists = track_info
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return (track_id, loop.run_until_complete(
+                    self._search_spotify_track(spotify_client, title, artists)
+                ))
+            finally:
+                loop.close()
 
         results = []
-        for future in asyncio.as_completed([asyncio.wrap_future(f) for f in future_to_track]):
-            try:
-                result = await future
-                results.append(result)
-            except Exception as e:
-                track_id = future_to_track.get(future, 'unknown')
-                logger.error("Error searching track ID %s: %s", track_id, str(e))
-                results.append((track_id, None))
+        with ThreadPoolExecutor(max_workers=self.max_concurrent_searches) as executor:
+            wrapped_futures = []
+            future_to_track_id = {}
+            for info in track_data:
+                cf = executor.submit(search_single_track, info)
+                af = asyncio.wrap_future(cf)
+                wrapped_futures.append(af)
+                future_to_track_id[af] = info[0]
 
-    total_time = time.time() - start_time
-    successful_searches = sum(1 for _, result in results if result is not None)
-    logger.info("Search completed: %d/%d tracks found in %.1fs",
-                successful_searches, len(track_data), total_time)
+            for af in asyncio.as_completed(wrapped_futures):
+                try:
+                    result = await af
+                    results.append(result)
+                except Exception as e:
+                    track_id = future_to_track_id.get(af, 'unknown')
+                    logger.error("Error searching track ID %s: %s", track_id, str(e))
+                    results.append((track_id, None))
 
-    return results
+        total_time = time.time() - start_time
+        successful_searches = sum(1 for _, r in results if r is not None)
+        logger.info("Search completed: %d/%d tracks found in %.1fs",
+                    successful_searches, len(track_data), total_time)
+        return results
 
     async def _get_cached_spotify_ids(self, db: AsyncSession, track_ids: List[int]) -> Dict[int, str]:
         """
@@ -456,7 +459,7 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
             logger.error("Failed to cache Spotify IDs: %s", str(e))
 
     async def _add_tracks_to_playlist(self, spotify_client: spotipy.Spotify,
-                                    playlist_id: str, track_uris: List[str]) -> None:
+                                      playlist_id: str, track_uris: List[str]) -> None:
         """
         Add tracks to Spotify playlist in batches
 
@@ -489,7 +492,8 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
         return tracks_added
 
     async def transfer_playlist_to_spotify(self, db: AsyncSession, playlist_id: str,
-                                         access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
+                                           access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[
+        str, Any]:
         """
         Transfer a Resomix playlist to Spotify
 
@@ -613,7 +617,7 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
                         not_found_tracks.append(f"{', '.join(artists)} - {title}")
 
             logger.info("Found %d tracks (%d cached + %d searched), %d not found",
-                       len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
+                        len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
 
             # Step 7: Add found tracks to Spotify playlist
             tracks_added = 0
@@ -637,7 +641,7 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
             }
 
             logger.info("Transfer completed successfully in %.1fs - %d/%d tracks added",
-                       total_time, tracks_added, len(playlist_tracks))
+                        total_time, tracks_added, len(playlist_tracks))
 
             return result
 
