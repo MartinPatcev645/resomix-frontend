@@ -1,4 +1,4 @@
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { useFormValidation, validateRequired } from "@resomix/hooks";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
@@ -42,7 +42,26 @@ export default function LoginContent({
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusTitle, setStatusTitle] = useState<string | undefined>(undefined);
+  const [showResendCTA, setShowResendCTA] = useState(false);
+  const [resendPending, setResendPending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    try {
+      const logoutReason = sessionStorage.getItem("auth_logout_reason");
+      if (logoutReason === "refresh_token_reuse") {
+        sessionStorage.removeItem("auth_logout_reason");
+        setStatusType("error");
+        setStatusTitle("Session Ended");
+        setStatusMessage("For your security we ended your sessions on all devices. Please sign in again.");
+        setShowResendCTA(false);
+        setShowStatus(true);
+      }
+    } catch {
+      // Ignore storage access issues (e.g., Safari private mode)
+    }
+  }, []);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -60,7 +79,11 @@ export default function LoginContent({
 
     setSubmitting(true);
     setStatusType("loading");
+    setStatusTitle(undefined);
+    setStatusMessage("");
     setShowStatus(true);
+    setShowResendCTA(false);
+    setResendPending(false);
 
     try {
       // Import dynamically to avoid circular dependencies
@@ -77,6 +100,7 @@ export default function LoginContent({
         if ("requires_2fa" in result.data && result.data.requires_2fa) {
           const twoFAData = result.data as { requires_2fa: true; user_id: number; message: string };
           setStatusType("success");
+          setStatusTitle("Two-factor verification required");
           setStatusMessage("Please enter your 2FA code");
           setTimeout(() => {
             onNavigate2FA?.(twoFAData.user_id);
@@ -89,6 +113,7 @@ export default function LoginContent({
             loginData.access_token
           );
           setStatusType("success");
+          setStatusTitle("Login successful");
           setStatusMessage("Login successful! Redirecting...");
 
           // Wait a bit longer to ensure cookie is persisted before cross-domain redirect
@@ -98,19 +123,79 @@ export default function LoginContent({
           }, 2000);
         } else {
           setStatusType("error");
+          setStatusTitle("Unexpected response");
           setStatusMessage("Unexpected response from server");
         }
       } else {
-        const errorResult = result as { success: false; error: string };
+        const errorResult = result as { success: false; error: string; status?: number };
+        const trimmedInput = form.email_or_username.trim();
         setStatusType("error");
+        if (errorResult.status === 403 || errorResult.error?.toLowerCase().includes("not verified")) {
+          const emailHint = trimmedInput && trimmedInput.includes("@")
+            ? `We just sent ${trimmedInput} a verification email when you signed up.`
+            : "Please check the inbox associated with your account.";
+          setStatusTitle("Verify your email");
+          setStatusMessage(
+            `${errorResult.error || "Your email address is not verified yet."} ${emailHint} You can request another email below.`
+          );
+          setShowResendCTA(true);
+        } else {
+          setStatusTitle("Sign-in failed");
         setStatusMessage(errorResult.error || "Invalid credentials. Please try again.");
+          setShowResendCTA(false);
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
       setStatusType("error");
+      setStatusTitle("Network error");
       setStatusMessage("Network error. Please check your connection and try again.");
+      setShowResendCTA(false);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const trimmedInput = form.email_or_username.trim();
+
+    if (!trimmedInput || !trimmedInput.includes("@")) {
+      setStatusType("error");
+      setStatusTitle("Enter your email");
+      setStatusMessage("Enter the email address you used to create your account so we can resend the verification link.");
+      setShowStatus(true);
+      setShowResendCTA(true);
+      return;
+    }
+
+    setResendPending(true);
+    setShowResendCTA(true);
+
+    try {
+      const { resendVerification } = await import("@resomix/api-client");
+      const result = await resendVerification(trimmedInput);
+
+      if (result.success) {
+        setStatusType("success");
+        setStatusTitle("Verification email sent");
+        setStatusMessage(`We sent a new verification link to ${trimmedInput}. Check your inbox and spam folder.`);
+        setShowResendCTA(false);
+      } else {
+        const errorResult = result as { success: false; error: string };
+        setStatusType("error");
+        setStatusTitle("Unable to resend");
+        setStatusMessage(errorResult.error || "We couldn't resend the verification email. Please try again later.");
+        setShowResendCTA(true);
+      }
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      setStatusType("error");
+      setStatusTitle("Unable to resend");
+      setStatusMessage("We couldn't resend the verification email. Please try again later.");
+      setShowResendCTA(true);
+    } finally {
+      setResendPending(false);
+      setShowStatus(true);
     }
   };
 
@@ -203,9 +288,21 @@ export default function LoginContent({
 
           <StatusMessage
             isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
+            onClose={() => {
+              setShowStatus(false);
+            }}
             status={statusType}
+            title={statusTitle}
             message={statusMessage}
+            additionalButton={
+              showResendCTA
+                ? {
+                    text: resendPending ? "Sending..." : "Resend verification email",
+                    onClick: handleResendVerification,
+                    disabled: resendPending,
+                  }
+                : undefined
+            }
           />
         </div>
       </div>

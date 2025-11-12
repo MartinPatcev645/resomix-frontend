@@ -158,6 +158,21 @@ authClient.interceptors.response.use(
       } catch (refreshError) {
         console.error('[authClient] Token refresh failed, logging out user', refreshError);
         processQueue(refreshError, null);
+        if (typeof window !== 'undefined' && axios.isAxiosError(refreshError)) {
+          const refreshStatus = refreshError.response?.status;
+          const refreshMessage = (refreshError.response?.data as any)?.error;
+          if (
+            refreshStatus === 401 &&
+            typeof refreshMessage === 'string' &&
+            refreshMessage.toLowerCase().includes('refresh token reuse detected')
+          ) {
+            try {
+              window.sessionStorage.setItem('auth_logout_reason', 'refresh_token_reuse');
+            } catch (storageError) {
+              console.warn('Unable to persist logout reason:', storageError);
+            }
+          }
+        }
         logout();
         isRefreshing = false;
         return Promise.reject(refreshError);

@@ -35,6 +35,7 @@ export default function ResetPasswordContent({
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusTitle, setStatusTitle] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   // Password strength calculation
@@ -118,6 +119,8 @@ export default function ResetPasswordContent({
 
     setSubmitting(true);
     setStatusType("loading");
+    setStatusTitle(undefined);
+    setStatusMessage("");
     setShowStatus(true);
 
     try {
@@ -128,6 +131,7 @@ export default function ResetPasswordContent({
 
       if (result.success) {
         setStatusType("success");
+        setStatusTitle("Password reset");
         setStatusMessage("Password reset successfully! Redirecting to login...");
 
         // Clear form
@@ -139,16 +143,24 @@ export default function ResetPasswordContent({
           onNavigateLogin?.();
         }, 2000);
       } else {
-        const errorResult = result as { success: false; error: string };
+        const errorResult = result as { success: false; error: string; status?: number };
+        const message =
+          errorResult.error || "Reset link expired or invalid. Please request a new one.";
         setStatusType("error");
-        setStatusMessage(
-          errorResult.error || "Reset link expired or invalid. Please request a new one."
-        );
+        setStatusMessage(message);
+
+        const lowerMessage = message.toLowerCase();
+        if (errorResult.status === 429 || lowerMessage.includes("rate limit")) {
+          setStatusTitle("Too many attempts");
+        } else {
+          setStatusTitle("Unable to reset password");
         setTokenValid(false);
+        }
       }
     } catch (error) {
       console.error("Password reset error:", error);
       setStatusType("error");
+      setStatusTitle("Network error");
       setStatusMessage("Network error. Please check your connection and try again.");
     } finally {
       setSubmitting(false);
@@ -268,6 +280,7 @@ export default function ResetPasswordContent({
             isOpen={showStatus}
             onClose={() => setShowStatus(false)}
             status={statusType}
+            title={statusTitle}
             message={statusMessage}
           />
         </div>

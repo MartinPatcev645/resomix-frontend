@@ -29,6 +29,7 @@ export const handleApiError = (error: AxiosError | Error): {
   success: false;
   error: string;
   details?: unknown;
+  status?: number;
 } => {
   console.error("API Error:", error);
 
@@ -48,24 +49,25 @@ export const handleApiError = (error: AxiosError | Error): {
         success: false,
         error: errorMessage,
         details: (data as any).details ?? null,
+        status,
       };
     }
 
     switch (status) {
       case 401:
-        return { success: false, error: "Authentication error. Please check your API key." };
+        return { success: false, error: "Authentication error. Please check your API key.", status };
       case 413:
-        return { success: false, error: "File too large." };
+        return { success: false, error: "File too large.", status };
       case 415:
-        return { success: false, error: "Unsupported file type." };
+        return { success: false, error: "Unsupported file type.", status };
       case 422:
-        return { success: false, error: "Invalid data provided." };
+        return { success: false, error: "Invalid data provided.", status };
       case 429:
-        return { success: false, error: "Too many requests. Please try again later." };
+        return { success: false, error: "Too many requests. Please try again later.", status };
       case 500:
-        return { success: false, error: "Server error. Please try again later." };
+        return { success: false, error: "Server error. Please try again later.", status };
       default:
-        return { success: false, error: "An error occurred. Please try again." };
+        return { success: false, error: "An error occurred. Please try again.", status };
     }
   }
 
