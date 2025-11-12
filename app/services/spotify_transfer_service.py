@@ -184,104 +184,104 @@ class SpotifyTransferService:
             text = re.sub(r"\s+", " ", text).strip()
             return text
 
-        def _strip_parentheses(self, text: str) -> str:
-            return re.sub(r"\([^)]*\)", " ", text).strip()
+    def _strip_parentheses(self, text: str) -> str:
+        return re.sub(r"\([^)]*\)", " ", text).strip()
 
-        def _tokenize(self, text: str) -> List[str]:
-            if not text:
-                return []
-            return [t for t in re.split(r"[\s\-]+", text) if t]
+    def _tokenize(self, text: str) -> List[str]:
+        if not text:
+            return []
+        return [t for t in re.split(r"[\s\-]+", text) if t]
 
-        def _dice_coefficient(self, tokens_a: List[str], tokens_b: List[str]) -> float:
-            if not tokens_a or not tokens_b:
-                return 0.0
-            set_a = set(tokens_a)
-            set_b = set(tokens_b)
-            inter = len(set_a.intersection(set_b))
-            return (2.0 * inter) / (len(set_a) + len(set_b))
+    def _dice_coefficient(self, tokens_a: List[str], tokens_b: List[str]) -> float:
+        if not tokens_a or not tokens_b:
+            return 0.0
+        set_a = set(tokens_a)
+        set_b = set(tokens_b)
+        inter = len(set_a.intersection(set_b))
+        return (2.0 * inter) / (len(set_a) + len(set_b))
 
-        def _best_name_similarity(self, name: str, candidates: List[str]) -> float:
-            if not name or not candidates:
-                return 0.0
-            n_name = self._normalize_text(name)
-            t_name = self._tokenize(n_name)
-            best = 0.0
-            for cand in candidates:
-                n_c = self._normalize_text(cand)
-                t_c = self._tokenize(n_c)
-                best = max(best, self._dice_coefficient(t_name, t_c))
-            return best
+    def _best_name_similarity(self, name: str, candidates: List[str]) -> float:
+        if not name or not candidates:
+            return 0.0
+        n_name = self._normalize_text(name)
+        t_name = self._tokenize(n_name)
+        best = 0.0
+        for cand in candidates:
+            n_c = self._normalize_text(cand)
+            t_c = self._tokenize(n_c)
+            best = max(best, self._dice_coefficient(t_name, t_c))
+        return best
 
-        def _extract_parenthetical_tags(self, title: str) -> List[str]:
-            tags = re.findall(r"\(([^)]{2,64})\)", title or "", flags=re.IGNORECASE)
-            return [self._normalize_text(t) for t in tags]
+    def _extract_parenthetical_tags(self, title: str) -> List[str]:
+        tags = re.findall(r"\(([^)]{2,64})\)", title or "", flags=re.IGNORECASE)
+        return [self._normalize_text(t) for t in tags]
 
-        def _remix_signal_from_tags(self, tags: List[str]) -> Dict[str, Any]:
-            info = {
-                "has_remix": False,
-                "has_original": False,
-                "has_edit": False,
-                "remixer_tokens": set(),
-            }
-            for tag in tags:
-                if "remix" in tag:
-                    info["has_remix"] = True
-                    tokens = [t for t in self._tokenize(tag) if t not in {"remix", "mix", "edit", "version", "original"}]
-                    info["remixer_tokens"].update(tokens)
-                if "original" in tag:
-                    info["has_original"] = True
-                if "edit" in tag:
-                    info["has_edit"] = True
-            return info
+    def _remix_signal_from_tags(self, tags: List[str]) -> Dict[str, Any]:
+        info = {
+            "has_remix": False,
+            "has_original": False,
+            "has_edit": False,
+            "remixer_tokens": set(),
+        }
+        for tag in tags:
+            if "remix" in tag:
+                info["has_remix"] = True
+                tokens = [t for t in self._tokenize(tag) if t not in {"remix", "mix", "edit", "version", "original"}]
+                info["remixer_tokens"].update(tokens)
+            if "original" in tag:
+                info["has_original"] = True
+            if "edit" in tag:
+                info["has_edit"] = True
+        return info
 
-        def _build_search_queries(self, title: str, artists: List[str]) -> List[str]:
-            queries = []
-            main_artist = artists[0] if artists else ""
-            title_no_paren = self._strip_parentheses(title)
+    def _build_search_queries(self, title: str, artists: List[str]) -> List[str]:
+        queries = []
+        main_artist = artists[0] if artists else ""
+        title_no_paren = self._strip_parentheses(title)
 
-            if title and main_artist:
-                queries.append(f'track:"{title}" artist:"{main_artist}"')
-                if title_no_paren != title:
-                    queries.append(f'track:"{title_no_paren}" artist:"{main_artist}"')
-                queries.append(f'"{title}" {main_artist}')
+        if title and main_artist:
+            queries.append(f'track:"{title}" artist:"{main_artist}"')
+            if title_no_paren != title:
+                queries.append(f'track:"{title_no_paren}" artist:"{main_artist}"')
+            queries.append(f'"{title}" {main_artist}')
 
-            if title:
-                queries.append(f'"{title}"')
-                if title_no_paren != title:
-                    queries.append(f'"{title_no_paren}"')
+        if title:
+            queries.append(f'"{title}"')
+            if title_no_paren != title:
+                queries.append(f'"{title_no_paren}"')
 
-            if main_artist and title_no_paren:
-                queries.append(f'{title_no_paren} {main_artist}')
+        if main_artist and title_no_paren:
+            queries.append(f'{title_no_paren} {main_artist}')
 
-            seen = set()
-            out = []
-            for q in queries:
-                if q not in seen:
-                    seen.add(q)
-                    out.append(q)
-            return out
+        seen = set()
+        out = []
+        for q in queries:
+            if q not in seen:
+                seen.add(q)
+                out.append(q)
+        return out
 
-        def _search_api(self, sp: spotipy.Spotify, query: str, limit: int = 20, retries: int = 2) -> Dict[str, Any]:
-            for attempt in range(retries + 1):
-                try:
-                    return sp.search(q=query, type="track", limit=limit)
-                except SpotifyException as e:
-                    if e.http_status == 429:
-                        retry_after = 2
-                        try:
-                            retry_after = int(getattr(e, "headers", {}).get("Retry-After", "2"))
-                        except Exception:
-                            pass
-                        time.sleep(retry_after)
-                    else:
-                        if attempt >= retries:
-                            raise
-                        time.sleep(1 + attempt)
-                except Exception:
+    def _search_api(self, sp: spotipy.Spotify, query: str, limit: int = 20, retries: int = 2) -> Dict[str, Any]:
+        for attempt in range(retries + 1):
+            try:
+                return sp.search(q=query, type="track", limit=limit)
+            except SpotifyException as e:
+                if e.http_status == 429:
+                    retry_after = 2
+                    try:
+                        retry_after = int(getattr(e, "headers", {}).get("Retry-After", "2"))
+                    except Exception:
+                        pass
+                    time.sleep(retry_after)
+                else:
                     if attempt >= retries:
                         raise
                     time.sleep(1 + attempt)
-            return {"tracks": {"items": []}}
+            except Exception:
+                if attempt >= retries:
+                    raise
+                time.sleep(1 + attempt)
+        return {"tracks": {"items": []}}
 
     async def _search_spotify_track(self, sp: spotipy.Spotify, title: str, artist_or_artists) -> Optional[str]:
         try:
