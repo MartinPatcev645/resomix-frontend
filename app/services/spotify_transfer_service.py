@@ -31,6 +31,7 @@ from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
+from spotipy.exceptions import SpotifyException
 from app.utils.logging_utils import log_request
 
 # Set up logger specifically for Spotify transfer
@@ -64,10 +65,10 @@ class SpotifyTransferService:
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
         """
         Create Spotify client with user's access token
-        
+
         Args:
             access_token: Valid Spotify OAuth access token
-            
+
         Returns:
             Configured Spotify client
         """
@@ -77,7 +78,7 @@ class SpotifyTransferService:
             # Test the token by getting user info
             user_info = client.me()
             logger.info("Successfully authenticated with Spotify for user: %s",
-                       user_info.get('display_name', 'Unknown'))
+                        user_info.get('display_name', 'Unknown'))
             return client
         except Exception as e:
             error_msg = str(e)
@@ -85,7 +86,8 @@ class SpotifyTransferService:
 
             # Provide specific error message for 403 errors
             if "403" in error_msg and "not be registered" in error_msg:
-                raise ValueError("This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list.")
+                raise ValueError(
+                    "This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list.")
             elif "403" in error_msg:
                 raise ValueError("Spotify access denied. Please check your access token permissions.")
             elif "401" in error_msg:
@@ -96,10 +98,10 @@ class SpotifyTransferService:
     def _clean_track_title(self, title: str) -> str:
         """
         Clean track title for better Spotify search results
-        
+
         Args:
             title: Raw track title
-            
+
         Returns:
             Cleaned track title
         """
@@ -128,11 +130,11 @@ class SpotifyTransferService:
     def _clean_search_query(self, title: str, artist: str) -> str:
         """
         Clean and format the search query for Spotify.
-        
+
         Args:
             title: Track title
             artist: Track artist
-            
+
         Returns:
             Cleaned search query string
         """
@@ -176,15 +178,15 @@ class SpotifyTransferService:
         return query[:100]  # Limit query length
 
     def _normalize_text(self, text: str) -> str:
-            if not text:
-                return ""
-            text = unicodedata.normalize("NFKD", text)
-            text = "".join(ch for ch in text if not unicodedata.combining(ch))
-            text = text.lower()
-            text = text.replace("&", " and ")
-            text = re.sub(r"[^\w\s\-\(\)]", " ", text)
-            text = re.sub(r"\s+", " ", text).strip()
-            return text
+        if not text:
+            return ""
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+        text = text.lower()
+        text = text.replace("&", " and ")
+        text = re.sub(r"[^\w\s\-\(\)]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
 
     def _strip_parentheses(self, text: str) -> str:
         return re.sub(r"\([^)]*\)", " ", text).strip()
@@ -375,47 +377,47 @@ class SpotifyTransferService:
             logger.warning("Search failed for '%s' by '%s': %s", title, artist_or_artists, str(e))
             return None
 
+    async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
+                                          track_data: List[Tuple[int, str, List[str]]]
+                                          ) -> List[Tuple[int, Optional[str]]]:
+        logger.info("Searching %d tracks concurrently", len(track_data))
+        start_time = time.time()
 
-async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
-                                      track_data: List[Tuple[int, str, List[str]]]) -> List[Tuple[int, Optional[str]]]:
-    logger.info("Searching %d tracks concurrently", len(track_data))
-
-    start_time = time.time()
-
-    def search_single_track(track_info):
-        track_id, title, artists = track_info
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            result = loop.run_until_complete(
-                self._search_spotify_track(spotify_client, title, artists)
-            )
-            return (track_id, result)
-        finally:
-            loop.close()
-
-    with ThreadPoolExecutor(max_workers=self.max_concurrent_searches) as executor:
-        future_to_track = {
-            executor.submit(search_single_track, track_info): track_info[0]
-            for track_info in track_data
-        }
+        def search_single_track(track_info):
+            track_id, title, artists = track_info
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return (track_id, loop.run_until_complete(
+                    self._search_spotify_track(spotify_client, title, artists)
+                ))
+            finally:
+                loop.close()
 
         results = []
-        for future in asyncio.as_completed([asyncio.wrap_future(f) for f in future_to_track]):
-            try:
-                result = await future
-                results.append(result)
-            except Exception as e:
-                track_id = future_to_track.get(future, 'unknown')
-                logger.error("Error searching track ID %s: %s", track_id, str(e))
-                results.append((track_id, None))
+        with ThreadPoolExecutor(max_workers=self.max_concurrent_searches) as executor:
+            wrapped_futures = []
+            future_to_track_id = {}
+            for info in track_data:
+                cf = executor.submit(search_single_track, info)
+                af = asyncio.wrap_future(cf)
+                wrapped_futures.append(af)
+                future_to_track_id[af] = info[0]
 
-    total_time = time.time() - start_time
-    successful_searches = sum(1 for _, result in results if result is not None)
-    logger.info("Search completed: %d/%d tracks found in %.1fs",
-                successful_searches, len(track_data), total_time)
+            for af in asyncio.as_completed(wrapped_futures):
+                try:
+                    result = await af
+                    results.append(result)
+                except Exception as e:
+                    track_id = future_to_track_id.get(af, 'unknown')
+                    logger.error("Error searching track ID %s: %s", track_id, str(e))
+                    results.append((track_id, None))
 
-    return results
+        total_time = time.time() - start_time
+        successful_searches = sum(1 for _, r in results if r is not None)
+        logger.info("Search completed: %d/%d tracks found in %.1fs",
+                    successful_searches, len(track_data), total_time)
+        return results
 
     async def _get_cached_spotify_ids(self, db: AsyncSession, track_ids: List[int]) -> Dict[int, str]:
         """
@@ -458,7 +460,7 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
             logger.error("Failed to cache Spotify IDs: %s", str(e))
 
     async def _add_tracks_to_playlist(self, spotify_client: spotipy.Spotify,
-                                    playlist_id: str, track_uris: List[str]) -> None:
+                                      playlist_id: str, track_uris: List[str]) -> None:
         """
         Add tracks to Spotify playlist in batches
 
@@ -491,7 +493,8 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
         return tracks_added
 
     async def transfer_playlist_to_spotify(self, db: AsyncSession, playlist_id: str,
-                                         access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
+                                           access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[
+        str, Any]:
         """
         Transfer a Resomix playlist to Spotify
 
@@ -615,7 +618,7 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
                         not_found_tracks.append(f"{', '.join(artists)} - {title}")
 
             logger.info("Found %d tracks (%d cached + %d searched), %d not found",
-                       len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
+                        len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
 
             # Step 7: Add found tracks to Spotify playlist
             tracks_added = 0
@@ -639,7 +642,7 @@ async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
             }
 
             logger.info("Transfer completed successfully in %.1fs - %d/%d tracks added",
-                       total_time, tracks_added, len(playlist_tracks))
+                        total_time, tracks_added, len(playlist_tracks))
 
             return result
 
