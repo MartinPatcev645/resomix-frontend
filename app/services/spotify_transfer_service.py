@@ -60,7 +60,7 @@ class SpotifyTransferService:
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
 
-        logger.info("SpotifyTransferService initialization complete")
+        logger.info("SpotifyTransferService initialization complete v2")
 
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
         """
