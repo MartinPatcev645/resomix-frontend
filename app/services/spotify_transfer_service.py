@@ -19,11 +19,13 @@ from typing import Dict, List, Any, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.exceptions import SpotifyException
 import asyncio
 import re
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
+import unicodedata
 
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
