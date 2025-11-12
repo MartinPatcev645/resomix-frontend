@@ -191,7 +191,18 @@ class PlaylistForkResponse(BaseModel):
                         "title": "Whole Life (Original Mix)",
                         "year": 2010
                     },
-                    "similar_tracks": [...],
+                    "similar_tracks": [
+                        {
+                            "rank": 1,
+                            "score": 0.98,
+                            "id": "3bc43c719b3444caa2b19f0e",
+                            "label": "Global Underground",
+                            "duration": 475,
+                            "artist": "Sasha",
+                            "title": "Xpander",
+                            "year": 1999
+                        }
+                    ],
                     "playlist": {
                         "id": "new-playlist-uuid",
                         "name": "Playlist Name",
