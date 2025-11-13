@@ -14,7 +14,7 @@ export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss }) =
             Demo Stage Notice
           </p>
           <p className="text-[length:var(--px-11)] lg:text-[length:var(--px-9)] font-light font-fira text-[var(--color-text-secondary)] mt-[var(--px-6)] leading-[var(--px-14)]">
-            Resomix is open exclusively for evaluation and feedback at this time. You can only play music that is publicly available or licensed. Downloading, sales, and public streaming are not available. We are working to build licensing partnerships with rightsholders.
+            Resomix is open exclusively for evaluation and feedback at this time. Playback, downloading, sales, and public streaming are not available right now. We are working to build licensing partnerships with rightsholders.
           </p>
         </div>
       </div>
