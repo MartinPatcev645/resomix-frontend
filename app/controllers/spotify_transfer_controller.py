@@ -18,12 +18,14 @@ Email: usman.naeem2212@gmail.com
 from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 import logging
 import time
 
 from app.services.spotify_transfer_service import SpotifyTransferService
 from app.services.logging_service import LoggingService
 from app.services.playlist_service import PlaylistService
+from app.models.user import User
 from app.utils.response_utils import format_response
 
 # Set up logger for controller
@@ -46,7 +48,8 @@ class SpotifyTransferController:
         request: Request,
         playlist_id: str,
         access_token: str,
-        custom_playlist_name: str = None
+        custom_playlist_name: str = None,
+        current_user: Optional[User] = None
     ) -> JSONResponse:
         """
         Handle playlist transfer to Spotify request
@@ -57,6 +60,7 @@ class SpotifyTransferController:
             playlist_id: Resomix playlist UUID
             access_token: Spotify OAuth access token
             custom_playlist_name: Optional custom name for Spotify playlist
+            current_user: Authenticated user (required)
             
         Returns:
             JSONResponse with transfer results
@@ -100,12 +104,22 @@ class SpotifyTransferController:
         )
         
         try:
+            # Validate user is authenticated
+            if not current_user:
+                error_message = "Authentication required. Please log in to transfer playlists."
+                logger.warning("Transfer attempted without authentication")
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content=format_response(success=False, error=error_message)
+                )
+            
             # Call the service to perform the transfer
             result = await self.spotify_service.transfer_playlist_to_spotify(
                 db=db,
                 playlist_id=playlist_id,
                 access_token=access_token,
-                custom_playlist_name=custom_playlist_name
+                custom_playlist_name=custom_playlist_name,
+                current_user=current_user
             )
             
             # Format success response
@@ -143,6 +157,9 @@ class SpotifyTransferController:
                     "custom_name": custom_playlist_name,
                     "platform": "SPOTIFY",
                     "operation": "playlist_transfer",
+                    "user_uuid": current_user.uuid if current_user else None,
+                    "user_email": current_user.email if current_user else None,
+                    "user_name": current_user.name if current_user else None,
                     "total_tracks": result.get('total_tracks', 0),
                     "tracks_added": result.get('tracks_added', 0),
                     "tracks_not_found": result.get('tracks_not_found', 0),
@@ -169,14 +186,26 @@ class SpotifyTransferController:
             )
             
         except ValueError as e:
-            # Handle validation errors (playlist not found, no tracks, etc.)
+            # Handle validation errors (playlist not found, no tracks, association errors, etc.)
             error_message = str(e)
             logger.warning("Validation error: %s", error_message)
             duration_ms = (time.time() - start_time) * 1000
             
-            # Determine status code
-            is_not_found = "not found" in error_message.lower()
-            error_status_code = status.HTTP_404_NOT_FOUND if is_not_found else status.HTTP_422_UNPROCESSABLE_ENTITY
+            # Determine status code based on error type
+            error_lower = error_message.lower()
+            is_not_found = "not found" in error_lower
+            is_association_error = "not associated" in error_lower or "association" in error_lower
+            is_auth_required = "authentication required" in error_lower or "log in" in error_lower
+            
+            if is_auth_required:
+                error_status_code = status.HTTP_401_UNAUTHORIZED
+            elif is_not_found:
+                error_status_code = status.HTTP_404_NOT_FOUND
+            elif is_association_error:
+                error_status_code = status.HTTP_403_FORBIDDEN
+            else:
+                error_status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+            
             error_response = format_response(success=False, error=error_message)
             
             self.logging_service.log(
@@ -204,8 +233,16 @@ class SpotifyTransferController:
                     "custom_name": custom_playlist_name,
                     "platform": "SPOTIFY",
                     "operation": "playlist_transfer",
+                    "user_uuid": current_user.uuid if current_user else None,
+                    "user_email": current_user.email if current_user else None,
+                    "user_name": current_user.name if current_user else None,
                     "error": error_message,
-                    "error_type": "not_found" if is_not_found else "validation_error",
+                    "error_type": (
+                        "authentication_required" if is_auth_required
+                        else "association_error" if is_association_error
+                        else "not_found" if is_not_found
+                        else "validation_error"
+                    ),
                     "validation_step": "playlist_validation",
                     "response": error_response
                 },

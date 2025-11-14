@@ -27,10 +27,13 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 import unicodedata
 
-from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
+from app.repositories.spotify_app_repository import UserSpotifyAppRepository, SpotifyAppRepository
+from app.repositories.user_repository import UserRepository
+from app.models.spotify_app import SpotifyApp
+from app.models.user import User
 from spotipy.exceptions import SpotifyException
 from app.utils.logging_utils import log_request
 
@@ -56,11 +59,36 @@ class SpotifyTransferService:
         self.playlist_repository = PlaylistRepository()
         self.track_repository = TrackRepository()
         self.transfer_track_repository = PlaylistTransferTrackRepository()
+        self.user_spotify_app_repository = UserSpotifyAppRepository()
+        self.spotify_app_repository = SpotifyAppRepository()
+        self.user_repository = UserRepository()
 
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
 
-        logger.info("SpotifyTransferService initialization complete v2")
+        logger.info("SpotifyTransferService initialization complete v3 (with multi-app support)")
+
+    async def _check_user_spotify_association(
+        self, 
+        db: AsyncSession, 
+        user: User
+    ) -> Optional[SpotifyApp]:
+        """
+        Check if user has Spotify app association.
+        
+        Args:
+            db: Database session
+            user: User object to check association for
+            
+        Returns:
+            SpotifyApp if associated, None otherwise
+        """
+        association = await self.user_spotify_app_repository.async_get_by_user_id(db, user.id)
+        if not association:
+            return None
+        
+        app = await self.spotify_app_repository.async_get_by_id(db, association.spotify_app_id)
+        return app
 
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
         """
@@ -492,9 +520,14 @@ class SpotifyTransferService:
         logger.info("Successfully added %d tracks to playlist", tracks_added)
         return tracks_added
 
-    async def transfer_playlist_to_spotify(self, db: AsyncSession, playlist_id: str,
-                                           access_token: str, custom_playlist_name: Optional[str] = None) -> Dict[
-        str, Any]:
+    async def transfer_playlist_to_spotify(
+        self, 
+        db: AsyncSession, 
+        playlist_id: str,
+        access_token: str, 
+        custom_playlist_name: Optional[str] = None,
+        current_user: Optional[User] = None
+    ) -> Dict[str, Any]:
         """
         Transfer a Resomix playlist to Spotify
 
@@ -503,15 +536,43 @@ class SpotifyTransferService:
             playlist_id: Resomix playlist UUID
             access_token: Spotify OAuth access token
             custom_playlist_name: Optional custom name for Spotify playlist
+            current_user: Authenticated user (required for association check)
 
         Returns:
             Transfer result with statistics and details
+            
+        Raises:
+            ValueError: If user not associated with Spotify app or other validation errors
         """
         logger.info("Starting playlist transfer...")
 
         transfer_start_time = time.time()
 
         try:
+            # Step 0: Check user association with Spotify app
+            if not current_user:
+                raise ValueError("User authentication required for Spotify transfer")
+            
+            logger.info("Checking user Spotify app association for user ID: %d", current_user.id)
+            spotify_app = await self._check_user_spotify_association(db, current_user)
+            
+            if not spotify_app:
+                logger.warning("User %d is not associated with any Spotify app", current_user.id)
+                raise ValueError(
+                    "User not associated with any Spotify app. Please contact admin to enable Spotify transfer."
+                )
+            
+            if not spotify_app.is_active:
+                logger.warning("User %d's associated Spotify app (ID: %d) is inactive", current_user.id, spotify_app.id)
+                raise ValueError(
+                    f"User's associated Spotify app '{spotify_app.name}' is not active. Please contact admin."
+                )
+            
+            logger.info(
+                "User %d is associated with Spotify app: %s (ID: %d, client_id: %s)",
+                current_user.id, spotify_app.name, spotify_app.id, spotify_app.client_id
+            )
+
             # Step 1: Get playlist from database
             logger.info("Fetching playlist from database...")
             playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
@@ -538,8 +599,8 @@ class SpotifyTransferService:
                     artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
                     track_data.append((track.id, track.title or "Unknown Track", artist_names))
 
-            # Step 4: Create Spotify client
-            logger.info("Authenticating with Spotify...")
+            # Step 4: Create Spotify client (access_token should be from the associated app)
+            logger.info("Authenticating with Spotify using associated app: %s", spotify_app.name)
             spotify_client = self._create_spotify_client(access_token)
 
             # Step 5: Create Spotify playlist
@@ -641,8 +702,10 @@ class SpotifyTransferService:
                 "transfer_time_seconds": round(total_time, 2)
             }
 
-            logger.info("Transfer completed successfully in %.1fs - %d/%d tracks added",
-                        total_time, tracks_added, len(playlist_tracks))
+            logger.info(
+                "Transfer completed successfully in %.1fs - %d/%d tracks added using Spotify app: %s (ID: %d)",
+                total_time, tracks_added, len(playlist_tracks), spotify_app.name, spotify_app.id
+            )
 
             return result
 

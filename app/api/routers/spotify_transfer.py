@@ -21,8 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.spotify_transfer_controller import SpotifyTransferController
 from app.controllers.spotify_app_controller import SpotifyAppController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_api_key, get_current_user
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.spotify_transfer import (
     SpotifyTransferRequest,
     SpotifyTransferResponse,
@@ -78,7 +79,8 @@ async def transfer_playlist_to_spotify_endpoint(
     request: Request,
     request_data: SpotifyTransferRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """
     Transfer a Resomix playlist to user's Spotify account.
@@ -87,16 +89,25 @@ async def transfer_playlist_to_spotify_endpoint(
     in the user's Spotify account. It searches for each track on Spotify
     and adds the best matches to the new playlist.
     
+    **Requirements:**
+    - User must be authenticated (JWT token required)
+    - User must be associated with a Spotify app (admin setup required)
+    
     **Process:**
     1. Validates the playlist exists and has tracks
-    2. Authenticates with Spotify using the provided access token
-    3. Creates a new playlist in user's Spotify account
-    4. Searches for each track on Spotify using title and artist
-    5. Adds found tracks to the Spotify playlist
-    6. Returns summary of transfer results
+    2. Checks user's Spotify app association
+    3. Authenticates with Spotify using the provided access token
+    4. Creates a new playlist in user's Spotify account
+    5. Searches for each track on Spotify using title and artist
+    6. Adds found tracks to the Spotify playlist
+    7. Returns summary of transfer results
     
     **OAuth Flow:**
-    The frontend should handle Spotify OAuth and provide the access token.
+    The frontend should:
+    1. Call GET /spotify/app-client-id (authenticated) to get client_id
+    2. Use that client_id for Spotify OAuth PKCE flow
+    3. Provide the access token in this request
+    
     Required Spotify scopes: `playlist-modify-public` or `playlist-modify-private`
     
     **Parameters:**
@@ -113,7 +124,8 @@ async def transfer_playlist_to_spotify_endpoint(
         request,
         request_data.playlist_id, 
         request_data.access_token,
-        custom_playlist_name=request_data.playlist_name
+        custom_playlist_name=request_data.playlist_name,
+        current_user=current_user
     )
 
 
@@ -135,26 +147,28 @@ async def transfer_playlist_to_spotify_endpoint(
 )
 async def get_user_spotify_app_client_id(
     request: Request,
-    user_uuid: str = Query(..., description="User UUID to get associated Spotify app client_id"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """
-    Get the Spotify app client_id for a user's associated app.
+    Get the Spotify app client_id for the authenticated user's associated app.
     
     This endpoint is used by the frontend to determine which Spotify app
     client_id to use for the OAuth flow. Users must be associated with
     a Spotify app by an admin before they can use Spotify transfer.
     
+    **Requirements:**
+    - User must be authenticated (JWT token required)
+    
     **Returns:**
     - If user has association: client_id and app_name
     - If no association: None values with helpful message
     
-    **Note:** This endpoint requires API key authentication but is not admin-only.
-    Users can check their own association status.
+    **Note:** Users can only check their own association status.
     """
     return await spotify_app_controller.get_user_spotify_app_client_id(
         db=db,
         request=request,
-        user_identifier=user_uuid,
+        user_identifier=current_user.uuid,
     )
