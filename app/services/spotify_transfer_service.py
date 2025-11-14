@@ -514,6 +514,7 @@ class SpotifyTransferService:
             # Step 1: Get playlist from database
             logger.info("Fetching playlist from database...")
             playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            sim_playlist = await self.playlist_repository.async_get_playlist_similarity_data(db, playlist_id)
             if not playlist:
                 logger.error("Playlist not found: %s", playlist_id)
                 raise ValueError(f"Playlist with ID {playlist_id} not found")
@@ -527,15 +528,49 @@ class SpotifyTransferService:
 
             logger.info("Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name)
 
-            # Step 3: Get track and artist information for each playlist track
+            # Step 3: Build track list (seed + playlist tracks)
             track_data = []
+
+            # 3a. Add seed (queried) track first if present
+            if playlist.seed_track_id:
+                seed_title = None
+                seed_artists = []
+
+                # Prefer using the already fetched similarity payload (single DB roundtrip)
+                if sim_playlist and sim_playlist.get("queried_track"):
+                    qt = sim_playlist["queried_track"]
+                    seed_title = qt.get("title") or "Unknown Track"
+                    artist_str = qt.get("artist") or ""
+                    # Convert "Artist1, Artist2" into ["Artist1", "Artist2"]
+                    seed_artists = [a.strip() for a in artist_str.split(",") if a.strip()] or ["Unknown Artist"]
+
+                # Fallback to DB if similarity payload misses queried_track
+                if not seed_title:
+                    try:
+                        seed_track_obj = await self.track_repository.async_get_by_id(db, playlist.seed_track_id)
+                        if seed_track_obj:
+                            artists = await self.track_repository.async_get_track_artists(db, seed_track_obj.id)
+                            seed_artists = [a.name for a in artists] if artists else ["Unknown Artist"]
+                            seed_title = seed_track_obj.title or "Unknown Track"
+                    except Exception as e:
+                        logger.warning("Failed to load seed track details: %s", e)
+
+                if seed_title:
+                    track_data.append((playlist.seed_track_id, seed_title, seed_artists))
+
+            # 3b. Add playlist tracks (skip duplicates if seed is present)
+            added_ids = {playlist.seed_track_id} if playlist.seed_track_id else set()
             for playlist_track in playlist_tracks:
-                # Get the actual track object
+                if playlist_track.track_id in added_ids:
+                    continue
                 track = await self.track_repository.async_get_by_id(db, playlist_track.track_id)
                 if track:
                     artists = await self.track_repository.async_get_track_artists(db, track.id)
                     artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
                     track_data.append((track.id, track.title or "Unknown Track", artist_names))
+                    added_ids.add(track.id)
+
+            logger.info("Found %d tracks in playlist '%s' (including seed if present)", len(track_data), playlist.name)
 
             # Step 4: Create Spotify client
             logger.info("Authenticating with Spotify...")
@@ -633,7 +668,7 @@ class SpotifyTransferService:
                 "spotify_playlist_id": spotify_playlist_id,
                 "spotify_playlist_url": spotify_playlist_url,
                 "spotify_playlist_name": playlist_name,
-                "total_tracks": len(playlist_tracks),
+                "total_tracks": len(track_data),
                 "tracks_added": tracks_added,
                 "tracks_not_found": len(not_found_tracks),
                 "not_found_tracks": not_found_tracks[:10],  # Limit to first 10 for response size
