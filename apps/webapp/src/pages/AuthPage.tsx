@@ -180,7 +180,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         <Navbar
           logo={
             <a
-              href={BASE_BETA_URL}
+              href={BASE_LANDING_URL}
               aria-label="Resomix beta home"
               className="cursor-default"
             >
@@ -197,7 +197,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
       <div className="block lg:hidden">
         <MobileNavbar
           logo={
-            <a href="/" aria-label="Resomix home" className="cursor-default">
+            <a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default">
               <LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
             </a>
           }
