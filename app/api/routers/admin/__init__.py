@@ -15,6 +15,7 @@ from .contact import router as admin_contact_router
 from .playlist import router as admin_playlist_router
 from .waitlist import router as admin_waitlist_router
 from .operation_limits import router as admin_operation_limits_router
+from .spotify_apps import router as admin_spotify_apps_router
 
 __all__ = [
     "admin_feedback_router",
@@ -22,4 +23,5 @@ __all__ = [
     "admin_waitlist_router",
     "admin_playlist_router",
     "admin_operation_limits_router",
+    "admin_spotify_apps_router",
 ]

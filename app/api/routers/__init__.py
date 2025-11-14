@@ -23,6 +23,7 @@ from .admin.contact import router as admin_contact_router
 from .admin.playlist import router as admin_playlist_router
 from .admin.waitlist import router as admin_waitlist_router
 from .admin.operation_limits import router as admin_operation_limits_router
+from .admin.spotify_apps import router as admin_spotify_apps_router
 from .contact import router as contact_router
 from .health import router as health_router
 from .preview import router as preview_router
@@ -51,6 +52,7 @@ all_routers = [
     admin_waitlist_router,
     admin_playlist_router,
     admin_operation_limits_router,
+    admin_spotify_apps_router,
     contact_router,
     health_router,
     preview_router,

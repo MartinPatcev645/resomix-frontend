@@ -15,11 +15,12 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Request
+from fastapi import APIRouter, Security, Depends, Request, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.spotify_transfer_controller import SpotifyTransferController
+from app.controllers.spotify_app_controller import SpotifyAppController
 from app.api.dependencies.auth import get_api_key
 from app.api.dependencies.database import get_database_session
 from app.schemas.spotify_transfer import (
@@ -27,6 +28,7 @@ from app.schemas.spotify_transfer import (
     SpotifyTransferResponse,
     SpotifyTransferErrorResponse
 )
+from app.schemas.spotify_app import UserSpotifyAppClientIdResponse
 
 router = APIRouter(
     prefix="/spotify",
@@ -39,8 +41,9 @@ router = APIRouter(
     }
 )
 
-# Initialize controller
+# Initialize controllers
 spotify_transfer_controller = SpotifyTransferController()
+spotify_app_controller = SpotifyAppController()
 
 
 @router.post(
@@ -111,4 +114,47 @@ async def transfer_playlist_to_spotify_endpoint(
         request_data.playlist_id, 
         request_data.access_token,
         custom_playlist_name=request_data.playlist_name
+    )
+
+
+@router.get(
+    "/app-client-id",
+    response_model=UserSpotifyAppClientIdResponse,
+    summary="Get User's Spotify App Client ID",
+    description="Get the Spotify app client_id associated with a user for OAuth flow. Returns None if user has no association.",
+    responses={
+        200: {
+            "model": UserSpotifyAppClientIdResponse,
+            "description": "Client ID retrieved (may be None if no association)"
+        },
+        404: {
+            "model": UserSpotifyAppClientIdResponse,
+            "description": "User not found or no association"
+        }
+    }
+)
+async def get_user_spotify_app_client_id(
+    request: Request,
+    user_uuid: str = Query(..., description="User UUID to get associated Spotify app client_id"),
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Get the Spotify app client_id for a user's associated app.
+    
+    This endpoint is used by the frontend to determine which Spotify app
+    client_id to use for the OAuth flow. Users must be associated with
+    a Spotify app by an admin before they can use Spotify transfer.
+    
+    **Returns:**
+    - If user has association: client_id and app_name
+    - If no association: None values with helpful message
+    
+    **Note:** This endpoint requires API key authentication but is not admin-only.
+    Users can check their own association status.
+    """
+    return await spotify_app_controller.get_user_spotify_app_client_id(
+        db=db,
+        request=request,
+        user_identifier=user_uuid,
     )
