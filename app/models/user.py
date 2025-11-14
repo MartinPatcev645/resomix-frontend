@@ -184,6 +184,13 @@ class User(Base):
         cascade="all, delete-orphan",
         foreign_keys="UserOperationLimit.user_id"
     )
+    spotify_app_association = relationship(
+        "UserSpotifyApp",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="UserSpotifyApp.user_id",
+        uselist=False,  # One-to-one relationship
+    )
 
     def __init__(self, **kwargs):
         if 'uuid' not in kwargs:

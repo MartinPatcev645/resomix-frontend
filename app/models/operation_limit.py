@@ -4,6 +4,11 @@ Operation Limit Models
 
 SQLAlchemy models for admin-configurable operation limits.
 Maps to the `operation_types` and `user_operation_limits` tables.
+
+Version: 3.0.1
+Init Date: November 05, 2025
+Author: Muhammad Usman Naeem
+Email: usman.naeem2212@gmail.com
 """
 
 from sqlalchemy import (

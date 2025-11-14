@@ -31,6 +31,7 @@ from .user import (
 from .log import SystemLog
 from .waitlist import Waitlist
 from .operation_limit import OperationType, UserOperationLimit
+from .spotify_app import SpotifyApp, UserSpotifyApp
 
 # Make models available at package level
 __all__ = [
@@ -51,5 +52,6 @@ __all__ = [
     "UserAuthProvider",
     "Role", "Permission", "RolePermission", "UserRole",
     "SystemLog", "Waitlist",
-    "OperationType", "UserOperationLimit"
+    "OperationType", "UserOperationLimit",
+    "SpotifyApp", "UserSpotifyApp"
 ]

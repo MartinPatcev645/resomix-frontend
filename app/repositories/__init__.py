@@ -8,6 +8,10 @@ from .user_repository import (
     TwoFactorCodeRepository,
     UserSessionRepository
 )
+from .spotify_app_repository import (
+    SpotifyAppRepository,
+    UserSpotifyAppRepository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -15,5 +19,7 @@ __all__ = [
     "EmailVerificationTokenRepository", 
     "PasswordResetTokenRepository",
     "TwoFactorCodeRepository",
-    "UserSessionRepository"
+    "UserSessionRepository",
+    "SpotifyAppRepository",
+    "UserSpotifyAppRepository",
 ]

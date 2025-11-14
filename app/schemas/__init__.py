@@ -155,6 +155,22 @@ from .operation_limit import (
     UserOperationLimitDeleteResponse,
 )
 
+# Spotify app schemas
+from .spotify_app import (
+    SpotifyAppResponse,
+    SpotifyAppDetailResponse,
+    SpotifyAppListResponse,
+    SpotifyAppCreateRequest,
+    SpotifyAppUpdateRequest,
+    SpotifyAppDeleteResponse,
+    UserSpotifyAppResponse,
+    UserSpotifyAppListFilters,
+    UserSpotifyAppListResponse,
+    UserSpotifyAppUpsertRequest,
+    UserSpotifyAppDeleteResponse,
+    UserSpotifyAppClientIdResponse,
+)
+
 # Authentication schemas
 from .auth import (
     RegisterRequest,
@@ -296,6 +312,20 @@ __all__ = [
     "UserOperationLimitDetailResponse",
     "UserOperationLimitUpsertRequest",
     "UserOperationLimitDeleteResponse",
+    
+    # Spotify app
+    "SpotifyAppResponse",
+    "SpotifyAppDetailResponse",
+    "SpotifyAppListResponse",
+    "SpotifyAppCreateRequest",
+    "SpotifyAppUpdateRequest",
+    "SpotifyAppDeleteResponse",
+    "UserSpotifyAppResponse",
+    "UserSpotifyAppListFilters",
+    "UserSpotifyAppListResponse",
+    "UserSpotifyAppUpsertRequest",
+    "UserSpotifyAppDeleteResponse",
+    "UserSpotifyAppClientIdResponse",
     
     # Authentication
     "RegisterRequest",

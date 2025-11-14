@@ -6,7 +6,7 @@ Adds user engagement tables for favorites and follows functionality
 for both playlists and tracks.
 
 Version: 3.2.1
-Date: 2025-01-XX
+Date: 2025-10-25
 Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 */
