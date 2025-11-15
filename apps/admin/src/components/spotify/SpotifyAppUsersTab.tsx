@@ -17,7 +17,7 @@ import { Plus, RefreshCw, Trash2, Pencil } from 'lucide-react'
 import { useConfirmDialog } from '@resomix/hooks'
 import { useSpotifyAppUsers } from '@/hooks/useSpotifyAppUsers.ts'
 import { useSpotifyApps } from '@/hooks/useSpotifyApps.ts'
-import { getUserOperationLimits, type AdminUserOperationLimit } from '@resomix/api-client'
+import { searchAdminUsers, type AdminUserSearchItem } from '@resomix/api-client'
 import type {
   AdminSpotifyAppUser,
   AdminSpotifyAppUserUpsertRequest,
@@ -83,7 +83,10 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
   const [searchInput, setSearchInput] = useState(search)
   const [userOptions, setUserOptions] = useState<Array<{ label: string | ReactNode; value: string; disabled?: boolean }>>([])
   const [userSearchLoading, setUserSearchLoading] = useState(false)
+  const [userSearchError, setUserSearchError] = useState<string | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
+  const currentUserSearchQuery = useRef('')
 
   const { confirmDelete } = useConfirmDialog()
 
@@ -102,73 +105,78 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
     [activeApps]
   )
 
-  // Search users using the operation limits API (same as operations tab uses)
+  const buildUserOption = useCallback((user: AdminUserSearchItem) => {
+    const primary = user.email || user.username || (user.uuid ? `UUID: ${user.uuid}` : `ID: ${user.id}`)
+    const secondaryParts: string[] = []
+    if (user.username) secondaryParts.push(`Username: ${user.username}`)
+    if (user.uuid) secondaryParts.push(`UUID: ${user.uuid}`)
+    secondaryParts.push(`ID: ${user.id}`)
+
+    return {
+      value: user.email || user.username || (user.uuid ?? String(user.id)),
+      label: (
+        <div className="flex flex-col">
+          <span className="font-medium text-primary break-all">{primary}</span>
+          <span className="text-xs text-secondary">
+            {secondaryParts.join(' • ')}
+          </span>
+        </div>
+      ),
+      displayLabel: user.email ?? primary,
+      raw: user,
+    }
+  }, [])
+
+  // Search users using the correct user search API (same as operations tab uses)
   const searchUsers = useCallback(async (searchText: string) => {
-    if (!searchText || searchText.trim().length < 2) {
+    const trimmed = searchText.trim()
+    currentUserSearchQuery.current = trimmed
+
+    if (!trimmed) {
       setUserOptions([])
+      setUserSearchError(null)
+      return
+    }
+
+    if (trimmed.length < 2) {
+      setUserOptions([])
+      setUserSearchError('Enter at least 2 characters to search')
       return
     }
 
     setUserSearchLoading(true)
-    try {
-      const result = await getUserOperationLimits({
-        page: 1,
-        page_size: 50,
-        search: searchText.trim(),
-      })
+    setUserSearchError(null)
+    setUserOptions([])
 
-      if (result.success && result.data) {
-        // Extract unique users from the results
-        const userMap = new Map<string, { label: string | ReactNode; value: string; disabled?: boolean }>()
-        
-        result.data.forEach((record: AdminUserOperationLimit) => {
-          const identifier = 
-            record.user_email || 
-            record.user_username || 
-            record.user_uuid || 
-            String(record.user_id)
-          
-          // Determine primary display name (email > username > UUID > ID)
-          const primaryDisplay = 
-            record.user_email || 
-            record.user_username || 
-            record.user_uuid || 
-            `ID ${record.user_id}`
-          
-          // Build description with all available identifiers (similar to operation type description)
-          const identifiers: string[] = []
-          if (record.user_email) identifiers.push(`Email: ${record.user_email}`)
-          if (record.user_username) identifiers.push(`Username: ${record.user_username}`)
-          if (record.user_uuid) identifiers.push(`UUID: ${record.user_uuid}`)
-          identifiers.push(`ID: ${record.user_id}`)
-          
-          // Format similar to operation types: "Primary — Email: x, Username: y, ID: z"
-          const label = identifiers.length > 1
-            ? `${primaryDisplay} — ${identifiers.join(', ')}`
-            : primaryDisplay
-          
-          if (!userMap.has(identifier)) {
-            userMap.set(identifier, { label, value: identifier })
-          }
-        })
-        
-        const options = Array.from(userMap.values()).sort((a, b) => {
-          const labelA = typeof a.label === 'string' ? a.label : ''
-          const labelB = typeof b.label === 'string' ? b.label : ''
-          return labelA.localeCompare(labelB)
-        })
-        
-        setUserOptions(options)
+    try {
+      const response = await searchAdminUsers(trimmed, 10)
+      if (!isMountedRef.current || currentUserSearchQuery.current !== trimmed) return
+
+      if (response.success && response.data) {
+        const validUsers = response.data.filter((user) => Boolean(user.email))
+        if (validUsers.length === 0) {
+          setUserOptions([])
+          setUserSearchError('No users found')
+          return
+        }
+        setUserOptions(validUsers.map(buildUserOption))
+        setUserSearchError(null)
       } else {
         setUserOptions([])
+        setUserSearchError(response.error || 'Failed to search users')
       }
     } catch (error) {
-      console.error('Error searching users:', error)
+      if (!isMountedRef.current) return
       setUserOptions([])
+      setUserSearchError(
+        error instanceof Error ? error.message : 'Unable to fetch users'
+      )
     } finally {
-      setUserSearchLoading(false)
+      if (isMountedRef.current) {
+        setUserSearchLoading(false)
+      }
     }
-  }, [])
+  }, [buildUserOption])
 
   // Debounced user search handler
   const handleUserSearch = useCallback((searchText: string) => {
@@ -185,7 +193,9 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
 
   // Cleanup timeout on unmount
   useEffect(() => {
+    isMountedRef.current = true
     return () => {
+      isMountedRef.current = false
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
       }
@@ -337,21 +347,27 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
       dataIndex: 'user_email',
       key: 'user',
       render: (_: unknown, record) => {
+        const email = record.user_email
+        const uuid = record.user_uuid
+        const username = record.user_username
         const primary =
-          record.user_email ||
-          record.user_username ||
-          record.user_uuid ||
-          `ID ${record.user_id}`
+          email ||
+          (uuid ? `UUID: ${uuid}` : username ? `Username: ${username}` : `ID: ${record.user_id}`)
 
         return (
           <div className="space-y-1">
-            <span className="font-medium text-primary">{primary}</span>
-            <div className="text-xs text-secondary space-x-3">
-              {record.user_email && <span>Email: {record.user_email}</span>}
-              {record.user_username && <span>Username: {record.user_username}</span>}
-              {record.user_uuid && <span>UUID: {record.user_uuid}</span>}
-              <span>ID: {record.user_id}</span>
-            </div>
+            <span className="font-medium text-primary break-all">{primary}</span>
+            {uuid && (
+              <div className="text-xs text-secondary">
+                <span>UUID: {uuid}</span>
+              </div>
+            )}
+            {(username || record.user_id) && (
+              <div className="text-xs text-secondary flex flex-wrap gap-3">
+                {username && <span>Username: {username}</span>}
+                <span>ID: {record.user_id}</span>
+              </div>
+            )}
           </div>
         )
       },
@@ -362,19 +378,10 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
       key: 'spotify_app',
       width: 250,
       render: (name: string, record) => (
-        <div className="space-y-1">
+        <div className="flex flex-col space-y-1">
           <span className="font-medium text-primary">{name}</span>
           <span className="text-xs text-secondary">App ID: {record.spotify_app_id}</span>
         </div>
-      ),
-    },
-    {
-      title: 'Created',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      width: 200,
-      render: (value: string) => (
-        <span className="text-secondary text-sm">{new Date(value).toLocaleString()}</span>
       ),
     },
     {
@@ -529,39 +536,29 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
                       return Promise.resolve()
                     }
                     return Promise.reject(
-                      new Error('Please enter an email, username, UUID, or numeric ID')
+                      new Error('Please enter an email, username, or UUID')
                     )
                   },
                 },
               ]}
             >
               <AutoComplete
-                options={
-                  userSearchLoading
-                    ? [
-                        {
-                          label: (
-                            <div className="p-2 text-center">
-                              <Spin size="small" /> <span className="ml-2">Searching users...</span>
-                            </div>
-                          ),
-                          value: '__loading__',
-                          disabled: true,
-                        },
-                      ]
-                    : userOptions
-                }
+                options={userOptions}
                 onSearch={handleUserSearch}
-                placeholder="Email, username, UUID, or numeric ID"
+                placeholder="Email, username, or UUID"
                 allowClear
                 notFoundContent={
-                  userIdentifierValue && userIdentifierValue.length > 0 && userIdentifierValue.length < 2 ? (
+                  userSearchLoading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Spin size="small" />
+                    </div>
+                  ) : userIdentifierValue && userIdentifierValue.length > 0 && userIdentifierValue.length < 2 ? (
                     <div className="p-2 text-secondary text-sm">
                       Type at least 2 characters to search for users
                     </div>
                   ) : userIdentifierValue && typeof userIdentifierValue === 'string' && userIdentifierValue.trim().length >= 2 ? (
                     <div className="p-2 text-secondary text-sm">
-                      No matching users found. You can type an email, username, UUID, or numeric ID to create a new association.
+                      {userSearchError || 'No matching users found. You can type an email, username, or UUID to create a new association.'}
                     </div>
                   ) : (
                     <div className="p-2 text-secondary text-sm">

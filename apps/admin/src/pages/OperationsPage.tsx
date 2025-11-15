@@ -24,18 +24,6 @@ function OperationsPage() {
 
   const tabItems: TabsProps['items'] = [
     {
-      key: 'operation-types',
-      label: 'Operation Types',
-      children: (
-        <OperationTypesTab
-          data={operationTypes}
-          loading={loading}
-          lastUpdated={lastUpdated}
-          onRefresh={refresh}
-        />
-      ),
-    },
-    {
       key: 'user-operation-limits',
       label: 'User Limits',
       children: (
@@ -48,6 +36,18 @@ function OperationsPage() {
         />
       ),
     },
+    {
+      key: 'operation-types',
+      label: 'Operation Types',
+      children: (
+        <OperationTypesTab
+          data={operationTypes}
+          loading={loading}
+          lastUpdated={lastUpdated}
+          onRefresh={refresh}
+        />
+      ),
+    },
   ]
 
   return (
@@ -56,7 +56,7 @@ function OperationsPage() {
 
       <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6 overflow-hidden">
         <Tabs
-          defaultActiveKey="operation-types"
+          defaultActiveKey="user-operation-limits"
           items={tabItems}
           destroyInactiveTabPane={false}
         />

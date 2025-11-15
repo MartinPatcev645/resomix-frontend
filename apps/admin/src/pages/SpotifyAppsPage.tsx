@@ -19,20 +19,20 @@ function SpotifyAppsPage() {
 
   const tabItems: TabsProps['items'] = [
     {
-      key: 'spotify-apps',
-      label: 'Spotify Apps',
+      key: 'user-associations',
+      label: 'User Associations',
       children: (
-        <SpotifyAppsTab
+        <SpotifyAppUsersTab
           onError={showErrorModal}
           onSuccess={showSuccessModal}
         />
       ),
     },
     {
-      key: 'user-associations',
-      label: 'User Associations',
+      key: 'spotify-apps',
+      label: 'Spotify Apps',
       children: (
-        <SpotifyAppUsersTab
+        <SpotifyAppsTab
           onError={showErrorModal}
           onSuccess={showSuccessModal}
         />
@@ -48,7 +48,7 @@ function SpotifyAppsPage() {
 
       <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6 overflow-hidden">
         <Tabs
-          defaultActiveKey="spotify-apps"
+          defaultActiveKey="user-associations"
           items={tabItems}
           destroyInactiveTabPane={false}
         />
