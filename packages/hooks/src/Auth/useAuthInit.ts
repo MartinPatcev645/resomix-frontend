@@ -123,10 +123,44 @@ export const useAuthInit = () => {
           }
         }
 
-        // No token and no user - user is not authenticated, initialize immediately
-        console.log('[useAuthInit] No token and no user - user not authenticated');
-        setIsInitialized(true);
-        setIsLoading(false);
+        // No token and no user - try to refresh using HttpOnly cookie
+        // This handles cross-subdomain scenarios where user data isn't in localStorage
+        // but refresh token cookie is available (domain: .resomix.com)
+        console.log('[useAuthInit] No token and no user - attempting refresh from HttpOnly cookie');
+        try {
+          const refreshResult = await refreshAccessToken();
+          if (refreshResult.success && refreshResult.data?.access_token) {
+            // Refresh succeeded - we have a valid session via cookie
+            store.setAccessToken(refreshResult.data.access_token);
+            console.log('[useAuthInit] Token refreshed from cookie, fetching user profile');
+            
+            // Fetch user profile now that we have a token
+            const profileResponse = await getMyProfile();
+            if (profileResponse.success) {
+              const userData = 'user' in profileResponse.data ? profileResponse.data.user : profileResponse.data;
+              setUser(userData);
+              console.log('[useAuthInit] User profile loaded successfully');
+            } else {
+              console.warn('[useAuthInit] Failed to fetch user profile after refresh');
+            }
+            
+            setIsInitialized(true);
+            setIsLoading(false);
+            return;
+          } else {
+            // Refresh failed - no valid session
+            console.log('[useAuthInit] No valid refresh token cookie - user not authenticated');
+            setIsInitialized(true);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          // Refresh failed - user is not authenticated
+          console.log('[useAuthInit] Refresh attempt failed - user not authenticated:', error);
+          setIsInitialized(true);
+          setIsLoading(false);
+          return;
+        }
       } catch (error) {
         // Don't block on init errors - let the interceptor handle auth errors
         console.warn('[useAuthInit] Init error (non-blocking):', error);

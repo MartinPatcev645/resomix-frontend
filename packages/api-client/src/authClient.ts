@@ -58,13 +58,21 @@ authClient.interceptors.request.use(
     const authStore = getAuthStore();
     if (authStore) {
       const state = authStore.getState();
-      const { accessToken, isAuthenticated } = state;
+      let { accessToken, isAuthenticated } = state;
+
+      // If user is authenticated but no token, log it
+      // The response interceptor will handle 401 and refresh the token
+      if (isAuthenticated && !accessToken) {
+        console.log(`[authClient] User authenticated but no token for ${config.url} - request will proceed, refresh will happen on 401`);
+      }
 
       // Add authorization header if token exists and user is authenticated
       // Don't check isTokenExpired here - let the backend decide and use refresh interceptor
       if (accessToken && isAuthenticated) {
         config.headers.Authorization = `Bearer ${accessToken}`;
         console.log(`[authClient] Added Authorization header for ${config.url}`);
+      } else if (isAuthenticated && !accessToken) {
+        console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user} - refresh attempt initiated`);
       } else {
         console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user}`);
       }
@@ -101,12 +109,18 @@ authClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const { setAccessToken, logout, accessToken } = authStore.getState();
+      const { setAccessToken, logout, accessToken, isAuthenticated } = authStore.getState();
 
-      // Only attempt refresh if we actually sent an Authorization header
-      if (!accessToken) {
-        console.log('[authClient] No access token in store, skipping refresh');
+      // Attempt refresh if user is authenticated (even if accessToken is missing)
+      // This handles cases where isAuthenticated=true but accessToken was cleared from sessionStorage
+      if (!isAuthenticated) {
+        console.log('[authClient] User not authenticated, skipping refresh');
         return Promise.reject(error);
+      }
+
+      // If we have no access token but user is authenticated, attempt refresh from HttpOnly cookie
+      if (!accessToken) {
+        console.log('[authClient] User authenticated but no access token - attempting refresh from cookie');
       }
 
       if (isRefreshing) {
