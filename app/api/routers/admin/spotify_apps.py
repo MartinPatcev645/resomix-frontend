@@ -78,28 +78,6 @@ async def list_spotify_apps(
     )
 
 
-@router.get(
-    "/{app_id}",
-    response_model=SpotifyAppDetailResponse,
-    status_code=200,
-    summary="Get Spotify app",
-    description="Get single Spotify app by ID. Includes client_secret for admin view.",
-)
-async def get_spotify_app(
-    request: Request,
-    app_id: int = Path(..., description="Spotify app ID", ge=1),
-    include_secret: bool = Query(True, description="Include client_secret in response"),
-    db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
-) -> JSONResponse:
-    return await controller.get_spotify_app(
-        db=db,
-        request=request,
-        app_id=app_id,
-        include_secret=include_secret,
-    )
-
-
 @router.post(
     "/",
     response_model=SpotifyAppDetailResponse,
@@ -121,54 +99,6 @@ async def create_spotify_app(
         client_id=payload.client_id,
         client_secret=payload.client_secret,
         is_active=payload.is_active,
-    )
-
-
-@router.put(
-    "/{app_id}",
-    response_model=SpotifyAppDetailResponse,
-    status_code=200,
-    summary="Update Spotify app",
-    description="Update Spotify app fields (name, description, client_id, client_secret, is_active). All fields optional.",
-)
-async def update_spotify_app(
-    request: Request,
-    app_id: int = Path(..., description="Spotify app ID", ge=1),
-    payload: SpotifyAppUpdateRequest = ...,
-    db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
-) -> JSONResponse:
-    return await controller.update_spotify_app(
-        db=db,
-        request=request,
-        app_id=app_id,
-        name=payload.name,
-        description=payload.description,
-        client_id=payload.client_id,
-        client_secret=payload.client_secret,
-        is_active=payload.is_active,
-    )
-
-
-@router.delete(
-    "/{app_id}",
-    response_model=SpotifyAppDeleteResponse,
-    status_code=200,
-    summary="Delete Spotify app",
-    description="Delete a Spotify app. Use cascade=true to delete even if users are associated.",
-)
-async def delete_spotify_app(
-    request: Request,
-    app_id: int = Path(..., description="Spotify app ID", ge=1),
-    cascade: bool = Query(False, description="Delete app even if users are associated"),
-    db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
-) -> JSONResponse:
-    return await controller.delete_spotify_app(
-        db=db,
-        request=request,
-        app_id=app_id,
-        cascade=cascade,
     )
 
 
@@ -262,5 +192,79 @@ async def delete_user_association(
         db=db,
         request=request,
         user_identifier=user_identifier,
+    )
+
+
+# ============================================================================
+# Spotify App Detail Endpoints (must come after /users routes)
+# ============================================================================
+
+@router.get(
+    "/{app_id}",
+    response_model=SpotifyAppDetailResponse,
+    status_code=200,
+    summary="Get Spotify app",
+    description="Get single Spotify app by ID. Includes client_secret for admin view.",
+)
+async def get_spotify_app(
+    request: Request,
+    app_id: int = Path(..., description="Spotify app ID", ge=1),
+    include_secret: bool = Query(True, description="Include client_secret in response"),
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+) -> JSONResponse:
+    return await controller.get_spotify_app(
+        db=db,
+        request=request,
+        app_id=app_id,
+        include_secret=include_secret,
+    )
+
+
+@router.put(
+    "/{app_id}",
+    response_model=SpotifyAppDetailResponse,
+    status_code=200,
+    summary="Update Spotify app",
+    description="Update Spotify app fields (name, description, client_id, client_secret, is_active). All fields optional.",
+)
+async def update_spotify_app(
+    request: Request,
+    app_id: int = Path(..., description="Spotify app ID", ge=1),
+    payload: SpotifyAppUpdateRequest = ...,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+) -> JSONResponse:
+    return await controller.update_spotify_app(
+        db=db,
+        request=request,
+        app_id=app_id,
+        name=payload.name,
+        description=payload.description,
+        client_id=payload.client_id,
+        client_secret=payload.client_secret,
+        is_active=payload.is_active,
+    )
+
+
+@router.delete(
+    "/{app_id}",
+    response_model=SpotifyAppDeleteResponse,
+    status_code=200,
+    summary="Delete Spotify app",
+    description="Delete a Spotify app. Use cascade=true to delete even if users are associated.",
+)
+async def delete_spotify_app(
+    request: Request,
+    app_id: int = Path(..., description="Spotify app ID", ge=1),
+    cascade: bool = Query(False, description="Delete app even if users are associated"),
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key),
+) -> JSONResponse:
+    return await controller.delete_spotify_app(
+        db=db,
+        request=request,
+        app_id=app_id,
+        cascade=cascade,
     )
 
