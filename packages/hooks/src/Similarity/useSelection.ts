@@ -5,6 +5,7 @@ import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import type { UploadResult } from "./useUpload";
 import { useTermsAcceptance } from "../useTermsAcceptance";
 import { BASE_BETA_URL } from "@resomix/config";
+import { mapPlaylistErrorMessage } from "../Playlist/errorMessages";
 
 /**
  * Hook for retrieving similar tracks given a selected track ID (no file upload).
@@ -78,12 +79,13 @@ export function useTrackSimilarity() {
           setOverlay(false);
         } else {
           // API indicated failure – surface error and keep overlay to show banner
-          setError(result?.error || "Failed to fetch similar tracks.");
+          setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));
           setOverlay(false);
         }
       } catch (err: any) {
         // Network / Axios error; show message, keep overlay so banner displays
-        setError(err?.error || err?.message || "Failed to fetch similar tracks.");
+        const mappedError = mapPlaylistErrorMessage(err?.error || err?.message, "Failed to fetch similar tracks.");
+        setError(mappedError);
         setOverlay(false);
       }
     },

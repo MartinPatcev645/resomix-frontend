@@ -45,17 +45,7 @@ function OperationTypesTab({ data, loading, lastUpdated, onRefresh }: OperationT
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-primary">Operation Types</h2>
-          <p className="text-secondary text-sm">
-            Reference list of available operations that can be assigned to users.
-          </p>
-          {lastUpdated && (
-            <p className="text-xs text-secondary mt-1">
-              Last updated {new Date(lastUpdated).toLocaleString()}
-            </p>
-          )}
-        </div>
+        <h2 className="text-xl font-semibold text-primary">Operation Types</h2>
         <Tooltip title="Refresh operation types">
           <Button
             type="default"
@@ -67,6 +57,11 @@ function OperationTypesTab({ data, loading, lastUpdated, onRefresh }: OperationT
           </Button>
         </Tooltip>
       </div>
+      {lastUpdated && (
+        <p className="text-xs text-secondary">
+          Last updated {new Date(lastUpdated).toLocaleString()}
+        </p>
+      )}
 
       <Table
         columns={columns}

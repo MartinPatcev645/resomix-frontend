@@ -4,6 +4,7 @@ import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { create } from "zustand";
 import { extractCoverArt } from "../meta/useMetatags";
 import { useTermsAcceptance } from "../useTermsAcceptance";
+import { mapPlaylistErrorMessage } from "../Playlist/errorMessages";
 
 export interface UploadResult<T = any> {
     success: boolean;
@@ -153,14 +154,15 @@ export function useUpload() {
                 setProgress(100);
             } else {
                 // API indicated failure
-                setError(result?.error || "Upload failed.");
+                setError(mapPlaylistErrorMessage(result?.error, "Upload failed."));
                 setUploading(false);
                 setOverlay(false);
             }
         } catch (err: any) {
             // Reset file upload flag on error
             setIsFileUpload(false);
-            setError(err?.error || err?.message || "Upload failed.");
+            const mappedError = mapPlaylistErrorMessage(err?.error || err?.message, "Upload failed.");
+            setError(mappedError);
             setUploading(false);
             setOverlay(false);
         }
