@@ -99,6 +99,13 @@ authClient.interceptors.response.use(
       console.warn(`Rate limited. Retry after: ${retryAfter || '60'} seconds`);
     }
 
+    // CRITICAL: Prevent infinite loop - never try to refresh the refresh endpoint itself
+    const isRefreshEndpoint = originalRequest.url?.includes('/auth/refresh');
+    if (isRefreshEndpoint) {
+      console.log('[authClient] 401 on refresh endpoint - not attempting refresh to prevent infinite loop');
+      return Promise.reject(error);
+    }
+
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.log(`[authClient] 401 error for ${originalRequest.url}, attempting token refresh...`);
@@ -110,7 +117,8 @@ authClient.interceptors.response.use(
       }
 
       const { setAccessToken, logout, accessToken, isAuthenticated } = authStore.getState();
-
+      
+      // Check if user logged out during refresh attempt
       // Attempt refresh if user is authenticated (even if accessToken is missing)
       // This handles cases where isAuthenticated=true but accessToken was cleared from sessionStorage
       if (!isAuthenticated) {
@@ -171,11 +179,32 @@ authClient.interceptors.response.use(
           throw new Error('Token refresh failed');
         }
       } catch (refreshError) {
-        console.error('[authClient] Token refresh failed, logging out user', refreshError);
-        processQueue(refreshError, null);
+        console.error('[authClient] Token refresh failed', refreshError);
+        
+        // Check if user logged out during refresh
+        const currentState = authStore.getState();
+        if (!currentState.isAuthenticated) {
+          console.log('[authClient] User logged out during refresh, aborting');
+          processQueue(refreshError, null);
+          isRefreshing = false;
+          return Promise.reject(refreshError);
+        }
+
+        // Distinguish between network errors and auth errors
         if (typeof window !== 'undefined' && axios.isAxiosError(refreshError)) {
           const refreshStatus = refreshError.response?.status;
           const refreshMessage = (refreshError.response?.data as any)?.error;
+          const isNetworkError = !refreshError.response; // No response = network error
+          
+          // Only logout on auth errors (401, 403), not on network errors
+          if (isNetworkError) {
+            console.warn('[authClient] Network error during refresh - will retry on next request');
+            processQueue(refreshError, null);
+            isRefreshing = false;
+            return Promise.reject(refreshError);
+          }
+          
+          // Handle refresh token reuse detection
           if (
             refreshStatus === 401 &&
             typeof refreshMessage === 'string' &&
@@ -188,6 +217,9 @@ authClient.interceptors.response.use(
             }
           }
         }
+        
+        // Only logout on auth errors (401, 403), not on network errors
+        processQueue(refreshError, null);
         logout();
         isRefreshing = false;
         return Promise.reject(refreshError);

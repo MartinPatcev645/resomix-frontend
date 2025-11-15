@@ -66,13 +66,33 @@ const useAuthStore = create<AuthState>()(
             // Update access token (after refresh)
             // Store in both memory (Zustand state) and sessionStorage for persistence across page reloads
             setAccessToken: (token) => {
-                set({ accessToken: token });
+                // If we're setting a token, mark as authenticated (token will be validated by backend)
+                // If we're clearing the token, mark as not authenticated
+                set({ 
+                    accessToken: token,
+                    isAuthenticated: !!token 
+                });
                 // Persist access token in sessionStorage (cleared on tab close, more secure than localStorage)
                 // This allows token to persist across page reloads without showing a loader
                 if (typeof window !== 'undefined') {
                     try {
                         if (token) {
                             window.sessionStorage.setItem('resomix-access-token', token);
+                            // Broadcast token update to other tabs via localStorage event
+                            // This ensures all tabs have the latest token after refresh
+                            try {
+                                localStorage.setItem('resomix-token-update', JSON.stringify({ token, timestamp: Date.now() }));
+                                // Remove immediately to trigger storage event and avoid cluttering localStorage
+                                setTimeout(() => {
+                                    try {
+                                        localStorage.removeItem('resomix-token-update');
+                                    } catch (e) {
+                                        // Ignore cleanup errors
+                                    }
+                                }, 100);
+                            } catch (e) {
+                                // If localStorage is unavailable, that's okay - sessionStorage is per-tab anyway
+                            }
                         } else {
                             window.sessionStorage.removeItem('resomix-access-token');
                         }
@@ -105,6 +125,13 @@ const useAuthStore = create<AuthState>()(
                 if (typeof window !== 'undefined') {
                     try {
                         window.sessionStorage.removeItem('resomix-access-token');
+                        // Broadcast sessionStorage clear to other tabs via localStorage event
+                        // Other tabs will listen for this and clear their sessionStorage too
+                        if (options?.broadcast !== false) {
+                            localStorage.setItem('resomix-session-clear', String(Date.now()));
+                            // Remove immediately to trigger storage event
+                            localStorage.removeItem('resomix-session-clear');
+                        }
                     } catch (e) {
                         console.warn('sessionStorage not available:', e);
                     }
@@ -176,11 +203,40 @@ if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
         if (event.storageArea !== window.localStorage) return;
 
+        // Handle logout broadcast from other tabs
         if (event.key === 'resomix-logout' && event.newValue) {
             useAuthStore.getState().logout({ broadcast: false });
             return;
         }
 
+        // Handle sessionStorage clear broadcast (when logout happens in another tab)
+        if (event.key === 'resomix-session-clear' && event.newValue) {
+            try {
+                window.sessionStorage.removeItem('resomix-access-token');
+            } catch (e) {
+                console.warn('Failed to clear sessionStorage token:', e);
+            }
+            return;
+        }
+
+        // Handle token update broadcast (when refresh happens in another tab)
+        if (event.key === 'resomix-token-update' && event.newValue) {
+            try {
+                const update = JSON.parse(event.newValue);
+                if (update.token && typeof update.token === 'string') {
+                    // Update token in this tab's sessionStorage and store
+                    window.sessionStorage.setItem('resomix-access-token', update.token);
+                    const { setAccessToken } = useAuthStore.getState();
+                    setAccessToken(update.token);
+                    console.log('[useAuthStore] Token synced from another tab');
+                }
+            } catch (e) {
+                console.warn('Failed to sync token from other tab:', e);
+            }
+            return;
+        }
+
+        // Handle auth state rehydration from other tabs
         if (event.key === 'resomix-auth-storage' && event.newValue) {
             const persistApi = (useAuthStore as any).persist;
             if (persistApi?.rehydrate) {
