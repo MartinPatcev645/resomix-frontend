@@ -26,12 +26,23 @@ interface AuthState {
     getAuthHeader: () => string | null;
 }
 
+// Initialize access token from sessionStorage on store creation
+// This restores the token immediately on page reload without waiting for refresh
+const getInitialAccessToken = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+        return window.sessionStorage.getItem('resomix-access-token');
+    } catch {
+        return null;
+    }
+};
+
 const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
-            // Initial State
+            // Initial State - restore access token from sessionStorage if available
             user: null,
-            accessToken: null,
+            accessToken: getInitialAccessToken(),
             isAuthenticated: false,
             isLoading: false,
 
@@ -42,11 +53,33 @@ const useAuthStore = create<AuthState>()(
                     accessToken,
                     isAuthenticated: true,
                 });
+                // Also persist access token in sessionStorage
+                if (typeof window !== 'undefined' && accessToken) {
+                    try {
+                        window.sessionStorage.setItem('resomix-access-token', accessToken);
+                    } catch (e) {
+                        console.warn('sessionStorage not available for access token:', e);
+                    }
+                }
             },
 
             // Update access token (after refresh)
+            // Store in both memory (Zustand state) and sessionStorage for persistence across page reloads
             setAccessToken: (token) => {
                 set({ accessToken: token });
+                // Persist access token in sessionStorage (cleared on tab close, more secure than localStorage)
+                // This allows token to persist across page reloads without showing a loader
+                if (typeof window !== 'undefined') {
+                    try {
+                        if (token) {
+                            window.sessionStorage.setItem('resomix-access-token', token);
+                        } else {
+                            window.sessionStorage.removeItem('resomix-access-token');
+                        }
+                    } catch (e) {
+                        console.warn('sessionStorage not available for access token:', e);
+                    }
+                }
             },
 
             // Update user data
@@ -55,7 +88,7 @@ const useAuthStore = create<AuthState>()(
             },
 
             // Logout
-      logout: (options?: LogoutOptions) => {
+            logout: (options?: LogoutOptions) => {
                 set({
                     user: null,
                     accessToken: null,
@@ -68,12 +101,20 @@ const useAuthStore = create<AuthState>()(
                 } catch (e) {
                     console.warn('localStorage not available:', e);
                 }
-        if (options?.broadcast !== false) {
-          try {
-            localStorage.setItem('resomix-logout', String(Date.now()));
-          } catch (e) {
-            console.warn('Unable to broadcast logout:', e);
-          }
+                // Clear access token from sessionStorage
+                if (typeof window !== 'undefined') {
+                    try {
+                        window.sessionStorage.removeItem('resomix-access-token');
+                    } catch (e) {
+                        console.warn('sessionStorage not available:', e);
+                    }
+                }
+                if (options?.broadcast !== false) {
+                    try {
+                        localStorage.setItem('resomix-logout', String(Date.now()));
+                    } catch (e) {
+                        console.warn('Unable to broadcast logout:', e);
+                    }
                 }
                 deleteCookie('resomix-auth-storage');
             },
