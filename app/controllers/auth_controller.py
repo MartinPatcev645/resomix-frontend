@@ -642,6 +642,23 @@ class AuthController:
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(success=False, error=e.detail)
 
+            # Create response
+            response = JSONResponse(status_code=e.status_code, content=response_data)
+            
+            # If token reuse detected, clear the refresh token cookie
+            if "Refresh token reuse detected" in e.detail:
+                # Fix cookie domain for localhost - must be None, not "localhost"
+                cookie_domain = None if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""] else settings.cookie_domain
+                
+                # Clear the refresh token cookie
+                response.delete_cookie(
+                    key="refresh_token",
+                    path="/",
+                    domain=cookie_domain,
+                    samesite=settings.cookie_samesite,
+                    secure=settings.cookie_secure,
+                )
+
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -655,7 +672,7 @@ class AuthController:
                 metadata={"error": e.detail},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return response
 
     async def logout(
         self, db: AsyncSession, request: Request, refresh_token: str
@@ -696,10 +713,16 @@ class AuthController:
 
             # Create response and clear refresh token cookie
             response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            
+            # Fix cookie domain for localhost - must be None, not "localhost"
+            cookie_domain = None if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""] else settings.cookie_domain
+            
             response.delete_cookie(
                 key="refresh_token",
-                domain=settings.cookie_domain,
-                path="/"
+                path="/",
+                domain=cookie_domain,
+                samesite=settings.cookie_samesite,
+                secure=settings.cookie_secure,
             )
             
             return response
