@@ -79,7 +79,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <img src={AngleLeftSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-30)] h-[var(--px-30)]" />
             </a>
             <div className="flex flex-col items-center gap-[var(--px-15)]">
-              <div className="flex items-center gap-[var(--px-22)] mr-[var(--px-5)]">
+              <div className="flex items-center gap-[var(--px-10)] mr-[var(--px-5)]">
                 <IconButton
                   text="Rename"
                   transparent={true}
@@ -91,8 +91,6 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   className="playlist-action-button"
                   id="playlist-hero-rename-button"
                 />
-              </div>
-              <div className="flex items-center gap-[var(--px-12)] mr-[var(--px-2)]">
                 <IconButton
                   text="Rate Playlist"
                   transparent={true}

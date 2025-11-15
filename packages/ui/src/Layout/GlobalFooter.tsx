@@ -73,12 +73,8 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             />
           </div>
           <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
-            <a href={`${baseUrl}/terms`} aria-label="Resomix terms" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-terms-link">
-              legal.terms(): open('/terms')
-            </a>
-            <br />
-            <a href={`${baseUrl}/privacy`} aria-label="Resomix privacy" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-privacy-link">
-              privacy_policy(): fetch('/privacy')
+            <a href="https://support.resomix.com" aria-label="Resomix Support" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-support-link">
+              legal.info(): open('/support')
             </a>
             <br />
             <a href={`${baseUrl}/contact`} aria-label="Resomix contact" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-contact-link">
