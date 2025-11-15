@@ -64,11 +64,10 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                             </div>
                             <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80">
                                 I agree to Resomix's{" "}
-                                <a 
+                                <a
                                     aria-label="Resomix privacy"
-                                    href={`${BASE_LANDING_URL}/privacy`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                    href="https://support.resomix.com/hc/articles/1/3/1/privacy-policy"
+                                    target="_blank"
                                     className="underline hover:font-normal footer-link"
                                     onClick={(e) => e.stopPropagation()}
                                     id="terms-privacy-link"
@@ -96,11 +95,10 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                             </div>
                             <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80">
                                 I agree to Resomix's{" "}
-                                <a 
+                                <a
                                     aria-label="Resomix terms"
-                                    href={`${BASE_LANDING_URL}/terms`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                    href="https://support.resomix.com/hc/articles/1/3/3/demo-stage-notice-and-terms-of-use"
+                                    target="_blank"
                                     className="underline hover:font-normal footer-link"
                                     onClick={(e) => e.stopPropagation()}
                                     id="terms-terms-link"
@@ -114,8 +112,8 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                 </div>
 
                 <div className="flex flex-col items-center gap-[var(--px-20)]">
-                    <ButtonSleek 
-                        text="Accept Terms" 
+                    <ButtonSleek
+                        text="Accept Terms"
                         onClick={handleAccept}
                         disabled={!canAccept}
                         className="cta-button primary"
@@ -123,10 +121,10 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                     />
                     <div className="text-[length:var(--px-9)] font-light font-fira leading-[var(--px-12)] opacity-60 text-center">
                         Questions? Contact us at{" "}
-                        <a 
+                        <a
                             aria-label="Resomix contact"
                             href={`${BASE_BETA_URL}/contact`}
-                            target="_blank" 
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="underline hover:font-normal footer-link"
                             onClick={(e) => e.stopPropagation()}
