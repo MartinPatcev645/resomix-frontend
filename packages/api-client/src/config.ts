@@ -20,7 +20,7 @@ export interface ApiConfig {
     PLAYLIST_SIMILARITY_HLS: string;
     PLAYLIST_FORK: string;
     WAITLIST: string;
-    SEGMENT_STATUS: string;
+    // SEGMENT_STATUS: string; // Commented out - segmentation polling no longer needed
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: string;
     ADMIN_FEEDBACK_DELETE: string;
@@ -110,7 +110,7 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     PLAYLIST_FORK: "/playlists/fork/",
     WAITLIST: "/waitlist/",
-    SEGMENT_STATUS: "/segment_status/",
+    // SEGMENT_STATUS: "/segment_status/", // Commented out - segmentation polling no longer needed
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: "/admin/feedback/",
     ADMIN_FEEDBACK_DELETE: "/admin/feedback/delete/",

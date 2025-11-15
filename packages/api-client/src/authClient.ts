@@ -57,7 +57,8 @@ authClient.interceptors.request.use(
     // Add auth token if available
     const authStore = getAuthStore();
     if (authStore) {
-      const { accessToken, isAuthenticated } = authStore.getState();
+      const state = authStore.getState();
+      const { accessToken, isAuthenticated } = state;
 
       // Add authorization header if token exists and user is authenticated
       // Don't check isTokenExpired here - let the backend decide and use refresh interceptor
@@ -65,10 +66,10 @@ authClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${accessToken}`;
         console.log(`[authClient] Added Authorization header for ${config.url}`);
       } else {
-        console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}`);
+        console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user}`);
       }
     } else {
-      console.log(`[authClient] Auth store not available for ${config.url}`);
+      console.warn(`[authClient] Auth store not available for ${config.url} - global store: ${!!(globalThis as any).__RESOMIX_AUTH_STORE__}`);
     }
 
     return config;
@@ -93,7 +94,7 @@ authClient.interceptors.response.use(
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.log(`[authClient] 401 error for ${originalRequest.url}, attempting token refresh...`);
-      
+
       const authStore = getAuthStore();
       if (!authStore) {
         console.log('[authClient] Auth store not available, cannot refresh token');
@@ -101,7 +102,7 @@ authClient.interceptors.response.use(
       }
 
       const { setAccessToken, logout, accessToken } = authStore.getState();
-      
+
       // Only attempt refresh if we actually sent an Authorization header
       if (!accessToken) {
         console.log('[authClient] No access token in store, skipping refresh');
@@ -130,7 +131,7 @@ authClient.interceptors.response.use(
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
           {}, // Empty body - server manages refresh token via HttpOnly cookie
-          { 
+          {
             withCredentials: true, // Include cookies
             params: { api_key: API_CONFIG.API_KEY } // Include api_key for auth endpoints
           }
