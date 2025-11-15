@@ -698,7 +698,7 @@ class SpotifyAppController:
             lowered_error = error_message.lower()
             if "not found" in lowered_error:
                 status_code = status.HTTP_404_NOT_FOUND
-            elif "inactive" in lowered_error:
+            elif "inactive" in lowered_error or "maximum limit" in lowered_error or "reached" in lowered_error:
                 status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
             else:
                 status_code = status.HTTP_400_BAD_REQUEST
