@@ -49,6 +49,8 @@ export interface ApiConfig {
     ADMIN_OPERATION_TYPES: string;
     ADMIN_OPERATION_LIMITS: string;
     ADMIN_OPERATION_LIMIT_DETAIL: string;
+    ADMIN_SPOTIFY_APPS: string;
+    ADMIN_SPOTIFY_APP_USERS: string;
     // unused beta endpoints
     // SPOTIFY_TRANSFER: string;
     // TIDAL_AUTH_TOKEN: string;
@@ -136,6 +138,8 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_OPERATION_TYPES: "/admin/operation-limits/operation-types",
     ADMIN_OPERATION_LIMITS: "/admin/operation-limits",
     ADMIN_OPERATION_LIMIT_DETAIL: "/admin/operation-limits/",
+    ADMIN_SPOTIFY_APPS: "/admin/spotify-apps/",
+    ADMIN_SPOTIFY_APP_USERS: "/admin/spotify-apps/users",
     // Unused beta endpoints
     // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
     // TIDAL_AUTH_TOKEN: "/tidal/auth/token",

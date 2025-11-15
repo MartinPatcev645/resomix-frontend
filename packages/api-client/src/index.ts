@@ -12,6 +12,7 @@ export * from "./admin/contact";
 export * from "./admin/waitlist";
 export * from "./admin/playlist";
 export * from "./admin/operationLimits";
+export * from "./admin/spotifyApps";
 export { default as apiAxiosInstance } from "./utils";
 
 // Auth exports
