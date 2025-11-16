@@ -137,7 +137,7 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PLAYLIST_VISIBILITY: "/admin/playlist/visibility/",
     ADMIN_PLAYLIST_BATCH_VISIBILITY: "/admin/playlist/batch-visibility",
     ADMIN_OPERATION_TYPES: "/admin/operation-limits/operation-types",
-    ADMIN_OPERATION_LIMITS: "/admin/operation-limits",
+    ADMIN_OPERATION_LIMITS: "/admin/operation-limits/",
     ADMIN_OPERATION_LIMIT_DETAIL: "/admin/operation-limits/",
     ADMIN_SPOTIFY_APPS: "/admin/spotify-apps/",
     ADMIN_SPOTIFY_APP_USERS: "/admin/spotify-apps/users",

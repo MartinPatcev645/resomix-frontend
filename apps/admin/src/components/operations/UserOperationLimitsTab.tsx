@@ -460,8 +460,8 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
     },
     {
       title: 'Usage',
-      dataIndex: 'playlist_count',
-      key: 'playlist_count',
+      dataIndex: 'usage_count',
+      key: 'usage_count',
       width: 100,
       render: (value: number | null) =>
         value !== null && value !== undefined ? (
