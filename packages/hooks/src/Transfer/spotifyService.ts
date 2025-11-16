@@ -3,7 +3,7 @@
  * Handles Spotify OAuth PKCE flow and playlist transfer functionality
  */
 
-import { API_CONFIG, SPOTIFY_CONFIG, authClient, axiosWrapper } from "@resomix/api-client";
+import { API_CONFIG, SPOTIFY_CONFIG } from "@resomix/api-client";
 
 type SpotifyAuthSuccess = {
   success: true;
@@ -209,15 +209,6 @@ export const transferPlaylistToSpotify = async (
   customPlaylistName: string | null = null
 ): Promise<TransferResponse> => {
   try {
-    // Pre-emptively validate/refresh JWT as in similarity flow
-    try {
-      const { getMyProfile } = await import("@resomix/api-client");
-      await getMyProfile();
-    } catch (e) {
-      // Ignore – if refresh is needed, authClient will handle 401 and retry
-      console.warn("Pre-transfer token check failed:", e);
-    }
-
     const accessToken = getSpotifyAccessToken();
 
     if (!accessToken) {
@@ -244,27 +235,39 @@ export const transferPlaylistToSpotify = async (
       return url.toString();
     };
 
-    // Use authClient to include JWT Authorization (Auth: Required) and api_key/x-api-key (via interceptor)
-    try {
-      const data = await axiosWrapper<TransferResponse>(
-        authClient.post(SPOTIFY_CONFIG.SPOTIFY_TRANSFER, {
-          playlist_id: playlistId,
-          access_token: accessToken,
-          playlist_name: customPlaylistName,
-        })
-      );
-      return data;
-    } catch (err: any) {
-      // If Spotify token expired, clear Spotify auth data (not app auth)
-      const status = err?.status ?? err?.response?.status;
-      if (status === 401) {
+    const response = await fetch(getUrl(SPOTIFY_CONFIG.SPOTIFY_TRANSFER), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        playlist_id: playlistId,
+        access_token: accessToken,
+        playlist_name: customPlaylistName,
+      }),
+    });
+
+    if (!response.ok) {
+      let errorData: TransferResponse = {
+        success: false,
+        error: 'Failed to transfer playlist to Spotify',
+      };
+
+      try {
+        errorData = (await response.json()) as TransferResponse;
+      } catch {
+          // keep default errorData
+      }
+
+        // If token expired, clear auth data
+      if (response.status === 401) {
         clearSpotifyAuth();
       }
-      return {
-        success: false,
-        error: err?.error || 'Failed to transfer playlist to Spotify',
-      };
+
+      return errorData;
     }
+
+    return (await response.json()) as TransferResponse;
   } catch (error: any) {
     console.error('Error transferring playlist to Spotify:', error);
     return {
