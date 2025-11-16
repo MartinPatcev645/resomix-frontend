@@ -3,7 +3,7 @@
  * Handles Spotify OAuth PKCE flow and playlist transfer functionality
  */
 
-import { API_CONFIG, SPOTIFY_CONFIG } from "@resomix/api-client";
+import { API_CONFIG, SPOTIFY_CONFIG, fetchSpotifyToken, postSpotifyTransfer } from "@resomix/api-client";
 
 type SpotifyAuthSuccess = {
   success: true;
@@ -107,20 +107,8 @@ export const handleSpotifyCallback = async (code: string, state: string): Promis
       throw new Error('No code verifier found');
     }
 
-      // Exchange code for access token
-    const response = await fetch(SPOTIFY_CONFIG.TOKEN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: SPOTIFY_CONFIG.CLIENT_ID,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: SPOTIFY_CONFIG.REDIRECT_URI,
-        code_verifier: codeVerifier,
-      }),
-    });
+      // Exchange code for access token (moved fetch to api client)
+    const response = await fetchSpotifyToken(code, codeVerifier);
 
     if (!response.ok) {
       throw new Error('Failed to exchange code for token');
@@ -218,33 +206,11 @@ export const transferPlaylistToSpotify = async (
       };
     }
 
-      // Helper to construct URLs with API key
-    const getUrl = (endpoint: string, queryParams: Record<string, string | number | null | undefined> = {}): string => {
-      const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
-
-        // Add API key
-      url.searchParams.append('api_key', API_CONFIG.API_KEY);
-
-        // Add any additional query params
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value));
-        }
-      });
-
-      return url.toString();
-    };
-
-    const response = await fetch(getUrl(SPOTIFY_CONFIG.SPOTIFY_TRANSFER), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playlist_id: playlistId,
-        access_token: accessToken,
-        playlist_name: customPlaylistName,
-      }),
+    // Perform transfer (moved fetch to api client)
+    const response = await postSpotifyTransfer({
+      playlist_id: playlistId,
+      access_token: accessToken,
+      playlist_name: customPlaylistName,
     });
 
     if (!response.ok) {
