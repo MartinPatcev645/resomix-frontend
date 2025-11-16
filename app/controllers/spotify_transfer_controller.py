@@ -25,8 +25,10 @@ import time
 from app.services.spotify_transfer_service import SpotifyTransferService
 from app.services.logging_service import LoggingService
 from app.services.playlist_service import PlaylistService
+from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.models.user import User
 from app.utils.response_utils import format_response
+from app.core.config import settings
 
 # Set up logger for controller
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ class SpotifyTransferController:
         self.spotify_service = SpotifyTransferService()
         self.logging_service = LoggingService()
         self.playlist_service = PlaylistService()
+        self.operation_limit_evaluator = OperationLimitEvaluator()
         logger.info("SpotifyTransferController initialized")
 
     async def transfer_playlist_to_spotify(
@@ -112,6 +115,22 @@ class SpotifyTransferController:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content=format_response(success=False, error=error_message)
                 )
+            
+            # Demo-mode operational limit check for spotify_transfer
+            if settings.demo_mode:
+                limit_check = await self.operation_limit_evaluator.check(
+                    db,
+                    user_id=current_user.id,
+                    operation_code="spotify_transfer",
+                )
+                if not limit_check.allowed:
+                    return JSONResponse(
+                        status_code=limit_check.status_code,
+                        content=format_response(
+                            success=False,
+                            error=limit_check.message or "Operation not permitted"
+                        ),
+                    )
             
             # Call the service to perform the transfer
             result = await self.spotify_service.transfer_playlist_to_spotify(

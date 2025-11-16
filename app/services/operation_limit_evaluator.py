@@ -17,10 +17,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 
 from app.core.config import settings
-from app.models import OperationType, UserOperationLimit, Playlist
+from app.models import OperationType, UserOperationLimit, Playlist, SystemLog
 
 
 @dataclass
@@ -90,6 +90,29 @@ class OperationLimitEvaluator:
                     allowed=False,
                     status_code=403,
                     message=f"Playlist limit reached ({limit.limit_value}). Please remove an existing playlist or upgrade your plan.",
+                )
+
+        if operation_code == "spotify_transfer":
+            # Count number of Spotify playlist transfer actions associated with the user's playlists
+            transfer_count_stmt = (
+                select(func.count(SystemLog.id))
+                .select_from(SystemLog)
+                .join(Playlist, Playlist.id == SystemLog.playlist_id)
+                .where(
+                    and_(
+                        Playlist.user_id == user_id,
+                        SystemLog.action.in_(["playlist_transfer_success", "playlist_transfer_exception"]),
+                    )
+                )
+            )
+            transfer_count_result = await db.execute(transfer_count_stmt)
+            transfer_count = transfer_count_result.scalar_one() or 0
+
+            if transfer_count >= limit.limit_value:
+                return OperationLimitResult(
+                    allowed=False,
+                    status_code=403,
+                    message=f"Spotify transfer limit reached ({limit.limit_value}). Please upgrade your plan or contact support.",
                 )
 
         return OperationLimitResult(allowed=True, status_code=200)
