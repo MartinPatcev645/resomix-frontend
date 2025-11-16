@@ -27,7 +27,7 @@ export interface AdminUserOperationLimit {
   operation_description: string;
   limit_value: number;
   window_seconds: number | null;
-  playlist_count: number | null;
+  usage_count: number | null;
   created_by: number | null;
   created_at: string;
   updated_at: string;
