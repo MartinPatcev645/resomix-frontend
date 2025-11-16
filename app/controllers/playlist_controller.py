@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 import time
 from app.services.playlist_service import PlaylistService
+from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.logging_service import LoggingService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
@@ -38,6 +39,7 @@ class PlaylistController:
         self.playlist_service = PlaylistService()
         self.logging_service = LoggingService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
+        self.operation_limit_repository = OperationLimitRepository()
     
     async def rename_playlist(self, db: AsyncSession, request: Request, playlist_id: str, new_name: str, current_user: Optional[User] = None) -> JSONResponse:
         """
@@ -740,6 +742,13 @@ class PlaylistController:
                         "response": result
                     }
                 )
+                # Increment operation usage for playlist_create on successful fork
+                try:
+                    await self.operation_limit_repository.async_increment_usage(
+                        db, user_id=current_user.id, operation_code="playlist_create", increment=1
+                    )
+                except Exception:
+                    pass
                 return JSONResponse(status_code=status.HTTP_201_CREATED, content=result)
             
             # Handle error responses

@@ -26,6 +26,7 @@ from app.services.spotify_transfer_service import SpotifyTransferService
 from app.services.logging_service import LoggingService
 from app.services.playlist_service import PlaylistService
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
+from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.models.user import User
 from app.utils.response_utils import format_response
 from app.core.config import settings
@@ -43,6 +44,7 @@ class SpotifyTransferController:
         self.logging_service = LoggingService()
         self.playlist_service = PlaylistService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
+        self.operation_limit_repository = OperationLimitRepository()
         logger.info("SpotifyTransferController initialized")
 
     async def transfer_playlist_to_spotify(
@@ -198,7 +200,14 @@ class SpotifyTransferController:
             
             logger.info("Transfer completed: %d/%d tracks added in %.1fs", 
                        result['tracks_added'], result['total_tracks'], result.get('transfer_time_seconds', 0))
-            
+            # Increment operation usage for spotify_transfer on successful completion
+            try:
+                await self.operation_limit_repository.async_increment_usage(
+                    db, user_id=current_user.id, operation_code="spotify_transfer", increment=1
+                )
+            except Exception:
+                pass
+
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=response_content

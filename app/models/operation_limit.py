@@ -58,6 +58,9 @@ class UserOperationLimit(Base):
     operation_id = Column(Integer, ForeignKey("operation_types.id", ondelete="CASCADE"), primary_key=True)
     limit_value = Column(Integer, nullable=False)
     window_seconds = Column(Integer, nullable=True)
+    # Tracks how many times the user has consumed this operation (e.g., number of transfers performed)
+    # Backed by an UNSIGNED INT column in DB; default 0.
+    usage = Column(Integer, nullable=False, server_default=func.cast(0, Integer))
     created_by = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
     updated_at = Column(

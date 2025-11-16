@@ -17,10 +17,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 
 from app.core.config import settings
-from app.models import OperationType, UserOperationLimit, Playlist, SystemLog
+from app.models import OperationType, UserOperationLimit, Playlist
+from app.repositories.operation_limit_repository import OperationLimitRepository
 
 
 @dataclass
@@ -34,7 +35,7 @@ class OperationLimitEvaluator:
     """Evaluate whether a user can perform an operation within their configured limits."""
 
     def __init__(self) -> None:
-        pass
+        self._op_repo = OperationLimitRepository()
 
     async def check(
         self,
@@ -81,11 +82,25 @@ class OperationLimitEvaluator:
             )
 
         if operation_code == "playlist_create":
-            count_stmt = select(func.count(Playlist.id)).where(Playlist.user_id == user_id)
-            count_result = await db.execute(count_stmt)
-            playlist_count = count_result.scalar_one() or 0
-
-            if playlist_count >= limit.limit_value:
+            # Prefer stored usage if present; if zero, backfill from actual playlist count once.
+            current_usage = (getattr(limit, "usage", 0) or 0)
+            if current_usage == 0:
+                count_stmt = select(func.count(Playlist.id)).where(Playlist.user_id == user_id)
+                current_usage = (await db.execute(count_stmt)).scalar_one() or 0
+                # Best-effort backfill of usage so future checks are O(1)
+                try:
+                    # Only update if different to avoid unnecessary writes
+                    if current_usage > 0:
+                        await self._op_repo.async_increment_usage(
+                            db, user_id=user_id, operation_code=operation_obj.code, increment=current_usage
+                        )
+                        # Refresh local value
+                        limit = await self._fetch_limit(db, user_id, operation_obj.id)
+                        current_usage = getattr(limit, "usage", current_usage)
+                except Exception:
+                    # Do not fail the request because of a metering write issue
+                    pass
+            if current_usage >= limit.limit_value:
                 return OperationLimitResult(
                     allowed=False,
                     status_code=403,
@@ -93,22 +108,9 @@ class OperationLimitEvaluator:
                 )
 
         if operation_code == "spotify_transfer":
-            # Count number of Spotify playlist transfer actions associated with the user's playlists
-            transfer_count_stmt = (
-                select(func.count(SystemLog.id))
-                .select_from(SystemLog)
-                .join(Playlist, Playlist.id == SystemLog.playlist_id)
-                .where(
-                    and_(
-                        Playlist.user_id == user_id,
-                        SystemLog.action.in_(["playlist_transfer_success", "playlist_transfer_exception"]),
-                    )
-                )
-            )
-            transfer_count_result = await db.execute(transfer_count_stmt)
-            transfer_count = transfer_count_result.scalar_one() or 0
-
-            if transfer_count >= limit.limit_value:
+            # Enforce using the per-user usage counter stored on the limit row
+            current_usage = getattr(limit, "usage", 0) or 0
+            if current_usage >= limit.limit_value:
                 return OperationLimitResult(
                     allowed=False,
                     status_code=403,
@@ -116,4 +118,12 @@ class OperationLimitEvaluator:
                 )
 
         return OperationLimitResult(allowed=True, status_code=200)
+
+    async def _fetch_limit(self, db: AsyncSession, user_id: int, operation_id: int) -> UserOperationLimit | None:
+        stmt = select(UserOperationLimit).where(
+            UserOperationLimit.user_id == user_id,
+            UserOperationLimit.operation_id == operation_id,
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
 

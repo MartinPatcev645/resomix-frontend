@@ -116,7 +116,7 @@ class OperationLimitService:
                 "error": "User operation limit not configured",
             }
 
-        playlist_count = await self._count_user_playlists(db, user.id)
+        playlist_count = await self._count_user_playlists(db, user.id) if operation.code == "playlist_create" else None
         data = self._serialize_limit(limit, operation, user, playlist_count)
         return {"success": True, "data": data}
 
@@ -267,6 +267,7 @@ class OperationLimitService:
         user: User,
         playlist_count: Optional[int],
     ) -> Dict[str, object]:
+        usage_count = (playlist_count or 0) if operation.code == "playlist_create" else (getattr(limit, "usage", 0) or 0)
         return {
             "user_id": user.id,
             "user_uuid": getattr(user, "uuid", None),
@@ -277,7 +278,7 @@ class OperationLimitService:
             "operation_description": operation.description,
             "limit_value": limit.limit_value,
             "window_seconds": limit.window_seconds,
-            "playlist_count": playlist_count,
+            "usage_count": int(usage_count),
             "created_by": limit.created_by,
             "created_at": limit.created_at.isoformat()
             if getattr(limit, "created_at", None)

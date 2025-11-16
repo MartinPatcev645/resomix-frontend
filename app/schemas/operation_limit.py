@@ -60,9 +60,8 @@ class UserOperationLimitResponse(BaseModel):
     window_seconds: Optional[int] = Field(
         None, description="Sliding window in seconds for rate limited operations"
     )
-    playlist_count: Optional[int] = Field(
-        None,
-        description="Current number of playlists created by the user (for playlist creation limits)",
+    usage_count: int = Field(
+        ..., description="Current usage count for this operation (e.g., playlists created or transfers performed)"
     )
     created_by: Optional[int] = Field(None, description="Admin user who created the limit")
     created_at: Optional[str] = Field(None, description="Creation timestamp (ISO format)")
@@ -80,7 +79,7 @@ class UserOperationLimitResponse(BaseModel):
                 "operation_description": "Maximum playlists the user can create",
                 "limit_value": 15,
                 "window_seconds": None,
-                "playlist_count": 7,
+                "usage_count": 7,
                 "created_by": 1,
                 "created_at": "2025-10-02T12:00:00",
                 "updated_at": "2025-10-03T09:45:00",
@@ -136,7 +135,7 @@ class UserOperationLimitDetailResponse(APIResponse):
                         "operation_description": "Maximum playlists the user can create",
                         "limit_value": 20,
                         "window_seconds": None,
-                        "playlist_count": 7,
+                        "usage_count": 7,
                         "created_by": 1,
                         "created_at": "2025-11-08T12:30:15",
                         "updated_at": "2025-11-08T12:30:15",
@@ -155,7 +154,7 @@ class UserOperationLimitDetailResponse(APIResponse):
                         "operation_description": "Maximum playlists the user can create",
                         "limit_value": 20,
                         "window_seconds": None,
-                        "playlist_count": 7,
+                        "usage_count": 7,
                         "created_by": 1,
                         "created_at": "2025-11-08T12:30:15",
                         "updated_at": "2025-11-08T12:30:15",

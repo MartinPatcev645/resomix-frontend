@@ -14,7 +14,7 @@ Email: usman.naeem2212@gmail.com
 
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -221,4 +221,38 @@ class OperationLimitRepository(BaseRepository[UserOperationLimit]):
             )
 
         return limits, total
+
+    # ------------------------------------------------------------------
+    # Usage helpers
+    # ------------------------------------------------------------------
+    async def async_increment_usage(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        operation_code: str,
+        increment: int = 1,
+    ) -> bool:
+        """
+        Atomically increment usage counter for a user's operation limit.
+        Returns True if a row was updated, False if no matching limit exists.
+        """
+        op = await self.async_get_operation_type_by_code(db, operation_code)
+        if not op:
+            return False
+
+        stmt = (
+            update(UserOperationLimit)
+            .where(
+                UserOperationLimit.user_id == user_id,
+                UserOperationLimit.operation_id == op.id,
+            )
+            .values(usage=UserOperationLimit.usage + increment)
+        )
+        result = await db.execute(stmt)
+        if result.rowcount and result.rowcount > 0:
+            await db.commit()
+            return True
+        await db.rollback()
+        return False
 
