@@ -20,3 +20,4 @@ export { default as apiAxiosInstance } from "./utils";
 export { default as authClient } from "./authClient";
 export * from "./auth";
 export * from "./types/auth";
+export * from "./spotify";
