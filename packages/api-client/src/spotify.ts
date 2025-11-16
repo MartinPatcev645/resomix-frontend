@@ -1,20 +1,14 @@
-import { API_CONFIG, SPOTIFY_CONFIG } from "./config";
+import { SPOTIFY_CONFIG } from "./config";
+import { axiosWrapper, handleApiError } from "./utils";
+import authClient from "./authClient";
 
-// Helper to construct URLs with API key
-const getUrl = (endpoint: string, queryParams: Record<string, string | number | null | undefined> = {}): string => {
-  const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
-
-  // Add API key
-  url.searchParams.append('api_key', API_CONFIG.API_KEY);
-
-  // Add any additional query params
-  Object.entries(queryParams).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      url.searchParams.append(key, String(value));
-    }
-  });
-
-  return url.toString();
+export type TransferResponse<T = any> = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: T;
+  details?: unknown;
+  status?: number;
 };
 
 // Performs the raw token exchange request to Spotify (PKCE flow)
@@ -35,18 +29,19 @@ export const fetchSpotifyToken = (code: string, codeVerifier: string): Promise<R
 };
 
 // Performs the raw transfer request to our backend for Spotify playlist creation
-export const postSpotifyTransfer = (body: {
+export const postSpotifyTransfer = async (body: {
   playlist_id: string;
   access_token: string;
   playlist_name: string | null;
-}): Promise<Response> => {
-  return fetch(getUrl(SPOTIFY_CONFIG.SPOTIFY_TRANSFER), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+}): Promise<TransferResponse> => {
+  try {
+    const data = await axiosWrapper<TransferResponse>(
+      authClient.post(SPOTIFY_CONFIG.SPOTIFY_TRANSFER, body)
+    );
+    return data;
+  } catch (error: any) {
+    return handleApiError(error as any);
+  }
 };
 
 

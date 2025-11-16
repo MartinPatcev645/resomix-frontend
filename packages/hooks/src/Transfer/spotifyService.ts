@@ -206,34 +206,22 @@ export const transferPlaylistToSpotify = async (
       };
     }
 
-    // Perform transfer (moved fetch to api client)
-    const response = await postSpotifyTransfer({
+    // Perform transfer via API client (includes JWT via authClient)
+    const result = await postSpotifyTransfer({
       playlist_id: playlistId,
       access_token: accessToken,
       playlist_name: customPlaylistName,
     });
 
-    if (!response.ok) {
-      let errorData: TransferResponse = {
-        success: false,
-        error: 'Failed to transfer playlist to Spotify',
-      };
-
-      try {
-        errorData = (await response.json()) as TransferResponse;
-      } catch {
-          // keep default errorData
-      }
-
-        // If token expired, clear auth data
-      if (response.status === 401) {
+    if (!result.success) {
+      // If backend indicates unauthorized wrt Spotify token, clear stored Spotify auth
+      if ((result as any).status === 401) {
         clearSpotifyAuth();
       }
-
-      return errorData;
+      return result;
     }
 
-    return (await response.json()) as TransferResponse;
+    return result;
   } catch (error: any) {
     console.error('Error transferring playlist to Spotify:', error);
     return {
