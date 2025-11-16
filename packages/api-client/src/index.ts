@@ -15,6 +15,7 @@ export * from "./admin/operationLimits";
 export * from "./admin/spotifyApps";
 export * from "./admin/users";
 export { default as apiAxiosInstance } from "./utils";
+export { axiosWrapper, handleApiError } from "./utils";
 
 // Auth exports
 export { default as authClient } from "./authClient";

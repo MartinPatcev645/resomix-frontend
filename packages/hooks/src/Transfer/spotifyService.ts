@@ -209,6 +209,15 @@ export const transferPlaylistToSpotify = async (
   customPlaylistName: string | null = null
 ): Promise<TransferResponse> => {
   try {
+    // Pre-emptively validate/refresh JWT as in similarity flow
+    try {
+      const { getMyProfile } = await import("@resomix/api-client");
+      await getMyProfile();
+    } catch (e) {
+      // Ignore – if refresh is needed, authClient will handle 401 and retry
+      console.warn("Pre-transfer token check failed:", e);
+    }
+
     const accessToken = getSpotifyAccessToken();
 
     if (!accessToken) {
@@ -235,7 +244,7 @@ export const transferPlaylistToSpotify = async (
       return url.toString();
     };
 
-    // Use authClient to include JWT Authorization (Auth: Required) and api_key (via interceptor)
+    // Use authClient to include JWT Authorization (Auth: Required) and api_key/x-api-key (via interceptor)
     try {
       const data = await axiosWrapper<TransferResponse>(
         authClient.post(SPOTIFY_CONFIG.SPOTIFY_TRANSFER, {
@@ -246,8 +255,9 @@ export const transferPlaylistToSpotify = async (
       );
       return data;
     } catch (err: any) {
-      // If token expired, clear Spotify auth data (not app auth)
-      if (err?.status === 401) {
+      // If Spotify token expired, clear Spotify auth data (not app auth)
+      const status = err?.status ?? err?.response?.status;
+      if (status === 401) {
         clearSpotifyAuth();
       }
       return {
