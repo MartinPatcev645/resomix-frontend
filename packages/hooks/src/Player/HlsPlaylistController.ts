@@ -20,6 +20,7 @@ const PLAY_FALLBACK_AFTER_MS = 3000;
 
 // ================== Helpers ==================
 function setNetworkErrorFlag(on: boolean, reason?: string) {
+  if (DEMO_MODE) return;
   try {
     usePlayerStore.getState().setNetworkError(on, reason);
   } catch {
