@@ -95,7 +95,6 @@ export function useSpotifyTransfer({ active, initialPlaylistId, onStatusChange }
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('message', onMessage);
       setConnectLoading(false);
-      setTransferLoading(false);
     };
   }, [active, message, onStatusChange]);
 
