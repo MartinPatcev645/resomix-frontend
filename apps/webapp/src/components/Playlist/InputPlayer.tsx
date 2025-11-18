@@ -183,7 +183,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
                 {formatTime(ctl.uiTime)} / {formatTime(totalDuration)}
               </time>
               {networkError && (
-                <div className="absolute bottom-9 left-40 flex items-center gap-[var(--px-3)] text-yellow-200">
+                <div className="absolute bottom-6 left-40 flex items-center gap-[var(--px-3)] text-yellow-200">
                   <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
                     style={{
                       WebkitMaskImage: `url("${NetworkSvg}")`,
