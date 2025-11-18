@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
@@ -6,6 +6,7 @@ import InfoSvg from "@/assets/icons/info.svg";
 import { SearchInput, SearchDropdown, Tooltip } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
+import { DEMO_MODE } from "@resomix/config";
 import type { SearchResult } from "@resomix/hooks";
 
 interface SearchComponentProps {
@@ -23,6 +24,8 @@ interface SearchComponentProps {
 export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick, onTrackSelect }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
     const { query, results, isLoading, handleQueryChange } = useSearch();
+    const [showSearchHint, setShowSearchHint] = useState(false);
+    const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     // Get searchMode state and setter from the store
     const { searchMode, setSearchMode } = usePlayerStore();
@@ -30,6 +33,44 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
     const handleSearchModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSearchMode(e.target.value as 'auto' | 'artist' | 'title');
     };
+
+    const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        if (DEMO_MODE) {
+            // Show hint and prevent search
+            setShowSearchHint(true);
+            if (hintTimerRef.current) {
+                clearTimeout(hintTimerRef.current);
+            }
+            hintTimerRef.current = setTimeout(() => {
+                setShowSearchHint(false);
+            }, 3000);
+            // Don't update query in demo mode
+            return;
+        }
+        // Normal search behavior when not in demo mode
+        handleQueryChange(e);
+    }, [handleQueryChange]);
+
+    const handleSearchInputFocus = useCallback(() => {
+        if (DEMO_MODE) {
+            setShowSearchHint(true);
+            if (hintTimerRef.current) {
+                clearTimeout(hintTimerRef.current);
+            }
+            hintTimerRef.current = setTimeout(() => {
+                setShowSearchHint(false);
+            }, 3000);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!DEMO_MODE) {
+            return;
+        }
+        return () => {
+            if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+        };
+    }, []);
 
     return (
         <div ref={sectionRef} className="relative">
@@ -117,15 +158,42 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] relative">
                                     {/** Search bar & dropdown */}
-                                    <SearchInput value={query} onChange={handleQueryChange} placeholder="Find Existing Tracks..." width="w-[var(--px-310)]" />
-                                    <SearchDropdown
-                                        show={query.length > 0}
-                                        results={results}
-                                        width="w-[var(--px-310)]"
-                                        truncateLength={22}
-                                        isLoading={isLoading}
-                                        onSelect={onTrackSelect}
-                                    />
+                                    <div className="relative inline-block">
+                                        {DEMO_MODE && showSearchHint && (
+                                            <div
+                                                role="status"
+                                                aria-live="polite"
+                                                className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10 z-20"
+                                            >
+                                                Demo mode - Search functionality limited while we complete licensing
+                                            </div>
+                                        )}
+                                        {DEMO_MODE && showSearchHint && (
+                                            <span
+                                                aria-hidden="true"
+                                                className="pointer-events-none absolute -inset-1 rounded-md ring-2 ring-[#FFCC00] animate-pulse z-10"
+                                            />
+                                        )}
+                                        <div className="relative z-20">
+                                            <SearchInput 
+                                                value={DEMO_MODE ? "" : query} 
+                                                onChange={handleSearchInputChange} 
+                                                onFocus={handleSearchInputFocus}
+                                                placeholder="Find Existing Tracks..." 
+                                                width="w-[var(--px-310)]" 
+                                            />
+                                        </div>
+                                    </div>
+                                    {!DEMO_MODE && (
+                                        <SearchDropdown
+                                            show={query.length > 0}
+                                            results={results}
+                                            width="w-[var(--px-310)]"
+                                            truncateLength={22}
+                                            isLoading={isLoading}
+                                            onSelect={onTrackSelect}
+                                        />
+                                    )}
                                 </div>
                                 <h3 className="text-[length:var(--px-11)] font-fira font-light text-center mt-[var(--px-30)]">
                                     Do you have a song in mind?
