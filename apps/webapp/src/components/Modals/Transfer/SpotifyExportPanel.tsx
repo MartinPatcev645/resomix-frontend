@@ -85,7 +85,7 @@ const SpotifyExportPanel: React.FC<Props> = ({
       <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)]">
         Status: {isAuthenticated ? 'Connected ✅' : 'Not Connected ❌'}
       </div>
-      {message && (
+      {message && !error && (
         <a
           href={message}
           target={'_blank'}
