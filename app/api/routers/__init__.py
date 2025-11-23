@@ -38,6 +38,7 @@ from .dummy import router as dummy_router
 from .auth import router as auth_router
 from .users import router as users_router
 from .playlist_engagement import router as playlist_engagement_router
+from .open_tracks_pipeline import router as open_tracks_pipeline_router
 
 # List of all routers for easy inclusion
 all_routers = [
@@ -65,4 +66,5 @@ all_routers = [
     waitlist_router,
     dummy_router,
     playlist_engagement_router,
+    open_tracks_pipeline_router,
 ]

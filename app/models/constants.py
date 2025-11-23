@@ -19,9 +19,10 @@ class TrackType:
     """Constants for track type values."""
     ELECTROBUZZ = "electrobuzz"  # Default type for existing tracks from ElectroBuzz
     UPLOAD = "upload"            # Type for user-uploaded tracks
+    OPEN = "open"                # Type for open tracks pipeline
     
     # List of all valid track types
-    ALL_TYPES = [ELECTROBUZZ, UPLOAD]
+    ALL_TYPES = [ELECTROBUZZ, UPLOAD, OPEN]
     
     @classmethod
     def is_valid(cls, track_type: str) -> bool:

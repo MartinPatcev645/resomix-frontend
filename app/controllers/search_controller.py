@@ -37,16 +37,6 @@ class SearchController:
         """
         log_request("search_tracks", "GET", {"query": query, "mode": mode})
         
-        # Check if demo mode is enabled
-        if settings.demo_mode:
-            return JSONResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                content=format_response(
-                    success=False,
-                    error="Search is restricted in demo mode. Please contact support for access."
-                )
-            )
-        
         try:
             # Call the search function with mode parameter
             search_results = await self.search_service.search_tracks(db, query, mode)

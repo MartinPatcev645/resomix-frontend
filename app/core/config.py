@@ -383,6 +383,28 @@ class Settings(BaseModel):
         description="Frontend URL for email verification/reset links"
     )
 
+    # SCP Configuration (for Open Tracks Pipeline)
+    scp_private_key_path: str = Field(
+        default="creds/resomix22tbserver-key.pem",
+        description="Path to SSH private key for SCP transfer"
+    )
+    scp_remote_user: str = Field(
+        default="ubuntu",
+        description="Remote user for SCP transfer"
+    )
+    scp_remote_host: str = Field(
+        default="65.21.116.184",
+        description="Remote host IP for SCP transfer"
+    )
+    scp_remote_port: int = Field(
+        default=8522,
+        description="Remote SSH port for SCP transfer"
+    )
+    scp_remote_dir: str = Field(
+        default="/home/ubuntu/usman/resomix-similarity/data/open_tracks/",
+        description="Remote target directory for SCP transfer"
+    )
+
     def __init__(self, **data):
         # Override with environment variables if they exist
         env_overrides = {}
@@ -437,6 +459,12 @@ class Settings(BaseModel):
             "SMTP_PASSWORD": "smtp_password",
             "SMTP_FROM_EMAIL": "smtp_from_email",
             "FRONTEND_URL": "frontend_url",
+            # SCP Configuration
+            "SCP_PRIVATE_KEY_PATH": "scp_private_key_path",
+            "SCP_REMOTE_USER": "scp_remote_user",
+            "SCP_REMOTE_HOST": "scp_remote_host",
+            "SCP_REMOTE_PORT": "scp_remote_port",
+            "SCP_REMOTE_DIR": "scp_remote_dir",
         }
         
         for env_key, config_key in direct_env_vars.items():

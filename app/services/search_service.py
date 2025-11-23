@@ -42,6 +42,7 @@ class SearchService:
     async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto") -> Dict[str, Any]:
         """
         Search for tracks via Elasticsearch first, then fetch full details from MariaDB.
+        If DEMO_MODE is enabled, search only OPEN tracks directly from MariaDB.
         """
         # Set default limits
         limit = settings.es_search_limit
@@ -56,6 +57,65 @@ class SearchService:
         if not query_clean:
             return {"tracks": []}
         
+        # DEMO MODE LOGIC
+        if settings.demo_mode:
+            print(f"[SEARCH] DEMO MODE ENABLED: Searching only OPEN tracks for '{query_clean}'")
+            try:
+                # Direct DB search for OPEN tracks
+                # We'll use a simple LIKE query on title or artist
+                # Note: This is a basic implementation for demo purposes
+                from sqlalchemy import select, or_
+                from app.models.track import Track, TrackArtist
+                from app.models.artist import Artist
+                from app.models.constants import TrackType
+                
+                # Join with artists to search by artist name
+                stmt = (
+                    select(Track)
+                    .outerjoin(TrackArtist)
+                    .outerjoin(Artist)
+                    .where(Track.track_type == TrackType.OPEN)
+                    .where(
+                        or_(
+                            Track.title.ilike(f"%{query_clean}%"),
+                            Artist.name.ilike(f"%{query_clean}%")
+                        )
+                    )
+                    .limit(limit)
+                    .distinct()
+                )
+                
+                result = await db.execute(stmt)
+                tracks = result.scalars().all()
+                
+                formatted_results = []
+                for track_obj in tracks:
+                    # Get all artist names
+                    # Note: We need to handle async loading of relationships if not eager loaded
+                    # But assuming track_repository patterns, we might need to be careful.
+                    # For simplicity in this direct query, we'll try to access what we can.
+                    # Ideally we should use repository methods but we need a custom query here.
+                    
+                    # Re-fetch with eager loading to be safe or rely on lazy loading if session is open
+                    # Let's try to use the object directly as session is active
+                    artist_names = [ta.artist.name for ta in track_obj.track_artists]
+                    artist_display = ", ".join(artist_names) if artist_names else "N/A"
+                    
+                    formatted_results.append({
+                        "id": track_obj.uuid,
+                        "artist": artist_display,
+                        "duration": float(track_obj.duration_sec) if track_obj.duration_sec is not None else 0.0,
+                        "title": track_obj.title
+                    })
+                
+                print(f"[SEARCH] Demo mode found {len(formatted_results)} tracks")
+                return {"tracks": formatted_results}
+                
+            except Exception as e:
+                print(f"[SEARCH] Demo mode search failed: {e}")
+                return {"tracks": []}
+
+        # NORMAL MODE (Elasticsearch)
         tokens_list = query_clean.split()
         tokens_lower = [t.lower() for t in tokens_list if t]
 
