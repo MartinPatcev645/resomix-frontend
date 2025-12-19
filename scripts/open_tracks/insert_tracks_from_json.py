@@ -61,12 +61,12 @@ from database.connection import AsyncSessionLocal
 JSON_PATH = "open_tracks.json"  # Path to JSON file from extract_tracks_info.py
 
 # Processing Configuration
-CONCURRENT_INSERTS = 30  # Number of tracks to insert concurrently (1-50 recommended)
-BATCH_COMMIT_SIZE = 100  # Commit every N tracks
+BATCH_COMMIT_SIZE = 100  # Commit every N tracks (for progress saving)
 
 # Test Mode Configuration
 TEST_MODE = False  # Set to True to run in test mode with limited tracks
 TEST_TRACK_LIMIT = 90  # Number of tracks to process in test mode
+
 
 
 # ============================================================================
@@ -304,40 +304,6 @@ async def insert_single_track(
     return True  # Inserted
 
 
-async def insert_track_batch(
-    db: AsyncSession,
-    cache: Cache,
-    tracks_batch: List[Dict[str, Any]]
-) -> Tuple[int, int]:
-    """
-    Insert a batch of tracks concurrently.
-    
-    Args:
-        db: Database session
-        cache: Entity cache
-        tracks_batch: List of track data dictionaries
-        
-    Returns:
-        Tuple of (inserted_count, skipped_count)
-    """
-    tasks = [
-        insert_single_track(db, cache, track_data)
-        for track_data in tracks_batch
-    ]
-    
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    
-    inserted = sum(1 for r in results if r is True)
-    skipped = sum(1 for r in results if r is False or isinstance(r, Exception))
-    
-    # Log any exceptions
-    for i, r in enumerate(results):
-        if isinstance(r, Exception):
-            logger.error(f"Error inserting track {tracks_batch[i].get('uuid')}: {r}")
-    
-    return inserted, skipped
-
-
 async def insert_from_json(data: List[Dict[str, Any]]) -> Tuple[int, int]:
     """
     Insert tracks from the JSON data.
@@ -355,42 +321,52 @@ async def insert_from_json(data: List[Dict[str, Any]]) -> Tuple[int, int]:
     cache = Cache()
 
     async with AsyncSessionLocal() as db:
-        await cache.preload(db)
+        try:
+            await cache.preload(db)
 
-        total_inserted = 0
-        total_skipped = 0
-        total_tracks = len(data)
+            total_inserted = 0
+            total_skipped = 0
+            total_tracks = len(data)
 
-        logger.info(f"Processing {total_tracks} tracks with {CONCURRENT_INSERTS} concurrent workers...")
+            logger.info(f"Processing {total_tracks} tracks sequentially with batch commits...")
 
-        # Process in batches
-        for i in range(0, total_tracks, CONCURRENT_INSERTS):
-            batch = data[i:i + CONCURRENT_INSERTS]
-            batch_inserted, batch_skipped = await insert_track_batch(db, cache, batch)
-            
-            total_inserted += batch_inserted
-            total_skipped += batch_skipped
-            
-            # Progress update
-            processed = i + len(batch)
-            percentage = (processed / total_tracks) * 100
+            # Process tracks sequentially (async session doesn't support concurrent operations)
+            for i, item in enumerate(data):
+                try:
+                    result = await insert_single_track(db, cache, item)
+                    if result:
+                        total_inserted += 1
+                    else:
+                        total_skipped += 1
+                except Exception as e:
+                    logger.error(f"Error inserting track {item.get('uuid')}: {e}")
+                    total_skipped += 1
+                
+                # Progress update every 30 tracks
+                if (i + 1) % 30 == 0 or (i + 1) == total_tracks:
+                    processed = i + 1
+                    percentage = (processed / total_tracks) * 100
+                    logger.info(
+                        f"[PROGRESS] {processed}/{total_tracks} ({percentage:.1f}%) - "
+                        f"Inserted: {total_inserted}, Skipped: {total_skipped}"
+                    )
+                
+                # Commit every BATCH_COMMIT_SIZE tracks
+                if total_inserted > 0 and total_inserted % BATCH_COMMIT_SIZE == 0:
+                    await db.commit()
+                    logger.info(f"[COMMIT] Saved progress: {total_inserted} inserted")
+
+            # Final commit
+            await db.commit()
             logger.info(
-                f"[PROGRESS] {processed}/{total_tracks} ({percentage:.1f}%) - "
-                f"Inserted: {total_inserted}, Skipped: {total_skipped}"
+                f"Done. Inserted {total_inserted} new tracks, skipped {total_skipped} existing/invalid records."
             )
+
+            return total_inserted, total_skipped
             
-            # Commit every BATCH_COMMIT_SIZE tracks
-            if total_inserted > 0 and total_inserted % BATCH_COMMIT_SIZE == 0:
-                await db.commit()
-                logger.info(f"[COMMIT] Saved progress: {total_inserted} inserted")
-
-        # Final commit
-        await db.commit()
-        logger.info(
-            f"Done. Inserted {total_inserted} new tracks, skipped {total_skipped} existing/invalid records."
-        )
-
-    return total_inserted, total_skipped
+        finally:
+            # Ensure session is properly closed
+            await db.close()
 
 
 # ============================================================================
