@@ -53,7 +53,7 @@ PARALLEL_WORKERS = 30  # Number of tracks to process in parallel (1-50 recommend
 FLUSH_EVERY = 100  # Save progress every N tracks
 
 # Test Mode Configuration
-TEST_MODE = False  # Set to True to run in test mode with limited tracks
+TEST_MODE = True  # Set to True to run in test mode with limited tracks
 TEST_TRACK_LIMIT = 90  # Number of tracks to process in test mode
 
 # File Size Limits
@@ -650,45 +650,57 @@ def scan_tracks(root_dir: str, existing_paths: set, limit: Optional[int] = None)
     total_discovered = 0
     root_dir = os.path.abspath(root_dir)
 
-    print(f"[SCAN] Walking directory tree: {root_dir}")
+    print(f"[SCAN] Scanning directory (non-recursive): {root_dir}")
 
-    for dirpath, _dirnames, filenames in os.walk(root_dir):
-        for name in filenames:
-            full_path = os.path.join(dirpath, name)
-            _, ext = os.path.splitext(name)
-            ext = ext.lower()
+    # Only scan files in the root directory, not subdirectories
+    try:
+        filenames = os.listdir(root_dir)
+    except OSError as e:
+        print(f"[SCAN] Error reading directory {root_dir}: {e}")
+        return [], 0
 
-            # Optional extension filter
-            if AUDIO_EXTENSIONS and ext not in AUDIO_EXTENSIONS:
-                continue
-
-            try:
-                size = os.path.getsize(full_path)
-            except OSError as e:
-                print(f"[SCAN] Skipping {full_path}: could not stat file ({e})")
-                continue
-
-            if size < MIN_SIZE_BYTES or size > MAX_SIZE_BYTES:
-                # Skip too small/too large tracks as requested
-                continue
-
-            total_discovered += 1
+    for name in filenames:
+        full_path = os.path.join(root_dir, name)
+        
+        # Skip directories
+        if os.path.isdir(full_path):
+            continue
             
-            # Skip if already exists
-            if full_path in existing_paths:
-                continue
-            
-            # Check limit
-            if limit is not None and len(new_records) >= limit:
-                continue
+        _, ext = os.path.splitext(name)
+        ext = ext.lower()
 
-            rec = TrackRecord(
-                uuid=generate_hyphenated_uuid(),
-                original_path=full_path,
-                filename=os.path.basename(full_path),
-                file_size=size,
-            )
-            new_records.append(rec)
+        # Optional extension filter
+        if AUDIO_EXTENSIONS and ext not in AUDIO_EXTENSIONS:
+            continue
+
+        try:
+            size = os.path.getsize(full_path)
+        except OSError as e:
+            print(f"[SCAN] Skipping {full_path}: could not stat file ({e})")
+            continue
+
+        if size < MIN_SIZE_BYTES or size > MAX_SIZE_BYTES:
+            # Skip too small/too large tracks as requested
+            continue
+
+        total_discovered += 1
+        
+        # Skip if already exists
+        if full_path in existing_paths:
+            continue
+        
+        # Check limit
+        if limit is not None and len(new_records) >= limit:
+            continue
+
+        rec = TrackRecord(
+            uuid=generate_hyphenated_uuid(),
+            original_path=full_path,
+            filename=os.path.basename(full_path),
+            file_size=size,
+        )
+        new_records.append(rec)
+
 
     print(f"[SCAN] Total discovered: {total_discovered} tracks")
     print(f"[SCAN] New tracks to add: {len(new_records)}")
