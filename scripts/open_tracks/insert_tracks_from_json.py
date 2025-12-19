@@ -65,7 +65,7 @@ CONCURRENT_INSERTS = 30  # Number of tracks to insert concurrently (1-50 recomme
 BATCH_COMMIT_SIZE = 100  # Commit every N tracks
 
 # Test Mode Configuration
-TEST_MODE = True  # Set to True to run in test mode with limited tracks
+TEST_MODE = False  # Set to True to run in test mode with limited tracks
 TEST_TRACK_LIMIT = 90  # Number of tracks to process in test mode
 
 
