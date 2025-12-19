@@ -94,3 +94,45 @@ mysql -u resomixAdmin -p resomix_db < user_data_back.sql
 MARIA_DB_NAME=resomix_db
 
 
+
+
+
+
+
+DEMO MODE USAGE (settings.demo_mode):
+
+. Search Service (app/services/search_service.py)
+Action: Changes search behavior to only search OPEN tracks directly from MariaDB
+2. Similarity Service (app/services/similarity_service.py)
+Action: Applies redaction to similarity results using apply_demo_mode_redaction()
+3. Playlist Service (app/services/playlist_service.py)
+Action: Applies redaction to playlist track data
+4. Operation Limit Evaluator (app/services/operation_limit_evaluator.py)
+Action: Disables operation limit checking when demo mode is OFF
+Normal Flow (demo mode ON): Enforces per-user limits on operations like playlist creation and Spotify transfers
+Impact: When demo mode is enabled, users have restricted operations (e.g., limited playlist creations, limited Spotify transfers)
+5. Similarity Controller (app/controllers/similarity_controller.py)
+Checks operation limits before allowing similarity uploads
+Applies redaction to response data
+Normal Flow: No limit checks, full metadata returned
+Impact: Limits how many playlists users can create from similarity results + redacts metadata
+6. Playlist Controller (app/controllers/playlist_controller.py)
+Action:
+Line 398: Applies redaction to playlist data
+Line 524: Blocks HLS playlist playback entirely (returns 403 Forbidden)
+Line 683: Checks operation limits before allowing playlist forking
+Normal Flow:
+Full metadata, HLS playback allowed, unlimited forking
+Impact:
+Redacted metadata
+No audio playback via HLS
+Limited playlist operations
+7. Spotify Transfer Controller (app/controllers/spotify_transfer_controller.py)
+Action: Checks operation limits before allowing Spotify playlist transfers
+Normal Flow: Unlimited Spotify transfers
+Impact: Users have a transfer limit (configured per user in user_operation_limits table)
+8. Demo Mode Utils (app/utils/demo_mode_utils.py)
+Function: 
+apply_demo_mode_redaction()
+Action: Redacts track metadata after the first 20 tracks
+Redaction Pattern:

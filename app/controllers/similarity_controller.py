@@ -65,21 +65,21 @@ class SimilarityController:
         # Log authentication status for debugging
         logger.info(f"SIMILARITY UPLOAD AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
 
-        if settings.demo_mode:
-            limit_check = await self.operation_limit_evaluator.check(
-                db,
-                user_id=current_user.id,
-                operation_code="playlist_create",
+        # Check operation limits before processing
+        limit_check = await self.operation_limit_evaluator.check(
+            db,
+            user_id=current_user.id,
+            operation_code="playlist_create",
+        )
+        if not limit_check.allowed:
+            response_content = format_response(
+                success=False,
+                error=limit_check.message or "Operation not permitted",
             )
-            if not limit_check.allowed:
-                response_content = format_response(
-                    success=False,
-                    error=limit_check.message or "Operation not permitted",
-                )
-                return JSONResponse(
-                    status_code=limit_check.status_code,
-                    content=response_content,
-                )
+            return JSONResponse(
+                status_code=limit_check.status_code,
+                content=response_content,
+            )
 
         # Validate and get the TOP_SK value using global settings
         validated_top_sk = settings.validate_and_get_top_sk(top_sk)
@@ -854,21 +854,21 @@ class SimilarityController:
         # Log authentication status for debugging
         logger.info(f"SIMILARITY BY ID AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}")
 
-        if settings.demo_mode:
-            limit_check = await self.operation_limit_evaluator.check(
-                db,
-                user_id=current_user.id,
-                operation_code="playlist_create",
+        # Check operation limits before processing
+        limit_check = await self.operation_limit_evaluator.check(
+            db,
+            user_id=current_user.id,
+            operation_code="playlist_create",
+        )
+        if not limit_check.allowed:
+            response_content = format_response(
+                success=False,
+                error=limit_check.message or "Operation not permitted",
             )
-            if not limit_check.allowed:
-                response_content = format_response(
-                    success=False,
-                    error=limit_check.message or "Operation not permitted",
-                )
-                return JSONResponse(
-                    status_code=limit_check.status_code,
-                    content=response_content,
-                )
+            return JSONResponse(
+                status_code=limit_check.status_code,
+                content=response_content,
+            )
 
         track = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
         track_int_id = track.id if track else None

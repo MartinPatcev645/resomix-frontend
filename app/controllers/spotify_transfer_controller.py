@@ -118,21 +118,20 @@ class SpotifyTransferController:
                     content=format_response(success=False, error=error_message)
                 )
             
-            # Demo-mode operational limit check for spotify_transfer
-            if settings.demo_mode:
-                limit_check = await self.operation_limit_evaluator.check(
-                    db,
-                    user_id=current_user.id,
-                    operation_code="spotify_transfer",
+            # Check operational limit for spotify_transfer
+            limit_check = await self.operation_limit_evaluator.check(
+                db,
+                user_id=current_user.id,
+                operation_code="spotify_transfer",
+            )
+            if not limit_check.allowed:
+                return JSONResponse(
+                    status_code=limit_check.status_code,
+                    content=format_response(
+                        success=False,
+                        error=limit_check.message or "Operation not permitted"
+                    ),
                 )
-                if not limit_check.allowed:
-                    return JSONResponse(
-                        status_code=limit_check.status_code,
-                        content=format_response(
-                            success=False,
-                            error=limit_check.message or "Operation not permitted"
-                        ),
-                    )
             
             # Call the service to perform the transfer
             result = await self.spotify_service.transfer_playlist_to_spotify(

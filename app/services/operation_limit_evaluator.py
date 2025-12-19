@@ -49,7 +49,7 @@ class OperationLimitEvaluator:
 
         Returns OperationLimitResult indicating whether the request should proceed.
         """
-        if not user_id or not settings.demo_mode:
+        if not user_id:
             return OperationLimitResult(allowed=True, status_code=200)
 
         operation = await db.execute(
