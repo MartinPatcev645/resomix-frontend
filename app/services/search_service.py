@@ -115,84 +115,102 @@ class SearchService:
                 print(f"[SEARCH] Demo mode search failed: {e}")
                 return {"tracks": []}
 
-        # NORMAL MODE (Elasticsearch)
-        tokens_list = query_clean.split()
-        tokens_lower = [t.lower() for t in tokens_list if t]
 
-        es_client = get_es_client()
+        # NORMAL MODE (Elasticsearch) - COMMENTED OUT - Using DB search instead
+        # tokens_list = query_clean.split()
+        # tokens_lower = [t.lower() for t in tokens_list if t]
+
+        # es_client = get_es_client()
+        # overall_start = time.perf_counter()
+
+        # # Build ES body based on mode
+        # if mode == "artist":
+        #     es_body = self.build_artist_query(query_clean, tokens_lower, limit)
+        # elif mode == "title":
+        #     es_body = self.build_title_query(query_clean, tokens_lower, limit)
+        # else:  # mode == "auto" (default)
+        #     # Use existing logic for "auto" mode
+        #     if len(tokens_list) <= 2:
+        #         es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
+        #     else:
+        #         es_body = self.build_long_query_es_body(query_clean, tokens_lower, limit)
+
+        # es_failed = False
+        # try:
+        #     es_resp = es_client.search(index="tracks-*", body=es_body)
+        #     hits = es_resp.get("hits", {}).get("hits", [])
+        #     # Collect uuid, dedupe, and score for deduplication
+        #     hit_items = [
+        #         {
+        #             "uuid": h.get("_source", {}).get("uuid"),
+        #             "dedupe": h.get("fields", {}).get("dedupe", "")[0],
+        #             "score": h.get("_score", 0.0),
+        #         }
+        #         for h in hits if h.get("_source")
+        #     ]
+        #     # Deduplicate based on punctuation-stripped dedupe
+        #     uuids = self.deduplicate_results_punctuation(hit_items)
+        # except Exception as e:
+        #     print(f"Elasticsearch query failed: {e}. Will fallback to DB-only search.")
+        #     es_failed = True
+        #     uuids = []
+
+        # formatted_results: List[Dict[str, Any]] = []
+
+        # if uuids:
+        #     tracks = await self.track_repository.async_get_tracks_by_uuids(db, uuids)
+        #     # Map uuid -> track object for quick lookup to retain ES order
+        #     track_map = {t.uuid: t for t in tracks}
+
+        #     for uuid in uuids:
+        #         track_obj = track_map.get(uuid)
+        #         if not track_obj:
+        #             continue
+
+        #         # Get all artist names
+        #         artist_names = [ta.artist.name for ta in track_obj.track_artists]
+        #         artist_display = ", ".join(artist_names) if artist_names else "N/A"
+        #         
+        #         formatted_results.append({
+        #             "id": uuid,
+        #             "artist": artist_display,
+        #             "duration": float(track_obj.duration_sec) if track_obj.duration_sec is not None else 0.0,
+        #             "title": track_obj.title
+        #         })
+        # elif es_failed:
+        #     # Fallback only when ES errored out
+        #     db_fallback_start = time.perf_counter()
+        #     db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
+        #     print(f"[Timing] Fallback DB text search took {(time.perf_counter()-db_fallback_start):.3f}s and returned {len(db_results)} tracks")
+        #     for track_data in db_results:
+        #         formatted_results.append({
+        #             "id": track_data.get("id"),
+        #             "artist": track_data.get("artist", "N/A"),
+        #             "duration": track_data.get("duration", 0.0),
+        #             "title": track_data.get("title", "N/A")
+        #         })
+        # else:
+        #     # No ES hits and ES succeeded: return empty results
+        #     print(f"[Timing] Elasticsearch returned 0 hits for mode '{mode}'; not falling back to DB.")
+
+        # print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
+        # return {"tracks": formatted_results}
+
+        # USING DIRECT DB SEARCH INSTEAD
         overall_start = time.perf_counter()
-
-        # Build ES body based on mode
-        if mode == "artist":
-            es_body = self.build_artist_query(query_clean, tokens_lower, limit)
-        elif mode == "title":
-            es_body = self.build_title_query(query_clean, tokens_lower, limit)
-        else:  # mode == "auto" (default)
-            # Use existing logic for "auto" mode
-            if len(tokens_list) <= 2:
-                es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
-            else:
-                es_body = self.build_long_query_es_body(query_clean, tokens_lower, limit)
-
-        es_failed = False
-        try:
-            es_resp = es_client.search(index="tracks-*", body=es_body)
-            hits = es_resp.get("hits", {}).get("hits", [])
-            # Collect uuid, dedupe, and score for deduplication
-            hit_items = [
-                {
-                    "uuid": h.get("_source", {}).get("uuid"),
-                    "dedupe": h.get("fields", {}).get("dedupe", "")[0],
-                    "score": h.get("_score", 0.0),
-                }
-                for h in hits if h.get("_source")
-            ]
-            # Deduplicate based on punctuation-stripped dedupe
-            uuids = self.deduplicate_results_punctuation(hit_items)
-        except Exception as e:
-            print(f"Elasticsearch query failed: {e}. Will fallback to DB-only search.")
-            es_failed = True
-            uuids = []
-
         formatted_results: List[Dict[str, Any]] = []
-
-        if uuids:
-            tracks = await self.track_repository.async_get_tracks_by_uuids(db, uuids)
-            # Map uuid -> track object for quick lookup to retain ES order
-            track_map = {t.uuid: t for t in tracks}
-
-            for uuid in uuids:
-                track_obj = track_map.get(uuid)
-                if not track_obj:
-                    continue
-
-                # Get all artist names
-                artist_names = [ta.artist.name for ta in track_obj.track_artists]
-                artist_display = ", ".join(artist_names) if artist_names else "N/A"
-                
-                formatted_results.append({
-                    "id": uuid,
-                    "artist": artist_display,
-                    "duration": float(track_obj.duration_sec) if track_obj.duration_sec is not None else 0.0,
-                    "title": track_obj.title
-                })
-        elif es_failed:
-            # Fallback only when ES errored out
-            db_fallback_start = time.perf_counter()
-            db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
-            print(f"[Timing] Fallback DB text search took {(time.perf_counter()-db_fallback_start):.3f}s and returned {len(db_results)} tracks")
-            for track_data in db_results:
-                formatted_results.append({
-                    "id": track_data.get("id"),
-                    "artist": track_data.get("artist", "N/A"),
-                    "duration": track_data.get("duration", 0.0),
-                    "title": track_data.get("title", "N/A")
-                })
-        else:
-            # No ES hits and ES succeeded: return empty results
-            print(f"[Timing] Elasticsearch returned 0 hits for mode '{mode}'; not falling back to DB.")
-
-        print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
+        
+        db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
+        print(f"[DB Search] Found {len(db_results)} tracks in {(time.perf_counter()-overall_start):.3f}s")
+        
+        for track_data in db_results:
+            formatted_results.append({
+                "id": track_data.get("id"),
+                "artist": track_data.get("artist", "N/A"),
+                "duration": track_data.get("duration", 0.0),
+                "title": track_data.get("title", "N/A")
+            })
+        
         return {"tracks": formatted_results}
     
     def build_short_query_es_body(self, query_text: str, tokens_kw: list[str], limit: int = 20):
