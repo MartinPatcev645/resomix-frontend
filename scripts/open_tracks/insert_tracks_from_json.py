@@ -26,8 +26,17 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import sys
 import time
+from pathlib import Path
 from typing import List, Dict, Any, Tuple
+
+# Add project root to Python path to allow imports from 'app' module
+# This script is in scripts/open_tracks/, so we go up 2 levels to reach project root
+script_dir = Path(__file__).resolve().parent
+project_root = script_dir.parent.parent
+sys.path.insert(0, str(project_root))
 
 from sqlalchemy import text, select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +50,7 @@ from app.utils.sanitization import (
     sanitize_album_title,
 )
 from database.connection import AsyncSessionLocal
+
 
 
 # ============================================================================
