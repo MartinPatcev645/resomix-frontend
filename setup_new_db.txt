@@ -1,0 +1,96 @@
+1. Create empty DB
+
+CREATE DATABASE resomix_db_open CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON resomix_db_open.* TO 'resomixAdmin'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+2. Import full schema with empty tables
+
+mysqldump -u resomixAdmin -p --no-data resomix_db > schema.sql
+mysql -u resomixAdmin -p resomix_db_open < schema.sql
+
+3. Dump only user tables' data
+
+mysqldump -u resomixAdmin -p \
+  --single-transaction \
+  --no-create-info \
+  resomix_db \
+  users \
+  email_verification_tokens \
+  password_reset_tokens \
+  two_factor_email_codes \
+  user_sessions \
+  user_auth_providers \
+  roles \
+  permissions \
+  role_permissions \
+  user_roles \
+  user_subscriptions \
+  waitlist \
+  operation_types \
+  user_operation_limits \
+  spotify_apps \
+  user_spotify_apps \
+  > user_data.sql
+
+4. Import dumped data to new database
+
+mysql -u resomixAdmin -p resomix_db_open < user_data.sql
+
+5. Fix Autoincrement tables dumped one by one (If empty table skip alter)
+
+SELECT MAX(id) FROM table;
+ALTER TABLE table AUTO_INCREMENT = <max_id + 100>;
+
+6. Change the db name in env
+
+MARIA_DB_NAME=resomix_db_open
+
+
+
+Switching back in future:
+
+1. Stop Fast api to freeze writes
+
+2. Dunp users tables from new database
+
+mysqldump -u resomixAdmin -p \
+  --single-transaction \
+  --no-create-info \
+  resomix_db_open \
+  users \
+  email_verification_tokens \
+  password_reset_tokens \
+  two_factor_email_codes \
+  user_sessions \
+  user_auth_providers \
+  roles \
+  permissions \
+  role_permissions \
+  user_roles \
+  user_subscriptions \
+  waitlist \
+  operation_types \
+  user_operation_limits \
+  spotify_apps \
+  user_spotify_apps \
+  > user_data_back.sql
+
+3. Truncate on old database (Make sure to create backup first)
+
+SET FOREIGN_KEY_CHECKS=0;
+TRUNCATE users;
+TRUNCATE email_verification_tokens;
+...
+SET FOREIGN_KEY_CHECKS=1;
+
+4. Put new data on old database 
+
+mysql -u resomixAdmin -p resomix_db < user_data_back.sql
+
+5. Change db name in env
+
+MARIA_DB_NAME=resomix_db
+
+

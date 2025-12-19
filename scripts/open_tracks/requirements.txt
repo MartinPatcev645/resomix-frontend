@@ -1,0 +1,2 @@
+# Requirements for extract_tracks_info.py standalone script
+mutagen
