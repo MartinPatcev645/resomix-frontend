@@ -97,6 +97,11 @@ MARIA_DB_NAME=resomix_db
 
 
 
+https://chatgpt.com/share/6945601b-3170-8012-8932-5afef17c1f77
+
+
+
+
 
 
 DEMO MODE USAGE (settings.demo_mode):
