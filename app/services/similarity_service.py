@@ -62,7 +62,7 @@ class SimilarityService:
         # Use centralized config (env already loaded & normalized in settings)
         self.similarity_server_url = settings.similarity_server_url
         self.similarity_segment_service = SimilaritySegmentService(self.similarity_server_url)
-        self.path_prefix_to_remove = "/home/usman/data/"  # Ensured this is the exact prefix.
+
 
     async def calculate_similarity_for_upload(
         self, 
@@ -117,18 +117,11 @@ class SimilarityService:
             raw_results = similarity_response.get("results", [])
             server_duration = similarity_response.get("duration")
             
-            # Convert server paths to clean paths for database lookup
-            abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
-            clean_paths = []
-            for abs_path in abs_paths_from_server:
-                if abs_path.startswith(self.path_prefix_to_remove):
-                    clean_path = abs_path[len(self.path_prefix_to_remove):]
-                    clean_paths.append(clean_path)
-                else:
-                    clean_paths.append(abs_path)
+            # Extract UUIDs from similarity server response
+            track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
             
-            # Get track details from database
-            db_details_map = await self.similarity_repository.async_get_track_details_by_paths(db, clean_paths)
+            # Get track details from database using UUIDs
+            db_details_map = await self.similarity_repository.async_get_track_details_by_uuids(db, track_uuids)
             
             # Enrich similarity results with database details
             enriched_similar_tracks = []
@@ -136,14 +129,11 @@ class SimilarityService:
             track_scores = []  # For playlist scores
             
             for res_item in raw_results:
-                abs_path = res_item.get("path")
-                if not abs_path: 
+                track_uuid = res_item.get("uuid")
+                if not track_uuid: 
                     continue
-
-                # Convert to clean path for database lookup
-                clean_path = abs_path[len(self.path_prefix_to_remove):] if abs_path.startswith(self.path_prefix_to_remove) else abs_path
                 
-                details = db_details_map.get(clean_path)
+                details = db_details_map.get(track_uuid)
                 if details:
                     enriched_similar_tracks.append({
                         "rank": res_item.get("rank"),
@@ -158,7 +148,7 @@ class SimilarityService:
                     # Collect track ID and score for playlist creation
                     track_ids.append(details.get("track_id"))
                     track_scores.append(res_item.get("score", 0.0))
-                # else: track details not found in DB for this path, so it's omitted from results
+                # else: track details not found in DB for this UUID, so it's omitted from results
 
             # Deduplicate tracks before returning
             target_count_after_deduplication = top_k - similarity_duplication_threshold
@@ -303,31 +293,35 @@ class SimilarityService:
             Dictionary containing similarity results or error information
         """
         queried_track_data: Optional[Dict[str, Any]] = None
+        queried_track_uuid: Optional[str] = None
+        
         try:
             queried_track_data = await self.similarity_repository.async_get_reference_track_details_by_path(db, server_track_path)
             if not queried_track_data:
                 print(f"Warning: Details for queried path '{server_track_path}' not found in local DB.")
+                return {"success": False, "error": f"Track at path '{server_track_path}' not found in database"}
+            
+            queried_track_uuid = queried_track_data.get("id")
+            if not queried_track_uuid:
+                print(f"Warning: No UUID found for queried path '{server_track_path}'")
+                return {"success": False, "error": "Track UUID not found"}
+                
         except Exception as e:
             print(f"Error fetching details for queried path '{server_track_path}' from DB: {e}")
+            return {"success": False, "error": f"Database error: {e}"}
 
-        payload = {"file_path": server_track_path, "top_k": top_k}
-        similarity_response = await self._call_similarity_server("/similarity/query-by-path/", data=payload)
+        # Use new UUID-based endpoint
+        payload = {"track_uuid": queried_track_uuid, "top_k": top_k}
+        similarity_response = await self._call_similarity_server("/similarity/query-by-uuid/", data=payload)
 
         if similarity_response.get("status") == "success":
             raw_results = similarity_response.get("results", [])
             
-            # Convert server paths to clean paths for database lookup
-            abs_paths_from_server = [res.get("path") for res in raw_results if res.get("path")]
-            clean_paths = []
-            for abs_path in abs_paths_from_server:
-                if abs_path.startswith(self.path_prefix_to_remove):
-                    clean_path = abs_path[len(self.path_prefix_to_remove):]
-                    clean_paths.append(clean_path)
-                else:
-                    clean_paths.append(abs_path)
+            # Extract UUIDs from similarity server response
+            track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
             
-            # Get track details from database
-            db_details_map = await self.similarity_repository.async_get_track_details_by_paths(db, clean_paths)
+            # Get track details from database using UUIDs
+            db_details_map = await self.similarity_repository.async_get_track_details_by_uuids(db, track_uuids)
             
             # Enrich similarity results with database details
             enriched_similar_tracks = []
@@ -335,14 +329,11 @@ class SimilarityService:
             track_scores = []  # For playlist scores
             
             for res_item in raw_results:
-                abs_path = res_item.get("path")
-                if not abs_path: 
+                track_uuid = res_item.get("uuid")
+                if not track_uuid: 
                     continue
-
-                # Convert to clean path for database lookup
-                clean_path = abs_path[len(self.path_prefix_to_remove):] if abs_path.startswith(self.path_prefix_to_remove) else abs_path
                 
-                details = db_details_map.get(clean_path)
+                details = db_details_map.get(track_uuid)
                 if details:
                     enriched_similar_tracks.append({
                         "rank": res_item.get("rank"),
@@ -357,7 +348,7 @@ class SimilarityService:
                     # Collect track ID and score for playlist creation
                     track_ids.append(details.get("track_id"))
                     track_scores.append(res_item.get("score", 0.0))
-                # else: track details not found in DB for this path, so it's omitted from results
+                # else: track details not found in DB for this UUID, so it's omitted from results
 
             # Deduplicate tracks before returning
             # The target count should be the original requested amount (top_k - threshold)
@@ -460,12 +451,12 @@ class SimilarityService:
 
             return response_data
         elif similarity_response.get("status") == "not_found":
-            # Path not found on similarity server, but we might still have its duration from our DB.
+            # UUID not found on similarity server, but we might still have its duration from our DB.
             # Return success=True because the API call to main server was fine, but data reflects the finding.
             return {
                 "queried_track": queried_track_data,
                 "similar_tracks": [],
-                "message": similarity_response.get("message", f"Track '{server_track_path}' not processed by similarity server.")
+                "message": similarity_response.get("message", f"Track UUID '{queried_track_uuid}' not processed by similarity server.")
             }
         else:
             # Error from similarity server
@@ -587,18 +578,16 @@ class SimilarityService:
             Track details with similar tracks
         """
         try:
-            # Get track file path by UUID
-            track_path = await self.track_repository.async_get_track_path_by_uuid(db, track_uuid)
-            if not track_path:
+            # Verify track exists in database
+            track = await self.track_repository.async_get_by_uuid(db, track_uuid)
+            if not track:
                 return {"success": False, "error": f"Track with UUID {track_uuid} not found"}
             
-            # Convert relative path to absolute path for similarity server
-            abs_path = self.path_prefix_to_remove + track_path if not track_path.startswith(self.path_prefix_to_remove) else track_path
-            
-            # Get similar tracks
+            # Get similar tracks using UUID-based endpoint
+            # We still use get_similarity_by_path but pass the file_path - it will internally convert to UUID
             similarity_result = await self.get_similarity_by_path(
                 db=db,
-                server_track_path=abs_path,
+                server_track_path=track.file_path,
                 top_k=max_similar,
                 similarity_duplication_threshold=0
             )

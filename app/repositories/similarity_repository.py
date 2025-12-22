@@ -228,6 +228,80 @@ class SimilarityRepository(BaseRepository[Track]):
             
         return details_map
     
+    async def async_get_track_details_by_uuids(
+        self, 
+        db: AsyncSession, 
+        track_uuids: List[str]
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Fetches full track details from MariaDB based on a list of UUIDs 
+        returned by the similarity server.
+
+        Args:
+            db: Database session
+            track_uuids: A list of track UUIDs.
+            
+        Returns:
+            A dictionary mapping UUID to track_details_dict.
+            Track_details_dict contains: id, track_id, filename, album, duration, artist, all_artists.
+        """
+        if not track_uuids:
+            return {}
+
+        uuids_to_query = set(track_uuids)
+        
+        if not uuids_to_query:
+            return {}
+
+        details_map: Dict[str, Dict[str, Any]] = {}
+        try:
+            # Use the existing track repository method for getting tracks by UUIDs
+            from ..repositories.track_repository import TrackRepository
+            track_repo = TrackRepository()
+            tracks = await track_repo.async_get_tracks_by_uuids(db, list(uuids_to_query))
+            
+            for track in tracks:
+                # Get primary artist (first artist in track_artists) for backward compatibility
+                artist_name = "N/A"
+                all_artists = []
+                
+                if track.track_artists:
+                    artist_name = track.track_artists[0].artist.name
+                    # Collect all artists for deduplication purposes
+                    all_artists = [ta.artist.name for ta in track.track_artists]
+                
+                # Extract filename from file_path
+                filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
+                
+                # Get album name
+                album_name = track.album.title if track.album else "N/A"
+                
+                # Get label name
+                label_name = track.label.name if track.label else "N/A"
+                
+                # Get genre name
+                genre_name = track.genre.name if track.genre else "N/A"
+                
+                track_data = {
+                    "id": track.uuid,  # Use UUID for compatibility with existing API
+                    "track_id": track.id,  # Add database ID for playlist creation
+                    "label": label_name,
+                    "duration": float(track.duration_sec) if track.duration_sec is not None else 0.0,
+                    "artist": artist_name,  # Primary artist for display
+                    "all_artists": all_artists,  # All artists for deduplication
+                    "title": track.title or "N/A",
+                    "year": track.year
+                }
+                details_map[track.uuid] = track_data
+            
+            print(f"MariaDB: Fetched details for {len(details_map)} out of {len(uuids_to_query)} unique UUIDs.")
+            
+        except Exception as e:
+            print(f"Error during MariaDB fetch for track details by UUIDs: {e}")
+            raise e
+            
+        return details_map
+    
     async def async_update_track_duration(
         self, 
         db: AsyncSession, 
