@@ -417,7 +417,12 @@ class TrackRepository(BaseRepository[Track]):
 
         stmt = (
             select(self.model)
-            .options(joinedload(self.model.track_artists).joinedload(TrackArtist.artist))
+            .options(
+                joinedload(self.model.album),
+                joinedload(self.model.label),
+                joinedload(self.model.genre),
+                joinedload(self.model.track_artists).joinedload(TrackArtist.artist)
+            )
             .where(self.model.uuid.in_(uuids))
         )
         result = await db.execute(stmt)
