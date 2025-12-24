@@ -29,18 +29,30 @@ class SimilarityByIdRequest(BaseModel):
         ge=1,
         le=100
     )
+    engine: Optional[str] = Field(None, description="Similarity engine (E1-E6)")
 
     @validator('top_sk')
     def validate_top_sk(cls, v):
         if v is not None and v not in ALLOWED_TOP_SK_VALUES:
             raise ValueError(f'top_sk must be one of {ALLOWED_TOP_SK_VALUES}')
         return v
+        
+    @validator('engine')
+    def validate_engine(cls, v):
+        if v is None:
+            return None
+        if v not in ["E1", "E2", "E3", "E4", "E5", "E6"]:
+            return None  # Return None if invalid instead of default, or raise error? User said "we will not pass anything... if we don't get any engine". So invalid -> None seems safe or just let it pass? Better to validate strict or None. 
+            # User said "anything we want to do with defaults etc we'll do there". 
+            # I will return None if invalid to avoid sending bad data.
+        return v
 
     class Config:
         json_schema_extra = {
             "example": {
                 "track_id": "507f1f77bcf86cd799439011",
-                "top_sk": 20
+                "top_sk": 20,
+                "engine": "E4"
             }
         }
 

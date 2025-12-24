@@ -72,7 +72,8 @@ class SimilarityService:
         track_uuid: str,
         top_k: int = 10, 
         similarity_duplication_threshold: int = 0,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        engine: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Sends uploaded audio bytes to the similarity server and returns enriched similar tracks.
@@ -85,6 +86,7 @@ class SimilarityService:
             top_k: Number of similar tracks to request from similarity server
             similarity_duplication_threshold: The threshold for removing duplicates before returning
             user_id: Optional user ID (internal BIGINT) to associate playlist with logged-in user
+            engine: Similarity engine (E1-E6). Defaults to None (server side default).
             
         Returns:
             Dictionary containing similarity results or error information
@@ -104,6 +106,8 @@ class SimilarityService:
         secure_filename = f"upload_{track_uuid}{file_ext}"
         files_data = {"file": (secure_filename, audio_bytes, "application/octet-stream")}
         request_data = {"top_k": top_k, "track_uuid": track_uuid}
+        if engine:
+            request_data["engine"] = engine
         similarity_response_task = self._call_similarity_server("/similarity/query-by-upload/", data=request_data, files=files_data)
 
         # Await both tasks
@@ -275,9 +279,11 @@ class SimilarityService:
         self, 
         db: AsyncSession,
         server_track_path: str, 
+        queried_track_uuid: str,
         top_k: int = 10, 
         similarity_duplication_threshold: int = 0,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        engine: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Gets similar tracks for a given server-side file path by calling the similarity server.
@@ -285,15 +291,16 @@ class SimilarityService:
         Args:
             db: Database session
             server_track_path: The file path to the track file (without /home/usman/data/ prefix)
+            queried_track_uuid: The UUID of the queried track (required for new similarity endpoint)
             top_k: Number of similar tracks to request from similarity server
             similarity_duplication_threshold: The threshold for removing duplicates before returning
             user_id: Optional user ID (internal BIGINT) to associate playlist with logged-in user
+            engine: Similarity engine (E1-E6). Defaults to None.
             
         Returns:
             Dictionary containing similarity results or error information
         """
         queried_track_data: Optional[Dict[str, Any]] = None
-        queried_track_uuid: Optional[str] = None
         
         try:
             queried_track_data = await self.similarity_repository.async_get_reference_track_details_by_path(db, server_track_path)
@@ -301,7 +308,10 @@ class SimilarityService:
                 print(f"Warning: Details for queried path '{server_track_path}' not found in local DB.")
                 return {"success": False, "error": f"Track at path '{server_track_path}' not found in database"}
             
-            queried_track_uuid = queried_track_data.get("id")
+            # Use provided UUID or valid from DB
+            if not queried_track_uuid:
+                 queried_track_uuid = queried_track_data.get("id")
+
             if not queried_track_uuid:
                 print(f"Warning: No UUID found for queried path '{server_track_path}'")
                 return {"success": False, "error": "Track UUID not found"}
@@ -312,6 +322,8 @@ class SimilarityService:
 
         # Use new UUID-based endpoint
         payload = {"track_uuid": queried_track_uuid, "top_k": top_k}
+        if engine:
+            payload["engine"] = engine
         similarity_response = await self._call_similarity_server("/similarity/query-by-uuid/", data=payload)
 
         if similarity_response.get("status") == "success":
@@ -508,7 +520,8 @@ class SimilarityService:
         db: AsyncSession,
         audio_bytes: bytes, 
         filename: str, 
-        max_results: int = 10
+        max_results: int = 10,
+        engine: str = "E4"
     ) -> Dict[str, Any]:
         """
         Simplified method to find similar tracks by uploaded audio.
@@ -518,6 +531,7 @@ class SimilarityService:
             audio_bytes: Audio file bytes
             filename: Original filename
             max_results: Maximum number of results
+            engine: Similarity engine (E1-E6)
             
         Returns:
             Similarity results
@@ -533,14 +547,16 @@ class SimilarityService:
             original_filename=filename,
             track_uuid=placeholder_uuid,
             top_k=max_results,
-            similarity_duplication_threshold=0
+            similarity_duplication_threshold=0,
+            engine=engine
         )
 
     async def find_similar_tracks_by_file_path(
         self, 
         db: AsyncSession,
         file_path: str, 
-        max_results: int = 10
+        max_results: int = 10,
+        engine: str = "E4"
     ) -> Dict[str, Any]:
         """
         Simplified method to find similar tracks by file path.
@@ -549,6 +565,7 @@ class SimilarityService:
             db: Database session
             file_path: Absolute file path
             max_results: Maximum number of results
+            engine: Similarity engine (E1-E6)
             
         Returns:
             Similarity results
@@ -557,14 +574,16 @@ class SimilarityService:
             db=db,
             server_track_path=file_path,
             top_k=max_results,
-            similarity_duplication_threshold=0
+            similarity_duplication_threshold=0,
+            engine=engine
         )
 
     async def get_track_by_uuid_with_similarity(
         self, 
         db: AsyncSession,
         track_uuid: str, 
-        max_similar: int = 10
+        max_similar: int = 10,
+        engine: str = "E4"
     ) -> Dict[str, Any]:
         """
         Get track details and find similar tracks by UUID.
@@ -573,6 +592,7 @@ class SimilarityService:
             db: Database session
             track_uuid: Track UUID
             max_similar: Maximum number of similar tracks
+            engine: Similarity engine (E1-E6)
             
         Returns:
             Track details with similar tracks
@@ -589,7 +609,8 @@ class SimilarityService:
                 db=db,
                 server_track_path=track.file_path,
                 top_k=max_similar,
-                similarity_duplication_threshold=0
+                similarity_duplication_threshold=0,
+                engine=engine
             )
             
             return similarity_result

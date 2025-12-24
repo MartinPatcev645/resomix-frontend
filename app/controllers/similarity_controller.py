@@ -55,6 +55,7 @@ class SimilarityController:
         file: UploadFile,
         current_user: User,
         top_sk: Optional[int] = None,
+        engine: Optional[str] = None,
     ) -> JSONResponse:
         """
         Process an audio file: first upload to database, then return similar tracks.
@@ -108,7 +109,8 @@ class SimilarityController:
             metadata={
                 "requested_top_sk": top_sk,
                 "validated_top_sk": validated_top_sk,
-                "file_size": file.size
+                "file_size": file.size,
+                "engine": engine
             },
             filename=file.filename,
             file_size=file.size,
@@ -308,6 +310,163 @@ class SimilarityController:
             file_size=file.size,
             operation="similarity_upload"
         )
+
+        # Use audio service to validate file
+        is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
+        
+        if is_ffmpeg_available:
+            is_valid_audio = self.audio_service.validate_audio_format(audio_bytes, secure_filename)
+            if not is_valid_audio:
+                duration_ms = (time.time() - start_time) * 1000
+                self.logging_service.log(
+                    async_db=db,
+                    level="WARNING",
+                    category="SIMILARITY",
+                    action="audio_format_validation_failed",
+                    message="Invalid audio format detected during similarity upload",
+                    correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=415,
+                    duration_ms=duration_ms,
+                    context="Audio format validation during similarity upload",
+                    metadata={
+                        "error": "File is not valid audio",
+                        "ffmpeg_available": is_ffmpeg_available,
+                        "validation_step": "audio_format_check",
+                        "file_content_type": file.content_type
+                    },
+                    filename=file.filename,
+                    file_size=file.size,
+                    operation="similarity_upload"
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    content=format_response(
+                        success=False,
+                        error="The uploaded file does not contain valid audio streams according to our analysis."
+                    )
+                )
+            
+            # Audio validation passed, now upload to database first
+            try:
+                # Reset file pointer for track upload service
+                await file.seek(0)
+                
+                # STEP 1: Upload track to database with metadata extraction
+                upload_result = await self.track_upload_service.upload_track_to_database(
+                    db,
+                    file, 
+                    audio_bytes
+                )
+                
+                if not upload_result.get("success", False):
+                    duration_ms = (time.time() - start_time) * 1000
+                    self.logging_service.log(
+                        async_db=db,
+                        level="ERROR",
+                        category="SIMILARITY",
+                        action="track_upload_failed",
+                        message="Failed to upload track to database during similarity processing",
+                        correlation_id=correlation_id,
+                        request=request,
+                        method=request.method,
+                        endpoint=str(request.url.path),
+                        path=str(request.url),
+                        query_params=dict(request.query_params),
+                        client_ip=request.client.host if request.client else None,
+                        user_agent=request.headers.get("user-agent"),
+                        referer=request.headers.get("referer"),
+                        status_code=500,
+                        duration_ms=duration_ms,
+                        context="Track upload phase of similarity processing",
+                        metadata={
+                            "error": "Failed to upload track to database",
+                            "upload_result": upload_result,
+                            "processing_step": "track_upload",
+                            "ffmpeg_available": True
+                        },
+                        filename=file.filename,
+                        file_size=file.size,
+                        operation="similarity_upload"
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content=format_response(
+                            success=False, 
+                            error=f"Failed to upload track to database: {upload_result.get('error', 'Unknown error')}"
+                        )
+                    )
+                
+                # STEP 2: Now perform similarity analysis
+                # Extract user_id if user is logged in
+                user_id = current_user.id if current_user else None
+                
+                # Pass original filename (not secure_filename) so similarity service can extract proper extension
+                original_filename = file.filename if file.filename else "upload.mp3"
+                
+                similarity_results = await self.similarity_service.calculate_similarity_for_upload(
+                    db=db,
+                    audio_bytes=audio_bytes, 
+                    original_filename=original_filename, 
+                    track_uuid=upload_result["uuid"],
+                    top_k=actual_top_k,
+                    similarity_duplication_threshold=duplication_threshold,
+                    user_id=user_id,
+                    engine=engine
+                )
+        
+                
+            except Exception as e:
+                import traceback
+                error_trace = traceback.format_exc()
+                print(f"Error during audio processing/upload: {e}")
+                print(error_trace)
+                
+                duration_ms = (time.time() - start_time) * 1000
+                self.logging_service.log(
+                    async_db=db,
+                    level="ERROR",
+                    category="SIMILARITY",
+                    action="upload_processing_exception",
+                    message="Exception during similarity upload processing",
+                    correlation_id=correlation_id,
+                    request=request,
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    path=str(request.url),
+                    query_params=dict(request.query_params),
+                    client_ip=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                    referer=request.headers.get("referer"),
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    duration_ms=duration_ms,
+                    error=e,
+                    stack_trace=error_trace,
+                    context="Track upload and processing phase",
+                    metadata={
+                        "error": str(e),
+                        "processing_step": "upload_and_analyze",
+                        "ffmpeg_available": True
+                    },
+                    filename=file.filename,
+                    file_size=file.size,
+                    operation="similarity_upload"
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(
+                        success=False,
+                        error=f"An error occurred during processing: {str(e)}"
+                    )
+                )
+
 
         # Use audio service to validate file
         is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
@@ -836,6 +995,7 @@ class SimilarityController:
         track_id: str,
         current_user: User,
         top_sk: Optional[int] = None,
+        engine: Optional[str] = None,
     ) -> JSONResponse:
         """
         Get similar tracks for a track identified by its UUID.
@@ -844,6 +1004,7 @@ class SimilarityController:
             db: Database session
             track_id: The track UUID to find similar tracks for
             top_sk: Number of similar tracks to return
+            engine: Similarity engine (E1-E6)
             
         Returns:
             JSON response with similar tracks
@@ -948,9 +1109,11 @@ class SimilarityController:
             similarity_results = await self.similarity_service.get_similarity_by_path(
                 db=db,
                 server_track_path=server_track_path,
+                queried_track_uuid=track_id,
                 top_k=actual_top_k,
                 similarity_duplication_threshold=duplication_threshold,
-                user_id=user_id
+                user_id=user_id,
+                engine=engine
             )
             duration_ms = (time.time() - start_time) * 1000
             # Check if similarity processing failed

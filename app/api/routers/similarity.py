@@ -82,6 +82,7 @@ async def get_similarity_upload_endpoint(
     request: Request,
     file: UploadFile = File(..., description="Audio file to analyze for similarity (max 100MB)"), 
     top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
+    engine: Optional[str] = Query(None, description="Similarity engine (E1-E6)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
     current_user: User = Depends(get_current_user)
@@ -97,6 +98,7 @@ async def get_similarity_upload_endpoint(
     
     - **file**: The audio file to upload and analyze (max 100MB)
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
+    - **engine**: Similarity engine to use (E1-E6). Optional.
     
     Note: If authenticated via JWT, user context is automatically associated with the upload.
     """
@@ -106,6 +108,7 @@ async def get_similarity_upload_endpoint(
         file=file,
         current_user=current_user,
         top_sk=top_sk,
+        engine=engine
     )
 
 
@@ -145,6 +148,7 @@ async def get_similarity_by_id_endpoint(
     
     - **track_id**: The database ID of the track to find similar tracks for.
     - **top_sk**: Number of similar tracks to return (10, 20, 50, or 100). Defaults to 20 if not provided or invalid.
+    - **engine**: Similarity engine to use (E1-E6). Optional.
     
     Note: If authenticated via JWT, user context is automatically associated.
     """
@@ -154,6 +158,7 @@ async def get_similarity_by_id_endpoint(
         track_id=request_data.track_id,
         current_user=current_user,
         top_sk=request_data.top_sk,
+        engine=request_data.engine
     )
 
 
