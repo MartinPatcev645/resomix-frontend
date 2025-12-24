@@ -25,27 +25,27 @@ export function useTrackSimilarity() {
 
   // Playlist store – we will save API response here
   const { setPlaylistResponse } = usePlaylistStore();
-  
-  // Get topSk from player store
-  const { topSk } = usePlayerStore();
-  
+
+  // Get topSk and engine from player store
+  const { topSk, engine } = usePlayerStore();
+
   // Terms acceptance hook
   const { checkTermsAcceptance } = useTermsAcceptance();
 
   const handleSelectTrack = useCallback(
     async (trackId: string | number, parameter: boolean = false) => {
       if (!trackId) return;
-      
+
       // Reset state first
       setError(null);
       setResponse(null);
       setProgress(0);
       setUploading(false);
       setIsFileUpload(false);
-      
+
       // Check terms acceptance before proceeding (don't show overlay yet)
       const termsAccepted = await checkTermsAcceptance();
-      
+
       if (!termsAccepted) {
         // User dismissed terms without accepting
         if (parameter) {
@@ -54,12 +54,12 @@ export function useTrackSimilarity() {
         }
         return;
       }
-      
+
       // Now show overlay after terms are accepted
       setOverlay(true);
 
       try {
-        const result = await getSimilarityForSelectedTrack(String(trackId), topSk);
+        const result = await getSimilarityForSelectedTrack(String(trackId), topSk, engine);
 
         if (result && result.success) {
           // Segmentation polling removed - no longer waiting for segments to be generated
@@ -89,7 +89,7 @@ export function useTrackSimilarity() {
         setOverlay(false);
       }
     },
-    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, checkTermsAcceptance],
+    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, engine, checkTermsAcceptance],
   );
 
   return {
