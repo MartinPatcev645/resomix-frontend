@@ -4,14 +4,14 @@ import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } from "@/components/index.ts";
 import { Tooltip } from "@resomix/ui";
-import { usePlayerStore } from "@resomix/stores";
+import { usePlayerStore, type EngineCode } from "@resomix/stores";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
 
-    // Get topSk state and setter from the store
-    const { topSk, setTopSk } = usePlayerStore();
-    
+    // Get topSk and engine state from the store
+    const { topSk, setTopSk, engine, setEngine } = usePlayerStore();
+
     const handleSearchClick = () => {
         setActiveComponent('search');
     };
@@ -24,6 +24,10 @@ const UploadOne: React.FC = () => {
         setTopSk(Number(e.target.value));
     };
 
+    const handleEngineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setEngine(e.target.value as EngineCode);
+    };
+
     const { handleSelectTrack } = useTrackSimilarity();
 
     const onTrackSelect = (track: SearchResult) => {
@@ -32,6 +36,56 @@ const UploadOne: React.FC = () => {
 
     return (
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
+            {/* Engine Selector - Temporary for testing */}
+            <div className="w-full bg-[var(--color-primary-background)] flex justify-end items-center gap-[var(--px-8)] mb-[var(--px-10)] px-[var(--px-4)]">
+                <Tooltip message="Select similarity engine algorithm. 'Auto' lets the server choose the default." displayOnClick={true}>
+                    <div className="flex items-center gap-[var(--px-6)]">
+                        <label
+                            htmlFor="engine-select-mobile"
+                            className="text-[length:var(--px-9)] font-fira font-light opacity-70"
+                        >
+                            Engine
+                        </label>
+                        <div className="hover:cursor-pointer">
+                            <img src={InfoSvg} alt="Info" aria-label="Info" draggable={false} className="w-[var(--px-10)] h-[var(--px-10)]" />
+                        </div>
+                    </div>
+                </Tooltip>
+                <div
+                    className="relative w-[var(--px-65)] h-[var(--px-26)] border border-dotted border-slate-200 flex items-center justify-center gap-[var(--px-6)] text-[length:var(--px-11)] font-fira font-extralight text-[var(--color-primary)]"
+                >
+                    <select
+                        aria-label="Similarity engine"
+                        id="engine-select-mobile"
+                        value={engine}
+                        onChange={handleEngineChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none upload-settings-select"
+                    >
+                        <option value="E1">E1</option>
+                        <option value="E2">E2</option>
+                        <option value="E3">E3</option>
+                        <option value="E4">E4</option>
+                        <option value="E5">E5</option>
+                        <option value="E6">E6</option>
+                    </select>
+                    <span className="pointer-events-none">{engine}</span>
+                    <svg
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 52 53"
+                        className="w-[var(--px-10)] h-[var(--px-10)] pointer-events-none"
+                        fill="none"
+                    >
+                        <path
+                            d="M41.6639 19.2529L26.5404 34.3764L11.417 19.2529"
+                            stroke="white"
+                            strokeWidth={5}
+                            strokeLinecap="square"
+                            strokeDasharray="1 1"
+                        />
+                    </svg>
+                </div>
+            </div>
             <div className="w-full bg-[var(--color-primary-background)] flex justify-between py-[var(--px-14)]">
                 <div className="">
                     <h2 className="text-[length:var(--px-18)] font-semibold font-helvetica uppercase">
@@ -47,7 +101,7 @@ const UploadOne: React.FC = () => {
                         className="relative w-[var(--px-97)] h-[var(--px-26)] border border-dotted border-slate-200 flex items-center justify-center gap-[var(--px-6)] text-[length:var(--px-11)] font-fira font-extralight text-[var(--color-primary)]"
                     >
                         {/* Invisible native select covers full area to keep accessibility & native picker */}
-                        <select 
+                        <select
                             aria-label="Upload results count"
                             id="upload-results-count-select-mobile"
                             value={topSk}
@@ -81,7 +135,7 @@ const UploadOne: React.FC = () => {
                     </div>
                     <Tooltip message="Adjust How deep Resomix should dig. You can choose how many matches you want the platform to suggest." displayOnClick={true}>
                         <div className="flex items-center gap-[var(--px-6)]">
-                            <label 
+                            <label
                                 htmlFor="upload-results-count-select-mobile"
                                 className="text-[length:var(--px-9)] font-fira font-light"
                             >

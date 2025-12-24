@@ -60,7 +60,7 @@ export function useUpload() {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
-    const { topSk, setUploadedCoverArt } = usePlayerStore();
+    const { topSk, engine, setUploadedCoverArt } = usePlayerStore();
     const { checkTermsAcceptance } = useTermsAcceptance();
 
     const inputAccept = useMemo(() => {
@@ -76,7 +76,7 @@ export function useUpload() {
         if (!termsAccepted) {
             return; // User dismissed terms without accepting
         }
-        
+
         if (inputRef.current) {
             inputRef.current.click();
         }
@@ -105,7 +105,7 @@ export function useUpload() {
         }
 
         setFile(file);
-        
+
         // Extract cover art from uploaded file
         try {
             const coverArt = await extractCoverArt(file, { debug: false });
@@ -114,14 +114,14 @@ export function useUpload() {
             console.warn('Failed to extract cover art:', error);
             setUploadedCoverArt(null);
         }
-        
+
         // Save uploaded file URL globally for playback previews
         try {
             const objectUrl = URL.createObjectURL(file);
             const { setUploadedUrl } = usePlayerStore.getState();
             setUploadedUrl(objectUrl);
-        } catch {/* no-op */}
-        
+        } catch {/* no-op */ }
+
         setProgress(0);
         setError(null);
         setResponse(null);
@@ -135,7 +135,7 @@ export function useUpload() {
                 // Ensure progress is properly bounded and rounded
                 const boundedProgress = Math.min(100, Math.max(0, p));
                 setProgress(Math.round(boundedProgress));
-            });
+            }, engine);
             if (result && result.success) {
                 // Segmentation polling removed - no longer waiting for segments to be generated
                 // const playlistId = (result as any).data?.playlist?.id as string | undefined;
@@ -166,7 +166,7 @@ export function useUpload() {
             setUploading(false);
             setOverlay(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt]);
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, engine, setUploadedCoverArt]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];
