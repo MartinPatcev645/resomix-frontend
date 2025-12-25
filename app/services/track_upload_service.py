@@ -19,7 +19,6 @@ import os
 import re
 import html  
 import logging
-import secrets
 import uuid
 from typing import Dict, Tuple, List, Optional, BinaryIO, Any
 from fastapi import UploadFile
@@ -232,143 +231,12 @@ class TrackUploadService:
         Returns:
             Dict containing the track UUID and insertion status
         """
-        try:
-            # Generate new UUID for the track
-            track_uuid = generate_track_uuid()
-            logger.info(f"Generated UUID for track: {track_uuid}")
-            
-            # Generate secure temporary filename for processing (NEVER trust uploaded filename)
-            secure_filename = f"upload_{track_uuid}.tmp"
-            
-            # Extract metadata using the existing service
-            file.file.seek(0)  # Reset file pointer
-            metadata = self.metadata_service.extract_metadata(file.file, secure_filename, mode="limited")
-            
-            if "error" in metadata:
-                raise Exception(f"Metadata extraction failed: {metadata['error']}")
-            
-            # Calculate file size
-            file_size = len(file_content)
-            
-            # Extract basic info with defaults - NEVER use uploaded filename
-            title = metadata.get("Title", "") or "Uploaded Track"
-            year = self._parse_year(metadata.get("Year"))
-            
-            # Parse artist names
-            artist_field = metadata.get("Artist", "")
-            artist_names = parse_artist_names(artist_field) or ["Unknown"]
-            
-            # Extract label and genre
-            label_name = metadata.get("Label", "").strip()
-            genre_name = extract_first_genre(metadata.get("Genre", ""))
-            
-            # Extract album
-            album_title = metadata.get("Album", "").strip()
-            
-            # Set file paths - use secure generated filename, NEVER trust uploaded filename
-            file_path = f"upload_{track_uuid}.tmp"
-            preview_path = f"/mnt/data/UPLOADS/{track_uuid}.mp3"
-            
-            # Insert into database using async session
-            # Preload cache
-            logger.info("Preloading database cache...")
-            await self.cache.preload(db)
-            
-            # Get or create artists
-            artist_ids = []
-            for name in artist_names:
-                artist_id = await self.cache.artist(db, name)
-                artist_ids.append(artist_id)
-            primary_artist_id = artist_ids[0]
-            
-            # Get or create label (optional)
-            label_id = None
-            if label_name:
-                label_id = await self.cache.label(db, label_name)
-            
-            # Get or create genre
-            genre_id = await self.cache.genre(db, genre_name)
-            
-            # Get or create album (optional)
-            album_id = None
-            if album_title:
-                album_id = await self.cache.album(db, album_title, primary_artist_id)
-            
-            # Insert track
-            track_data = {
-                "uuid": track_uuid,
-                "album_id": album_id,
-                "label_id": label_id,
-                "genre_id": genre_id,
-                "title": title[:255],  # Ensure it fits in the column
-                "year": year,
-                "duration_sec": None,  # Will be updated from similarity server response
-                "file_path": file_path[:500],  # Ensure it fits in the column
-                "preview_path": preview_path,
-                "file_size": file_size,
-                "type": "upload"  # Set the type to "upload"
-            }
-            
-            logger.info(f"Inserting track: {track_data}")
-            
-            # Insert track using ORM
-            track_insert = insert(Track).values(
-                uuid=track_data["uuid"],
-                album_id=track_data["album_id"],
-                label_id=track_data["label_id"],
-                genre_id=track_data["genre_id"],
-                title=track_data["title"],
-                year=track_data["year"],
-                duration_sec=track_data["duration_sec"],
-                file_path=track_data["file_path"],
-                preview_path=track_data["preview_path"],
-                file_size=track_data["file_size"],
-                type=track_data["type"]
-            )
-            await db.execute(track_insert)
-            
-            # Get the track ID using ORM
-            track_id_result = await db.execute(
-                select(Track.id).where(Track.uuid == track_uuid)
-            )
-            track_row = track_id_result.first()
-            if track_row is None:
-                raise Exception("Failed to insert track or retrieve track ID")
-            
-            track_id = track_row[0]
-            
-            # Insert track-artist relationships using ORM
-            for artist_id in artist_ids:
-                ta_insert = insert(TrackArtist).values(
-                    track_id=track_id,
-                    artist_id=artist_id
-                )
-                await db.execute(ta_insert)
-            
-            # Commit the transaction
-            await db.commit()
-            
-            logger.info(f"Successfully inserted track {track_uuid} with ID {track_id}")
-            
-            return {
-                "success": True,
-                "uuid": track_uuid,
-                "track_id": track_id,
-                "metadata": metadata,
-                "file_size": file_size,
-                "artist_names": artist_names,
-                "album_title": album_title,
-                "label_name": label_name,
-                "genre_name": genre_name
-            }
-                
-        except Exception as e:
-            await db.rollback()
-            logger.error(f"Error uploading track to database: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+        return await self._process_and_insert_track(
+            db=db,
+            file=file,
+            file_content=file_content,
+            track_type=TrackType.UPLOAD
+        )
     
     def _parse_year(self, year_str: Optional[str]) -> Optional[int]:
         """Parse year from string, handling various formats."""
@@ -412,8 +280,35 @@ class TrackUploadService:
         Returns:
             Dict containing the track UUID and insertion status
         """
+        return await self._process_and_insert_track(
+            db=db,
+            file=file,
+            file_content=file_content,
+            track_uuid=track_uuid,
+            track_type=track_type,
+            duration_sec=duration_sec,
+            full_path=full_path
+        )
+
+    async def _process_and_insert_track(
+        self, 
+        db: AsyncSession,
+        file: UploadFile, 
+        file_content: bytes,
+        track_uuid: Optional[str] = None,
+        track_type: str = TrackType.UPLOAD,
+        duration_sec: Optional[float] = None,
+        full_path: Optional[str] = None
+    ) -> Dict[str, any]:
+        """
+        Internal method to handle the core logic of processing and inserting a track.
+        """
         try:
-            logger.info(f"Using provided UUID for track: {track_uuid}")
+            # Use provided UUID or generate new one
+            if not track_uuid:
+                track_uuid = generate_track_uuid()
+                
+            logger.info(f"Processing track upload with UUID: {track_uuid} (Type: {track_type})")
             
             # Generate secure temporary filename for processing (NEVER trust uploaded filename)
             secure_filename = f"upload_{track_uuid}.tmp"
@@ -447,6 +342,7 @@ class TrackUploadService:
             file_path = full_path if full_path else f"upload_{track_uuid}.tmp"
             
             # Set preview path based on track type
+            # NOTE: logic preserved from original implementation
             if track_type == TrackType.ELECTROBUZZ:
                 preview_path = f"/mnt/data/PREVIEWS/{track_uuid}.mp3"
             else:
@@ -489,7 +385,7 @@ class TrackUploadService:
                 "file_path": file_path[:500],  # Ensure it fits in the column
                 "preview_path": preview_path,
                 "file_size": file_size,
-                "type": track_type  # Use the provided track type
+                "type": track_type
             }
             
             logger.info(f"Inserting track with type '{track_type}': {track_data}")
