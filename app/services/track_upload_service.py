@@ -20,6 +20,7 @@ import re
 import html  
 import logging
 import secrets
+import uuid
 from typing import Dict, Tuple, List, Optional, BinaryIO, Any
 from fastapi import UploadFile
 
@@ -46,8 +47,8 @@ DELIM_PATTERN = re.compile(
 
 
 def generate_track_uuid() -> str:
-    """Generate a random 24-character hex UUID like the MongoDB ObjectIds."""
-    return secrets.token_hex(12)  # 12 bytes = 24 hex characters
+    """Generate a random standard UUID (v4)."""
+    return str(uuid.uuid4())
 
 
 def extract_first_genre(genre_string: str) -> str:

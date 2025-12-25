@@ -133,11 +133,11 @@ class SimilarityService:
             track_scores = []  # For playlist scores
             
             for res_item in raw_results:
-                track_uuid = res_item.get("uuid")
-                if not track_uuid: 
+                sim_track_uuid = res_item.get("uuid")
+                if not sim_track_uuid: 
                     continue
                 
-                details = db_details_map.get(track_uuid)
+                details = db_details_map.get(sim_track_uuid)
                 if details:
                     enriched_similar_tracks.append({
                         "rank": res_item.get("rank"),
