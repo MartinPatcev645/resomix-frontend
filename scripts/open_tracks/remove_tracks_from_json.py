@@ -62,7 +62,7 @@ TEST_MODE = False  # Set to True to run in test mode with limited deletions
 TEST_TRACK_LIMIT = 50  # Number of tracks to process in test mode
 
 # Dry Run Mode
-DRY_RUN = True  # Set to True to preview deletions without executing
+DRY_RUN = False  # Set to True to preview deletions without executing
 
 
 # ============================================================================
