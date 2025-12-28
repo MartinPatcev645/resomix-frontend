@@ -177,7 +177,8 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         {!isInput && (
                             <div className="w-full flex flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
-                                    window.location.href = `${BASE_BETA_URL}/?id=${trackId}`;
+                                    onClose?.();
+                                    window.open(`${BASE_BETA_URL}/?id=${trackId}`, '_blank');
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
                             </div>
                         )}
@@ -185,7 +186,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-tidal-button opacity-50" text="Export to TIDAL" customWidth="w-full" onClick={() => setIsTidalOpen(true)} id={`playlist-hero-export-tidal`} disabled aria-disabled="true" />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />                        
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />
                             </div>
                         )}
                         <div className="w-full flex flex-col">

@@ -1,8 +1,8 @@
 import React from "react";
-import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon } from "@resomix/ui";
+import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, ToggleButton } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
@@ -39,10 +39,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
-  // const { uploadedUrl } = usePlayerStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
-  void autoplay;
-  void setAutoplay;
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -90,6 +87,13 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   className="playlist-action-button"
                   id="playlist-hero-rename-button"
+                />
+                <ToggleButton
+                  text="Autoplay"
+                  customWidth="min-w-[var(--px-100)]"
+                  isOn={autoplay}
+                  onToggle={setAutoplay}
+                  id="playlist-hero-autoplay-toggle"
                 />
                 <IconButton
                   text="Rate Playlist"
@@ -172,22 +176,22 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   </div>
                 </div>
               </div>
-                <div className={`gap-[var(--px-8)] mt-[var(--px-6)] ${showMeta ? 'flex' : 'hidden'}`}>
-                  <div className="inline-flex py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
-                  <div className="py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white">
-                    {playlistData?.playlist.is_public ? (
-                      <>
-                        <PublicIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
-                        Public
-                      </>
-                    ) : (
-                      <>
-                        <PrivateIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
-                        Private
-                      </>
-                    )}
-                  </div>
+              <div className={`gap-[var(--px-8)] mt-[var(--px-6)] ${showMeta ? 'flex' : 'hidden'}`}>
+                <div className="inline-flex py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
+                <div className="py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white">
+                  {playlistData?.playlist.is_public ? (
+                    <>
+                      <PublicIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
+                      Public
+                    </>
+                  ) : (
+                    <>
+                      <PrivateIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
+                      Private
+                    </>
+                  )}
                 </div>
+              </div>
               <div className="flex flex-col gap-[var(--px-10)]">
                 {/* Hidden Meta Info */}
                 <div className={`flex gap-[var(--px-2)] text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] my-[var(--px-5)] font-light font-fira leading-[var(--px-7)] items-center ${showMeta ? '' : 'hidden'}`}>
@@ -230,6 +234,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               >
                 <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-19)] h-[var(--px-14)]" />
               </button>
+            </div>
+            {/* Creative Commons License Icons - Bottom Right */}
+            <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
+              <CCLicenseGroup size={12} />
             </div>
           </div>
         </div>

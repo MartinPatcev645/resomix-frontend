@@ -4,13 +4,13 @@ import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import { SearchComponent, UploadComponent, PopularComponent } from "@/components/index.ts";
 import { Tooltip } from "@resomix/ui";
-import { usePlayerStore, type EngineCode } from "@resomix/stores";
+import { usePlayerStore } from "@resomix/stores";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
 
-    // Get topSk and engine state from the store
-    const { topSk, setTopSk, engine, setEngine } = usePlayerStore();
+    // Get topSk state from the store
+    const { topSk, setTopSk } = usePlayerStore();
 
     const handleSearchClick = () => {
         setActiveComponent('search');
@@ -31,40 +31,11 @@ const UploadOne: React.FC = () => {
         setTopSk(Number(e.target.value));
     };
 
-    const handleEngineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setEngine(e.target.value as EngineCode);
-    };
+
 
     return (
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
-            {/* Engine Selector - Temporary for testing */}
-            <div className="w-[var(--px-880)] mb-[var(--px-10)] flex justify-end items-center gap-[var(--px-8)]">
-                <Tooltip message="Select similarity engine algorithm. 'Auto' lets the server choose the default." displayOnClick={true}>
-                    <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
-                        <label
-                            htmlFor="engine-select-desktop"
-                            className="text-[length:var(--px-9)] font-fira font-light opacity-70"
-                        >
-                            Engine
-                        </label>
-                        <img src={InfoSvg} draggable={false} alt="Info" aria-label="Info" className="w-[var(--px-10)] h-[var(--px-10)]" />
-                    </div>
-                </Tooltip>
-                <select
-                    id="engine-select-desktop"
-                    aria-label="Similarity engine"
-                    value={engine}
-                    onChange={handleEngineChange}
-                    className="w-[var(--px-65)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)] upload-settings-select"
-                >
-                    <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="E1">E1</option>
-                    <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="E2">E2</option>
-                    <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="E3">E3</option>
-                    <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="E4">E4</option>
-                    <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="E5">E5</option>
-                    <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="E6">E6</option>
-                </select>
-            </div>
+
             <div className="w-[var(--px-880)] h-[var(--px-61)] border border-dotted border-slate-200 flex justify-between px-[var(--px-12)] py-[var(--px-14)]">
                 <div className="">
                     <h2 className="text-[length:var(--px-11)] font-light font-helvetica uppercase">

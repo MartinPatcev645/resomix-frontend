@@ -51,10 +51,10 @@ function isAbortError(err: unknown): boolean {
 }
 
 export const PlaylistShare: React.FC<PlaylistShareProps> = ({
-                                                                isOpen,
-                                                                onClose,
-                                                            }) => {
-    const { playlistData } = usePlaylistStore();
+    isOpen,
+    onClose,
+}) => {
+    const { playlistData, updatePlaylistPublicStatus } = usePlaylistStore();
     const [link, setLink] = useState('');
     const isMobileView = useIsMobileView(768);
 
@@ -74,10 +74,13 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                     const response = await changePlaylistVisibility(playlistData.playlist.id, true);
 
                     if (response.success) {
+                        // Update the store and localStorage cache to reflect the new public status
+                        updatePlaylistPublicStatus(true);
+
                         const generated =
-                          response?.details?.share_url ||
-                          response?.details?.link ||
-                          (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                            response?.details?.share_url ||
+                            response?.details?.link ||
+                            (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                         setLink(generated);
                     } else {
                         setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
@@ -179,59 +182,59 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     if (!isOpen) return null
 
     return (
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center" 
-        role="dialog" 
-        aria-modal="true" 
-        aria-labelledby="share-dialog-title"
-      >
-          <div
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
-            onClick={onClose}
-            id="playlist-share-backdrop"
-            aria-hidden="true"
-          />
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-dialog-title"
+        >
+            <div
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
+                onClick={onClose}
+                id="playlist-share-backdrop"
+                aria-hidden="true"
+            />
 
-          <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
+            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
 
-              <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
+                <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
 
-              <div className="text-center w-full">
-                  <h2 id="share-dialog-title" className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                      PLAYLIST SHARED!
-                  </h2>
-                  <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                      {playlistData?.playlist.is_public 
-                        ? "Your playlist is publicly accessible." 
+                <div className="text-center w-full">
+                    <h2 id="share-dialog-title" className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+                        PLAYLIST SHARED!
+                    </h2>
+                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
+                        {playlistData?.playlist.is_public
+                            ? "Your playlist is publicly accessible."
+                            : "Your playlist is now publicly accessible."
+                        }
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={handlePrimaryAction}
+                    className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link'
+                    id="playlist-share-link"
+                    aria-label="Copy playlist link"
+                >
+                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="absolute top-0 left-0 pointer-events-none" />
+                    {link || 'Generating link...'}
+                </button>
+
+                <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
+                    {playlistData?.playlist.is_public
+                        ? "Your playlist is publicly accessible."
                         : "Your playlist is now publicly accessible."
-                      }
-                  </div>
-              </div>
+                    }
+                </div>
 
-              <button 
-                type="button"
-                onClick={handlePrimaryAction} 
-                className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link' 
-                id="playlist-share-link"
-                aria-label="Copy playlist link"
-              >
-                  <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="absolute top-0 left-0 pointer-events-none" />
-                  {link || 'Generating link...'}
-              </button>
-
-              <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                  {playlistData?.playlist.is_public 
-                    ? "Your playlist is publicly accessible." 
-                    : "Your playlist is now publicly accessible."
-                  }
-              </div>
-
-              <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                  <ButtonSleek text={buttonText} onClick={handlePrimaryAction} className="cta-button primary" id="playlist-share-action-button" />
-                  <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-share-cancel-button" />
-              </div>
-          </div>
-      </div>
+                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
+                    <ButtonSleek text={buttonText} onClick={handlePrimaryAction} className="cta-button primary" id="playlist-share-action-button" />
+                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-share-cancel-button" />
+                </div>
+            </div>
+        </div>
     )
 }
 

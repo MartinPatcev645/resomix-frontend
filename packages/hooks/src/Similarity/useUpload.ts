@@ -60,7 +60,7 @@ export function useUpload() {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
-    const { topSk, engine, setUploadedCoverArt } = usePlayerStore();
+    const { topSk, setUploadedCoverArt } = usePlayerStore();
     const { checkTermsAcceptance } = useTermsAcceptance();
 
     const inputAccept = useMemo(() => {
@@ -135,7 +135,7 @@ export function useUpload() {
                 // Ensure progress is properly bounded and rounded
                 const boundedProgress = Math.min(100, Math.max(0, p));
                 setProgress(Math.round(boundedProgress));
-            }, engine);
+            });
             if (result && result.success) {
                 // Segmentation polling removed - no longer waiting for segments to be generated
                 // const playlistId = (result as any).data?.playlist?.id as string | undefined;
@@ -166,7 +166,7 @@ export function useUpload() {
             setUploading(false);
             setOverlay(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, engine, setUploadedCoverArt]);
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];

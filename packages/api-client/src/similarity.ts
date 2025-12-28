@@ -2,21 +2,18 @@ import axiosInstance, { axiosWrapper, handleApiError, validateAudioFile } from "
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
 
-// Valid engine codes for similarity requests
-export type EngineCode = 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6';
+
 
 /**
  * Get track similarity based on uploaded audio file
  * @param file Audio file
  * @param TOPSK Number of similar tracks to return (default 20)
  * @param progressCallback Optional callback for upload progress (0-100)
- * @param engine Optional engine code (E1-E6). If omitted, server applies its own default.
  */
 export const getSimilarTracks = async (
   file: File,
   TOPSK = 20,
   progressCallback?: (progress: number) => void,
-  engine?: EngineCode,
 ) => {
   try {
     const validation = validateAudioFile(file);
@@ -37,11 +34,7 @@ export const getSimilarTracks = async (
       console.warn("Pre-upload token check failed:", e);
     }
 
-    // Build params - only include engine if provided
-    const params: { top_sk: number; engine?: EngineCode } = { top_sk: TOPSK };
-    if (engine) {
-      params.engine = engine;
-    }
+    const params = { top_sk: TOPSK };
 
     // Use authClient to include Authorization header if user is logged in
     const data = await axiosWrapper<any>(
@@ -73,22 +66,16 @@ export const getSimilarTracks = async (
  * Get track similarity for a selected track ID
  * @param trackId The track ID to find similar tracks for
  * @param TOPSK Number of similar tracks to return (default 20)
- * @param engine Optional engine code (E1-E6). If omitted, server applies its own default.
  */
 export const getSimilarityForSelectedTrack = async (
   trackId: string,
   TOPSK = 20,
-  engine?: EngineCode,
 ) => {
   try {
-    // Build payload - only include engine if provided
-    const payload: { track_id: string; top_sk: number; engine?: EngineCode } = {
+    const payload = {
       track_id: trackId,
       top_sk: TOPSK,
     };
-    if (engine) {
-      payload.engine = engine;
-    }
 
     // Use authClient instead of axiosInstance to include credentials and Authorization header
     const data = await axiosWrapper<any>(

@@ -11,11 +11,9 @@ const STORAGE_KEYS = {
   topSk: 'resomix.player.topSk',
   trackTimes: 'resomix.player.trackTimes',
   searchMode: 'resomix.player.searchMode',
-  engine: 'resomix.player.engine'
 } as const;
 
-// Valid engine codes for similarity requests
-export type EngineCode = 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6';
+
 
 // NOTE: Settings are now stored only in browser localStorage.
 function getStoredValue<T>(key: string, defaultValue: T): T {
@@ -84,12 +82,7 @@ interface PlayerStore {
   topSk: number
   setTopSk: (value: number) => void
 
-  /**
-   * Similarity engine code (E1-E6).
-   * This is temporary for testing and may be removed later.
-   */
-  engine: EngineCode
-  setEngine: (value: EngineCode) => void
+
 
   /**
    * Search mode for track searching
@@ -165,22 +158,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       return { topSk: value };
     }),
 
-  // Engine is E4 by default - validate stored value is a valid EngineCode
-  engine: (() => {
-    const VALID_ENGINES: EngineCode[] = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6'];
-    const stored = getStoredValue<string>(STORAGE_KEYS.engine, 'E4');
-    if (VALID_ENGINES.includes(stored as EngineCode)) {
-      return stored as EngineCode;
-    }
-    // Invalid stored value (e.g., empty string from old Auto option) - reset to E4
-    setStoredValue(STORAGE_KEYS.engine, 'E4');
-    return 'E4' as EngineCode;
-  })(),
-  setEngine: (value) =>
-    set(() => {
-      setStoredValue(STORAGE_KEYS.engine, value);
-      return { engine: value };
-    }),
+
 
   searchMode: getStoredValue<'auto' | 'artist' | 'title'>(STORAGE_KEYS.searchMode, 'auto'),
   setSearchMode: (value) =>
