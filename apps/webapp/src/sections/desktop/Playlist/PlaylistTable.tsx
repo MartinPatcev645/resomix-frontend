@@ -218,7 +218,7 @@ const PlaylistTable: React.FC = () => {
                                             className="ml-[var(--px-30)] w-[var(--px-40)] flex items-center justify-center hover:cursor-pointer playlist-sonic-discovery-button"
                                             role="cell"
                                             onClick={() => {
-                                                window.location.href = `${BASE_BETA_URL}/?id=${track.id}`;
+                                                window.open(`${BASE_BETA_URL}/?id=${track.id}`, '_blank');
                                             }}
                                             id={`playlist-table-sonic-discovery-${track.id}`}
                                             data-track-id={track.id}
