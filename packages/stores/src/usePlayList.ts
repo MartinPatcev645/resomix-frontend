@@ -45,7 +45,7 @@ const saveResponseToCache = (response: PlaylistResponse): void => {
     }
 
     const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
-    
+
     let cachedPlaylists: PlaylistResponse[] = []
     if (cachedPlaylistsStr) {
       try {
@@ -58,20 +58,20 @@ const saveResponseToCache = (response: PlaylistResponse): void => {
         cachedPlaylists = []
       }
     }
-    
+
     // Remove existing response with same ID if it exists
-    cachedPlaylists = cachedPlaylists.filter(p => 
+    cachedPlaylists = cachedPlaylists.filter(p =>
       p?.data?.playlist?.id && p.data.playlist.id !== playlistId
     )
-    
+
     // Add new response to the end (most recent)
     cachedPlaylists.push(response)
-    
+
     // Keep only last 2 responses
     if (cachedPlaylists.length > 2) {
       cachedPlaylists = cachedPlaylists.slice(-2)
     }
-    
+
     // Update localStorage - store the most recent playlist ID separately
     window.localStorage.setItem('lastAccessedPlaylist', playlistId)
     window.localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists))
@@ -98,12 +98,12 @@ const loadCachedResponse = (id?: string): PlaylistResponse | null => {
     // If specific ID is requested, use that; otherwise get the last accessed one
     const targetId = id || window.localStorage.getItem('lastAccessedPlaylist')
     if (!targetId) return null
-    
+
     const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
     if (!cachedPlaylistsStr) return null
-    
+
     const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
-    
+
     // Validate the cached data structure
     if (!Array.isArray(cachedPlaylists)) {
       console.warn('Invalid cached playlists data, clearing cache')
@@ -111,18 +111,18 @@ const loadCachedResponse = (id?: string): PlaylistResponse | null => {
       window.localStorage.removeItem('lastAccessedPlaylist')
       return null
     }
-    
+
     // Find the response with matching ID
-    const foundResponse = cachedPlaylists.find(p => 
+    const foundResponse = cachedPlaylists.find(p =>
       p?.data?.playlist?.id === targetId
     )
-    
+
     // Validate the found response structure
     if (foundResponse && !foundResponse.data?.playlist?.id) {
       console.warn('Invalid cached response structure')
       return null
     }
-    
+
     return foundResponse || null
   } catch (error) {
     console.warn('Failed to load playlist from cache:', error)
@@ -141,7 +141,7 @@ const clearCache = (): void => {
   if (typeof window === 'undefined' || !window.localStorage) {
     return;
   }
-  
+
   try {
     window.localStorage.removeItem('playlistsBackup')
     window.localStorage.removeItem('lastAccessedPlaylist')
@@ -157,7 +157,7 @@ interface PlaylistStore {
   isLoading: boolean
   error: string | null
   trackRatings: Record<string, number>
-  
+
   // Actions
   setPlaylistData: (data: PlaylistData) => void
   setPlaylistResponse: (response: PlaylistResponse) => void
@@ -172,6 +172,8 @@ interface PlaylistStore {
   clearCache: () => void
   // Utility to check if current data matches URL context
   validateCurrentData: () => boolean
+  // Update is_public flag in both state and cache
+  updatePlaylistPublicStatus: (isPublic: boolean) => void
 }
 
 // Create the Zustand store
@@ -181,10 +183,10 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   isLoading: false,
   error: null,
   trackRatings: {},
-  
+
   // Actions
   setPlaylistData: (data) => set({ playlistData: data, error: null }),
-  
+
   setPlaylistResponse: (response) => {
     if (response.success) {
       set({ playlistData: response.data, error: null })
@@ -196,37 +198,85 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   setTrackRating: (trackId, rating) => set((state) => ({ trackRatings: { ...state.trackRatings, [trackId]: rating } })),
-  
+
   clearPlaylistData: () => set({ playlistData: null, error: null }),
-  
+
   setLoading: (loading) => set({ isLoading: loading }),
-  
+
   setError: (error) => set({ error }),
-  
+
   reset: () => set({ playlistData: null, isLoading: false, error: null, trackRatings: {} }),
-  
+
   // Cache actions
   saveResponseToCache,
   loadCachedResponse,
   clearCache,
-  
+
   // Utility to check if current data matches URL context
   validateCurrentData: () => {
     const state = get()
     if (!state.playlistData?.playlist?.id) return true // No data to validate
-    
+
     // Check if current playlist ID matches URL parameter
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const urlId = params.get('id')
-      
+
       // If URL has an ID, it should match current data
       if (urlId && urlId !== state.playlistData.playlist.id) {
         return false
       }
     }
-    
+
     return true
+  },
+
+  // Update is_public flag in both state and localStorage cache
+  updatePlaylistPublicStatus: (isPublic: boolean) => {
+    const state = get()
+    if (!state.playlistData) return
+
+    const playlistId = state.playlistData.playlist.id
+
+    // Update Zustand state
+    const updatedPlaylistData = {
+      ...state.playlistData,
+      playlist: {
+        ...state.playlistData.playlist,
+        is_public: isPublic
+      }
+    }
+    set({ playlistData: updatedPlaylistData })
+
+    // Update localStorage cache
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
+        if (cachedPlaylistsStr) {
+          const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
+
+          const updatedPlaylists = cachedPlaylists.map(p => {
+            if (p?.data?.playlist?.id === playlistId) {
+              return {
+                ...p,
+                data: {
+                  ...p.data,
+                  playlist: {
+                    ...p.data.playlist,
+                    is_public: isPublic
+                  }
+                }
+              }
+            }
+            return p
+          })
+
+          window.localStorage.setItem('playlistsBackup', JSON.stringify(updatedPlaylists))
+        }
+      } catch (error) {
+        console.warn('Failed to update is_public in cache:', error)
+      }
+    }
   }
 }))
 

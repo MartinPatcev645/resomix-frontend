@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon } from "@resomix/ui";
+import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, ToggleButton } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
@@ -39,10 +39,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
-  // const { uploadedUrl } = usePlayerStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
-  void autoplay;
-  void setAutoplay;
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -90,6 +87,13 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   className="playlist-action-button"
                   id="playlist-hero-rename-button"
+                />
+                <ToggleButton
+                  text="Autoplay"
+                  customWidth="min-w-[var(--px-100)]"
+                  isOn={autoplay}
+                  onToggle={setAutoplay}
+                  id="playlist-hero-autoplay-toggle"
                 />
                 <IconButton
                   text="Rate Playlist"
