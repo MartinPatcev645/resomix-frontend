@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 interface ConfigStore {
   version: string
+  ccLicenseUrl: string
 }
 
 /**
@@ -11,6 +12,7 @@ interface ConfigStore {
  */
 export const useConfig = create<ConfigStore>(() => ({
   version: 'open-0.10.2',
+  ccLicenseUrl: 'https://creativecommons.org/licenses/by-nc-sa/3.0/',
 }))
 
 export default useConfig
