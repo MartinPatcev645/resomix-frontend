@@ -26,8 +26,8 @@ export function useTrackSimilarity() {
   // Playlist store – we will save API response here
   const { setPlaylistResponse } = usePlaylistStore();
 
-  // Get topSk and engine from player store
-  const { topSk, engine } = usePlayerStore();
+  // Get topSk from player store
+  const { topSk } = usePlayerStore();
 
   // Terms acceptance hook
   const { checkTermsAcceptance } = useTermsAcceptance();
@@ -59,7 +59,7 @@ export function useTrackSimilarity() {
       setOverlay(true);
 
       try {
-        const result = await getSimilarityForSelectedTrack(String(trackId), topSk, engine);
+        const result = await getSimilarityForSelectedTrack(String(trackId), topSk);
 
         if (result && result.success) {
           // Segmentation polling removed - no longer waiting for segments to be generated
@@ -89,7 +89,7 @@ export function useTrackSimilarity() {
         setOverlay(false);
       }
     },
-    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, engine, checkTermsAcceptance],
+    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, checkTermsAcceptance],
   );
 
   return {
