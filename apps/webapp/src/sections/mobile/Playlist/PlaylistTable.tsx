@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { SimilarityPlayer } from "@/components/index.ts";
+import { SimilarityPlayer, CCLicenseGroup } from "@/components/index.ts";
 import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow } from "@resomix/ui";
@@ -69,7 +69,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         )}
                         <div className={isRestricted ? "pointer-events-none select-none" : ""}>
                             <div
-                                className={`w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] relative ${isRestricted ? "blur-xs" : ""}`}
+                                className={`w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] pb-[var(--px-18)] relative ${isRestricted ? "blur-xs" : ""}`}
                                 role="row"
                             >
                                 <div className="flex flex-col w-full">
@@ -191,6 +191,10 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 >
                                     <img src={MoreSvg} draggable={false} aria-label="More" alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
                                 </button>
+                                {/* Creative Commons License Icons - Bottom Right */}
+                                <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
+                                    <CCLicenseGroup size={10} />
+                                </div>
                             </div>
                         </div>
                     </div>
