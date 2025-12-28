@@ -102,13 +102,15 @@ async def get_similarity_upload_endpoint(
     
     Note: If authenticated via JWT, user context is automatically associated with the upload.
     """
+    # NOTE: engine parameter is intentionally ignored (set to empty string)
+    # The backend flow is preserved for potential future use when re-enabling engine selection
     return await similarity_controller.get_similarity_upload(
         db=db,
         request=request,
         file=file,
         current_user=current_user,
         top_sk=top_sk,
-        engine=engine
+        engine=""  # Ignoring frontend value
     )
 
 
@@ -152,13 +154,15 @@ async def get_similarity_by_id_endpoint(
     
     Note: If authenticated via JWT, user context is automatically associated.
     """
+    # NOTE: engine parameter is intentionally ignored (set to empty string)
+    # The backend flow is preserved for potential future use when re-enabling engine selection
     return await similarity_controller.get_similarity_by_id(
         db=db,
         request=request,
         track_id=request_data.track_id,
         current_user=current_user,
         top_sk=request_data.top_sk,
-        engine=request_data.engine
+        engine=""  # Ignoring frontend value
     )
 
 
