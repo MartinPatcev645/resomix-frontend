@@ -2,11 +2,11 @@ import React from "react";
 import type { SearchResult } from "./useSearch";
 
 const POPULAR_TRACKS: SearchResult[] = [
-  { id: "67ad9cec799206f8d64acd07", title: "Champagne Dancer", artist: "Schatrax", duration: "5:10" },
-  { id: "67ad9cec799206f8d64acdf1", title: "Whole life", artist: "Oxia", duration: "8:05" },
-  { id: "67ad9eb1799206f8d64c2200", title: "Arsenic (Original Mix)", artist: "Rone White, Deetech", duration: "6:20" },
-  { id: "67ad9d34799206f8d64b3315", title: "Memento Mori", artist: "Murahni", duration: "7:15" },
-  { id: "67b1aa3bf4110a1ed672dd89", title: "back in 1995 (extended mix)", artist: "Andrey Exx", duration: "6:14" }
+  { id: "bb9e0241-3ccc-4098-9b86-c25647fdc0b7", title: "Harry McFly", artist: "Lomov", duration: "5:45" },
+  { id: "7923b7c9-8e43-488c-a1d6-66814cd52e14", title: "About To Do It", artist: "Bobby Marleni", duration: "5:16" },
+  { id: "f726bc72-427c-4c7d-8032-745a040a5cd8", title: "Deelites", artist: "Bobby Marleni", duration: "6:52" },
+  { id: "e2b9e15e-fd94-4df8-9ea5-517999f06a5d", title: "Hi-4", artist: "Superbus feat. Loop Loops Clan", duration: "6:09" },
+  { id: "ea3f8387-5f26-43bf-b181-f0ac6ba3c5ca", title: "Cry Over You", artist: "Psychadelik Pedestrian", duration: "8:03" }
 ];
 
 export const usePopularTracks = () => {
