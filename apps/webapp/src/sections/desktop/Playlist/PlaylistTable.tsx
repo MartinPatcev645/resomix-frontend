@@ -242,9 +242,7 @@ const PlaylistTable: React.FC = () => {
                             </div>
                             {/* Creative Commons License Icons - Bottom Right */}
                             <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
-                                <Tooltip message="Licensed under CC BY-NC-SA 3.0">
-                                    <CCLicenseGroup size={10} />
-                                </Tooltip>
+                                <CCLicenseGroup size={10} />
                             </div>
                         </div>
                     </div>
