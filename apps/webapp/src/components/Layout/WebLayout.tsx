@@ -16,9 +16,12 @@ import { MenuPage } from "@/pages/index.ts";
 export function WebLayout() {
     const { isDesktop } = useResponsive();
     const { showOverlay } = useUploadStore();
+
+
     const location = useLocation();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
 
     // Internal navigation handler to avoid full page reloads
     const handleNavigate = React.useCallback((path: string) => {
@@ -114,32 +117,21 @@ export function WebLayout() {
         window.scrollTo(0, 0);
     }, [location.pathname]);
 
-    // HIDE SHELL WHEN OVERLAY IS ACTIVE
-    if (showOverlay) {
-        return (
-            <div className="bg-[var(--color-primary-background)] min-h-screen relative overflow-x-hidden">
-                <StaticNoise />
-                <div className="fixed inset-0 z-[9999]">
-                    <UploadLoader />
-                </div>
-                <main
-                    key={location.pathname}
-                    className="page-transition"
-                >
-                    <Outlet />
-                </main>
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
+        <div className={`bg-[var(--color-primary-background)] ${!showOverlay ? 'lg:bg-[var(--color-secondary)]' : ''} min-h-screen relative overflow-x-hidden`}>
             {/* Persistent Static Noise */}
             <StaticNoise />
 
+            {/* Persistent Upload / Search Overlay */}
+            {showOverlay && (
+                <div className="fixed inset-0 z-[9999]" id="upload-loader-wrapper">
+                    <UploadLoader />
+                </div>
+            )}
+
             {/* Persistent Layout Content */}
             <div
-                className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]"
+                className={`mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                 style={{ overflowX: "hidden" }}
             >
                 <SideLines

@@ -10,7 +10,7 @@ const UploadLoader: React.FC = () => {
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
     const [usedMessages, setUsedMessages] = useState<Set<number>>(new Set([0])); // Start with first message used
     const [hideProgressBar, setHideProgressBar] = useState(false);
-    
+
 
     const messages = [
         "The system is reading the shape, structure, and spectral flow...",
@@ -78,8 +78,8 @@ const UploadLoader: React.FC = () => {
     const loaderProgress = progress;
 
     return (
-        <div 
-            className="w-screen h-screen relative overflow-hidden bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] similarity-playlist-loader" 
+        <div
+            className="w-screen h-screen relative overflow-hidden bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] similarity-playlist-loader"
             id="similarity-playlist-loader"
             role="status"
             aria-live="polite"
@@ -165,53 +165,53 @@ const UploadLoader: React.FC = () => {
                 </div>
                 {/* Desktop Loader - Only show for file uploads */}
                 {isFileUpload && !hideProgressBar && (
-                <div className="hidden lg:flex flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-900)]">
-                    <div className="text-[length:var(--px-11)] font-light font-fira tracking-[var(--px-2)] w-[var(--px-900)] relative">
-                        <div
-                            className="absolute -top-[var(--px-10)]"
-                            style={{ left: `min(calc((var(--px-830) * ${loaderProgress}) / 100), calc(var(--px-830)))` }}
-                        >
-                            [ {Math.round(loaderProgress)}% ]
+                    <div className="hidden lg:flex flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-900)]">
+                        <div className="text-[length:var(--px-11)] font-light font-fira tracking-[var(--px-2)] w-[var(--px-900)] relative">
+                            <div
+                                className="absolute -top-[var(--px-10)]"
+                                style={{ left: `min(calc((var(--px-830) * ${loaderProgress}) / 100), calc(var(--px-830)))` }}
+                            >
+                                [ {Math.round(loaderProgress)}% ]
+                            </div>
                         </div>
+                        <img src={ScaleSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-900)] h-[var(--px-21)]" />
+                        {/* Only show progress bar for actual file uploads */}
+                        {(loaderProgress < 99) && (
+                            <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                                Uploading...
+                            </div>
+                        )}
+                        {(loaderProgress >= 99) && (
+                            <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                                Uploaded!
+                            </div>
+                        )}
                     </div>
-                    <img src={ScaleSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-900)] h-[var(--px-21)]" />
-                    {/* Only show progress bar for actual file uploads */}
-                    {(loaderProgress < 99) && (
-                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Uploading...
-                        </div>
-                    )}
-                    {(loaderProgress >= 99) && (
-                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Uploaded!
-                        </div>
-                    )}
-                </div>
                 )}
                 {/* Mobile Loader - Only show for file uploads */}
                 {isFileUpload && !hideProgressBar && (
-                <div className="flex lg:hidden flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-393)]">
-                    <div className="text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2-2)] w-[var(--px-393)] relative">
-                        <div
-                            className="absolute -top-[var(--px-10)]"
-                            style={{ left: `min(calc((var(--px-315) * ${loaderProgress}) / 100), calc(var(--px-315)))` }}
-                        >
-                            [ {Math.round(loaderProgress)}% ]
+                    <div className="flex lg:hidden flex-col w-full justify-center min-h-[var(--px-40)] gap-[var(--px-10)] relative w-[var(--px-393)]">
+                        <div className="text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2-2)] w-[var(--px-393)] relative">
+                            <div
+                                className="absolute -top-[var(--px-10)]"
+                                style={{ left: `min(calc((var(--px-315) * ${loaderProgress}) / 100), calc(var(--px-315)))` }}
+                            >
+                                [ {Math.round(loaderProgress)}% ]
+                            </div>
                         </div>
+                        <img src={ScaleMobileSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-393)] h-[var(--px-23)]" />
+                        {/* Only show progress bar for actual file uploads */}
+                        {(loaderProgress < 99) && (
+                            <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                                Uploading...
+                            </div>
+                        )}
+                        {(loaderProgress >= 99) && (
+                            <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
+                                Uploaded!
+                            </div>
+                        )}
                     </div>
-                    <img src={ScaleMobileSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-393)] h-[var(--px-23)]" />
-                    {/* Only show progress bar for actual file uploads */}
-                    {(loaderProgress < 99) && (
-                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Uploading...
-                        </div>
-                    )}
-                    {(loaderProgress >= 99) && (
-                        <div className="text-right text-[var(--px-11)] font-light font-fira tracking-[var(--px-2)] -mr-[var(--px-3)]">
-                            Uploaded!
-                        </div>
-                    )}
-                </div>
                 )}
 
                 {/* Error banner removed – status handled globally */}
