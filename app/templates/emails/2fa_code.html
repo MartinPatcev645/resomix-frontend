@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@
             padding: 0;
             background-color: #fafafa;
         }
+
         .container {
             max-width: 600px;
             margin: 40px auto;
@@ -20,11 +22,13 @@
             border: 2px solid #222222;
             overflow: hidden;
         }
+
         .header {
             padding: 28px 20px;
             text-align: center;
             border-bottom: 1px dotted #cccccc;
         }
+
         .header h1 {
             margin: 0;
             font-size: 20px;
@@ -33,9 +37,11 @@
             text-transform: uppercase;
             color: #1a1a1a;
         }
+
         .content {
             padding: 32px 28px;
         }
+
         .content h2 {
             font-size: 18px;
             font-weight: 500;
@@ -43,6 +49,7 @@
             margin: 0 0 20px 0;
             color: #1a1a1a;
         }
+
         .content p {
             font-size: 14px;
             font-weight: 300;
@@ -50,6 +57,7 @@
             margin: 12px 0;
             color: #1a1a1a;
         }
+
         .code-box {
             background-color: transparent;
             padding: 32px;
@@ -57,6 +65,7 @@
             margin: 32px 0;
             border: 2px dotted #cccccc;
         }
+
         .code {
             font-size: 40px;
             font-weight: 300;
@@ -64,6 +73,7 @@
             color: #1a1a1a;
             font-family: 'Courier New', 'Courier', monospace;
         }
+
         .footer {
             background-color: transparent;
             padding: 24px 20px;
@@ -73,59 +83,72 @@
             font-weight: 300;
             border-top: 1px dotted #cccccc;
         }
+
         .footer p {
             margin: 6px 0;
             letter-spacing: 0.5px;
         }
+
         .alert-danger {
             padding: 16px;
             background-color: transparent;
             border: 1px dotted #666666;
             margin: 20px 0;
         }
+
         .text-muted {
             color: #666666;
             font-size: 12px;
             font-weight: 300;
         }
+
         @media (prefers-color-scheme: dark) {
             body {
                 background-color: #0a0a0a;
             }
+
             .container {
                 background-color: #1a1a1a;
                 border-color: #333333;
             }
+
             .header h1,
             .content h2,
             .content p,
             .code {
                 color: #ffffff !important;
             }
+
             .alert-danger p,
             .alert-danger strong {
                 color: #ffffff !important;
             }
+
             .footer,
             .footer p {
                 color: #999999 !important;
             }
+
             .text-muted {
                 color: #999999 !important;
             }
+
             .code-box,
             .alert-danger {
                 border-color: #666666;
             }
+
             .header {
                 border-bottom-color: #666666;
             }
+
             .footer {
                 border-top-color: #666666;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -134,27 +157,29 @@
         <div class="content">
             <h2>Your Verification Code</h2>
             <p>Hi {{ username }},</p>
-            <p>You are attempting to {{ purpose_text }} your Resomix account. Please use the verification code below:</p>
-            
+            <p>You are attempting to {{ purpose_text }} your Resomix account. Please use the verification code below:
+            </p>
+
             <div class="code-box">
                 <div class="code">{{ code }}</div>
             </div>
-            
+
             <p class="text-muted" style="text-align: center;">
                 This code will expire in {{ expire_minutes }} minutes.
             </p>
-            
+
             <div class="alert-danger">
                 <p style="margin: 0; font-size: 12px; font-weight: 300;">
-                    <strong style="font-weight: 400;">Security Notice:</strong> If you didn't request this code, please secure your account immediately by changing your password.
+                    <strong style="font-weight: 400;">Security Notice:</strong> If you didn't request this code, please
+                    secure your account immediately by changing your password.
                 </p>
             </div>
         </div>
         <div class="footer">
-            <p>&copy; 2025 Resomix. All rights reserved.</p>
+            <p>&copy; 2026 Resomix. All rights reserved.</p>
             <p>Audio Similarity Engine for Music Discovery</p>
         </div>
     </div>
 </body>
-</html>
 
+</html>
