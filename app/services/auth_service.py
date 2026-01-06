@@ -23,6 +23,7 @@ from app.repositories.user_repository import (
     TwoFactorCodeRepository,
     UserSessionRepository,
 )
+from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.core.security import (
     hash_password,
     verify_password,
@@ -46,6 +47,7 @@ class AuthService:
         self.password_reset_repo = PasswordResetTokenRepository()
         self.two_fa_repo = TwoFactorCodeRepository()
         self.session_repo = UserSessionRepository()
+        self.operation_limit_repo = OperationLimitRepository()
 
     async def register_user(
         self,
@@ -122,6 +124,23 @@ class AuthService:
         await self.email_verification_repo.async_create_token(
             db=db, user_id=user.id, token=token, expires_at=expires_at
         )
+
+        # TEMPORARY: Grant high playlist creation limit (1000) for testing phase
+        # This allows new users to test the platform without immediately hitting limits.
+        try:
+            op_type = await self.operation_limit_repo.async_get_operation_type_by_code(db, "playlist_create")
+            if op_type:
+                await self.operation_limit_repo.async_upsert_limit(
+                    db,
+                    user_id=user.id,
+                    operation_id=op_type.id,
+                    limit_value=1000,
+                    window_seconds=None,
+                    created_by=None
+                )
+        except Exception:
+            # Don't fail registration if limit setup fails
+            pass
 
         return user, token
 
