@@ -7,28 +7,28 @@
     <!-- Main web app entry -->
     <url>
         <loc>https://beta.resomix.com/</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
     
     <url>
         <loc>https://beta.resomix.com/playlist</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.3</priority>
     </url>
     
     <url>
         <loc>https://beta.resomix.com/sonic-discovery</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.3</priority>
     </url>
     
     <url>
         <loc>https://beta.resomix.com/contact</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>

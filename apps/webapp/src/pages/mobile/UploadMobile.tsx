@@ -15,7 +15,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
+  const { showOverlay, response, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -25,11 +25,11 @@ export function UploadMobile() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    
+
     // Prevent infinite loop by checking if we've already processed this ID
     if (id && processedId.current !== id) {
       processedId.current = id;
-      
+
       // First check cache before making API call
       const cachedResponse = loadCachedResponse(id);
       if (cachedResponse) {
@@ -51,7 +51,7 @@ export function UploadMobile() {
   React.useEffect(() => {
     if (response && response.success) {
       setPlaylistResponse(response as any);
-      setOverlay(false);
+
       const playlistId = (response as any).data?.playlist?.id || null;
       if (playlistId) {
         navigate(`/playlist?id=${playlistId}`);
@@ -59,7 +59,15 @@ export function UploadMobile() {
         navigate('/playlist');
       }
     }
-  }, [response, setPlaylistResponse, navigate, setOverlay]);
+  }, [response, setPlaylistResponse, navigate]);
+
+  // Cleanup effect to reset upload store state when leaving the page
+  // This avoids the "Back" button loop and ensures loader is closed
+  React.useEffect(() => {
+    return () => {
+      useUploadStore.getState().reset();
+    };
+  }, []);
 
   return (
     <>

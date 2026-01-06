@@ -68,7 +68,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
           <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
             <CodeTyping
               speed={50}
-              text="© 2025 Resomix // built on beatmaps and algorithms"
+              text="© 2026 Resomix // built on beatmaps and algorithms"
               multiline={true}
             />
           </div>
