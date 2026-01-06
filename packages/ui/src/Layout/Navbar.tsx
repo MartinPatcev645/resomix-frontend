@@ -57,11 +57,12 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
               customWidth="30"
               customHeight="30"
               onClick={(e) => {
-                if (onNavigate) {
+                if (onProfileClick) {
                   e.preventDefault();
-                  onNavigate(`${baseBetaUrl}/profile`);
-                } else if (onProfileClick) {
                   onProfileClick();
+                } else if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate('/profile');
                 }
               }}
             />
