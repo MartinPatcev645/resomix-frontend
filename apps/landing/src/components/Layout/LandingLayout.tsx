@@ -116,12 +116,9 @@ export function LandingLayout() {
     }, [location.pathname]);
 
     return (
-        <div className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
+        <div className="bg-[var(--color-secondary)] min-h-screen relative">
             <StaticNoise />
-            <div
-                className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]"
-                style={{ overflowX: "hidden" }}
-            >
+            <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
                 <SideLines
                     navbar={isDesktop ? undefined : mobileNavbar}
                     mode={mode}
