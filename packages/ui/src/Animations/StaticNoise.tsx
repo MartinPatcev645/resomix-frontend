@@ -22,12 +22,12 @@ export interface StaticNoiseProps {
  * HTML demo, merely wrapped for convenient reuse across pages.
  */
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
-                                                          className = "pointer-events-none fixed inset-0",
-                                                          zIndex,
-                                                          fps = 20,
-                                                          storageKey = "staticNoiseVisible",
-                                                          defaultVisible = true,
-                                                        }) => {
+  className = "pointer-events-none fixed inset-0",
+  zIndex,
+  fps = 20,
+  storageKey = "staticNoiseVisible",
+  defaultVisible = true,
+}) => {
   const boxRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState<boolean>(defaultVisible);
 
@@ -252,6 +252,10 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       gl.deleteShader(frag);
       gl.deleteBuffer(buf);
       gl.deleteTexture(tex);
+
+      // Force context loss to reclaim GPU resources immediately
+      const ext = gl.getExtension("WEBGL_lose_context");
+      if (ext) ext.loseContext();
 
       if (container.contains(canvas)) container.removeChild(canvas);
     };

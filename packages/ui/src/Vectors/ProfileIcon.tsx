@@ -4,7 +4,7 @@ interface ProfileIconProps {
   className?: string;
   customWidth?: string;
   customHeight?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const ProfileIcon: React.FC<ProfileIconProps> = ({ className = "", customWidth = "24", customHeight = "24", onClick }) => {

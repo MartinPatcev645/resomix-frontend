@@ -3,7 +3,7 @@ import { IconComp } from "../Elements/IconComp";
 
 interface ButtonHeavyRightProps {
   text: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
   transparent?: boolean;
   link_arrow?: boolean;
   className?: string;
@@ -57,7 +57,7 @@ export const ButtonHeavyRight: React.FC<ButtonHeavyRightProps> = ({ text, onClic
   const iconComp = (
     <IconComp
       className="ml-[var(--px-1)]"
-      asDiv={!!(href && !disabled)} // Use div when rendered as link, button otherwise
+      asDiv={true} // Icon is decorative; outer component handles interaction
       ariaHidden={true}
       svg={svgContent}
       padding="p-1.5"

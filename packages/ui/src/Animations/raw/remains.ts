@@ -16,7 +16,7 @@ export function initRemains(container: HTMLElement): () => void {
   canvas.style.pointerEvents = "none";
   container.appendChild(canvas);
 
-  const gl = canvas.getContext("webgl2",{alpha:true});
+  const gl = canvas.getContext("webgl2", { alpha: true });
   if (!gl) {
     console.warn("WebGL2 is not supported in this browser");
     return () => {
@@ -33,8 +33,8 @@ export function initRemains(container: HTMLElement): () => void {
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
 
-    canvas.width = width * DPR*0.65;
-    canvas.height = height * DPR*0.65;
+    canvas.width = width * DPR * 0.65;
+    canvas.height = height * DPR * 0.65;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
   };
@@ -328,6 +328,17 @@ export function initRemains(container: HTMLElement): () => void {
     window.removeEventListener("pointerdown", onPointerDown);
     window.removeEventListener("pointerup", onPointerUp);
     window.removeEventListener("pointermove", onPointerMove);
+
+    // Clean up WebGL resources
+    gl.deleteBuffer(buffer);
+    gl.deleteProgram(program);
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
+    // Force context loss to reclaim GPU memory
+    const ext = gl.getExtension("WEBGL_lose_context");
+    if (ext) ext.loseContext();
+
     if (container.contains(canvas)) container.removeChild(canvas);
   };
 } 

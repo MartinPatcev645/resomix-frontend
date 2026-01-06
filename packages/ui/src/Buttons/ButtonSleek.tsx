@@ -2,7 +2,7 @@ import React from "react";
 
 interface ButtonSleekProps {
   text: string;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
   transparent?: boolean;
   className?: string;
   disabled?: boolean;

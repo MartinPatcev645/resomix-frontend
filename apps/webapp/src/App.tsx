@@ -3,8 +3,8 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { ProtectedRoute, OptionalAuthRoute, GuestRoute } from "@/components/index.ts";
-import {MetricsOverlay} from "@/components/metrics/MetricsOverlay.js";
+import { ProtectedRoute, OptionalAuthRoute, GuestRoute, WebLayout } from "@/components/index.ts";
+import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
 const UploadPage = lazy(() => import("@/pages/desktop/UploadPage.tsx").then(m => ({ default: m.UploadPage })));
@@ -17,9 +17,9 @@ const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
-const AppleRedirect = lazy(()=>import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
-const TidalRedirect = lazy(()=>import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
-const SpotifyRedirect = lazy(()=>import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
+const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
+const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
+const SpotifyRedirect = lazy(() => import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
 
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
@@ -51,7 +51,7 @@ function App() {
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
   const { isDesktop } = useResponsive();
-  
+
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
   useCrossTabAuth();
@@ -104,41 +104,46 @@ function App() {
 
       <Suspense fallback={null}>
         <Routes>
-          {/* Guest-Only Auth Routes (redirect to home if logged in) */}
-          <Route path="/auth/login" element={<GuestRoute><AuthPage mode="login" /></GuestRoute>} />
-          <Route path="/auth/register" element={<GuestRoute><AuthPage mode="register" /></GuestRoute>} />
-          <Route path="/auth/forgot-password" element={<GuestRoute><AuthPage mode="forgot-password" /></GuestRoute>} />
-          
-          {/* Auth Routes that work regardless of login state */}
-          <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
-          <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
-          <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />
+          {/* Group A: Routes wrapped in persistent WebLayout shell */}
+          <Route element={<WebLayout />}>
+            {/* Optional Auth Routes (work with or without login) */}
+            <Route path="/" element={<OptionalAuthRoute><UploadLanding /></OptionalAuthRoute>} />
+            <Route path="/playlist" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
+            <Route path="/sonic-discovery" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
+
+            {/* Protected Auth Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<AuthPage mode="profile" />} />
+              <Route path="/sessions" element={<AuthPage mode="sessions" />} />
+              <Route path="/change-password" element={<AuthPage mode="change-password" />} />
+            </Route>
+
+            {/* Guest-Only Auth Routes */}
+            <Route path="/auth/login" element={<GuestRoute><AuthPage mode="login" /></GuestRoute>} />
+            <Route path="/auth/register" element={<GuestRoute><AuthPage mode="register" /></GuestRoute>} />
+            <Route path="/auth/forgot-password" element={<GuestRoute><AuthPage mode="forgot-password" /></GuestRoute>} />
+
+            {/* Other Auth Routes */}
+            <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
+            <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
+            <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />
+
+            {/* Info Pages */}
+            <Route path="/contact" element={<InfoPage mode="contact" />} />
+            <Route path="/error" element={<InfoPage mode="error" />} />
+            <Route path="/test" element={<TestPage />} />
+            <Route path="/test-two" element={<TestTwo />} />
+            <Route path="*" element={<InfoPage mode="404" />} />
+          </Route>
+
+          {/* Group B: Standalone Routes (Outside the shell) */}
+          <Route path="/loader" element={<OptionalAuthRoute><UploadLoader /></OptionalAuthRoute>} />
+          <Route path="/player" element={<PlayerPage />} />
 
           {/* Exports redirects */}
           <Route path="/apple-redirect" element={<AppleRedirect />} />
           <Route path="/tidal-redirect" element={<TidalRedirect />} />
           <Route path="/spotify-redirect" element={<SpotifyRedirect />} />
-
-          {/* Protected Auth Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<AuthPage mode="profile" />} />
-            <Route path="/sessions" element={<AuthPage mode="sessions" />} />
-            <Route path="/change-password" element={<AuthPage mode="change-password" />} />
-          </Route>
-
-          {/* Optional Auth Routes (work with or without login) */}
-          <Route path="/" element={<OptionalAuthRoute><UploadLanding /></OptionalAuthRoute>} />
-          <Route path="/loader" element={<OptionalAuthRoute><UploadLoader /></OptionalAuthRoute>} />
-          <Route path="/playlist" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
-          <Route path="/sonic-discovery" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
-
-          {/* Info Pages */}
-          <Route path="/contact" element={<InfoPage mode="contact" />} />
-          <Route path="/error" element={<InfoPage mode="error" />} />
-          <Route path="/test" element={<TestPage />} />
-          <Route path="/test-two" element={<TestTwo />} />
-          <Route path="/player" element={<PlayerPage />} />
-          <Route path="*" element={<InfoPage mode="404" />} />
         </Routes>
       </Suspense>
     </>

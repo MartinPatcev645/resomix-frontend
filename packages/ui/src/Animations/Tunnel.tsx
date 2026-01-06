@@ -217,6 +217,14 @@ export const Tunnel: React.FC<TunnelProps> = ({ aspectRatio }) => {
       renderer.dispose();
       material.dispose();
       geometry.dispose();
+
+      // Force context loss
+      const gl = renderer.getContext();
+      if (gl) {
+        const ext = gl.getExtension("WEBGL_lose_context");
+        if (ext) ext.loseContext();
+      }
+
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }

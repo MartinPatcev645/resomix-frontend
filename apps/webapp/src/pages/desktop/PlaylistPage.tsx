@@ -1,16 +1,15 @@
-import { Navbar, StaticNoise, GlobalFooter, SideLines, StatusMessage } from "@resomix/ui";
+import { StatusMessage } from "@resomix/ui";
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
-import { LogoHeader, LogoRFooter } from "@/components/index.ts";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
-import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
+import { BASE_BETA_URL } from "@resomix/config";
 
 export function PlaylistPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
+
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -82,45 +81,10 @@ export function PlaylistPage() {
           message="Playlist Private. Share to make it public to view"
         />
       ) : (
-        // color-noise-background
-        <div className="bg-[var(--color-secondary)]">
-          {/* Static noise background */}
-          {/* <StaticNoise color="#313132" opacity={0.5} zIndex={10} overscanVh={50} /> */}
-          <StaticNoise />
-
-          {/* Content layer */}
-          <div
-            style={{
-              margin: '0 auto',
-              color: 'var(--color-text-secondary)',
-              position: 'relative',
-              zIndex: 30,
-              maxWidth: '2560px',
-              overflowX: "hidden"
-            }}
-          >
-          <main>
-            <SideLines>
-              {/* Navbar */}
-              <header>
-                <Navbar
-                  logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-                  mode="playlist"
-                  baseUrl={BASE_LANDING_URL}
-                  baseBetaUrl={BASE_BETA_URL}
-                  customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-                  onProfileClick={() => navigate('/profile')}
-                  currentPath={location.pathname}
-                />
-              </header>
-
-              <PlaylistHero />
-              <PlaylistTable />
-              <GlobalFooter logo={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />} baseUrl={BASE_LANDING_URL} />
-            </SideLines>
-          </main>
-          </div>
-        </div>
+        <>
+          <PlaylistHero />
+          <PlaylistTable />
+        </>
       )}
     </AudioProvider>
   );

@@ -332,6 +332,14 @@ export function initContourSphere(
     if (leftSphere) {
       group.remove(leftSphere);
       group.remove(rightSphere!);
+
+      // Dispose old geometries
+      leftSphere.geometry.dispose();
+      rightSphere!.geometry.dispose();
+
+      // Dispose old materials
+      (leftSphere.material as THREE.Material).dispose();
+      (rightSphere!.material as THREE.Material).dispose();
     }
     const detail = settings.sphereDetail;
     const radius = 1;
@@ -524,7 +532,31 @@ export function initContourSphere(
     cancelAnimationFrame(animationId);
     window.removeEventListener("resize", onResize);
     if (mainScrollTrigger) mainScrollTrigger.kill();
+
+    // Recursive disposal of Three.js objects
+    scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach((mat) => mat.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      }
+    });
+
+    materialBase.dispose();
     renderer.dispose();
+
+    // Force context loss
+    const gl = renderer.getContext();
+    if (gl) {
+      const ext = gl.getExtension("WEBGL_lose_context");
+      if (ext) ext.loseContext();
+    }
+
     canvas.remove();
   };
 } 

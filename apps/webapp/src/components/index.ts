@@ -18,13 +18,15 @@ import PlaylistRating from "./Modals/PlaylistRating.tsx";
 import PlaylistShare from "./Modals/PlaylistShare.tsx";
 import PlaylistRename from "./Modals/PlaylistRename.tsx";
 import PlaylistExport from "./Modals/PlaylistExport.tsx";
-import StatusMessage from  "../../../../packages/ui/src/Elements/StatusMessage.tsx";
+import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
 import { ProtectedRoute } from "./ProtectedRoute.tsx";
 import { OptionalAuthRoute } from "./OptionalAuthRoute.tsx";
 import { GuestRoute } from "./GuestRoute.tsx";
 import { CCLicenseGroup } from "./icons/CCLicenseGroup.tsx";
+
+import { WebLayout } from "./Layout/WebLayout.tsx";
 
 export {
     LogoHeader,
@@ -54,4 +56,5 @@ export {
     OptionalAuthRoute,
     GuestRoute,
     CCLicenseGroup,
+    WebLayout,
 }

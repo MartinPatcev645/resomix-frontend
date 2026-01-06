@@ -5,9 +5,10 @@ import { useConfig } from "@resomix/stores";
 interface GlobalMobileFooterProps {
   logo: React.ReactNode;
   baseUrl?: string;
+  onNavigate?: (path: string) => void;
 }
 
-const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl = "https://resomix.com" }) => {
+const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl = "https://resomix.com", onNavigate }) => {
   const version = useConfig((s) => s.version);
 
   return (
@@ -18,7 +19,18 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
         </div>
         <div className="flex flex-col items-start px-[var(--px-10)] min-h-[var(--px-129)] mt-[var(--px-40)]">
           <div className="flex w-full justify-start">
-            <a href={baseUrl} aria-label="Resomix home" className="cursor-default footer-logo-link" id="footer-logo-link">
+            <a
+              href={baseUrl}
+              aria-label="Resomix home"
+              className="cursor-default footer-logo-link"
+              id="footer-logo-link"
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate(baseUrl);
+                }
+              }}
+            >
               {logo}
             </a>
           </div>
@@ -55,7 +67,18 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
             </a>
             <br />
             <br />
-            <a href={`${baseUrl}/contact`} aria-label="Resomix contact" className="hover:underline decoration-[var(--px-0-5)] footer-link" id="footer-contact-link">
+            <a
+              href={`${baseUrl}/contact`}
+              aria-label="Resomix contact"
+              className="hover:underline decoration-[var(--px-0-5)] footer-link"
+              id="footer-contact-link"
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate(`${baseUrl}/contact`);
+                }
+              }}
+            >
               contact_us()
             </a>
           </div>
