@@ -13,10 +13,11 @@ interface NavbarProps {
   baseUrl?: string;
   baseBetaUrl?: string;
   onProfileClick?: () => void;
+  onNavigate?: (path: string) => void;
   currentPath?: string; // Current page path for redirect after login
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath }) => {
+export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath, onNavigate }) => {
   const { showFeedbackForm } = useFeedbackStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -26,8 +27,8 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         style={{
           color: "var(--color-text-secondary)",
         }}>
-        <LinkButton text="About Us" path={`${baseUrl}/about`} className="nav-link" id="navbar-about-link" />
-        <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} className="nav-link" id="navbar-waitlist-link" />
+        <LinkButton text="About Us" path={`${baseUrl}/about`} className="nav-link" id="navbar-about-link" onClick={() => onNavigate?.(`${baseUrl}/about`)} />
+        <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} className="nav-link" id="navbar-waitlist-link" onClick={() => onNavigate?.(`${baseUrl}/waitlist`)} />
         <LinkButton text="Journal" path={`https://resomix.com/blog`} newTab={true} className="nav-link" id="navbar-journal-link" />
       </div>
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
@@ -55,7 +56,14 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
               className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
               customWidth="30"
               customHeight="30"
-              onClick={onProfileClick}
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate(`${baseBetaUrl}/profile`);
+                } else if (onProfileClick) {
+                  onProfileClick();
+                }
+              }}
             />
           </a>
         ) : (
@@ -65,7 +73,12 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
             className="auth-button"
             id="navbar-login-button"
             customWidth="min-w-[var(--px-80)]"
-            onClick={() => { }} // Empty handler for href navigation
+            onClick={(e) => {
+              if (onNavigate) {
+                e.preventDefault();
+                onNavigate(`${baseBetaUrl}/auth/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`);
+              }
+            }}
           />
         )}
       </div>

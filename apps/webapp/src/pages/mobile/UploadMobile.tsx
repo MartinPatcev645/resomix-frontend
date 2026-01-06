@@ -5,7 +5,6 @@ import AngleDown from "@/assets/icons/AngleDown.svg";
 import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
 import { UploadOne, UploadHero } from "@/sections/mobile/index.ts";
 import { BASE_LANDING_URL } from "@resomix/config";
-import { UploadLoader } from "@/components/index.ts";
 import { StatusMessage } from "@resomix/ui";
 import { useUploadStore } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
@@ -15,7 +14,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 
 export function UploadMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { showOverlay, response, error, setError } = useUploadStore();
+  const { response, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -110,12 +109,6 @@ export function UploadMobile() {
       {isMenuOpen && (
         <div className="fixed inset-0 z-[100]">
           <MenuPage onClose={() => setIsMenuOpen(false)} />
-        </div>
-      )}
-
-      {showOverlay && (
-        <div className="fixed inset-0 z-[9999]">
-          <UploadLoader />
         </div>
       )}
 

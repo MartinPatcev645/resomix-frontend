@@ -6,9 +6,10 @@ import { useConfig } from "@resomix/stores";
 interface GlobalFooterProps {
   logo: React.ReactNode;
   baseUrl?: string;
+  onNavigate?: (path: string) => void;
 }
 
-const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://resomix.com" }) => {
+const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://resomix.com", onNavigate }) => {
   const version = useConfig((s) => s.version);
 
   return (
@@ -19,7 +20,18 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
       <div className="flex flex-col gap-[var(--px-130)]">
         <div className="flex flex-col px-[var(--px-65)] min-h-[var(--px-129)]">
           <div className="flex w-full justify-start">
-            <a href={baseUrl} aria-label="Resomix home" className="cursor-default footer-logo-link" id="footer-logo-link">
+            <a
+              href={baseUrl}
+              aria-label="Resomix home"
+              className="cursor-default footer-logo-link"
+              id="footer-logo-link"
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate(baseUrl);
+                }
+              }}
+            >
               {logo}
             </a>
           </div>
@@ -77,7 +89,18 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               legal.info(): open('/support')
             </a>
             <br />
-            <a href={`${baseUrl}/contact`} aria-label="Resomix contact" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-contact-link">
+            <a
+              href={`${baseUrl}/contact`}
+              aria-label="Resomix contact"
+              className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              id="footer-contact-link"
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate(`${baseUrl}/contact`);
+                }
+              }}
+            >
               contact_us(): fetch('/contact')
             </a>
           </div>

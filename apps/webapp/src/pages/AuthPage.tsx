@@ -1,7 +1,4 @@
 import {
-  InfoPageLayout,
-  MobileNavbar,
-  Navbar,
   LoginContent,
   RegisterContent,
   ForgotPasswordContent,
@@ -12,27 +9,23 @@ import {
   ChangePasswordContent,
   SessionsContent,
 } from "@resomix/ui";
-import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
-import { useState } from "react";
-import { MenuPage } from "./index.ts";
-import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { useNavigate, useLocation } from "react-router-dom";
+import { BASE_BETA_URL } from "@resomix/config";
 
 interface AuthPageProps {
   mode:
-    | "login"
-    | "register"
-    | "forgot-password"
-    | "reset-password"
-    | "verify-email"
-    | "verify-2fa"
-    | "profile"
-    | "sessions"
-    | "change-password";
+  | "login"
+  | "register"
+  | "forgot-password"
+  | "reset-password"
+  | "verify-email"
+  | "verify-2fa"
+  | "profile"
+  | "sessions"
+  | "change-password";
 }
 
 export default function AuthPage({ mode }: AuthPageProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,11 +35,11 @@ export default function AuthPage({ mode }: AuthPageProps) {
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
+
     if (redirectTo) {
-      navigate("/auth/login", { 
+      navigate("/auth/login", {
         state: { from: redirectTo },
-        replace: true 
+        replace: true
       });
     } else {
       navigate("/auth/login", { replace: true });
@@ -57,22 +50,22 @@ export default function AuthPage({ mode }: AuthPageProps) {
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
-    navigate("/auth/register", { 
+
+    navigate("/auth/register", {
       state: redirectTo ? { from: redirectTo } : undefined,
-      replace: true 
+      replace: true
     });
   };
-  
+
   const handleNavigateForgotPassword = () => {
     // Preserve redirect information when navigating to forgot password
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
-    navigate("/auth/forgot-password", { 
+
+    navigate("/auth/forgot-password", {
       state: redirectTo ? { from: redirectTo } : undefined,
-      replace: true 
+      replace: true
     });
   };
   const handleNavigateProfile = () => navigate("/profile");
@@ -81,40 +74,32 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   // Success handlers
   const handleLoginSuccess = () => {
-    // Check for redirect destination from multiple sources:
-    // 1. React Router state (for protected routes)
-    // 2. URL query parameter (for public page logins)
-    // 3. Default to home page
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const from = fromState || fromQuery || "/";
-    
-    // Clean up the URL by removing query parameters
     navigate(from, { replace: true });
   };
 
   const handleRegisterSuccess = () => {
-    // Preserve redirect information for email verification
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
-    navigate("/auth/verify-email", { 
+
+    navigate("/auth/verify-email", {
       state: redirectTo ? { from: redirectTo } : undefined,
-      replace: true 
+      replace: true
     });
   };
 
   const handleVerifyEmailSuccess = () => {
-    // Preserve redirect information when going back to login
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
+
     if (redirectTo) {
-      navigate("/auth/login", { 
+      navigate("/auth/login", {
         state: { from: redirectTo },
-        replace: true 
+        replace: true
       });
     } else {
       navigate("/auth/login", { replace: true });
@@ -126,15 +111,14 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
 
   const handleResetPasswordSuccess = () => {
-    // Preserve redirect information when going back to login
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
+
     if (redirectTo) {
-      navigate("/auth/login", { 
+      navigate("/auth/login", {
         state: { from: redirectTo },
-        replace: true 
+        replace: true
       });
     } else {
       navigate("/auth/login", { replace: true });
@@ -142,26 +126,23 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
 
   const handle2FASuccess = () => {
-    // Use same redirect logic as login success
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const from = fromState || fromQuery || "/";
-    
     navigate(from, { replace: true });
   };
 
   const handleNavigate2FA = (userId: number) => {
-    // Preserve redirect information for 2FA flow
     const fromState = (location.state as any)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
-    
-    navigate("/auth/verify-2fa", { 
-      state: { 
-        userId, 
+
+    navigate("/auth/verify-2fa", {
+      state: {
+        userId,
         ...(redirectTo && { from: redirectTo })
-      }, 
-      replace: true 
+      },
+      replace: true
     });
   };
 
@@ -173,137 +154,75 @@ export default function AuthPage({ mode }: AuthPageProps) {
     navigate("/auth/login", { replace: true });
   };
 
-  // Navbar component (same pattern as InfoPage)
-  const navbar = (
-    <>
-      <div className="hidden lg:block">
-        <Navbar
-          logo={
-            <a
-              href={BASE_LANDING_URL}
-              aria-label="Resomix beta home"
-              className="cursor-default"
-            >
-              <LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-            </a>
-          }
-          mode={mode}
-          baseUrl={BASE_LANDING_URL}
-          baseBetaUrl={BASE_BETA_URL}
-          customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-          onProfileClick={() => navigate('/profile')}
-        />
-      </div>
-      <div className="block lg:hidden">
-        <MobileNavbar
-          logo={
-            <a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default">
-              <LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-            </a>
-          }
-          menuIcon={
-            <button
-              name="Open menu"
-              type="button"
-              onClick={() => setIsMenuOpen(true)}
-              aria-label="Open menu"
-              className="cursor-default"
-            >
-              <MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-            </button>
-          }
-          customClass="flex justify-between items-center align-center z-50 relative"
-        />
-      </div>
-    </>
-  );
-
   return (
     <>
-      <InfoPageLayout
-        navbar={navbar}
-        baseUrl={BASE_LANDING_URL}
-        LogoRFooter={
-          <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-        }
-        mode={mode}
-      >
-        {mode === "login" && (
-          <LoginContent
-            baseUrl={BASE_BETA_URL}
-            onLoginSuccess={handleLoginSuccess}
-            onNavigateRegister={handleNavigateRegister}
-            onNavigateForgotPassword={handleNavigateForgotPassword}
-            onNavigate2FA={handleNavigate2FA}
-          />
-        )}
-        {mode === "register" && (
-          <RegisterContent
-            baseUrl={BASE_BETA_URL}
-            onRegisterSuccess={handleRegisterSuccess}
-            onNavigateLogin={handleNavigateLogin}
-          />
-        )}
-        {mode === "forgot-password" && (
-          <ForgotPasswordContent
-            baseUrl={BASE_BETA_URL}
-            onNavigateLogin={handleNavigateLogin}
-            onSuccess={handleForgotPasswordSuccess}
-          />
-        )}
-        {mode === "reset-password" && (
-          <ResetPasswordContent
-            baseUrl={BASE_BETA_URL}
-            onSuccess={handleResetPasswordSuccess}
-            onNavigateLogin={handleNavigateLogin}
-            onNavigateForgotPassword={handleNavigateForgotPassword}
-          />
-        )}
-        {mode === "verify-email" && (
-          <VerifyEmailContent
-            baseUrl={BASE_BETA_URL}
-            onSuccess={handleVerifyEmailSuccess}
-            onNavigateLogin={handleNavigateLogin}
-          />
-        )}
-        {mode === "verify-2fa" && (
-          <Verify2FAContent
-            baseUrl={BASE_BETA_URL}
-            userId={(location.state as any)?.userId}
-            onSuccess={handle2FASuccess}
-            onNavigateLogin={handleNavigateLogin}
-          />
-        )}
-        {mode === "profile" && (
-          <ProfileContent
-            baseUrl={BASE_BETA_URL}
-            onNavigateChangePassword={handleNavigateChangePassword}
-            onNavigateSessions={handleNavigateSessions}
-            onLogout={handleLogout}
-          />
-        )}
-        {mode === "change-password" && (
-          <ChangePasswordContent
-            baseUrl={BASE_BETA_URL}
-            onSuccess={handleChangePasswordSuccess}
-            onCancel={handleNavigateProfile}
-          />
-        )}
-        {mode === "sessions" && (
-          <SessionsContent
-            baseUrl={BASE_BETA_URL}
-            onNavigateProfile={handleNavigateProfile}
-          />
-        )}
-      </InfoPageLayout>
-
-      {/* Menu Overlay - same as InfoPage */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-[100]">
-          <MenuPage onClose={() => setIsMenuOpen(false)} />
-        </div>
+      {mode === "login" && (
+        <LoginContent
+          baseUrl={BASE_BETA_URL}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigateRegister={handleNavigateRegister}
+          onNavigateForgotPassword={handleNavigateForgotPassword}
+          onNavigate2FA={handleNavigate2FA}
+        />
+      )}
+      {mode === "register" && (
+        <RegisterContent
+          baseUrl={BASE_BETA_URL}
+          onRegisterSuccess={handleRegisterSuccess}
+          onNavigateLogin={handleNavigateLogin}
+        />
+      )}
+      {mode === "forgot-password" && (
+        <ForgotPasswordContent
+          baseUrl={BASE_BETA_URL}
+          onNavigateLogin={handleNavigateLogin}
+          onSuccess={handleForgotPasswordSuccess}
+        />
+      )}
+      {mode === "reset-password" && (
+        <ResetPasswordContent
+          baseUrl={BASE_BETA_URL}
+          onSuccess={handleResetPasswordSuccess}
+          onNavigateLogin={handleNavigateLogin}
+          onNavigateForgotPassword={handleNavigateForgotPassword}
+        />
+      )}
+      {mode === "verify-email" && (
+        <VerifyEmailContent
+          baseUrl={BASE_BETA_URL}
+          onSuccess={handleVerifyEmailSuccess}
+          onNavigateLogin={handleNavigateLogin}
+        />
+      )}
+      {mode === "verify-2fa" && (
+        <Verify2FAContent
+          baseUrl={BASE_BETA_URL}
+          userId={(location.state as any)?.userId}
+          onSuccess={handle2FASuccess}
+          onNavigateLogin={handleNavigateLogin}
+        />
+      )}
+      {mode === "profile" && (
+        <ProfileContent
+          baseUrl={BASE_BETA_URL}
+          onNavigateChangePassword={handleNavigateChangePassword}
+          onNavigateSessions={handleNavigateSessions}
+          onLogout={handleLogout}
+        />
+      )}
+      {mode === "change-password" && (
+        <ChangePasswordContent
+          baseUrl={BASE_BETA_URL}
+          onSuccess={handleChangePasswordSuccess}
+          onCancel={handleNavigateProfile}
+        />
+      )}
+      {mode === "sessions" && (
+        <SessionsContent
+          baseUrl={BASE_BETA_URL}
+          onNavigateProfile={handleNavigateProfile}
+        />
       )}
     </>
   );
 }
-

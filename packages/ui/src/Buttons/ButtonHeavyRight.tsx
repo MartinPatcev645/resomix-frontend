@@ -3,7 +3,7 @@ import { IconComp } from "../Elements/IconComp";
 
 interface ButtonHeavyRightProps {
   text: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
   transparent?: boolean;
   link_arrow?: boolean;
   className?: string;

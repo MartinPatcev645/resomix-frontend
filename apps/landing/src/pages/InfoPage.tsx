@@ -1,8 +1,4 @@
-import { InfoPageLayout, MobileNavbar, Navbar, ContactContent, ErrorContent, Error404 } from "@resomix/ui";
-import { LogoHeader, LogoRFooter, MenuIcon } from "@/components/index.ts";
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
-import { MenuPage } from "./index.ts";
+import { ContactContent, ErrorContent, Error404 } from "@resomix/ui";
 import TermsContent from "@/content/TermsContent.tsx";
 import PrivacyContent from "@/content/PrivacyContent.tsx";
 import WaitListContent from "@/content/WaitList.tsx";
@@ -13,52 +9,14 @@ interface InfoPageProps {
 }
 
 export default function InfoPage({ mode }: InfoPageProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-
-  const navbar = (
-    <>
-      <div className="hidden lg:block">
-        <Navbar
-          logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-          mode={mode}
-          baseUrl={BASE_LANDING_URL}
-          baseBetaUrl={BASE_BETA_URL}
-          customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-          currentPath={location.pathname}
-        />
-      </div>
-      <div className="block lg:hidden">
-        <MobileNavbar
-          logo={<a href={BASE_LANDING_URL} aria-label="Resomix home" className="cursor-default"><LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></a>}
-          menuIcon={<button type="button" name="Open menu" onClick={() => setIsMenuOpen(true)} aria-label="Open menu" className="cursor-default"><MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" /></button>}
-          customClass="flex justify-between items-center align-center z-50 relative"
-        />
-      </div>
-    </>
-  );
-
   return (
-    <>
-      <InfoPageLayout
-        navbar={navbar}
-        baseUrl={BASE_LANDING_URL}
-        LogoRFooter={<LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />}
-        mode={mode}
-      >
-        {mode === "terms" && <TermsContent />}
-        {mode === "privacy" && <PrivacyContent />}
-        {mode === "contact" && <ContactContent baseUrl={BASE_LANDING_URL} />}
-        {mode === "waitlist" && <WaitListContent baseUrl={BASE_LANDING_URL} />}
-        {mode === "error" && <ErrorContent baseUrl={BASE_BETA_URL} />}
-        {mode === "404" && <Error404 baseUrl={BASE_LANDING_URL} />}
-      </InfoPageLayout>
-      {/* Menu Overlay */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-[100]">
-          <MenuPage onClose={() => setIsMenuOpen(false)} />
-        </div>
-      )}
-    </>
+    <div className="min-h-screen p-[var(--px-20)] lg:p-[var(--px-40)]">
+      {mode === "terms" && <TermsContent />}
+      {mode === "privacy" && <PrivacyContent />}
+      {mode === "contact" && <ContactContent baseUrl={BASE_LANDING_URL} />}
+      {mode === "waitlist" && <WaitListContent baseUrl={BASE_LANDING_URL} />}
+      {mode === "error" && <ErrorContent baseUrl={BASE_BETA_URL} />}
+      {mode === "404" && <Error404 baseUrl={BASE_LANDING_URL} />}
+    </div>
   );
 }

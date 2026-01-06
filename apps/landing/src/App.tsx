@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
-import { WelcomeMessage, FeedbackForm, SineWaves, StaticNoise } from "@resomix/ui";
+import { WelcomeMessage, FeedbackForm, SineWaves } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { ProtectedRoute, OptionalAuthRoute, GuestRoute } from "@/components/index.ts";
+import { ProtectedRoute, OptionalAuthRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/desktop/HomePage.tsx").then(m => ({ default: m.HomePage })));
 const HomeMobile = lazy(() => import("@/pages/mobile/HomeMobile.tsx").then(m => ({ default: m.HomeMobile })));
@@ -40,32 +40,15 @@ function UsedAboutPage() {
 function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
-  const { isDesktop } = useResponsive();
-  
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
   useCrossTabAuth();
 
-  // Show loading during auth initialization
+  // Show simple loading during auth initialization to avoid flashes
   if (isLoading || !isInitialized) {
     return (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--color-secondary, #fff)',
-        overflow: 'hidden'
-      }}>
-        {isDesktop && <StaticNoise />}
-        <div style={{
-          position: 'relative',
-          zIndex: 10,
-          width: '100%',
-          maxWidth: '300px',
-          padding: '20px'
-        }}>
+      <div className="bg-[var(--color-secondary)] min-h-screen flex items-center justify-center">
+        <div className="w-full max-w-[300px] p-5">
           <SineWaves />
         </div>
       </div>
@@ -86,35 +69,37 @@ function App() {
 
       <Suspense fallback={null}>
         <Routes>
-          {/* Guest-Only Auth Routes (redirect to home if logged in) */}
-          <Route path="/auth/login" element={<GuestRoute><AuthPage mode="login" /></GuestRoute>} />
-          <Route path="/auth/register" element={<GuestRoute><AuthPage mode="register" /></GuestRoute>} />
-          <Route path="/auth/forgot-password" element={<GuestRoute><AuthPage mode="forgot-password" /></GuestRoute>} />
-          
-          {/* Auth Routes that work regardless of login state */}
-          <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
-          <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
-          <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />
+          <Route element={<LandingLayout />}>
+            {/* Guest-Only Auth Routes */}
+            <Route path="/auth/login" element={<GuestRoute><AuthPage mode="login" /></GuestRoute>} />
+            <Route path="/auth/register" element={<GuestRoute><AuthPage mode="register" /></GuestRoute>} />
+            <Route path="/auth/forgot-password" element={<GuestRoute><AuthPage mode="forgot-password" /></GuestRoute>} />
 
-          {/* Protected Auth Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<AuthPage mode="profile" />} />
-            <Route path="/sessions" element={<AuthPage mode="sessions" />} />
-            <Route path="/change-password" element={<AuthPage mode="change-password" />} />
+            {/* Auth Routes that work regardless of login state */}
+            <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
+            <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
+            <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />
+
+            {/* Protected Auth Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<AuthPage mode="profile" />} />
+              <Route path="/sessions" element={<AuthPage mode="sessions" />} />
+              <Route path="/change-password" element={<AuthPage mode="change-password" />} />
+            </Route>
+
+            {/* Optional Auth Routes */}
+            <Route path="/" element={<OptionalAuthRoute><UsedHomePage /></OptionalAuthRoute>} />
+            <Route path="/about" element={<OptionalAuthRoute><UsedAboutPage /></OptionalAuthRoute>} />
+
+            {/* Info Pages */}
+            <Route path="/terms" element={<InfoPage mode="terms" />} />
+            <Route path="/privacy" element={<InfoPage mode="privacy" />} />
+            <Route path="/contact" element={<InfoPage mode="contact" />} />
+            <Route path="/waitlist" element={<InfoPage mode="waitlist" />} />
+            <Route path="/error" element={<InfoPage mode="error" />} />
+            <Route path="/test" element={<TestPage />} />
+            <Route path="*" element={<InfoPage mode="404" />} />
           </Route>
-
-          {/* Optional Auth Routes (work with or without login) */}
-          <Route path="/" element={<OptionalAuthRoute><UsedHomePage /></OptionalAuthRoute>} />
-          <Route path="/about" element={<OptionalAuthRoute><UsedAboutPage /></OptionalAuthRoute>} />
-
-          {/* Info Pages */}
-          <Route path="/terms" element={<InfoPage mode="terms" />} />
-          <Route path="/privacy" element={<InfoPage mode="privacy" />} />
-          <Route path="/contact" element={<InfoPage mode="contact" />} />
-          <Route path="/waitlist" element={<InfoPage mode="waitlist" />} />
-          <Route path="/error" element={<InfoPage mode="error" />} />
-          <Route path="/test" element={<TestPage />} />
-          <Route path="*" element={<InfoPage mode="404" />} />
         </Routes>
       </Suspense>
     </>
