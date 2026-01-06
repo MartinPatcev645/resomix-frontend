@@ -7,7 +7,7 @@
     <!-- Main landing page -->
     <url>
         <loc>https://resomix.com/</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
@@ -16,35 +16,35 @@
     Example for future pages: -->
     <url>
         <loc>https://resomix.com/about</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     
     <url>
         <loc>https://resomix.com/contact</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     
     <url>
         <loc>https://resomix.com/terms</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://resomix.com/privacy</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://resomix.com/waitlist</loc>
-        <lastmod>2025-10-15</lastmod>
+        <lastmod>2026-01-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>

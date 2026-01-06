@@ -12,7 +12,7 @@
   Tailwind CSS: https://tailwindcss.com
 
 /* SITE */
-  Last update: 2025/07/30
+  Last update: 2026/01/13
   Language: English
   Doctype: HTML5
   IDE: Visual Studio Code

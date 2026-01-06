@@ -10,7 +10,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import React from "react";
 
 export function UploadPage() {
-  const { showOverlay, response, setOverlay, error, setError } = useUploadStore();
+  const { showOverlay, response, error, setError } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,11 +22,11 @@ export function UploadPage() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    
+
     // Prevent infinite loop by checking if we've already processed this ID
     if (id && processedId.current !== id) {
       processedId.current = id;
-      
+
       // First check cache before making API call
       const cachedResponse = loadCachedResponse(id);
       if (cachedResponse) {
@@ -49,8 +49,7 @@ export function UploadPage() {
   React.useEffect(() => {
     if (response && response.success) {
       setPlaylistResponse(response as any);
-      // Hide loader if it was shown
-      setOverlay(false);
+
       const playlistId = (response as any).data?.playlist?.id || null;
       if (playlistId) {
         navigate(`/playlist?id=${playlistId}`);
@@ -58,7 +57,15 @@ export function UploadPage() {
         navigate('/playlist');
       }
     }
-  }, [response, setPlaylistResponse, navigate, setOverlay]);
+  }, [response, setPlaylistResponse, navigate]);
+
+  // Cleanup effect to reset upload store state when leaving the page
+  // This avoids the "Back" button loop and ensures loader is closed
+  React.useEffect(() => {
+    return () => {
+      useUploadStore.getState().reset();
+    };
+  }, []);
 
   return (
     // <div className="bg-[var(--color-noise-background)]">
