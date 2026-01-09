@@ -119,23 +119,23 @@ export function WebLayout() {
     }, [location.pathname]);
 
     return (
-        <div className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
-            {/* Persistent Static Noise */}
-            <StaticNoise />
+        <OptionalAuthRoute>
+            <div className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
+                {/* Persistent Static Noise */}
+                <StaticNoise />
 
-            {/* Persistent Upload / Search Overlay */}
-            {showOverlay && (
-                <div className="fixed inset-0 z-[9999]" id="upload-loader-wrapper">
-                    <UploadLoader />
-                </div>
-            )}
+                {/* Persistent Upload / Search Overlay */}
+                {showOverlay && (
+                    <div className="fixed inset-0 z-[9999]" id="upload-loader-wrapper">
+                        <UploadLoader />
+                    </div>
+                )}
 
-            {/* Persistent Layout Content */}
-            <div
-                className={`mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-                style={{ overflowX: "hidden" }}
-            >
-                <OptionalAuthRoute>
+                {/* Persistent Layout Content */}
+                <div
+                    className={`mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                    style={{ overflowX: "hidden" }}
+                >
                     <SideLines
                         navbar={isDesktop ? undefined : mobileNavbar}
                         mode={mode}
@@ -157,15 +157,15 @@ export function WebLayout() {
                             </div>
                         )}
                     </SideLines>
-                </OptionalAuthRoute>
-            </div>
-
-            {/* Menu Overlay for Mobile */}
-            {isMenuOpen && (
-                <div className="fixed inset-0 z-[100]">
-                    <MenuPage onClose={() => setIsMenuOpen(false)} />
                 </div>
-            )}
-        </div>
+
+                {/* Menu Overlay for Mobile */}
+                {isMenuOpen && (
+                    <div className="fixed inset-0 z-[100]">
+                        <MenuPage onClose={() => setIsMenuOpen(false)} />
+                    </div>
+                )}
+            </div>
+        </OptionalAuthRoute>
     );
 }
