@@ -118,7 +118,7 @@ export function WebLayout() {
     }, [location.pathname]);
 
     return (
-        <div className={`bg-[var(--color-primary-background)] ${!showOverlay ? 'lg:bg-[var(--color-secondary)]' : ''} min-h-screen relative overflow-x-hidden`}>
+        <div className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
             {/* Persistent Static Noise */}
             <StaticNoise />
 
