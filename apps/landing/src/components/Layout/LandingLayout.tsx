@@ -4,6 +4,7 @@ import { Navbar, MobileNavbar, StaticNoise, GlobalFooter, GlobalMobileFooter, Si
 import { LogoHeader } from "../LogoHeader.tsx";
 import { LogoRFooter } from "../LogoRFooter.tsx";
 import { MenuIcon } from "../MenuIcon.tsx";
+import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import { useResponsive } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { MenuPage } from "@/pages/index.ts";
@@ -116,38 +117,40 @@ export function LandingLayout() {
     }, [location.pathname]);
 
     return (
-        <div className="bg-[var(--color-secondary)] min-h-screen relative">
-            <StaticNoise />
-            <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
-                <SideLines
-                    navbar={isDesktop ? undefined : mobileNavbar}
-                    mode={mode}
-                >
-                    {isDesktop && <header>{desktopNavbar}</header>}
-
-                    <main
-                        key={location.pathname}
-                        className="page-transition"
+        <OptionalAuthRoute>
+            <div className="bg-[var(--color-secondary)] min-h-screen relative">
+                <StaticNoise />
+                <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
+                    <SideLines
+                        navbar={isDesktop ? undefined : mobileNavbar}
+                        mode={mode}
                     >
-                        <Outlet />
-                    </main>
+                        {isDesktop && <header>{desktopNavbar}</header>}
 
-                    {isDesktop ? (
-                        <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                    ) : (
-                        <div className="mt-[var(--px-60)]">
-                            <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                        </div>
-                    )}
-                </SideLines>
-            </div>
+                        <main
+                            key={location.pathname}
+                            className="page-transition"
+                        >
+                            <Outlet />
+                        </main>
 
-            {/* Menu Overlay for Mobile */}
-            {isMenuOpen && (
-                <div className="fixed inset-0 z-[100]">
-                    <MenuPage onClose={() => setIsMenuOpen(false)} />
+                        {isDesktop ? (
+                            <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                        ) : (
+                            <div className="mt-[var(--px-60)]">
+                                <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                            </div>
+                        )}
+                    </SideLines>
                 </div>
-            )}
-        </div>
+
+                {/* Menu Overlay for Mobile */}
+                {isMenuOpen && (
+                    <div className="fixed inset-0 z-[100]">
+                        <MenuPage onClose={() => setIsMenuOpen(false)} />
+                    </div>
+                )}
+            </div>
+        </OptionalAuthRoute>
     );
 }

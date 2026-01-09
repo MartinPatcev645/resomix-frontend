@@ -80,7 +80,12 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
           <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
             <CodeTyping
               speed={50}
-              text="© 2026 Resomix // built on beatmaps and algorithms"
+              text="© 2026 Resomix Inc. // Demo Stage"
+              multiline={true}
+            />
+            <CodeTyping
+              speed={70}
+              text="All tracks CC BY-NC-SA 3.0 licensed Non-commercial prototype | licensing@resomix.com"
               multiline={true}
             />
           </div>
