@@ -85,7 +85,12 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
           <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)]">
             <CodeTyping
               speed={50}
-              text="© 2026 Resomix<br />// built on beatmaps and algorithms"
+              text="© 2026 Resomix Inc.<br />// Demo Stage"
+              multiline={true}
+            />
+            <CodeTyping
+              speed={70}
+              text="All tracks CC BY-NC-SA 3.0<br />licensed Non-commercial prototype<br />licensing@resomix.com"
               multiline={true}
             />
           </div>
