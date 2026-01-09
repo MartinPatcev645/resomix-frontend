@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, SineWaves } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { ProtectedRoute, OptionalAuthRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
+import { ProtectedRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/desktop/HomePage.tsx").then(m => ({ default: m.HomePage })));
 const HomeMobile = lazy(() => import("@/pages/mobile/HomeMobile.tsx").then(m => ({ default: m.HomeMobile })));
@@ -88,8 +88,8 @@ function App() {
             </Route>
 
             {/* Optional Auth Routes */}
-            <Route path="/" element={<OptionalAuthRoute><UsedHomePage /></OptionalAuthRoute>} />
-            <Route path="/about" element={<OptionalAuthRoute><UsedAboutPage /></OptionalAuthRoute>} />
+            <Route path="/" element={<UsedHomePage />} />
+            <Route path="/about" element={<UsedAboutPage />} />
 
             {/* Info Pages */}
             <Route path="/terms" element={<InfoPage mode="terms" />} />

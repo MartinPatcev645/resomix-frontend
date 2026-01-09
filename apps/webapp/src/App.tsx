@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
-import { ProtectedRoute, OptionalAuthRoute, GuestRoute, WebLayout } from "@/components/index.ts";
+import { ProtectedRoute, GuestRoute, WebLayout } from "@/components/index.ts";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
@@ -107,9 +107,9 @@ function App() {
           {/* Group A: Routes wrapped in persistent WebLayout shell */}
           <Route element={<WebLayout />}>
             {/* Optional Auth Routes (work with or without login) */}
-            <Route path="/" element={<OptionalAuthRoute><UploadLanding /></OptionalAuthRoute>} />
-            <Route path="/playlist" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
-            <Route path="/sonic-discovery" element={<OptionalAuthRoute><PlaylistLanding /></OptionalAuthRoute>} />
+            <Route path="/" element={<UploadLanding />} />
+            <Route path="/playlist" element={<PlaylistLanding />} />
+            <Route path="/sonic-discovery" element={<PlaylistLanding />} />
 
             {/* Protected Auth Routes */}
             <Route element={<ProtectedRoute />}>
@@ -137,7 +137,7 @@ function App() {
           </Route>
 
           {/* Group B: Standalone Routes (Outside the shell) */}
-          <Route path="/loader" element={<OptionalAuthRoute><UploadLoader /></OptionalAuthRoute>} />
+          <Route path="/loader" element={<UploadLoader />} />
           <Route path="/player" element={<PlayerPage />} />
 
           {/* Exports redirects */}

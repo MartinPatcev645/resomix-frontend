@@ -4,6 +4,7 @@ import { Navbar, MobileNavbar, StaticNoise, GlobalFooter, GlobalMobileFooter, Si
 import { LogoHeader } from "../icons/LogoHeader.tsx";
 import { LogoRFooter } from "../icons/LogoRFooter.tsx";
 import { MenuIcon } from "../icons/MenuIcon.tsx";
+import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import UploadLoader from "../upload/UploadLoader.tsx";
 import { useResponsive, useUploadStore } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
@@ -134,27 +135,29 @@ export function WebLayout() {
                 className={`mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                 style={{ overflowX: "hidden" }}
             >
-                <SideLines
-                    navbar={isDesktop ? undefined : mobileNavbar}
-                    mode={mode}
-                >
-                    {isDesktop && <header>{desktopNavbar}</header>}
-
-                    <main
-                        key={location.pathname}
-                        className="page-transition"
+                <OptionalAuthRoute>
+                    <SideLines
+                        navbar={isDesktop ? undefined : mobileNavbar}
+                        mode={mode}
                     >
-                        <Outlet />
-                    </main>
+                        {isDesktop && <header>{desktopNavbar}</header>}
 
-                    {isDesktop ? (
-                        <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                    ) : (
-                        <div className="mt-[var(--px-60)]">
-                            <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                        </div>
-                    )}
-                </SideLines>
+                        <main
+                            key={location.pathname}
+                            className="page-transition"
+                        >
+                            <Outlet />
+                        </main>
+
+                        {isDesktop ? (
+                            <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                        ) : (
+                            <div className="mt-[var(--px-60)]">
+                                <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                            </div>
+                        )}
+                    </SideLines>
+                </OptionalAuthRoute>
             </div>
 
             {/* Menu Overlay for Mobile */}

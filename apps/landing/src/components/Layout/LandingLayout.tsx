@@ -4,6 +4,7 @@ import { Navbar, MobileNavbar, StaticNoise, GlobalFooter, GlobalMobileFooter, Si
 import { LogoHeader } from "../LogoHeader.tsx";
 import { LogoRFooter } from "../LogoRFooter.tsx";
 import { MenuIcon } from "../MenuIcon.tsx";
+import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import { useResponsive } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { MenuPage } from "@/pages/index.ts";
@@ -119,27 +120,29 @@ export function LandingLayout() {
         <div className="bg-[var(--color-secondary)] min-h-screen relative">
             <StaticNoise />
             <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
-                <SideLines
-                    navbar={isDesktop ? undefined : mobileNavbar}
-                    mode={mode}
-                >
-                    {isDesktop && <header>{desktopNavbar}</header>}
-
-                    <main
-                        key={location.pathname}
-                        className="page-transition"
+                <OptionalAuthRoute>
+                    <SideLines
+                        navbar={isDesktop ? undefined : mobileNavbar}
+                        mode={mode}
                     >
-                        <Outlet />
-                    </main>
+                        {isDesktop && <header>{desktopNavbar}</header>}
 
-                    {isDesktop ? (
-                        <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                    ) : (
-                        <div className="mt-[var(--px-60)]">
-                            <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                        </div>
-                    )}
-                </SideLines>
+                        <main
+                            key={location.pathname}
+                            className="page-transition"
+                        >
+                            <Outlet />
+                        </main>
+
+                        {isDesktop ? (
+                            <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                        ) : (
+                            <div className="mt-[var(--px-60)]">
+                                <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                            </div>
+                        )}
+                    </SideLines>
+                </OptionalAuthRoute>
             </div>
 
             {/* Menu Overlay for Mobile */}
