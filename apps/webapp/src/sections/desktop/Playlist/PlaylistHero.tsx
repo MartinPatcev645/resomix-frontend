@@ -453,7 +453,7 @@ const PlaylistHero: React.FC = () => {
               </div>
               {/* Creative Commons License Icons - Bottom Right */}
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
-                <CCLicenseGroup size={14} />
+                <CCLicenseGroup size={9} />
               </div>
             </div>
           </div>
