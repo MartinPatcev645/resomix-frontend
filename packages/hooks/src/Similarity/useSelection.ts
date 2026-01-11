@@ -74,7 +74,7 @@ export function useTrackSimilarity() {
           // Success path
           setProgress(100);
           setResponse(result as UploadResult);
-          setPlaylistResponse(result as any);
+          setPlaylistResponse(result as any, false);
         } else {
           // API indicated failure – surface error and keep overlay to show banner
           setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));

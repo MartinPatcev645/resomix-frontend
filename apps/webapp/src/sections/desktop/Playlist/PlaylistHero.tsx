@@ -452,9 +452,11 @@ const PlaylistHero: React.FC = () => {
                 </Tooltip>
               </div>
               {/* Creative Commons License Icons - Bottom Right */}
-              <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
-                <CCLicenseGroup size={9} />
-              </div>
+              {!playlistData?.isUpload && (
+                <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
+                  <CCLicenseGroup size={9} />
+                </div>
+              )}
             </div>
           </div>
           <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
