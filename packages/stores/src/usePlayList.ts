@@ -23,6 +23,7 @@ export interface PlaylistData {
   queried_track: Track
   similar_tracks: Track[]
   playlist: Playlist
+  isUpload?: boolean
 }
 
 export interface PlaylistResponse {
@@ -159,8 +160,8 @@ interface PlaylistStore {
   trackRatings: Record<string, number>
 
   // Actions
-  setPlaylistData: (data: PlaylistData) => void
-  setPlaylistResponse: (response: PlaylistResponse) => void
+  setPlaylistData: (data: PlaylistData, isUpload?: boolean) => void
+  setPlaylistResponse: (response: PlaylistResponse, isUpload?: boolean) => void
   setTrackRating: (trackId: string, rating: number) => void
   clearPlaylistData: () => void
   setLoading: (loading: boolean) => void
@@ -185,13 +186,23 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   trackRatings: {},
 
   // Actions
-  setPlaylistData: (data) => set({ playlistData: data, error: null }),
+  setPlaylistData: (data, isUpload) => set({
+    playlistData: {
+      ...data,
+      isUpload: isUpload !== undefined ? isUpload : (data.isUpload ?? false)
+    },
+    error: null
+  }),
 
-  setPlaylistResponse: (response) => {
+  setPlaylistResponse: (response, isUpload) => {
     if (response.success) {
-      set({ playlistData: response.data, error: null })
+      const dataWithUpload = {
+        ...response.data,
+        isUpload: isUpload !== undefined ? isUpload : (response.data.isUpload ?? false)
+      };
+      set({ playlistData: dataWithUpload, error: null })
       // Auto-save to cache when response is set
-      get().saveResponseToCache(response)
+      get().saveResponseToCache({ ...response, data: dataWithUpload })
     } else {
       set({ error: 'Failed to load playlist data', playlistData: null })
     }

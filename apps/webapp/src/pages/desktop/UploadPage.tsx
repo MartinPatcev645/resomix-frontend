@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import React from "react";
 
 export function UploadPage() {
-  const { response, error, setError } = useUploadStore();
+  const { response, error, setError, isFileUpload } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -43,7 +43,7 @@ export function UploadPage() {
   // Watch for API completion and route to playlist
   React.useEffect(() => {
     if (response && response.success) {
-      setPlaylistResponse(response as any);
+      setPlaylistResponse(response as any, isFileUpload);
 
       const playlistId = (response as any).data?.playlist?.id || null;
       if (playlistId) {

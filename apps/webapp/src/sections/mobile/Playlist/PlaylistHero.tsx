@@ -236,9 +236,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </button>
             </div>
             {/* Creative Commons License Icons - Bottom Right */}
-            <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
-              <CCLicenseGroup size={8} />
-            </div>
+            {!playlistData?.isUpload && (
+              <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
+                <CCLicenseGroup size={8} />
+              </div>
+            )}
           </div>
         </div>
         <img src={AngleDownSvg} draggable={false} alt="arrow_down" aria-hidden="true" loading="lazy" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
