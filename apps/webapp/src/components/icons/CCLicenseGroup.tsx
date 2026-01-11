@@ -1,13 +1,8 @@
 import { Tooltip } from '@resomix/ui';
-import { useConfig } from '@resomix/stores';
-import CCSvg from '@/assets/icons/cc/cc.svg';
-import LittleManSvg from '@/assets/icons/cc/little_man.svg';
-import NoDollarSvg from '@/assets/icons/cc/no_dollar.svg';
-import RoundArrowSvg from '@/assets/icons/cc/round_arrow.svg';
 
 interface CCLicenseGroupProps {
     /**
-     * Size of each icon (width and height in px). Defaults to 16.
+     * Size of each icon (height in px, width will auto-scale). Defaults to 16.
      */
     size?: number;
     /**
@@ -17,31 +12,43 @@ interface CCLicenseGroupProps {
 }
 
 /**
- * Creative Commons License Icon Group (CC BY-NC-SA 3.0).
- * Displays four icons horizontally: CC, Attribution (little man), NonCommercial (no dollar), ShareAlike (round arrow).
+ * Creative Commons License Icon Group.
+ * Displays three icons horizontally: CC BY 4.0, CC0 1.0, and Public Domain Mark 1.0.
  * Each icon is independently clickable and hoverable.
  */
 export function CCLicenseGroup({
     size = 16,
     className = '',
 }: CCLicenseGroupProps) {
-    const { ccLicenseUrl } = useConfig();
-
     const icons = [
-        { src: CCSvg, alt: 'Creative Commons', label: 'Creative Commons' },
-        { src: LittleManSvg, alt: 'Attribution', label: 'Attribution (BY)' },
-        { src: NoDollarSvg, alt: 'NonCommercial', label: 'Non-Commercial (NC)' },
-        { src: RoundArrowSvg, alt: 'ShareAlike', label: 'Share-Alike (SA)' },
+        {
+            href: "https://creativecommons.org/licenses/by/4.0/",
+            src: "https://licensebuttons.net/l/by/4.0/88x31.png",
+            alt: "Creative Commons License",
+            label: "Creative Commons License (BY 4.0)"
+        },
+        {
+            href: "https://creativecommons.org/publicdomain/zero/1.0/",
+            src: "https://licensebuttons.net/l/zero/1.0/88x31.png",
+            alt: "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+            label: "CC0 1.0 Universal"
+        },
+        {
+            href: "https://creativecommons.org/publicdomain/mark/1.0/",
+            src: "https://licensebuttons.net/p/mark/1.0/88x31.png",
+            alt: "Public Domain Mark 1.0",
+            label: "Public Domain Mark 1.0"
+        }
     ];
 
     return (
-        <div className={`inline-flex items-center gap-[var(--px-2)] ${className}`.trim()}>
+        <div className={`inline-flex items-center gap-[var(--px-3)] ${className}`.trim()}>
             {icons.map((icon, index) => (
                 <Tooltip key={index} message={icon.label}>
                     <a
-                        href={ccLicenseUrl}
+                        href={icon.href}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="license noopener noreferrer"
                         className="transition-opacity hover:opacity-70 hover:cursor-pointer flex items-center justify-center"
                         aria-label={icon.label}
                     >
@@ -51,9 +58,9 @@ export function CCLicenseGroup({
                             draggable={false}
                             className="cc-license-icon"
                             style={{
-                                width: `var(--px-${size})`,
                                 height: `var(--px-${size})`,
-                                filter: 'invert(1)'
+                                width: 'auto',
+                                borderWidth: 0
                             }}
                         />
                     </a>

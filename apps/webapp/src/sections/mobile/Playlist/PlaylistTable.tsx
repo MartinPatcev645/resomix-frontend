@@ -193,7 +193,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </button>
                                 {/* Creative Commons License Icons - Bottom Right */}
                                 <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
-                                    <CCLicenseGroup size={10} />
+                                    <CCLicenseGroup size={7} />
                                 </div>
                             </div>
                         </div>

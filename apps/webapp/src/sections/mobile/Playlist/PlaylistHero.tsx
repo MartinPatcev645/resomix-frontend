@@ -237,7 +237,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
             </div>
             {/* Creative Commons License Icons - Bottom Right */}
             <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
-              <CCLicenseGroup size={12} />
+              <CCLicenseGroup size={8} />
             </div>
           </div>
         </div>
