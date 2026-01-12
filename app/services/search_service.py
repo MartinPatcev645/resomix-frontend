@@ -64,7 +64,7 @@ class SearchService:
                 # Direct DB search for OPEN tracks
                 # We'll use a simple LIKE query on title or artist
                 # Note: This is a basic implementation for demo purposes
-                from sqlalchemy import select, or_
+                from sqlalchemy import select, or_, and_
                 from app.models.track import Track, TrackArtist
                 from app.models.artist import Artist
                 from app.models.constants import TrackType
@@ -74,7 +74,10 @@ class SearchService:
                     select(Track)
                     .outerjoin(TrackArtist)
                     .outerjoin(Artist)
-                    .where(Track.track_type == TrackType.OPEN)
+                    .where(and_(
+                        Track.type == TrackType.OPEN,
+                        Track.type != TrackType.UPLOAD
+                    ))
                     .where(
                         or_(
                             Track.title.ilike(f"%{query_clean}%"),

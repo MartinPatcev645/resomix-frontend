@@ -26,6 +26,7 @@ from app.models.artist import Artist
 from app.models.album import Album
 from app.models.label import Label
 from app.models.genre import Genre
+from app.models.constants import TrackType
 from app.repositories.base_repository import BaseRepository
 
 
@@ -177,6 +178,7 @@ class TrackRepository(BaseRepository[Track]):
             .join(TrackArtist, TrackArtist.track_id == self.model.id, isouter=True)
             .join(Artist, Artist.id == TrackArtist.artist_id, isouter=True)
             .filter(search_conditions)
+            .filter(self.model.type != TrackType.UPLOAD)
             .distinct()
             .limit(limit)
             .all()
@@ -217,7 +219,7 @@ class TrackRepository(BaseRepository[Track]):
             select(self.model)
             .join(TrackArtist, TrackArtist.track_id == self.model.id, isouter=True)
             .join(Artist, Artist.id == TrackArtist.artist_id, isouter=True)
-            .where(search_conditions)
+            .where(and_(search_conditions, self.model.type != TrackType.UPLOAD))
             .distinct()
             .limit(limit)
         )
