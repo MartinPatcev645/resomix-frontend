@@ -1,8 +1,9 @@
 interface DemoStageBannerProps {
   onDismiss: () => void;
+  learnMoreUrl?: string;
 }
 
-export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss }) => {
+export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss, learnMoreUrl = "https://support.resomix.com/hc/categories/1/3/legal" }) => {
   return (
     <div className="w-full bg-[var(--color-secondary)] border-l-4 border-[var(--color-primary)] p-[var(--px-12)] mb-[var(--px-20)] flex items-start justify-between gap-[var(--px-10)] relative z-10">
       <div className="flex items-start gap-[var(--px-10)] flex-1">
@@ -14,7 +15,15 @@ export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss }) =
             Demo Stage Notice
           </p>
           <p className="text-[length:var(--px-11)] lg:text-[length:var(--px-9)] font-light font-fira text-[var(--color-text-secondary)] mt-[var(--px-6)] leading-[var(--px-14)]">
-            Resomix is open exclusively for evaluation and feedback at this time. Playback, downloading, sales, and public streaming are not available right now.
+            Resomix is open exclusively for evaluation and feedback at this time. Playback, downloading, sales, and public streaming are not available right now.{" "}
+            <a
+              href={learnMoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-red-500 hover:text-red-400 transition-colors cursor-pointer underline decoration-red-500/30 underline-offset-2"
+            >
+              Learn More.
+            </a>
           </p>
         </div>
       </div>
