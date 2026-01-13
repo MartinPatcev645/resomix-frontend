@@ -102,20 +102,43 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     if (!gl) return;
 
     // --- Resize handling ------------------------------------------------------
+    const prevSize = { w: 0, h: 0 };
     const scale = 1;
-    const resize = () => {
+
+    const resize = (force = false) => {
       const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.floor(container.clientWidth * dpr * scale));
-      const h = Math.max(1, Math.floor(container.clientHeight * dpr * scale));
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w;
-        canvas.height = h;
+      const currentW = Math.max(1, Math.floor(container.clientWidth * dpr * scale));
+      const currentH = Math.max(1, Math.floor(container.clientHeight * dpr * scale));
+
+      // Always update on increase; only update on decrease if > 120px to prevent iOS flickering
+      const widthIncreased = currentW > prevSize.w;
+      const widthDecreasedSignificantly = prevSize.w - currentW > 120 * dpr;
+      const heightIncreased = currentH > prevSize.h;
+      const heightDecreasedSignificantly = prevSize.h - currentH > 120 * dpr;
+
+      const shouldUpdate =
+        force ||
+        prevSize.w === 0 ||
+        widthIncreased ||
+        widthDecreasedSignificantly ||
+        heightIncreased ||
+        heightDecreasedSignificantly;
+
+      if (shouldUpdate) {
+        canvas.width = currentW;
+        canvas.height = currentH;
+        prevSize.w = currentW;
+        prevSize.h = currentH;
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+        // Immediate draw if uniforms are available (they are set up below)
+        if (uResolution && uOffset) {
+          gl.uniform2f(uResolution, canvas.width, canvas.height);
+          gl.uniform2f(uOffset, Math.random(), Math.random());
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
       }
     };
-    const ro = new ResizeObserver(resize);
-    ro.observe(container);
-    resize();
 
     // --- Shader helpers -------------------------------------------------------
     const compileShader = (src: string, type: number): WebGLShader => {
@@ -208,6 +231,11 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, TEX_SIZE, TEX_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
     gl.uniform1i(uNoise, 0);
     gl.uniform2f(uTexelScale, 1.0 / TEX_SIZE, 1.0 / TEX_SIZE);
+
+    // Now that uniforms are ready, start observing resize
+    const ro = new ResizeObserver(() => resize(false));
+    ro.observe(container);
+    resize(true); // Initial force resize to populate dimensions and draw first frame
 
     // --- Render loop ----------------------------------------------------------
     let raf = 0;
