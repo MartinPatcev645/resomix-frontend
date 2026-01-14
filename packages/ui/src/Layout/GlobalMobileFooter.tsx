@@ -90,7 +90,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
             />
             <CodeTyping
               speed={70}
-              text="All tracks CC BY-NC-SA 3.0<br />licensed Non-commercial prototype<br />licensing@resomix.com"
+              text="All tracks CC BY 4.0<br />licensed Non-commercial prototype<br />licensing@resomix.com"
               multiline={true}
             />
           </div>

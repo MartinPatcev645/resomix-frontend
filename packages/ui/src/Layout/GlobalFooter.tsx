@@ -85,7 +85,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             />
             <CodeTyping
               speed={70}
-              text="All tracks CC BY-NC-SA 3.0 licensed Non-commercial prototype | licensing@resomix.com"
+              text="All tracks CC BY 4.0 licensed Non-commercial prototype | licensing@resomix.com"
               multiline={true}
             />
           </div>
