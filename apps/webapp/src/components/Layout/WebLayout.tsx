@@ -120,7 +120,7 @@ export function WebLayout() {
 
     return (
         <OptionalAuthRoute>
-            <div className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
+            <div className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative overflow-x-hidden`}>
                 {/* Persistent Static Noise */}
                 {isDesktop && <StaticNoise />}
 
