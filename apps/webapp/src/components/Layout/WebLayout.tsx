@@ -122,7 +122,7 @@ export function WebLayout() {
         <OptionalAuthRoute>
             <div className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-hidden">
                 {/* Persistent Static Noise */}
-                <StaticNoise />
+                {isDesktop && <StaticNoise />}
 
                 {/* Persistent Upload / Search Overlay */}
                 {showOverlay && (
