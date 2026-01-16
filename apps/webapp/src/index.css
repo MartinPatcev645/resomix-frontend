@@ -128,3 +128,46 @@ html #stcm-wrapper {
 #stcm-icon {
   display: none !important;
 }
+
+/* ─── Silktide Dotted Border Styling ───────────────────────── */
+/* Banner dotted border */
+html #stcm-banner {
+  border: 1px dotted #e2e8f0 !important; /* slate-200 */
+  border-radius: 0.5rem !important;
+}
+
+/* Modal dotted border */
+html #stcm-modal {
+  border: 1px dotted #e2e8f0 !important; /* slate-200 */
+  border-radius: 0.5rem !important;
+}
+
+/* Button styling - Default state */
+html #stcm-wrapper .stcm-button {
+  background-color: #111111 !important;
+  color: #ffffff !important;
+  border: 1px dotted #e2e8f0 !important; /* slate-200 */
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+html #stcm-wrapper .stcm-button-primary {
+  background-color: #111111 !important;
+  color: #ffffff !important;
+  border: 1px dotted #e2e8f0 !important;
+}
+
+html #stcm-wrapper .stcm-button-secondary {
+  background-color: #111111 !important;
+  color: #ffffff !important;
+  border: 1px dotted #e2e8f0 !important;
+}
+
+/* Button styling - Hover state */
+html #stcm-wrapper .stcm-button:hover,
+html #stcm-wrapper .stcm-button-primary:hover,
+html #stcm-wrapper .stcm-button-secondary:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px dotted #000000 !important; /* black dotted border on hover */
+}
