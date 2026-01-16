@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth, useSilktide } from "@resomix/hooks";
+import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
@@ -38,6 +39,7 @@ function UsedAboutPage() {
 
 
 function App() {
+  useSilktide(consentConfig);
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   // Initialize authentication

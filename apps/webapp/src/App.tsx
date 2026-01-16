@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth, useSilktide } from "@resomix/hooks";
+import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, WebLayout } from "@/components/index.ts";
@@ -47,6 +48,7 @@ function PlaylistLanding() {
 
 
 function App() {
+  useSilktide(consentConfig);
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
