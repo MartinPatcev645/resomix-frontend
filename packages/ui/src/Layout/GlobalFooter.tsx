@@ -108,6 +108,18 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             >
               contact_us(): fetch('/contact')
             </a>
+            <button
+              className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link cursor-pointer text-right"
+              onClick={(e) => {
+                e.preventDefault();
+                const silktideIcon = document.querySelector('#stcm-icon') as HTMLElement;
+                if (silktideIcon) {
+                  silktideIcon.click();
+                }
+              }}
+            >
+              privacy.preferences(): open('/cookies')
+            </button>
           </div>
         </div>
       </div>

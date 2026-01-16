@@ -1,51 +1,27 @@
 import { useState, useEffect } from 'react';
 
-// Typed strictly according to Silktide Docs
-export interface SilktideConfig {
-  prompt?: {
-    position?: 'center' | 'bottomRight' | 'bottomLeft';
-  };
-  backdrop?: {
-    show?: boolean;
-    opacity?: number;
-  };
-  theme?: {
-    primary?: string;
-    text?: string;
-  };
-  text?: any;
-  cookieTypes?: any[];
+declare global {
+  interface Window {
+    silktideConsentManager?: {
+      init: (config: any) => void;
+    };
+  }
 }
 
-export const useSilktide = (config: SilktideConfig) => {
+// Initialized via explicit call as per GitHub README
+export const useSilktide = (config: any) => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // 1. Mount Config to Window
-    // @ts-ignore
-    window.silktideCookieBannerConfig = config;
-
-    // 2. Load Local Script (Cache-busting optional but recommended in prod)
-    const scriptId = 'silktide-script';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.async = true;
-      script.src = '/scripts/silktide-consent-manager.js'; // Points to public/scripts
-      
-      script.onload = () => {
-        setLoaded(true);
-        console.log('Silktide loaded locally');
-      };
-      
-      script.onerror = () => console.error('Failed to load Silktide script');
-      
-      document.body.appendChild(script);
-    } else {
+    // Prevent double initialization
+    if (document.getElementById('silktide-script')) {
+      // If script is already there, it might have auto-init or we might need to re-init
+      // Typical for SPAs is to init once.
       setLoaded(true);
+      return;
     }
 
-    // 3. Load Local CSS
+    // 1. Inject CSS (OS version relies on external CSS)
     const styleId = 'silktide-style';
     if (!document.getElementById(styleId)) {
       const link = document.createElement('link');
@@ -54,6 +30,25 @@ export const useSilktide = (config: SilktideConfig) => {
       link.href = '/scripts/silktide-consent-manager.css';
       document.head.appendChild(link);
     }
+
+    // 2. Inject JS
+    const script = document.createElement('script');
+    script.id = 'silktide-script';
+    script.src = '/scripts/silktide-consent-manager.js';
+    script.async = true;
+
+    script.onload = () => {
+      // 3. EXPLICIT INIT (Specific requirement of the Open Source Repo version)
+      if (window.silktideConsentManager) {
+        window.silktideConsentManager.init(config);
+        setLoaded(true);
+        console.log('Silktide Consent Manager initialized (GitHub OS version)');
+      }
+    };
+
+    script.onerror = () => console.error('Failed to load Silktide script');
+
+    document.body.appendChild(script);
   }, [config]);
 
   return { loaded };
