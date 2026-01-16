@@ -103,3 +103,19 @@ html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;            /* Chrome, Safari, Opera */
 }
+
+/* ─── Silktide Custom Overrides ───────────────────────── */
+html #stcm-wrapper {
+  --backgroundColor: var(--color-primary-background) !important; /* #111111 */
+  --primaryColor: var(--color-primary) !important; /* #FFFFFF */
+  --textColor: #FFFFFF !important;
+  --buttonTextColor: #000000 !important;
+  --fontFamily: 'Inter', system-ui, sans-serif !important;
+  --backdropColor: rgba(0, 0, 0, 0.7) !important;
+  --borderRadius: 0.5rem !important;
+}
+
+/* Hide the floating revocation badge */
+#stcm-icon {
+  display: none !important;
+}

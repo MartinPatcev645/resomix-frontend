@@ -81,6 +81,18 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
             >
               contact_us()
             </a>
+            <button
+              className="hover:underline decoration-[var(--px-0-5)] footer-link mt-[var(--px-20)] cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                const silktideIcon = document.querySelector('#stcm-icon') as HTMLElement;
+                if (silktideIcon) {
+                  silktideIcon.click();
+                }
+              }}
+            >
+              privacy.preferences()
+            </button>
           </div>
           <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)]">
             <CodeTyping
