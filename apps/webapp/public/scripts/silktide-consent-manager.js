@@ -1036,7 +1036,6 @@ class SilktideConsentManager {
     const modalContent = `
       <header>
         <h1>${preferencesTitle}</h1>
-        ${closeModalButton}
       </header>
       ${preferencesDescription}
       <section id="stcm-form">
