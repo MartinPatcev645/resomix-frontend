@@ -27,8 +27,8 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     const [isSpotifyOpen, setIsSpotifyOpen] = React.useState(false);
     const [isTidalOpen, setIsTidalOpen] = React.useState(false);
 
-    const handleStatusChange = React.useCallback((status: 'loading' | 'success' | 'error', message: string, title?: string) => {
-        console.log('[MOBILE EXPORT]', status, title, message);
+    const handleStatusChange = React.useCallback((_status: 'loading' | 'success' | 'error', _message: string, _title?: string) => {
+        // Status change handler for export operations - can be used for toast notifications if needed
     }, []);
 
     React.useEffect(() => {
