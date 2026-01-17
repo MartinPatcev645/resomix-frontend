@@ -12,7 +12,7 @@ const AboutPage = lazy(() => import("@/pages/desktop/AboutPage.tsx").then(m => (
 const AboutMobile = lazy(() => import("@/pages/mobile/AboutMobile.tsx").then(m => ({ default: m.AboutMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
-const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
+// const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
@@ -99,7 +99,7 @@ function App() {
             <Route path="/contact" element={<InfoPage mode="contact" />} />
             <Route path="/waitlist" element={<InfoPage mode="waitlist" />} />
             <Route path="/error" element={<InfoPage mode="error" />} />
-            <Route path="/test" element={<TestPage />} />
+            {/* <Route path="/test" element={<TestPage />} /> */}
             <Route path="*" element={<InfoPage mode="404" />} />
           </Route>
         </Routes>

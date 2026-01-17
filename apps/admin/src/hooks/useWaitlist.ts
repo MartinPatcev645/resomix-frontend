@@ -83,7 +83,7 @@ export function useWaitlist(options?: UseWaitlistOptions) {
         params.sort_order = sortOrder || 'desc'
       }
 
-      console.log('Fetching waitlist with params:', params)
+      // console.log('Fetching waitlist with params:', params)
 
       const result = await getWaitlistList(params)
       
@@ -160,11 +160,11 @@ export function useWaitlist(options?: UseWaitlistOptions) {
     try {
       const numericIds = ids.map(id => Number(id))
       
-      console.log('Deleting waitlist IDs:', numericIds)
+      // console.log('Deleting waitlist IDs:', numericIds)
       
       if (numericIds.length === 1) {
         const result = await apiDeleteWaitlist(numericIds[0])
-        console.log('Delete result:', result)
+        // console.log('Delete result:', result)
         
         if (result.success) {
           setSelectedRowKeys([])
@@ -184,7 +184,7 @@ export function useWaitlist(options?: UseWaitlistOptions) {
         }
       } else {
         const result = await apiBatchDeleteWaitlist(numericIds)
-        console.log('Batch delete result:', result)
+        // console.log('Batch delete result:', result)
         
         if (result.success) {
           setSelectedRowKeys([])
@@ -218,10 +218,10 @@ export function useWaitlist(options?: UseWaitlistOptions) {
     try {
       const numericId = Number(id)
       
-      console.log('Updating waitlist status:', { id: numericId, status })
+      // console.log('Updating waitlist status:', { id: numericId, status })
       
       const result = await updateWaitlistStatus(numericId, status)
-      console.log('Update status result:', result)
+      // console.log('Update status result:', result)
       
       if (result.success) {
         await fetchData()

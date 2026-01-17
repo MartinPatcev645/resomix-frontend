@@ -228,7 +228,7 @@ if (typeof window !== 'undefined') {
                     window.sessionStorage.setItem('resomix-access-token', update.token);
                     const { setAccessToken } = useAuthStore.getState();
                     setAccessToken(update.token);
-                    console.log('[useAuthStore] Token synced from another tab');
+                    // console.log('[useAuthStore] Token synced from another tab');
                 }
             } catch (e) {
                 console.warn('Failed to sync token from other tab:', e);
