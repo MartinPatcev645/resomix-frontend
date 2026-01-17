@@ -89,7 +89,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
         params.sort_order = sortOrder || 'desc'
       }
 
-      console.log('Fetching feedback with params:', params) // Debug log
+      // console.log('Fetching feedback with params:', params) // Debug log
 
       const result = await getFeedbackList(params)
       
@@ -173,11 +173,11 @@ export function useFeedback(options?: UseFeedbackOptions) {
       // Convert string IDs to numbers (backend expects numeric IDs)
       const numericIds = ids.map(id => Number(id))
       
-      console.log('Deleting feedback IDs:', numericIds) // Debug log
+      // console.log('Deleting feedback IDs:', numericIds) // Debug log
       
       if (numericIds.length === 1) {
         const result = await apiDeleteFeedback(numericIds[0])
-        console.log('Delete result:', result) // Debug log
+        // console.log('Delete result:', result) // Debug log
         
         if (result.success) {
           setSelectedRowKeys([])
@@ -197,7 +197,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
         }
       } else {
         const result = await apiBatchDeleteFeedback(numericIds)
-        console.log('Batch delete result:', result) // Debug log
+        // console.log('Batch delete result:', result) // Debug log
         
         if (result.success) {
           setSelectedRowKeys([])
@@ -232,10 +232,10 @@ export function useFeedback(options?: UseFeedbackOptions) {
       // Convert string ID to number (backend expects numeric ID)
       const numericId = Number(id)
       
-      console.log('Marking feedback status:', { id: numericId, status }) // Debug log
+      // console.log('Marking feedback status:', { id: numericId, status }) // Debug log
       
       const result = await markFeedbackStatus(numericId, status)
-      console.log('Mark status result:', result) // Debug log
+      // console.log('Mark status result:', result) // Debug log
       
       if (result.success) {
         await fetchData()

@@ -14,9 +14,9 @@ const PlaylistPage = lazy(() => import("@/pages/desktop/PlaylistPage.tsx").then(
 const PlaylistMobile = lazy(() => import("@/pages/mobile/PlaylistMobile.tsx").then(m => ({ default: m.PlaylistMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
-const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
-const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
-const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
+// const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
+// const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
+// const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
 const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
@@ -133,14 +133,14 @@ function App() {
             {/* Info Pages */}
             <Route path="/contact" element={<InfoPage mode="contact" />} />
             <Route path="/error" element={<InfoPage mode="error" />} />
-            <Route path="/test" element={<TestPage />} />
-            <Route path="/test-two" element={<TestTwo />} />
+            {/* <Route path="/test" element={<TestPage />} /> */}
+            {/* <Route path="/test-two" element={<TestTwo />} /> */}
+            {/* <Route path="/player" element={<PlayerPage />} /> */}
             <Route path="*" element={<InfoPage mode="404" />} />
           </Route>
 
           {/* Group B: Standalone Routes (Outside the shell) */}
           <Route path="/loader" element={<UploadLoader />} />
-          <Route path="/player" element={<PlayerPage />} />
 
           {/* Exports redirects */}
           <Route path="/apple-redirect" element={<AppleRedirect />} />

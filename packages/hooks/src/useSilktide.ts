@@ -42,7 +42,7 @@ export const useSilktide = (config: any) => {
       if (window.silktideConsentManager) {
         window.silktideConsentManager.init(config);
         setLoaded(true);
-        console.log('Silktide Consent Manager initialized (GitHub OS version)');
+        // console.log('Silktide Consent Manager initialized (GitHub OS version)');
       }
     };
 

@@ -389,7 +389,7 @@ class HlsPlaylistController implements AudioController {
     this.wiredGlobalEvents = true;
 
     window.addEventListener('online', () => {
-      console.log('--return window online');
+      // console.log('--return window online');
       setNetworkErrorFlag(false);
       this.attemptResume(true, true);
     });

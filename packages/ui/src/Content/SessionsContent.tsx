@@ -40,7 +40,7 @@ export default function SessionsContent({
   const loadSessions = async () => {
     // Prevent duplicate requests
     if (isLoadingRef) {
-      console.log('[SessionsContent] Request already in progress, skipping');
+      // console.log('[SessionsContent] Request already in progress, skipping');
       return;
     }
     

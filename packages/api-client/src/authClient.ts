@@ -63,18 +63,18 @@ authClient.interceptors.request.use(
       // If user is authenticated but no token, log it
       // The response interceptor will handle 401 and refresh the token
       if (isAuthenticated && !accessToken) {
-        console.log(`[authClient] User authenticated but no token for ${config.url} - request will proceed, refresh will happen on 401`);
+        // console.log(`[authClient] User authenticated but no token for ${config.url} - request will proceed, refresh will happen on 401`);
       }
 
       // Add authorization header if token exists and user is authenticated
       // Don't check isTokenExpired here - let the backend decide and use refresh interceptor
       if (accessToken && isAuthenticated) {
         config.headers.Authorization = `Bearer ${accessToken}`;
-        console.log(`[authClient] Added Authorization header for ${config.url}`);
+        // console.log(`[authClient] Added Authorization header for ${config.url}`);
       } else if (isAuthenticated && !accessToken) {
-        console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user} - refresh attempt initiated`);
+        // console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user} - refresh attempt initiated`);
       } else {
-        console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user}`);
+        // console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user}`);
       }
     } else {
       console.warn(`[authClient] Auth store not available for ${config.url} - global store: ${!!(globalThis as any).__RESOMIX_AUTH_STORE__}`);
@@ -102,17 +102,17 @@ authClient.interceptors.response.use(
     // CRITICAL: Prevent infinite loop - never try to refresh the refresh endpoint itself
     const isRefreshEndpoint = originalRequest.url?.includes('/auth/refresh');
     if (isRefreshEndpoint) {
-      console.log('[authClient] 401 on refresh endpoint - not attempting refresh to prevent infinite loop');
+      // console.log('[authClient] 401 on refresh endpoint - not attempting refresh to prevent infinite loop');
       return Promise.reject(error);
     }
 
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log(`[authClient] 401 error for ${originalRequest.url}, attempting token refresh...`);
+      // console.log(`[authClient] 401 error for ${originalRequest.url}, attempting token refresh...`);
 
       const authStore = getAuthStore();
       if (!authStore) {
-        console.log('[authClient] Auth store not available, cannot refresh token');
+        // console.log('[authClient] Auth store not available, cannot refresh token');
         return Promise.reject(error);
       }
 
@@ -122,18 +122,18 @@ authClient.interceptors.response.use(
       // Attempt refresh if user is authenticated (even if accessToken is missing)
       // This handles cases where isAuthenticated=true but accessToken was cleared from sessionStorage
       if (!isAuthenticated) {
-        console.log('[authClient] User not authenticated, skipping refresh');
+        // console.log('[authClient] User not authenticated, skipping refresh');
         return Promise.reject(error);
       }
 
       // If we have no access token but user is authenticated, attempt refresh from HttpOnly cookie
       if (!accessToken) {
-        console.log('[authClient] User authenticated but no access token - attempting refresh from cookie');
+        // console.log('[authClient] User authenticated but no access token - attempting refresh from cookie');
       }
 
       if (isRefreshing) {
         // If already refreshing, queue this request
-        console.log(`[authClient] Token refresh in progress, queueing request for ${originalRequest.url}`);
+        // console.log(`[authClient] Token refresh in progress, queueing request for ${originalRequest.url}`);
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -148,7 +148,7 @@ authClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        console.log('[authClient] Refreshing access token...');
+        // console.log('[authClient] Refreshing access token...');
         // Attempt to refresh token - no body needed, server reads from HttpOnly cookie
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
@@ -161,7 +161,7 @@ authClient.interceptors.response.use(
 
         if (response.data.success) {
           const newAccessToken = response.data.data.access_token;
-          console.log(`[authClient] Token refresh successful, retrying ${originalRequest.url}`);
+          // console.log(`[authClient] Token refresh successful, retrying ${originalRequest.url}`);
           setAccessToken(newAccessToken);
 
           // Update authorization header
@@ -184,7 +184,7 @@ authClient.interceptors.response.use(
         // Check if user logged out during refresh
         const currentState = authStore.getState();
         if (!currentState.isAuthenticated) {
-          console.log('[authClient] User logged out during refresh, aborting');
+          // console.log('[authClient] User logged out during refresh, aborting');
           processQueue(refreshError, null);
           isRefreshing = false;
           return Promise.reject(refreshError);

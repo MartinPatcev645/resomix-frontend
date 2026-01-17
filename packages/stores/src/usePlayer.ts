@@ -119,7 +119,7 @@ interface PlayerStore {
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTrackId: null,
   setCurrentTrack: (id) => {
-    console.log('[usePlayerStore] currentTrackId', id);
+    // console.log('[usePlayerStore] currentTrackId', id);
     set({ currentTrackId: id });
   },
 
