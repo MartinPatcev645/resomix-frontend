@@ -1099,9 +1099,10 @@ class SilktideConsentManager {
       this.removeBanner();
       this.preventBodyScroll();
 
-      // Focus the close button
+      // Focus the close button (or fallback to save button if close is hidden)
       const modalCloseButton = this.preferences.querySelector('.stcm-modal-close');
-      modalCloseButton.focus();
+      const saveButton = this.preferences.querySelector('.stcm-modal-save');
+      (modalCloseButton || saveButton)?.focus();
 
       // Trigger optional onPreferencesOpen callback
       if (typeof this.config.onPreferencesOpen === 'function') {
