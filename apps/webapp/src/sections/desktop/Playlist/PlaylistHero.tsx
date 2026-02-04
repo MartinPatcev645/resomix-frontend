@@ -399,6 +399,7 @@ const PlaylistHero: React.FC = () => {
                       <div>|</div>
                       <div>Mode: Independent</div>
                       <div>|</div>
+                      {/* Usage: playlistData?.queried_track.type (either 'upload' or 'internal') */}
                       <div>Instance: Input Track</div>
                     </div>
                     <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>

@@ -177,6 +177,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 </div>
               </div>
               <div className={`gap-[var(--px-8)] mt-[var(--px-6)] ${showMeta ? 'flex' : 'hidden'}`}>
+                {/* Usage: Use playlistData?.queried_track.type === 'upload' to show an "Uploaded" badge */}
                 <div className="inline-flex py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
                 <div className="py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white">
                   {playlistData?.playlist.is_public ? (
@@ -198,11 +199,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div className="truncate max-w-[var(--px-50)]">ID: {playlistData?.queried_track.id}</div>
                   <div>|</div>
                   <div>Status: {InputTrackStatus}</div>
-                  <div>|</div>
-                  <div>Mode: Independent</div>
-                  <div>|</div>
-                  <div>Instance: Input Track</div>
-                </div>
+                      <div>|</div>
+                      <div>Mode: Independent</div>
+                      <div>|</div>
+                      {/* Usage: playlistData?.queried_track.type (either 'upload' or 'internal') */}
+                      <div>Instance: Input Track</div>
+                    </div>
                 {/* The actual Input player */}
                 <InputPlayer
                   trackId={playlistData?.queried_track.id || ''}
