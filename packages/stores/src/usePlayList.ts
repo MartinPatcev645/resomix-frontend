@@ -10,6 +10,7 @@ export interface Track {
   duration: number
   label: string
   artist: string
+  type: 'upload' | 'internal'
 }
 
 export interface Playlist {

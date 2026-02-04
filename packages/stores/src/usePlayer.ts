@@ -114,6 +114,12 @@ interface PlayerStore {
   networkError: boolean
   networkErrorReason: string | null
   setNetworkError: (hasError: boolean, reason?: string | null) => void
+
+  /**
+   * Snippet metadata for uploaded tracks (detected from HLS)
+   */
+  snippetMetadata: Record<string, { start: number; end: number }>
+  setSnippetMetadata: (trackId: string, metadata: { start: number; end: number } | null) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -213,6 +219,18 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   networkErrorReason: null,
   setNetworkError: (hasError, reason = null) =>
     set({ networkError: hasError, networkErrorReason: hasError ? (reason ?? null) : null }),
+
+  snippetMetadata: {},
+  setSnippetMetadata: (trackId, metadata) =>
+    set((state) => {
+      const next = { ...state.snippetMetadata };
+      if (metadata) {
+        next[trackId] = metadata;
+      } else {
+        delete next[trackId];
+      }
+      return { snippetMetadata: next };
+    }),
 }));
 
 export default usePlayerStore

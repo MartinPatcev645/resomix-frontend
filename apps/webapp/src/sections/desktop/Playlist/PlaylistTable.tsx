@@ -100,7 +100,7 @@ const PlaylistTable: React.FC = () => {
                 const isRestricted = demoTracksRestricted && track.rank > 20;
 
                 return (
-                    <div className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
+                    <div key={track.id} className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
                         {/* Check if the rank is 21 and isRestricted is true, display a text here on top of the usual track details */}
                         {track.rank === 22 && isRestricted && (
                             <div className="absolute z-50 top-0 left-0 w-full h-full flex items-center justify-center text-white text-[length:var(--px-12)] font-fira font-semibold uppercase tracking-[var(--px-0-5)] text-center px-[var(--px-20)] rounded-sm">
@@ -108,9 +108,9 @@ const PlaylistTable: React.FC = () => {
                             </div>
                         )}
                         <div className={isRestricted ? "blur-xs" : ""}>
-                            <div key={track.id} className="w-full border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
+                            <div className="w-full border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
                                 <div className="flex flex-col w-full">
-                                    <div key={track.id} className="flex items-center" role="row">
+                                    <div className="flex items-center" role="row">
                                         <div className="text-[length:var(--px-10)] font-fira font-light mr-[var(--px-5)]" role="cell">
                                             {track.rank}
                                         </div>
