@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, useLayoutEffect } from 'react';
 import { loadPeaksData, PeaksRich } from './peaksCache';
 
 export type UsePeaksReturn = {
@@ -23,12 +23,18 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const [duration, setDuration] = useState(0);
   const [restrictedRange, setRestrictedRange] = useState<{ start: number; end: number } | null>(null);
 
-  // Refs to latest values for event handlers
-  const currentTimeRef = useRef(0);
-  useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
-
+  // Refs for logic/sync to avoid stale closures in effects and event handlers
+  const fullbandRef = useRef<number[]>([]);
+  const lowbandRef = useRef<number[]>([]);
   const durationRef = useRef(0);
+  const restrictedRangeRef = useRef<{ start: number; end: number } | null>(null);
+  const currentTimeRef = useRef(0);
+
+  useEffect(() => { fullbandRef.current = fullband; }, [fullband]);
+  useEffect(() => { lowbandRef.current = lowband; }, [lowband]);
   useEffect(() => { durationRef.current = duration; }, [duration]);
+  useEffect(() => { restrictedRangeRef.current = restrictedRange; }, [restrictedRange]);
+  useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
 
   // Drag state
   const draggingRef = useRef<boolean>(false);
@@ -79,6 +85,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
     const { ctx, width, height } = getCtxAndDevSize(canvas);
     if (!ctx || width === 0 || height === 0) return;
+
 
     const barCount = Math.max(1, Math.floor(width / (barWidthDev + gapWidthDev)));
     const timePercent = duration > 0 ? Math.min(time / duration, 1) : 0;
@@ -140,9 +147,8 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     );
   }, [fullband, lowband, duration, getCtxAndDevSize, restrictedRange]);
 
-  // Keep latest draw function for event handlers/resize without re-subscribing
   const drawWaveformRef = useRef<(t?: number) => void>(() => {});
-  useEffect(() => {
+  useLayoutEffect(() => {
     drawWaveformRef.current = drawWaveform;
   }, [drawWaveform]);
 
@@ -277,6 +283,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
       if (needRedraw || dprRef.current !== dpr) {
         dprRef.current = dpr;
+        // Use the ref which we just updated via useLayoutEffect
         drawWaveformRef.current(currentTimeRef.current);
       }
     };
@@ -392,7 +399,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   // Redraw when data, time, or restricted range changes
   useEffect(() => {
     drawWaveform(currentTime);
-  }, [fullband, lowband, duration, currentTime, drawWaveform, restrictedRange]);
+  }, [fullband, lowband, duration, currentTime, drawWaveform, restrictedRange, uuid]);
 
   const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
     setCurrentTime(timeSec);

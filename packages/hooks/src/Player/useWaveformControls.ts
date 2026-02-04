@@ -76,7 +76,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   // 5a. Update custom peaks restricted range
   useEffect(() => {
     setRestrictedRange(restrictedRange);
-  }, [restrictedRange, setRestrictedRange]);
+  }, [restrictedRange, setRestrictedRange, effectiveId]);
 
   // 6. Playback helpers (optional)
   const isPlaying = isCommonPlay && currentTrackId === effectiveId;
