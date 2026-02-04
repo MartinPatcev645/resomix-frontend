@@ -601,6 +601,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.title,
                         t.year,
                         t.duration_sec as duration,
+                        t.type,
                         COALESCE(l.name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
@@ -611,7 +612,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_artists ta ON t.id = ta.track_id
                     LEFT JOIN artists a ON ta.artist_id = a.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, t.type, l.name
                     LIMIT 1
                 """
                 )
@@ -635,6 +636,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         ),
                         "label": seed_row.label,
                         "artist": seed_row.artist or "Unknown",
+                        "type": "upload" if seed_row.type == "upload" else "internal",
                     }
 
             # Get all tracks in playlist with details
@@ -648,6 +650,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.title,
                         t.year,
                         t.duration_sec as duration,
+                        t.type,
                         COALESCE(l.name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
@@ -658,7 +661,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_artists ta ON t.id = ta.track_id
                     LEFT JOIN artists a ON ta.artist_id = a.id
                     WHERE t.id IN :track_ids
-                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, l.name
+                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, t.type, l.name
                 """
                 )
 
@@ -685,6 +688,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             ),
                             "label": track_data.label,
                             "artist": track_data.artist or "Unknown",
+                            "type": (
+                                "upload" if track_data.type == "upload" else "internal"
+                            ),
                         }
                         similar_tracks.append(track_info)
             else:
@@ -797,6 +803,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.uuid,
                         t.title,
                         t.duration_sec,
+                        t.type,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
                             'Unknown Artist'
@@ -805,7 +812,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_artists ta ON t.id = ta.track_id
                     LEFT JOIN artists a ON ta.artist_id = a.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.duration_sec
+                    GROUP BY t.id, t.uuid, t.title, t.duration_sec, t.type
                     LIMIT 1
                 """
                 )
@@ -826,6 +833,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                                 else 0.0
                             ),
                             "artist": seed_row.artist or "Unknown Artist",
+                            "type": (
+                                "upload" if seed_row.type == "upload" else "internal"
+                            ),
                         }
                     )
 

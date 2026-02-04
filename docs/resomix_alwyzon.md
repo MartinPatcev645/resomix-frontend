@@ -1,211 +1,175 @@
-# Resomix API Reference - Alwyzon
+# Resomix API - Alwyzon Server
 
-**Comprehensive API endpoint documentation with input, processing, and output summaries**
-
-**Production Server**: `https://bserver.resomix.com` | **Documentation**: `https://bserver.resomix.com/docs`
+**Production Server**: `https://bserver.resomix.com` | **Docs**: `https://bserver.resomix.com/docs`
 
 ---
 
-## 🎧 Audio Similarity Endpoints
+## Overview
 
-### POST `/get_similarity/`
-- **Input**: Audio file upload (max 100MB) + optional top_sk parameter (10/20/50/100)
-- **Processing**: Extracts metadata → stores track in database → **calls similarity microservice `/similarity/query-by-upload/` endpoint** → deduplicates results → creates playlist
-- **Output**: Uploaded track details + array of similar tracks with scores and metadata + optional playlist info
-
-### POST `/get_selection_similarity/`
-- **Input**: Track database ID + optional top_sk parameter (10/20/50/100)
-- **Processing**: Retrieves track file path → **calls similarity microservice `/similarity/query-by-path/` endpoint** → enriches results with database metadata → deduplicates → creates playlist
-- **Output**: Queried track details + array of similar tracks with scores and metadata + optional playlist info
+FastAPI backend for music discovery through audio similarity analysis. Manages **2.3M+ tracks** in MariaDB with dual authentication (API key + JWT).
 
 ---
 
-## 🔍 Search & Discovery Endpoints
+## Similarity Engine
 
-### GET `/search_tracks/`
-- **Input**: Text query string (1-200 characters)
-- **Processing**: Searches database across titles, artists, albums, labels using fuzzy matching and relevance scoring
-- **Output**: Array of matching tracks with metadata, scores, and search relevance ranking
+Audio similarity is powered by an external microservice using:
 
-### POST `/metadata/`
-- **Input**: Audio file upload (any supported format)
-- **Processing**: Extracts metadata using FFmpeg and Mutagen → applies filtering rules → validates and cleans data
-- **Output**: Comprehensive metadata object (title, artist, album, genre, label, year, duration, BPM, key)
+- **MAEST** - Music Audio Efficient Spectrogram Transformer for audio embeddings
+- **Discogs** - Effnet-based model trained on Discogs data
 
----
+### Endpoints Used
 
-## 🎼 Playlist Management Endpoints
-
-### PUT `/playlists/rename/`
-- **Input**: Playlist UUID + new name (1-150 characters)
-- **Processing**: Validates playlist exists → updates name in database → commits transaction
-- **Output**: Success confirmation with operation status message
-
-### PUT `/playlists/visibility/`
-- **Input**: Playlist UUID + is_public boolean flag
-- **Processing**: Validates playlist exists → updates visibility status in database → commits transaction
-- **Output**: Success confirmation with visibility change status message
-
-### GET `/playlists/similarity/{playlist_id}`
-- **Input**: Playlist UUID via URL path parameter
-- **Processing**: Validates playlist is public → retrieves playlist with tracks → applies metadata filtering → formats as similarity response
-- **Output**: Similarity-formatted response with queried track, similar tracks array, and playlist metadata
+| Endpoint                                           | Purpose                       |
+| -------------------------------------------------- | ----------------------------- |
+| `/similarity/query-by-upload/`                     | Similarity by file upload     |
+| `/similarity/query-by-path/`                       | Similarity by file path       |
+| `/generate_embedding_preview`                      | Pipeline embedding generation |
+| `/open_tracks_pipeline/generate_embedding_preview` | Open tracks embedding         |
 
 ---
 
-## 🎵 Preview & Content Endpoints
+## Track Types
 
-### GET `/preview/get_preview/`
-- **Input**: Track database ID as query parameter
-- **Processing**: Validates track exists → generates time-limited signed URL → encrypts with HMAC and Fernet
-- **Output**: Secure preview download URL with expiration timestamp and authentication tokens
+| Type          | Description                         |
+| ------------- | ----------------------------------- |
+| `electrobuzz` | Premium catalog tracks              |
+| `upload`      | User-uploaded tracks                |
+| `open`        | Open tracks from extraction scripts |
 
----
-
-## 🔧 Pipeline Processing Endpoints
-
-### POST `/monthly_pipeline/track/`
-- **Input**: Audio file upload + file path string
-- **Processing**: Extracts metadata → generates UUID → **calls similarity server `/generate_embedding_preview` endpoint** → stores in database if successful
-- **Output**: Success confirmation with track UUID, path, and processing status message
+**Open Tracks Pipeline**: Uses scripts in `scripts/open_tracks/` to extract metadata, insert to DB, and generate embeddings via similarity server.
 
 ---
 
-## 💬 Feedback & Contact Endpoints
+## Core Endpoints
 
-### POST `/feedback/`
-- **Input**: Satisfaction rating (1-10) + recommendation rating (1-10) + optional feedback text + category + user_id
-- **Processing**: Validates ratings → stores in database → **optionally sends to Google Sheets API** → generates confirmation
-- **Output**: Success confirmation with feedback submission ID and timestamp
+### Audio Similarity
 
-### GET `/feedback/{feedback_id}`
-- **Input**: Feedback ID via URL path parameter
-- **Processing**: Validates feedback exists → retrieves from database → formats response
-- **Output**: Complete feedback record with ratings, text, category, timestamps, and status
+- `POST /get_similarity/` - Upload file → find similar tracks
+- `POST /get_selection_similarity/` - Query by track ID → similar tracks
 
-### PATCH `/feedback/{feedback_id}/status`
-- **Input**: Feedback ID via URL path + status update (open/resolved)
-- **Processing**: Validates feedback exists → updates status in database → commits transaction
-- **Output**: Success confirmation with updated status information
+### Search & Discovery
 
-### POST `/feedback/contact/`
-- **Input**: Name + email + message + optional subject + phone + user_id
-- **Processing**: Validates email format → stores in database → **optionally sends to Google Sheets API** → generates confirmation
-- **Output**: Success confirmation with contact submission ID and timestamp
+- `GET /search_tracks/` - Full-text search
+- `POST /metadata/` - Extract metadata from audio file
 
-### GET `/contact/{contact_id}`
-- **Input**: Contact ID via URL path parameter
-- **Processing**: Validates contact exists → retrieves from database → formats response
-- **Output**: Complete contact record with personal details, message, timestamps, and status
+### Playlists
 
-### PATCH `/contact/{contact_id}/status`
-- **Input**: Contact ID via URL path + status update (open/resolved)
-- **Processing**: Validates contact exists → updates status in database → commits transaction
-- **Output**: Success confirmation with updated status information
+- `PUT /playlists/rename/` - Rename playlist
+- `PUT /playlists/visibility/` - Toggle public/private
+- `GET /playlists/similarity/{id}` - Get similarity playlist
 
----
+### Preview
 
-## 🏥 Health & Status Endpoints
+- `GET /preview/get_preview/` - Time-limited signed URL
 
-### GET `/`
-- **Input**: None (public endpoint)
-- **Processing**: Returns static API information and service status
-- **Output**: API name, version, status, and documentation URL
+### Pipeline
 
-### GET `/health`
-- **Input**: None (public endpoint)
-- **Processing**: Performs basic health check of service availability
-- **Output**: Service health status and API identification
+- `POST /monthly_pipeline/track/` - Process electrobuzz track
+- `POST /open_tracks_pipeline/track/` - Process open track
+- `POST /open_tracks_pipeline/update_embeddings/` - Bulk update embeddings
+
+### Feedback & Contact
+
+- `POST /feedback/` - Submit feedback
+- `POST /feedback/contact/` - Submit contact form
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
-**All endpoints require API key authentication via query parameter:**
-```
-?api_key=YOUR_API_KEY
-```
-
-**Example requests:**
 ```bash
-# Development
-curl -X GET "http://localhost:8005/api/health/?api_key=YOUR_API_KEY"
+# API Key (all protected endpoints)
+curl "https://bserver.resomix.com/api/endpoint/?api_key=YOUR_KEY"
 
-# Production
-curl -X GET "https://bserver.resomix.com/api/health/?api_key=YOUR_API_KEY"
+# JWT (authenticated users)
+curl -H "Authorization: Bearer <JWT>" https://bserver.resomix.com/users/me
 ```
 
-**Exception**: Health endpoints (`/` and `/health`) are public and don't require authentication.
+Health endpoints (`/`, `/health`) are public.
 
 ---
 
-## 📊 Response Format
+## Server Security
 
-**All API responses follow this standardized format:**
+### NGINX Rate Limiting
+
+**Config**: `/etc/nginx/conf.d/ratelimits_realip.conf`
+
+| Zone         | Rate     | Purpose                       |
+| ------------ | -------- | ----------------------------- |
+| `api_rl`     | 3 r/s    | API/search endpoints          |
+| `global_rl`  | 5 r/s    | Catch-all safety net          |
+| `admin_rl`   | 10 r/min | Admin routes                  |
+| `perip_conn` | 30 max   | Concurrent connections per IP |
+
+**Features**:
+
+- Cloudflare real IP restoration via `CF-Connecting-IP`
+- CORS allowlist for resomix domains
+- HTTPS redirect with Let's Encrypt SSL
+- OWASP security headers (X-Frame-Options, HSTS, etc.)
+
+### Fail2Ban
+
+**Jails active**:
+
+| Jail                | Threshold       | Ban Time | Purpose                  |
+| ------------------- | --------------- | -------- | ------------------------ |
+| `nginx-4xx-5xx`     | 40 hits / 2 min | 2 hours  | Block probing/scans      |
+| `nginx-admin-abuse` | 6 hits / 5 min  | 12 hours | Block admin path probing |
+| `nginx-404`         | 25 hits / 3 min | 3 hours  | Block 404 storms         |
+| `recidive`          | 5 bans / 1 day  | 7 days   | Repeat offenders         |
+
+```bash
+# Check jail status
+sudo fail2ban-client status nginx-404
+sudo fail2ban-client status recidive
+```
+
+---
+
+## Architecture
+
+```
+Router → Controller → Service → Repository → MariaDB
+           ↓            ↓
+       Validation    Business
+       + Logging     Logic
+```
+
+**4-layer design**: Routers (HTTP), Controllers (thin handlers), Services (logic), Repositories (data access).
+
+---
+
+## Tech Stack
+
+| Component  | Version |
+| ---------- | ------- |
+| Python     | 3.12    |
+| FastAPI    | 0.109   |
+| MariaDB    | 11.3+   |
+| SQLAlchemy | 2.0     |
+| FFmpeg     | Latest  |
+| Mutagen    | 1.47    |
+
+---
+
+## Response Format
 
 ```json
 {
   "success": true,
-  "data": {
-    // Endpoint-specific response data
-  }
+  "data": { ... }
 }
 ```
 
-**Error responses include:**
 ```json
 {
   "success": false,
-  "error": "Error description",
-  "details": {
-    // Additional error context when available
-  }
+  "error": "Error description"
 }
 ```
 
 ---
 
-## 🔗 External Service Integration
-
-### Similarity Microservice
-The Resomix API integrates with an external similarity microservice for audio similarity calculations:
-
-- **Service URL**: Configurable via `SIMILARITY_SERVER_URL` environment variable
-- **Endpoints Used**:
-  - `/similarity/query-by-upload/` - For similarity calculation of uploaded files
-  - `/similarity/query-by-path/` - For similarity calculation by file path
-  - `/generate_embedding_preview` - For monthly pipeline embedding generation
-- **Communication**: HTTP POST requests with 60-second timeout using httpx client
-- **Response Handling**: Automatic retry and error management with structured error responses
-
-### Google Sheets Integration
-Feedback and contact endpoints can optionally integrate with Google Sheets for data storage:
-
-- **Authentication**: Service account authentication using Google OAuth2
-- **Worksheets**: Separate sheets for feedback and contact submissions
-- **Data Flow**: Parallel storage in database and Google Sheets with fallback handling
-- **Configuration**: Optional integration controlled by environment variables
-
----
-
-## 🎯 Key Processing Features
-
-### Metadata Filtering
-- **URL/Domain Detection**: Automatically removes URLs and domain names from metadata fields
-- **Title Cleaning**: Removes unwanted strings like "(Original Mix)" and stops at markers
-- **Field Validation**: Ensures data quality and consistency across all metadata
-
-### Similarity Pipeline
-- **Multi-format Support**: Handles MP3, FLAC, WAV, OGG, M4A, AAC, OPUS, WMA formats
-- **Deduplication**: Advanced algorithms prevent duplicate results based on filename and artist/title combinations
-- **Score Ranking**: Similarity scores from 0.0 to 1.0 with higher scores indicating better matches
-
-### Security & Performance
-- **API Key Validation**: Secure access control on all protected endpoints
-- **File Size Limits**: 100MB maximum file upload size with validation
-- **Async Processing**: Full async/await implementation for high-performance operations
-- **Database Optimization**: Connection pooling and optimized queries for 2.2M+ track database
-
----
-
-**Resomix API v3.0.1** - Advanced audio similarity and music discovery platform
+**Resomix API v3.0.1** - Audio similarity and music discovery platform
