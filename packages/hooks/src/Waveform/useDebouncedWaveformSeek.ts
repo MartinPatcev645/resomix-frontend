@@ -9,6 +9,7 @@ export interface UseDebouncedWaveformSeekOptions {
   onCommit?: (t: number) => void;        // real player seek and store update
   debounceMs?: number;                   // debounce default 300 ms
   holdAfterMs?: number;                  // default 200 ms
+  restrictedRange?: { start: number; end: number } | null;
 }
 
 export interface UseDebouncedWaveformSeekResult {
@@ -27,6 +28,7 @@ export function useDebouncedWaveformSeek({
   onCommit,
   debounceMs = 300,
   holdAfterMs = 200,
+  restrictedRange = null,
 }: UseDebouncedWaveformSeekOptions): UseDebouncedWaveformSeekResult {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,10 +50,15 @@ export function useDebouncedWaveformSeek({
 
   const requestSeek = useCallback(
     (time: number, opts?: { immediate?: boolean }) => {
-      setTime(time, true);
-      onPreview?.(time);
+      let t = time;
+      if (restrictedRange) {
+        t = Math.min(Math.max(t, restrictedRange.start), restrictedRange.end);
+      }
 
-      lastRequestedTimeRef.current = time;
+      setTime(t, true);
+      onPreview?.(t);
+
+      lastRequestedTimeRef.current = t;
 
       const now = Date.now();
       holdUntilRef.current = now + (opts?.immediate ? 0 : debounceMs) + holdAfterMs;
@@ -60,16 +67,16 @@ export function useDebouncedWaveformSeek({
       const delay = opts?.immediate ? 0 : debounceMs;
 
       seekTimeoutRef.current = window.setTimeout(() => {
-        const t = lastRequestedTimeRef.current;
-        if (t == null) return;
+        const finalT = lastRequestedTimeRef.current;
+        if (finalT == null) return;
 
-        onCommit?.(t);
+        onCommit?.(finalT);
 
         holdUntilRef.current = Date.now() + holdAfterMs;
         seekTimeoutRef.current = null;
       }, delay);
     },
-    [debounceMs, holdAfterMs, onCommit, onPreview, setTime]
+    [debounceMs, holdAfterMs, onCommit, onPreview, setTime, restrictedRange]
   );
 
   const handleSeekByClientX = useCallback(
@@ -79,12 +86,15 @@ export function useDebouncedWaveformSeek({
       const r = el.getBoundingClientRect();
       const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
       if (totalDuration > 0) {
-        const newPosition = x * totalDuration;
+        let newPosition = x * totalDuration;
+        if (restrictedRange) {
+          newPosition = Math.min(Math.max(newPosition, restrictedRange.start), restrictedRange.end);
+        }
         setTime(newPosition, true);
         pendingSeekPosition.current = newPosition;
       }
     },
-    [totalDuration, setTime]
+    [totalDuration, setTime, restrictedRange]
   );
 
   const applyPendingSeek = useCallback(() => {

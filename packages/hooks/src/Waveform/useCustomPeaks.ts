@@ -6,6 +6,7 @@ export type UsePeaksReturn = {
   error: string | null;
   setTime: (timeSec: number, isImmediatelly?: boolean) => void;
   attachOverviewElement: (overviewElement: HTMLDivElement) => void;
+  setRestrictedRange: (range: { start: number; end: number } | null) => void;
 };
 
 export function useCustomPeaks(uuid: string): UsePeaksReturn {
@@ -20,6 +21,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const [lowband, setLowband] = useState<number[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [restrictedRange, setRestrictedRange] = useState<{ start: number; end: number } | null>(null);
 
   // Refs to latest values for event handlers
   const currentTimeRef = useRef(0);
@@ -86,6 +88,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
     for (let i = 0; i < barCount; i++) {
       const pos01 = barCount > 1 ? i / (barCount - 1) : 0;
+      const barTime = pos01 * duration;
 
       const fi = Math.floor(pos01 * Math.max(0, fullband.length - 1));
       const fv = fullband[fi] || 0;
@@ -100,9 +103,12 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
       const x = i * (barWidthDev + gapWidthDev);
       const isPlayed = x < cursorPositionDev;
+      const restrictedColor = '#5c5c5c';
+      const isOutside = restrictedRange && (barTime < restrictedRange.start || barTime > restrictedRange.end);
 
       // Fullband
-      ctx.fillStyle = isPlayed ? playedColor : unplayedColor;
+      ctx.fillStyle = isOutside ? restrictedColor : (isPlayed ? playedColor : unplayedColor);
+      ctx.globalAlpha = isOutside ? 0.2 : 1.0;
       ctx.fillRect(
         x,
         height - fullHeight,
@@ -112,7 +118,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
       // Lowband
       if (lowHeight > 0) {
-        ctx.fillStyle = isPlayed ? lowPlayedColor : lowUnplayedColor;
+        ctx.fillStyle = isOutside ? restrictedColor : (isPlayed ? lowPlayedColor : lowUnplayedColor);
         ctx.fillRect(
           x,
           height - lowHeight,
@@ -120,6 +126,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
           lowHeight
         );
       }
+      ctx.globalAlpha = 1.0;
     }
 
     // Cursor: 2 device-pixel
@@ -131,7 +138,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
       cursorWidthDev,
       height
     );
-  }, [fullband, lowband, duration, getCtxAndDevSize]);
+  }, [fullband, lowband, duration, getCtxAndDevSize, restrictedRange]);
 
   // Keep latest draw function for event handlers/resize without re-subscribing
   const drawWaveformRef = useRef<(t?: number) => void>(() => {});
@@ -382,10 +389,10 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     };
   }, [overviewElement, supportsHover, getCtxAndDevSize, clearOverlay, drawOverlay]);
 
-  // Redraw when data/time changes
+  // Redraw when data, time, or restricted range changes
   useEffect(() => {
     drawWaveform(currentTime);
-  }, [fullband, lowband, duration, currentTime, drawWaveform]);
+  }, [fullband, lowband, duration, currentTime, drawWaveform, restrictedRange]);
 
   const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
     setCurrentTime(timeSec);
@@ -411,5 +418,5 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     }, 100);
   }, [drawWaveform]);
 
-  return { loading, error, setTime, attachOverviewElement };
+  return { loading, error, setTime, attachOverviewElement, setRestrictedRange };
 }

@@ -172,21 +172,30 @@ class HlsPlaylistController implements AudioController {
     const id = trackId || this.currentTrackId;
     if (!id) return;
 
-    const start = this.offsets.get(id) || 0;
+    const startOffset = this.offsets.get(id) || 0;
     const d = this.durations.get(id) || 0;
-    const local = Math.min(Math.max(0, seconds), d);
+    const meta = usePlayerStore.getState().snippetMetadata;
+    const snippet = meta ? meta[id] : null;
 
-    this.audio.currentTime = start + local;
-    usePlayerStore.getState().setTrackTime(id, local);
+    // seconds is the absolute time in the original file (0 to original_duration)
+    // We want to map this to the audible snippet range
+    const audibleStart = snippet ? snippet.start : 0;
+    
+    // Position within the snippet (0 to snippetDuration)
+    const localAudibleOffset = Math.min(Math.max(0, seconds - audibleStart), d);
+    const audioTargetTime = startOffset + localAudibleOffset;
+
+    this.audio.currentTime = audioTargetTime;
+    usePlayerStore.getState().setTrackTime(id, seconds);
 
     if (this.isMediaSessionInit) {
       msUpdatePositionState({
-        position: local,
+        position: seconds,
         duration: d,
         playbackRate: this.audio.paused ? 0 : 1
       }, true);
     }
-    usePlayerStore.setState({ inputCurrentTime: local });
+    usePlayerStore.setState({ inputCurrentTime: seconds });
   };
 
   unload = () => {
@@ -212,8 +221,13 @@ class HlsPlaylistController implements AudioController {
 
   getCurrentTime = () => {
     if (!this.currentTrackId) return 0;
-    const start = this.offsets.get(this.currentTrackId) || 0;
-    return Math.max(0, (this.audio.currentTime || 0) - start);
+    const meta = usePlayerStore.getState().snippetMetadata;
+    const snippet = meta ? meta[this.currentTrackId] : null;
+    const audioOffset = this.offsets.get(this.currentTrackId) || 0;
+    
+    // (audio.currentTime - audioOffset) is the time relative to the snippet start in the manifest (0..snipDur)
+    // We add snippet.start to get the absolute time in the original file (audibleStart..audibleEnd)
+    return (this.audio.currentTime - audioOffset) + (snippet ? snippet.start : 0);
   };
 
   getDuration = () => {
@@ -240,6 +254,11 @@ class HlsPlaylistController implements AudioController {
 
     this.tracksIds = this.tracks.map(t => t.id);
     this.buildTimeline();
+
+    // Fast-track snippet detection for uploads by loading the manifest immediately
+    if (playlistData.queried_track?.type === 'upload' && this.playlistUrl) {
+      this.ensureHlsLoaded();
+    }
   }
 
   private buildTimeline() {
@@ -248,7 +267,10 @@ class HlsPlaylistController implements AudioController {
 
     let acc = 0;
     this.tracks.forEach((t, i) => {
-      const d = Math.max(0, Number(t.duration) || 0);
+      const meta = usePlayerStore.getState().snippetMetadata;
+      const snippet = meta ? meta[t.id] : null;
+      const d = snippet ? (snippet.end - snippet.start) : Math.max(0, Number(t.duration) || 0);
+
       this.offsets.set(t.id, acc);
       this.durations.set(t.id, d);
       acc += d;
@@ -260,9 +282,20 @@ class HlsPlaylistController implements AudioController {
 
   private getSavedLocalTime(trackId: string) {
     const d = this.durations.get(trackId) || 0;
-    const saved = usePlayerStore.getState().getTrackTime(trackId) || 0;
+    const saved = usePlayerStore.getState().getTrackTime(trackId);
+    
+    const meta = usePlayerStore.getState().snippetMetadata;
+    const snippet = meta ? meta[trackId] : null;
+
+    // If never played before, start at the snippet's audible start
+    const effectiveSaved = (saved === undefined || saved === 0) && snippet ? snippet.start : (saved || 0);
+
     const max = d > 0.25 ? d - 0.25 : d;
-    return Math.min(Math.max(0, saved), max);
+    // We clamp to the absolute range (snippet.start to snippet.end)
+    const audibleStart = snippet ? snippet.start : 0;
+    const audibleEnd = snippet ? snippet.end : d;
+
+    return Math.min(Math.max(audibleStart, effectiveSaved), audibleEnd);
   }
 
   // =============== Private: HLS lifecycle ===============
@@ -467,10 +500,79 @@ class HlsPlaylistController implements AudioController {
       }
     });
 
+    this.hls.on(Hls.Events.LEVEL_LOADED, (_e, data) => {
+      const queriedTrack = usePlaylistStore.getState().playlistData?.queried_track;
+      if (!queriedTrack || queriedTrack.type !== 'upload') return;
+
+      const frags = data.details.fragments;
+      if (!frags.length) return;
+
+      // Segments before the first discontinuity belong to the first track (the uploaded snippet)
+      const firstCC = frags[0].cc;
+      let totalCCDuration = 0;
+      let lastFragDuration = 0;
+      let ccFragCount = 0;
+      
+      for (const f of frags) {
+        if (f.cc !== firstCC) break;
+        totalCCDuration += f.duration;
+        lastFragDuration = f.duration;
+        ccFragCount++;
+      }
+
+      // If the last fragment in the first CC is roughly 2s (and we have other segments),
+      // it's likely the silent gap. We exclude it from the audible snippet duration
+      // so it can be handled as a GAP_BETWEEN_TRACKS by the controller timeline.
+      let snippetDuration = totalCCDuration;
+      if (ccFragCount > 1 && Math.abs(lastFragDuration - 2.0) < 0.5) {
+        snippetDuration -= lastFragDuration;
+        // console.log(`[HLS] Detected 2s gap at end of snippet, excluding from audible duration. New dur: ${snippetDuration}`);
+      }
+
+      // Detect snippet start from the first segment's index
+      const firstSN = frags[0].sn;
+      let snippetStart = firstSN * 6; // Default assumption
+
+      // Try to parse index from filename if it looks like segment_123.ts or index123.ts or similar
+      const url = frags[0].url || '';
+      const relUrl = frags[0].relurl || '';
+      
+      // The segment number is at the end: ...&seg=0 or ...?seg=0
+      // We also fallback to common patterns like segment_20 or index20
+      const match = url.match(/[?&]seg=(\d+)/i) || 
+                   relUrl.match(/[?&]seg=(\d+)/i) ||
+                   url.match(/(?:segment|index)[_-]?(\d+)/i) || 
+                   relUrl.match(/(?:segment|index)[_-]?(\d+)/i);
+      
+      if (match) {
+        const segIdx = parseInt(match[1], 10);
+        // If SN is 0 but we found a segment number in the filename/url, trust it
+        if (snippetStart === 0 || firstSN === 0) {
+          snippetStart = segIdx * 6;
+        }
+      }
+
+      console.log(`[HLS] Detected snippet for ${queriedTrack.id}: start=${snippetStart}s, end=${snippetStart + snippetDuration}s (sn: ${firstSN}, cc: ${firstCC}, totalCC: ${totalCCDuration}s)`);
+
+      usePlayerStore.getState().setSnippetMetadata(queriedTrack.id, {
+        start: snippetStart,
+        end: snippetStart + snippetDuration,
+      });
+
+      // Update initial position if never played
+      const storedTime = usePlayerStore.getState().getTrackTime(queriedTrack.id);
+      if (storedTime === undefined || storedTime === 0) {
+        usePlayerStore.getState().setTrackTime(queriedTrack.id, snippetStart);
+      }
+
+      // Re-build timeline if metadata changed
+      this.buildTimeline();
+    });
+
     const clear = () => {
       this.clearRetry();
       this.clearColdRetry();
-    }
+    };
     this.hls.on(Hls.Events.MANIFEST_PARSED, clear);
     this.hls.on(Hls.Events.LEVEL_LOADED, clear);
     this.hls.on(Hls.Events.FRAG_LOADED, clear);
@@ -670,13 +772,20 @@ class HlsPlaylistController implements AudioController {
     if (!this.isPlaylistLoaded) this.ensureHlsLoaded();
     if (!this.tracksIds.length) return;
 
-    const start = this.offsets.get(trackId) || 0;
+    const startOffset = this.offsets.get(trackId) || 0;
     const d = this.durations.get(trackId) || 0;
     const savedLocal = this.getSavedLocalTime(trackId);
 
-    let target = start + savedLocal;
-    if (preRollOnZero && savedLocal === 0) {
-      target = Math.max(0, start - AUTOSWITCH_PREROLL);
+    const meta = usePlayerStore.getState().snippetMetadata;
+    const snippet = meta ? meta[trackId] : null;
+    const audibleStart = snippet ? snippet.start : 0;
+
+    // Position relative to manifest start (0..snipDur)
+    const localAudibleOffset = Math.max(0, savedLocal - audibleStart);
+    let target = startOffset + localAudibleOffset;
+    
+    if (preRollOnZero && localAudibleOffset === 0) {
+      target = Math.max(0, startOffset - AUTOSWITCH_PREROLL);
     }
 
     this.selectCurrent(trackId);
@@ -763,8 +872,15 @@ class HlsPlaylistController implements AudioController {
     if (!this.currentTrackId || this.isSeeking) return;
 
     const globalT = this.audio.currentTime || 0;
-    const start = this.offsets.get(this.currentTrackId) || 0;
-    const localT = Math.max(0, globalT - start);
+    const startOffset = this.offsets.get(this.currentTrackId) || 0;
+    const meta = usePlayerStore.getState().snippetMetadata;
+    const snippet = meta ? meta[this.currentTrackId] : null;
+    
+    // (globalT - startOffset) is position in snippet (0..snipDur)
+    // Adding snippet.start gives us the absolute time in the original file
+    const localT = Math.max(0, globalT - startOffset + (snippet ? snippet.start : 0));
+
+    // console.log(`[HLS] onTimeUpdate: globalT=${globalT}, startOffset=${startOffset}, snipStart=${snippet?.start}, localT=${localT}`);
 
     usePlayerStore.setState({ inputCurrentTime: localT });
     usePlayerStore.getState().setTrackTime(this.currentTrackId, localT);

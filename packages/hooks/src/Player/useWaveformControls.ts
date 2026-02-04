@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCustomPeaks } from "../Waveform/useCustomPeaks";
 import { useDebouncedWaveformSeek } from "../Waveform/useDebouncedWaveformSeek";
 import { useGlobalAudioController } from "./AudioProvider";
-import { usePlayerStore } from "@resomix/stores";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 
 // Constants shared by both player components
 const SEEK_DEBOUNCE_MS = 300;
@@ -27,7 +27,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const effectiveId = id ?? "uploaded-local";
 
   // 2. Peaks waveform hook
-  const { loading: wfLoading, error: wfError, setTime, attachOverviewElement } = useCustomPeaks(id || "");
+  const { loading: wfLoading, error: wfError, setTime, attachOverviewElement, setRestrictedRange } = useCustomPeaks(id || "");
 
   // 3. Global audio controller
   const hlsController = useGlobalAudioController();
@@ -39,6 +39,20 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const isCommonPlay = usePlayerStore((s) => s.isPlaying);
   const volume = usePlayerStore((s) => s.volume);
   const setVolume = usePlayerStore((s) => s.setVolume);
+  const restrictedRange = usePlayerStore((s) => (s.snippetMetadata ? s.snippetMetadata[effectiveId] : null) || null);
+  const playlistData = usePlaylistStore((s: any) => s.playlistData);
+  
+  // 4a. Detection for "Upload" tracks that are still loading their manifest to determine range
+  const isUpload = useMemo(() => {
+    if (playlistData?.queried_track?.id === effectiveId) return playlistData.queried_track.type === 'upload';
+    return playlistData?.similar_tracks?.find((t: any) => t.id === effectiveId)?.type === 'upload';
+  }, [playlistData, effectiveId]);
+
+  const isSnippetWaiting = isUpload && !restrictedRange;
+
+  // 4b. We treat the track as loading if the snippet metadata is awaited, 
+  // or if the underlying peaks are still fetching.
+  const isActuallyLoading = wfLoading || isSnippetWaiting;
 
   // 5. Waveform seek helpers
   const { containerRef, isDragging, uiTime, requestSeek } = useDebouncedWaveformSeek({
@@ -55,7 +69,14 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
     },
     debounceMs: SEEK_DEBOUNCE_MS,
     holdAfterMs: HOLD_AFTER_SEEK_MS,
+    restrictedRange,
   });
+
+
+  // 5a. Update custom peaks restricted range
+  useEffect(() => {
+    setRestrictedRange(restrictedRange);
+  }, [restrictedRange, setRestrictedRange]);
 
   // 6. Playback helpers (optional)
   const isPlaying = isCommonPlay && currentTrackId === effectiveId;
@@ -84,7 +105,10 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
 
   const skipForward = useCallback(() => {
     if (!hlsController) return;
-    const d = Number.isFinite(hlsController.getDuration()) ? hlsController.getDuration() : totalDuration;
+    // For snippets, hlsController.getDuration() returns the audible snippet length (e.g. 60s)
+    // while totalDuration is the original file length (e.g. 344s). We use the max to allow absolute skipping.
+    const hlsDur = hlsController.getDuration();
+    const d = (Number.isFinite(hlsDur) && hlsDur > 0) ? Math.max(hlsDur, totalDuration) : totalDuration;
     const base = uiTime || 0;
     requestSeek(Math.min(d, base + 10));
   }, [hlsController, uiTime, totalDuration, requestSeek]);
@@ -111,7 +135,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
     // waveform
     containerRef,
     attachOverviewElement,
-    wfLoading,
+    wfLoading: isActuallyLoading,
     wfError,
     isDragging,
     uiTime,

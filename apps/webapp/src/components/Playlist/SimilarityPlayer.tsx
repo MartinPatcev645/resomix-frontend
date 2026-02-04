@@ -29,11 +29,18 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
   return (
     <div className="flex flex-col w-full gap-[var(--px-5)]">
-      <div className="h-[var(--px-50)] overflow-y-hidden">
-        <div ref={ctl.containerRef} className="w-full h-full">
-          {ctl.wfLoading && <WaveformLoader />}
-          {ctl.wfError && <div className="text-center text-sm text-red-500">Error: {ctl.wfError}</div>}
+      <div className="h-[var(--px-50)] overflow-y-hidden relative">
+        <div 
+          ref={ctl.containerRef} 
+          className={`w-full h-full ${ctl.wfLoading ? "invisible" : "visible"}`}
+        >
         </div>
+        {ctl.wfLoading && (
+          <div className="absolute inset-0 flex items-center justify-center z-50">
+            <WaveformLoader />
+          </div>
+        )}
+        {ctl.wfError && <div className="text-center text-sm text-red-500 absolute inset-0 flex items-center justify-center">Error: {ctl.wfError}</div>}
       </div>
 
       <div className="flex items-center justify-between w-full">

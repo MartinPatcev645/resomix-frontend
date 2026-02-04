@@ -60,7 +60,6 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
     };
   }, []);
 
-
   return (
     <>
       <div className="flex items-center gap-2 w-full">
@@ -98,13 +97,24 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
         </div>
 
         <div className="flex flex-col w-full gap-[var(--px-5)]">
-          <div
-            ref={ctl.containerRef}
-            className="h-[var(--px-50)] overflow-y-hidden w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]"
-            style={{ cursor: ctl.isDragging ? "grabbing" : "pointer" }}
-          >
-            {ctl.wfLoading && <WaveformLoader />}
-            {ctl.wfError && <div className="text-center text-sm text-red-500">Error: {ctl.wfError}</div>}
+          <div className="relative h-[var(--px-50)] w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]">
+            <div
+              ref={ctl.containerRef}
+              className={`w-full h-full overflow-y-hidden ${ctl.wfLoading ? "invisible" : "visible"}`}
+              style={{ cursor: ctl.isDragging ? "grabbing" : "pointer" }}
+            >
+              {/* Peaks will append canvas here */}
+            </div>
+            {ctl.wfLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-50">
+                <WaveformLoader />
+              </div>
+            )}
+            {ctl.wfError && (
+              <div className="text-center text-sm text-red-500 absolute inset-0 flex items-center justify-center">
+                Error: {ctl.wfError}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between w-full">
