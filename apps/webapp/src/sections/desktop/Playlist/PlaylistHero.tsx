@@ -453,7 +453,7 @@ const PlaylistHero: React.FC = () => {
                 </Tooltip>
               </div>
               {/* Creative Commons License Icons - Bottom Right */}
-              {!playlistData?.isUpload && (
+              {playlistData?.queried_track?.type === 'internal' && (
                 <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
                   <CCLicenseGroup size={9} />
                 </div>
