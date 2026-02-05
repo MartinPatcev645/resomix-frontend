@@ -33,7 +33,11 @@ export function usePlaylistExport() {
       .join('\n');
     
     // Combine all parts
-    return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}\n\n\nRestricted to 10 tracks in demo mode.\nSonic matches provided by Resomix https://resomix.com`;
+    const footer = DEMO_MODE 
+      ? `\n\nRestricted to 10 tracks in demo mode.\nSonic matches provided by Resomix https://resomix.com`
+      : `\n\nSonic matches provided by Resomix https://resomix.com`;
+
+    return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}${footer}`;
   }, []);
 
   const generateFilename = useCallback((data: typeof playlistData): string => {
