@@ -2,11 +2,9 @@ import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, ToggleButton } from "@resomix/ui";
 import { formatDuration } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
-import ShareSvg from "@/assets/icons/share.svg";
-import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import AngleDownSvg from "@/assets/icons/AngleDown.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
@@ -31,7 +29,6 @@ interface PlaylistHeroProps {
 const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
-  const [showShare, setShowShare] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
@@ -105,17 +102,6 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   hoverIcon={<img src={StarBlackSvg} aria-label="Star" alt="Star" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   className="playlist-rating-button"
                   id="playlist-hero-rating-button"
-                />
-                <IconButton
-                  text="Share"
-                  transparent={true}
-                  customWidth="min-w-[var(--px-70)]"
-                  mobile={true}
-                  onClick={() => setShowShare(true)}
-                  icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                  hoverIcon={<img src={ShareBlackSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                  className="playlist-action-button"
-                  id="playlist-hero-share-button"
                 />
               </div>
             </div>
@@ -255,7 +241,6 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         onClose={handleRatingClose}
         onStatusChange={handleStatusChange}
       />
-      <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={playlistData?.playlist.id || ''} />
       <PlaylistRename
         isOpen={showRename}
         onClose={handleRenameClose}
