@@ -104,38 +104,66 @@ export function useDebouncedWaveformSeek({
     }
   }, [requestSeek]);
 
+  // Create a ref to hold the latest values of dependencies so we can use them in event handlers without re-binding
+  const latestStateRef = useRef({
+    isDragging,
+    handleSeekByClientX,
+    applyPendingSeek,
+  });
+
+  // Keep the ref updated with latest values on every render
+  useEffect(() => {
+    latestStateRef.current = {
+      isDragging,
+      handleSeekByClientX,
+      applyPendingSeek,
+    };
+  }, [isDragging, handleSeekByClientX, applyPendingSeek]);
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const onMouseDown = (e: MouseEvent) => {
+      // Direct state updates are fine, but for logic dependent on current state, use ref
       setIsDragging(true);
-      handleSeekByClientX(e.clientX);
+      latestStateRef.current.handleSeekByClientX(e.clientX);
     };
+
     const onMouseMove = (e: MouseEvent) => {
-      if (isDragging) handleSeekByClientX(e.clientX);
+      // Check ref instead of closure variable
+      if (latestStateRef.current.isDragging) {
+        latestStateRef.current.handleSeekByClientX(e.clientX);
+      }
     };
+
     const onMouseUp = () => {
       setIsDragging(false);
-      applyPendingSeek();
+      latestStateRef.current.applyPendingSeek();
     };
 
     const onTouchStart = (e: TouchEvent) => {
       setIsDragging(true);
-      handleSeekByClientX(e.touches[0].clientX);
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (isDragging) handleSeekByClientX(e.touches[0].clientX);
-    };
-    const onTouchEnd = () => {
-      setIsDragging(false);
-      applyPendingSeek();
+      latestStateRef.current.handleSeekByClientX(e.touches[0].clientX);
     };
 
+    const onTouchMove = (e: TouchEvent) => {
+      if (latestStateRef.current.isDragging) {
+        latestStateRef.current.handleSeekByClientX(e.touches[0].clientX);
+      }
+    };
+
+    const onTouchEnd = () => {
+      setIsDragging(false);
+      latestStateRef.current.applyPendingSeek();
+    };
+
+    // Add listeners ONCE.
+    // Note: { passive: true } is used for touch events to improve scrolling performance and remove violations.
     el.addEventListener("mousedown", onMouseDown as never);
     el.addEventListener("mousemove", onMouseMove as never);
-    el.addEventListener("touchstart", onTouchStart as never);
-    el.addEventListener("touchmove", onTouchMove as never);
+    el.addEventListener("touchstart", onTouchStart as never, { passive: true });
+    el.addEventListener("touchmove", onTouchMove as never, { passive: true });
 
     document.addEventListener("mouseup", onMouseUp);
     document.addEventListener("touchend", onTouchEnd);
@@ -148,7 +176,7 @@ export function useDebouncedWaveformSeek({
       document.removeEventListener("mouseup", onMouseUp);
       document.removeEventListener("touchend", onTouchEnd);
     };
-  }, [applyPendingSeek, handleSeekByClientX, isDragging]);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   useEffect(() => {
     if (!isDragging && !isUiHoldActive()) {

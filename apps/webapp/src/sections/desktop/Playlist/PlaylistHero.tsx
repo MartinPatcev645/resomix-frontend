@@ -4,11 +4,9 @@ import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hoo
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { useNavigate, useLocation } from "react-router-dom";
-import { InputPlayer, PlaylistRating, PlaylistShare, PlaylistRename, PlaylistExport } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
-import ShareSvg from "@/assets/icons/share.svg";
-import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
 import ExportBlackSvg from "@/assets/icons/export_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
@@ -25,7 +23,6 @@ const InputTrackStatus = "Loading..."
 const PlaylistHero: React.FC = () => {
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
-  const [showShare, setShowShare] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
 
   const [showExportMenu, setShowExportMenu] = React.useState(false);
@@ -237,18 +234,6 @@ const PlaylistHero: React.FC = () => {
                     id="playlist-hero-rename-button"
                   />
                 </Tooltip>
-                <Tooltip message="Make Public and Generate Shareable Link">
-                  <IconButton
-                    text="Share"
-                    transparent={true}
-                    customWidth="min-w-[var(--px-100)]"
-                    onClick={() => setShowShare(true)}
-                    icon={<img src={ShareSvg} draggable={false} aria-label="Share" alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={ShareBlackSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    className="playlist-action-button"
-                    id="playlist-hero-share-button"
-                  />
-                </Tooltip>
 
                 <div ref={exportButtonWrapRef} className="relative">
                   <Tooltip message="Export Playlist to TXT file">
@@ -436,7 +421,7 @@ const PlaylistHero: React.FC = () => {
                     <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white mt-[var(--px-6)]" onClick={handleForkClick} />
                   </Tooltip>
                 )}
-                <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private! Share to make it public"}>
+                <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private!"}>
                   <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
                     {playlistData?.playlist.is_public ? (
                       <>
@@ -470,7 +455,6 @@ const PlaylistHero: React.FC = () => {
         onClose={handleRatingClose}
         onStatusChange={handleStatusChange}
       />
-      <PlaylistShare isOpen={showShare} onClose={() => setShowShare(false)} id={playlistData?.playlist.id || ''} />
       <PlaylistRename
         isOpen={showRename}
         onClose={handleRenameClose}
