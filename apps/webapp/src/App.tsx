@@ -18,9 +18,9 @@ const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 // const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
-const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
-const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
-const SpotifyRedirect = lazy(() => import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
+// const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
+// const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
+// const SpotifyRedirect = lazy(() => import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
 
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
@@ -133,9 +133,6 @@ function App() {
             {/* Info Pages */}
             <Route path="/contact" element={<InfoPage mode="contact" />} />
             <Route path="/error" element={<InfoPage mode="error" />} />
-            {/* <Route path="/test" element={<TestPage />} /> */}
-            {/* <Route path="/test-two" element={<TestTwo />} /> */}
-            {/* <Route path="/player" element={<PlayerPage />} /> */}
             <Route path="*" element={<InfoPage mode="404" />} />
           </Route>
 
@@ -143,9 +140,9 @@ function App() {
           <Route path="/loader" element={<UploadLoader />} />
 
           {/* Exports redirects */}
-          <Route path="/apple-redirect" element={<AppleRedirect />} />
-          <Route path="/tidal-redirect" element={<TidalRedirect />} />
-          <Route path="/spotify-redirect" element={<SpotifyRedirect />} />
+          {/* <Route path="/apple-redirect" element={<AppleRedirect />} /> */}
+          {/* <Route path="/tidal-redirect" element={<TidalRedirect />} />
+          <Route path="/spotify-redirect" element={<SpotifyRedirect />} /> */}
         </Routes>
       </Suspense>
     </>
