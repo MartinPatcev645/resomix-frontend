@@ -38,7 +38,7 @@ const AboutTwo: React.FC = () => {
                     <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-medium flex flex-col gap-[var(--px-10)]">
                         We believe you deserve better tools to craft your set and explore the depth of your musical taste.
                         <span className="font-light">
-                            Resomix finds hidden connections because we know that music doesn't need a high chart position to be relevant. The platform analyzes every aspect of a song's structure, to map its sonic DNA and find a perfect match, regardless of who released it or when.
+                            Resomix finds hidden connections because we know that music doesn't need a high chart position to be relevant. The platform analyzes every aspect of a song's structure, to map its Acoustic sonic DNA and find a perfect match, regardless of who released it or when.
                         </span>
                     </div>
                 </div>
@@ -51,7 +51,7 @@ const AboutTwo: React.FC = () => {
                         What makes<br />resomix<br />different
                     </div>
                     <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-medium flex flex-col gap-[var(--px-10)]">
-                        Our music discovery system is based on a deep learning algorithm that identifies musical patterns on a granular level.
+                        Our music discovery system is ased on a Computational algorithm that identifies musical patterns on a granular level.
                         <span className="font-light">
                             Playing outside of the "streaming game," Resomix can find unknown tunes and hidden gems that reflect the essence of your reference.
                         </span>
@@ -61,10 +61,10 @@ const AboutTwo: React.FC = () => {
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
                         <img src={AnalysisSvg} draggable={false} aria-hidden="true" loading="lazy" alt="analysis" className="w-[var(--px-54)] h-[var(--px-54)]" />
                         <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
-                            Deeper Sound Analysis
+                            Spectral Feature Analysis
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
-                            No artificial curation, no shortcutting the research; just an innovative way of doing audio analysis through deep learning algorithms.
+                            No artificial curation, no shortcutting the research; just an innovative way of doing audio analysis through Computational algorithms.
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
@@ -73,7 +73,7 @@ const AboutTwo: React.FC = () => {
                             Technology and Craft
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
-                            Resomix explores what defines a track: its subtlety, dynamics, flow, rhythm, texture, energy, and more. Just like when DJs read the room while performing, our deep-learning engine delivers personalized results based on hard data, not trends.
+                            Resomix explores what defines a track: its subtlety, dynamics, flow, rhythm, texture, energy, and more. Just like when DJs read the room while performing, our computational engine delivers personalized results based on hard data, not trends.
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
