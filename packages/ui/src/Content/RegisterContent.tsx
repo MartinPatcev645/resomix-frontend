@@ -30,10 +30,10 @@ type RegisterForm = {
 };
 
 export default function RegisterContent({
-                                          baseUrl = "https://resomix.com",
-                                          onRegisterSuccess,
-                                          onNavigateLogin,
-                                        }: RegisterContentProps) {
+    baseUrl = "https://resomix.com",
+    onRegisterSuccess,
+    onNavigateLogin,
+  }: RegisterContentProps) {
   // Form validation hook
   const initialValues: RegisterForm = {
     email: "",
@@ -312,7 +312,7 @@ export default function RegisterContent({
                 <span className="text-[length:var(--px-11)] font-light font-helvetica leading-relaxed">
                   I agree to the{" "}
                   <a
-                    href={`${baseUrl}/terms`}
+                    href="https://support.resomix.com/hc/articles/1/3/11/terms-of-service"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] underline"
@@ -335,7 +335,7 @@ export default function RegisterContent({
                 <span className="text-[length:var(--px-11)] font-light font-helvetica leading-relaxed">
                   I agree to the{" "}
                   <a
-                    href={`${baseUrl}/privacy`}
+                    href="https://support.resomix.com/hc/articles/1/3/1/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] underline"
