@@ -66,10 +66,11 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
                   multiline={true}
                 />
               </div>
+
               <div className="leading-[var(--px-8)] mt-[var(--px-40)]">
                 <CodeTyping
                   speed={100}
-                  text="Deep Learning Audio Engine: v5.3.9 [ML model: R-BeatNet]<br />latency: zero-latency-mode = active<br />data_nodes: [New York] [London] [Singapore]"
+                  text="PYXIS-1 Sonic Analysis Engine: v5.3.9<br />latency: zero-latency-mode = active<br />data_nodes: [New York] [London] [Singapore]"
                   multiline={true}
                 />
               </div>

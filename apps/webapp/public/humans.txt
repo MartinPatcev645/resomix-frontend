@@ -21,7 +21,7 @@
   Components: React, TypeScript
 
 /* DESCRIPTION */
-  Resomix Beta is the live testing environment for Resomix — a deep learning platform helping DJs discover tracks by feeling.
+  Resomix Beta is the live testing environment for Resomix — a Sonic Analysis platform helping DJs discover tracks by feeling.
 
 /* CONTACT */
   Website: https://resomix.com

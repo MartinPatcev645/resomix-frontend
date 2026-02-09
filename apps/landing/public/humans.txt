@@ -20,7 +20,7 @@
   Components: React, TypeScript
 
 /* DESCRIPTION */
-  Resomix is a deep learning platform that helps DJs discover tracks by feeling, not by genre.
+  Resomix is a Sonic Analysis platform that helps DJs discover tracks by feeling, not by genre.
 
 /* CONTACT */
   Website: https://resomix.com
