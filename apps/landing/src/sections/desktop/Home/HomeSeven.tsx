@@ -117,7 +117,7 @@ const HomeSeven: React.FC = () => {
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
               <CodeTyping
                 speed={50}
-                text="sonic.analysis.beatmap[OK]"
+                text="PYXIS-1: engine.check[OK]"
               />
             </div>
             <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
