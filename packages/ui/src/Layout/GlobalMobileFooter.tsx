@@ -46,7 +46,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
               <div>
                 <CodeTyping
                   speed={50}
-                  text={`company_name: Resomix Inc.<br />status: online [✓]<br />version: ${version}`}
+                  text={`company_name: Resomix<br />status: online [✓]<br />version: ${version}`}
                   multiline={true}
                 />
               </div>
@@ -97,7 +97,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
           <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)]">
             <CodeTyping
               speed={50}
-              text="© 2026 Resomix Inc.<br />// Demo Stage"
+              text="© 2026 Resomix<br />// Demo Stage"
               multiline={true}
             />
             <CodeTyping
