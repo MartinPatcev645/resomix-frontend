@@ -16,7 +16,7 @@ const HomeFive: React.FC = () => {
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
           <div className="absolute top-1/3 right-0 transform text-[length:var(--px-14)] font-extralight font-auger text-right z-20 mr-[var(--px-35)] -mt-[var(--px-14)] leading-[var(--px-16)]">
-            Spectral Feature Analysis, pure<br />and simple, unaffected by<br />metadata or trends.
+            Spectral Feature Analysis<br />pure and simple, unaffected<br />by metadata or trends.
           </div>
           <img src={SectionFiveGraphicRight} aria-hidden="true" loading="lazy" draggable={false} alt="Section Five Graphic Right" className="w-[var(--px-280)] h-[var(--px-100)]" />
         </div>
