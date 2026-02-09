@@ -16,13 +16,13 @@ const HomeFive: React.FC = () => {
       <div className='flex flex-col w-full my-[var(--px-80)]'>
         <div className='flex w-full justify-end relative'>
           <div className="absolute top-1/3 right-0 transform text-[length:var(--px-14)] font-extralight font-auger text-right z-20 mr-[var(--px-35)] -mt-[var(--px-14)] leading-[var(--px-16)]">
-            Deep sonic analysis, pure<br />and simple, unaffected by<br />metadata or trends.
+            Spectral Feature Analysis, pure<br />and simple, unaffected by<br />metadata or trends.
           </div>
           <img src={SectionFiveGraphicRight} aria-hidden="true" loading="lazy" draggable={false} alt="Section Five Graphic Right" className="w-[var(--px-280)] h-[var(--px-100)]" />
         </div>
         <div className='flex flex-col w-full justify-center'>
           <div className="mx-auto text-center text-[length:var(--px-20)] font-light leading-[var(--px-24)] mt-[var(--px-80)] font-helvetica uppercase">
-            Resomix is the only platform in<br />the world that focuses on the<br />“soul” of your reference track<br />to find music that matches its<br />mood and spirit.
+            Resomix is the only platform in<br />the world that focuses on the<br />SONIC TEXTURE of your reference track<br />to find music that matches its<br />mood and spirit.
           </div>
           <div className='mx-auto text-center text-[length:var(--px-14)] mt-[var(--px-14)] font-auger tracking-wide'>
             Cutting-Edge Innovation

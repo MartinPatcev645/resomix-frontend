@@ -23,7 +23,7 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex flex-col w-full justify-center'>
           <div className="relative z-20 mx-auto text-center text-[length:var(--px-25-19)] font-extralight leading-[var(--px-34)] mt-[var(--px-24)] opacity-90 font-helvetica uppercase">
-            Resomix is the only platform in the world that<br />focuses on <span className="font-medium text-black">the “soul” of your reference track<br />to find music that matches its mood and spirit.</span>
+            Resomix is the only platform in the world that<br />focuses on <span className="font-medium text-black">the “SONIC TEXTURE” of your reference<br />track to find music that matches its mood and spirit.</span>
           </div>
           <img src={SoulOfReference} aria-hidden="true" loading="lazy" draggable={false} alt="Soul Of Reference" className="absolute z-5 top-[25.8%] left-[50.35%] transform -translate-x-1/2 w-[var(--px-695)] h-[var(--px-65)]" />
           <div className='mx-auto text-center text-[length:var(--px-13)] font-extralight mt-[var(--px-12)] opacity-60 font-auger'>

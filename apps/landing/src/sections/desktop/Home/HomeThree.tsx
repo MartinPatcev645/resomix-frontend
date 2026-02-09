@@ -21,7 +21,7 @@ const HomeThree: React.FC = () => (
         </div>
         <div className="text-right justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-12)] opacity-70">The thrill and excitement of crate digging, but with the power,<br />speed, and convenience of cutting-edge technology.</div>
       </div>
-      <div className="justify-start text-[length:var(--px-59)] font-light font-helvetica uppercase leading-[var(--px-64)]">THE ART OF SELECTION<br />INTO THE AGE OF DEEP LEARNING</div>
+      <div className="justify-start text-[length:var(--px-59)] font-light font-helvetica uppercase leading-[var(--px-64)]">THE ART OF SELECTION<br />INTO THE AGE OF ALGORITHMIC PRECISION</div>
     </div>
     <div className='mt-[var(--px-350)] flex justify-between items-start'>
       <div className="justify-start text-[length:var(--px-25)] font-light font-montserrat uppercase leading-[var(--px-28)]">A safe haven for DJs escaping the<br />noise of algorithms and trends</div>
