@@ -11,6 +11,7 @@ build/Release
 
 # Dependency directories
 node_modules/
+node_modules.old/
 jspm_packages/
 .DS_Store
 

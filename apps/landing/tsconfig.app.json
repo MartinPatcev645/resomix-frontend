@@ -39,7 +39,7 @@
     // for vitest
     "types": ["vitest/globals", "node"]
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e"],
+  "include": ["src", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
   "references": [
     { "path": "../../packages/ui" },
     { "path": "../../packages/hooks" },

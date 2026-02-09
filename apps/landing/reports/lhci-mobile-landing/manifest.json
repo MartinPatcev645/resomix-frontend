@@ -1,11 +1,11 @@
 [
   {
-    "url": "http://localhost:5173/",
+    "url": "http://localhost:5175/",
     "isRepresentativeRun": true,
-    "htmlPath": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/resomix-web/apps/landing/reports/lhci-mobile-landing/localhost--2025_10_15_09_04_14.report.html",
-    "jsonPath": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/resomix-web/apps/landing/reports/lhci-mobile-landing/localhost--2025_10_15_09_04_14.report.json",
+    "htmlPath": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/resomix-web/apps/landing/reports/lhci-mobile-landing/localhost--2026_02_09_11_11_06.report.html",
+    "jsonPath": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/resomix-web/apps/landing/reports/lhci-mobile-landing/localhost--2026_02_09_11_11_06.report.json",
     "summary": {
-      "performance": 0.54,
+      "performance": 0.33,
       "accessibility": 1,
       "best-practices": 0.93,
       "seo": 1

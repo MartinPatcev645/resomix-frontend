@@ -40,7 +40,7 @@
     // for vitest
     "types": ["vitest/globals", "node"]
   },
-  "include": ["src", "../../packages/ui/src/Elements/StatusMessage.tsx", "vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e", "e2e"],
+  "include": ["src", "../../packages/ui/src/Elements/StatusMessage.tsx", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
   "references": [
     { "path": "../../packages/ui" },
     { "path": "../../packages/hooks" },
