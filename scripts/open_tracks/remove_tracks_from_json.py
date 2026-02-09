@@ -28,11 +28,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import sys
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Tuple, Set
+from typing import List, Dict, Any, Tuple
 
 # Add project root to Python path
 script_dir = Path(__file__).resolve().parent
@@ -301,22 +300,22 @@ def print_test_mode_summary(
     print(f"[TEST MODE] UUIDs processed: {processed:,} / {total_available:,} total available")
     
     if dry_run:
-        print(f"[TEST MODE] Would delete:")
+        print("[TEST MODE] Would delete:")
     else:
-        print(f"[TEST MODE] Deleted:")
+        print("[TEST MODE] Deleted:")
     
     print(f"[TEST MODE]   - Tracks: {tracks_deleted:,}")
     print(f"[TEST MODE]   - Track-Artist associations: {track_artists_deleted:,}")
     print(f"[TEST MODE]   - Not found: {not_found:,}")
-    print(f"[TEST MODE]")
+    print("[TEST MODE]")
     print(f"[TEST MODE] Total time: {format_time(elapsed_time)}")
     print(f"[TEST MODE] Average per UUID: {avg_per_track:.2f} seconds")
-    print(f"[TEST MODE]")
-    print(f"[TEST MODE] ESTIMATED TIME FOR FULL DATASET:")
+    print("[TEST MODE]")
+    print("[TEST MODE] ESTIMATED TIME FOR FULL DATASET:")
     print(f"[TEST MODE] - Total UUIDs: {total_available:,}")
     print(f"[TEST MODE] - Estimated time: ~{format_time(estimated_total)}")
-    print(f"[TEST MODE]")
-    print(f"[TEST MODE] Set TEST_MODE = False to process all tracks.")
+    print("[TEST MODE]")
+    print("[TEST MODE] Set TEST_MODE = False to process all tracks.")
     print("="*70 + "\n")
 
 
@@ -334,7 +333,7 @@ def main() -> None:
             all_data: List[Dict[str, Any]] = json.load(f)
     except FileNotFoundError:
         logger.error(f"ERROR: JSON file not found: {JSON_PATH}")
-        logger.error(f"Please ensure removal_tracks.json exists in the script directory.")
+        logger.error("Please ensure removal_tracks.json exists in the script directory.")
         return
     except json.JSONDecodeError as e:
         logger.error(f"ERROR: Invalid JSON file: {e}")
@@ -365,14 +364,14 @@ def main() -> None:
     # Dry run warning
     if DRY_RUN:
         print(f"\n{'='*70}")
-        print(f"[DRY RUN] ENABLED - No deletions will be executed")
+        print("[DRY RUN] ENABLED - No deletions will be executed")
         print(f"{'='*70}\n")
     
     # Confirmation prompt (if not in test mode and not dry run)
     if not TEST_MODE and not DRY_RUN:
         print(f"\n{'!'*70}")
         print(f"WARNING: You are about to DELETE {len(uuids):,} tracks from the database!")
-        print(f"This operation is DESTRUCTIVE and cannot be undone.")
+        print("This operation is DESTRUCTIVE and cannot be undone.")
         print(f"{'!'*70}\n")
         response = input("Are you sure you want to continue? (yes/no): ").strip().lower()
         if response != "yes":
@@ -407,11 +406,11 @@ def main() -> None:
         
         if DRY_RUN:
             print(f"\n{'='*70}")
-            print(f"[DRY RUN] Summary:")
+            print("[DRY RUN] Summary:")
             print(f"  Would delete {tracks_deleted:,} tracks")
             print(f"  Would delete {track_artists_deleted:,} track-artist associations")
             print(f"  {not_found:,} UUIDs not found in database")
-            print(f"  Set DRY_RUN = False to execute deletions")
+            print("  Set DRY_RUN = False to execute deletions")
             print(f"{'='*70}\n")
 
 

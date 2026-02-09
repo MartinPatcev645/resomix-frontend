@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, BinaryIO, Union, Optional
+from typing import Any, Dict, List, BinaryIO, Union
 
 from mutagen import File as MutagenFile, MutagenError
 from mutagen.id3 import ID3

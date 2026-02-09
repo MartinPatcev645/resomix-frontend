@@ -19,7 +19,6 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.core.config import settings
 from app.models import OperationType, UserOperationLimit, Playlist
 from app.repositories.operation_limit_repository import OperationLimitRepository
 

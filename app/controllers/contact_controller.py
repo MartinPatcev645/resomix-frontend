@@ -434,7 +434,7 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error=result.get("error", "Failed to retrieve contact list")))
-        except Exception as e:
+        except Exception:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -448,7 +448,7 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
-        except Exception as e:
+        except Exception:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -459,7 +459,7 @@ class ContactController:
             return JSONResponse(status_code=status.HTTP_200_OK,
                 content={"success": result.get("success"), "deleted_count": result.get("deleted_count", 0),
                         "message": result.get("message", result.get("error", ""))})
-        except Exception as e:
+        except Exception:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -478,7 +478,7 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
-        except Exception as e:
+        except Exception:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -494,6 +494,6 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error=result.get("error", "Failed to export contact")))
-        except Exception as e:
+        except Exception:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))

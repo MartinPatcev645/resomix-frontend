@@ -11,7 +11,6 @@ Or run directly: python tests/unit/test_routes/test_contact_routes.py
 
 import requests
 import time
-from typing import Dict, Any
 
 # Configuration
 BASE_URL = "http://localhost:8005"
@@ -76,7 +75,7 @@ def test_contact_submit_valid():
             print_test_result("Contact Submit Valid Data Field", False, "Missing 'data' field in response")
             return False
         
-        print_test_result("Contact Submit Valid", True, f"Contact form submitted successfully", response_time)
+        print_test_result("Contact Submit Valid", True, "Contact form submitted successfully", response_time)
         return True
         
     except requests.exceptions.RequestException as e:

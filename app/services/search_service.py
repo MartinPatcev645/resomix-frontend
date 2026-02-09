@@ -22,11 +22,9 @@ import unicodedata
 import time
 from typing import Dict, Any, Optional, List, Literal
 from app.core.config import settings
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.track_repository import TrackRepository
-from app.utils.elasticsearch_utils import get_es_client
 
 
 class SearchService:

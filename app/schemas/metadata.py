@@ -15,9 +15,8 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 from pydantic import BaseModel, Field
-from app.schemas.common import FileInfo
 
 
 class MetadataInfo(BaseModel):

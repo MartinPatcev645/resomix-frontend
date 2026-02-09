@@ -20,13 +20,12 @@ import csv
 import os
 import uuid
 import math
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 
 from app.repositories.waitlist_repository import WaitlistRepository
-from app.models.waitlist import Waitlist
 from app.core.config import settings
 
 

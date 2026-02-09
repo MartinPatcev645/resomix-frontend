@@ -2,10 +2,10 @@ import shutil
 import os
 import asyncio # Added for asyncio.to_thread
 from contextlib import asynccontextmanager # For lifespan manager
-from fastapi import FastAPI, File, UploadFile, HTTPException, Security, Depends, Query, Body, status
-from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
+from fastapi import FastAPI, File, UploadFile, HTTPException, Security, Query, Body, status
+from fastapi.security.api_key import APIKeyQuery
 from fastapi.responses import JSONResponse
-from starlette.status import HTTP_403_FORBIDDEN, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_404_NOT_FOUND, HTTP_415_UNSUPPORTED_MEDIA_TYPE, HTTP_503_SERVICE_UNAVAILABLE
+from starlette.status import HTTP_403_FORBIDDEN
 from starlette.middleware.cors import CORSMiddleware
 import uuid
 from typing import Dict, Any, Optional, AsyncGenerator # For lifespan type hint

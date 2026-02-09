@@ -19,7 +19,6 @@ import os
 import subprocess
 import tempfile
 import json
-import httpx
 from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 

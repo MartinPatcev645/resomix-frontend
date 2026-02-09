@@ -11,7 +11,6 @@ Or run directly: python tests/unit/test_routes/test_health_routes.py
 
 import requests
 import time
-from typing import Dict, Any
 
 # Configuration
 BASE_URL = "http://localhost:8005"

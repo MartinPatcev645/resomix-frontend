@@ -15,7 +15,7 @@ All other tags and technical fields are ignored.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, BinaryIO, Union
+from typing import Any, Dict, List, BinaryIO
 
 from mutagen import File as MutagenFile, MutagenError
 from mutagen.id3 import ID3

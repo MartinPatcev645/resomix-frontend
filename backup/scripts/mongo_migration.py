@@ -527,7 +527,7 @@ def migrate(batch_size: int, retry_errors: bool = False):
     
     if errors > 0:
         logging.info(f"Error details logged to: {ERROR_LOG_FILE}")
-        logging.info(f"To retry failed documents, run with --retry-errors flag")
+        logging.info("To retry failed documents, run with --retry-errors flag")
     
     logging.info("="*60)
 

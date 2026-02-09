@@ -24,7 +24,6 @@ from typing import Optional, Literal
 from app.services.search_service import SearchService
 from app.utils.response_utils import format_response
 from app.utils.logging_utils import log_request
-from app.core.config import settings
 
 
 class SearchController:

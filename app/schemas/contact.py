@@ -15,9 +15,8 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from pydantic import BaseModel, Field, validator, EmailStr
-from datetime import datetime
 from app.schemas.common import StatusEnum
 
 

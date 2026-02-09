@@ -21,7 +21,6 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from database.connection import engine

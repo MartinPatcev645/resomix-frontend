@@ -94,8 +94,6 @@ class OpenTracksPipelineService:
         import json
         import tempfile
         import subprocess
-        import os
-        from sqlalchemy import text
 
         # Step 1: Fetch uuid and file_path for OPEN tracks only
         try:
@@ -181,7 +179,7 @@ class OpenTracksPipelineService:
 
         # Step 5: Send request to similarity server with file path
         try:
-            print(f"[OPEN_PIPELINE] Sending file path to similarity server...")
+            print("[OPEN_PIPELINE] Sending file path to similarity server...")
             request_data = {"file_path": remote_path}
             # Note: Endpoint on similarity server needs to match
             response = await self._call_similarity_server("/open-tracks-pipeline/update_embeddings", data=request_data)

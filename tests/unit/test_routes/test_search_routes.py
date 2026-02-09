@@ -419,9 +419,9 @@ def run_search_tests():
     print(f"Success Rate: {test_results['passed']/test_results['total']*100:.1f}%")
     
     if test_results['failed'] > 0:
-        print(f"\n⚠️  Some search tests failed.")
+        print("\n⚠️  Some search tests failed.")
     else:
-        print(f"\n🎉 All search tests passed!")
+        print("\n🎉 All search tests passed!")
     
     return test_results
 

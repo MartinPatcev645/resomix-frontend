@@ -364,9 +364,9 @@ def run_metadata_tests():
     print(f"Success Rate: {test_results['passed']/test_results['total']*100:.1f}%")
     
     if test_results['failed'] > 0:
-        print(f"\n⚠️  Some metadata tests failed.")
+        print("\n⚠️  Some metadata tests failed.")
     else:
-        print(f"\n🎉 All metadata tests passed!")
+        print("\n🎉 All metadata tests passed!")
     
     return test_results
 

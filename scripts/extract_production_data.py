@@ -23,10 +23,8 @@ import uuid
 import random
 import argparse
 import logging
-from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from collections import defaultdict
 import pymysql
 from pymysql.cursors import DictCursor
 

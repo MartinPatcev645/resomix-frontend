@@ -10,7 +10,7 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import secrets
 import re
@@ -145,7 +145,7 @@ def decode_token(token: str) -> Dict[str, Any]:
             algorithms=[settings.jwt_algorithm]
         )
         return payload
-    except JWTError as e:
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

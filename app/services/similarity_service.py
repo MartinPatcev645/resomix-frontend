@@ -14,30 +14,20 @@ Email: usman.naeem2212@gmail.com
 
 import os
 import httpx
-import re
 import asyncio
-import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from dotenv import load_dotenv
-import asyncio
-import io
-from mutagen import File as MutagenFile, MutagenError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.similarity_repository import SimilarityRepository
 from app.services.similarity_segment import SimilaritySegmentService
 from app.core.config import settings
-from app.services.metadata_service import MetadataService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.similarity_utils import (
     get_duration_from_bytes_sync,
-    normalize_artist_name,
     deduplicate_tracks,
-    execute_playlist_peaks_request,
-    send_playlist_peaks_request,
     generate_playlist_name_from_seed_track,
 )
 from app.utils.similarity_filters import filter_track_title, apply_response_filtering

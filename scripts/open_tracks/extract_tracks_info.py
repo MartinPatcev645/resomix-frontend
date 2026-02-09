@@ -34,7 +34,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, BinaryIO, Optional, Union
+from typing import List, Dict, Any, BinaryIO, Optional
 
 from mutagen import File as MutagenFile, MutagenError
 from mutagen.id3 import ID3
@@ -904,20 +904,20 @@ def print_test_mode_summary(processed: int, total_discovered: int, phase1_time: 
     print("[TEST MODE] Test run completed!")
     print("="*60)
     print(f"[TEST MODE] Tracks processed: {processed:,} / {total_discovered:,} total discovered")
-    print(f"[TEST MODE]")
+    print("[TEST MODE]")
     print(f"[TEST MODE] Phase 1 (Scanning): {format_time(phase1_time)}")
     print(f"[TEST MODE] Phase 2 (Metadata): {format_time(phase2_time)}")
     print(f"[TEST MODE] Total time: {format_time(total_time)}")
-    print(f"[TEST MODE]")
+    print("[TEST MODE]")
     print(f"[TEST MODE] Average per track: {avg_per_track:.2f} seconds")
-    print(f"[TEST MODE]")
-    print(f"[TEST MODE] ESTIMATED TIME FOR FULL DATASET:")
+    print("[TEST MODE]")
+    print("[TEST MODE] ESTIMATED TIME FOR FULL DATASET:")
     print(f"[TEST MODE] - Total tracks: {total_discovered:,}")
     print(f"[TEST MODE] - Estimated time: ~{format_time(estimated_total)}")
-    print(f"[TEST MODE]")
+    print("[TEST MODE]")
     print(f"[TEST MODE] Output saved to: {OUTPUT_JSON}")
-    print(f"[TEST MODE] Review the JSON to verify output quality.")
-    print(f"[TEST MODE] Set TEST_MODE = False to process all tracks.")
+    print("[TEST MODE] Review the JSON to verify output quality.")
+    print("[TEST MODE] Set TEST_MODE = False to process all tracks.")
     print("="*60 + "\n")
 
 
@@ -931,7 +931,7 @@ def main() -> None:
     # Validate input directory
     if not os.path.isdir(INPUT_DIR):
         print(f"ERROR: Input directory does not exist or is not a directory: {INPUT_DIR}")
-        print(f"Please edit the INPUT_DIR variable at the top of this script.")
+        print("Please edit the INPUT_DIR variable at the top of this script.")
         sys.exit(1)
     
     # Test mode notification
@@ -954,7 +954,7 @@ def main() -> None:
     else:
         existing_records = []
         existing_paths = set()
-        print(f"[INFO] No existing JSON found, starting fresh")
+        print("[INFO] No existing JSON found, starting fresh")
     
     # Scan for new tracks
     limit = TEST_TRACK_LIMIT if TEST_MODE else None

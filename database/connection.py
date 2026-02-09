@@ -17,11 +17,11 @@ Email: usman.naeem2212@gmail.com
 
 import os
 import logging
-from typing import Optional, Dict, Any
-from sqlalchemy import create_engine, event, pool, text
+from typing import Dict, Any
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import QueuePool
 import urllib.parse
 

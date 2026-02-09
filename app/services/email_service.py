@@ -10,8 +10,6 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from typing import Optional
-import os
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType

@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Track, TrackArtist models 
-from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Text, Numeric
+from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base

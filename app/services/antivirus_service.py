@@ -19,7 +19,7 @@ import io
 import subprocess
 import tempfile
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 class AntivirusService:

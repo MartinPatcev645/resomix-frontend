@@ -12,7 +12,6 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from enum import Enum
 
 
 class TrackType:

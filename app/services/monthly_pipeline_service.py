@@ -19,7 +19,6 @@ import os
 import httpx
 from typing import Dict, Any, Optional
 
-from app.core.config import settings
 from sqlalchemy import text
 
 
@@ -95,7 +94,6 @@ class MonthlyPipelineService:
         import tempfile
         import subprocess
         import os
-        from sqlalchemy import text
 
         # Step 1: Fetch uuid and file_path for all tracks
         try:
@@ -139,7 +137,7 @@ class MonthlyPipelineService:
         remote_path = f"/home/ubuntu/usman/resomix-similarity/data/all_tracks/{filename}"
         
         try:
-            print(f"[UPDATE_EMBEDDINGS] Transferring file via SCP...")
+            print("[UPDATE_EMBEDDINGS] Transferring file via SCP...")
             scp_command = [
                 "scp", "-i", "/etc/pem/resomix22tbserver-key.pem", "-P", "8522",
                 tmp_file_path, f"ubuntu@65.21.116.184:{remote_path}"
@@ -162,7 +160,7 @@ class MonthlyPipelineService:
 
         # Step 5: Send request to similarity server with file path
         try:
-            print(f"[UPDATE_EMBEDDINGS] Sending file path to similarity server...")
+            print("[UPDATE_EMBEDDINGS] Sending file path to similarity server...")
             request_data = {"file_path": remote_path}
             response = await self._call_similarity_server("/monthly-pipeline/update_embeddings", data=request_data)
         except Exception as e:

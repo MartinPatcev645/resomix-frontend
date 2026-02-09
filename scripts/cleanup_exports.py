@@ -15,7 +15,6 @@ Author: Muhammad Usman Naeem
 Date: October 2, 2025
 """
 
-import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path

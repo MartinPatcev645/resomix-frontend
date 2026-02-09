@@ -15,16 +15,15 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, text, func, desc
+from sqlalchemy import select, and_, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.models.track import Track, TrackArtist
 from app.models.artist import Artist
 from app.models.album import Album
-from app.models.label import Label
 from app.models.genre import Genre
 from app.models.constants import TrackType
 from app.repositories.base_repository import BaseRepository

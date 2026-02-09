@@ -1,7 +1,6 @@
-from typing import Optional
 from functools import lru_cache
 
-from elasticsearch import Elasticsearch, AsyncElasticsearch  # type: ignore
+from elasticsearch import Elasticsearch  # type: ignore
 from app.core.config import settings
 
 

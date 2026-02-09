@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # TrackRating, PlaylistRating models 
-from sqlalchemy import Column, Integer, BigInteger, String, Text, SmallInteger, ForeignKey, DateTime, Index
+from sqlalchemy import Column, BigInteger, Text, SmallInteger, ForeignKey, DateTime, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base

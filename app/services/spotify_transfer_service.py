@@ -18,7 +18,6 @@ Email: usman.naeem2212@gmail.com
 from typing import Dict, List, Any, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyException
 import asyncio
 import re
@@ -34,8 +33,6 @@ from app.repositories.spotify_app_repository import UserSpotifyAppRepository, Sp
 from app.repositories.user_repository import UserRepository
 from app.models.spotify_app import SpotifyApp
 from app.models.user import User
-from spotipy.exceptions import SpotifyException
-from app.utils.logging_utils import log_request
 
 # Set up logger specifically for Spotify transfer
 logger = logging.getLogger(__name__)

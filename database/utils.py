@@ -15,14 +15,13 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-import os
 import subprocess
 import logging
 import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 from pathlib import Path
-from sqlalchemy import text, inspect
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from database.connection import engine, DB_URL
 import urllib.parse

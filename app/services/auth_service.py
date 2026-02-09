@@ -571,7 +571,7 @@ class AuthService:
         new_refresh_token_hash = hash_password(new_refresh_token)
 
         # Calculate new expiration
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
         expires_at = datetime.utcnow() + timedelta(
             days=settings.jwt_refresh_token_expire_days
         )

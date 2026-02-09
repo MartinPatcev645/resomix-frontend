@@ -19,7 +19,6 @@ from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
 import uuid
 from datetime import datetime
@@ -903,7 +902,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Dictionary with playlists and pagination metadata
         """
         try:
-            from sqlalchemy import and_, or_, func, case
+            from sqlalchemy import and_, func
             from datetime import datetime
 
             page = filters.get("page", 1)
@@ -1173,7 +1172,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             List of playlist dictionaries
         """
         try:
-            from sqlalchemy import and_, func
+            from sqlalchemy import and_
             from datetime import datetime
 
             search = filters.get("search")
@@ -1297,7 +1296,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
         """
         try:
             from sqlalchemy import func
-            from sqlalchemy.orm import aliased
             from app.models.track import Track
             from app.models.artist import Artist
             from app.models.genre import Genre
@@ -1501,7 +1499,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Tuple of (list of playlist dictionaries, total count)
         """
         try:
-            from sqlalchemy import text, func, and_, or_
+            from sqlalchemy import text, func, and_
             from datetime import datetime, timedelta
             from app.models.playlist_engagement import UserPlaylistEngagement
 

@@ -15,14 +15,13 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, delete
 
 from ..models.rating import TrackRating, PlaylistRating
 from ..models.track import Track
-from ..models.playlist import Playlist
 from ..repositories.base_repository import BaseRepository
 
 

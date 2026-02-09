@@ -24,7 +24,6 @@ from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.services.metadata_service import MetadataService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
-from app.utils.hls_utils import generate_m3u8_playlist
 from app.core.config import settings
 
 

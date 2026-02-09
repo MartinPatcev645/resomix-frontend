@@ -17,7 +17,6 @@ Email: usman.naeem2212@gmail.com
 import re
 import asyncio
 from typing import List, Tuple, Dict, Any, Optional
-from concurrent.futures import ThreadPoolExecutor
 import logging
 
 logger = logging.getLogger(__name__)

@@ -23,7 +23,6 @@ import time
 from typing import Dict, List, Any
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import get_database_session
 
 

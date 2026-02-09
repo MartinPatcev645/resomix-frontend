@@ -27,7 +27,6 @@ from app.schemas.tidal_transfer import (
     TidalTransferRequest,
     TidalTransferResponse,
     TidalTransferErrorResponse,
-    TidalAuthRequest,
     TidalTokenRequest,
     TidalTokenResponse,
 )

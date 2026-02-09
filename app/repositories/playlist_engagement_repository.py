@@ -19,7 +19,6 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from app.models.playlist_engagement import UserPlaylistEngagement
 from app.repositories.base_repository import BaseRepository

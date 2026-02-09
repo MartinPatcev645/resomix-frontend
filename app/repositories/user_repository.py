@@ -10,12 +10,11 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, timedelta
+from typing import Optional, List
+from datetime import datetime
 from sqlalchemy import select, and_, or_, delete, update, func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
 
 from app.models.user import (
     User,
@@ -25,7 +24,7 @@ from app.models.user import (
     UserSession
 )
 from app.repositories.base_repository import BaseRepository
-from app.core.security import hash_password, generate_session_id
+from app.core.security import generate_session_id
 
 
 class UserRepository(BaseRepository[User]):

@@ -19,14 +19,11 @@ from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
-import secrets
-from urllib.parse import urlencode
 
-from app.core.config import settings
 from app.services.tidal_transfer_service import TidalTransferService
 from app.utils.response_utils import format_response
-from app.utils.playlist_transfer_utils import format_success_message, get_platform_error_message
-from app.schemas.tidal_transfer import TidalAuthRequest, TidalTokenRequest
+from app.utils.playlist_transfer_utils import format_success_message
+from app.schemas.tidal_transfer import TidalTokenRequest
 from app.services.logging_service import LoggingService
 import time
 from app.services.playlist_service import PlaylistService

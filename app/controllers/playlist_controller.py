@@ -18,7 +18,6 @@ Email: usman.naeem2212@gmail.com
 from fastapi import status, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from typing import Optional, List
 import time
 from app.services.playlist_service import PlaylistService

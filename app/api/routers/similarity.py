@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 # Similarity endpoints 
 from typing import Optional
-from fastapi import APIRouter, File, UploadFile, Query, Body, Security, Depends, Request
+from fastapi import APIRouter, File, UploadFile, Query, Security, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 

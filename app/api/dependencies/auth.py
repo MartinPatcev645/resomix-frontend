@@ -193,7 +193,7 @@ async def get_current_user_optional(
     except HTTPException:
         # Re-raise HTTPException (401 errors from decode_token or above)
         raise
-    except Exception as e:
+    except Exception:
         # Unexpected error - treat as invalid token
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,

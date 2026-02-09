@@ -11,11 +11,10 @@ Date: October 23, 2025
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
-from app.models.user import User, UserSession
+from app.models.user import User
 from app.repositories.user_repository import (
     UserRepository,
     UserSessionRepository,

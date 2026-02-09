@@ -8,7 +8,7 @@ Handles admin HTTP orchestration for managing Spotify apps and user associations
 from __future__ import annotations
 
 import time
-from typing import Dict, Optional
+from typing import Optional
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse

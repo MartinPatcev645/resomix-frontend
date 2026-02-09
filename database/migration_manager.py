@@ -15,17 +15,16 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-import os
 import re
 import hashlib
 import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
-from sqlalchemy import create_engine, text, MetaData, inspect
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from database.connection import DB_URL, engine
+from database.connection import engine
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -405,7 +404,7 @@ def main():
     try:
         if command == "status":
             status = manager.get_migration_status()
-            print(f"Migration Status:")
+            print("Migration Status:")
             print(f"  Total migrations: {status['total_migrations']}")
             print(f"  Applied: {status['applied_count']}")
             print(f"  Pending: {status['pending_count']}")

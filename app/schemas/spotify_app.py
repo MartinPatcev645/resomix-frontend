@@ -19,7 +19,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, validator
 
-from app.schemas.common import APIResponse, PaginationResponse, PaginatedResponse
+from app.schemas.common import PaginationResponse, PaginatedResponse
 
 
 # ============================================================================

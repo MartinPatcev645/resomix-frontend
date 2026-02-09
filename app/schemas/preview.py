@@ -16,8 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 from typing import Optional
-from pydantic import BaseModel, Field, validator
-from app.schemas.common import ALLOWED_TOP_SK_VALUES
+from pydantic import BaseModel, Field
 
 
 class PreviewDownloadRequest(BaseModel):

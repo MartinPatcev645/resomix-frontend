@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc, asc, and_, or_, func, text
+from sqlalchemy import select, desc, asc, and_, or_, func
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 

@@ -35,7 +35,6 @@ from app.utils.playlist_transfer_utils import (
     search_tracks_concurrently,
     format_transfer_response,
     batch_list,
-    get_platform_error_message,
     log_transfer_progress,
 )
 from app.core.exceptions import PublicHttpError

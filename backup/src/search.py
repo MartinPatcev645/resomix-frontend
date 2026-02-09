@@ -54,7 +54,7 @@ async def initialize_mongodb_client():
     async with _mongo_lock:
         if _mongo_client is None:
             try:
-                print(f"Initializing MongoDB client")
+                print("Initializing MongoDB client")
                 _mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
                 # You can add server selection timeout or other client options here if needed
                 # Example: _mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)

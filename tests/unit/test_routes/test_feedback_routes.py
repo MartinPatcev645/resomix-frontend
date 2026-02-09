@@ -11,7 +11,6 @@ Or run directly: python tests/unit/test_routes/test_feedback_routes.py
 
 import requests
 import time
-from typing import Dict, Any
 
 # Configuration
 BASE_URL = "http://localhost:8005"
@@ -75,7 +74,7 @@ def test_feedback_submit_valid():
             print_test_result("Feedback Submit Valid Data Field", False, "Missing 'data' field in response")
             return False
         
-        print_test_result("Feedback Submit Valid", True, f"Feedback submitted successfully", response_time)
+        print_test_result("Feedback Submit Valid", True, "Feedback submitted successfully", response_time)
         return True
         
     except requests.exceptions.RequestException as e:

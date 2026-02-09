@@ -50,7 +50,7 @@ def test_antivirus_service():
     if result.get('success') and not result.get('clean'):
         print(f"   ✓ PASS: Malware detected correctly: {result.get('threat')}")
     else:
-        print(f"   ✗ FAIL: Expected malware to be detected")
+        print("   ✗ FAIL: Expected malware to be detected")
     
     # Test with clean file
     print("\n3. Testing with clean file (should pass)...")
@@ -64,9 +64,9 @@ def test_antivirus_service():
     print(f"   Error:      {result.get('error', 'N/A')}")
     
     if result.get('success') and result.get('clean'):
-        print(f"   ✓ PASS: Clean file passed scan")
+        print("   ✓ PASS: Clean file passed scan")
     else:
-        print(f"   ✗ FAIL: Expected clean file to pass")
+        print("   ✗ FAIL: Expected clean file to pass")
     
     # Test with empty file
     print("\n4. Testing with empty file (should fail gracefully)...")
@@ -78,9 +78,9 @@ def test_antivirus_service():
     print(f"   Error:      {result.get('error', 'N/A')}")
     
     if not result.get('success') and result.get('error'):
-        print(f"   ✓ PASS: Empty file handled correctly")
+        print("   ✓ PASS: Empty file handled correctly")
     else:
-        print(f"   ✗ FAIL: Expected error for empty file")
+        print("   ✗ FAIL: Expected error for empty file")
     
     print("\n" + "=" * 70)
     print("TEST COMPLETE")

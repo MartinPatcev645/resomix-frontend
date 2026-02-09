@@ -26,7 +26,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import sys
 import time
 from pathlib import Path
@@ -401,15 +400,15 @@ def print_test_mode_summary(
     print("="*60)
     print(f"[TEST MODE] Tracks processed: {processed:,} / {total_available:,} total available")
     print(f"[TEST MODE] Inserted: {inserted:,}, Skipped: {skipped:,}")
-    print(f"[TEST MODE]")
+    print("[TEST MODE]")
     print(f"[TEST MODE] Total time: {format_time(elapsed_time)}")
     print(f"[TEST MODE] Average per track: {avg_per_track:.2f} seconds")
-    print(f"[TEST MODE]")
-    print(f"[TEST MODE] ESTIMATED TIME FOR FULL DATASET:")
+    print("[TEST MODE]")
+    print("[TEST MODE] ESTIMATED TIME FOR FULL DATASET:")
     print(f"[TEST MODE] - Total tracks: {total_available:,}")
     print(f"[TEST MODE] - Estimated time: ~{format_time(estimated_total)}")
-    print(f"[TEST MODE]")
-    print(f"[TEST MODE] Set TEST_MODE = False to process all tracks.")
+    print("[TEST MODE]")
+    print("[TEST MODE] Set TEST_MODE = False to process all tracks.")
     print("="*60 + "\n")
 
 
@@ -427,7 +426,7 @@ def main() -> None:
             all_data: List[Dict[str, Any]] = json.load(f)
     except FileNotFoundError:
         logger.error(f"ERROR: JSON file not found: {JSON_PATH}")
-        logger.error(f"Please edit the JSON_PATH variable at the top of this script.")
+        logger.error("Please edit the JSON_PATH variable at the top of this script.")
         return
     except json.JSONDecodeError as e:
         logger.error(f"ERROR: Invalid JSON file: {e}")

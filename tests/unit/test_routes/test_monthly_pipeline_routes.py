@@ -738,7 +738,7 @@ def print_test_summary():
     print("🧪 MONTHLY PIPELINE TESTS SUMMARY")
     print("="*60)
     
-    print(f"\n📊 Overall Results:")
+    print("\n📊 Overall Results:")
     print(f"   Total Tests: {test_results['total']}")
     print(f"   ✅ Passed: {test_results['passed']}")
     print(f"   ❌ Failed: {test_results['failed']}")
@@ -747,7 +747,7 @@ def print_test_summary():
         pass_rate = (test_results['passed'] / test_results['total']) * 100
         print(f"   📈 Pass Rate: {pass_rate:.1f}%")
     
-    print(f"\n📋 Detailed Results:")
+    print("\n📋 Detailed Results:")
     for i, test in enumerate(test_results['tests'], 1):
         status = "✅" if test['passed'] else "❌"
         print(f"   {i:2d}. {status} {test['name']} ({test['duration']:.2f}s)")

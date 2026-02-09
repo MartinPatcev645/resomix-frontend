@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Any, Optional, Dict, List, Union
+from typing import Any, Optional, List
 from pydantic import BaseModel, Field
 from enum import Enum
 

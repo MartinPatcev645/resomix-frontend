@@ -23,16 +23,13 @@ from app.schemas.auth import (
     LoginResponse,
     TwoFactorRequiredResponse,
     TwoFactorVerifyRequest,
-    TokenRefreshRequest,
     TokenRefreshResponse,
-    EmailVerificationRequest,
     ResendVerificationRequest,
     EmailVerificationResponse,
     PasswordResetRequest,
     PasswordResetResponse,
     PasswordResetConfirmRequest,
     MessageResponse,
-    LogoutRequest,
 )
 from app.schemas.common import ErrorResponse
 

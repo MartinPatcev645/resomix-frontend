@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
-from app.schemas.common import TopSkRequest, ALLOWED_TOP_SK_VALUES
+from app.schemas.common import ALLOWED_TOP_SK_VALUES
 
 
 class SimilarityByIdRequest(BaseModel):

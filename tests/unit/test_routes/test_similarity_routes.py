@@ -519,9 +519,9 @@ def run_similarity_tests():
     print(f"Success Rate: {test_results['passed']/test_results['total']*100:.1f}%")
     
     if test_results['failed'] > 0:
-        print(f"\n⚠️  Some similarity tests failed.")
+        print("\n⚠️  Some similarity tests failed.")
     else:
-        print(f"\n🎉 All similarity tests passed!")
+        print("\n🎉 All similarity tests passed!")
     
     return test_results
 

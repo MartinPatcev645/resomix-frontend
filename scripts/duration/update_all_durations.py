@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 import time
@@ -254,7 +253,7 @@ async def test_mode(db_engine, remaining_uuids: List[str], total_tracks: int, co
             secs = int(seconds % 60)
             return f"{hours}h {minutes}m {secs}s"
         
-        print(f"\n[TEST RESULTS]")
+        print("\n[TEST RESULTS]")
         print(f"  Test Duration: {format_time(test_duration)}")
         print(f"  Tracks Processed: {total_processed_in_test}")
         print(f"  Time per Track: {time_per_track:.2f} seconds")
@@ -262,11 +261,11 @@ async def test_mode(db_engine, remaining_uuids: List[str], total_tracks: int, co
         print(f"  Estimated Time to Complete: {format_time(estimated_time_remaining)}")
         print(f"  Current Progress: {completed_count + total_processed_in_test}/{total_tracks} ({((completed_count + total_processed_in_test)/total_tracks*100):.1f}%)")
     else:
-        print(f"\n[TEST RESULTS]")
+        print("\n[TEST RESULTS]")
         print(f"  Test Duration: {test_duration:.2f} seconds")
-        print(f"  No tracks were successfully processed - cannot estimate completion time")
+        print("  No tracks were successfully processed - cannot estimate completion time")
     
-    print(f"\n[INFO] Test completed. Set TEST_MODE = False to run full processing.")
+    print("\n[INFO] Test completed. Set TEST_MODE = False to run full processing.")
 
 async def main():
     """Main processing function."""

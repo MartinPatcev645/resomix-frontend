@@ -44,7 +44,7 @@ def setup_cors(app: FastAPI) -> None:
     """
     if settings.use_cors_regex:
         # Legacy regex mode (not recommended with credentials=True)
-        print(f"WARNING: Using CORS regex mode - not recommended with credentials=True")
+        print("WARNING: Using CORS regex mode - not recommended with credentials=True")
         app.add_middleware(
             CORSMiddleware,
             allow_origin_regex=settings.allowed_origin_regex,

@@ -29,7 +29,6 @@ from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.models.user import User
 from app.utils.response_utils import format_response
-from app.core.config import settings
 
 # Set up logger for controller
 logger = logging.getLogger(__name__)

@@ -15,12 +15,11 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-import os
 import re
 import html  
 import logging
 import uuid
-from typing import Dict, Tuple, List, Optional, BinaryIO, Any
+from typing import Dict, Tuple, List, Optional
 from fastapi import UploadFile
 
 from sqlalchemy import text, select, insert
