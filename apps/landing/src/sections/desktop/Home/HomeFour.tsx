@@ -106,7 +106,7 @@ const HomeFour: React.FC = () => {
               </div>
             </div>
             <div className='text-[length:var(--px-17)] font-extralight font-auger opacity-70 leading-[var(--px-20)] my-[var(--px-8)]'>
-              You can upload any audio file: a released or unreleased track, a sketch<br />from your archive, or a short clip. Metadata is not important; Resomix<br />listens to your reference audio and extrapolates its sonic DNA to find<br />a perfect match.
+              You can upload any audio file: a released or unreleased track, a sketch<br />from your archive, or a short clip. Metadata is not important; Resomix<br />listens to your reference audio and extracts its Acoustic sonic DNA to find<br />a perfect match.
             </div>
           </div>
           <div className='mt-[var(--px-12)] mb-[var(--px-32)] opacity-70'>
@@ -116,7 +116,7 @@ const HomeFour: React.FC = () => {
             <div className='flex flex-col justify-between gap-[var(--px-8)] items-start'>
               <img className="w-[var(--px-46)] h-[var(--px-48)]" aria-hidden="true" loading="lazy" draggable={false} src={AnalysisSvg} alt="Analysis" />
               <div className='text-[length:var(--px-22)] mb-[var(--px-16)] font-bold font-helvetica uppercase'>
-                2 — Deep Sound Analysis
+                2 — Spectral Feature Analysis
               </div>
               <div className='text-[length:var(--px-17)] font-extralight font-auger opacity-70 leading-[var(--px-20)]'>
                 Here's when the magic happens.<br />Our system performs a full spectral<br />analysis on a granular level,<br />exploring every aspect of your tune:<br />rhythm, harmonic content, energy <br />flow, dynamics, and tonal balance.

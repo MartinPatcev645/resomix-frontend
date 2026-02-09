@@ -79,8 +79,8 @@ const HomeSix: React.FC = () => {
                   discovery by putting sound first
                 </div>
                 <div className='flex w-full justify-start text-[length:var(--px-13)] font-extralight text-left font-auger opacity-70'>
-                  Cutting-edge Machine Learning to Enhance<br />
-                  Human Imagination, Proprietary models designed<br />
+                  Cutting-Edge Signal Processing to Enhance<br />
+                  Human Imagination, Proprietary algorithms designed<br />
                   to listen like producers, and discover like DJs.
                 </div>
               </div>

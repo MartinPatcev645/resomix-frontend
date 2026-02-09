@@ -65,7 +65,7 @@ const HomeHero: React.FC = () => {
             <div className='flex w-full justify-between items-start -mt-[var(--px-34)]'>
               <div className='flex gap-[var(--px-12)]'>
                 <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} aria-hidden="true" loading="lazy" draggable={false} src={ArrowSmallDown} alt="Arrow Small Down" />
-                <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A deep learning platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
+                <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A sound analysis platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
               </div>
               <img className="w-[var(--px-596)] h-[var(--px-54)]" aria-hidden="true" loading="lazy" draggable={false} src={HeroAlign} alt="Align With Your Sound" />
             </div>

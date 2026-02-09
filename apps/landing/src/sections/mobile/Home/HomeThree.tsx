@@ -25,7 +25,7 @@ const HomeThree: React.FC = () => (
             </div>
           </div>
           <div className="text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] uppercase tracking-wide text-left">
-            into the age of deep learning
+            into the age of ALGORITHMIC PRECISION
           </div>
         </div>
         <div className="text-[length:var(--px-14)] text-left font-extralight font-auger mt-[var(--px-28)] leading-[var(--px-16)]">

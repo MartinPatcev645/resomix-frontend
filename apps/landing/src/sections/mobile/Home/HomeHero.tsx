@@ -54,7 +54,7 @@ const HomeHero: React.FC = () => (
       <div className="absolute inset-0 flex flex-col items-end justify-start w-full h-full select-none -mt-[var(--px-20)]">
         <div className="flex flex-col text-start mt-[var(--px-200)] mb-[var(--px-70)] w-full relative z-15">
           <div className="justify-start text-[length:var(--px-46)] font-bold font-helvetica uppercase leading-[var(--px-52)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— Align with<br />your Sound </div>
-          <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A deep learning platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
+          <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A sound analysis platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
           <img className="w-[var(--px-35)] h-[var(--px-35)] mt-[var(--px-12)]" aria-hidden="true" loading="lazy" draggable={false} style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
         </div>
         <div className="w-full flex justify-center items-center mb-[var(--px-20)]">
