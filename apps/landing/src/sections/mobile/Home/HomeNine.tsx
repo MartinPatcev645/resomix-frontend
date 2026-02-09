@@ -69,13 +69,13 @@ const HomeNine: React.FC = () => {
             <div className="leading-[var(--px-32)] min-h-[var(--px-32)] tracking-[var(--px-1-2)]">
               <CodeTyping
                 speed={50}
-                text="// ML.engine::Enhancing_Human_Creativity()"
+                text="// PYXIS-1::Enhancing_Human_Creativity()"
               />
             </div>
             <div className="mb-[var(--px-32)] min-h-[var(--px-8)] tracking-[var(--px-1-2)]">
               <CodeTyping
                 speed={50}
-                text="neural_waveform"
+                text="spectral_waveform"
                 delay={1100}
               />
             </div>
