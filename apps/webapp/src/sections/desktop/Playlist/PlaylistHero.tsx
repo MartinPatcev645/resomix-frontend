@@ -14,8 +14,6 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import TidalExportModal from "@/components/Modals/Transfer/TidalExportModal.js";
-import SpotifyExportModal from "@/components/Modals/Transfer/SpotifyExportModal.js";
 import { CCLicenseGroup } from "@/components/index.ts";
 
 const InputTrackStatus = "Loading..."
@@ -27,8 +25,6 @@ const PlaylistHero: React.FC = () => {
 
   const [showExportMenu, setShowExportMenu] = React.useState(false);
   const [showDownloadExport, setShowDownloadExport] = React.useState(false);
-  const [showTidalExport, setShowTidalExport] = React.useState(false);
-  const [showSpotifyExport, setShowSpotifyExport] = React.useState(false);
 
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
@@ -63,8 +59,6 @@ const PlaylistHero: React.FC = () => {
   const handleRenameClose = () => setShowRename(false);
   const handleRatingClose = () => setShowRating(false);
   const handleDownloadExportClose = () => setShowDownloadExport(false);
-  const handleTidalExportClose = () => setShowTidalExport(false);
-  const handleSpotifyExportClose = () => setShowSpotifyExport(false);
   const handleStatusClose = () => {
     setShowStatus(false);
     // Don't clear forkedPlaylistId or hasForkedThisPlaylist here - keep them for the button to work
@@ -73,16 +67,6 @@ const PlaylistHero: React.FC = () => {
   const handleExportButtonClick = () => {
     if (isExporting) return;
     setShowExportMenu((v) => !v);
-  };
-
-  const handleSelectTidalExport = () => {
-    setShowExportMenu(false);
-    setShowTidalExport(true);
-  };
-
-  const handleSelectSpotifyExport = () => {
-    setShowExportMenu(false);
-    setShowSpotifyExport(true);
   };
 
   const handleDownloadExportClick = () => {
@@ -264,28 +248,6 @@ const PlaylistHero: React.FC = () => {
                       >
                         Export to TXT
                       </button>
-                      <div className="h-[1px] bg-slate-200/50" />
-                      <Tooltip message="Coming soon!">
-                        <button
-                          role="menuitem"
-                          className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] opacity-50 cursor-not-allowed"
-                          onClick={handleSelectTidalExport}
-                          id="export-menu-tidal"
-                          disabled
-                          aria-disabled="true"
-                        >
-                          Export to Tidal
-                        </button>
-                      </Tooltip>
-                      <div className="h-[1px] bg-slate-200/50" />
-                      <button
-                        role="menuitem"
-                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)]"
-                        onClick={handleSelectSpotifyExport}
-                        id="export-menu-apple"
-                      >
-                        Export to Spotify
-                      </button>
                     </div>
                   )}
                 </div>
@@ -465,20 +427,6 @@ const PlaylistHero: React.FC = () => {
         isOpen={showDownloadExport}
         onClose={handleDownloadExportClose}
         onStatusChange={handleStatusChange}
-      />
-
-      <TidalExportModal
-        isOpen={showTidalExport}
-        onClose={handleTidalExportClose}
-        onStatusChange={handleStatusChange}
-        initialPlaylistId={playlistData?.playlist.id}
-      />
-
-      <SpotifyExportModal
-        isOpen={showSpotifyExport}
-        onClose={handleSpotifyExportClose}
-        onStatusChange={handleStatusChange}
-        initialPlaylistId={playlistData?.playlist.id}
       />
 
       {/* Status Message */}

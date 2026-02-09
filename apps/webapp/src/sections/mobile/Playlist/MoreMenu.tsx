@@ -7,8 +7,6 @@ import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport } from "@resomix/hooks";
 import { getTrackRating, saveTrackRating } from "@/utils/trackRatingsStorage.js";
-import MobileTidalExportSheet from "@/components/Modals/Transfer/MobileTidalExportSheet.js";
-import MobileSpotifyExportSheet from "@/components/Modals/Transfer/MobileSpotifyExportSheet.js";
 
 interface MoreMenuProps {
     onClose?: () => void;
@@ -24,12 +22,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     const [exportButtonText, setExportButtonText] = React.useState("Export to TXT");
-    const [isSpotifyOpen, setIsSpotifyOpen] = React.useState(false);
-    const [isTidalOpen, setIsTidalOpen] = React.useState(false);
-
-    const handleStatusChange = React.useCallback((_status: 'loading' | 'success' | 'error', _message: string, _title?: string) => {
-        // Status change handler for export operations - can be used for toast notifications if needed
-    }, []);
 
     React.useEffect(() => {
         if (!trackId) return;
@@ -185,8 +177,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         {isInput && (
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-tidal-button opacity-50" text="Export to TIDAL" customWidth="w-full" onClick={() => setIsTidalOpen(true)} id={`playlist-hero-export-tidal`} disabled aria-disabled="true" />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-spotify-button" text="Export to Spotify" customWidth="w-full" onClick={() => setIsSpotifyOpen(true)} id={`playlist-hero-export-spotify`} />
                             </div>
                         )}
                         <div className="w-full flex flex-col">
@@ -195,18 +185,6 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                     </div>
                 </div>
             </div>
-            <MobileSpotifyExportSheet
-                isOpen={isSpotifyOpen}
-                onClose={() => setIsSpotifyOpen(false)}
-                onStatusChange={handleStatusChange}
-                initialPlaylistId={playlistData?.playlist.id || ''}
-            />
-            <MobileTidalExportSheet
-                isOpen={isTidalOpen}
-                onClose={() => setIsTidalOpen(false)}
-                onStatusChange={handleStatusChange}
-                initialPlaylistId={playlistData?.playlist.id || ''}
-            />
         </div >
     );
 };

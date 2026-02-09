@@ -97,7 +97,7 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                                 I agree to Resomix's{" "}
                                 <a
                                     aria-label="Resomix terms"
-                                    href="https://support.resomix.com/hc/articles/1/3/3/demo-stage-notice-and-terms-of-use"
+                                    href="https://support.resomix.com/hc/articles/1/3/11/terms-of-service"
                                     target="_blank"
                                     className="underline hover:font-normal footer-link"
                                     onClick={(e) => e.stopPropagation()}
