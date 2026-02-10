@@ -15,9 +15,11 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-# FastAPI app creation and configuration 
+# FastAPI app creation and configuration
 import shutil
 import os
+import logging
+import traceback
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
@@ -57,20 +59,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     # Extract validation error details
     details = []
     for error in exc.errors():
-        field_path = " -> ".join(str(loc) for loc in error["loc"][1:])  # Skip 'body' prefix
-        details.append({
-            "field": field_path,
-            "message": error["msg"],
-            "value": error.get("input")
-        })
-    
+        field_path = " -> ".join(
+            str(loc) for loc in error["loc"][1:]
+        )  # Skip 'body' prefix
+        details.append(
+            {"field": field_path, "message": error["msg"], "value": error.get("input")}
+        )
+
     return JSONResponse(
         status_code=422,
         content=format_response(
-            success=False,
-            error="Validation failed",
-            data={"details": details}
-        )
+            success=False, error="Validation failed", data={"details": details}
+        ),
     )
 
 
@@ -80,24 +80,40 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     """
     return JSONResponse(
         status_code=exc.status_code,
-        content=format_response(
-            success=False,
-            error=exc.detail
-        )
+        content=format_response(success=False, error=exc.detail),
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception):
     """
     Handle unexpected exceptions and return standardized format.
+    Logs full exception details server-side but returns generic message to client.
     """
-    print(f"Unhandled exception: {exc}")
+    # Create a logger for this handler
+    logger = logging.getLogger("app.main")
+
+    # Log the full exception with context
+    logger.error(
+        f"Unhandled exception in {request.method} {request.url.path}: {exc.__class__.__name__}: {str(exc)}",
+        exc_info=True,  # This logs the full stack trace
+    )
+
+    # In development mode, also print to console for quick debugging
+    if settings.use_development_cors:
+        print(f"\n{'='*60}")
+        print(f"Unhandled Exception: {exc.__class__.__name__}")
+        print(f"Request: {request.method} {request.url.path}")
+        print(f"Message: {str(exc)}")
+        print(f"{'='*60}\n")
+        traceback.print_exc()
+
+    # Always return a generic error message to the client (never expose internals)
     return JSONResponse(
         status_code=500,
         content=format_response(
             success=False,
-            error="An internal server error occurred"
-        )
+            error="An internal server error occurred. Please try again later.",
+        ),
     )
 
 
@@ -109,7 +125,7 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     Initializes external services on startup and cleans up on shutdown.
     """
     print("Application startup: Initializing external services via lifespan...")
-    
+
     # Test MariaDB database connection
     try:
         async with async_engine.begin() as conn:
@@ -118,47 +134,69 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
         print("MariaDB database connection established successfully.")
     except Exception as e:
         print(f"WARNING: Failed to connect to MariaDB database: {e}")
-    
+
     # Create temporary directory for uploads if it doesn't exist
     if not os.path.exists(settings.temp_dir):
         os.makedirs(settings.temp_dir)
-    
+
     # Create exports directory if it doesn't exist
-    exports_dir = os.path.join(os.getcwd(), 'exports')
+    exports_dir = os.path.join(os.getcwd(), "exports")
     if not os.path.exists(exports_dir):
         os.makedirs(exports_dir)
         print(f"Created exports directory: {exports_dir}")
-    
+
     # Check if FFmpeg is installed at startup
     ffmpeg_available = AudioService.is_ffmpeg_installed()
     if not ffmpeg_available:
-        print("WARNING: FFmpeg is not installed or not found in PATH. Audio file validation will be skipped.")
-    
+        print(
+            "WARNING: FFmpeg is not installed or not found in PATH. Audio file validation will be skipped."
+        )
+
     print("Application startup: External services initialization complete (lifespan).")
-    
+
     yield
-    
+
     print("Application shutdown: Cleaning up resources (lifespan)...")
-    
+
     # Close database engine and all connections
     await async_engine.dispose()
     print("MariaDB database connections closed.")
-    
+
     # Clean up temp directory on shutdown
     if os.path.exists(settings.temp_dir):
         shutil.rmtree(settings.temp_dir)
         print(f"Cleaned up temporary directory: {settings.temp_dir}")
-    
+
     print("Application shutdown: Resource cleanup complete (lifespan).")
 
 
 # Create FastAPI app
 # Conditionally disable docs endpoints in production (when use_development_cors is False)
+
+# Configure OpenAPI servers list to prevent private IP disclosure
+servers = []
+if settings.use_development_cors:
+    # In development, include localhost
+    servers.append(
+        {"url": "http://localhost:8000", "description": "Development server"}
+    )
+# Always include production URL if available
+if (
+    settings.resomix_server_url
+    and settings.resomix_server_url != "http://localhost:8000"
+):
+    servers.append(
+        {"url": settings.resomix_server_url, "description": "Production server"}
+    )
+
 app = FastAPI(
     title=settings.app_title,
     description=settings.app_description,
     version=settings.app_version,
     lifespan=lifespan,
+    servers=(
+        servers if servers else None
+    ),  # Explicitly define servers to prevent IP disclosure
     # Disable docs, redoc, and openapi.json in production
     docs_url="/docs" if settings.use_development_cors else None,
     redoc_url="/redoc" if settings.use_development_cors else None,
@@ -180,7 +218,7 @@ setup_cors(app)
 app.add_middleware(TimingMiddleware)
 
 # Mount static files for exports BEFORE including routers to avoid conflicts
-exports_dir = os.path.join(os.getcwd(), 'exports')
+exports_dir = os.path.join(os.getcwd(), "exports")
 if not os.path.exists(exports_dir):
     os.makedirs(exports_dir)
     print(f"Created exports directory for static serving: {exports_dir}")
@@ -203,7 +241,7 @@ async def root():
     response = {
         "name": settings.app_title,
         "version": settings.app_version,
-        "status": "running"
+        "status": "running",
     }
     # Only include docs_url in development mode
     if settings.use_development_cors:
@@ -213,5 +251,6 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     # It's good practice to make host and port configurable
     uvicorn.run(app, host="0.0.0.0", port=8001)
