@@ -113,12 +113,8 @@ export default function SessionsContent({
 
     try {
       const { logoutAll } = await import("@resomix/api-client");
-      const { useAuthStore } = await import("@resomix/stores");
 
-      const user = useAuthStore.getState().user;
-      if (!user || !user.id) return;
-
-      const result = await logoutAll(user.id);
+      const result = await logoutAll();
 
       if (result.success) {
         setStatusType("success");

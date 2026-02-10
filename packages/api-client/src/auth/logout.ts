@@ -14,10 +14,11 @@ export const logout = async () => {
   }
 };
 
-export const logoutAll = async (userId: number) => {
+export const logoutAll = async () => {
   try {
+    // JWT is automatically sent via authClient's Authorization header
     const response = await axiosWrapper<SuccessResponse>(
-      authClient.post('/auth/logout-all', { user_id: userId })
+      authClient.post('/auth/logout-all', {})
     );
     return response;
   } catch (error) {
