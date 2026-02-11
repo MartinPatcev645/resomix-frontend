@@ -47,7 +47,7 @@ const HomeNine: React.FC = () => {
             <div className="leading-[var(--px-32)]">
               <CodeTyping
                 speed={50}
-                text="init.crate_digging(powered_by_AI)"
+                text="init.crate_digging(powered_by_PYXIS-1)"
                 delay={1100}
               />
             </div>
