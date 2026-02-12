@@ -1516,7 +1516,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     and_(
                         UserPlaylistEngagement.playlist_id == Playlist.id,
                         UserPlaylistEngagement.user_id == user_id,
-                        UserPlaylistEngagement.is_favorite == True,
+                        UserPlaylistEngagement.is_favorite,
                     ),
                 )
                 needs_engagement_join = True
@@ -1528,7 +1528,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     and_(
                         UserPlaylistEngagement.playlist_id == Playlist.id,
                         UserPlaylistEngagement.user_id == user_id,
-                        UserPlaylistEngagement.is_favorite == True,
+                        UserPlaylistEngagement.is_favorite,
                     ),
                 )
                 conditions.append(Playlist.user_id == user_id)
@@ -1608,7 +1608,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             and_(
                                 UserPlaylistEngagement.playlist_id == Playlist.id,
                                 UserPlaylistEngagement.user_id == user_id,
-                                UserPlaylistEngagement.is_favorite == True,
+                                UserPlaylistEngagement.is_favorite,
                             ),
                         )
                     )
@@ -1627,7 +1627,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             and_(
                                 UserPlaylistEngagement.playlist_id == Playlist.id,
                                 UserPlaylistEngagement.user_id == user_id,
-                                UserPlaylistEngagement.is_favorite == True,
+                                UserPlaylistEngagement.is_favorite,
                             ),
                         )
                     )

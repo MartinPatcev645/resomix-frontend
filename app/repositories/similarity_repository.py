@@ -206,16 +206,16 @@ class SimilarityRepository(BaseRepository[Track]):
                     all_artists = [ta.artist.name for ta in track.track_artists]
 
                 # Extract filename from file_path
-                filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
+                # filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
 
                 # Get album name
-                album_name = track.album.title if track.album else "N/A"
+                # album_name = track.album.title if track.album else "N/A"
 
                 # Get label name
                 label_name = track.label.name if track.label else "N/A"
 
                 # Get genre name
-                genre_name = track.genre.name if track.genre else "N/A"
+                # genre_name = track.genre.name if track.genre else "N/A"
 
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API
@@ -288,16 +288,16 @@ class SimilarityRepository(BaseRepository[Track]):
                     all_artists = [ta.artist.name for ta in track.track_artists]
 
                 # Extract filename from file_path
-                filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
+                # filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
 
                 # Get album name
-                album_name = track.album.title if track.album else "N/A"
+                # album_name = track.album.title if track.album else "N/A"
 
                 # Get label name
                 label_name = track.label.name if track.label else "N/A"
 
                 # Get genre name
-                genre_name = track.genre.name if track.genre else "N/A"
+                # genre_name = track.genre.name if track.genre else "N/A"
 
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API

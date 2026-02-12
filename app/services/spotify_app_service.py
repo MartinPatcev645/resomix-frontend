@@ -13,7 +13,6 @@ Email: usman.naeem2212@gmail.com
 
 from __future__ import annotations
 
-import math
 from typing import Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,11 +58,7 @@ class SpotifyAppService:
             limit=page_size,
         )
 
-        data: List[Dict[str, object]] = [
-            self._serialize_app(app) for app in apps
-        ]
-
-        total_pages = math.ceil(total / page_size) if page_size else 0
+        data: List[Dict[str, object]] = [self._serialize_app(app) for app in apps]
 
         pagination = {
             "total": total,
@@ -277,8 +272,6 @@ class SpotifyAppService:
         data: List[Dict[str, object]] = [
             self._serialize_association_bundle(bundle) for bundle in results
         ]
-
-        total_pages = math.ceil(total / page_size) if page_size else 0
 
         pagination = {
             "total": total,
@@ -546,9 +539,7 @@ class SpotifyAppService:
     # Helper Methods
     # ------------------------------------------------------------------
 
-    async def _resolve_user(
-        self, db: AsyncSession, identifier: str
-    ) -> Optional[User]:
+    async def _resolve_user(self, db: AsyncSession, identifier: str) -> Optional[User]:
         """Resolve user by email, UUID, username, or ID."""
         if not identifier:
             return None
@@ -587,12 +578,12 @@ class SpotifyAppService:
             "client_id": app.client_id,
             "is_active": app.is_active,
             "user_count": app.user_count,
-            "created_at": app.created_at.isoformat()
-            if getattr(app, "created_at", None)
-            else None,
-            "updated_at": app.updated_at.isoformat()
-            if getattr(app, "updated_at", None)
-            else None,
+            "created_at": (
+                app.created_at.isoformat() if getattr(app, "created_at", None) else None
+            ),
+            "updated_at": (
+                app.updated_at.isoformat() if getattr(app, "updated_at", None) else None
+            ),
         }
         if include_secret:
             data["client_secret"] = app.client_secret
@@ -621,11 +612,14 @@ class SpotifyAppService:
             "user_uuid": getattr(user, "uuid", None),
             "spotify_app_id": association.spotify_app_id,
             "spotify_app_name": app.name if app else None,
-            "created_at": association.created_at.isoformat()
-            if getattr(association, "created_at", None)
-            else None,
-            "updated_at": association.updated_at.isoformat()
-            if getattr(association, "updated_at", None)
-            else None,
+            "created_at": (
+                association.created_at.isoformat()
+                if getattr(association, "created_at", None)
+                else None
+            ),
+            "updated_at": (
+                association.updated_at.isoformat()
+                if getattr(association, "updated_at", None)
+                else None
+            ),
         }
-

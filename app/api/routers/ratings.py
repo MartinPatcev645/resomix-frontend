@@ -15,10 +15,9 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Query, Path, Request
+from fastapi import APIRouter, Security, Depends, Path, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
 
 from app.controllers.rating_controller import RatingController
 from app.api.dependencies.auth import get_api_key, get_current_user

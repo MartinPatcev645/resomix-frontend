@@ -301,7 +301,7 @@ class WaitlistService:
                     "total_pages": total_pages,
                 },
             }
-        except Exception as e:
+        except Exception:
             return {
                 "success": False,
                 "error": "Internal server error occurred while retrieving waitlist entries",
@@ -328,7 +328,7 @@ class WaitlistService:
                     "error": f"Waitlist entry with ID {waitlist_id} not found",
                 }
             )
-        except Exception as e:
+        except Exception:
             return {"success": False, "error": "Internal server error during deletion"}
 
     async def batch_delete_waitlist_admin(
@@ -344,7 +344,7 @@ class WaitlistService:
                 "deleted_count": deleted_count,
                 "message": f"{deleted_count} waitlist entries deleted",
             }
-        except Exception as e:
+        except Exception:
             return {
                 "success": False,
                 "error": "Internal server error during batch deletion",
@@ -371,7 +371,7 @@ class WaitlistService:
                     "error": f"Waitlist entry with ID {waitlist_id} not found",
                 }
             )
-        except Exception as e:
+        except Exception:
             return {"success": False, "error": "Internal server error during status update"}
 
     async def export_waitlist_csv_admin(
@@ -415,5 +415,5 @@ class WaitlistService:
                 "filename": filename,
                 "expires_at": (datetime.now() + timedelta(hours=24)).isoformat(),
             }
-        except Exception as e:
+        except Exception:
             return {"success": False, "error": "Internal server error during CSV export"}

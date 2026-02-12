@@ -128,7 +128,9 @@ class AuthService:
         # TEMPORARY: Grant high playlist creation limit (1000) for testing phase
         # This allows new users to test the platform without immediately hitting limits.
         try:
-            op_type = await self.operation_limit_repo.async_get_operation_type_by_code(db, "playlist_create")
+            op_type = await self.operation_limit_repo.async_get_operation_type_by_code(
+                db, "playlist_create"
+            )
             if op_type:
                 await self.operation_limit_repo.async_upsert_limit(
                     db,
@@ -136,7 +138,7 @@ class AuthService:
                     operation_id=op_type.id,
                     limit_value=1000,
                     window_seconds=None,
-                    created_by=None
+                    created_by=None,
                 )
         except Exception:
             # Don't fail registration if limit setup fails
@@ -572,6 +574,7 @@ class AuthService:
 
         # Calculate new expiration
         from datetime import datetime, timedelta
+
         expires_at = datetime.utcnow() + timedelta(
             days=settings.jwt_refresh_token_expire_days
         )
@@ -584,7 +587,7 @@ class AuthService:
         return {
             "access_token": access_token,
             "refresh_token": new_refresh_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
 
     async def logout(self, db: AsyncSession, refresh_token: str) -> bool:
@@ -616,7 +619,7 @@ class AuthService:
                             db, session.session_id
                         )
                         return True
-        except:
+        except Exception:
             pass
 
         return False

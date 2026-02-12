@@ -28,8 +28,13 @@ import unicodedata
 
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
-from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
-from app.repositories.spotify_app_repository import UserSpotifyAppRepository, SpotifyAppRepository
+from app.repositories.playlist_transfer_track_repository import (
+    PlaylistTransferTrackRepository,
+)
+from app.repositories.spotify_app_repository import (
+    UserSpotifyAppRepository,
+    SpotifyAppRepository,
+)
 from app.repositories.user_repository import UserRepository
 from app.models.spotify_app import SpotifyApp
 from app.models.user import User
@@ -42,7 +47,7 @@ logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - [SPOTIFY_TRANSFER] %(message)s'
+        "%(asctime)s - %(name)s - %(levelname)s - [SPOTIFY_TRANSFER] %(message)s"
     )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -63,28 +68,32 @@ class SpotifyTransferService:
         # Concurrent processing settings
         self.max_concurrent_searches = 2  # Process 2 tracks at a time
 
-        logger.info("SpotifyTransferService initialization complete v3 (with multi-app support)")
+        logger.info(
+            "SpotifyTransferService initialization complete v3 (with multi-app support)"
+        )
 
     async def _check_user_spotify_association(
-        self, 
-        db: AsyncSession, 
-        user: User
+        self, db: AsyncSession, user: User
     ) -> Optional[SpotifyApp]:
         """
         Check if user has Spotify app association.
-        
+
         Args:
             db: Database session
             user: User object to check association for
-            
+
         Returns:
             SpotifyApp if associated, None otherwise
         """
-        association = await self.user_spotify_app_repository.async_get_by_user_id(db, user.id)
+        association = await self.user_spotify_app_repository.async_get_by_user_id(
+            db, user.id
+        )
         if not association:
             return None
-        
-        app = await self.spotify_app_repository.async_get_by_id(db, association.spotify_app_id)
+
+        app = await self.spotify_app_repository.async_get_by_id(
+            db, association.spotify_app_id
+        )
         return app
 
     def _create_spotify_client(self, access_token: str) -> spotipy.Spotify:
@@ -102,8 +111,10 @@ class SpotifyTransferService:
             client = spotipy.Spotify(auth=access_token)
             # Test the token by getting user info
             user_info = client.me()
-            logger.info("Successfully authenticated with Spotify for user: %s",
-                        user_info.get('display_name', 'Unknown'))
+            logger.info(
+                "Successfully authenticated with Spotify for user: %s",
+                user_info.get("display_name", "Unknown"),
+            )
             return client
         except Exception as e:
             error_msg = str(e)
@@ -112,11 +123,16 @@ class SpotifyTransferService:
             # Provide specific error message for 403 errors
             if "403" in error_msg and "not be registered" in error_msg:
                 raise ValueError(
-                    "This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list.")
+                    "This Spotify account is not authorized to use this app. Please contact the app developer to add your Spotify account to the authorized users list."
+                )
             elif "403" in error_msg:
-                raise ValueError("Spotify access denied. Please check your access token permissions.")
+                raise ValueError(
+                    "Spotify access denied. Please check your access token permissions."
+                )
             elif "401" in error_msg:
-                raise ValueError("Invalid or expired Spotify access token. Please re-authenticate.")
+                raise ValueError(
+                    "Invalid or expired Spotify access token. Please re-authenticate."
+                )
             else:
                 raise
 
@@ -135,20 +151,20 @@ class SpotifyTransferService:
 
         # Remove only the most basic unwanted strings (extremely minimal cleaning)
         unwanted_patterns = [
-            r'\(Original Mix\)',  # Only keep this one - it's the most common
+            r"\(Original Mix\)",  # Only keep this one - it's the most common
             # Removed almost all other patterns to prevent over-cleaning
         ]
 
         cleaned = title
         for pattern in unwanted_patterns:
-            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
 
         # Clean up extra spaces and trim
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
         # Limit length for Spotify search (Spotify has query limits)
         if len(cleaned) > 100:
-            cleaned = cleaned[:100].rsplit(' ', 1)[0]  # Cut at word boundary
+            cleaned = cleaned[:100].rsplit(" ", 1)[0]  # Cut at word boundary
 
         return cleaned
 
@@ -170,11 +186,13 @@ class SpotifyTransferService:
             "(Radio Edit)",
             "(Extended Mix)",
             "(Club Mix)",
-            "(Remix)"
+            "(Remix)",
         ]
 
         for remove_str in removal_strings:
-            title_clean = re.sub(re.escape(remove_str), '', title_clean, flags=re.IGNORECASE)
+            title_clean = re.sub(
+                re.escape(remove_str), "", title_clean, flags=re.IGNORECASE
+            )
 
         # Remove stopper strings
         stopper_strings = ["http://", "https://", "www.", ".com", ".net", ".org"]
@@ -184,8 +202,8 @@ class SpotifyTransferService:
                 break
 
         # Clean up extra spaces and special characters
-        title_clean = re.sub(r'[^\w\s\-\(\)]', ' ', title_clean).strip()
-        title_clean = re.sub(r'\s+', ' ', title_clean)
+        title_clean = re.sub(r"[^\w\s\-\(\)]", " ", title_clean).strip()
+        title_clean = re.sub(r"\s+", " ", title_clean)
 
         # Clean artist name similarly
         artist_clean = artist
@@ -195,8 +213,8 @@ class SpotifyTransferService:
                 artist_clean = artist_clean.split(stopper)[0]
                 break
 
-        artist_clean = re.sub(r'[^\w\s\-]', ' ', artist_clean).strip()
-        artist_clean = re.sub(r'\s+', ' ', artist_clean)
+        artist_clean = re.sub(r"[^\w\s\-]", " ", artist_clean).strip()
+        artist_clean = re.sub(r"\s+", " ", artist_clean)
 
         # Create search query
         query = f"{title_clean} {artist_clean}".strip()
@@ -255,7 +273,11 @@ class SpotifyTransferService:
         for tag in tags:
             if "remix" in tag:
                 info["has_remix"] = True
-                tokens = [t for t in self._tokenize(tag) if t not in {"remix", "mix", "edit", "version", "original"}]
+                tokens = [
+                    t
+                    for t in self._tokenize(tag)
+                    if t not in {"remix", "mix", "edit", "version", "original"}
+                ]
                 info["remixer_tokens"].update(tokens)
             if "original" in tag:
                 info["has_original"] = True
@@ -280,7 +302,7 @@ class SpotifyTransferService:
                 queries.append(f'"{title_no_paren}"')
 
         if main_artist and title_no_paren:
-            queries.append(f'{title_no_paren} {main_artist}')
+            queries.append(f"{title_no_paren} {main_artist}")
 
         seen = set()
         out = []
@@ -290,7 +312,9 @@ class SpotifyTransferService:
                 out.append(q)
         return out
 
-    def _search_api(self, sp: spotipy.Spotify, query: str, limit: int = 20, retries: int = 2) -> Dict[str, Any]:
+    def _search_api(
+        self, sp: spotipy.Spotify, query: str, limit: int = 20, retries: int = 2
+    ) -> Dict[str, Any]:
         for attempt in range(retries + 1):
             try:
                 return sp.search(q=query, type="track", limit=limit)
@@ -298,7 +322,9 @@ class SpotifyTransferService:
                 if e.http_status == 429:
                     retry_after = 2
                     try:
-                        retry_after = int(getattr(e, "headers", {}).get("Retry-After", "2"))
+                        retry_after = int(
+                            getattr(e, "headers", {}).get("Retry-After", "2")
+                        )
                     except Exception:
                         pass
                     time.sleep(retry_after)
@@ -312,7 +338,9 @@ class SpotifyTransferService:
                 time.sleep(1 + attempt)
         return {"tracks": {"items": []}}
 
-    async def _search_spotify_track(self, sp: spotipy.Spotify, title: str, artist_or_artists) -> Optional[str]:
+    async def _search_spotify_track(
+        self, sp: spotipy.Spotify, title: str, artist_or_artists
+    ) -> Optional[str]:
         try:
             if isinstance(artist_or_artists, str):
                 artists = [artist_or_artists] if artist_or_artists else []
@@ -323,7 +351,6 @@ class SpotifyTransferService:
 
             title = title or ""
             n_title = self._normalize_text(title)
-            title_no_paren = self._strip_parentheses(title)
             tags = self._extract_parenthetical_tags(title)
             remix_info = self._remix_signal_from_tags(tags)
 
@@ -357,7 +384,10 @@ class SpotifyTransferService:
 
                     artist_score_best = 0.0
                     for a in artists:
-                        artist_score_best = max(artist_score_best, self._best_name_similarity(a, cand_artists))
+                        artist_score_best = max(
+                            artist_score_best,
+                            self._best_name_similarity(a, cand_artists),
+                        )
 
                     cand_tags = self._extract_parenthetical_tags(cand_title)
                     cand_remix = self._remix_signal_from_tags(cand_tags)
@@ -399,12 +429,16 @@ class SpotifyTransferService:
             return best_uri
 
         except Exception as e:
-            logger.warning("Search failed for '%s' by '%s': %s", title, artist_or_artists, str(e))
+            logger.warning(
+                "Search failed for '%s' by '%s': %s", title, artist_or_artists, str(e)
+            )
             return None
 
-    async def _search_tracks_concurrently(self, spotify_client: spotipy.Spotify,
-                                          track_data: List[Tuple[int, str, List[str]]]
-                                          ) -> List[Tuple[int, Optional[str]]]:
+    async def _search_tracks_concurrently(
+        self,
+        spotify_client: spotipy.Spotify,
+        track_data: List[Tuple[int, str, List[str]]],
+    ) -> List[Tuple[int, Optional[str]]]:
         logger.info("Searching %d tracks concurrently", len(track_data))
         start_time = time.time()
 
@@ -413,9 +447,12 @@ class SpotifyTransferService:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                return (track_id, loop.run_until_complete(
-                    self._search_spotify_track(spotify_client, title, artists)
-                ))
+                return (
+                    track_id,
+                    loop.run_until_complete(
+                        self._search_spotify_track(spotify_client, title, artists)
+                    ),
+                )
             finally:
                 loop.close()
 
@@ -434,17 +471,23 @@ class SpotifyTransferService:
                     result = await af
                     results.append(result)
                 except Exception as e:
-                    track_id = future_to_track_id.get(af, 'unknown')
+                    track_id = future_to_track_id.get(af, "unknown")
                     logger.error("Error searching track ID %s: %s", track_id, str(e))
                     results.append((track_id, None))
 
         total_time = time.time() - start_time
         successful_searches = sum(1 for _, r in results if r is not None)
-        logger.info("Search completed: %d/%d tracks found in %.1fs",
-                    successful_searches, len(track_data), total_time)
+        logger.info(
+            "Search completed: %d/%d tracks found in %.1fs",
+            successful_searches,
+            len(track_data),
+            total_time,
+        )
         return results
 
-    async def _get_cached_spotify_ids(self, db: AsyncSession, track_ids: List[int]) -> Dict[int, str]:
+    async def _get_cached_spotify_ids(
+        self, db: AsyncSession, track_ids: List[int]
+    ) -> Dict[int, str]:
         """
         Get cached Spotify IDs for tracks
 
@@ -456,7 +499,9 @@ class SpotifyTransferService:
             Dictionary mapping track_id -> spotify_id for cached entries
         """
         try:
-            cached_ids = await self.transfer_track_repository.async_get_spotify_ids(db, track_ids)
+            cached_ids = await self.transfer_track_repository.async_get_spotify_ids(
+                db, track_ids
+            )
 
             if cached_ids:
                 logger.info("Found %d cached Spotify IDs", len(cached_ids))
@@ -467,7 +512,9 @@ class SpotifyTransferService:
             logger.error("Failed to get cached Spotify IDs: %s", str(e))
             return {}
 
-    async def _update_spotify_cache(self, db: AsyncSession, track_spotify_map: Dict[int, str]) -> None:
+    async def _update_spotify_cache(
+        self, db: AsyncSession, track_spotify_map: Dict[int, str]
+    ) -> None:
         """
         Update cache with newly found Spotify IDs
 
@@ -479,13 +526,16 @@ class SpotifyTransferService:
             return
 
         try:
-            await self.transfer_track_repository.async_batch_upsert_spotify_ids(db, track_spotify_map)
+            await self.transfer_track_repository.async_batch_upsert_spotify_ids(
+                db, track_spotify_map
+            )
             logger.info("Cached %d new Spotify IDs", len(track_spotify_map))
         except Exception as e:
             logger.error("Failed to cache Spotify IDs: %s", str(e))
 
-    async def _add_tracks_to_playlist(self, spotify_client: spotipy.Spotify,
-                                      playlist_id: str, track_uris: List[str]) -> None:
+    async def _add_tracks_to_playlist(
+        self, spotify_client: spotipy.Spotify, playlist_id: str, track_uris: List[str]
+    ) -> None:
         """
         Add tracks to Spotify playlist in batches
 
@@ -501,13 +551,12 @@ class SpotifyTransferService:
         tracks_added = 0
 
         for i in range(0, len(track_uris), batch_size):
-            batch = track_uris[i:i + batch_size]
+            batch = track_uris[i : i + batch_size]
 
             try:
                 loop = asyncio.get_event_loop()
                 await loop.run_in_executor(
-                    None,
-                    lambda: spotify_client.playlist_add_items(playlist_id, batch)
+                    None, lambda: spotify_client.playlist_add_items(playlist_id, batch)
                 )
                 tracks_added += len(batch)
             except Exception as e:
@@ -518,12 +567,12 @@ class SpotifyTransferService:
         return tracks_added
 
     async def transfer_playlist_to_spotify(
-        self, 
-        db: AsyncSession, 
+        self,
+        db: AsyncSession,
         playlist_id: str,
-        access_token: str, 
+        access_token: str,
         custom_playlist_name: Optional[str] = None,
-        current_user: Optional[User] = None
+        current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         """
         Transfer a Resomix playlist to Spotify
@@ -537,7 +586,7 @@ class SpotifyTransferService:
 
         Returns:
             Transfer result with statistics and details
-            
+
         Raises:
             ValueError: If user not associated with Spotify app or other validation errors
         """
@@ -549,43 +598,66 @@ class SpotifyTransferService:
             # Step 0: Check user association with Spotify app
             if not current_user:
                 raise ValueError("User authentication required for Spotify transfer")
-            
-            logger.info("Checking user Spotify app association for user ID: %d", current_user.id)
+
+            logger.info(
+                "Checking user Spotify app association for user ID: %d", current_user.id
+            )
             spotify_app = await self._check_user_spotify_association(db, current_user)
-            
+
             if not spotify_app:
-                logger.warning("User %d is not associated with any Spotify app", current_user.id)
+                logger.warning(
+                    "User %d is not associated with any Spotify app", current_user.id
+                )
                 raise ValueError(
                     "User not associated with any Spotify app. Please contact admin to enable Spotify transfer."
                 )
-            
+
             if not spotify_app.is_active:
-                logger.warning("User %d's associated Spotify app (ID: %d) is inactive", current_user.id, spotify_app.id)
+                logger.warning(
+                    "User %d's associated Spotify app (ID: %d) is inactive",
+                    current_user.id,
+                    spotify_app.id,
+                )
                 raise ValueError(
                     f"User's associated Spotify app '{spotify_app.name}' is not active. Please contact admin."
                 )
-            
+
             logger.info(
                 "User %d is associated with Spotify app: %s (ID: %d, client_id: %s)",
-                current_user.id, spotify_app.name, spotify_app.id, spotify_app.client_id
+                current_user.id,
+                spotify_app.name,
+                spotify_app.id,
+                spotify_app.client_id,
             )
 
             # Step 1: Get playlist from database
             logger.info("Fetching playlist from database...")
-            playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
-            sim_playlist = await self.playlist_repository.async_get_playlist_similarity_data(db, playlist_id)
+            playlist = await self.playlist_repository.async_get_playlist_by_uuid(
+                db, playlist_id
+            )
+            sim_playlist = (
+                await self.playlist_repository.async_get_playlist_similarity_data(
+                    db, playlist_id
+                )
+            )
             if not playlist:
                 logger.error("Playlist not found: %s", playlist_id)
                 raise ValueError(f"Playlist with ID {playlist_id} not found")
 
             # Step 2: Get tracks for playlist
             logger.info("Fetching tracks for playlist...")
-            playlist_tracks = await self.playlist_repository.async_get_tracks_by_playlist_id(db, playlist.id)
+            playlist_tracks = (
+                await self.playlist_repository.async_get_tracks_by_playlist_id(
+                    db, playlist.id
+                )
+            )
             if not playlist_tracks:
                 logger.warning("Playlist has no tracks: %s", playlist_id)
                 raise ValueError(f"Playlist {playlist_id} has no tracks to transfer")
 
-            logger.info("Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name)
+            logger.info(
+                "Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name
+            )
 
             # Step 3: Build track list (seed + playlist tracks)
             track_data = []
@@ -601,55 +673,85 @@ class SpotifyTransferService:
                     seed_title = qt.get("title") or "Unknown Track"
                     artist_str = qt.get("artist") or ""
                     # Convert "Artist1, Artist2" into ["Artist1", "Artist2"]
-                    seed_artists = [a.strip() for a in artist_str.split(",") if a.strip()] or ["Unknown Artist"]
+                    seed_artists = [
+                        a.strip() for a in artist_str.split(",") if a.strip()
+                    ] or ["Unknown Artist"]
 
                 # Fallback to DB if similarity payload misses queried_track
                 if not seed_title:
                     try:
-                        seed_track_obj = await self.track_repository.async_get_by_id(db, playlist.seed_track_id)
+                        seed_track_obj = await self.track_repository.async_get_by_id(
+                            db, playlist.seed_track_id
+                        )
                         if seed_track_obj:
-                            artists = await self.track_repository.async_get_track_artists(db, seed_track_obj.id)
-                            seed_artists = [a.name for a in artists] if artists else ["Unknown Artist"]
+                            artists = (
+                                await self.track_repository.async_get_track_artists(
+                                    db, seed_track_obj.id
+                                )
+                            )
+                            seed_artists = (
+                                [a.name for a in artists]
+                                if artists
+                                else ["Unknown Artist"]
+                            )
                             seed_title = seed_track_obj.title or "Unknown Track"
                     except Exception as e:
                         logger.warning("Failed to load seed track details: %s", e)
 
                 if seed_title:
-                    track_data.append((playlist.seed_track_id, seed_title, seed_artists))
+                    track_data.append(
+                        (playlist.seed_track_id, seed_title, seed_artists)
+                    )
 
             # 3b. Add playlist tracks (skip duplicates if seed is present)
             added_ids = {playlist.seed_track_id} if playlist.seed_track_id else set()
             for playlist_track in playlist_tracks:
                 if playlist_track.track_id in added_ids:
                     continue
-                track = await self.track_repository.async_get_by_id(db, playlist_track.track_id)
+                track = await self.track_repository.async_get_by_id(
+                    db, playlist_track.track_id
+                )
                 if track:
-                    artists = await self.track_repository.async_get_track_artists(db, track.id)
-                    artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
-                    track_data.append((track.id, track.title or "Unknown Track", artist_names))
+                    artists = await self.track_repository.async_get_track_artists(
+                        db, track.id
+                    )
+                    artist_names = (
+                        [artist.name for artist in artists]
+                        if artists
+                        else ["Unknown Artist"]
+                    )
+                    track_data.append(
+                        (track.id, track.title or "Unknown Track", artist_names)
+                    )
                     added_ids.add(track.id)
 
-            logger.info("Found %d tracks in playlist '%s' (including seed if present)", len(track_data), playlist.name)
+            logger.info(
+                "Found %d tracks in playlist '%s' (including seed if present)",
+                len(track_data),
+                playlist.name,
+            )
 
             # Step 4: Create Spotify client (access_token should be from the associated app)
-            logger.info("Authenticating with Spotify using associated app: %s", spotify_app.name)
+            logger.info(
+                "Authenticating with Spotify using associated app: %s", spotify_app.name
+            )
             spotify_client = self._create_spotify_client(access_token)
 
             # Step 5: Create Spotify playlist
             logger.info("Creating Spotify playlist...")
             playlist_name = custom_playlist_name or f"Resomix - {playlist.name}"
             user_info = spotify_client.me()
-            user_id = user_info['id']
+            user_id = user_info["id"]
 
             spotify_playlist = spotify_client.user_playlist_create(
                 user=user_id,
                 name=playlist_name,
                 public=False,  # Create as private by default
-                description=f"Transferred from Resomix playlist '{playlist.name}'"
+                description=f"Transferred from Resomix playlist '{playlist.name}'",
             )
 
-            spotify_playlist_id = spotify_playlist['id']
-            spotify_playlist_url = spotify_playlist['external_urls']['spotify']
+            spotify_playlist_id = spotify_playlist["id"]
+            spotify_playlist_url = spotify_playlist["external_urls"]["spotify"]
 
             logger.info("Created Spotify playlist: %s", playlist_name)
 
@@ -680,7 +782,9 @@ class SpotifyTransferService:
                 for track_id, title, artists in uncached_tracks:
                     concurrent_track_data.append((track_id, title, artists))
 
-                search_results = await self._search_tracks_concurrently(spotify_client, concurrent_track_data)
+                search_results = await self._search_tracks_concurrently(
+                    spotify_client, concurrent_track_data
+                )
 
                 # Collect newly found Spotify IDs for caching
                 for track_id, spotify_uri in search_results:
@@ -705,18 +809,27 @@ class SpotifyTransferService:
                     found_tracks.append(spotify_uri)
                 else:
                     # Find original track info for not found list
-                    original_track = next((t for t in track_data if t[0] == track_id), None)
+                    original_track = next(
+                        (t for t in track_data if t[0] == track_id), None
+                    )
                     if original_track:
                         _, title, artists = original_track
                         not_found_tracks.append(f"{', '.join(artists)} - {title}")
 
-            logger.info("Found %d tracks (%d cached + %d searched), %d not found",
-                        len(found_tracks), len(cached_tracks), len(new_spotify_ids), len(not_found_tracks))
+            logger.info(
+                "Found %d tracks (%d cached + %d searched), %d not found",
+                len(found_tracks),
+                len(cached_tracks),
+                len(new_spotify_ids),
+                len(not_found_tracks),
+            )
 
             # Step 7: Add found tracks to Spotify playlist
             tracks_added = 0
             if found_tracks:
-                tracks_added = await self._add_tracks_to_playlist(spotify_client, spotify_playlist_id, found_tracks)
+                tracks_added = await self._add_tracks_to_playlist(
+                    spotify_client, spotify_playlist_id, found_tracks
+                )
             else:
                 logger.warning("No tracks found on Spotify to add to playlist")
 
@@ -730,13 +843,19 @@ class SpotifyTransferService:
                 "total_tracks": len(track_data),
                 "tracks_added": tracks_added,
                 "tracks_not_found": len(not_found_tracks),
-                "not_found_tracks": not_found_tracks[:10],  # Limit to first 10 for response size
-                "transfer_time_seconds": round(total_time, 2)
+                "not_found_tracks": not_found_tracks[
+                    :10
+                ],  # Limit to first 10 for response size
+                "transfer_time_seconds": round(total_time, 2),
             }
 
             logger.info(
                 "Transfer completed successfully in %.1fs - %d/%d tracks added using Spotify app: %s (ID: %d)",
-                total_time, tracks_added, len(playlist_tracks), spotify_app.name, spotify_app.id
+                total_time,
+                tracks_added,
+                len(playlist_tracks),
+                spotify_app.name,
+                spotify_app.id,
             )
 
             return result

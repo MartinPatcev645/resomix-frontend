@@ -32,37 +32,43 @@ from app.core.config import settings
 
 class PlaylistController:
     """Controller for playlist-related HTTP requests."""
-    
+
     def __init__(self):
         """Initialize playlist controller."""
         self.playlist_service = PlaylistService()
         self.logging_service = LoggingService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.operation_limit_repository = OperationLimitRepository()
-    
-    async def rename_playlist(self, db: AsyncSession, request: Request, playlist_id: str, new_name: str, current_user: Optional[User] = None) -> JSONResponse:
+
+    async def rename_playlist(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        new_name: str,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """
         Rename a playlist by UUID.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_id: Playlist UUID
             new_name: New playlist name
-            
+
         Returns:
             JSON response with operation result
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
             # Log validation failure
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
-                success=False,
-                error="playlist_id cannot be empty"
+                success=False, error="playlist_id cannot be empty"
             )
             self.logging_service.log(
                 async_db=db,
@@ -79,21 +85,19 @@ class PlaylistController:
                     "validation_step": "playlist_id_check",
                     "new_name": new_name,
                     "response": response_data,
-                    "operation": "playlist_rename"
-                }
+                    "operation": "playlist_rename",
+                },
             )
-            
+
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=response_data
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
             )
-        
+
         if not new_name or not new_name.strip():
             # Log validation failure
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
-                success=False,
-                error="new_name cannot be empty"
+                success=False, error="new_name cannot be empty"
             )
             self.logging_service.log(
                 async_db=db,
@@ -110,25 +114,28 @@ class PlaylistController:
                     "validation_step": "new_name_check",
                     "playlist_id": playlist_id,
                     "response": response_data,
-                    "operation": "playlist_rename"
-                }
+                    "operation": "playlist_rename",
+                },
             )
-            
+
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=response_data
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
             )
-        
+
         try:
             # First, get the playlist to obtain the integer ID for logging
-            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                db, playlist_id
+            )
             playlist_int_id = playlist.id if playlist else None
-            
-            result = await self.playlist_service.rename_playlist(db, playlist_id, new_name.strip())
-            
+
+            result = await self.playlist_service.rename_playlist(
+                db, playlist_id, new_name.strip()
+            )
+
             # Calculate operation duration
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 # Log successful rename - use integer ID for foreign key
                 self.logging_service.log(
@@ -148,14 +155,11 @@ class PlaylistController:
                         "old_name": result.get("old_name"),
                         "new_name": new_name.strip(),
                         "response": result,
-                        "operation": "playlist_rename"
-                    }
+                        "operation": "playlist_rename",
+                    },
                 )
-                
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 # Log playlist not found - use integer ID for foreign key (may be None)
                 self.logging_service.log(
@@ -175,28 +179,28 @@ class PlaylistController:
                         "new_name": new_name.strip(),
                         "error": result.get("error"),
                         "response": result,
-                        "operation": "playlist_rename"
-                    }
+                        "operation": "playlist_rename",
+                    },
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=result
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
                 )
-                
+
         except Exception as e:
             # Log error with full context - use integer ID if available
             duration_ms = (time.time() - start_time) * 1000
             playlist_int_id = None
             try:
-                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                    db, playlist_id
+                )
                 playlist_int_id = playlist.id if playlist else None
-            except:
+            except Exception:
                 pass  # Ignore errors when getting playlist for logging
-                
+
             response_data = format_response(
-                success=False,
-                error="An error occurred while renaming the playlist"
+                success=False, error="An error occurred while renaming the playlist"
             )
             self.logging_service.log(
                 async_db=db,
@@ -217,35 +221,43 @@ class PlaylistController:
                     "new_name": new_name,
                     "error_type": type(e).__name__,
                     "response": response_data,
-                    "operation": "playlist_rename"
-                }
+                    "operation": "playlist_rename",
+                },
             )
-            
+
             return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=response_data
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
-    
-    async def change_playlist_visibility(self, db: AsyncSession, request: Request, playlist_id: str, is_public: bool, current_user: Optional[User] = None) -> JSONResponse:
+
+    async def change_playlist_visibility(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        is_public: bool,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """
         Change playlist visibility (public/private).
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_id: Playlist UUID
             is_public: Whether to make the playlist public
-            
+
         Returns:
             JSON response with operation result
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="playlist_id cannot be empty")
+            response_data = format_response(
+                success=False, error="playlist_id cannot be empty"
+            )
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -261,20 +273,23 @@ class PlaylistController:
                     "validation_step": "playlist_id_check",
                     "is_public": is_public,
                     "response": response_data,
-                    "operation": "playlist_visibility_change"
-                }
+                    "operation": "playlist_visibility_change",
+                },
             )
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=response_data
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
             )
-        
+
         try:
-            result = await self.playlist_service.change_playlist_visibility(db, playlist_id, is_public)
+            result = await self.playlist_service.change_playlist_visibility(
+                db, playlist_id, is_public
+            )
             duration_ms = (time.time() - start_time) * 1000
-            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                db, playlist_id
+            )
             playlist_int_id = playlist.id if playlist else None
-            
+
             if result.get("success"):
                 self.logging_service.log(
                     async_db=db,
@@ -294,8 +309,8 @@ class PlaylistController:
                         "previous_visibility": result.get("previous_visibility"),
                         "visibility_change": f"{'private' if result.get('previous_visibility') else 'unknown'} -> {'public' if is_public else 'private'}",
                         "response": result,
-                        "operation": "playlist_visibility_change"
-                    }
+                        "operation": "playlist_visibility_change",
+                    },
                 )
                 return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
@@ -316,13 +331,18 @@ class PlaylistController:
                         "is_public": is_public,
                         "error": result.get("error"),
                         "response": result,
-                        "operation": "playlist_visibility_change"
-                    }
+                        "operation": "playlist_visibility_change",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=result)
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
+                )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="An internal server error occurred while changing playlist visibility")
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while changing playlist visibility",
+            )
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -341,31 +361,41 @@ class PlaylistController:
                     "is_public": is_public,
                     "error_type": type(e).__name__,
                     "response": response_data,
-                    "operation": "playlist_visibility_change"
-                }
+                    "operation": "playlist_visibility_change",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            )
 
-    async def get_playlist_similarity_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
+    async def get_playlist_similarity_data(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """
         Get playlist with similarity data.
         Only returns data for public playlists.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_id: Playlist UUID
-            
+
         Returns:
             JSON response with similarity data
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         # Validate inputs
         if not playlist_id or not playlist_id.strip():
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="playlist_id cannot be empty")
+            response_data = format_response(
+                success=False, error="playlist_id cannot be empty"
+            )
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -380,11 +410,13 @@ class PlaylistController:
                     "error": "playlist_id cannot be empty",
                     "validation_step": "playlist_id_check",
                     "response": response_data,
-                    "operation": "get_playlist_similarity_data"
-                }
+                    "operation": "get_playlist_similarity_data",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
-        
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
+            )
+
         try:
             result = await self.playlist_service.get_playlist_similarity_data(
                 db,
@@ -392,7 +424,7 @@ class PlaylistController:
                 current_user.id if current_user else None,
             )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 if settings.demo_mode:
                     apply_demo_mode_redaction(result)
@@ -400,10 +432,14 @@ class PlaylistController:
                 playlist_int_id = None
                 try:
                     playlist_data = result.get("data", {})
-                    playlist_int_id = playlist_data.get("id") if isinstance(playlist_data.get("id"), int) else None
-                except:
+                    playlist_int_id = (
+                        playlist_data.get("id")
+                        if isinstance(playlist_data.get("id"), int)
+                        else None
+                    )
+                except Exception:
                     pass
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -418,10 +454,14 @@ class PlaylistController:
                     metadata={
                         "playlist_uuid": playlist_id,
                         "playlist_int_id": playlist_int_id,
-                        "tracks_count": len(result.get("data", {}).get("tracks", [])) if result.get("data") else 0,
+                        "tracks_count": (
+                            len(result.get("data", {}).get("tracks", []))
+                            if result.get("data")
+                            else 0
+                        ),
                         "response": result,
-                        "operation": "get_playlist_similarity_data"
-                    }
+                        "operation": "get_playlist_similarity_data",
+                    },
                 )
                 return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             elif "not public" in result.get("error", "").lower():
@@ -441,10 +481,12 @@ class PlaylistController:
                         "error": "playlist_not_public",
                         "access_denied_reason": "private_playlist",
                         "response": result,
-                        "operation": "get_playlist_similarity_data"
-                    }
+                        "operation": "get_playlist_similarity_data",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=result)
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN, content=result
+                )
             else:
                 self.logging_service.log(
                     async_db=db,
@@ -461,13 +503,18 @@ class PlaylistController:
                         "playlist_uuid": playlist_id,
                         "error": result.get("error"),
                         "response": result,
-                        "operation": "get_playlist_similarity_data"
-                    }
+                        "operation": "get_playlist_similarity_data",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=result)
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
+                )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="An internal server error occurred while retrieving playlist data")
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while retrieving playlist data",
+            )
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -485,22 +532,28 @@ class PlaylistController:
                     "playlist_uuid": playlist_id,
                     "error_type": type(e).__name__,
                     "response": response_data,
-                    "operation": "get_playlist_similarity_data"
-                }
+                    "operation": "get_playlist_similarity_data",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            )
 
-    async def get_playlist_hls_data(self, db: AsyncSession, request: Request, playlist_id: str, current_user: User) -> Response:
+    async def get_playlist_hls_data(
+        self, db: AsyncSession, request: Request, playlist_id: str, current_user: User
+    ) -> Response:
         """
         Get playlist as HLS M3U8 format.
         Only returns data for public playlists.
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         if not playlist_id or not playlist_id.strip():
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="playlist_id cannot be empty")
+            response_data = format_response(
+                success=False, error="playlist_id cannot be empty"
+            )
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -515,18 +568,22 @@ class PlaylistController:
                     "error": "playlist_id cannot be empty",
                     "validation_step": "playlist_id_check",
                     "response": response_data,
-                    "operation": "get_playlist_hls_data"
-                }
+                    "operation": "get_playlist_hls_data",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
+            )
         try:
             result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
                 # Extract playlist integer ID if available
-                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                    db, playlist_id
+                )
                 playlist_int_id = playlist.id if playlist else None
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -544,15 +601,21 @@ class PlaylistController:
                         "m3u8_content_length": len(result.get("m3u8_content", "")),
                         "tracks_count": result.get("tracks_count", 0),
                         "media_type": "application/vnd.apple.mpegurl",
-                        "operation": "get_playlist_hls_data"
-                    }
+                        "operation": "get_playlist_hls_data",
+                    },
                 )
-                response = Response(content=result["m3u8_content"], media_type="application/vnd.apple.mpegurl", status_code=status.HTTP_200_OK)
+                response = Response(
+                    content=result["m3u8_content"],
+                    media_type="application/vnd.apple.mpegurl",
+                    status_code=status.HTTP_200_OK,
+                )
                 response.headers["Access-Control-Allow-Origin"] = "*"
                 response.headers["Cache-Control"] = "no-store"
                 return response
             elif "not public" in result.get("error", "").lower():
-                response_data = format_response(success=False, error=result.get("error"))
+                response_data = format_response(
+                    success=False, error=result.get("error")
+                )
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -570,12 +633,16 @@ class PlaylistController:
                         "access_denied_reason": "private_playlist",
                         "media_type": "application/vnd.apple.mpegurl",
                         "response": response_data,
-                        "operation": "get_playlist_hls_data"
-                    }
+                        "operation": "get_playlist_hls_data",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=response_data)
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN, content=response_data
+                )
             else:
-                response_data = format_response(success=False, error=result.get("error"))
+                response_data = format_response(
+                    success=False, error=result.get("error")
+                )
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -592,13 +659,18 @@ class PlaylistController:
                         "error": result.get("error"),
                         "media_type": "application/vnd.apple.mpegurl",
                         "response": response_data,
-                        "operation": "get_playlist_hls_data"
-                    }
+                        "operation": "get_playlist_hls_data",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=response_data)
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND, content=response_data
+                )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="An internal server error occurred while generating HLS playlist")
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while generating HLS playlist",
+            )
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -617,37 +689,37 @@ class PlaylistController:
                     "error_type": type(e).__name__,
                     "media_type": "application/vnd.apple.mpegurl",
                     "response": response_data,
-                    "operation": "get_playlist_hls_data"
-                }
+                    "operation": "get_playlist_hls_data",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            )
+
     async def fork_playlist(
-        self,
-        db: AsyncSession,
-        request: Request,
-        playlist_id: str,
-        current_user: User
+        self, db: AsyncSession, request: Request, playlist_id: str, current_user: User
     ) -> JSONResponse:
         """
         Fork (copy) a public playlist for a user.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_id: UUID of the playlist to fork
             current_user: Authenticated user object
-            
+
         Returns:
             JSON response with forked playlist data or error message
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         # Validate input
         if not playlist_id or not playlist_id.strip():
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="playlist_id cannot be empty")
+            response_data = format_response(
+                success=False, error="playlist_id cannot be empty"
+            )
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -664,11 +736,13 @@ class PlaylistController:
                     "error": "playlist_id cannot be empty",
                     "validation_step": "playlist_id_check",
                     "response": response_data,
-                    "operation": "playlist_fork"
-                }
+                    "operation": "playlist_fork",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data)
-        
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
+            )
+
         # Check operation limits before forking
         limit_check = await self.operation_limit_evaluator.check(
             db,
@@ -684,31 +758,35 @@ class PlaylistController:
                 status_code=limit_check.status_code,
                 content=response_data,
             )
-        
+
         try:
             # Call service layer
             result = await self.playlist_service.fork_playlist(
-                db, 
-                playlist_id, 
-                current_user.id
+                db, playlist_id, current_user.id
             )
-            
+
             duration_ms = (time.time() - start_time) * 1000
-            
+
             # Handle success response
             if result.get("success"):
                 # Extract playlist integer ID from result data for logging
                 new_playlist_uuid = result.get("data", {}).get("playlist", {}).get("id")
                 track_count = len(result.get("data", {}).get("similar_tracks", []))
-                
+
                 # Get new playlist integer ID for logging
-                new_playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, new_playlist_uuid)
+                new_playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                    db, new_playlist_uuid
+                )
                 new_playlist_int_id = new_playlist.id if new_playlist else None
-                
+
                 # Get original playlist integer ID for logging
-                original_playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
-                original_playlist_int_id = original_playlist.id if original_playlist else None
-                
+                original_playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                    db, playlist_id
+                )
+                original_playlist_int_id = (
+                    original_playlist.id if original_playlist else None
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -728,21 +806,24 @@ class PlaylistController:
                         "new_playlist_int_id": new_playlist_int_id,
                         "track_count": track_count,
                         "operation": "playlist_fork",
-                        "response": result
-                    }
+                        "response": result,
+                    },
                 )
                 # Increment operation usage for playlist_create on successful fork
                 try:
                     await self.operation_limit_repository.async_increment_usage(
-                        db, user_id=current_user.id, operation_code="playlist_create", increment=1
+                        db,
+                        user_id=current_user.id,
+                        operation_code="playlist_create",
+                        increment=1,
                     )
                 except Exception:
                     pass
                 return JSONResponse(status_code=status.HTTP_201_CREATED, content=result)
-            
+
             # Handle error responses
             error_message = result.get("error", "")
-            
+
             if "not found" in error_message.lower():
                 response_data = format_response(success=False, error=error_message)
                 self.logging_service.log(
@@ -760,12 +841,16 @@ class PlaylistController:
                         "original_playlist_uuid": playlist_id,
                         "error": error_message,
                         "response": response_data,
-                        "operation": "playlist_fork"
-                    }
+                        "operation": "playlist_fork",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=response_data)
-            
-            elif "private" in error_message.lower() or "public" in error_message.lower():
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND, content=response_data
+                )
+
+            elif (
+                "private" in error_message.lower() or "public" in error_message.lower()
+            ):
                 response_data = format_response(success=False, error=error_message)
                 self.logging_service.log(
                     async_db=db,
@@ -782,11 +867,13 @@ class PlaylistController:
                         "original_playlist_uuid": playlist_id,
                         "error": error_message,
                         "response": response_data,
-                        "operation": "playlist_fork"
-                    }
+                        "operation": "playlist_fork",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=response_data)
-            
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN, content=response_data
+                )
+
             elif "already own" in error_message.lower():
                 response_data = format_response(success=False, error=error_message)
                 self.logging_service.log(
@@ -804,11 +891,13 @@ class PlaylistController:
                         "original_playlist_uuid": playlist_id,
                         "error": error_message,
                         "response": response_data,
-                        "operation": "playlist_fork"
-                    }
+                        "operation": "playlist_fork",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response_data)
-            
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST, content=response_data
+                )
+
             else:
                 # Generic error
                 response_data = format_response(success=False, error=error_message)
@@ -827,14 +916,20 @@ class PlaylistController:
                         "original_playlist_uuid": playlist_id,
                         "error": error_message,
                         "response": response_data,
-                        "operation": "playlist_fork"
-                    }
+                        "operation": "playlist_fork",
+                    },
                 )
-                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
-                
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=response_data,
+                )
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="An internal server error occurred while forking the playlist")
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while forking the playlist",
+            )
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -853,46 +948,45 @@ class PlaylistController:
                     "original_playlist_uuid": playlist_id,
                     "error_type": type(e).__name__,
                     "response": response_data,
-                    "operation": "playlist_fork"
-                }
+                    "operation": "playlist_fork",
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            )
+
     # ============================================================================
     # Admin Methods
     # ============================================================================
-    
+
     async def get_playlist_list_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        filters: dict
+        self, db: AsyncSession, request: Request, filters: dict
     ) -> JSONResponse:
         """
         Get paginated playlist list for admin.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             filters: Dictionary containing filter parameters
-            
+
         Returns:
             JSON response with playlist list and pagination
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
             result = await self.playlist_service.get_playlist_list_admin(db, filters)
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 response_content = {
                     "success": True,
                     "data": result.get("data", []),
-                    "pagination": result.get("pagination", {})
+                    "pagination": result.get("pagination", {}),
                 }
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -907,18 +1001,19 @@ class PlaylistController:
                     metadata={
                         "filters": filters,
                         "result_count": len(result.get("data", [])),
-                        "total": result.get("pagination", {}).get("total", 0)
-                    }
+                        "total": result.get("pagination", {}).get("total", 0),
+                    },
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                response_content = format_response(success=False, error=result.get("error"))
-                
+                response_content = format_response(
+                    success=False, error=result.get("error")
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="ERROR",
@@ -930,22 +1025,23 @@ class PlaylistController:
                     status_code=500,
                     duration_ms=duration_ms,
                     context="admin playlist list",
-                    metadata={"filters": filters, "error": result.get("error")}
+                    metadata={"filters": filters, "error": result.get("error")},
                 )
-                
+
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=response_content
+                    content=response_content,
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while retrieving playlists"
+                error="An internal server error occurred while retrieving playlists",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -961,43 +1057,45 @@ class PlaylistController:
                 metadata={
                     "filters": filters,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def delete_playlist_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        playlist_id: int
+        self, db: AsyncSession, request: Request, playlist_id: int
     ) -> JSONResponse:
         """
         Delete a single playlist.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_id: Playlist ID to delete
-            
+
         Returns:
             JSON response with deletion result
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
             result = await self.playlist_service.delete_playlist_admin(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 response_content = {
                     "success": True,
                     "data": {
-                        "message": result.get("message", "Playlist deleted successfully")
-                    }
+                        "message": result.get(
+                            "message", "Playlist deleted successfully"
+                        )
+                    },
                 }
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -1010,18 +1108,19 @@ class PlaylistController:
                     duration_ms=duration_ms,
                     context="admin playlist delete",
                     playlist_id=playlist_id,
-                    metadata={"playlist_id": playlist_id}
+                    metadata={"playlist_id": playlist_id},
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 # Playlist not found
                 duration_ms = (time.time() - start_time) * 1000
-                response_content = format_response(success=False, error=result.get("error", "Playlist not found"))
-                
+                response_content = format_response(
+                    success=False, error=result.get("error", "Playlist not found")
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -1033,22 +1132,22 @@ class PlaylistController:
                     status_code=404,
                     duration_ms=duration_ms,
                     context="admin playlist delete",
-                    metadata={"playlist_id": playlist_id}
+                    metadata={"playlist_id": playlist_id},
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=response_content
+                    status_code=status.HTTP_404_NOT_FOUND, content=response_content
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while deleting the playlist"
+                error="An internal server error occurred while deleting the playlist",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1064,42 +1163,44 @@ class PlaylistController:
                 metadata={
                     "playlist_id": playlist_id,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def batch_delete_playlist_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        playlist_ids: list
+        self, db: AsyncSession, request: Request, playlist_ids: list
     ) -> JSONResponse:
         """
         Delete multiple playlists.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_ids: List of playlist IDs to delete
-            
+
         Returns:
             JSON response with batch deletion result
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
-            result = await self.playlist_service.batch_delete_playlists_admin(db, playlist_ids)
+            result = await self.playlist_service.batch_delete_playlists_admin(
+                db, playlist_ids
+            )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 response_content = {
                     "success": True,
                     "deleted_count": result.get("deleted_count", 0),
-                    "message": result.get("message", "Playlists deleted successfully")
+                    "message": result.get("message", "Playlists deleted successfully"),
                 }
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -1113,18 +1214,19 @@ class PlaylistController:
                     context="admin playlist batch delete",
                     metadata={
                         "playlist_ids": playlist_ids,
-                        "deleted_count": result.get("deleted_count", 0)
-                    }
+                        "deleted_count": result.get("deleted_count", 0),
+                    },
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                response_content = format_response(success=False, error=result.get("error"))
-                
+                response_content = format_response(
+                    success=False, error=result.get("error")
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="ERROR",
@@ -1136,22 +1238,26 @@ class PlaylistController:
                     status_code=500,
                     duration_ms=duration_ms,
                     context="admin playlist batch delete",
-                    metadata={"playlist_ids": playlist_ids, "error": result.get("error")}
+                    metadata={
+                        "playlist_ids": playlist_ids,
+                        "error": result.get("error"),
+                    },
                 )
-                
+
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=response_content
+                    content=response_content,
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while batch deleting playlists"
+                error="An internal server error occurred while batch deleting playlists",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1167,43 +1273,46 @@ class PlaylistController:
                 metadata={
                     "playlist_ids": playlist_ids,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def change_playlist_visibility_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        playlist_id: int,
-        is_public: bool
+        self, db: AsyncSession, request: Request, playlist_id: int, is_public: bool
     ) -> JSONResponse:
         """
         Change playlist visibility (admin).
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_id: Playlist ID
             is_public: Whether to make the playlist public
-            
+
         Returns:
             JSON response with visibility change result
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
-            result = await self.playlist_service.change_playlist_visibility_admin(db, playlist_id, is_public)
+            result = await self.playlist_service.change_playlist_visibility_admin(
+                db, playlist_id, is_public
+            )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 response_content = {
                     "success": True,
-                    "message": result.get("message", "Playlist visibility changed successfully")
+                    "message": result.get(
+                        "message", "Playlist visibility changed successfully"
+                    ),
                 }
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -1216,21 +1325,19 @@ class PlaylistController:
                     duration_ms=duration_ms,
                     context="admin playlist visibility change",
                     playlist_id=playlist_id,
-                    metadata={
-                        "playlist_id": playlist_id,
-                        "is_public": is_public
-                    }
+                    metadata={"playlist_id": playlist_id, "is_public": is_public},
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 # Playlist not found
                 duration_ms = (time.time() - start_time) * 1000
-                response_content = format_response(success=False, error=result.get("error", "Playlist not found"))
-                
+                response_content = format_response(
+                    success=False, error=result.get("error", "Playlist not found")
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -1242,22 +1349,22 @@ class PlaylistController:
                     status_code=404,
                     duration_ms=duration_ms,
                     context="admin playlist visibility change",
-                    metadata={"playlist_id": playlist_id, "is_public": is_public}
+                    metadata={"playlist_id": playlist_id, "is_public": is_public},
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=response_content
+                    status_code=status.HTTP_404_NOT_FOUND, content=response_content
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while changing playlist visibility"
+                error="An internal server error occurred while changing playlist visibility",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1274,44 +1381,49 @@ class PlaylistController:
                     "playlist_id": playlist_id,
                     "is_public": is_public,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def batch_change_playlist_visibility_admin(
         self,
         db: AsyncSession,
         request: Request,
         playlist_ids: List[int],
-        is_public: bool
+        is_public: bool,
     ) -> JSONResponse:
         """
         Change visibility for multiple playlists (admin).
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_ids: List of playlist IDs to update
             is_public: Whether to make the playlists public
-            
+
         Returns:
             JSON response with batch visibility change result
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
-            result = await self.playlist_service.batch_change_playlist_visibility_admin(db, playlist_ids, is_public)
+            result = await self.playlist_service.batch_change_playlist_visibility_admin(
+                db, playlist_ids, is_public
+            )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 response_content = {
                     "success": True,
                     "updated_count": result.get("updated_count", 0),
-                    "message": result.get("message", "Playlists updated successfully")
+                    "message": result.get("message", "Playlists updated successfully"),
                 }
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -1326,18 +1438,19 @@ class PlaylistController:
                     metadata={
                         "playlist_ids": playlist_ids,
                         "updated_count": result.get("updated_count", 0),
-                        "is_public": is_public
-                    }
+                        "is_public": is_public,
+                    },
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                response_content = format_response(success=False, error=result.get("error"))
-                
+                response_content = format_response(
+                    success=False, error=result.get("error")
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="ERROR",
@@ -1349,22 +1462,27 @@ class PlaylistController:
                     status_code=500,
                     duration_ms=duration_ms,
                     context="admin playlist batch visibility change",
-                    metadata={"playlist_ids": playlist_ids, "is_public": is_public, "error": result.get("error")}
+                    metadata={
+                        "playlist_ids": playlist_ids,
+                        "is_public": is_public,
+                        "error": result.get("error"),
+                    },
                 )
-                
+
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=response_content
+                    content=response_content,
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while batch changing playlist visibility"
+                error="An internal server error occurred while batch changing playlist visibility",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1381,43 +1499,43 @@ class PlaylistController:
                     "playlist_ids": playlist_ids,
                     "is_public": is_public,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def export_playlist_csv_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        filters: dict
+        self, db: AsyncSession, request: Request, filters: dict
     ) -> JSONResponse:
         """
         Export playlists to CSV.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             filters: Dictionary containing filter parameters
-            
+
         Returns:
             JSON response with download URL
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
             result = await self.playlist_service.export_playlists_csv_admin(db, filters)
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 response_content = {
                     "success": True,
                     "download_url": result.get("download_url"),
                     "filename": result.get("filename"),
-                    "expires_at": result.get("expires_at")
+                    "expires_at": result.get("expires_at"),
                 }
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -1429,20 +1547,18 @@ class PlaylistController:
                     status_code=200,
                     duration_ms=duration_ms,
                     context="admin playlist export",
-                    metadata={
-                        "filters": filters,
-                        "filename": result.get("filename")
-                    }
+                    metadata={"filters": filters, "filename": result.get("filename")},
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                response_content = format_response(success=False, error=result.get("error"))
-                
+                response_content = format_response(
+                    success=False, error=result.get("error")
+                )
+
                 self.logging_service.log(
                     async_db=db,
                     level="ERROR",
@@ -1454,22 +1570,23 @@ class PlaylistController:
                     status_code=500,
                     duration_ms=duration_ms,
                     context="admin playlist export",
-                    metadata={"filters": filters, "error": result.get("error")}
+                    metadata={"filters": filters, "error": result.get("error")},
                 )
-                
+
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=response_content
+                    content=response_content,
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while exporting playlists"
+                error="An internal server error occurred while exporting playlists",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1485,41 +1602,40 @@ class PlaylistController:
                 metadata={
                     "filters": filters,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def get_playlist_detail_by_uuid_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        playlist_uuid: str
+        self, db: AsyncSession, request: Request, playlist_uuid: str
     ) -> JSONResponse:
         """
         Get detailed playlist information by UUID.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             playlist_uuid: Playlist UUID
-            
+
         Returns:
             JSON response with playlist details
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
-            result = await self.playlist_service.get_playlist_detail_by_uuid_admin(db, playlist_uuid)
+            result = await self.playlist_service.get_playlist_detail_by_uuid_admin(
+                db, playlist_uuid
+            )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
-                response_content = {
-                    "success": True,
-                    "data": result.get("data")
-                }
-                
+                response_content = {"success": True, "data": result.get("data")}
+
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -1533,20 +1649,25 @@ class PlaylistController:
                     context="admin playlist detail",
                     metadata={
                         "playlist_uuid": playlist_uuid,
-                        "track_count": result.get("data", {}).get("playlist", {}).get("track_count", 0)
-                    }
+                        "track_count": result.get("data", {})
+                        .get("playlist", {})
+                        .get("track_count", 0),
+                    },
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=response_content
+                    status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
                 error_message = result.get("error", "Playlist not found")
-                status_code = status.HTTP_404_NOT_FOUND if "not found" in error_message.lower() else status.HTTP_400_BAD_REQUEST
+                status_code = (
+                    status.HTTP_404_NOT_FOUND
+                    if "not found" in error_message.lower()
+                    else status.HTTP_400_BAD_REQUEST
+                )
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(success=False, error=error_message)
-                
+
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING" if status_code == 404 else "ERROR",
@@ -1558,22 +1679,20 @@ class PlaylistController:
                     status_code=status_code,
                     duration_ms=duration_ms,
                     context="admin playlist detail",
-                    metadata={"playlist_uuid": playlist_uuid, "error": error_message}
+                    metadata={"playlist_uuid": playlist_uuid, "error": error_message},
                 )
-                
-                return JSONResponse(
-                    status_code=status_code,
-                    content=response_content
-                )
-                
+
+                return JSONResponse(status_code=status_code, content=response_content)
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while retrieving playlist details"
+                error="An internal server error occurred while retrieving playlist details",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1589,11 +1708,14 @@ class PlaylistController:
                 metadata={
                     "playlist_uuid": playlist_uuid,
                     "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc()
-                }
+                    "traceback": traceback.format_exc(),
+                },
             )
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_content)
-    
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=response_content,
+            )
+
     async def get_all_user_playlists(
         self,
         db: AsyncSession,
@@ -1601,26 +1723,28 @@ class PlaylistController:
         current_user: User,
         page: int = 1,
         page_size: int = 20,
-        filters = None
+        filters=None,
     ) -> JSONResponse:
         """
         Get all playlists owned by the authenticated user.
-        
+
         Args:
             db: Database session
             request: FastAPI Request object
             current_user: Authenticated user object
-            
+
         Returns:
             JSON response with list of user's playlists
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
         try:
-            result = await self.playlist_service.get_all_user_playlists(db, current_user.id, page, page_size, filters)
+            result = await self.playlist_service.get_all_user_playlists(
+                db, current_user.id, page, page_size, filters
+            )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 self.logging_service.log(
                     async_db=db,
@@ -1638,14 +1762,11 @@ class PlaylistController:
                         "playlist_count": len(result.get("data", [])),
                         "page": page,
                         "page_size": page_size,
-                        "operation": "get_all_user_playlists"
-                    }
+                        "operation": "get_all_user_playlists",
+                    },
                 )
-                
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 self.logging_service.log(
                     async_db=db,
@@ -1661,22 +1782,21 @@ class PlaylistController:
                         "user_uuid": current_user.uuid,
                         "user_id": current_user.id,
                         "error": result.get("error"),
-                        "operation": "get_all_user_playlists"
-                    }
+                        "operation": "get_all_user_playlists",
+                    },
                 )
-                
+
                 return JSONResponse(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=result
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=result
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
-                error="An internal server error occurred while retrieving playlists"
+                error="An internal server error occurred while retrieving playlists",
             )
-            
+
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -1694,11 +1814,10 @@ class PlaylistController:
                     "user_id": current_user.id,
                     "error_type": type(e).__name__,
                     "response": response_data,
-                    "operation": "get_all_user_playlists"
-                }
+                    "operation": "get_all_user_playlists",
+                },
             )
-            
+
             return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=response_data
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )

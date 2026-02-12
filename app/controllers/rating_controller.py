@@ -151,6 +151,10 @@ class RatingController:
         except ValueError as e:
             # Handle Pydantic validation errors
             duration_ms = (time.time() - start_time) * 1000
+            error_response = {
+                "success": False,
+                "error": "Validation error: The provided rating data is invalid",
+            }
             self.logging_service.log(
                 async_db=db,
                 level="WARNING",
@@ -167,18 +171,12 @@ class RatingController:
                 user_agent=request.headers.get("user-agent"),
                 referer=request.headers.get("referer"),
                 status_code=422,
-                response_size=(
-                    len(str(error_response)) if "error_response" in locals() else None
-                ),
+                response_size=len(str(error_response)),
                 duration_ms=duration_ms,
                 context="Track rating input validation",
                 metadata={"error": str(e), "validation_step": "input_validation"},
                 operation="track_rating",
             )
-            error_response = {
-                "success": False,
-                "error": "Validation error: The provided rating data is invalid",
-            }
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response
             )
@@ -335,6 +333,10 @@ class RatingController:
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
+            error_response = {
+                "success": False,
+                "error": "Internal server error occurred while retrieving the rating",
+            }
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -351,9 +353,7 @@ class RatingController:
                 user_agent=request.headers.get("user-agent"),
                 referer=request.headers.get("referer"),
                 status_code=500,
-                response_size=(
-                    len(str(error_response)) if "error_response" in locals() else None
-                ),
+                response_size=len(str(error_response)),
                 duration_ms=duration_ms,
                 error=e,
                 context="get_track_rating",
@@ -362,10 +362,6 @@ class RatingController:
                 ),
                 operation="get_track_rating",
             )
-            error_response = {
-                "success": False,
-                "error": "Internal server error occurred while retrieving the rating",
-            }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=error_response,

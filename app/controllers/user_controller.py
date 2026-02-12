@@ -481,9 +481,7 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            user = await self.user_service.enable_2fa(
-                db=db, user_id=user_id, method=method
-            )
+            await self.user_service.enable_2fa(db=db, user_id=user_id, method=method)
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(

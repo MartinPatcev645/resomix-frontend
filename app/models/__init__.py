@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 from sqlalchemy.ext.declarative import declarative_base
 
 # Create SQLAlchemy Base class
@@ -17,16 +18,16 @@ from .purchase import Purchase, UserSubscription
 from .feedback import Feedback
 from .contact import Contact
 from .user import (
-    User, 
-    EmailVerificationToken, 
-    PasswordResetToken, 
+    User,
+    EmailVerificationToken,
+    PasswordResetToken,
     TwoFactorEmailCode,
     UserSession,
     UserAuthProvider,
-    Role, 
-    Permission, 
-    RolePermission, 
-    UserRole
+    Role,
+    Permission,
+    RolePermission,
+    UserRole,
 )
 from .log import SystemLog
 from .waitlist import Waitlist
@@ -35,23 +36,37 @@ from .spotify_app import SpotifyApp, UserSpotifyApp
 
 # Make models available at package level
 __all__ = [
-    "Base", 
-    "Artist", "Label", "Genre", "Album", 
-    "Track", "TrackArtist",
-    "Playlist", "PlaylistTrack",
+    "Base",
+    "Artist",
+    "Label",
+    "Genre",
+    "Album",
+    "Track",
+    "TrackArtist",
+    "Playlist",
+    "PlaylistTrack",
     "UserPlaylistEngagement",
     "PlaylistTransferTrack",
-    "TrackRating", "PlaylistRating",
-    "Purchase", "UserSubscription",
-    "Feedback", "Contact",
+    "TrackRating",
+    "PlaylistRating",
+    "Purchase",
+    "UserSubscription",
+    "Feedback",
+    "Contact",
     "User",
     "EmailVerificationToken",
-    "PasswordResetToken", 
+    "PasswordResetToken",
     "TwoFactorEmailCode",
     "UserSession",
     "UserAuthProvider",
-    "Role", "Permission", "RolePermission", "UserRole",
-    "SystemLog", "Waitlist",
-    "OperationType", "UserOperationLimit",
-    "SpotifyApp", "UserSpotifyApp"
+    "Role",
+    "Permission",
+    "RolePermission",
+    "UserRole",
+    "SystemLog",
+    "Waitlist",
+    "OperationType",
+    "UserOperationLimit",
+    "SpotifyApp",
+    "UserSpotifyApp",
 ]

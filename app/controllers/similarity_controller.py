@@ -1031,7 +1031,7 @@ class SimilarityController:
                 if track_int_id is None:
                     try:
                         track_int_id = int(track_id) if track_id.isdigit() else None
-                    except:
+                    except Exception:
                         track_int_id = None
 
                 self.logging_service.log(
@@ -1076,7 +1076,7 @@ class SimilarityController:
             if track_int_id is None:
                 try:
                     track_int_id = int(track_id) if track_id.isdigit() else None
-                except:
+                except Exception:
                     track_int_id = None
 
             generated_playlist_uuid = similarity_results.get("playlist")["id"]
@@ -1128,7 +1128,7 @@ class SimilarityController:
             if track_int_id is None:
                 try:
                     track_int_id = int(track_id) if track_id.isdigit() else None
-                except:
+                except Exception:
                     track_int_id = None
 
             import traceback
