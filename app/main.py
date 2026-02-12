@@ -208,6 +208,29 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
+
+# Add security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """
+    Middleware to add security headers to all responses.
+    Prevents MIME-sniffing attacks and other security vulnerabilities.
+    """
+    response = await call_next(request)
+
+    # Prevent browsers from MIME-sniffing (helps prevent XSS)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Optional: Add other security headers for defense-in-depth
+    # Prevent clickjacking attacks
+    response.headers["X-Frame-Options"] = "DENY"
+
+    # Control how much referrer information is passed
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    return response
+
+
 # Add rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)

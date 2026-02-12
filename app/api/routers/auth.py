@@ -15,7 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.auth_controller import AuthController
 from app.api.dependencies.database import get_database_session
+from app.api.dependencies.auth import get_current_user
 from app.api.middlewares.rate_limit import limiter, auth_rate_limit
+from app.models.user import User
 from app.schemas.auth import (
     RegisterRequest,
     RegisterResponse,
@@ -91,9 +93,7 @@ async def register(
     summary="User Login",
     description="Authenticate user with email/username and password.",
     response_description="Login successful, returns tokens or 2FA requirement",
-    responses={
-        401: {"model": ErrorResponse, "description": "Invalid credentials"}
-    },
+    responses={401: {"model": ErrorResponse, "description": "Invalid credentials"}},
 )
 @limiter.limit(auth_rate_limit("login"))
 async def login(
@@ -224,7 +224,9 @@ async def request_password_reset(
     Sends reset link via email. Always returns success for security
     (doesn't reveal if email exists).
     """
-    return await auth_controller.request_password_reset(db, request, reset_request.email)
+    return await auth_controller.request_password_reset(
+        db, request, reset_request.email
+    )
 
 
 @router.post(
@@ -240,7 +242,7 @@ async def request_password_reset(
             "description": "Invalid/expired token or weak password",
         }
     },
-) 
+)
 @limiter.limit("5/minute")
 async def reset_password(
     request: Request,
@@ -288,9 +290,9 @@ async def refresh_token(
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token not found in cookie"
+            detail="Refresh token not found in cookie",
         )
-    
+
     return await auth_controller.refresh_token(db, request, refresh_token)
 
 
@@ -320,9 +322,9 @@ async def logout(
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token not found in cookie"
+            detail="Refresh token not found in cookie",
         )
-    
+
     return await auth_controller.logout(db, request, refresh_token)
 
 
@@ -331,22 +333,21 @@ async def logout(
     response_model=MessageResponse,
     status_code=200,
     summary="Logout All Devices",
-    description="Logout from all sessions (all devices).",
+    description="Logout from all sessions (all devices). Requires authentication.",
     response_description="Logged out from all devices",
 )
 async def logout_all(
     request: Request,
-    user_id: int,
     db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Logout from all devices.
 
-    This endpoint revokes all user sessions:
-    - **user_id**: User ID (from authenticated user)
+    This endpoint revokes all user sessions for the authenticated user.
+    User ID is automatically extracted from the JWT token.
 
     Invalidates all refresh tokens. User must login again on all devices.
-    Note: This should be protected by authentication middleware.
+    Requires valid JWT access token in Authorization header.
     """
-    return await auth_controller.logout_all(db, request, user_id)
-
+    return await auth_controller.logout_all(db, request, current_user.id)

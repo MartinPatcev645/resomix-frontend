@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.rating_controller import RatingController
-from app.api.dependencies.auth import get_api_key, get_current_user_optional
+from app.api.dependencies.auth import get_api_key, get_current_user
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.rating import (
@@ -29,7 +29,7 @@ from app.schemas.rating import (
     PlaylistRatingRequest,
     RatingOperationResponse,
     RatingStatsResponse,
-    RatingErrorResponse
+    RatingErrorResponse,
 )
 
 router = APIRouter(
@@ -38,8 +38,8 @@ router = APIRouter(
     responses={
         404: {"model": RatingErrorResponse},
         422: {"model": RatingErrorResponse},
-        500: {"model": RatingErrorResponse}
-    }
+        500: {"model": RatingErrorResponse},
+    },
 )
 
 # Initialize controller
@@ -55,37 +55,31 @@ rating_controller = RatingController()
     responses={
         200: {
             "model": RatingOperationResponse,
-            "description": "Track rated successfully"
+            "description": "Track rated successfully",
         },
         404: {
             "model": RatingErrorResponse,
-            "description": "Track or playlist not found"
+            "description": "Track or playlist not found",
         },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid rating data"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        422: {"model": RatingErrorResponse, "description": "Invalid rating data"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def rate_track_endpoint(
     request: Request,
     request_data: TrackRatingRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Rate a track with similarity feedback within a playlist context.
-    
+
     - **track_id**: The UUID of the track to rate
     - **playlist_id**: The UUID of the playlist from which the rating is being submitted
     - **rating**: Rating value - 0 (not similar) or 1 (similar)
     - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
-    
+
     Note: If authenticated via JWT, the user_id from the token will be used automatically.
     """
     return await rating_controller.rate_track(db, request, request_data, current_user)
@@ -99,35 +93,31 @@ async def rate_track_endpoint(
     responses={
         200: {
             "model": RatingOperationResponse,
-            "description": "Track rating retrieved successfully"
+            "description": "Track rating retrieved successfully",
         },
-        404: {
-            "model": RatingErrorResponse,
-            "description": "Track rating not found"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": RatingErrorResponse, "description": "Track rating not found"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def get_track_rating_endpoint(
     request: Request,
     track_id: str = Path(..., description="Track UUID"),
     playlist_id: str = Path(..., description="Playlist UUID"),
-    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Get user's rating for a specific track within a playlist context.
-    
+
+    User ID is automatically extracted from JWT token if authenticated.
+
     - **track_id**: The UUID of the track
     - **playlist_id**: The UUID of the playlist
-    - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
     """
-    return await rating_controller.get_track_rating(db, request, track_id, user_id, playlist_id, current_user)
+    return await rating_controller.get_track_rating(
+        db, request, track_id, None, playlist_id, current_user
+    )
 
 
 @router.delete(
@@ -138,35 +128,31 @@ async def get_track_rating_endpoint(
     responses={
         200: {
             "model": RatingOperationResponse,
-            "description": "Track rating deleted successfully"
+            "description": "Track rating deleted successfully",
         },
-        404: {
-            "model": RatingErrorResponse,
-            "description": "Track rating not found"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": RatingErrorResponse, "description": "Track rating not found"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def delete_track_rating_endpoint(
     request: Request,
     track_id: str = Path(..., description="Track UUID"),
     playlist_id: str = Path(..., description="Playlist UUID"),
-    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Delete user's rating for a specific track within a playlist context.
-    
+
+    User ID is automatically extracted from JWT token if authenticated.
+
     - **track_id**: The UUID of the track
     - **playlist_id**: The UUID of the playlist
-    - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
     """
-    return await rating_controller.delete_track_rating(db, request, track_id, user_id, playlist_id, current_user)
+    return await rating_controller.delete_track_rating(
+        db, request, track_id, None, playlist_id, current_user
+    )
 
 
 @router.get(
@@ -177,29 +163,23 @@ async def delete_track_rating_endpoint(
     responses={
         200: {
             "model": RatingStatsResponse,
-            "description": "Track rating statistics retrieved successfully"
+            "description": "Track rating statistics retrieved successfully",
         },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid track ID"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        422: {"model": RatingErrorResponse, "description": "Invalid track ID"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def get_track_rating_stats_endpoint(
     request: Request,
     track_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     """
     Get rating statistics for a specific track.
-    
+
     Returns the total count and distribution of ratings (similar/not similar).
-    
+
     - **track_id**: The UUID of the track
     """
     return await rating_controller.get_track_rating_stats(db, request, track_id)
@@ -214,38 +194,31 @@ async def get_track_rating_stats_endpoint(
     responses={
         200: {
             "model": RatingOperationResponse,
-            "description": "Playlist rated successfully"
+            "description": "Playlist rated successfully",
         },
-        404: {
-            "model": RatingErrorResponse,
-            "description": "Playlist not found"
-        },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid rating data"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": RatingErrorResponse, "description": "Playlist not found"},
+        422: {"model": RatingErrorResponse, "description": "Invalid rating data"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def rate_playlist_endpoint(
     request: Request,
     request_data: PlaylistRatingRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Rate a playlist with star rating and optional message.
-    
+
     - **playlist_id**: The ID of the playlist to rate (positive integer)
     - **rating**: Rating value from 0 to 3 stars
     - **message**: Optional message/feedback about the playlist (max 1000 characters)
     - **user_id**: Optional user ID for the rating (UUID format) - overridden by JWT if present
     """
-    return await rating_controller.rate_playlist(db, request, request_data, current_user)
+    return await rating_controller.rate_playlist(
+        db, request, request_data, current_user
+    )
 
 
 @router.get(
@@ -256,37 +229,30 @@ async def rate_playlist_endpoint(
     responses={
         200: {
             "model": RatingOperationResponse,
-            "description": "Playlist rating retrieved successfully"
+            "description": "Playlist rating retrieved successfully",
         },
-        404: {
-            "model": RatingErrorResponse,
-            "description": "Rating not found"
-        },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid playlist ID"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": RatingErrorResponse, "description": "Rating not found"},
+        422: {"model": RatingErrorResponse, "description": "Invalid playlist ID"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def get_playlist_rating_endpoint(
     request: Request,
     playlist_id: int,
-    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Get user's rating for a specific playlist.
-    
+
+    User ID is automatically extracted from JWT token if authenticated.
+
     - **playlist_id**: The ID of the playlist
-    - **user_id**: Optional user ID (query parameter) - overridden by JWT if present
     """
-    return await rating_controller.get_playlist_rating(db, request, playlist_id, user_id, current_user)
+    return await rating_controller.get_playlist_rating(
+        db, request, playlist_id, None, current_user
+    )
 
 
 @router.delete(
@@ -297,37 +263,30 @@ async def get_playlist_rating_endpoint(
     responses={
         200: {
             "model": RatingOperationResponse,
-            "description": "Playlist rating deleted successfully"
+            "description": "Playlist rating deleted successfully",
         },
-        404: {
-            "model": RatingErrorResponse,
-            "description": "Rating not found"
-        },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid playlist ID"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": RatingErrorResponse, "description": "Rating not found"},
+        422: {"model": RatingErrorResponse, "description": "Invalid playlist ID"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def delete_playlist_rating_endpoint(
     request: Request,
     playlist_id: int,
-    user_id: Optional[str] = Query(None, description="User ID (optional)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Delete user's rating for a specific playlist.
-    
+
+    User ID is automatically extracted from JWT token if authenticated.
+
     - **playlist_id**: The ID of the playlist
-    - **user_id**: Optional user ID (query parameter) - overridden by JWT if present
     """
-    return await rating_controller.delete_playlist_rating(db, request, playlist_id, user_id, current_user)
+    return await rating_controller.delete_playlist_rating(
+        db, request, playlist_id, None, current_user
+    )
 
 
 @router.get(
@@ -338,29 +297,23 @@ async def delete_playlist_rating_endpoint(
     responses={
         200: {
             "model": RatingStatsResponse,
-            "description": "Playlist rating statistics retrieved successfully"
+            "description": "Playlist rating statistics retrieved successfully",
         },
-        422: {
-            "model": RatingErrorResponse,
-            "description": "Invalid playlist ID"
-        },
-        500: {
-            "model": RatingErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        422: {"model": RatingErrorResponse, "description": "Invalid playlist ID"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
 )
 async def get_playlist_rating_stats_endpoint(
     request: Request,
     playlist_id: int,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     """
     Get rating statistics for a specific playlist.
-    
+
     Returns the total count, average rating, and distribution of ratings (0-3 stars).
-    
+
     - **playlist_id**: The ID of the playlist
     """
     return await rating_controller.get_playlist_rating_stats(db, request, playlist_id)

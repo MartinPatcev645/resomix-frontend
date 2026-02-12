@@ -25,7 +25,7 @@ from app.api.dependencies.database import get_database_session
 from app.schemas.waitlist import (
     WaitlistRequest,
     WaitlistSuccessResponse,
-    WaitlistErrorResponse
+    WaitlistErrorResponse,
 )
 
 router = APIRouter(
@@ -34,8 +34,8 @@ router = APIRouter(
     responses={
         404: {"model": WaitlistErrorResponse},
         422: {"model": WaitlistErrorResponse},
-        500: {"model": WaitlistErrorResponse}
-    }
+        500: {"model": WaitlistErrorResponse},
+    },
 )
 
 # Initialize controller
@@ -50,61 +50,54 @@ waitlist_controller = WaitlistController()
     responses={
         200: {
             "model": WaitlistSuccessResponse,
-            "description": "Successfully added to waitlist"
+            "description": "Successfully added to waitlist",
         },
         422: {
             "model": WaitlistErrorResponse,
-            "description": "Invalid email or email already exists in waitlist"
+            "description": "Invalid email or email already exists in waitlist",
         },
-        500: {
-            "model": WaitlistErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        500: {"model": WaitlistErrorResponse, "description": "Internal server error"},
+    },
 )
 async def join_waitlist_endpoint(
     request: Request,
     request_data: WaitlistRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     """
     Add an email address to the waitlist.
-    
+
     - **email**: The email address to add to the waitlist
     """
     return await waitlist_controller.add_to_waitlist(db, request, request_data.dict())
 
 
-@router.get(
-    "/",
+@router.post(
+    "/status",
     response_model=WaitlistSuccessResponse,
     summary="Check Waitlist Status",
     description="Check if an email address is already in the waitlist and get its status.",
     responses={
-        200: {
-            "model": WaitlistSuccessResponse,
-            "description": "Waitlist entry found"
-        },
+        200: {"model": WaitlistSuccessResponse, "description": "Waitlist entry found"},
         404: {
             "model": WaitlistErrorResponse,
-            "description": "Email not found in waitlist"
+            "description": "Email not found in waitlist",
         },
-        500: {
-            "model": WaitlistErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        500: {"model": WaitlistErrorResponse, "description": "Internal server error"},
+    },
 )
 async def check_waitlist_status_endpoint(
     request: Request,
-    email: str = Query(..., description="Email address to check in waitlist"),
+    request_data: WaitlistRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     """
     Check if an email address is in the waitlist and get its status.
-    
-    - **email**: The email address to check (query parameter)
+
+    Email is sent in request body for security (not exposed in URLs/logs).
+
+    - **email**: The email address to check
     """
-    return await waitlist_controller.get_waitlist_entry(db, request, email)
+    return await waitlist_controller.get_waitlist_entry(db, request, request_data.email)
