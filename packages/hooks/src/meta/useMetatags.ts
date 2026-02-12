@@ -41,11 +41,14 @@ export const extractCoverArt = async (file: File, options: CoverArtOptions = {})
           if (tag.tags && tag.tags.picture) {
             try {
               const { data, format } = tag.tags.picture;
-              let base64String = "";
-              for (let i = 0; i < data.length; i++) {
-                base64String += String.fromCharCode(data[i]);
+              // Efficiently convert array of numbers to binary string
+              const uint8Array = new Uint8Array(data);
+              let binary = "";
+              const len = uint8Array.byteLength;
+              for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(uint8Array[i]);
               }
-              const coverUrl = `data:${format};base64,${window.btoa(base64String)}`;
+              const coverUrl = `data:${format};base64,${window.btoa(binary)}`;
               
               if (debug) {
                 console.log('Cover art extracted successfully:', {
@@ -297,11 +300,14 @@ export const extractAudioMetadata = async (file: File, options: MetadataOptions 
             if (includeCoverArt && tags.picture) {
               try {
                 const { data, format } = tags.picture;
-                let base64String = "";
-                for (let i = 0; i < data.length; i++) {
-                  base64String += String.fromCharCode(data[i]);
+                // Efficiently convert array of numbers to binary string
+                const uint8Array = new Uint8Array(data);
+                let binary = "";
+                const len = uint8Array.byteLength;
+                for (let i = 0; i < len; i++) {
+                  binary += String.fromCharCode(uint8Array[i]);
                 }
-                basicMetadata.coverUrl = `data:${format};base64,${window.btoa(base64String)}`;
+                basicMetadata.coverUrl = `data:${format};base64,${window.btoa(binary)}`;
               } catch (error) {
                 console.warn('Could not extract cover art:', error);
               }

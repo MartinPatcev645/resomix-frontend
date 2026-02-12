@@ -73,7 +73,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
   // Get ctx and size in real pixels
   const getCtxAndDevSize = useCallback((canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const width = canvas.width;   // device px
     const height = canvas.height; // device px
     return { ctx, width, height };
