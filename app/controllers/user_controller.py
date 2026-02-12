@@ -41,8 +41,12 @@ class UserController:
 
         trimmed_query = (query or "").strip()
         if not trimmed_query:
-            response_data = format_response(success=False, error="Query parameter cannot be empty")
-            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response_data)
+            response_data = format_response(
+                success=False, error="Query parameter cannot be empty"
+            )
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST, content=response_data
+            )
 
         try:
             results = await self.user_service.search_users(
@@ -64,14 +68,20 @@ class UserController:
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"query": trimmed_query, "limit": limit, "result_count": len(results)},
+                metadata={
+                    "query": trimmed_query,
+                    "limit": limit,
+                    "result_count": len(results),
+                },
             )
 
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
 
         except Exception as exc:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error="Failed to search users")
+            response_data = format_response(
+                success=False, error="Failed to search users"
+            )
 
             self.logging_service.log(
                 async_db=db,
@@ -130,7 +140,9 @@ class UserController:
                     "is_email_verified": user.is_email_verified,
                     "is_two_factor_enabled": user.is_two_factor_enabled,
                     "two_factor_method": user.two_factor_method,
-                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                    "created_at": (
+                        user.created_at.isoformat() if user.created_at else None
+                    ),
                 },
             )
 
@@ -169,7 +181,11 @@ class UserController:
             return JSONResponse(status_code=e.status_code, content=response_data)
 
     async def update_profile(
-        self, db: AsyncSession, request: Request, user_id: int, profile_data: Dict[str, Any]
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_id: int,
+        profile_data: Dict[str, Any],
     ) -> JSONResponse:
         """
         Update user profile.
@@ -246,7 +262,11 @@ class UserController:
             return JSONResponse(status_code=e.status_code, content=response_data)
 
     async def change_password(
-        self, db: AsyncSession, request: Request, user_id: int, password_data: Dict[str, Any]
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_id: int,
+        password_data: Dict[str, Any],
     ) -> JSONResponse:
         """
         Change user password.
@@ -353,7 +373,10 @@ class UserController:
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error=str(e))
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while retrieving sessions",
+            )
 
             self.logging_service.log(
                 async_db=db,
@@ -365,6 +388,7 @@ class UserController:
                 request=request,
                 status_code=500,
                 duration_ms=duration_ms,
+                error=e,
                 metadata={"user_id": user_id, "error": str(e)},
             )
 
@@ -391,7 +415,9 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            await self.user_service.revoke_session(db=db, user_id=user_id, session_id=session_id)
+            await self.user_service.revoke_session(
+                db=db, user_id=user_id, session_id=session_id
+            )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
@@ -427,7 +453,11 @@ class UserController:
                 request=request,
                 status_code=e.status_code,
                 duration_ms=duration_ms,
-                metadata={"user_id": user_id, "session_id": session_id, "error": e.detail},
+                metadata={
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "error": e.detail,
+                },
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
@@ -451,7 +481,9 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            user = await self.user_service.enable_2fa(db=db, user_id=user_id, method=method)
+            user = await self.user_service.enable_2fa(
+                db=db, user_id=user_id, method=method
+            )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
@@ -516,7 +548,9 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            await self.user_service.disable_2fa(db=db, user_id=user_id, password=password)
+            await self.user_service.disable_2fa(
+                db=db, user_id=user_id, password=password
+            )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
@@ -580,14 +614,14 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            await self.user_service.delete_account(db=db, user_id=user_id, password=password)
+            await self.user_service.delete_account(
+                db=db, user_id=user_id, password=password
+            )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=True,
-                data={
-                    "message": "Account deleted successfully"
-                },
+                data={"message": "Account deleted successfully"},
             )
 
             self.logging_service.log(
@@ -623,4 +657,3 @@ class UserController:
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
- 

@@ -46,6 +46,7 @@ from database.connection import async_engine
 
 # Import FFmpeg check utility
 from app.services.audio_service import AudioService
+from app.services.logging_service import LoggingService
 
 # Import response formatting utility
 from app.utils.response_utils import format_response
@@ -75,12 +76,29 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """
-    Handle HTTP exceptions and return standardized format.
-    """
+    """Handler for HTTP exceptions (e.g., 404, 401, 500)"""
+    # Create logging service instance
+    logging_service = LoggingService()
+
+    # Log the exception internally
+    logging_service.log(
+        level="WARNING" if exc.status_code < 500 else "ERROR",
+        category="INTERNAL",
+        action="http_exception",
+        message=f"HTTP Exception {exc.status_code}: {exc.detail}",
+        request=request,
+        status_code=exc.status_code,
+        error=exc,
+    )
+
+    # For 500 internal server errors, never expose the detail to the client
+    error_message = exc.detail
+    if exc.status_code == 500:
+        error_message = "An internal server error occurred. Please try again later."
+
     return JSONResponse(
         status_code=exc.status_code,
-        content=format_response(success=False, error=exc.detail),
+        content=format_response(success=False, error=error_message),
     )
 
 

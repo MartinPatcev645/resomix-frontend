@@ -31,36 +31,46 @@ from app.models.user import User
 
 class RatingController:
     """Controller for rating-related HTTP requests."""
-    
+
     def __init__(self):
         """Initialize rating controller."""
         self.rating_service = RatingService()
         self.logging_service = LoggingService()
         self.playlist_service = PlaylistService()
-    
+
     # Track Rating Endpoints
-    async def rate_track(self, db: AsyncSession, request: Request, request_data: TrackRatingRequest, current_user: Optional[User] = None) -> JSONResponse:
+    async def rate_track(
+        self,
+        db: AsyncSession,
+        request: Request,
+        request_data: TrackRatingRequest,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """Rate a track endpoint handler."""
         start_time = time.time()
         try:
             correlation_id = self.logging_service.generate_correlation_id()
-            
+
             # Prioritize JWT user over request body user_id
             user_id = current_user.id if current_user else request_data.user_id
-            
+
             result = await self.rating_service.rate_track(
-                db, 
+                db,
                 request_data.track_id,  # Now a string UUID
                 request_data.playlist_id,  # Playlist UUID
-                request_data.rating, 
-                user_id
+                request_data.rating,
+                user_id,
             )
             # Resolve integer IDs for logging
-            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, request_data.track_id)
+            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(
+                db, request_data.track_id
+            )
             track_int_id = track_obj.id if track_obj else None
-            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, request_data.playlist_id)
+            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                db, request_data.playlist_id
+            )
             playlist_int_id = playlist_obj.id if playlist_obj else None
-            
+
             if result["success"]:
                 # log success
                 duration_ms = (time.time() - start_time) * 1000
@@ -90,17 +100,18 @@ class RatingController:
                         "playlist_uuid": request_data.playlist_id,
                         "rating": request_data.rating,
                         "result": result,
-                        "response": result
+                        "response": result,
                     },
-                    operation="track_rating"
+                    operation="track_rating",
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
+                error_code = (
+                    status.HTTP_404_NOT_FOUND
+                    if "not found" in result["error"].lower()
+                    else status.HTTP_422_UNPROCESSABLE_ENTITY
+                )
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -116,7 +127,11 @@ class RatingController:
                     client_ip=request.client.host if request.client else None,
                     user_agent=request.headers.get("user-agent"),
                     referer=request.headers.get("referer"),
-                    status_code=error_code.value if hasattr(error_code, 'value') else int(error_code),
+                    status_code=(
+                        error_code.value
+                        if hasattr(error_code, "value")
+                        else int(error_code)
+                    ),
                     response_size=len(str(result)),
                     duration_ms=duration_ms,
                     track_id=track_int_id,
@@ -127,15 +142,12 @@ class RatingController:
                         "playlist_uuid": request_data.playlist_id,
                         "rating": request_data.rating,
                         "error": result.get("error"),
-                        "response": result
+                        "response": result,
                     },
-                    operation="track_rating"
+                    operation="track_rating",
                 )
-                return JSONResponse(
-                    status_code=error_code,
-                    content=result
-                )
-                
+                return JSONResponse(status_code=error_code, content=result)
+
         except ValueError as e:
             # Handle Pydantic validation errors
             duration_ms = (time.time() - start_time) * 1000
@@ -155,22 +167,20 @@ class RatingController:
                 user_agent=request.headers.get("user-agent"),
                 referer=request.headers.get("referer"),
                 status_code=422,
-                response_size=len(str(error_response)) if 'error_response' in locals() else None,
+                response_size=(
+                    len(str(error_response)) if "error_response" in locals() else None
+                ),
                 duration_ms=duration_ms,
                 context="Track rating input validation",
-                metadata={
-                    "error": str(e),
-                    "validation_step": "input_validation"
-                },
-                operation="track_rating"
+                metadata={"error": str(e), "validation_step": "input_validation"},
+                operation="track_rating",
             )
             error_response = {
                 "success": False,
-                "error": f"Validation failed: {str(e)}"
+                "error": "Validation error: The provided rating data is invalid",
             }
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=error_response
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response
             )
         except ValidationError as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -190,22 +200,20 @@ class RatingController:
                 user_agent=request.headers.get("user-agent"),
                 referer=request.headers.get("referer"),
                 status_code=422,
-                response_size=len(str(error_response)) if 'error_response' in locals() else None,
+                response_size=(
+                    len(str(error_response)) if "error_response" in locals() else None
+                ),
                 duration_ms=duration_ms,
                 context="Track rating validation error",
-                metadata={
-                    "error": str(e),
-                    "validation_step": "service_validation"
-                },
-                operation="track_rating"
+                metadata={"error": str(e), "validation_step": "service_validation"},
+                operation="track_rating",
             )
             error_response = {
                 "success": False,
-                "error": f"Validation error: {str(e)}"
+                "error": "Validation error: The provided rating data is invalid",
             }
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=error_response
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response
             )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -217,32 +225,46 @@ class RatingController:
                 error=e,
                 context="rate_track_controller",
                 duration_ms=duration_ms,
-                correlation_id=correlation_id
+                correlation_id=correlation_id,
             )
             error_response = {
                 "success": False,
-                "error": "Internal server error occurred while processing the rating"
+                "error": "Internal server error occurred while processing the rating",
             }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=error_response
+                content=error_response,
             )
-    
-    async def get_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
+
+    async def get_track_rating(
+        self,
+        db: AsyncSession,
+        request: Request,
+        track_id: str,
+        user_id: Optional[str],
+        playlist_id: str,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """Get track rating endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             # Prioritize JWT user over query param user_id
             final_user_id = current_user.id if current_user else user_id
-            
-            result = await self.rating_service.get_track_rating(db, track_id, playlist_id, final_user_id)
+
+            result = await self.rating_service.get_track_rating(
+                db, track_id, playlist_id, final_user_id
+            )
             # Resolve integer IDs for logging
-            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
+            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(
+                db, track_id
+            )
             track_int_id = track_obj.id if track_obj else None
-            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                db, playlist_id
+            )
             playlist_int_id = playlist_obj.id if playlist_obj else None
-            
+
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -266,13 +288,15 @@ class RatingController:
                     track_id=track_int_id,
                     playlist_id=playlist_int_id,
                     context="Track rating retrieval",
-                    metadata={"rating": result.get("rating"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
-                    operation="get_track_rating"
+                    metadata={
+                        "rating": result.get("rating"),
+                        "response": result,
+                        "track_uuid": track_id,
+                        "playlist_uuid": playlist_id,
+                    },
+                    operation="get_track_rating",
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -296,14 +320,19 @@ class RatingController:
                     track_id=track_int_id,
                     playlist_id=playlist_int_id,
                     context="Track rating lookup",
-                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
-                    operation="get_track_rating"
+                    metadata={
+                        "rating": result.get("rating"),
+                        "error": result.get("error"),
+                        "response": result,
+                        "track_uuid": track_id,
+                        "playlist_uuid": playlist_id,
+                    },
+                    operation="get_track_rating",
                 )
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=result
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log(
@@ -322,37 +351,55 @@ class RatingController:
                 user_agent=request.headers.get("user-agent"),
                 referer=request.headers.get("referer"),
                 status_code=500,
-                response_size=len(str(error_response)) if 'error_response' in locals() else None,
+                response_size=(
+                    len(str(error_response)) if "error_response" in locals() else None
+                ),
                 duration_ms=duration_ms,
                 error=e,
                 context="get_track_rating",
-                metadata={"exception_type": type(e).__name__} if 'e' in locals() else None,
-                operation="get_track_rating"
+                metadata=(
+                    {"exception_type": type(e).__name__} if "e" in locals() else None
+                ),
+                operation="get_track_rating",
             )
             error_response = {
                 "success": False,
-                "error": "Internal server error occurred while retrieving the rating"
+                "error": "Internal server error occurred while retrieving the rating",
             }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=error_response
+                content=error_response,
             )
-    
-    async def delete_track_rating(self, db: AsyncSession, request: Request, track_id: str, user_id: Optional[str], playlist_id: str, current_user: Optional[User] = None) -> JSONResponse:
+
+    async def delete_track_rating(
+        self,
+        db: AsyncSession,
+        request: Request,
+        track_id: str,
+        user_id: Optional[str],
+        playlist_id: str,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """Delete track rating endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             # Prioritize JWT user over query param user_id
             final_user_id = current_user.id if current_user else user_id
-            
-            result = await self.rating_service.delete_track_rating(db, track_id, playlist_id, final_user_id)
+
+            result = await self.rating_service.delete_track_rating(
+                db, track_id, playlist_id, final_user_id
+            )
             # Resolve integer IDs for logging
-            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(db, track_id)
+            track_obj = await self.playlist_service.track_repository.async_get_by_uuid(
+                db, track_id
+            )
             track_int_id = track_obj.id if track_obj else None
-            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
+            playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                db, playlist_id
+            )
             playlist_int_id = playlist_obj.id if playlist_obj else None
-            
+
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -376,13 +423,15 @@ class RatingController:
                     track_id=track_int_id,
                     playlist_id=playlist_int_id,
                     context="Track rating deletion",
-                    metadata={"rating": result.get("rating"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
-                    operation="delete_track_rating"
+                    metadata={
+                        "rating": result.get("rating"),
+                        "response": result,
+                        "track_uuid": track_id,
+                        "playlist_uuid": playlist_id,
+                    },
+                    operation="delete_track_rating",
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -406,14 +455,19 @@ class RatingController:
                     track_id=track_int_id,
                     playlist_id=playlist_int_id,
                     context="Track rating deletion lookup",
-                    metadata={"rating": result.get("rating"), "error": result.get("error"), "response": result, "track_uuid": track_id, "playlist_uuid": playlist_id},
-                    operation="delete_track_rating"
+                    metadata={
+                        "rating": result.get("rating"),
+                        "error": result.get("error"),
+                        "response": result,
+                        "track_uuid": track_id,
+                        "playlist_uuid": playlist_id,
+                    },
+                    operation="delete_track_rating",
                 )
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=result
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
                 )
-                
+
         except Exception as e:
             self.logging_service.log(
                 async_db=db,
@@ -434,25 +488,27 @@ class RatingController:
                 duration_ms=(time.time() - start_time) * 1000,
                 error=e,
                 context="delete_track_rating",
-                operation="delete_track_rating"
+                operation="delete_track_rating",
             )
             error_response = {
                 "success": False,
-                "error": "Internal server error occurred while deleting the rating"
+                "error": "Internal server error occurred while deleting the rating",
             }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=error_response
+                content=error_response,
             )
-    
-    async def get_track_rating_stats(self, db: AsyncSession, request: Request, track_id: str) -> JSONResponse:
+
+    async def get_track_rating_stats(
+        self, db: AsyncSession, request: Request, track_id: str
+    ) -> JSONResponse:
         """
         Get rating statistics for a specific track.
-        
+
         Args:
             db: Database session
             track_id: Track UUID
-            
+
         Returns:
             JSON response with rating statistics
         """
@@ -462,7 +518,9 @@ class RatingController:
             result = await self.rating_service.get_track_rating_stats(db, track_id)
             duration_ms = None
             try:
-                duration_ms = (time.time() - start_time) * 1000  # start_time defined earlier in similar endpoints
+                duration_ms = (
+                    time.time() - start_time
+                ) * 1000  # start_time defined earlier in similar endpoints
             except Exception:
                 pass
             self.logging_service.log(
@@ -484,14 +542,15 @@ class RatingController:
                 response_size=len(str(result)),
                 duration_ms=duration_ms,
                 context="Track rating statistics retrieval",
-                metadata={"statistics": result, "response": result, "track_uuid": track_id},
-                operation="get_track_rating_stats"
+                metadata={
+                    "statistics": result,
+                    "response": result,
+                    "track_uuid": track_id,
+                },
+                operation="get_track_rating_stats",
             )
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=result
-            )
-                
+            return JSONResponse(status_code=status.HTTP_200_OK, content=result)
+
         except Exception as e:
             self.logging_service.log(
                 async_db=db,
@@ -511,37 +570,47 @@ class RatingController:
                 status_code=500,
                 error=e,
                 context="get_track_rating_stats",
-                operation="get_track_rating_stats"
+                operation="get_track_rating_stats",
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
                     success=False,
-                    error="An internal server error occurred while retrieving rating statistics"
-                )
+                    error="An internal server error occurred while retrieving rating statistics",
+                ),
             )
-    
+
     # Playlist Rating Endpoints
-    async def rate_playlist(self, db: AsyncSession, request: Request, request_data: PlaylistRatingRequest, current_user: Optional[User] = None) -> JSONResponse:
+    async def rate_playlist(
+        self,
+        db: AsyncSession,
+        request: Request,
+        request_data: PlaylistRatingRequest,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """Rate a playlist endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
-        playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, request_data.playlist_id)
+
+        playlist = (
+            await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                db, request_data.playlist_id
+            )
+        )
         playlist_int_id = playlist.id if playlist else None
-        
+
         try:
             # Prioritize JWT user over request body user_id
             user_id = current_user.id if current_user else request_data.user_id
-            
+
             result = await self.rating_service.rate_playlist(
-                db, 
+                db,
                 request_data.playlist_id,  # Now a string UUID
                 request_data.rating,
                 user_id,
-                request_data.message
+                request_data.message,
             )
-            
+
             if result["success"]:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -570,17 +639,18 @@ class RatingController:
                         "user_id": request_data.user_id,
                         "message": request_data.message,
                         "result": result,
-                        "response": result
+                        "response": result,
                     },
-                    operation="playlist_rating"
+                    operation="playlist_rating",
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 duration_ms = (time.time() - start_time) * 1000
-                error_code = status.HTTP_404_NOT_FOUND if "not found" in result["error"].lower() else status.HTTP_422_UNPROCESSABLE_ENTITY
+                error_code = (
+                    status.HTTP_404_NOT_FOUND
+                    if "not found" in result["error"].lower()
+                    else status.HTTP_422_UNPROCESSABLE_ENTITY
+                )
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -608,20 +678,17 @@ class RatingController:
                         "message": request_data.message,
                         "error": result.get("error"),
                         "validation_step": "playlist_rating_processing",
-                        "response": result
+                        "response": result,
                     },
-                    operation="playlist_rating"
+                    operation="playlist_rating",
                 )
-                return JSONResponse(
-                    status_code=error_code,
-                    content=result
-                )
-                
+                return JSONResponse(status_code=error_code, content=result)
+
         except ValidationError as e:
             duration_ms = (time.time() - start_time) * 1000
             error_response = {
                 "success": False,
-                "error": f"Validation error: {str(e)}"
+                "error": "Validation error: Invalid playlist rating data",
             }
             self.logging_service.log(
                 async_db=db,
@@ -650,20 +717,20 @@ class RatingController:
                     "message": request_data.message,
                     "error": str(e),
                     "validation_step": "input_validation",
-                    "response": error_response
+                    "response": error_response,
                 },
-                operation="playlist_rating"
+                operation="playlist_rating",
             )
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=error_response
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response
             )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             error_response = {
                 "success": False,
-                "error": "Internal server error occurred while processing the rating"
+                "error": "Internal server error occurred while processing the rating",
             }
             self.logging_service.log(
                 async_db=db,
@@ -694,24 +761,31 @@ class RatingController:
                     "message": request_data.message,
                     "error": "Internal server error occurred",
                     "exception_type": type(e).__name__,
-                    "response": error_response
+                    "response": error_response,
                 },
-                operation="playlist_rating"
+                operation="playlist_rating",
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=error_response
+                content=error_response,
             )
-    
-    async def get_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None, current_user: Optional[User] = None) -> JSONResponse:
+
+    async def get_playlist_rating(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: int,
+        user_id: str = None,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """
         Get user's rating for a specific playlist.
-        
+
         Args:
             db: Database session
             playlist_id: Playlist ID
             user_id: User ID (optional)
-            
+
         Returns:
             JSON response with rating data
         """
@@ -722,8 +796,7 @@ class RatingController:
             if playlist_id <= 0:
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
-                    success=False,
-                    error="playlist_id must be a positive integer"
+                    success=False, error="playlist_id must be a positive integer"
                 )
                 self.logging_service.log(
                     async_db=db,
@@ -750,20 +823,22 @@ class RatingController:
                         "provided_playlist_id": playlist_id,
                         "user_id": user_id,
                         "validation_step": "playlist_id_check",
-                        "response": response_content
+                        "response": response_content,
                     },
-                    operation="get_playlist_rating"
+                    operation="get_playlist_rating",
                 )
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content=response_content
+                    content=response_content,
                 )
-            
+
             # Prioritize JWT user over query param user_id
             final_user_id = current_user.id if current_user else user_id
-            
-            result = await self.rating_service.get_playlist_rating(db, playlist_id, final_user_id)
-            
+
+            result = await self.rating_service.get_playlist_rating(
+                db, playlist_id, final_user_id
+            )
+
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -790,14 +865,11 @@ class RatingController:
                         "playlist_id": playlist_id,
                         "user_id": user_id,
                         "rating_data": result,
-                        "response": result
+                        "response": result,
                     },
-                    operation="get_playlist_rating"
+                    operation="get_playlist_rating",
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -825,21 +897,21 @@ class RatingController:
                         "user_id": user_id,
                         "error": result.get("error"),
                         "lookup_step": "rating_search",
-                        "response": result
+                        "response": result,
                     },
-                    operation="get_playlist_rating"
+                    operation="get_playlist_rating",
                 )
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=result
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while retrieving the rating"
+                error="An internal server error occurred while retrieving the rating",
             )
             self.logging_service.log(
                 async_db=db,
@@ -868,24 +940,31 @@ class RatingController:
                     "user_id": user_id,
                     "error": "Internal server error occurred",
                     "exception_type": type(e).__name__,
-                    "response": response_content
+                    "response": response_content,
                 },
-                operation="get_playlist_rating"
+                operation="get_playlist_rating",
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=response_content
+                content=response_content,
             )
-    
-    async def delete_playlist_rating(self, db: AsyncSession, request: Request, playlist_id: int, user_id: str = None, current_user: Optional[User] = None) -> JSONResponse:
+
+    async def delete_playlist_rating(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: int,
+        user_id: str = None,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
         """
         Delete user's rating for a specific playlist.
-        
+
         Args:
             db: Database session
             playlist_id: Playlist ID
             user_id: User ID (optional)
-            
+
         Returns:
             JSON response with operation result
         """
@@ -896,8 +975,7 @@ class RatingController:
             if playlist_id <= 0:
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
-                    success=False,
-                    error="playlist_id must be a positive integer"
+                    success=False, error="playlist_id must be a positive integer"
                 )
                 self.logging_service.log(
                     async_db=db,
@@ -924,20 +1002,22 @@ class RatingController:
                         "provided_playlist_id": playlist_id,
                         "user_id": user_id,
                         "validation_step": "playlist_id_check",
-                        "response": response_content
+                        "response": response_content,
                     },
-                    operation="delete_playlist_rating"
+                    operation="delete_playlist_rating",
                 )
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content=response_content
+                    content=response_content,
                 )
-            
+
             # Prioritize JWT user over query param user_id
             final_user_id = current_user.id if current_user else user_id
-            
-            result = await self.rating_service.delete_playlist_rating(db, playlist_id, final_user_id)
-            
+
+            result = await self.rating_service.delete_playlist_rating(
+                db, playlist_id, final_user_id
+            )
+
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -964,14 +1044,11 @@ class RatingController:
                         "playlist_id": playlist_id,
                         "user_id": user_id,
                         "deletion_result": result,
-                        "response": result
+                        "response": result,
                     },
-                    operation="delete_playlist_rating"
+                    operation="delete_playlist_rating",
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=result
-                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
@@ -999,21 +1076,21 @@ class RatingController:
                         "user_id": user_id,
                         "error": result.get("error"),
                         "deletion_step": "rating_lookup",
-                        "response": result
+                        "response": result,
                     },
-                    operation="delete_playlist_rating"
+                    operation="delete_playlist_rating",
                 )
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=result
+                    status_code=status.HTTP_404_NOT_FOUND, content=result
                 )
-                
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while deleting the rating"
+                error="An internal server error occurred while deleting the rating",
             )
             self.logging_service.log(
                 async_db=db,
@@ -1042,23 +1119,25 @@ class RatingController:
                     "user_id": user_id,
                     "error": "Internal server error occurred",
                     "exception_type": type(e).__name__,
-                    "response": response_content
+                    "response": response_content,
                 },
-                operation="delete_playlist_rating"
+                operation="delete_playlist_rating",
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=response_content
+                content=response_content,
             )
-    
-    async def get_playlist_rating_stats(self, db: AsyncSession, request: Request, playlist_id: int) -> JSONResponse:
+
+    async def get_playlist_rating_stats(
+        self, db: AsyncSession, request: Request, playlist_id: int
+    ) -> JSONResponse:
         """
         Get rating statistics for a specific playlist.
-        
+
         Args:
             db: Database session
             playlist_id: Playlist ID
-            
+
         Returns:
             JSON response with rating statistics
         """
@@ -1069,8 +1148,7 @@ class RatingController:
             if playlist_id <= 0:
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
-                    success=False,
-                    error="playlist_id must be a positive integer"
+                    success=False, error="playlist_id must be a positive integer"
                 )
                 self.logging_service.log(
                     async_db=db,
@@ -1096,17 +1174,19 @@ class RatingController:
                         "error": "playlist_id must be a positive integer",
                         "provided_playlist_id": playlist_id,
                         "validation_step": "playlist_id_check",
-                        "response": response_content
+                        "response": response_content,
                     },
-                    operation="get_playlist_rating_stats"
+                    operation="get_playlist_rating_stats",
                 )
                 return JSONResponse(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content=response_content
+                    content=response_content,
                 )
-            
-            result = await self.rating_service.get_playlist_rating_stats(db, playlist_id)
-            
+
+            result = await self.rating_service.get_playlist_rating_stats(
+                db, playlist_id
+            )
+
             duration_ms = (time.time() - start_time) * 1000
             self.logging_service.log(
                 async_db=db,
@@ -1131,21 +1211,19 @@ class RatingController:
                 metadata={
                     "playlist_id": playlist_id,
                     "statistics": result,
-                    "response": result
+                    "response": result,
                 },
-                operation="get_playlist_rating_stats"
+                operation="get_playlist_rating_stats",
             )
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=result
-            )
-                
+            return JSONResponse(status_code=status.HTTP_200_OK, content=result)
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             import traceback
+
             response_content = format_response(
                 success=False,
-                error="An internal server error occurred while retrieving rating statistics"
+                error="An internal server error occurred while retrieving rating statistics",
             )
             self.logging_service.log(
                 async_db=db,
@@ -1173,11 +1251,11 @@ class RatingController:
                     "playlist_id": playlist_id,
                     "error": "Internal server error occurred",
                     "exception_type": type(e).__name__,
-                    "response": response_content
+                    "response": response_content,
                 },
-                operation="get_playlist_rating_stats"
+                operation="get_playlist_rating_stats",
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=response_content
-            ) 
+                content=response_content,
+            )

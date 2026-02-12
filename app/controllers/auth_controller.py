@@ -67,7 +67,9 @@ class AuthController:
 
             # Send verification email
             await self.email_service.send_verification_email(
-                email=user.email, username=user.username, verification_token=verification_token
+                email=user.email,
+                username=user.username,
+                verification_token=verification_token,
             )
 
             duration_ms = (time.time() - start_time) * 1000
@@ -91,10 +93,16 @@ class AuthController:
                 request=request,
                 status_code=201,
                 duration_ms=duration_ms,
-                metadata={"user_uuid": user.uuid, "email": user.email, "username": user.username},
+                metadata={
+                    "user_uuid": user.uuid,
+                    "email": user.email,
+                    "username": user.username,
+                },
             )
 
-            return JSONResponse(status_code=status.HTTP_201_CREATED, content=response_data)
+            return JSONResponse(
+                status_code=status.HTTP_201_CREATED, content=response_data
+            )
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -146,7 +154,9 @@ class AuthController:
             # Check if 2FA is required
             if result.get("requires_2fa"):
                 # Send 2FA code via email
-                user = await self.auth_service.user_repo.async_get_by_id(db, result["user_id"])
+                user = await self.auth_service.user_repo.async_get_by_id(
+                    db, result["user_id"]
+                )
                 await self.email_service.send_2fa_code_email(
                     email=user.email,
                     username=user.username,
@@ -177,14 +187,16 @@ class AuthController:
                     metadata={"user_id": result["user_id"]},
                 )
 
-                return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK, content=response_data
+                )
 
             # Successful login
             duration_ms = (time.time() - start_time) * 1000
-            
+
             # Extract refresh token from result
             refresh_token = result.pop("refresh_token")
-            
+
             # Prepare response data without refresh token
             response_data = format_response(success=True, data=result)
 
@@ -198,22 +210,30 @@ class AuthController:
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"user_uuid": result["user"]["uuid"], "email": result["user"]["email"]},
+                metadata={
+                    "user_uuid": result["user"]["uuid"],
+                    "email": result["user"]["email"],
+                },
             )
 
             # Create response and set refresh token cookie
-            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response = JSONResponse(
+                status_code=status.HTTP_200_OK, content=response_data
+            )
             response.set_cookie(
                 key="refresh_token",
                 value=refresh_token,
-                max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,  # Convert days to seconds
+                max_age=settings.jwt_refresh_token_expire_days
+                * 24
+                * 60
+                * 60,  # Convert days to seconds
                 httponly=True,
                 secure=settings.cookie_secure,
                 samesite=settings.cookie_samesite,
                 domain=settings.cookie_domain,
-                path="/"
+                path="/",
             )
-            
+
             return response
 
         except HTTPException as e:
@@ -230,7 +250,10 @@ class AuthController:
                 request=request,
                 status_code=e.status_code,
                 duration_ms=duration_ms,
-                metadata={"email_or_username": login_data.get("email_or_username"), "error": e.detail},
+                metadata={
+                    "email_or_username": login_data.get("email_or_username"),
+                    "error": e.detail,
+                },
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
@@ -263,10 +286,10 @@ class AuthController:
             )
 
             duration_ms = (time.time() - start_time) * 1000
-            
+
             # Extract refresh token from result
             refresh_token = result.pop("refresh_token")
-            
+
             # Prepare response data without refresh token
             response_data = format_response(success=True, data=result)
 
@@ -284,7 +307,9 @@ class AuthController:
             )
 
             # Create response and set refresh token cookie
-            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response = JSONResponse(
+                status_code=status.HTTP_200_OK, content=response_data
+            )
             response.set_cookie(
                 key="refresh_token",
                 value=refresh_token,
@@ -293,9 +318,9 @@ class AuthController:
                 secure=settings.cookie_secure,
                 samesite=settings.cookie_samesite,
                 domain=settings.cookie_domain,
-                path="/"
+                path="/",
             )
-            
+
             return response
 
         except HTTPException as e:
@@ -312,7 +337,10 @@ class AuthController:
                 request=request,
                 status_code=e.status_code,
                 duration_ms=duration_ms,
-                metadata={"user_id": verification_data.get("user_id"), "error": e.detail},
+                metadata={
+                    "user_id": verification_data.get("user_id"),
+                    "error": e.detail,
+                },
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
@@ -338,7 +366,9 @@ class AuthController:
             user = await self.auth_service.verify_email(db=db, token=token)
 
             # Send welcome email
-            await self.email_service.send_welcome_email(email=user.email, username=user.username)
+            await self.email_service.send_welcome_email(
+                email=user.email, username=user.username
+            )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
@@ -401,13 +431,15 @@ class AuthController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            user, verification_token = await self.auth_service.resend_verification_email(
-                db=db, email=email
+            user, verification_token = (
+                await self.auth_service.resend_verification_email(db=db, email=email)
             )
 
             # Send verification email
             await self.email_service.send_verification_email(
-                email=user.email, username=user.username, verification_token=verification_token
+                email=user.email,
+                username=user.username,
+                verification_token=verification_token,
             )
 
             duration_ms = (time.time() - start_time) * 1000
@@ -468,7 +500,9 @@ class AuthController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            user, reset_token = await self.auth_service.request_password_reset(db=db, email=email)
+            user, reset_token = await self.auth_service.request_password_reset(
+                db=db, email=email
+            )
 
             # Send email only if user exists
             if user:
@@ -480,7 +514,9 @@ class AuthController:
             # Always return same message for security
             response_data = format_response(
                 success=True,
-                data={"message": "If the email exists, a password reset link has been sent."},
+                data={
+                    "message": "If the email exists, a password reset link has been sent."
+                },
             )
 
             self.logging_service.log(
@@ -503,7 +539,9 @@ class AuthController:
             # Still return success message for security
             response_data = format_response(
                 success=True,
-                data={"message": "If the email exists, a password reset link has been sent."},
+                data={
+                    "message": "If the email exists, a password reset link has been sent."
+                },
             )
 
             self.logging_service.log(
@@ -540,13 +578,17 @@ class AuthController:
 
         try:
             user = await self.auth_service.reset_password(
-                db=db, token=reset_data["token"], new_password=reset_data["new_password"]
+                db=db,
+                token=reset_data["token"],
+                new_password=reset_data["new_password"],
             )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=True,
-                data={"message": "Password reset successfully. Please login with your new password."},
+                data={
+                    "message": "Password reset successfully. Please login with your new password."
+                },
             )
 
             self.logging_service.log(
@@ -601,13 +643,15 @@ class AuthController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            result = await self.auth_service.refresh_access_token(db=db, refresh_token=refresh_token)
+            result = await self.auth_service.refresh_access_token(
+                db=db, refresh_token=refresh_token
+            )
 
             duration_ms = (time.time() - start_time) * 1000
-            
+
             # Extract new refresh token from result
             new_refresh_token = result.pop("refresh_token")
-            
+
             # Prepare response data without refresh token
             response_data = format_response(success=True, data=result)
 
@@ -624,7 +668,9 @@ class AuthController:
             )
 
             # Create response and set new refresh token cookie (token rotation)
-            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            response = JSONResponse(
+                status_code=status.HTTP_200_OK, content=response_data
+            )
             response.set_cookie(
                 key="refresh_token",
                 value=new_refresh_token,
@@ -633,9 +679,9 @@ class AuthController:
                 secure=settings.cookie_secure,
                 samesite=settings.cookie_samesite,
                 domain=settings.cookie_domain,
-                path="/"
+                path="/",
             )
-            
+
             return response
 
         except HTTPException as e:
@@ -644,12 +690,16 @@ class AuthController:
 
             # Create response
             response = JSONResponse(status_code=e.status_code, content=response_data)
-            
+
             # If token reuse detected, clear the refresh token cookie
             if "Refresh token reuse detected" in e.detail:
                 # Fix cookie domain for localhost - must be None, not "localhost"
-                cookie_domain = None if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""] else settings.cookie_domain
-                
+                cookie_domain = (
+                    None
+                    if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""]
+                    else settings.cookie_domain
+                )
+
                 # Clear the refresh token cookie
                 response.delete_cookie(
                     key="refresh_token",
@@ -712,11 +762,17 @@ class AuthController:
             )
 
             # Create response and clear refresh token cookie
-            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
-            
+            response = JSONResponse(
+                status_code=status.HTTP_200_OK, content=response_data
+            )
+
             # Fix cookie domain for localhost - must be None, not "localhost"
-            cookie_domain = None if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""] else settings.cookie_domain
-            
+            cookie_domain = (
+                None
+                if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""]
+                else settings.cookie_domain
+            )
+
             response.delete_cookie(
                 key="refresh_token",
                 path="/",
@@ -724,7 +780,7 @@ class AuthController:
                 samesite=settings.cookie_samesite,
                 secure=settings.cookie_secure,
             )
-            
+
             return response
 
         except Exception as e:
@@ -747,13 +803,13 @@ class AuthController:
             )
 
             # Clear cookie even if logout fails
-            response = JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
-            response.delete_cookie(
-                key="refresh_token",
-                domain=settings.cookie_domain,
-                path="/"
+            response = JSONResponse(
+                status_code=status.HTTP_200_OK, content=response_data
             )
-            
+            response.delete_cookie(
+                key="refresh_token", domain=settings.cookie_domain, path="/"
+            )
+
             return response
 
     async def logout_all(
@@ -802,7 +858,10 @@ class AuthController:
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(success=False, error=str(e))
+            response_data = format_response(
+                success=False,
+                error="An internal server error occurred while logging out from all devices",
+            )
 
             self.logging_service.log(
                 async_db=db,
@@ -814,8 +873,10 @@ class AuthController:
                 request=request,
                 status_code=500,
                 duration_ms=duration_ms,
+                error=e,
                 metadata={"error": str(e)},
             )
 
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data)
-
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            )
