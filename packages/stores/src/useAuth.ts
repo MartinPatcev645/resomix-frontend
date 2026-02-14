@@ -237,6 +237,24 @@ if (typeof window !== 'undefined') {
             return;
         }
 
+        // Handle token request from a new tab
+        if (event.key === 'resomix-token-request' && event.newValue) {
+            const token = useAuthStore.getState().accessToken;
+            if (token) {
+                // Broadcast our token to the requesting tab
+                localStorage.setItem('resomix-token-update', JSON.stringify({
+                    token,
+                    timestamp: Date.now(),
+                    tabId: TAB_ID
+                }));
+                // Delay cleanup to ensure the requesting tab receives the storage event
+                setTimeout(() => {
+                    try { localStorage.removeItem('resomix-token-update'); } catch { /* noop */ }
+                }, 100);
+            }
+            return;
+        }
+
         // Handle auth state rehydration from other tabs
         if (event.key === 'resomix-auth-storage' && event.newValue) {
             // Skip if this write was made by the current tab (envelope contains tabId)

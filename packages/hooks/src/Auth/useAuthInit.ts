@@ -12,6 +12,51 @@ let globalHasInitialized = false;
  * Token refresh is handled by authClient interceptor on 401 errors
  * This prevents unnecessary refresh calls and loaders on page navigation
  */
+
+/**
+ * Request a token from other open tabs via localStorage events.
+ * Returns the token if received within the timeout, otherwise null.
+ */
+const requestTokenFromOtherTabs = (): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      window.removeEventListener('storage', onStorage);
+      resolve(null);
+    }, 1000); // Wait up to 1 second for a response
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'resomix-token-update' && event.newValue) {
+        try {
+          const update = JSON.parse(event.newValue);
+          if (update.token && typeof update.token === 'string') {
+            clearTimeout(timeout);
+            window.removeEventListener('storage', onStorage);
+            resolve(update.token);
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+
+    // Broadcast the request
+    try {
+      localStorage.setItem('resomix-token-request', String(Date.now()));
+      // Delay cleanup to ensure browser dispatches the storage event to other tabs
+      setTimeout(() => {
+        try { localStorage.removeItem('resomix-token-request'); } catch { /* noop */ }
+      }, 100);
+    } catch (e) {
+      console.warn('Failed to broadcast token request:', e);
+      clearTimeout(timeout);
+      window.removeEventListener('storage', onStorage);
+      resolve(null);
+    }
+  });
+};
+
 export const useAuthInit = () => {
   const { setUser } = useAuthStore();
   const [isInitialized, setIsInitialized] = useState(false);
@@ -94,33 +139,22 @@ export const useAuthInit = () => {
           return;
         }
 
-        // If we have a user but no token, refresh the token
-        // This should be rare now since token is persisted in sessionStorage
+        // If we have a user but no token, try to get it from other tabs first.
+        // Do NOT call refreshAccessToken() here — just initialize with user data.
+        // The interceptor will handle getting a fresh token on the first API call.
         if (!token && hasUser) {
-          // console.log('[useAuthInit] User found but no token - refreshing token');
-          try {
-            const refreshResult = await refreshAccessToken();
-            if (refreshResult.success && refreshResult.data?.access_token) {
-              store.setAccessToken(refreshResult.data.access_token);
-              // console.log('[useAuthInit] Token refreshed successfully');
-              setIsInitialized(true);
-              setIsLoading(false);
-              return;
-            } else {
-              // Refresh failed - user session may have expired
-              console.warn('[useAuthInit] Token refresh failed, logging out');
-              store.logout();
-              setIsInitialized(true);
-              setIsLoading(false);
-              return;
-            }
-          } catch (error) {
-            console.warn('[useAuthInit] Token refresh error:', error);
-            store.logout();
-            setIsInitialized(true);
-            setIsLoading(false);
-            return;
+          const sharedToken = await requestTokenFromOtherTabs();
+          
+          if (sharedToken) {
+            store.setAccessToken(sharedToken);
           }
+
+          // Initialize immediately — we have user data from persist,
+          // so the UI shows logged-in state. Token will be acquired
+          // lazily by the interceptor on the first API call if needed.
+          setIsInitialized(true);
+          setIsLoading(false);
+          return;
         }
 
         // No token and no user - try to refresh using HttpOnly cookie
