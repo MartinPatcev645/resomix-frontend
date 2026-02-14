@@ -130,7 +130,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   uploadedUrl: null,
-  setUploadedUrl: (url) => set({ uploadedUrl: url }),
+  setUploadedUrl: (url) => set((state) => {
+    // Revoke old blob URL to prevent memory leak
+    if (state.uploadedUrl) {
+      try { URL.revokeObjectURL(state.uploadedUrl); } catch { /* noop */ }
+    }
+    return { uploadedUrl: url };
+  }),
 
   uploadedCoverArt: null,
   setUploadedCoverArt: (coverUrl) => set({ uploadedCoverArt: coverUrl }),

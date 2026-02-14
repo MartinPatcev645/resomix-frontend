@@ -117,6 +117,9 @@ export function useUpload() {
 
         // Save uploaded file URL globally for playback previews
         try {
+            // Revoke previous URL to free the old File blob from memory
+            const prevUrl = usePlayerStore.getState().uploadedUrl;
+            if (prevUrl) URL.revokeObjectURL(prevUrl);
             const objectUrl = URL.createObjectURL(file);
             const { setUploadedUrl } = usePlayerStore.getState();
             setUploadedUrl(objectUrl);

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useFirstVisit, useResponsive, useAuthInit, useCrossTabAuth, useSilktide } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useAuthInit, useSilktide } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
@@ -44,7 +44,7 @@ function App() {
   const { showFeedback } = useFeedbackStore();
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
-  useCrossTabAuth();
+
 
   // Show simple loading during auth initialization to avoid flashes
   if (isLoading || !isInitialized) {

@@ -186,7 +186,7 @@ interface Envelope {
   payload: string;
 }
 
-const TAB_ID = (() => {
+export const TAB_ID = (() => {
   const generate = () => `${Math.random().toString(36).slice(2)}${Date.now()}`;
   if (typeof window === 'undefined') return generate();
   try {

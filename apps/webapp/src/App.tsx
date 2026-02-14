@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useCrossTabAuth, useSilktide } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
@@ -56,7 +56,7 @@ function App() {
 
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
-  useCrossTabAuth();
+
 
   const location = useLocation();
   const showMetrics = new URLSearchParams(location.search).get("metrics") === "true";

@@ -63,6 +63,7 @@ class HlsPlaylistController implements AudioController {
 
   private currentTrackId: string | null = null;
   private isPlaylistLoaded = false;
+  private pendingOnReady: (() => void) | null = null;
 
   private isSeeking = false;
   private isMediaSessionInit = false;
@@ -123,8 +124,15 @@ class HlsPlaylistController implements AudioController {
     }
     this.playAfterLoad = isPlayAfter;
 
+    // Remove any pending loadedmetadata handler to prevent stacking
+    if (this.pendingOnReady) {
+      this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
+      this.pendingOnReady = null;
+    }
+
     const onReady = () => {
       this.audio.removeEventListener('loadedmetadata', onReady);
+      this.pendingOnReady = null;
       this.goToTrack(trackId, this.playAfterLoad, true);
       this.playAfterLoad = false;
     };
@@ -132,6 +140,7 @@ class HlsPlaylistController implements AudioController {
     if (this.audio.readyState >= 1) {
       this.goToTrack(trackId, isPlayAfter, true);
     } else {
+      this.pendingOnReady = onReady;
       this.audio.addEventListener('loadedmetadata', onReady);
     }
   };
@@ -215,6 +224,15 @@ class HlsPlaylistController implements AudioController {
 
     this.isPlaylistLoaded = false;
     this.currentTrackId = null;
+    this.tracks = [];
+    this.tracksIds = [];
+    this.offsets.clear();
+    this.durations.clear();
+    this.totalDuration = 0;
+
+    // Clear stale snippet metadata so the next upload starts clean
+    usePlayerStore.setState({ snippetMetadata: {} });
+
     msReset();
     usePlayerStore.setState({ isLoaded: false });
   };
@@ -503,6 +521,10 @@ class HlsPlaylistController implements AudioController {
     this.hls.on(Hls.Events.LEVEL_LOADED, (_e, data) => {
       const queriedTrack = usePlaylistStore.getState().playlistData?.queried_track;
       if (!queriedTrack || queriedTrack.type !== 'upload') return;
+
+      // Only detect snippet once per track — LEVEL_LOADED fires on every level refresh
+      const existingMeta = usePlayerStore.getState().snippetMetadata[queriedTrack.id];
+      if (existingMeta) return;
 
       const frags = data.details.fragments;
       if (!frags.length) return;
