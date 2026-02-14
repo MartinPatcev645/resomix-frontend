@@ -30,7 +30,7 @@ export function usePeaks2(
     const canvas = canvasRef.current;
     if (!canvas || !normalizedData.length) return;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const width = canvas.width;
@@ -106,6 +106,8 @@ export function usePeaks2(
 
     return () => {
       if (canvasRef.current) {
+        canvasRef.current.width = 0;
+        canvasRef.current.height = 0;
         el.removeChild(canvas);
       }
     };

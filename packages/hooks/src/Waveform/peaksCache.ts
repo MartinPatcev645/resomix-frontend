@@ -11,6 +11,26 @@ interface CachedPeaks {
 
 const peaksCache = new Map<string, CachedPeaks>();
 const activeLoads = new Map<string, Promise<PeaksRich>>();
+const MAX_CACHE_SIZE = 100;
+
+/** Flush the entire peaks cache (e.g. on logout or heavy memory pressure). */
+export function clearPeaksCache() {
+  peaksCache.clear();
+}
+
+/** Evict the oldest entry if the cache exceeds its size limit. */
+function evictIfNeeded() {
+  if (peaksCache.size <= MAX_CACHE_SIZE) return;
+  let oldestKey: string | null = null;
+  let oldestTime = Infinity;
+  for (const [key, val] of peaksCache) {
+    if (val.timestamp < oldestTime) {
+      oldestTime = val.timestamp;
+      oldestKey = key;
+    }
+  }
+  if (oldestKey) peaksCache.delete(oldestKey);
+}
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -80,6 +100,7 @@ export const loadPeaksData = async (
           const parsedV2 = parseV2Payload(v2);
           if (parsedV2) {
             peaksCache.set(uuid, { data: parsedV2, timestamp: Date.now() });
+            evictIfNeeded();
             return parsedV2;
           }
         } catch (e) {
@@ -97,6 +118,7 @@ export const loadPeaksData = async (
         };
 
         peaksCache.set(uuid, { data: payload, timestamp: Date.now() });
+        evictIfNeeded();
         return payload;
 
       } catch (err) {

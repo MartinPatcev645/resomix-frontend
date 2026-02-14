@@ -73,7 +73,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
 
   // Get ctx and size in real pixels
   const getCtxAndDevSize = useCallback((canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     const width = canvas.width;   // device px
     const height = canvas.height; // device px
     return { ctx, width, height };
@@ -381,10 +381,14 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
       el.style.touchAction = prevTouchAction;
 
       if (canvasRef.current && canvasRef.current.parentElement === el) {
+        canvasRef.current.width = 0;
+        canvasRef.current.height = 0;
         el.removeChild(canvasRef.current);
         canvasRef.current = null;
       }
       if (overlayCanvasRef.current && overlayCanvasRef.current.parentElement === el) {
+        overlayCanvasRef.current.width = 0;
+        overlayCanvasRef.current.height = 0;
         el.removeChild(overlayCanvasRef.current);
         overlayCanvasRef.current = null;
       }
@@ -396,10 +400,10 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
     };
   }, [overviewElement, supportsHover, getCtxAndDevSize, clearOverlay, drawOverlay]);
 
-  // Redraw when data, time, or restricted range changes
+  // Redraw when data or time changes (restrictedRange is already captured in drawWaveform's identity)
   useEffect(() => {
     drawWaveform(currentTime);
-  }, [fullband, lowband, duration, currentTime, drawWaveform, restrictedRange, uuid]);
+  }, [fullband, lowband, duration, currentTime, drawWaveform]);
 
   const setTime = useCallback((timeSec: number, isImmediatelly = false) => {
     setCurrentTime(timeSec);
