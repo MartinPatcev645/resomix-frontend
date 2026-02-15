@@ -1,0 +1,38 @@
+Troubleshooting Summary: StaticNoise on Safari/iOS
+Here is a chronological summary of the steps we have taken to resolve the issues with the 
+StaticNoise
+ component on Safari (iOS/macOS).
+
+1. Initial State
+Problem: The site crashed or showed a blank white screen on iOS.
+Cause: Strict shader validation on iOS Metal drivers failed due to unused variables (uResolution, vUv) being passed to the shader.
+2. Attempt 1: Cleanup Unused Variables
+Action: Removed uResolution and vUv from the shader code and JavaScript.
+Result: Crash Fixed. The white screen disappeared, but the noise effect was rendered incorrectly as "sparse dots" instead of dense static.
+3. Attempt 2: High Precision
+Action: Changed Fragment Shader precision from mediump to highp.
+Reason: Suspected floating-point precision issues on mobile GPUs were causing the noise calculation to fail.
+Result: No Change. Sparse dots persisted.
+4. Attempt 3: Procedural Noise (Sine-based)
+Action: Removed the noise texture entirely and implemented a mathematical pseudo-random function using sin().
+Reason: Texture sampling might be buggy or formatted incorrectly on iOS. Mathematical generation is usually safer.
+Result: No Change. Sparse dots persisted, suggesting sin() precision issues on the GPU as well.
+5. Attempt 4: Robust Noise (Hash12) + Debugging
+Action: Switched to a "Hash12" random function (using only fract and dot products) to avoid trigonometry. Added console logs for precision support.
+Reason: Trigonometry functions (sin/cos) are notoriously unstable on mobile GPUs for large inputs.
+Result: No Change. Console logs confirmed standard precision support, ruling out hardware limitations.
+6. Attempt 5: Split-Screen Debug Mode
+Action: Rendered raw black/white noise on the Left half of the screen, and the original stylized noise on the Right half.
+Result: Crucial Discovery.
+Left Side: Showed perfect dense white static. This proved the noise generator math was working correctly!
+Right Side: Showed sparse dots/nothing. This proved the issue was entirely in the styling/visibility logic (specifically the step() threshold clipping the signal).
+7. Attempt 6: Simplified Styling (Alpha Blending)
+Action: Removed the step() thresholding logic. Changed the output to a simple dark grey color with varying alpha opacity (vec4(vec3(0.2), n * 0.5)).
+Reason: To stop "clipping" the noise signal and let all pixels contribute to the texture.
+Result: Visibility Issue. The noise became invisible or a "grey soup", likely due to "crushed blacks" on OLED screens or gamma differences.
+8. Attempt 7: Visibility Optimization (2px + White)
+Action:
+Scaled Noise: Increased grain size to 2px (physical pixels) to prevent sub-pixel blurring on Retina screens.
+White Grain: Switched color from Dark Grey (0.2) to White (1.0) with low opacity (10%).
+Reason: White pixels are guaranteed to be visible on dark backgrounds, unlike grey pixels which can blend into black. Larger grains survive high-DPI scaling better.
+Current Result: Pending user confirmation. This brings the implementation closer to "film grain" overlays that are standard for cross-platform compatibility.

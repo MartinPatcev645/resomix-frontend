@@ -88,6 +88,8 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
+    canvas.style.mixBlendMode = "multiply"; // Creates "Dark Static" effect
+    canvas.style.opacity = "0.20";          // Controls intensity
     container.appendChild(canvas);
 
     const gl = canvas.getContext("webgl", {
@@ -132,8 +134,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
         // Immediate draw if uniforms are available (they are set up below)
-        if (uResolution && uOffset) {
-          gl.uniform2f(uResolution, canvas.width, canvas.height);
+        if (uOffset) {
           gl.uniform2f(uOffset, Math.random(), Math.random());
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         }
@@ -154,9 +155,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
 
     const VERTEX_SRC = `
       attribute vec2 aPosition;
-      varying vec2 vUv;
       void main() {
-        vUv = (aPosition + 1.0) * 0.5;
         gl_Position = vec4(aPosition, 0.0, 1.0);
       }
     `;
@@ -165,17 +164,16 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       precision mediump float;
 
       uniform sampler2D uNoise;
-      uniform vec2 uResolution;
       uniform vec2 uTexelScale;
       uniform vec2 uOffset;
-      varying vec2 vUv;
 
       void main() {
         vec2 uv = fract(gl_FragCoord.xy * uTexelScale + uOffset);
         float n = texture2D(uNoise, uv).r;
-        float alpha = n * step(0.02, n);
-        float val = 0.15 * step(0.01, n);
-        gl_FragColor = vec4(vec3(val, val, val * 0.95), alpha);
+        
+        // Opaque Grayscale Noise for Safari/iOS stability:
+        // We output raw noise and let CSS "multiply" blend mode create the dark static effect.
+        gl_FragColor = vec4(vec3(n), 1.0);
       }
     `;
 
@@ -207,7 +205,6 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     gl.enableVertexAttribArray(posLoc);
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-    const uResolution = gl.getUniformLocation(prog, "uResolution");
     const uTexelScale = gl.getUniformLocation(prog, "uTexelScale");
     const uOffset = gl.getUniformLocation(prog, "uOffset");
     const uNoise = gl.getUniformLocation(prog, "uNoise");
@@ -246,7 +243,6 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       if (document.hidden) return;
       if (now - last < interval) return;
       last = now;
-      gl.uniform2f(uResolution, canvas.width, canvas.height);
       gl.uniform2f(uOffset, Math.random(), Math.random());
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
