@@ -119,7 +119,8 @@ export function LandingLayout() {
     return (
         <OptionalAuthRoute>
             <div className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
-                {isDesktop && <StaticNoise />}
+                {/* {isDesktop && <StaticNoise />} */}
+                <StaticNoise />
                 <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
                     <SideLines
                         navbar={isDesktop ? undefined : mobileNavbar}
