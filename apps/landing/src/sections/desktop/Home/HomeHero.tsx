@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { IconComp, ButtonHeavyRight } from "@resomix/ui";
-import { useOnScreen } from "@resomix/hooks";
+// import { useOnScreen } from "@resomix/hooks";
 // import { BackgroundNoise } from "@/components/index.ts";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
@@ -13,7 +13,7 @@ import { BASE_BETA_URL, FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomi
 
 const HomeHero: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
+  // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
     <div ref={sectionRef} className="relative">
