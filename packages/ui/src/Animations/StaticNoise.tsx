@@ -44,6 +44,12 @@ float noise(vec2 p) {
   return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
+// 2D Rotation matrix
+mat2 rotate(float a) {
+  float s = sin(a), c = cos(a);
+  return mat2(c, -s, s, c);
+}
+
 float fbm(vec2 p) {
   float v = 0.0;
   float amp = 0.5;
@@ -56,49 +62,84 @@ float fbm(vec2 p) {
   return v;
 }
 
-mat2 rotate(float a) {
-  float s = sin(a), c = cos(a);
-  return mat2(c, -s, s, c);
+// ── SHOOTING STAR ───────────────────────────────────────────────────────────
+
+float shootingStar(vec2 uv, float t, float interval, float slot) {
+  // Randomize timing per slot
+  float timeOffset = hash(vec2(slot, 12.34)) * 100.0;
+  float adjustedTime = t + timeOffset;
+  
+  float cycle = floor(adjustedTime / interval);
+  float local = adjustedTime - cycle * interval;
+  
+  float duration = 1.2; // How long it stays on screen
+  if (local > duration) return 0.0;
+  
+  float progress = local / duration;
+  
+  // Randomize characteristics based on cycle
+  float r1 = hash(vec2(cycle + slot, slot + 7.0));
+  float r2 = hash(vec2(cycle + slot, slot + 13.0));
+  float r3 = hash(vec2(cycle + slot, slot + 23.0));
+  
+  // Start position (randomized)
+  vec2 origin = vec2(mix(-0.8, 0.8, r1), mix(-0.2, 0.8, r2));
+  
+  // Angle (Left-down diagonal to match nebula flow mostly, or random)
+  float angle = mix(-0.5, -2.5, r3); 
+  vec2 dir = vec2(cos(angle), sin(angle));
+  
+  float speed = 0.8 + 0.5 * r2;
+  vec2 head = origin + dir * progress * speed;
+  float trailLen = 0.15 + 0.1 * r1;
+  vec2 tail = head - dir * trailLen;
+  
+  // Distance to line segment
+  vec2 pa = uv - tail;
+  vec2 ba = head - tail;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  float d = length(pa - ba * h);
+  
+  // Sharp thin line
+  float streak = smoothstep(0.002, 0.0005, d);
+  streak *= h; // Fade tail
+  streak *= smoothstep(0.0, 0.1, progress) * smoothstep(1.0, 0.5, progress); // Fade in/out
+  
+  return streak;
 }
 
 // ── STARFIELD ───────────────────────────────────────────────────────────────
 
-// Returns vec3(intensity, color_tint_r, color_tint_b) packed or just intensity with color managed outside
 vec3 starLayer(vec2 uv, float density, float seed) {
   vec2 id = floor(uv * density);
   vec2 gv = fract(uv * density) - 0.5;
   
   float rnd = hash(id + seed * 0.001);
-  if (rnd < 0.85) return vec3(0.0); // Sparse threshold
   
-  // Star properties
-  float sizeBase = 0.02 + 0.1 * hash(id * 9.2); // Varied sizes
-  float brightness = 0.5 + 0.5 * sin(u_time * (2.0 + 8.0 * rnd) + rnd * 10.0); // Twinkle
+  // REDUCED DENSITY: Only top 4.5% of slots have a star (was ~15%)
+  // Original threshold was < 0.85 (15%). New: < 0.955 (4.5%) -> 70% reduction
+  if (rnd < 0.955) return vec3(0.0); 
+  
+  // RANDOM SIZE: Max size reduced
+  // Previously: 0.02 + 0.1 * hash... => Max ~0.12
+  // New: 0.02 + 0.035 * hash... => Max ~0.055 (approx 1/3 of previous max visual weight)
+  float sizeBase = 0.02 + 0.035 * hash(id * 9.2); 
+  
+  // BLINKING: Slower, desynchronized
+  // Use a very large multiplier for rnd (100.0) to desync phases completely
+  // Slower rate: u_time multiplied by smaller factor (0.5 to 1.5)
+  float blinkSpeed = 0.5 + 1.0 * rnd; 
+  float blinkPhase = rnd * 100.0;
+  float brightness = 0.5 + 0.5 * sin(u_time * blinkSpeed + blinkPhase);
  
   // Position jitter
   vec2 offset = (vec2(hash(id), hash(id + 11.0)) - 0.5) * 0.8;
   float d = length(gv - offset);
   
-  // Core glow
-  float core = smoothstep(sizeBase, sizeBase * 0.1, d);
+  // SHARP STAR: No outer glow, sharp smoothstep
+  float core = smoothstep(sizeBase, sizeBase - 0.01, d);
   
-  // Outer glow
-  float glow = smoothstep(sizeBase * 4.0, 0.0, d) * 0.4;
-  
-  float total = (core + glow) * brightness;
-  
-  // Star Colors: Blue-white (hot), Yellow-orange (cooler), White (avg)
-  // Map random value to color
-  vec3 col = vec3(1.0);
-  if (rnd > 0.96) {
-    col = vec3(0.7, 0.8, 1.0); // Blue-white
-  } else if (rnd > 0.92) {
-    col = vec3(1.0, 0.9, 0.7); // Yellow-white
-  } else if (rnd > 0.88) {
-    col = vec3(1.0, 0.7, 0.5); // Orange (rare)
-  }
-  
-  return col * total;
+  return vec3(core * brightness); // Pure white
 }
 
 // ── NEBULA SDF / SHAPE ──────────────────────────────────────────────────────
@@ -125,39 +166,54 @@ void main() {
   // Normalize UV
   vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.y, u_res.x); 
   
-  // Slow movement
+  // Slow global movement for everything
   float time = u_time * 0.05;
+  
+  // ── MOVEMENT CONSTANTS ────────────────────────────────────────────────────
+  // Slowly rotating and panning the view
+  float globalRot = sin(time * 0.1) * 0.05; // Subtle back-forth rotation
+  mat2 viewRot = rotate(globalRot);
+  vec2 pan = vec2(time * 0.05, time * 0.02); // Slow drift
   
   // ── BACKGROUND ────────────────────────────────────────────────────────────
   vec3 bg = vec3(0.005, 0.005, 0.01); // Deep dark space, slight blue tint
   
   // ── STARS ─────────────────────────────────────────────────────────────────
-  // Multiple layers for parallax/depth sensation
+  // Parallax layers moving at different speeds/rotations
   vec3 stars = vec3(0.0);
   
-  // Distant small stars
-  stars += starLayer(rotate(u_time * 0.005) * uv + vec2(10.0), 80.0, u_seed);
+  // Distant small stars (slowest)
+  vec2 uvStar1 = viewRot * uv + pan * 0.2;
+  stars += starLayer(uvStar1, 80.0, u_seed);
+  
   // Mid stars
-  stars += starLayer(rotate(u_time * 0.008) * uv + vec2(25.0), 30.0, u_seed + 12.0);
-  // Bright foreground stars
-  stars += starLayer(uv, 10.0, u_seed + 55.0);
+  vec2 uvStar2 = viewRot * uv + pan * 0.5 + vec2(0.5); // Offset
+  stars += starLayer(uvStar2, 40.0, u_seed + 12.0);
+  
+  // Bright foreground stars (fastest, feels closer)
+  vec2 uvStar3 = viewRot * uv + pan * 1.0 + vec2(0.2, 0.8);
+  stars += starLayer(uvStar3, 15.0, u_seed + 55.0);
   
   // ── NEBULA (Seagull Composition) ──────────────────────────────────────────
   
+  // Nebula movement: rotate lightly and pan
+  vec2 nebulaUV = viewRot * uv + pan * 0.1; // Nebula is "far", moves slow
+  
   // Global coordinate distortion for wispy feel
-  vec2 nUV = uv * 1.0;
-  float warp = fbm(nUV * 3.0 + vec2(time * 0.1, 0.0));
+  // We offset the FBM with time to make the "smoke" evolve slightly
+  vec2 nUV = nebulaUV * 1.0;
+  float warp = fbm(nUV * 3.0 + vec2(time * 0.15, 0.0));
   nUV += warp * 0.2;
   
-  // Shape mask
-  float mask = seagullShape(uv * 0.8); // Scale to fit nicely
+  // Shape mask (using the moving UV)
+  float mask = seagullShape(nebulaUV * 0.8); 
   
   // Detail layers within the shape
   float detail1 = fbm(nUV * 4.0 + vec2(time * 0.2, -time * 0.1));
   float detail2 = fbm(nUV * 8.0 - vec2(time * 0.1, time * 0.1));
   
   // Dust lanes (darker subtraction)
-  float dust = fbm(uv * 6.0 + warp + vec2(10.0));
+  float dust = fbm(nebulaUV * 6.0 + warp + vec2(10.0));
   
   // Composition
   float cloud = mask * (detail1 * 0.7 + detail2 * 0.3);
@@ -180,12 +236,20 @@ void main() {
   // Additive Blend
   vec3 finalCloud = nebulaCol * cloud * 2.5; // Boost intensity
   
+  // ── SHOOTING STARS ────────────────────────────────────────────────────────
+  // Random interval 5-8 seconds
+  // We use multiple slots to allow overlap if needed, though rare
+  float shoot = 0.0;
+  // Interval 7.0s avg
+  shoot += shootingStar(uv, u_time, 7.0, 10.0); // Slot 1
+  shoot += shootingStar(uv, u_time, 6.2, 25.0); // Slot 2 (diff freq for variance)
+  
   // ── COMPOSITE ─────────────────────────────────────────────────────────────
   
   // Vignette
   float vig = 1.0 - dot(uv, uv) * 0.4;
   
-  vec3 finalColor = bg + stars + finalCloud;
+  vec3 finalColor = bg + stars + finalCloud + vec3(shoot);
   finalColor *= vig;
   
   gl_FragColor = vec4(finalColor, 1.0);
