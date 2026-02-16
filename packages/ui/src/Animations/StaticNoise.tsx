@@ -109,21 +109,19 @@ float shootingStar(vec2 uv, float t, float interval, float slot) {
 
 // ── STARFIELD ───────────────────────────────────────────────────────────────
 
-vec3 starLayer(vec2 uv, float density, float seed, vec3 tint) {
+vec3 starLayer(vec2 uv, float density, float seed, vec3 tint, float probability) {
   vec2 id = floor(uv * density);
   vec2 gv = fract(uv * density) - 0.5;
   
   float rnd = hash(id + seed * 0.001);
   
-  // REDUCED DENSITY 2 (50% less than previous step)
-  // Previous threshold: < 0.955 (~4.5% fill)
-  // New target: ~2.25% fill -> Threshold < 0.9775
-  if (rnd < 0.9775) return vec3(0.0); 
+  // Probability culling control
+  if (rnd > probability) return vec3(0.0); 
   
-  // REDUCED SIZE 2 (50% smaller max)
+  // Size logic
   float sizeBase = 0.01 + 0.0175 * hash(id * 9.2); 
   
-  // SMOOTH BLINKING
+  // Smooth Blinking
   float blinkSpeed = 0.2 + 0.5 * rnd; 
   float blinkPhase = rnd * 50.0;
   
@@ -145,25 +143,17 @@ vec2 seagullShapeStart(vec2 p, float t) {
   p = rotate(0.4) * p; 
   
   // Dynamic Shape Cycle: Volumetric Feel
-  // Period ~10s
   float cycle = sin(t * 0.6); 
   
-  // Width/Amplitude: 
-  // Map cycle -1..1 to Width Factor 0.5..1.5
   float widthFactor = 1.0 + cycle * 0.4;
-  
-  // Brightness: Inverse to Width (Energy Conservation approximation)
-  // Narrower = Brighter/Denser
   float brightness = 1.6 / (widthFactor * widthFactor); 
   
   vec2 headPos = p - vec2(-0.2, 0.1);
   float head = smoothstep(0.4 * widthFactor, 0.0, length(headPos)) * 1.5;
   
-  // Wings
   float amplitude = 0.3 * widthFactor; 
   float lengthVal = 1.2; 
   
-  // Add some large scale noise warp to shape edges so it's not perfect math shape
   float shapeNoise = noise(p * 2.0 + t * 0.2); 
   amplitude += shapeNoise * 0.1;
   
@@ -177,44 +167,36 @@ void main() {
   vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.y, u_res.x); 
   
   // ── SETTINGS: SLOWER ──────────────────────────────────────────────────────
-  // "Reduce star speed by 1/4th of current" -> (which was already 50% slow)
-  // Current: 0.025. Target: 0.025 / 4 = 0.00625
   float travelTime = u_time * u_speed * 0.00625; 
-  
-  // "Nebula speed 1/3rd of current"
-  // Previous: 0.05. Target: 0.05 / 3 = 0.0166
   float nebTime = u_time * u_nebula_speed * 0.0166;
-
-  // Star Rotation Speed: also reduced? "Slow"
-  float rotSpeed = u_speed * 0.02; // Reduced significantly
+  float rotSpeed = u_speed * 0.02; 
   float angle = u_time * rotSpeed; // Clockwise visual
   mat2 rot = rotate(angle);
   
   // ── BACKGROUND ────────────────────────────────────────────────────────────
   vec3 bg = vec3(0.005, 0.005, 0.01); 
   
-  // ── LAYER 1: DISTANT STARS ────────────────────────────────────────────────
+  // ── LAYER 1: DISTANT STARS (Small) ────────────────────────────────────────
   vec3 starsBack = vec3(0.0);
   
+  // Probability ~0.0225 (Keep existing small star density)
   vec2 uvStar1 = rot * uv; 
-  starsBack += starLayer(uvStar1, 80.0, u_seed, vec3(1.0));
+  starsBack += starLayer(uvStar1, 80.0, u_seed, vec3(1.0), 0.0225);
   
   vec2 drift = vec2(sin(u_time * 0.05), cos(u_time * 0.06)) * 0.05;
   vec2 uvStar2 = rot * (uv + drift) + vec2(0.5); 
-  starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(1.0));
+  starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(1.0), 0.0225);
 
   // ── NEBULA (Volumetric) ───────────────────────────────────────────────────
   
   vec2 nebPan = vec2(sin(nebTime * 0.3), cos(nebTime * 0.25)) * 0.15; 
   vec2 nebulaUV = uv + nebPan; 
-  nebulaUV = rotate(angle * 0.3) * nebulaUV; // Rotate slightly with stars but slower lag
+  nebulaUV = rotate(angle * 0.3) * nebulaUV; 
   
   vec2 nUV = nebulaUV * 1.0;
-  // Deep Domain Warp for "Cloud" feel
   float warp = fbm(nUV * 3.0 + vec2(nebTime * 0.15, 0.0));
   nUV += warp * 0.25; 
   
-  // Dynamic Shape & Brightness Logic
   vec2 shapeData = seagullShapeStart(nebulaUV * 0.8, nebTime * 5.0); 
   float mask = shapeData.x;
   float densityMult = shapeData.y;
@@ -228,39 +210,38 @@ void main() {
   cloud = smoothstep(0.1, 1.0, cloud); 
   cloud *= smoothstep(0.35, 1.0, 1.0 - dust * 0.8);
   
-  // Colors (DARKENED for White Text Readability)
-  // Originals were ~0.8-1.0 brightness. Now capped around ~0.4-0.5 max.
-  
-  vec3 colDeepRed = vec3(0.1, 0.0, 0.02);    // Very dark base
-  vec3 colPink = vec3(0.4, 0.05, 0.15);      // Muted pink
-  vec3 colOrange = vec3(0.5, 0.2, 0.05);     // Dark orange/brown
-  vec3 colMagenta = vec3(0.3, 0.05, 0.2);    // Dark purple
+  // Colors (Darkened)
+  vec3 colDeepRed = vec3(0.1, 0.0, 0.02);    
+  vec3 colPink = vec3(0.4, 0.05, 0.15);      
+  vec3 colOrange = vec3(0.5, 0.2, 0.05);     
+  vec3 colMagenta = vec3(0.3, 0.05, 0.2);    
   
   vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
   nebulaCol = mix(nebulaCol, colOrange, detail2 * mask); 
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
-  // Apply Dynamic Density Multiplier
-  // Reduced base multiplier from 2.5 down to 1.8 to prevent blowing out whites
   vec3 finalCloud = nebulaCol * cloud * 1.8 * densityMult; 
 
   // ── ORANGE STARS ──────────────────────────────────────────────────────────
   vec3 orangeStars = vec3(0.0);
   if (cloud * densityMult > 0.3) {
-    orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2));
+    orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2), 0.0225);
     orangeStars *= smoothstep(0.3, 0.6, cloud * densityMult);
   }
 
-  // ── LAYER 2: FOREGROUND STARS ─────────────────────────────────────────────
+  // ── LAYER 2: FOREGROUND STARS (Big) ───────────────────────────────────────
+  // User wants "3x more" of these big stars.
+  // Original implied probability was ~0.0225 (1 - 0.9775)
+  // New target probability: 0.0225 * 3 = 0.0675
   vec3 starsFront = vec3(0.0);
   
   mat2 rotFast = rotate(angle * 1.2);
   vec2 uvStar3 = rotFast * uv + vec2(0.2, 0.8);
-  starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(1.0)); 
+  starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(1.0), 0.0675); 
   
   mat2 rotVeryFast = rotate(angle * 1.5);
   vec2 uvStar4 = rotVeryFast * uv + vec2(0.9, 0.3); 
-  starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(1.0)); 
+  starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(1.0), 0.0675); 
   
   // ── SHOOTING STARS ────────────────────────────────────────────────────────
   float shoot = 0.0;
@@ -270,13 +251,10 @@ void main() {
   
   starsBack *= (1.0 - cloud * 0.8); 
   
-  // Stronger vignette to keep edges clear for framing if needed
   float vig = 1.0 - dot(uv, uv) * 0.6; 
   
   vec3 finalColor = bg + starsBack + finalCloud + orangeStars + starsFront + vec3(shoot);
   finalColor *= vig;
-  
-  // Slight desaturation just to be safe for text contrast? Not needed if colors are dark enough.
   
   gl_FragColor = vec4(finalColor, 1.0);
 }
