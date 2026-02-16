@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface StaticNoiseProps {
   /** Optional Tailwind/utility classes. Defaults to a fullscreen fixed overlay. */
@@ -7,15 +7,11 @@ export interface StaticNoiseProps {
   zIndex?: number;
   /** Target frames-per-second for the render loop. Defaults to 60. */
   fps?: number;
-  /** localStorage variable name to check for visibility. Defaults to 'staticNoiseVisible'. */
-  storageKey?: string;
-  /** Default visibility state if no localStorage value is found. Defaults to true. */
-  defaultVisible?: boolean;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GLSL Shaders — Animated space background (starfield, nebula, shooting
-   stars, film grain, vignette). Ported from final-bg.jsx.
+   GLSL Shaders — Seagull Nebula (IC 2177) Representation
+   Deep red/pink emission nebula with a distinct "bird" shape against a dense starfield.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const VERT = `
@@ -29,16 +25,18 @@ uniform vec2  u_res;
 uniform float u_time;
 uniform float u_seed;
 
+// ── UTILS ───────────────────────────────────────────────────────────────────
+
 highp float hash(highp vec2 p) {
   highp vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
 }
 
-float vnoise(vec2 p) {
+float noise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
-  vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+  vec2 u = f * f * (3.0 - 2.0 * f);
   float a = hash(i);
   float b = hash(i + vec2(1.0, 0.0));
   float c = hash(i + vec2(0.0, 1.0));
@@ -47,12 +45,13 @@ float vnoise(vec2 p) {
 }
 
 float fbm(vec2 p) {
-  float v = 0.0, a = 0.5;
+  float v = 0.0;
+  float amp = 0.5;
   mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
-  for (int i = 0; i < 3; i++) {
-    v += a * vnoise(p);
-    p = rot * p * 2.0;
-    a *= 0.5;
+  for (int i = 0; i < 5; i++) {
+    v += amp * noise(p);
+    p = rot * p * 2.0 + vec2(1.2, 3.4);
+    amp *= 0.5;
   }
   return v;
 }
@@ -62,113 +61,134 @@ mat2 rotate(float a) {
   return mat2(c, -s, s, c);
 }
 
-float starLayer(vec2 uv, float density, float seed) {
+// ── STARFIELD ───────────────────────────────────────────────────────────────
+
+// Returns vec3(intensity, color_tint_r, color_tint_b) packed or just intensity with color managed outside
+vec3 starLayer(vec2 uv, float density, float seed) {
   vec2 id = floor(uv * density);
   vec2 gv = fract(uv * density) - 0.5;
+  
   float rnd = hash(id + seed * 0.001);
-  if (rnd < 0.88) return 0.0;
-  float rnd2 = hash(id * 1.7 + 31.0);
-  float rnd3 = hash(id * 2.3 + 57.0);
-  vec2 offset = (vec2(hash(id + 10.0), hash(id + 20.0)) - 0.5) * 0.7;
+  if (rnd < 0.85) return vec3(0.0); // Sparse threshold
+  
+  // Star properties
+  float sizeBase = 0.02 + 0.1 * hash(id * 9.2); // Varied sizes
+  float brightness = 0.5 + 0.5 * sin(u_time * (2.0 + 8.0 * rnd) + rnd * 10.0); // Twinkle
+ 
+  // Position jitter
+  vec2 offset = (vec2(hash(id), hash(id + 11.0)) - 0.5) * 0.8;
   float d = length(gv - offset);
-  float size = 0.003 + 0.012 * rnd2;
-  float core = smoothstep(size, size * 0.15, d);
-  float glow = rnd2 * 0.3 * smoothstep(size * (3.0 + 4.0 * rnd3), 0.0, d);
-  float twinkle = 0.6 + 0.4 * sin(u_time * (0.8 + 1.5 * rnd3) + rnd * 6.2831);
-  return (core + glow) * twinkle;
+  
+  // Core glow
+  float core = smoothstep(sizeBase, sizeBase * 0.1, d);
+  
+  // Outer glow
+  float glow = smoothstep(sizeBase * 4.0, 0.0, d) * 0.4;
+  
+  float total = (core + glow) * brightness;
+  
+  // Star Colors: Blue-white (hot), Yellow-orange (cooler), White (avg)
+  // Map random value to color
+  vec3 col = vec3(1.0);
+  if (rnd > 0.96) {
+    col = vec3(0.7, 0.8, 1.0); // Blue-white
+  } else if (rnd > 0.92) {
+    col = vec3(1.0, 0.9, 0.7); // Yellow-white
+  } else if (rnd > 0.88) {
+    col = vec3(1.0, 0.7, 0.5); // Orange (rare)
+  }
+  
+  return col * total;
 }
 
-float shootingStar(vec2 uv, float t, float interval, float slot) {
-  float cycle = floor(t / interval);
-  float local = t - cycle * interval;
-  float duration = 1.8;
-  if (local > duration) return 0.0;
-  float progress = local / duration;
-  float r1 = hash(vec2(cycle + slot, slot + 7.0));
-  float r2 = hash(vec2(cycle + slot, slot + 13.0));
-  float r3 = hash(vec2(cycle + slot, slot + 23.0));
-  vec2 origin = vec2(mix(-0.6, 0.6, r1), mix(0.2, 0.5, r2));
-  float angle = mix(-0.8, -2.3, r3);
-  vec2 dir = vec2(cos(angle), sin(angle));
-  float speed = 0.6 + 0.4 * r2;
-  vec2 head = origin + dir * progress * speed;
-  float trailLen = 0.12 + 0.08 * r1;
-  vec2 tail = head - dir * trailLen;
-  vec2 pa = uv - tail;
-  vec2 ba = head - tail;
-  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-  float d = length(pa - ba * h);
-  float streak = smoothstep(0.0015, 0.0002, d);
-  streak *= h;
-  float fade = smoothstep(0.0, 0.1, progress) * smoothstep(1.0, 0.6, progress);
-  return streak * fade * (0.8 + 0.2 * r3);
+// ── NEBULA SDF / SHAPE ──────────────────────────────────────────────────────
+
+// Domain warping for the "Seagull" shape
+float seagullShape(vec2 p) {
+  // Rotate to align diagonal (Top-Right to Bottom-Left)
+  p = rotate(0.4) * p; // Slight tilt
+  
+  // Head (Center-ish, slightly offset)
+  vec2 headPos = p - vec2(-0.2, 0.1);
+  float head = smoothstep(0.4, 0.0, length(headPos)) * 1.5;
+  
+  // Wings (Arc shape)
+  // Use a curve function: y = x^2 approx
+  float wingArc = abs(p.y - 0.3 * sin(p.x * 2.0)); 
+  float wings = smoothstep(0.5, 0.0, wingArc) * smoothstep(1.2, 0.0, abs(p.x));
+  
+  // Combine
+  return head * 0.8 + wings * 0.6;
 }
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.x, u_res.y);
-  vec2 px = gl_FragCoord.xy;
-  float t = u_time;
-
-  float rotSpeed = 0.008;
-  vec2 ruv1 = rotate(t * rotSpeed) * uv;
-  vec2 ruv2 = rotate(t * rotSpeed * 1.15) * uv;
-  vec2 ruv3 = rotate(t * rotSpeed * 1.35) * uv;
-
-  // ── STARFIELD
-  float stars = 0.0;
-  stars += starLayer(ruv1, 50.0, u_seed) * 0.35;
-  stars += starLayer(ruv2 + 100.0, 30.0, u_seed + 50.0) * 0.6;
-  stars += starLayer(ruv3 + 200.0, 12.0, u_seed + 100.0) * 1.0;
-
-  // ── ETHEREAL NEBULA
-  float aspect = u_res.x / u_res.y;
-  vec2 nUV = vec2(ruv1.x * aspect, ruv1.y);
-
-  // Layer A: deep veil (low freq, slow, very subtle)
-  float veil = fbm(nUV * 1.2 + vec2(t * 0.006, -t * 0.004) + 80.0);
-  veil = pow(veil, 2.5) * 0.055;
-  vec3 veilColor = vec3(0.6, 0.15, 0.02) * veil;
-
-  // Layer B: mid structure
-  float smoke1 = fbm(nUV * 2.2 + vec2(0.0, t * 0.018));
-  float smoke2 = fbm(nUV * 1.5 + vec2(t * 0.012, 0.0) + 50.0);
-  smoke1 = pow(smoke1, 3.7) * 0.08;
-  smoke2 = pow(smoke2, 3.9) * 0.06;
-  vec3 smokeColor = vec3(1.0, 0.4, 0.03) * smoke1
-                  + vec3(0.9, 0.55, 0.1) * smoke2;
-
-  // Layer C: hot core filaments
-  float core = fbm(nUV * 3.8 + vec2(-t * 0.01, t * 0.022) + 120.0);
-  core = pow(core, 4.5) * 0.1;
-  vec3 coreColor = vec3(1.0, 0.3, 0.0) * core;
-
-  // Additive layering = translucent overlap bloom
-  vec3 nebula = veilColor + smokeColor + coreColor;
-
-  // ── SHOOTING STARS (delayed 4.5s, then every ~17s)
-  float shoot = 0.0;
-  float shootT = t - 4.5;
-  if (shootT > 0.0) {
-    shoot += shootingStar(uv, shootT, 17.0, 0.0);
-    shoot += shootingStar(uv, shootT + 8.5, 17.0, 50.0);
-  }
-
-  // ── GRAIN
-  float grain = hash(px + fract(t * 43758.5453 + u_seed) * 171.31);
-  grain = pow(grain, 1.6) * 0.045;
-
-  // ── VIGNETTE
-  float vignette = 1.0 - dot(uv, uv) * 0.6;
-  vignette = clamp(pow(max(vignette, 0.0), 0.5), 0.0, 1.0);
-
-  // ── COMPOSITE
-  vec3 color = vec3(0.0);
-  color += vec3(stars) * vignette;
-  color += nebula * vignette;
-  color += vec3(shoot);
-  color += vec3(grain);
-
-  gl_FragColor = vec4(color, 1.0);
+  // Normalize UV
+  vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.y, u_res.x); 
+  
+  // Slow movement
+  float time = u_time * 0.05;
+  
+  // ── BACKGROUND ────────────────────────────────────────────────────────────
+  vec3 bg = vec3(0.005, 0.005, 0.01); // Deep dark space, slight blue tint
+  
+  // ── STARS ─────────────────────────────────────────────────────────────────
+  // Multiple layers for parallax/depth sensation
+  vec3 stars = vec3(0.0);
+  
+  // Distant small stars
+  stars += starLayer(rotate(u_time * 0.005) * uv + vec2(10.0), 80.0, u_seed);
+  // Mid stars
+  stars += starLayer(rotate(u_time * 0.008) * uv + vec2(25.0), 30.0, u_seed + 12.0);
+  // Bright foreground stars
+  stars += starLayer(uv, 10.0, u_seed + 55.0);
+  
+  // ── NEBULA (Seagull Composition) ──────────────────────────────────────────
+  
+  // Global coordinate distortion for wispy feel
+  vec2 nUV = uv * 1.0;
+  float warp = fbm(nUV * 3.0 + vec2(time * 0.1, 0.0));
+  nUV += warp * 0.2;
+  
+  // Shape mask
+  float mask = seagullShape(uv * 0.8); // Scale to fit nicely
+  
+  // Detail layers within the shape
+  float detail1 = fbm(nUV * 4.0 + vec2(time * 0.2, -time * 0.1));
+  float detail2 = fbm(nUV * 8.0 - vec2(time * 0.1, time * 0.1));
+  
+  // Dust lanes (darker subtraction)
+  float dust = fbm(uv * 6.0 + warp + vec2(10.0));
+  
+  // Composition
+  float cloud = mask * (detail1 * 0.7 + detail2 * 0.3);
+  cloud = smoothstep(0.1, 1.0, cloud); // Contrast
+  
+  // Carve out dust
+  cloud *= smoothstep(0.35, 1.0, 1.0 - dust * 0.8);
+  
+  // Color Palette
+  // Deep reds, pinks, magenta, faint orange
+  vec3 colDeepRed = vec3(0.2, 0.0, 0.05);
+  vec3 colPink = vec3(0.8, 0.1, 0.3);
+  vec3 colOrange = vec3(1.0, 0.4, 0.1);
+  vec3 colMagenta = vec3(0.6, 0.1, 0.4);
+  
+  vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
+  nebulaCol = mix(nebulaCol, colOrange, detail2 * mask); // Highlights
+  nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); // Accents
+  
+  // Additive Blend
+  vec3 finalCloud = nebulaCol * cloud * 2.5; // Boost intensity
+  
+  // ── COMPOSITE ─────────────────────────────────────────────────────────────
+  
+  // Vignette
+  float vig = 1.0 - dot(uv, uv) * 0.4;
+  
+  vec3 finalColor = bg + stars + finalCloud;
+  finalColor *= vig;
+  
+  gl_FragColor = vec4(finalColor, 1.0);
 }
 `;
 
@@ -221,72 +241,15 @@ function buildProgram(
    React component
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/**
- * Animated space-background overlay implemented with raw WebGL.
- *
- * Renders a starfield with twinkling stars, ethereal orange nebula wisps,
- * periodic shooting stars, subtle film grain and a vignette — all running
- * in a single fragment shader.
- *
- * Visibility can be toggled via localStorage (key configurable through props)
- * and is synchronised across tabs via storage events.
- */
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
   className = "pointer-events-none fixed inset-0",
   zIndex,
   fps = 60,
-  storageKey = "staticNoiseVisible",
-  defaultVisible = true,
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState<boolean>(defaultVisible);
-
-  /* ── localStorage visibility toggle ──────────────────────────────────── */
-  useEffect(() => {
-    const checkVisibility = () => {
-      try {
-        const storedValue = localStorage.getItem(storageKey);
-        if (storedValue !== null) {
-          setIsVisible(storedValue === "true");
-        } else {
-          localStorage.setItem(storageKey, defaultVisible.toString());
-          setIsVisible(defaultVisible);
-        }
-      } catch {
-        console.warn(
-          "localStorage not available, using default visibility:",
-          defaultVisible,
-        );
-        setIsVisible(defaultVisible);
-      }
-    };
-
-    checkVisibility();
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === storageKey) checkVisibility();
-    };
-    const handleCustomStorageChange = () => checkVisibility();
-
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener(
-      "localStorageChange",
-      handleCustomStorageChange as EventListener,
-    );
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener(
-        "localStorageChange",
-        handleCustomStorageChange as EventListener,
-      );
-    };
-  }, [storageKey, defaultVisible]);
 
   /* ── WebGL lifecycle ─────────────────────────────────────────────────── */
   useEffect(() => {
-    if (!isVisible) return;
-
     const container = boxRef.current;
     if (!container) return;
 
@@ -296,7 +259,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
-    canvas.style.background = "#000";
+    canvas.style.background = "#050508"; // Fallback deep space color
     container.appendChild(canvas);
 
     const opts: WebGLContextAttributes = {
@@ -338,29 +301,19 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     const prevSize = { w: 0, h: 0 };
 
     const resize = (force = false) => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const currentW = Math.max(
-        1,
-        Math.floor(container.clientWidth * dpr),
-      );
-      const currentH = Math.max(
-        1,
-        Math.floor(container.clientHeight * dpr),
-      );
+      const dpr = Math.min(window.devicePixelRatio || 1, 2); // Max DPR 2 for performance
+      const currentW = Math.max(1, Math.floor(container.clientWidth * dpr));
+      const currentH = Math.max(1, Math.floor(container.clientHeight * dpr));
 
       const widthIncreased = currentW > prevSize.w;
-      const widthDecreasedSignificantly = prevSize.w - currentW > 120 * dpr;
       const heightIncreased = currentH > prevSize.h;
-      const heightDecreasedSignificantly =
-        prevSize.h - currentH > 120 * dpr;
-
+      // Reallocate if size changes significantly or increases
       const shouldUpdate =
         force ||
-        prevSize.w === 0 ||
         widthIncreased ||
-        widthDecreasedSignificantly ||
         heightIncreased ||
-        heightDecreasedSignificantly;
+        Math.abs(currentW - prevSize.w) > 50 ||
+        Math.abs(currentH - prevSize.h) > 50;
 
       if (shouldUpdate) {
         canvas.width = currentW;
@@ -426,9 +379,7 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
 
       if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, [fps, isVisible]);
-
-  if (!isVisible) return null;
+  }, [fps]);
 
   return (
     <div
