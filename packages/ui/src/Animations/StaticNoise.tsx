@@ -121,18 +121,12 @@ vec3 starLayer(vec2 uv, float density, float seed, vec3 tint) {
   if (rnd < 0.9775) return vec3(0.0); 
   
   // REDUCED SIZE 2 (50% smaller max)
-  // New: 0.01 + 0.0175 * hash... => Max ~0.0275
   float sizeBase = 0.01 + 0.0175 * hash(id * 9.2); 
   
   // SMOOTH BLINKING
-  // Previously: 0.5 + 1.0 * rnd blinkSpeed. 
-  // User says "blink smootbher". We reduce frequency and intensity range.
-  // Using u_time * smallFactor + phase.
-  float blinkSpeed = 0.2 + 0.5 * rnd; // Slower average blink
+  float blinkSpeed = 0.2 + 0.5 * rnd; 
   float blinkPhase = rnd * 50.0;
   
-  // Sine wave is naturally smooth, but let's compress range so it never goes black.
-  // 0.7 base brightness + 0.3 variation = drops to 0.4 min, peaks at 1.0
   float brightness = 0.7 + 0.3 * sin(u_time * blinkSpeed + blinkPhase);
  
   vec2 offset = (vec2(hash(id), hash(id + 11.0)) - 0.5) * 0.8;
@@ -146,59 +140,97 @@ vec3 starLayer(vec2 uv, float density, float seed, vec3 tint) {
 
 // ── NEBULA SDF / SHAPE ──────────────────────────────────────────────────────
 
-float seagullShape(vec2 p) {
+// Now accepts time for dynamic shaping
+float seagullShape(vec2 p, float t) {
   p = rotate(0.4) * p; 
   vec2 headPos = p - vec2(-0.2, 0.1);
   float head = smoothstep(0.4, 0.0, length(headPos)) * 1.5;
-  float wingArc = abs(p.y - 0.3 * sin(p.x * 2.0)); 
-  float wings = smoothstep(0.5, 0.0, wingArc) * smoothstep(1.2, 0.0, abs(p.x));
+  
+  // Dynamic wing properties
+  // "Change shape... more wide or long and dim... bright while narrow"
+  // Period ~10s
+  float shapeCycle = sin(t * 0.5); 
+  
+  // Amplitude (width): Base 0.3 +/- 0.1
+  float amplitude = 0.3 + shapeCycle * 0.1; 
+  // Length (x-spread): Base 1.2 +/- 0.3
+  // When wide (amplitude high), length should ideally change too?
+  float lengthFactor = 1.2 - shapeCycle * 0.3; 
+  
+  float wingArc = abs(p.y - amplitude * sin(p.x * 2.0)); 
+  float wings = smoothstep(0.5, 0.0, wingArc) * smoothstep(lengthFactor, 0.0, abs(p.x));
+  
   return head * 0.8 + wings * 0.6;
 }
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.y, u_res.x); 
   
-  // ── MOVEMENT: ZOOM/DIRECTIONAL ────────────────────────────────────────────
-  // 50% slower speed request
-  float travelTime = u_time * u_speed * 0.025; 
+  // ── MOVEMENT: ROTATION CLOCKWISE ──────────────────────────────────────────
+  // User wants "stars to go around... clockwise... very close to a circle"
+  // "Rotating spaceship feel"
   
-  // Direction: Bottom-Left -> Top-Right
-  vec2 dir = vec2(1.0, 0.8); 
-  vec2 travel = dir * travelTime;
+  // Center of rotation can be center of screen (0,0 in UV space)
+  // To rotate stars CLOCKWISE, we rotate UVs ANTI-CLOCKWISE? 
+  // If camera rotates CW, world rotates CCW.
+  // Wait, if I spin CW, the room spins CCW relative to my view.
+  // User said "stars go around... clockwise".
+  // So we rotate UVs in negative direction (CW)? 
+  // Standard rotation matrix: +angle is CCW. -angle is CW.
   
-  // Nebula: Constrained/Looping
-  float nebTime = u_time * u_nebula_speed * 0.05;
-  float globalRot = sin(nebTime * 0.4) * 0.05; 
-  mat2 viewRot = rotate(globalRot);
-  
-  // Bounded translation (looping effect)
-  // Amplitude 0.15 is small enough to stay on screen (UV is -0.5 to 0.5 roughly)
-  vec2 nebPan = vec2(sin(nebTime * 0.3), cos(nebTime * 0.25)) * 0.15; 
+  float rotSpeed = u_speed * 0.1;
+  float angle = u_time * rotSpeed; // Positive angle for Clockwise visual rotation
+  mat2 rot = rotate(angle);
   
   // ── BACKGROUND ────────────────────────────────────────────────────────────
   vec3 bg = vec3(0.005, 0.005, 0.01); 
   
-  // ── LAYER 1: DISTANT STARS (Zoom Parallax) ────────────────────────────────
+  // ── LAYER 1: DISTANT STARS (Rotation Parallax) ────────────────────────────
   vec3 starsBack = vec3(0.0);
   
+  // Rotation parallax: distant stars rotate slower? 
+  // Actually, purely rotational movement means distant things move same angular speed usually 
+  // BUT for "depth" feel, maybe we slighty vary the rotation speed or center?
+  // Let's stick to true rotation for now, maybe scale UVs for depth (zoom)
+  
   // Layer 1 (Furthest)
-  vec2 uvStar1 = uv - travel * 0.2; 
+  vec2 uvStar1 = rot * uv; 
   starsBack += starLayer(uvStar1, 80.0, u_seed, vec3(1.0));
   
-  // Layer 1.5
-  vec2 uvStar2 = uv - travel * 0.4 + vec2(0.5); 
+  // Layer 1.5 (Slightly faster rotation or just offset?)
+  // Let's create a "spiral" or "very close to circle" effect by adding small drift
+  // Drift outward/inward over time? "Not exactly a circle"
+  vec2 drift = vec2(sin(u_time * 0.1), cos(u_time * 0.13)) * 0.1;
+  vec2 uvStar2 = rot * (uv + drift) + vec2(0.5); 
   starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(1.0));
 
-  // ── NEBULA (Middle Layer) ─────────────────────────────────────────────────
+  // ── NEBULA (Dynamic Shape) ────────────────────────────────────────────────
   
-  vec2 nebulaUV = viewRot * uv + nebPan; // Constrained movement
+  // Nebula stays on screen, but moves/shapes dynamically
+  float nebTime = u_time * u_nebula_speed * 0.05;
+  
+  // Dynamic Intensity/Brightness
+  // "dim... or bright"
+  // Inverse to width? Wide = Dim, Narrow = Bright
+  float shapeCycle = sin(nebTime * 10.0 * 0.5); // Same freq as shape function
+  
+  float brightnessMod = 1.0 - shapeCycle * 0.4; // 0.6 to 1.4 range approx
+  
+  // Constrained Movement
+  vec2 nebPan = vec2(sin(nebTime * 0.3), cos(nebTime * 0.25)) * 0.15; 
+  vec2 nebulaUV = uv + nebPan; // Constrained
+  
+  // Rotate nebula slowly (independent of ship rotation to show it's "space")
+  // Or should it rotate with the stars? Usually background rotates with stars.
+  // Let's apply half-rotation to imply distance?
+  nebulaUV = rotate(angle * 0.5) * nebulaUV;
   
   vec2 nUV = nebulaUV * 1.0;
-  // Domain warp evolution
   float warp = fbm(nUV * 3.0 + vec2(nebTime * 0.15, 0.0));
   nUV += warp * 0.2;
   
-  float mask = seagullShape(nebulaUV * 0.8); 
+  // Dynamic Shape Call
+  float mask = seagullShape(nebulaUV * 0.8, nebTime * 10.0); 
   
   float detail1 = fbm(nUV * 4.0 + vec2(nebTime * 0.3, -nebTime * 0.1));
   float detail2 = fbm(nUV * 8.0 - vec2(nebTime * 0.15, nebTime * 0.2));
@@ -219,24 +251,26 @@ void main() {
   nebulaCol = mix(nebulaCol, colOrange, detail2 * mask); 
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
-  vec3 finalCloud = nebulaCol * cloud * 2.5; 
+  vec3 finalCloud = nebulaCol * cloud * 2.5 * brightnessMod; // Apply brightness mod
 
   // ── ORANGE STARS (Nebula Internal) ────────────────────────────────────────
   vec3 orangeStars = vec3(0.0);
   if (cloud > 0.2) {
-    // Smoother blink for orange stars too
     orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2));
     orangeStars *= smoothstep(0.2, 0.5, cloud);
   }
 
-  // ── LAYER 2: FOREGROUND STARS (Zoom Parallax) ─────────────────────────────
+  // ── LAYER 2: FOREGROUND STARS (Rotation Parallax) ─────────────────────────
   vec3 starsFront = vec3(0.0);
   
-  // Closer = faster travel
-  vec2 uvStar3 = uv - travel * 0.8 + vec2(0.2, 0.8);
+  // Faster rotation for closer feeling?
+  mat2 rotFast = rotate(angle * 1.2);
+  
+  vec2 uvStar3 = rotFast * uv + vec2(0.2, 0.8);
   starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(1.0)); 
   
-  vec2 uvStar4 = uv - travel * 1.5 + vec2(0.9, 0.3); // Fastest
+  mat2 rotVeryFast = rotate(angle * 1.5);
+  vec2 uvStar4 = rotVeryFast * uv + vec2(0.9, 0.3); // Fastest
   starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(1.0)); 
   
   // ── SHOOTING STARS ────────────────────────────────────────────────────────
