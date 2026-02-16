@@ -144,7 +144,7 @@ export function WebLayout() {
 
                         <main
                             key={location.pathname}
-                            className="page-transition"
+                            className="page-transition min-h-[50vh]"
                         >
                             <Outlet />
                         </main>
