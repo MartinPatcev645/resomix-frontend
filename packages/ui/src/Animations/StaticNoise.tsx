@@ -39,6 +39,7 @@ highp float hash(highp vec2 p) {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+// 3D Noise for smoother temporal transitions if needed, but 2D is fine for blinking
 float noise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
@@ -114,10 +115,15 @@ vec3 starLayer(vec2 uv, float density, float seed, vec3 tint) {
   
   float rnd = hash(id + seed * 0.001);
   
+  // REDUCED DENSITY 2 (50% less than previous step)
+  // Previous threshold: < 0.955 (~4.5% fill)
+  // New target: ~2.25% fill -> Threshold < 0.9775
   if (rnd < 0.9775) return vec3(0.0); 
   
+  // REDUCED SIZE 2 (50% smaller max)
   float sizeBase = 0.01 + 0.0175 * hash(id * 9.2); 
   
+  // SMOOTH BLINKING
   float blinkSpeed = 0.2 + 0.5 * rnd; 
   float blinkPhase = rnd * 50.0;
   
@@ -126,6 +132,7 @@ vec3 starLayer(vec2 uv, float density, float seed, vec3 tint) {
   vec2 offset = (vec2(hash(id), hash(id + 11.0)) - 0.5) * 0.8;
   float d = length(gv - offset);
   
+  // Sharp star
   float core = smoothstep(sizeBase, sizeBase - 0.005, d);
   
   return tint * core * brightness; 
@@ -142,11 +149,6 @@ vec2 seagullShapeStart(vec2 p, float t) {
   float cycle = sin(t * 0.6); 
   
   // Width/Amplitude: 
-  // Narrow (side view) -> High Amplitude (dense feel?) OR Thin spread
-  // Let's say: 
-  // Cycle > 0: "Top View" -> Wide area, Dimmer
-  // Cycle < 0: "Side View" -> Narrow area, Brighter
-  
   // Map cycle -1..1 to Width Factor 0.5..1.5
   float widthFactor = 1.0 + cycle * 0.4;
   
@@ -162,7 +164,6 @@ vec2 seagullShapeStart(vec2 p, float t) {
   float lengthVal = 1.2; 
   
   // Add some large scale noise warp to shape edges so it's not perfect math shape
-  // "Change its shape like a cloud"
   float shapeNoise = noise(p * 2.0 + t * 0.2); 
   amplitude += shapeNoise * 0.1;
   
@@ -211,10 +212,10 @@ void main() {
   vec2 nUV = nebulaUV * 1.0;
   // Deep Domain Warp for "Cloud" feel
   float warp = fbm(nUV * 3.0 + vec2(nebTime * 0.15, 0.0));
-  nUV += warp * 0.25; // Increased warp strength for more organic look
+  nUV += warp * 0.25; 
   
   // Dynamic Shape & Brightness Logic
-  vec2 shapeData = seagullShapeStart(nebulaUV * 0.8, nebTime * 5.0); // Pass fast time for shape morph
+  vec2 shapeData = seagullShapeStart(nebulaUV * 0.8, nebTime * 5.0); 
   float mask = shapeData.x;
   float densityMult = shapeData.y;
   
@@ -227,18 +228,21 @@ void main() {
   cloud = smoothstep(0.1, 1.0, cloud); 
   cloud *= smoothstep(0.35, 1.0, 1.0 - dust * 0.8);
   
-  // Colors
-  vec3 colDeepRed = vec3(0.2, 0.0, 0.05);
-  vec3 colPink = vec3(0.8, 0.1, 0.3);
-  vec3 colOrange = vec3(1.0, 0.4, 0.1);
-  vec3 colMagenta = vec3(0.6, 0.1, 0.4);
+  // Colors (DARKENED for White Text Readability)
+  // Originals were ~0.8-1.0 brightness. Now capped around ~0.4-0.5 max.
+  
+  vec3 colDeepRed = vec3(0.1, 0.0, 0.02);    // Very dark base
+  vec3 colPink = vec3(0.4, 0.05, 0.15);      // Muted pink
+  vec3 colOrange = vec3(0.5, 0.2, 0.05);     // Dark orange/brown
+  vec3 colMagenta = vec3(0.3, 0.05, 0.2);    // Dark purple
   
   vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
   nebulaCol = mix(nebulaCol, colOrange, detail2 * mask); 
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
   // Apply Dynamic Density Multiplier
-  vec3 finalCloud = nebulaCol * cloud * 2.5 * densityMult; 
+  // Reduced base multiplier from 2.5 down to 1.8 to prevent blowing out whites
+  vec3 finalCloud = nebulaCol * cloud * 1.8 * densityMult; 
 
   // ── ORANGE STARS ──────────────────────────────────────────────────────────
   vec3 orangeStars = vec3(0.0);
@@ -266,10 +270,13 @@ void main() {
   
   starsBack *= (1.0 - cloud * 0.8); 
   
-  float vig = 1.0 - dot(uv, uv) * 0.4;
+  // Stronger vignette to keep edges clear for framing if needed
+  float vig = 1.0 - dot(uv, uv) * 0.6; 
   
   vec3 finalColor = bg + starsBack + finalCloud + orangeStars + starsFront + vec3(shoot);
   finalColor *= vig;
+  
+  // Slight desaturation just to be safe for text contrast? Not needed if colors are dark enough.
   
   gl_FragColor = vec4(finalColor, 1.0);
 }
