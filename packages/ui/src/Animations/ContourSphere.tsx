@@ -30,8 +30,12 @@ export const ContourSphere: React.FC<{
    * Total scroll distance in pixels for the animation when localScroll is
    * enabled. Graphic stays centred inside this area. Default 3 × size.
    */
-  scrollAreaHeight?: number;
-}> = ({ sections = 4, localScroll = false, size = 500, scrollAreaHeight }) => {
+  scrollAreaHeight?: number | string;
+  /** GSAP ScrollTrigger start point. Defaults to "top top". */
+  start?: string;
+  /** GSAP ScrollTrigger end point. Defaults to "bottom bottom". */
+  end?: string;
+}> = ({ sections = 4, localScroll = false, size = 500, scrollAreaHeight, start, end }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -39,14 +43,17 @@ export const ContourSphere: React.FC<{
   // added so React pages that navigate away don't leak WebGL contexts.
   useEffect(() => {
     if (!wrapperRef.current) return;
-    const triggerEl = localScroll ? scrollAreaRef.current! : "body";
+    // The trigger should be the sphere itself to ensure sync with its visibility
+    const triggerEl = localScroll ? wrapperRef.current : "body";
 
     const dispose = initContourSphere(wrapperRef.current, {
       trigger: triggerEl,
       useContainerSize: localScroll,
+      start,
+      end,
     });
     return dispose;
-  }, [localScroll, scrollAreaHeight]);
+  }, [localScroll, scrollAreaHeight, start, end]);
 
   // Build the placeholder sections – their actual content can be replaced by
   // whatever you need via later composition, but we provide sensible defaults
