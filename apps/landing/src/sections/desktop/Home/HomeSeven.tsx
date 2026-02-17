@@ -1,9 +1,7 @@
 import React, { useRef } from "react";
 import ArrowBigDownSvg from "@/assets/icons/ArrowBigDown2.svg";
-// import { ButtonHeavyRight, CodeTyping } from "@resomix/ui";
-import { Terrain, ButtonHeavyRight, CodeTyping } from "@resomix/ui";
+import { ButtonHeavyRight } from "@resomix/ui";
 import { useOnScreen } from "@resomix/hooks";
-import LineThreeSvg from "@/assets/icons/line3.svg";
 import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeSeven: React.FC = () => {
@@ -27,18 +25,6 @@ const HomeSeven: React.FC = () => {
         opacity: '60%'
       }}
     >
-      <Terrain
-        speed={1.2}
-        segments={324}
-        perlinPasses={1}
-        elevation={1}
-        noiseRange={2.14}
-        sombreroAmplitude={0.6}
-        sombreroFrequency={10}
-        wireframe={true}
-        wireframeColor="#FFFFFF"
-        floorVisible={false}
-      />
     </div>
     )}
     {/* Content with higher z-index */}
@@ -59,76 +45,10 @@ const HomeSeven: React.FC = () => {
           AND EXPLORE NEW POSSIBILITIES
         </div>
       </div>
-      <div className="w-full flex justify-center items-center pt-[var(--px-60)] pb-[var(--px-140)] min-h-[var(--px-309)]">
+      <div className="w-full flex justify-center items-center pt-[var(--px-60)] pb-[var(--px-100)] min-h-[var(--px-309)]">
         <ButtonHeavyRight text="Unlock a Universe of Sounds" onClick={() => {
           window.location.href = BASE_BETA_URL
         }} link_arrow={true} className="cta-button primary" id="home-seven-unlock-button" />
-      </div>
-      <div className='flex flex-col justify-start items-start mt-[var(--px-200)]'>
-        {/* <div className="min-h-[var(--px-309)]"></div> */}
-        <div className='flex justify-center items-start w-full mt-[var(--px-60)] gap-[var(--px-235)] opacity-70 min-h-[var(--px-121-5)]'>
-          <div className="flex flex-col min-w-[var(--px-136-4)] justify-start items-start">
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              <CodeTyping
-                speed={50}
-                text="sonic_analysis..."
-              />
-            </div>
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              <CodeTyping
-                speed={50}
-                text="resonance_activated();"
-                delay={700}
-              />
-            </div>
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              <CodeTyping
-                speed={50}
-                text="waveform::quantized"
-                delay={1200}
-              />
-            </div>
-            <div className="w-full my-[var(--px-4)]">
-              <img src={LineThreeSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Line Three" className="w-[var(--px-3)] h-[var(--px-29)]" />
-            </div>
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              <CodeTyping
-                speed={50}
-                text="loop_density &gt; 97%"
-                delay={1700}
-              />
-            </div>
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              <CodeTyping
-                speed={50}
-                text="feedback_loop::stable"
-                delay={2200}
-              />
-            </div>
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
-              <CodeTyping
-                speed={50}
-                text="spectral_analysis..."
-                delay={2700}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col justify-start items-end min-w-[var(--px-117-8)]">
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)]">
-              <CodeTyping
-                speed={50}
-                text="PYXIS-1: engine.check[OK]"
-              />
-            </div>
-            <div className="text-[length:var(--px-7)] font-extralight font-fira tracking-[var(--px-2)] leading-[var(--px-32)]">
-              <CodeTyping
-                speed={50}
-                text="sound.check: PASS"
-                delay={3800}
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>

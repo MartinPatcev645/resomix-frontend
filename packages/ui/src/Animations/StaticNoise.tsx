@@ -340,49 +340,73 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       preserveDrawingBuffer: false,
       powerPreference: "default",
     };
-    const gl =
+    
+    // We store refs to GL context and Program here for use in listeners
+    let gl =
       canvas.getContext("webgl2", opts) ||
       (canvas.getContext("webgl", opts) as WebGLRenderingContext | null);
+      
     if (!gl) return;
 
-    const pgm = buildProgram(gl, VERT, FRAG);
-    if (!pgm) return;
-    gl.useProgram(pgm);
-
-    // --- Geometry (fullscreen quad) -----------------------------------------
-    const buf = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-      gl.STATIC_DRAW,
-    );
-    const aPos = gl.getAttribLocation(pgm, "a_pos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    // --- Uniforms -----------------------------------------------------------
-    const uRes = gl.getUniformLocation(pgm, "u_res");
-    const uTime = gl.getUniformLocation(pgm, "u_time");
-    const uSeed = gl.getUniformLocation(pgm, "u_seed");
-    const uSpeed = gl.getUniformLocation(pgm, "u_speed");
-    const uNebulaSpeed = gl.getUniformLocation(pgm, "u_nebula_speed");
+    let pgm: WebGLProgram | null = null;
+    let buf: WebGLBuffer | null = null;
+    let raf = 0;
     
-    gl.uniform1f(uSeed, Math.random() * 10000);
-    gl.uniform1f(uSpeed, speed);
-    gl.uniform1f(uNebulaSpeed, nebulaSpeed);
-
-    // --- Resize handling ----------------------------------------------------
+    // Uniform Locations
+    let uRes: WebGLUniformLocation | null = null;
+    let uTime: WebGLUniformLocation | null = null;
+    let uSeed: WebGLUniformLocation | null = null;
+    let uSpeed: WebGLUniformLocation | null = null;
+    let uNebulaSpeed: WebGLUniformLocation | null = null;
+    
     const prevSize = { w: 0, h: 0 };
+    const t0 = performance.now();
+
+    // Init function to setup/restore context
+    const initGL = () => {
+      if (!gl) return;
+      
+      pgm = buildProgram(gl, VERT, FRAG);
+      if (!pgm) return;
+      gl.useProgram(pgm);
+
+      // Geometry
+      buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+      const aPos = gl.getAttribLocation(pgm, "a_pos");
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      // Uniforms
+      uRes = gl.getUniformLocation(pgm, "u_res");
+      uTime = gl.getUniformLocation(pgm, "u_time");
+      uSeed = gl.getUniformLocation(pgm, "u_seed");
+      uSpeed = gl.getUniformLocation(pgm, "u_speed");
+      uNebulaSpeed = gl.getUniformLocation(pgm, "u_nebula_speed");
+      
+      gl.uniform1f(uSeed, Math.random() * 10000);
+      gl.uniform1f(uSpeed, speed);
+      gl.uniform1f(uNebulaSpeed, nebulaSpeed);
+      
+      // Force immediate resize update
+      resize(true);
+    };
 
     const resize = (force = false) => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2); // Max DPR 2 for performance
+      if (!gl || !pgm || !uRes) return;
+      
+      const dpr = Math.min(window.devicePixelRatio || 1, 2); 
       const currentW = Math.max(1, Math.floor(container.clientWidth * dpr));
       const currentH = Math.max(1, Math.floor(container.clientHeight * dpr));
 
       const widthIncreased = currentW > prevSize.w;
       const heightIncreased = currentH > prevSize.h;
-      // Reallocate if size changes significantly or increases
+      
       const shouldUpdate =
         force ||
         widthIncreased ||
@@ -400,15 +424,9 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       }
     };
 
-    const ro = new ResizeObserver(() => resize(false));
-    ro.observe(container);
-    resize(true);
-
-    // --- Render loop --------------------------------------------------------
-    let raf = 0;
+    // Main Loop
     let last = 0;
     const interval = 1000 / Math.max(1, fps);
-    const t0 = performance.now();
 
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
@@ -416,12 +434,32 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       if (now - last < interval) return;
       last = now;
 
+      if (!gl || gl.isContextLost()) return;
+
       resize();
-      gl.uniform1f(uTime, (now - t0) * 0.001);
-      gl.uniform1f(uSpeed, speed);
-      gl.uniform1f(uNebulaSpeed, nebulaSpeed);
+      
+      if (uTime) gl.uniform1f(uTime, (now - t0) * 0.001);
+      if (uSpeed) gl.uniform1f(uSpeed, speed);
+      if (uNebulaSpeed) gl.uniform1f(uNebulaSpeed, nebulaSpeed);
+      
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
+
+    // Restore Handlers
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      cancelAnimationFrame(raf);
+      console.warn("StaticNoise: WebGL context lost");
+    };
+
+    const handleContextRestored = () => {
+      console.log("StaticNoise: WebGL context restored");
+      initGL();
+      start();
+    };
+
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
+    canvas.addEventListener("webglcontextrestored", handleContextRestored, false);
 
     const start = () => {
       if (!document.hidden && !raf) raf = requestAnimationFrame(loop);
@@ -439,6 +477,10 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       }
     };
 
+    // Initialize
+    initGL();
+    const ro = new ResizeObserver(() => resize(false));
+    ro.observe(container);
     document.addEventListener("visibilitychange", onVis);
     start();
 
@@ -447,11 +489,14 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
       stop();
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVis);
+      
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
+      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
 
-      gl.deleteProgram(pgm);
-      gl.deleteBuffer(buf);
+      if (gl && pgm) gl.deleteProgram(pgm);
+      if (gl && buf) gl.deleteBuffer(buf);
 
-      const ext = gl.getExtension("WEBGL_lose_context");
+      const ext = gl?.getExtension("WEBGL_lose_context");
       if (ext) ext.loseContext();
 
       if (container.contains(canvas)) container.removeChild(canvas);
