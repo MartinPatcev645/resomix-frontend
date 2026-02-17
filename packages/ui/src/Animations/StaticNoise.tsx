@@ -210,17 +210,22 @@ void main() {
   cloud = smoothstep(0.1, 1.0, cloud); 
   cloud *= smoothstep(0.35, 1.0, 1.0 - dust * 0.8);
   
-  // Colors (Darkened)
-  vec3 colDeepRed = vec3(0.1, 0.0, 0.02);    
-  vec3 colPink = vec3(0.4, 0.05, 0.15);      
+  // Colors (Darkened for better foreground contrast)
+  vec3 colDeepRed = vec3(0.08, 0.0, 0.015);    
+  vec3 colPink = vec3(0.3, 0.04, 0.12);      
   vec3 colOrange = vec3(0.5, 0.2, 0.05);     
-  vec3 colMagenta = vec3(0.3, 0.05, 0.2);    
+  vec3 colMagenta = vec3(0.25, 0.04, 0.18);    
   
   vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
-  nebulaCol = mix(nebulaCol, colOrange, detail2 * mask); 
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
-  vec3 finalCloud = nebulaCol * cloud * 1.8 * densityMult; 
+  // The Red/Pink/Magenta core pulses with densityMult
+  vec3 core = nebulaCol * densityMult;
+  
+  // The Orange highlights are kept at a constant low brightness (static dim glow)
+  vec3 highlights = colOrange * detail2 * mask * 0.15;
+  
+  vec3 finalCloud = (core + highlights) * cloud * 1.8; 
 
   // ── ORANGE STARS ──────────────────────────────────────────────────────────
   vec3 orangeStars = vec3(0.0);
