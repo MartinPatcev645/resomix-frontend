@@ -1,6 +1,6 @@
 import React from "react";
-import { FlyingThroughSpace, IconComp, ButtonHeavyRight } from "@resomix/ui";
-// import { Remains, IconComp } from "@resomix/ui";
+import { IconComp, ButtonHeavyRight } from "@resomix/ui";
+// import { Remains, IconComp, FlyingThroughSpace } from "@resomix/ui";
 // import { BackgroundNoise } from "@/components/index.ts";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
@@ -45,10 +45,10 @@ const HomeHero: React.FC = () => (
       {/* Background noise layers (two, for consistency with other sections) */}
       {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
-      {/* FlyingThroughSpace background animation */}
-      <div className="absolute inset-0 w-full h-full">
+      {/* FlyingThroughSpace background animation, removeed because using StaticNoise */}
+      {/* <div className="absolute inset-0 w-full h-full">
         <FlyingThroughSpace />
-      </div>
+      </div> */}
 
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-start w-full h-full select-none -mt-[var(--px-20)]">

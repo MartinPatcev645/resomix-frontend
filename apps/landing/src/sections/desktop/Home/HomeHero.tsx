@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
-import { Remains, IconComp, ButtonHeavyRight } from "@resomix/ui";
-import { useOnScreen } from "@resomix/hooks";
+import { IconComp, ButtonHeavyRight } from "@resomix/ui";
+// import { useOnScreen } from "@resomix/hooks";
 // import { BackgroundNoise } from "@/components/index.ts";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
@@ -13,7 +13,7 @@ import { BASE_BETA_URL, FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomi
 
 const HomeHero: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
+  // const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
     <div ref={sectionRef} className="relative">
@@ -51,10 +51,10 @@ const HomeHero: React.FC = () => {
         {/* Background noise layers (two, for consistency with other sections) */}
         {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
 
-        {/* Remains background animation */}
-        <div className="absolute left-[var(--px-1)] top-[var(--px-1)] w-[var(--px-1151)] h-[var(--px-626)]">
+        {/* Remains background animation, removed for now */}
+        {/* <div className="absolute left-[var(--px-1)] top-[var(--px-1)] w-[var(--px-1151)] h-[var(--px-626)]">
           {isVisible && <Remains />}
-        </div>
+        </div> */}
 
         {/* Overlay content */}
         <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none">

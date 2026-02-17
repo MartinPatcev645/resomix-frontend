@@ -21,6 +21,10 @@ export interface ContourSphereOptions {
   trigger?: HTMLElement | string;
   /** if true, renderer sizing is based on container instead of window */
   useContainerSize?: boolean;
+  /** GSAP ScrollTrigger start point. Defaults to "top top". */
+  start?: string;
+  /** GSAP ScrollTrigger end point. Defaults to "bottom bottom". */
+  end?: string;
 }
 
 export function initContourSphere(
@@ -398,8 +402,8 @@ export function initContourSphere(
 
     mainScrollTrigger = ScrollTrigger.create({
       trigger: options.trigger || "body",
-      start: "top top",
-      end: "bottom bottom",
+      start: options.start || "top top",
+      end: options.end || "bottom bottom",
       onUpdate: (self) => {
         /* --- original section-specific modifiers (abridged not to exceed token) --- */
         // Get scroll progress

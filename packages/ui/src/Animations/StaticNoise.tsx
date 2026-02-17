@@ -5,126 +5,419 @@ export interface StaticNoiseProps {
   className?: string;
   /** Optional z-index so you can position above/below other layers. */
   zIndex?: number;
-  /** Target frames-per-second for the noise refresh. Defaults to 20 (≈ original). */
+  /** Target frames-per-second for the render loop. Defaults to 60. */
   fps?: number;
-  /** localStorage variable name to check for visibility. Defaults to 'staticNoiseVisible'. */
-  storageKey?: string;
-  /** Default visibility state if no localStorage value is found. Defaults to true. */
-  defaultVisible?: boolean;
+  /** Speed of the starfield movement (spaceship effect). Defaults to 1.0. */
+  speed?: number;
+  /** Speed of the nebula's internal evolution/rotation. Defaults to 1.5. */
+  nebulaSpeed?: number;
 }
 
-/**
- * Static-noise overlay implemented with raw WebGL (no three.js).
- *
- * The fragment shader and render loop are lifted verbatim from the
- * `test - Copy (2).html` proof-of-concept, packaged here as a reusable React
- * component. Behaviour, look and performance should be **identical** to the
- * HTML demo, merely wrapped for convenient reuse across pages.
- */
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLSL Shaders — Seagull Nebula (IC 2177) Representation
+   Deep red/pink emission nebula with a distinct "bird" shape against a dense starfield.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const VERT = `
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FRAG = `
+precision highp float;
+uniform vec2  u_res;
+uniform float u_time;
+uniform float u_seed;
+uniform float u_speed;        // Starfield "travel" speed
+uniform float u_nebula_speed; // Nebula evolution/rotation speed
+
+// ── UTILS ───────────────────────────────────────────────────────────────────
+
+highp float hash(highp vec2 p) {
+  highp vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+// 3D Noise for smoother temporal transitions if needed, but 2D is fine for blinking
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+mat2 rotate(float a) {
+  float s = sin(a), c = cos(a);
+  return mat2(c, -s, s, c);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+  for (int i = 0; i < 5; i++) {
+    v += amp * noise(p);
+    p = rot * p * 2.0 + vec2(1.2, 3.4);
+    amp *= 0.5;
+  }
+  return v;
+}
+
+// ── SHOOTING STAR ───────────────────────────────────────────────────────────
+
+float shootingStar(vec2 uv, float t, float interval, float slot) {
+  float timeOffset = hash(vec2(slot, 12.34)) * 100.0;
+  float adjustedTime = t + timeOffset;
+  
+  float cycle = floor(adjustedTime / interval);
+  float local = adjustedTime - cycle * interval;
+  
+  float duration = 1.2; 
+  if (local > duration) return 0.0;
+  
+  float progress = local / duration;
+  
+  float r1 = hash(vec2(cycle + slot, slot + 7.0));
+  float r2 = hash(vec2(cycle + slot, slot + 13.0));
+  float r3 = hash(vec2(cycle + slot, slot + 23.0));
+  
+  vec2 origin = vec2(mix(-0.8, 0.8, r1), mix(-0.2, 0.8, r2));
+  float angle = mix(-0.5, -2.5, r3); 
+  vec2 dir = vec2(cos(angle), sin(angle));
+  
+  float speed = 0.8 + 0.5 * r2;
+  vec2 head = origin + dir * progress * speed;
+  float trailLen = 0.15 + 0.1 * r1;
+  vec2 tail = head - dir * trailLen;
+  
+  vec2 pa = uv - tail;
+  vec2 ba = head - tail;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  float d = length(pa - ba * h);
+  
+  float streak = smoothstep(0.002, 0.0005, d);
+  streak *= h; 
+  streak *= smoothstep(0.0, 0.1, progress) * smoothstep(1.0, 0.5, progress); 
+  
+  return streak;
+}
+
+// ── STARFIELD ───────────────────────────────────────────────────────────────
+
+vec3 starLayer(vec2 uv, float density, float seed, vec3 tint, float probability) {
+  vec2 id = floor(uv * density);
+  vec2 gv = fract(uv * density) - 0.5;
+  
+  float rnd = hash(id + seed * 0.001);
+  
+  // Probability culling control
+  if (rnd > probability) return vec3(0.0); 
+  
+  // Size logic
+  float sizeBase = 0.01 + 0.0175 * hash(id * 9.2); 
+  
+  // Smooth Blinking
+  float blinkSpeed = 0.2 + 0.5 * rnd; 
+  float blinkPhase = rnd * 50.0;
+  
+  float brightness = 0.7 + 0.3 * sin(u_time * blinkSpeed + blinkPhase);
+ 
+  vec2 offset = (vec2(hash(id), hash(id + 11.0)) - 0.5) * 0.8;
+  float d = length(gv - offset);
+  
+  // Sharp star
+  float core = smoothstep(sizeBase, sizeBase - 0.005, d);
+  
+  return tint * core * brightness; 
+}
+
+// ── NEBULA SDF / SHAPE ──────────────────────────────────────────────────────
+
+// Returns vec2(mask, brightness_multiplier)
+vec2 seagullShapeStart(vec2 p, float t) {
+  p = rotate(0.4) * p; 
+  
+  // Dynamic Shape Cycle: Volumetric Feel
+  float cycle = sin(t * 0.6); 
+  
+  float widthFactor = 1.0 + cycle * 0.4;
+  float brightness = 1.6 / (widthFactor * widthFactor); 
+  
+  vec2 headPos = p - vec2(-0.2, 0.1);
+  float head = smoothstep(0.4 * widthFactor, 0.0, length(headPos)) * 1.5;
+  
+  float amplitude = 0.3 * widthFactor; 
+  float lengthVal = 1.2; 
+  
+  float shapeNoise = noise(p * 2.0 + t * 0.2); 
+  amplitude += shapeNoise * 0.1;
+  
+  float wingArc = abs(p.y - amplitude * sin(p.x * 2.0)); 
+  float wings = smoothstep(0.5 * widthFactor, 0.0, wingArc) * smoothstep(lengthVal, 0.0, abs(p.x));
+  
+  return vec2(head * 0.8 + wings * 0.6, brightness);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.y, u_res.x); 
+  
+  // ── SETTINGS: SLOWER ──────────────────────────────────────────────────────
+  float travelTime = u_time * u_speed * 0.00625; 
+  float nebTime = u_time * u_nebula_speed * 0.0166;
+  float rotSpeed = u_speed * 0.02; 
+  float angle = u_time * rotSpeed; // Clockwise visual
+  mat2 rot = rotate(angle);
+  
+  // ── BACKGROUND ────────────────────────────────────────────────────────────
+  vec3 bg = vec3(0.005, 0.005, 0.01); 
+  
+  // ── LAYER 1: DISTANT STARS (Small) ────────────────────────────────────────
+  vec3 starsBack = vec3(0.0);
+  
+  // Probability ~0.0225 (Keep existing small star density)
+  vec2 uvStar1 = rot * uv; 
+  starsBack += starLayer(uvStar1, 80.0, u_seed, vec3(1.0), 0.0225);
+  
+  vec2 drift = vec2(sin(u_time * 0.05), cos(u_time * 0.06)) * 0.05;
+  vec2 uvStar2 = rot * (uv + drift) + vec2(0.5); 
+  starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(1.0), 0.0225);
+
+  // ── NEBULA (Volumetric) ───────────────────────────────────────────────────
+  
+  vec2 nebPan = vec2(sin(nebTime * 0.3), cos(nebTime * 0.25)) * 0.15; 
+  vec2 nebulaUV = uv + nebPan; 
+  nebulaUV = rotate(angle * 0.3) * nebulaUV; 
+  
+  vec2 nUV = nebulaUV * 1.0;
+  float warp = fbm(nUV * 3.0 + vec2(nebTime * 0.15, 0.0));
+  nUV += warp * 0.25; 
+  
+  vec2 shapeData = seagullShapeStart(nebulaUV * 0.8, nebTime * 5.0); 
+  float mask = shapeData.x;
+  float densityMult = shapeData.y;
+  
+  float detail1 = fbm(nUV * 4.0 + vec2(nebTime * 0.3, -nebTime * 0.1));
+  float detail2 = fbm(nUV * 8.0 - vec2(nebTime * 0.15, nebTime * 0.2));
+  
+  float dust = fbm(nebulaUV * 6.0 + warp + vec2(10.0));
+  
+  float cloud = mask * (detail1 * 0.7 + detail2 * 0.3);
+  cloud = smoothstep(0.1, 1.0, cloud); 
+  cloud *= smoothstep(0.35, 1.0, 1.0 - dust * 0.8);
+  
+  // Colors (Darkened for better foreground contrast)
+  vec3 colDeepRed = vec3(0.08, 0.0, 0.015);    
+  vec3 colPink = vec3(0.3, 0.04, 0.12);      
+  vec3 colOrange = vec3(0.5, 0.2, 0.05);     
+  vec3 colMagenta = vec3(0.25, 0.04, 0.18);    
+  
+  vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
+  nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
+  
+  // The Red/Pink/Magenta core pulses with densityMult
+  vec3 core = nebulaCol * densityMult;
+  
+  // The Orange highlights are kept at a constant low brightness (static dim glow)
+  vec3 highlights = colOrange * detail2 * mask * 0.15;
+  
+  vec3 finalCloud = (core + highlights) * cloud * 1.8; 
+
+  // ── ORANGE STARS ──────────────────────────────────────────────────────────
+  vec3 orangeStars = vec3(0.0);
+  if (cloud * densityMult > 0.3) {
+    orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2), 0.0225);
+    orangeStars *= smoothstep(0.3, 0.6, cloud * densityMult);
+  }
+
+  // ── LAYER 2: FOREGROUND STARS (Big) ───────────────────────────────────────
+  // User wants "3x more" of these big stars.
+  // Original implied probability was ~0.0225 (1 - 0.9775)
+  // New target probability: 0.0225 * 3 = 0.0675
+  vec3 starsFront = vec3(0.0);
+  
+  mat2 rotFast = rotate(angle * 1.2);
+  vec2 uvStar3 = rotFast * uv + vec2(0.2, 0.8);
+  starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(1.0), 0.0675); 
+  
+  mat2 rotVeryFast = rotate(angle * 1.5);
+  vec2 uvStar4 = rotVeryFast * uv + vec2(0.9, 0.3); 
+  starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(1.0), 0.0675); 
+  
+  // ── SHOOTING STARS ────────────────────────────────────────────────────────
+  float shoot = 0.0;
+  shoot += shootingStar(uv, u_time, 7.0, 10.0); 
+  
+  // ── COMPOSITE ─────────────────────────────────────────────────────────────
+  
+  starsBack *= (1.0 - cloud * 0.8); 
+  
+  float vig = 1.0 - dot(uv, uv) * 0.6; 
+  
+  vec3 finalColor = bg + starsBack + finalCloud + orangeStars + starsFront + vec3(shoot);
+  finalColor *= vig;
+  
+  gl_FragColor = vec4(finalColor, 1.0);
+}
+`;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WebGL helpers
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function compileShader(
+  gl: WebGLRenderingContext,
+  type: number,
+  src: string,
+): WebGLShader | null {
+  const s = gl.createShader(type);
+  if (!s) return null;
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(s));
+    gl.deleteShader(s);
+    return null;
+  }
+  return s;
+}
+
+function buildProgram(
+  gl: WebGLRenderingContext,
+  vSrc: string,
+  fSrc: string,
+): WebGLProgram | null {
+  const v = compileShader(gl, gl.VERTEX_SHADER, vSrc);
+  const f = compileShader(gl, gl.FRAGMENT_SHADER, fSrc);
+  if (!v || !f) return null;
+  const p = gl.createProgram()!;
+  gl.attachShader(p, v);
+  gl.attachShader(p, f);
+  gl.linkProgram(p);
+  gl.detachShader(p, v);
+  gl.detachShader(p, f);
+  gl.deleteShader(v);
+  gl.deleteShader(f);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(p));
+    gl.deleteProgram(p);
+    return null;
+  }
+  return p;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   React component
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 export const StaticNoise: React.FC<StaticNoiseProps> = ({
   className = "pointer-events-none fixed inset-0",
   zIndex,
-  fps = 20,
-  storageKey = "staticNoiseVisible",
-  defaultVisible = true,
+  fps = 60,
+  speed = 1.0,
+  nebulaSpeed = 1.5,
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState<boolean>(defaultVisible);
 
-  // Check localStorage on component mount and set up storage event listener
+  /* ── WebGL lifecycle ─────────────────────────────────────────────────── */
   useEffect(() => {
-    const checkVisibility = () => {
-      try {
-        const storedValue = localStorage.getItem(storageKey);
-        if (storedValue !== null) {
-          setIsVisible(storedValue === "true");
-        } else {
-          // If no value exists, set the default
-          localStorage.setItem(storageKey, defaultVisible.toString());
-          setIsVisible(defaultVisible);
-        }
-      } catch (error) {
-        // Fallback if localStorage is not available
-        console.warn("localStorage not available, using default visibility:", defaultVisible);
-        setIsVisible(defaultVisible);
-      }
-    };
-
-    // Check initial value
-    checkVisibility();
-
-    // Listen for storage changes (from other tabs/windows)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === storageKey) {
-        checkVisibility();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Optional: Also listen for custom events if you want to update from same tab
-    const handleCustomStorageChange = () => {
-      checkVisibility();
-    };
-
-    window.addEventListener("localStorageChange", handleCustomStorageChange as EventListener);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("localStorageChange", handleCustomStorageChange as EventListener);
-    };
-  }, [storageKey, defaultVisible]);
-
-  useEffect(() => {
-    // Don't initialize WebGL if not visible
-    if (!isVisible) return;
-
     const container = boxRef.current;
     if (!container) return;
 
-    // --- Canvas / GL context --------------------------------------------------
+    // --- Canvas / GL context ------------------------------------------------
     const canvas = document.createElement("canvas");
     canvas.style.display = "block";
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
-    canvas.style.mixBlendMode = "multiply"; // Creates "Dark Static" effect
-    canvas.style.opacity = "0.20";          // Controls intensity
+    canvas.style.background = "#050508"; // Fallback deep space color
     container.appendChild(canvas);
 
-    const gl = canvas.getContext("webgl", {
-      alpha: true,
-      premultipliedAlpha: false,
-      powerPreference: "low-power",
+    const opts: WebGLContextAttributes = {
+      alpha: false,
       antialias: false,
       depth: false,
       stencil: false,
       preserveDrawingBuffer: false,
-    });
+      powerPreference: "default",
+    };
+    
+    // We store refs to GL context and Program here for use in listeners
+    let gl =
+      canvas.getContext("webgl2", opts) ||
+      (canvas.getContext("webgl", opts) as WebGLRenderingContext | null);
+      
     if (!gl) return;
 
-    // --- Resize handling ------------------------------------------------------
+    let pgm: WebGLProgram | null = null;
+    let buf: WebGLBuffer | null = null;
+    let raf = 0;
+    
+    // Uniform Locations
+    let uRes: WebGLUniformLocation | null = null;
+    let uTime: WebGLUniformLocation | null = null;
+    let uSeed: WebGLUniformLocation | null = null;
+    let uSpeed: WebGLUniformLocation | null = null;
+    let uNebulaSpeed: WebGLUniformLocation | null = null;
+    
     const prevSize = { w: 0, h: 0 };
-    const scale = 1;
+    const t0 = performance.now();
+
+    // Init function to setup/restore context
+    const initGL = () => {
+      if (!gl) return;
+      
+      pgm = buildProgram(gl, VERT, FRAG);
+      if (!pgm) return;
+      gl.useProgram(pgm);
+
+      // Geometry
+      buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+      const aPos = gl.getAttribLocation(pgm, "a_pos");
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      // Uniforms
+      uRes = gl.getUniformLocation(pgm, "u_res");
+      uTime = gl.getUniformLocation(pgm, "u_time");
+      uSeed = gl.getUniformLocation(pgm, "u_seed");
+      uSpeed = gl.getUniformLocation(pgm, "u_speed");
+      uNebulaSpeed = gl.getUniformLocation(pgm, "u_nebula_speed");
+      
+      gl.uniform1f(uSeed, Math.random() * 10000);
+      gl.uniform1f(uSpeed, speed);
+      gl.uniform1f(uNebulaSpeed, nebulaSpeed);
+      
+      // Force immediate resize update
+      resize(true);
+    };
 
     const resize = (force = false) => {
-      const dpr = window.devicePixelRatio || 1;
-      const currentW = Math.max(1, Math.floor(container.clientWidth * dpr * scale));
-      const currentH = Math.max(1, Math.floor(container.clientHeight * dpr * scale));
+      if (!gl || !pgm || !uRes) return;
+      
+      const dpr = Math.min(window.devicePixelRatio || 1, 2); 
+      const currentW = Math.max(1, Math.floor(container.clientWidth * dpr));
+      const currentH = Math.max(1, Math.floor(container.clientHeight * dpr));
 
-      // Always update on increase; only update on decrease if > 120px to prevent iOS flickering
       const widthIncreased = currentW > prevSize.w;
-      const widthDecreasedSignificantly = prevSize.w - currentW > 120 * dpr;
       const heightIncreased = currentH > prevSize.h;
-      const heightDecreasedSignificantly = prevSize.h - currentH > 120 * dpr;
-
+      
       const shouldUpdate =
         force ||
-        prevSize.w === 0 ||
         widthIncreased ||
-        widthDecreasedSignificantly ||
         heightIncreased ||
-        heightDecreasedSignificantly;
+        Math.abs(currentW - prevSize.w) > 50 ||
+        Math.abs(currentH - prevSize.h) > 50;
 
       if (shouldUpdate) {
         canvas.width = currentW;
@@ -132,120 +425,47 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         prevSize.w = currentW;
         prevSize.h = currentH;
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-        // Immediate draw if uniforms are available (they are set up below)
-        if (uOffset) {
-          gl.uniform2f(uOffset, Math.random(), Math.random());
-          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        }
+        gl.uniform2f(uRes, currentW, currentH);
       }
     };
 
-    // --- Shader helpers -------------------------------------------------------
-    const compileShader = (src: string, type: number): WebGLShader => {
-      const shader = gl.createShader(type)!;
-      gl.shaderSource(shader, src);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        // tslint:disable-next-line:no-console
-        console.error(gl.getShaderInfoLog(shader));
-      }
-      return shader;
-    };
-
-    const VERTEX_SRC = `
-      attribute vec2 aPosition;
-      void main() {
-        gl_Position = vec4(aPosition, 0.0, 1.0);
-      }
-    `;
-
-    const FRAGMENT_SRC = `
-      precision mediump float;
-
-      uniform sampler2D uNoise;
-      uniform vec2 uTexelScale;
-      uniform vec2 uOffset;
-
-      void main() {
-        vec2 uv = fract(gl_FragCoord.xy * uTexelScale + uOffset);
-        float n = texture2D(uNoise, uv).r;
-        
-        // Opaque Grayscale Noise for Safari/iOS stability:
-        // We output raw noise and let CSS "multiply" blend mode create the dark static effect.
-        gl_FragColor = vec4(vec3(n), 1.0);
-      }
-    `;
-
-    // --- Program --------------------------------------------------------------
-    const vert = compileShader(VERTEX_SRC, gl.VERTEX_SHADER);
-    const frag = compileShader(FRAGMENT_SRC, gl.FRAGMENT_SHADER);
-    const prog = gl.createProgram()!;
-    gl.attachShader(prog, vert);
-    gl.attachShader(prog, frag);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-      // tslint:disable-next-line:no-console
-      console.error(gl.getProgramInfoLog(prog));
-    }
-    gl.useProgram(prog);
-
-    // --- Geometry -------------------------------------------------------------
-    const quad = new Float32Array([
-      -1, -1,
-      1, -1,
-      -1, 1,
-      1, 1,
-    ]);
-    const buf = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
-
-    const posLoc = gl.getAttribLocation(prog, "aPosition");
-    gl.enableVertexAttribArray(posLoc);
-    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-    const uTexelScale = gl.getUniformLocation(prog, "uTexelScale");
-    const uOffset = gl.getUniformLocation(prog, "uOffset");
-    const uNoise = gl.getUniformLocation(prog, "uNoise");
-
-    const TEX_SIZE = 256;
-    const data = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-    for (let p = 0; p < data.length; p += 4) {
-      const v = (Math.random() * 255) | 0;
-      data[p] = v;
-      data[p + 1] = v;
-      data[p + 2] = v;
-      data[p + 3] = 255;
-    }
-    const tex = gl.createTexture()!;
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, TEX_SIZE, TEX_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
-    gl.uniform1i(uNoise, 0);
-    gl.uniform2f(uTexelScale, 1.0 / TEX_SIZE, 1.0 / TEX_SIZE);
-
-    // Now that uniforms are ready, start observing resize
-    const ro = new ResizeObserver(() => resize(false));
-    ro.observe(container);
-    resize(true); // Initial force resize to populate dimensions and draw first frame
-
-    // --- Render loop ----------------------------------------------------------
-    let raf = 0;
+    // Main Loop
     let last = 0;
     const interval = 1000 / Math.max(1, fps);
+
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       if (document.hidden) return;
       if (now - last < interval) return;
       last = now;
-      gl.uniform2f(uOffset, Math.random(), Math.random());
+
+      if (!gl || gl.isContextLost()) return;
+
+      resize();
+      
+      if (uTime) gl.uniform1f(uTime, (now - t0) * 0.001);
+      if (uSpeed) gl.uniform1f(uSpeed, speed);
+      if (uNebulaSpeed) gl.uniform1f(uNebulaSpeed, nebulaSpeed);
+      
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
+
+    // Restore Handlers
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      cancelAnimationFrame(raf);
+      console.warn("StaticNoise: WebGL context lost");
+    };
+
+    const handleContextRestored = () => {
+      console.log("StaticNoise: WebGL context restored");
+      initGL();
+      start();
+    };
+
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
+    canvas.addEventListener("webglcontextrestored", handleContextRestored, false);
+
     const start = () => {
       if (!document.hidden && !raf) raf = requestAnimationFrame(loop);
     };
@@ -261,34 +481,32 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
         start();
       }
     };
+
+    // Initialize
+    initGL();
+    const ro = new ResizeObserver(() => resize(false));
+    ro.observe(container);
     document.addEventListener("visibilitychange", onVis);
     start();
 
-    // --- Cleanup --------------------------------------------------------------
+    // --- Cleanup ------------------------------------------------------------
     return () => {
       stop();
       ro.disconnect();
-
       document.removeEventListener("visibilitychange", onVis);
+      
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
+      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
 
-      gl.deleteProgram(prog);
-      gl.deleteShader(vert);
-      gl.deleteShader(frag);
-      gl.deleteBuffer(buf);
-      gl.deleteTexture(tex);
+      if (gl && pgm) gl.deleteProgram(pgm);
+      if (gl && buf) gl.deleteBuffer(buf);
 
-      // Force context loss to reclaim GPU resources immediately
-      const ext = gl.getExtension("WEBGL_lose_context");
+      const ext = gl?.getExtension("WEBGL_lose_context");
       if (ext) ext.loseContext();
 
       if (container.contains(canvas)) container.removeChild(canvas);
     };
-  }, [fps, isVisible]); // Added isVisible as dependency
-
-  // Don't render anything if not visible
-  if (!isVisible) {
-    return null;
-  }
+  }, [fps, speed, nebulaSpeed]);
 
   return (
     <div

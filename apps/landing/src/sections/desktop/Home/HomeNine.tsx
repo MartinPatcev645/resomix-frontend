@@ -1,12 +1,10 @@
 import React, { useRef } from "react";
 import SectionNineGraphic from "@/assets/icons/composites/section_nine_graphic.svg";
-import { GoldenSpiral, CodeTyping, ButtonHeavyRight } from "@resomix/ui";
-import { useOnScreen } from "@resomix/hooks";
+import { CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { BASE_BETA_URL } from "@resomix/config";
 
 const HomeNine: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const isVisible = useOnScreen(sectionRef, "600px 0px 600px 0px");
 
   return (
     <div ref={sectionRef} className="mt-[var(--px-120)] mr-[var(--px-1)] relative z-15">
@@ -16,9 +14,6 @@ const HomeNine: React.FC = () => {
             window.location.href = BASE_BETA_URL
           }} link_arrow={true} className="cta-button primary" id="home-nine-upload-button" />
         </div>
-      </div>
-      <div className="absolute top-[var(--px-690)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-300)] h-[var(--px-300)] opacity-90">
-        {isVisible && <GoldenSpiral />}
       </div>
       {/* Content with higher z-index */}
       <div className="flex flex-col justify-between relative z-15">
@@ -98,7 +93,7 @@ const HomeNine: React.FC = () => {
         </div>
 
         {/* Section 9 B */}
-        <div className="mt-[var(--px-350)]">
+        <div className="mt-[var(--px-180)]">
           <div className="flex justify-between mx-[var(--px-240)] -mb-[var(--px-6)]">
             <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)] ml-[var(--px-20)]">
               A New Era of Music

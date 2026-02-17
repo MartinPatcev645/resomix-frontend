@@ -15,7 +15,13 @@ const HomeTwo: React.FC = () => (
         zIndex: 2,
       }}
     >
-      <ContourSphere localScroll size={394} scrollAreaHeight={1600} />
+      <ContourSphere 
+        localScroll 
+        size={394} 
+        scrollAreaHeight="clamp(var(--px-600), 200vh, var(--px-1600))" 
+        start="top bottom" 
+        end="bottom top" 
+      />
     </div>
     {/* Content with higher z-index */}
     <div className='flex flex-col justify-between items-center relative z-15'>

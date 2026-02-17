@@ -35,4 +35,27 @@ Action:
 Scaled Noise: Increased grain size to 2px (physical pixels) to prevent sub-pixel blurring on Retina screens.
 White Grain: Switched color from Dark Grey (0.2) to White (1.0) with low opacity (10%).
 Reason: White pixels are guaranteed to be visible on dark backgrounds, unlike grey pixels which can blend into black. Larger grains survive high-DPI scaling better.
-Current Result: Pending user confirmation. This brings the implementation closer to "film grain" overlays that are standard for cross-platform compatibility.
+Result: User rejected "White Grain" look. Returned to "Dark Static" goal.
+
+9. Attempt 8: High Contrast + Hard Light (Dark Static)
+Action: Restored "Dark Static" logic but increased brightness from 0.15 -> 0.50 (mid-grey) and added `mix-blend-mode: hard-light` to canvas.
+Reason: Hypothesized that dark values were being "crushed" by Safari's compositor.
+Result: Inconsistent / Did not match the goal appearance on Chrome.
+
+10. Attempt 9 (FINAL SOLUTION): Opaque Noise + CSS Multiply
+Action: 
+- **Shader:** Changed to output **OPAQUE** grayscale noise (alpha = 1.0).
+- **CSS:** Applied `mix-blend-mode: multiply` and `opacity: 0.2` to the canvas element.
+Reason: Safari's WebGL implementation appears to have a bug with **Usage of Alpha Channel** in noise shaders (causing the "sparse dots" artifact). However, it handles **Opaque** textures perfectly (proven by Attempt 5). By moving the blending responsibility from the Shader (Alpha) to the Browser's Layout Engine (CSS Multiply), we bypassed the WebGL bug entirely.
+Result: **SUCCESS**. 
+- Safari now renders the dense static correctly (because the shader output is opaque).
+- The "Multiply" mode creates the exact "Dark Static" look desired.
+- Appearance is consistent across Chrome and Safari.
+
+---
+**Root Cause Analysis:**
+The issue was likely a bug or implementation detail in Safari's WebGL handling of **Fragment Shader Alpha Transparency** when combined with noise functions. When the shader tried to output semi-transparent pixels, Safari either discarded them or rendered them sparsely.
+
+**Resolution:**
+The fix was to stop using Alpha in the Shader. We switched to an **Opaque** shader output (which Safari renders reliably) and used **CSS Compositing** (`mix-blend-mode: multiply`) to achieve the visual transparency/blending effect. This decoupled the "generation" (WebGL) from the "blending" (CSS), playing to the strengths of both engines.
+

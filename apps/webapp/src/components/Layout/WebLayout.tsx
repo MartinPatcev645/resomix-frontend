@@ -122,7 +122,8 @@ export function WebLayout() {
         <OptionalAuthRoute>
             <div className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative overflow-x-hidden`}>
                 {/* Persistent Static Noise */}
-                {isDesktop && <StaticNoise />}
+                {/* {isDesktop && <StaticNoise />} */}
+                <StaticNoise />
 
                 {/* Persistent Upload / Search Overlay */}
                 {showOverlay && (
@@ -144,7 +145,7 @@ export function WebLayout() {
 
                         <main
                             key={location.pathname}
-                            className="page-transition"
+                            className="page-transition min-h-[50vh]"
                         >
                             <Outlet />
                         </main>
