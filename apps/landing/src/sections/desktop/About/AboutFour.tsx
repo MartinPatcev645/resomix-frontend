@@ -1,7 +1,7 @@
 import React from "react";
 import ArrowSmallUp from "@/assets/icons/arrow_small_up.svg"
 import PlaySvg from "@/assets/icons/play.svg"
-import { GoldenSpiral, ButtonHeavyRight } from "@resomix/ui";
+import { ButtonHeavyRight } from "@resomix/ui";
 import { BASE_BETA_URL } from "@resomix/config";
 import { useTranslation } from 'react-i18next';
 
@@ -9,9 +9,6 @@ const AboutFour: React.FC = () => {
     const { t } = useTranslation('common');
     return (
         <div className="flex flex-col w-full gap-[var(--px-120)] mt-[var(--px-400)] relative z-20">
-            <div className="absolute top-[var(--px-775)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-400)] h-[var(--px-400)] opacity-90">
-                <GoldenSpiral />
-            </div>
             {/* About 2 A */}
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 <div className="flex justify-between items-start">
@@ -80,7 +77,7 @@ const AboutFour: React.FC = () => {
             </div>
 
             {/* About 2 B */}
-            <div className="flex flex-col gap-[var(--px-400)] w-full z-15">
+            <div className="flex flex-col gap-[var(--px-200)] w-full z-15">
                 <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-left w-full" dangerouslySetInnerHTML={{ __html: t('about.about_four.run_by') }}>
                 </div>
                 <div className="flex flex-col items-end w-full">

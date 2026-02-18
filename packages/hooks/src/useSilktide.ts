@@ -14,7 +14,7 @@ export const useSilktide = (config: any) => {
 
   useEffect(() => {
     // Prevent double initialization
-    if (document.getElementById('silktide-script')) {
+    if (document.getElementById('resomix-consent-script')) {
       // If script is already there, it might have auto-init or we might need to re-init
       // Typical for SPAs is to init once.
       setLoaded(true);
@@ -22,19 +22,19 @@ export const useSilktide = (config: any) => {
     }
 
     // 1. Inject CSS (OS version relies on external CSS)
-    const styleId = 'silktide-style';
+    const styleId = 'resomix-consent-style';
     if (!document.getElementById(styleId)) {
       const link = document.createElement('link');
       link.id = styleId;
       link.rel = 'stylesheet';
-      link.href = '/scripts/silktide-consent-manager.css';
+      link.href = '/scripts/resomix-consent.css';
       document.head.appendChild(link);
     }
 
     // 2. Inject JS
     const script = document.createElement('script');
-    script.id = 'silktide-script';
-    script.src = '/scripts/silktide-consent-manager.js';
+    script.id = 'resomix-consent-script';
+    script.src = '/scripts/resomix-consent.js';
     script.async = true;
 
     script.onload = () => {

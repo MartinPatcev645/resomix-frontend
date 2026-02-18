@@ -1,5 +1,5 @@
 import React from "react";
-import { CodeTyping } from "../index";
+import { CodeTyping, fetchGenerationTime } from "../index";
 import { useConfig } from "@resomix/stores";
 
 // Add a prop for the LogoRFooter and base URL
@@ -53,7 +53,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               <div className="leading-[var(--px-8)] mt-[var(--px-14)]">
                 <CodeTyping
                   speed={120}
-                  text={`contact@email: support@resomix.com<br />HQ_coords: 47°59'397"N 14°12'456"W // Europe<br />address: resomix.com`}
+                  text={`contact@email: support@resomix.com<br />HQ_coords: 37°56'08.5"N 23°52'44.5"E // Europe<br />address: resomix.com`}
                   multiline={true}
                 />
               </div>
@@ -62,7 +62,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               <div className="leading-[var(--px-8)]">
                 <CodeTyping
                   speed={50}
-                  text="upload_protocol: SSL 256-bit // encrypted<br />system_uptime: 99.97%<br />last_waveform_uploaded: 3.4s ago"
+                  text={`upload_protocol: SSL 256-bit // encrypted<br />system_uptime: 99.97%<br />last_waveform_uploaded: ${fetchGenerationTime()} ago`}
                   multiline={true}
                 />
               </div>

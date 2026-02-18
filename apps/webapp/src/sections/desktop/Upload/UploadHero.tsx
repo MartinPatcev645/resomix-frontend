@@ -1,5 +1,5 @@
 import React from "react";
-import { CodeTyping } from "@resomix/ui";
+import { CodeTyping, fetchSessionId } from "@resomix/ui";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
 import LineThree from "@/assets/icons/line3.svg";
@@ -45,7 +45,7 @@ const UploadHero: React.FC = () => {
           <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[42px] max-h-[42px]">
             <CodeTyping
               speed={50}
-              text='// RESOMIX SYSTEM v1.0.9'
+              text='// PYXIS-1 Engine: v5.3.9'
               multiline={true}
             />
             <CodeTyping
@@ -94,7 +94,7 @@ const UploadHero: React.FC = () => {
           <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[30px] max-h-[30px]">
             <CodeTyping
               speed={50}
-              text='> gateway.open()<br /> auth_granted: DJ_MODE_ACTIVE<br /> session_ID: RSX_8472A'
+              text={`> gateway.open()<br /> auth_granted: DJ_MODE_ACTIVE<br /> session_ID: ${fetchSessionId()}`}
               multiline={true}
             />
           </div>
