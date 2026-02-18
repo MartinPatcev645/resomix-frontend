@@ -213,19 +213,23 @@ void main() {
   // Colors (Darkened for better foreground contrast)
   vec3 colDeepRed = vec3(0.08, 0.0, 0.015);    
   vec3 colPink = vec3(0.3, 0.04, 0.12);      
-  vec3 colOrange = vec3(0.5, 0.2, 0.05);     
+  vec4 colOrangeHex = vec4(0.933, 0.290, 0.149, 1.0); // #EE4A26 (Brand Color)
+  vec3 colOrange = colOrangeHex.rgb;
   vec3 colMagenta = vec3(0.25, 0.04, 0.18);    
   
   vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
+  // Abundant orange base (mixed in at low intensity to increase presence without brightness)
+  nebulaCol = mix(nebulaCol, colOrange * 0.12, detail2); 
+  
   // The Red/Pink/Magenta core pulses with densityMult
   vec3 core = nebulaCol * densityMult;
   
-  // The Orange highlights are kept at a constant low brightness (static dim glow)
-  vec3 highlights = colOrange * detail2 * mask * 0.15;
+  // Independent Orange highlights (Abundant dim glow, decoupled from pulsing core)
+  vec3 highlights = colOrange * detail2 * mask * 0.22;
   
-  vec3 finalCloud = (core + highlights) * cloud * 1.8; 
+  vec3 finalCloud = core * cloud * 1.8 + highlights * 1.6; 
 
   // ── ORANGE STARS ──────────────────────────────────────────────────────────
   vec3 orangeStars = vec3(0.0);
