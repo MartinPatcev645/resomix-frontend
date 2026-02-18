@@ -11,10 +11,7 @@ cloudflared tunnel run resomix-dev
 - In profile, make the danger zone background transparent
 - Make all the popups modals have black background color
 - Failed to load silktide script in beta.resomix check CORS
-
-
 - Update nebula color to be a bit more orangy, like neon orange brand color. Not too much cherry as it is now. #EE4A26
-
 - In beta hero home, as well as in landing hero home. Use font-benzin, and adjust weights and size to match the existing design
 
 

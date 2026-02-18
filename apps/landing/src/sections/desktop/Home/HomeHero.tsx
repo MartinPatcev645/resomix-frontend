@@ -7,8 +7,6 @@ import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
 import SoundWaves from "@/assets/icons/sound_waves.svg";
 import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
-import HeroResomix from "@/assets/icons/hero/resomix.svg";
-import HeroAlign from "@/assets/icons/hero/align_with_sound.svg";
 import { BASE_BETA_URL, FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomix/config";
 
 const HomeHero: React.FC = () => {
@@ -60,14 +58,14 @@ const HomeHero: React.FC = () => {
         <div className="absolute inset-0 flex flex-col items-end justify-between w-full h-full select-none">
           <div className="flex flex-col text-start my-auto w-full relative z-15">
             <div className="w-full justify-start h-[var(--px-164)] mt-[var(--px-42)]">
-              <img className="w-[var(--px-613)] h-[var(--px-122)]" aria-hidden="true" loading="lazy" draggable={false} src={HeroResomix} alt="Resomix" />
+              <span className="text-[length:var(--px-100)] font-benzin uppercase leading-[var(--px-150)]">RESOMIX</span>
             </div>
             <div className='flex w-full justify-between items-start -mt-[var(--px-34)]'>
               <div className='flex gap-[var(--px-12)]'>
                 <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} aria-hidden="true" loading="lazy" draggable={false} src={ArrowSmallDown} alt="Arrow Small Down" />
                 <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A sound analysis platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
               </div>
-              <img className="w-[var(--px-596)] h-[var(--px-54)]" aria-hidden="true" loading="lazy" draggable={false} src={HeroAlign} alt="Align With Your Sound" />
+              <span className="text-[length:var(--px-55)] font-helvetica uppercase leading-[var(--px-40)]">Align with your sound</span>
             </div>
             <div className="flex justify-end w-full min-w-[var(--px-204-5)] mt-[var(--px-42)]">
               <ButtonHeavyRight text="Upload Your Track" onClick={() => {
