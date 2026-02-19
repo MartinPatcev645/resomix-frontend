@@ -1,7 +1,5 @@
 import React from "react";
 import { IconComp, ButtonHeavyRight } from "@resomix/ui";
-// import { Remains, IconComp, FlyingThroughSpace } from "@resomix/ui";
-// import { BackgroundNoise } from "@/components/index.ts";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
@@ -42,14 +40,6 @@ const HomeHero: React.FC = () => (
         WebkitClipPath: "url(#heroClip)"
       }}
     >
-      {/* Background noise layers (two, for consistency with other sections) */}
-      {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
-
-      {/* FlyingThroughSpace background animation, removeed because using StaticNoise */}
-      {/* <div className="absolute inset-0 w-full h-full">
-        <FlyingThroughSpace />
-      </div> */}
-
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-start w-full h-full select-none -mt-[var(--px-20)]">
         <div className="flex flex-col text-start mt-[var(--px-200)] mb-[var(--px-70)] w-full relative z-15">
