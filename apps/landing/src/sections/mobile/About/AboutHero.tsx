@@ -16,7 +16,7 @@ const AboutHero: React.FC = () => {
         <img src={GradientOne} draggable={false} aria-hidden="true" loading="lazy" className="w-full h-full mt-[var(--px-6)]" alt="Gradient" />
       </div>
       <div></div>
-      <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-40)] font-helvetica leading-[var(--px-40)] font-bold uppercase my-[var(--px-2)] ml-[var(--px-30)] z-20">
+      <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-35)] font-benzin uppercase my-[var(--px-2)] ml-[var(--px-30)] z-20">
         <div className="">
           A Discovery<br />Engine
         </div>
@@ -24,7 +24,7 @@ const AboutHero: React.FC = () => {
           <div className="">
             For DJs
           </div>
-          <img src={ArrowDownRightSvg} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_down_right" className="w-[var(--px-29)] h-[var(--px-29)] transform rotate-90" />
+          <img src={ArrowDownRightSvg} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_down_right" className="w-[var(--px-29)] h-[var(--px-29)] transform rotate-90 mb-[var(--px-10)] ml-[var(--px-10)]" />
         </div>
         <div className="">
           Who Feel<br />The Music

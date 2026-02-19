@@ -20,7 +20,7 @@ const UploadHero: React.FC = () => {
         />
       </div>
       <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
-        <h1 className="text-[length:var(--px-49)] font-helvetica leading-[var(--px-50)] font-bold uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></h1>
+        <h1 className="text-[length:var(--px-35)] font-benzin leading-[var(--px-50)] uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></h1>
         <div className="text-[length:var(--px-20)] font-helvetica font-extralight leading-[var(--px-24)] uppercase">upload a reference track,<br />and unlock a universe<br />of sounds</div>
         <img src={ArrowDownRightSvg} draggable={false} alt="" aria-hidden="true" loading="lazy" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>
