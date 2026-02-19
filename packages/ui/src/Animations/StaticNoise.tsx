@@ -145,7 +145,7 @@ vec2 seagullShapeStart(vec2 p, float t) {
   // Dynamic Shape Cycle: Volumetric Feel
   float cycle = sin(t * 0.6); 
   
-  float widthFactor = 1.0 + cycle * 0.4;
+  float widthFactor = 1.0 + cycle * 0.2;
   float brightness = 1.6 / (widthFactor * widthFactor); 
   
   vec2 headPos = p - vec2(-0.2, 0.1);
