@@ -2,7 +2,7 @@ import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections
 
 export function AboutPage() {
   return (
-    <div className="">
+    <div className="overflow-x-hidden">
       <AboutHero />
       <AboutOne />
       <AboutTwo />

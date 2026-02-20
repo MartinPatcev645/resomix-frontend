@@ -1,15 +1,12 @@
 import React from "react";
 import ArrowSmallUp from "@/assets/icons/arrow_small_up.svg"
 import PlaySvg from "@/assets/icons/play.svg"
-import { GoldenSpiral, ButtonHeavyRight } from "@resomix/ui";
+import { ButtonHeavyRight } from "@resomix/ui";
 import { BASE_BETA_URL } from "@resomix/config";
 
 const AboutFour: React.FC = () => {
     return (
         <div className="flex flex-col w-full gap-[var(--px-90)] mt-[var(--px-400)] relative z-20">
-            <div className="absolute top-[var(--px-1059)] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[var(--px-250)] h-[var(--px-250)]">
-                <GoldenSpiral />
-            </div>
             {/* About 2 A */}
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 <div className="flex flex-col gap-[var(--px-100)] items-start">
@@ -78,7 +75,7 @@ const AboutFour: React.FC = () => {
             </div>
 
             {/* About 2 B */}
-            <div className="flex flex-col gap-[var(--px-300)] w-full z-15">
+            <div className="flex flex-col gap-[var(--px-100)] w-full z-15">
                 <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-left w-full opacity-80">
                     Resomix is run<br />by DJs, engineers,<br />and music<br />professionals
                 </div>

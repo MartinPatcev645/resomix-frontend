@@ -542,7 +542,7 @@ export default function ProfileContent({
                       value={form.language}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-white text-slate-900 dark:bg-black dark:text-slate-100"
+                      className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-black text-slate-100"
                     >
                       <option value="">Select language</option>
                       <option value="en">English</option>
@@ -562,7 +562,7 @@ export default function ProfileContent({
                         value={form.timezone}
                         onChange={handleChange}
                         disabled={!isEditing}
-                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-white text-slate-900 dark:bg-black dark:text-slate-100"
+                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-black text-slate-100"
                       >
                         <option value="">Select timezone</option>
                         {timezones.map((tz) => (
@@ -624,8 +624,8 @@ export default function ProfileContent({
                 </div>
               </div>
 
-              <div className="p-[var(--px-16)] border border-red-300/70 dark:border-red-800 border-dotted rounded-lg bg-red-50/40 dark:bg-red-950/10">
-                <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-red-600">
+              <div className="p-[var(--px-16)] border border-[var(--color-neon-orange)] border-dotted rounded-lg">
+                <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-[var(--color-neon-orange)]">
                   Danger Zone
                 </h3>
 
@@ -633,13 +633,13 @@ export default function ProfileContent({
                   {!showDeleteConfirm ? (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 transition-colors cursor-pointer rounded"
+                      className="px-[var(--px-20)] py-[var(--px-10)] border border-[var(--color-neon-orange)] text-[var(--color-neon-orange)] text-[length:var(--px-11)] font-light font-helvetica hover:bg-white/10 transition-colors cursor-pointer rounded"
                     >
                       Delete Account
                     </button>
                   ) : (
-                    <div className="border border-red-500 p-[var(--px-10)] rounded">
-                      <p className="text-[length:var(--px-11)] font-light font-helvetica text-red-500 mb-[var(--px-10)]">
+                    <div className="border border-[var(--color-neon-orange)] p-[var(--px-10)] rounded">
+                      <p className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-neon-orange)] mb-[var(--px-10)]">
                         This action cannot be undone. Enter your password to confirm:
                       </p>
                       <input

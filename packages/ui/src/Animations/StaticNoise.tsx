@@ -118,20 +118,20 @@ vec3 starLayer(vec2 uv, float density, float seed, vec3 tint, float probability)
   // Probability culling control
   if (rnd > probability) return vec3(0.0); 
   
-  // Size logic
-  float sizeBase = 0.01 + 0.0175 * hash(id * 9.2); 
+  // Size logic: Slight increase to prevent sub-pixel disappearance (aliasing)
+  // Was 0.01 + ..., now 0.02 + ...
+  float sizeBase = 0.02 + 0.02 * hash(id * 9.2); 
   
-  // Smooth Blinking
-  float blinkSpeed = 0.2 + 0.5 * rnd; 
-  float blinkPhase = rnd * 50.0;
-  
-  float brightness = 0.7 + 0.3 * sin(u_time * blinkSpeed + blinkPhase);
- 
+  // NO BLINKING. Steady brightness.
+  float brightness = 1.0; 
+
   vec2 offset = (vec2(hash(id), hash(id + 11.0)) - 0.5) * 0.8;
   float d = length(gv - offset);
   
-  // Sharp star
-  float core = smoothstep(sizeBase, sizeBase - 0.005, d);
+  // Anti-Aliasing Fix:
+  // Instead of sharp smoothstep (sizeBase, sizeBase - 0.005), we use a wider falloff.
+  // This gradient ensures smooth transitions across pixels, eliminating "sparkling/shimmering".
+  float core = smoothstep(sizeBase, sizeBase * 0.2, d);
   
   return tint * core * brightness; 
 }
@@ -145,7 +145,7 @@ vec2 seagullShapeStart(vec2 p, float t) {
   // Dynamic Shape Cycle: Volumetric Feel
   float cycle = sin(t * 0.6); 
   
-  float widthFactor = 1.0 + cycle * 0.4;
+  float widthFactor = 1.0 + cycle * 0.2;
   float brightness = 1.6 / (widthFactor * widthFactor); 
   
   vec2 headPos = p - vec2(-0.2, 0.1);
@@ -179,12 +179,16 @@ void main() {
   // ── LAYER 1: DISTANT STARS (Small) ────────────────────────────────────────
   vec3 starsBack = vec3(0.0);
   
-  // Probability ~0.0225 (Keep existing small star density)
-  vec2 uvStar1 = rot * uv; 
+  // Decouple star rotation completely
+  float starAngle = u_time * u_speed * 0.02; 
+  mat2 starRot = rotate(starAngle);
+  
+  // Layer 1a: STATIC — no rotation, no drift. Provides steady, flicker-free background.
+  vec2 uvStar1 = uv; 
   starsBack += starLayer(uvStar1, 80.0, u_seed, vec3(1.0), 0.0225);
   
-  vec2 drift = vec2(sin(u_time * 0.05), cos(u_time * 0.06)) * 0.05;
-  vec2 uvStar2 = rot * (uv + drift) + vec2(0.5); 
+  // Layer 1b: Rotates slowly. Drift removed to minimize cell-boundary crossings.
+  vec2 uvStar2 = starRot * uv + vec2(0.5); 
   starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(1.0), 0.0225);
 
   // ── NEBULA (Volumetric) ───────────────────────────────────────────────────
@@ -197,7 +201,7 @@ void main() {
   float warp = fbm(nUV * 3.0 + vec2(nebTime * 0.15, 0.0));
   nUV += warp * 0.25; 
   
-  vec2 shapeData = seagullShapeStart(nebulaUV * 0.8, nebTime * 5.0); 
+  vec2 shapeData = seagullShapeStart(nebulaUV * 1.2, nebTime * 5.0); 
   float mask = shapeData.x;
   float densityMult = shapeData.y;
   
@@ -213,21 +217,26 @@ void main() {
   // Colors (Darkened for better foreground contrast)
   vec3 colDeepRed = vec3(0.08, 0.0, 0.015);    
   vec3 colPink = vec3(0.3, 0.04, 0.12);      
-  vec3 colOrange = vec3(0.5, 0.2, 0.05);     
+  vec4 colOrangeHex = vec4(0.933, 0.290, 0.149, 1.0); // #EE4A26 (Brand Color)
+  vec3 colOrange = colOrangeHex.rgb;
   vec3 colMagenta = vec3(0.25, 0.04, 0.18);    
   
   vec3 nebulaCol = mix(colDeepRed, colPink, detail1);
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
+  // Abundant orange base (mixed in at low intensity to increase presence without brightness)
+  nebulaCol = mix(nebulaCol, colOrange * 0.12, detail2); 
+  
   // The Red/Pink/Magenta core pulses with densityMult
   vec3 core = nebulaCol * densityMult;
   
-  // The Orange highlights are kept at a constant low brightness (static dim glow)
-  vec3 highlights = colOrange * detail2 * mask * 0.15;
+  // Independent Orange highlights (Abundant dim glow, decoupled from pulsing core)
+  vec3 highlights = colOrange * detail2 * mask * 0.22;
   
-  vec3 finalCloud = (core + highlights) * cloud * 1.8; 
+  vec3 finalCloud = core * cloud * 1.8 + highlights * 1.6; 
 
   // ── ORANGE STARS ──────────────────────────────────────────────────────────
+  // These are "part" of the nebula structurally, but we render them with the NEW anti-aliased star logic
   vec3 orangeStars = vec3(0.0);
   if (cloud * densityMult > 0.3) {
     orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2), 0.0225);
@@ -240,11 +249,11 @@ void main() {
   // New target probability: 0.0225 * 3 = 0.0675
   vec3 starsFront = vec3(0.0);
   
-  mat2 rotFast = rotate(angle * 1.2);
+  mat2 rotFast = rotate(starAngle * 1.2);
   vec2 uvStar3 = rotFast * uv + vec2(0.2, 0.8);
   starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(1.0), 0.0675); 
   
-  mat2 rotVeryFast = rotate(angle * 1.5);
+  mat2 rotVeryFast = rotate(starAngle * 1.5);
   vec2 uvStar4 = rotVeryFast * uv + vec2(0.9, 0.3); 
   starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(1.0), 0.0675); 
   
@@ -254,7 +263,7 @@ void main() {
   
   // ── COMPOSITE ─────────────────────────────────────────────────────────────
   
-  starsBack *= (1.0 - cloud * 0.8); 
+  // starsBack *= (1.0 - cloud * 0.8); // Removed to prevent "disappearing" stars effect
   
   float vig = 1.0 - dot(uv, uv) * 0.6; 
   

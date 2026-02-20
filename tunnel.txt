@@ -1,1 +1,24 @@
 cloudflared tunnel run resomix-dev
+
+
+- Remove image graphic for both desktop and mobile: our mission, (also reduce space bottom)
+- Remove the animation from bottom of about page
+- In footer we have this: "last_waveform_uploaded: 3.4s ago" display a random time always between 1 min to 20 min
+- In footer replace dummy coordinates with "37°56'08.5"N 23°52'44.5"E"
+- In beta home hero we have this: "session_ID: RSX_8472A" generate random every time using same format
+- In beta home hero we have this: "// RESOMIX SYSTEM v1.0.9" replace it with "PYXIS-1 Engine: v5.3.9"
+- In about page sometimes there's a horizontal scroll when we arrive at "Our vision"
+- In profile, make the danger zone background transparent
+- Make all the popups modals have black background color
+- Failed to load silktide script in beta.resomix check CORS
+- Update nebula color to be a bit more orangy, like neon orange brand color. Not too much cherry as it is now. #EE4A26
+- In beta hero home, as well as in landing hero home. Use font-benzin, and adjust weights and size to match the existing design
+
+
+
+
+
+
+
+
+

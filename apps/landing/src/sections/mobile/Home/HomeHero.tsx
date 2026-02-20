@@ -1,7 +1,5 @@
 import React from "react";
 import { IconComp, ButtonHeavyRight } from "@resomix/ui";
-// import { Remains, IconComp, FlyingThroughSpace } from "@resomix/ui";
-// import { BackgroundNoise } from "@/components/index.ts";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
@@ -42,18 +40,10 @@ const HomeHero: React.FC = () => (
         WebkitClipPath: "url(#heroClip)"
       }}
     >
-      {/* Background noise layers (two, for consistency with other sections) */}
-      {/* <BackgroundNoise zIndex={1} opacity={0.8} /> */}
-
-      {/* FlyingThroughSpace background animation, removeed because using StaticNoise */}
-      {/* <div className="absolute inset-0 w-full h-full">
-        <FlyingThroughSpace />
-      </div> */}
-
       {/* Overlay content */}
       <div className="absolute inset-0 flex flex-col items-end justify-start w-full h-full select-none -mt-[var(--px-20)]">
         <div className="flex flex-col text-start mt-[var(--px-200)] mb-[var(--px-70)] w-full relative z-15">
-          <div className="justify-start text-[length:var(--px-46)] font-bold font-helvetica uppercase leading-[var(--px-52)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— Align with<br />your Sound </div>
+          <div className="justify-start text-[length:var(--px-40)] font-benzin uppercase leading-[var(--px-52)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>Resomix<br />— Hear the<br />Invisible </div>
           <div className="justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase mt-[var(--px-12)]" style={{ textShadow: "0 4px 10px rgba(0,0,0,0.6)" }}>A sound analysis platform<br />that helps DJs discover tracks<br />by feeling, not by genre.</div>
           <img className="w-[var(--px-35)] h-[var(--px-35)] mt-[var(--px-12)]" aria-hidden="true" loading="lazy" draggable={false} style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} src={ArrowSmallDown} alt="Arrow Small Down" />
         </div>

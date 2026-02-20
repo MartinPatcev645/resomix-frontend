@@ -52,7 +52,7 @@ const AboutThree: React.FC = () => {
                                 Discovery Based<br />on Sound
                             </div>
                             <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                Resomix starts off by reading the spectral flow of the audio provided. It compares rhythm, tone, and spectral fingerprints of music online until it finds the right fits.
+                                Resomix starts off by reading the spectral flow of the audio provided. It compares rhythm, tone, and spectral fingerprints of music until it finds the right fits.
                             </div>
                         </div>
                     </div>

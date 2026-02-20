@@ -1,5 +1,5 @@
 import React from "react";
-import { CodeTyping } from "@resomix/ui";
+import { CodeTyping, fetchSessionId } from "@resomix/ui";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 import ArrowSmallDown from "@/assets/icons/arrow_small_down.svg";
 import LineThree from "@/assets/icons/line3.svg";
@@ -45,7 +45,7 @@ const UploadHero: React.FC = () => {
           <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[42px] max-h-[42px]">
             <CodeTyping
               speed={50}
-              text='// RESOMIX SYSTEM v1.0.9'
+              text='// PYXIS-1 Engine: v5.3.9'
               multiline={true}
             />
             <CodeTyping
@@ -62,7 +62,7 @@ const UploadHero: React.FC = () => {
             />
           </div>
           <div className="flex justify-start items-start w-full relative z-15">
-            <div className="text-[length:var(--px-62)] font-semibold font-helvetica uppercase">Here's Where</div>
+            <div className="text-[length:var(--px-60)] mb-[var(--px-10)] font-benzin uppercase">Here's Where</div>
             <div className="text-[length:var(--px-8)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] ml-[var(--px-20)] mt-[var(--px-20)]">
               <CodeTyping
                 speed={100}
@@ -86,7 +86,7 @@ const UploadHero: React.FC = () => {
               <img className="w-[var(--px-35)] h-[var(--px-35)]" draggable={false} src={ArrowSmallDown} aria-hidden="true" loading="lazy" alt="" />
               <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-[var(--px-20)] text-[var(--color-primary)]">Upload a reference track,<br />and unlock a universe of sounds.</div>
             </div>
-            <div className="text-[length:var(--px-62)] font-semibold font-helvetica uppercase text-right">The Journey <span className="italic">Begins</span></div>
+            <div className="text-[length:var(--px-50)] font-benzin uppercase text-right mr-[var(--px-6)]">The Journey <span className="italic">Begins</span></div>
           </div>
           <div className="flex justify-center items-center w-full relative z-15">
             <img src={LineThree} className="w-[var(--px-4)] h-[var(--px-60)]" draggable={false} aria-hidden="true" loading="lazy" alt="" />
@@ -94,7 +94,7 @@ const UploadHero: React.FC = () => {
           <div className="text-[length:var(--px-8)] mb-[var(--px-30)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] w-full text-center relative z-15 min-h-[30px] max-h-[30px]">
             <CodeTyping
               speed={50}
-              text='> gateway.open()<br /> auth_granted: DJ_MODE_ACTIVE<br /> session_ID: RSX_8472A'
+              text={`> gateway.open()<br /> auth_granted: DJ_MODE_ACTIVE<br /> session_ID: ${fetchSessionId()}`}
               multiline={true}
             />
           </div>

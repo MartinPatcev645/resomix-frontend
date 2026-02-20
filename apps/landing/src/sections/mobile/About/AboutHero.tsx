@@ -4,7 +4,6 @@ import ArrowDownRightSvg from "@/assets/icons/arrow_down_right.svg";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
-import GradientOne from "@/assets/images/gradient 1.png";
 import { FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomix/config";
 
 const AboutHero: React.FC = () => {
@@ -12,11 +11,8 @@ const AboutHero: React.FC = () => {
 
   return (
     <div ref={sectionRef} className="relative z-20 flex flex-col items-center justify-between gap-[var(--px-40)] min-h-[var(--px-670)] h-[var(--px-670)]">
-      <div className="absolute -left-[var(--px-130)] top-[var(--px-28)] w-[var(--px-605)] h-[var(--px-489)]">
-        <img src={GradientOne} draggable={false} aria-hidden="true" loading="lazy" className="w-full h-full mt-[var(--px-6)]" alt="Gradient" />
-      </div>
       <div></div>
-      <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-40)] font-helvetica leading-[var(--px-40)] font-bold uppercase my-[var(--px-2)] ml-[var(--px-30)] z-20">
+      <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-35)] font-benzin uppercase my-[var(--px-2)] ml-[var(--px-30)] z-20">
         <div className="">
           A Discovery<br />Engine
         </div>
@@ -24,7 +20,7 @@ const AboutHero: React.FC = () => {
           <div className="">
             For DJs
           </div>
-          <img src={ArrowDownRightSvg} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_down_right" className="w-[var(--px-29)] h-[var(--px-29)] transform rotate-90" />
+          <img src={ArrowDownRightSvg} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_down_right" className="w-[var(--px-29)] h-[var(--px-29)] transform rotate-90 mb-[var(--px-10)] ml-[var(--px-10)]" />
         </div>
         <div className="">
           Who Feel<br />The Music

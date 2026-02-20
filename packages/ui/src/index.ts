@@ -70,6 +70,7 @@ import Verify2FAContent from "./Content/Verify2FAContent";
 import ProfileContent from "./Content/ProfileContent";
 import ChangePasswordContent from "./Content/ChangePasswordContent";
 import SessionsContent from "./Content/SessionsContent";
+import { fetchSessionId, fetchGenerationTime } from "./utils/fetching";
 
 export {
   Navbar,
@@ -146,4 +147,6 @@ export {
   PrivateIcon,
   HeartFilledIcon,
   HeartStrokeIcon,
+  fetchSessionId,
+  fetchGenerationTime,
 };

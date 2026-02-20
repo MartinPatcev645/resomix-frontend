@@ -3,18 +3,14 @@ import ArrowBigDownSvg from "@/assets/icons/arrow_big_down_stroke.svg"
 import AboutSeparatorLineSvg from "@/assets/icons/about_section_one_line.svg"
 import AboutSeparatorLineTwo from "@/assets/icons/about_section_one_line_2.svg"
 import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
-import GradientTwo from "@/assets/images/gradient 2.png"
 import { CodeTyping, ButtonHeavyRight } from "@resomix/ui";
 import { BASE_BETA_URL } from "@resomix/config";
 
 const AboutOne: React.FC = () => {
     return (
-        <div className="flex flex-col w-full justify-start gap-[var(--px-300)] items-center mt-[var(--px-100)]relative z-20">
+        <div className="flex flex-col w-full justify-start gap-[var(--px-150)] items-center mt-[var(--px-100)]relative z-20">
             {/* Section 1 A */}
             <div className="flex flex-col w-full items-center gap-[var(--px-10)]">
-                <div className="absolute w-[var(--px-500)] -top-[var(--px-100)] z-5">
-                    <img src={GradientTwo} draggable={false} aria-hidden="true" loading="lazy" alt="gradient_two" className="w-full h-auto" />
-                </div>
                 <div className="flex flex-col items-end w-full justify-center gap-[var(--px-10)] z-20">
                     <img src={ArrowBigDownSvg} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_big_down_stroke" className="w-[var(--px-31)] h-[var(--px-29)] transform rotate-90" />
                     <div className="text-[length:var(--px-43)] font-bold font-helvetica uppercase leading-[var(--px-43)] w-full text-center">
@@ -25,6 +21,7 @@ const AboutOne: React.FC = () => {
                     Putting together a set that tells a story is no trivial task.
                     Tracks that perfectly fit (tonally and emotionally) with our mix are often hard to find, especially now that most platforms focus more on tags and popularity metrics rather than intention and vibe.
                 </div>
+                <img src={AboutSeparatorLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line" className="mt-[var(--px-30)] w-[var(--px-4)] h-[var(--px-115)] z-20" />
             </div>
 
             {/* Section 1 B */}

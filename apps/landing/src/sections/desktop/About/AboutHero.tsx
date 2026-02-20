@@ -2,7 +2,6 @@ import React, { useRef } from "react";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
 import FbSvg from "@/assets/icons/facebook.svg";
-import GradientOne from "@/assets/images/gradient 1.png";
 import { IconComp } from "@resomix/ui";
 import { FACEBOOK_URL, INSTAGRAM_URL, TWITTER_URL } from "@resomix/config";
 import { useTranslation } from 'react-i18next';
@@ -45,16 +44,10 @@ const AboutHero: React.FC = () => {
           WebkitClipPath: "url(#heroClip)"
         }}
       >
-        {/* Remains background animation */}
-        <div className="absolute inset-0 flex justify-center items-center w-full h-full overflow-clip">
-          {/* {isVisible && <Remains />} */}
-          <img src={GradientOne} draggable={false} aria-hidden="true" loading="lazy" className="w-[var(--px-1100)] h-[var(--px-750)] mt-[var(--px-6)]" alt="Gradient" />
-        </div>
-
         {/* Overlay content */}
         <div className="absolute inset-0 flex flex-col justify-center w-full h-full select-none py-auto z-15">
-          <div className="text-[length:var(--px-59)] font-helvetica uppercase leading-[var(--px-51)]">{t('about.about_hero.discovery_engine')}</div>
-          <div className="text-[length:var(--px-59)] font-helvetica uppercase leading-[var(--px-51)] text-right">{t('about.about_hero.for_djs_who_feel')}</div>
+          <div className="text-[length:var(--px-60)] font-benzin uppercase leading-[var(--px-60)]">{t('about.about_hero.discovery_engine')}</div>
+          <div className="text-[length:var(--px-50)] font-benzin uppercase leading-[var(--px-50)] text-right">{t('about.about_hero.for_djs_who_feel')}</div>
         </div>
         <div className="absolute inset-0 flex flex-col justify-end items-end w-full h-full select-none py-auto z-15">
           <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">

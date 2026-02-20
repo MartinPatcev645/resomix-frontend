@@ -53,7 +53,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
               <div className="mt-[var(--px-20)]">
                 <CodeTyping
                   speed={120}
-                  text={`contact@email: support@resomix.com<br />HQ_coords: 47°59'397"N 14°12'456"W // Europe<br />address: resomix.com`}
+                  text={`contact@email: support@resomix.com<br />HQ_coords: 37°56'08.5"N 23°52'44.5"E // Europe<br />address: resomix.com`}
                   multiline={true}
                 />
               </div>

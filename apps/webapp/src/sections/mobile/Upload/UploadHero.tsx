@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { CodeTyping, IconComp } from "@resomix/ui";
+import { CodeTyping, fetchSessionId, IconComp } from "@resomix/ui";
 import ArrowDownRightSvg from "@/assets/icons/arrow_down_right.svg";
 import XSvg from "@/assets/icons/twitter_x.svg";
 import InstaSvg from "@/assets/icons/instagram.svg";
@@ -14,13 +14,13 @@ const UploadHero: React.FC = () => {
     <div ref={sectionRef} className="relative z-20 flex flex-col items-center justify-between gap-[var(--px-40)] min-h-[var(--px-670)] h-[var(--px-670)]">
       <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] mt-[var(--px-60)] min-h-[var(--px-33)]">
         <CodeTyping
-          text='// RESOMIX SYSTEM v1.0.9 [booting...]<br />init.protocol("resonance_scan")'
+          text={`// PYXIS-1 Engine: v5.3.9 [booting...]<br />init.protocol("resonance_scan")<br />> gateway.open()<br />auth_granted: DJ_MODE_ACTIVE<br />session_ID: ${fetchSessionId()}`}
           speed={100}
           multiline={true}
         />
       </div>
       <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
-        <h1 className="text-[length:var(--px-49)] font-helvetica leading-[var(--px-50)] font-bold uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></h1>
+        <h1 className="text-[length:var(--px-35)] font-benzin leading-[var(--px-50)] uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></h1>
         <div className="text-[length:var(--px-20)] font-helvetica font-extralight leading-[var(--px-24)] uppercase">upload a reference track,<br />and unlock a universe<br />of sounds</div>
         <img src={ArrowDownRightSvg} draggable={false} alt="" aria-hidden="true" loading="lazy" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>
