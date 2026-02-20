@@ -65,7 +65,7 @@ const HomeHero: React.FC = () => {
                 <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} aria-hidden="true" loading="lazy" draggable={false} src={ArrowSmallDown} alt="Arrow Small Down" />
                 <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A sound analysis platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
               </div>
-              <span className="text-[length:var(--px-55)] font-helvetica uppercase leading-[var(--px-40)]">Align with your sound</span>
+              <span className="text-[length:var(--px-50)] font-benzin uppercase leading-[var(--px-40)]">Hear the Invisible</span>
             </div>
             <div className="flex justify-end w-full min-w-[var(--px-204-5)] mt-[var(--px-42)]">
               <ButtonHeavyRight text="Upload Your Track" onClick={() => {
