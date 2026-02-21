@@ -2,7 +2,7 @@ import React from "react";
 import SectionFiveGraphicLeft from "@/assets/icons/composites/section_five_graphic_left.svg";
 import SectionFiveGraphicRight from "@/assets/icons/composites/section_five_graphic_right.svg";
 import ArrowBigDownSvg from "@/assets/icons/arrow_big_down_stroke.svg";
-import SoulOfReference from "@/assets/icons/hero/section_five_soul_of_reference.svg";
+// import SoulOfReference from "@/assets/icons/hero/section_five_soul_of_reference.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 import { BASE_BETA_URL } from "@resomix/config";
