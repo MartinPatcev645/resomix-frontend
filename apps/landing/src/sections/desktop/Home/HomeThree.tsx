@@ -19,7 +19,7 @@ const HomeThree: React.FC = () => (
           <img className="w-[var(--px-43)] h-[var(--px-44)]" aria-hidden="true" loading="lazy" draggable={false} src={ArrowDownRightSvg} alt="Arrow Down Right" />
           <div className="justify-start text-[length:var(--px-59)] font-light font-helvetica uppercase leading-[var(--px-64)]">RESOMIX BRINGS</div>
         </div>
-        <div className="text-right justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-12)] opacity-70">The instinct of a crate digger, amplified by<br />spectral analysis. This is what discovery feels like<br />when the machine understands the music.</div>
+        <div className="text-right justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-12)] opacity-70">The instinct of a crate digger, amplified by<br />spectral analysis. This is what discovery feels like<br />when your trusted tool understands the music.</div>
       </div>
       <div className="justify-start text-[length:var(--px-59)] font-light font-helvetica uppercase leading-[var(--px-64)]">THE ART OF SELECTION<br />INTO THE AGE OF ALGORITHMIC PRECISION</div>
     </div>

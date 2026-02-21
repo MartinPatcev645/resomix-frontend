@@ -29,7 +29,7 @@ const HomeThree: React.FC = () => (
           </div>
         </div>
         <div className="text-[length:var(--px-14)] text-left font-extralight font-auger mt-[var(--px-28)] leading-[var(--px-16)]">
-          The instinct of a crate digger,<br />amplified by spectral analysis. This is what discovery feels like when<br />the machine understands the music.
+          The instinct of a crate digger,<br />amplified by spectral analysis. This is what discovery feels like when<br />your trusted tool understands the music.
         </div>
       </div>
     </div>
