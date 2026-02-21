@@ -8,7 +8,7 @@ const HomeThree: React.FC = () => (
   <div className='mt-[var(--px-90)] flex flex-col w-full relative z-15'>
     <div className="mb-[var(--px-90)]">
       <div className="w-full flex justify-center items-center">
-        <ButtonHeavyRight text="Start Your Sonic Journey" onClick={() => {
+        <ButtonHeavyRight text="Upload Your Track" onClick={() => {
           window.location.href = BASE_BETA_URL
         }} link_arrow={true} className="cta-button primary" id="home-three-start-journey-button" />
       </div>
@@ -29,19 +29,16 @@ const HomeThree: React.FC = () => (
           </div>
         </div>
         <div className="text-[length:var(--px-14)] text-left font-extralight font-auger mt-[var(--px-28)] leading-[var(--px-16)]">
-          The thrill and excitement of crate<br />digging, but with the power, speed, and<br />convenience of cutting-edge technology.
-        </div>
-        <div className="text-[length:var(--px-14)] text-left font-extralight font-auger mt-[var(--px-14)] leading-[var(--px-16)]">
-          Our unique approach amplifies personal<br />taste, and shines a light on hidden gems<br />at the edges of catalogs, archives, and<br />time.
+          The instinct of a crate digger,<br />amplified by spectral analysis. This is what discovery feels like when<br />your trusted tool understands the music.
         </div>
       </div>
     </div>
     <div className='mt-[var(--px-180)] flex flex-col justify-between w-full'>
-      <div className="justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">A safe haven for DJs escaping<br />the noise of algorithms and<br />trends</div>
+      <div className="justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">BEYOND CHARTS. BEYOND TRENDS.<br />BEYOND WHAT'S POPULAR.</div>
       <div className="flex items-center justify-center my-[var(--px-40)]">
         <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Sound Waves" className="w-[var(--px-160)] h-[var(--px-131)]" />
       </div>
-      <div className="text-right justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">Resomix will expand your sonic<br />horizon, discovering threads you<br />never knew were there.</div>
+      <div className="text-right justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">RESOMIX REVEALS<br />THE SONIC THREADS<br />YOU NEVER KNEW WERE THERE.</div>
     </div>
   </div>
 );

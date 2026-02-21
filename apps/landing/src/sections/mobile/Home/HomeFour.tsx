@@ -37,7 +37,7 @@ const HomeFour: React.FC = () => {
             </div>
           </div>
           <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
-            You can upload any audio file: a released or unreleased track, a sketch from your archive, or a short clip. Metadata is not important; Resomix listens to your reference audio and extracts its Acoustic sonic DNA to find a perfect match.
+            You can upload any audio file: a released or unreleased track, a sketch from your archive, or a short clip. Metadata is not important; Resomix listens to your reference audio and extracts its sonic DNA to find a perfect match.
           </div>
         </div>
         <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>
@@ -48,7 +48,7 @@ const HomeFour: React.FC = () => {
             </div>
           </div>
           <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
-            Here's when the magic happens. Our system performs a full spectral analysis on a granular level, exploring every aspect of your tune rhythm, harmonic content, energy flow, dynamics, and tonal balance.
+            PYXIS-1 performs a full spectral analysis on a granular level, exploring every aspect of your tune rhythm, harmonic content, energy flow, dynamics, and tonal balance.
           </div>
         </div>
         <div className='flex flex-col justify-between mb-[var(--px-16)] items-start'>

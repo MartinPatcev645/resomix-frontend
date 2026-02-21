@@ -106,7 +106,7 @@ const HomeFour: React.FC = () => {
               </div>
             </div>
             <div className='text-[length:var(--px-17)] font-extralight font-auger opacity-70 leading-[var(--px-20)] my-[var(--px-8)]'>
-              You can upload any audio file: a released or unreleased track, a sketch<br />from your archive, or a short clip. Metadata is not important; Resomix<br />listens to your reference audio and extracts its Acoustic sonic DNA to find<br />a perfect match.
+              You can upload any audio file: a released or unreleased track, a sketch<br />from your archive, or a short clip. Metadata is not important; Resomix<br />listens to your reference audio and extracts its sonic DNA to find<br />a perfect match.
             </div>
           </div>
           <div className='mt-[var(--px-12)] mb-[var(--px-32)] opacity-70'>
@@ -119,7 +119,7 @@ const HomeFour: React.FC = () => {
                 2 — Spectral Feature Analysis
               </div>
               <div className='text-[length:var(--px-17)] font-extralight font-auger opacity-70 leading-[var(--px-20)]'>
-                Here's when the magic happens.<br />Our system performs a full spectral<br />analysis on a granular level,<br />exploring every aspect of your tune:<br />rhythm, harmonic content, energy <br />flow, dynamics, and tonal balance.
+                PYXIS-1 performs a full spectral<br />analysis on a granular level,<br />exploring every aspect of your tune:<br />rhythm, harmonic content, energy <br />flow, dynamics, and tonal balance.
               </div>
             </div>
             <div className=''>

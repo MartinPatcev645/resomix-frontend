@@ -63,12 +63,12 @@ const HomeHero: React.FC = () => {
             <div className='flex w-full justify-between items-start -mt-[var(--px-34)]'>
               <div className='flex gap-[var(--px-12)]'>
                 <img className="w-[var(--px-35)] h-[var(--px-35)]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.6))" }} aria-hidden="true" loading="lazy" draggable={false} src={ArrowSmallDown} alt="Arrow Small Down" />
-                <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A sound analysis platform that helps DJs <br />discover tracks by feeling, not by genre. </div>
+                <div className="justify-start text-[length:var(--px-16)] font-normal font-helvetica uppercase leading-5 text-[var(--color-primary)]" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>A sonic analysis platform that searches <br />by sound and feeling, not trends. </div>
               </div>
               <span className="text-[length:var(--px-50)] font-benzin uppercase leading-[var(--px-40)]">Hear the Invisible</span>
             </div>
             <div className="flex justify-end w-full min-w-[var(--px-204-5)] mt-[var(--px-42)]">
-              <ButtonHeavyRight text="Upload Your Track" onClick={() => {
+              <ButtonHeavyRight text="Start Your Sonic Discovery" onClick={() => {
                 window.location.href = BASE_BETA_URL
               }} link_arrow={true} className="cta-button primary" id="home-hero-upload-button" />
             </div>
@@ -110,7 +110,7 @@ const HomeHero: React.FC = () => {
 
       {/* Text below the SVG clip path */}
       <div className='flex justify-center items-center gap-[var(--px-8)] relative z-15'>
-        <div className="text-right justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase leading-5">Unbounded by trends,<br />built for emotional resonance</div>
+        <div className="text-right justify-start text-[length:var(--px-18)] font-light font-helvetica uppercase leading-5">Unbounded by trends.<br />built for emotional resonance</div>
         <img src={SoundWaves} aria-hidden="true" loading="lazy" draggable={false} className="w-[var(--px-55)] h-[var(--px-44)]" alt="Sound Waves" />
       </div>
     </div>

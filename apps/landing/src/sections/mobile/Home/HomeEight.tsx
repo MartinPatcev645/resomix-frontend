@@ -8,29 +8,26 @@ const HomeEight: React.FC = () => (
     <div className="flex justify-end w-full relative">
       {/* Right graphic here */}
       <div className="absolute top-1/3 right-0 transform text-[length:var(--px-14)] font-extralight font-auger text-right z-20 mr-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] tracking-[var(--px-0-1)]">
-        The DJ's Secret Weapon<br />for Instant Inspiration
+        Discovery Through Sound<br />Connection Through Emotion
       </div>
       <img src={SectionEightGraphicRightSvg} aria-hidden="true" loading="lazy" draggable={false} className="w-[var(--px-280)] h-[var(--px-80)]" alt="Section Eight Graphic Right" />
     </div>
     <div className="flex flex-col justify-center items-center w-full mt-[var(--px-60)]">
-      <div className="flex flex-col uppercase text-[length:var(--px-20)] font-light leading-[var(--px-20)] mt-[var(--px-30)] font-helvetica items-center text-center">
-        <div className="">
-          Let us do the heavy lifting,<br />while you focus on creating
-        </div>
-        <div className="flex items-center gap-[var(--px-5)]">
+      <div className="flex flex-col uppercase text-[length:var(--px-24)] font-medium leading-[var(--px-20)] mt-[var(--px-30)] font-helvetica items-center text-center">
+        <div className="flex flex-col items-center gap-[var(--px-10)]">
           <div className="">
-            something
+            You bring the vision
+          </div>
+          <div className="mt-[var(--px-5)] mb-[var(--px-7)]">
+            <img src={DividerSvg} aria-hidden="true" loading="lazy" draggable={false} className="w-[var(--px-30)] h-[var(--px-30)] mb-[var(--px-3)]" alt="Divider" />
           </div>
           <div className="">
-            <img src={DividerSvg} aria-hidden="true" loading="lazy" draggable={false} className="w-[var(--px-24)] h-[var(--px-24)]" alt="Divider" />
-          </div>
-          <div className="">
-            unforgettable.
+            We surface the sound
           </div>
         </div>
       </div>
-      <div className="text-[length:var(--px-14)] font-extralight font-auger mt-[var(--px-10)] text-center leading-[var(--px-14)]">
-        Discovery Through Sound.<br />Connection Through Emotion.
+      <div className="text-[length:var(--px-14)] font-extralight font-auger mt-[var(--px-50)] text-center leading-[var(--px-14)]">
+        Upload any reference track — released, unreleased, even a rough sketch.<br />PYXIS-1 listens to what makes it unique.
       </div>
     </div>
     <div className="flex justify-start w-full relative mt-[var(--px-80)]">

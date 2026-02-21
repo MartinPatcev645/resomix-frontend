@@ -30,7 +30,10 @@ const HomeTwo: React.FC = () => (
         <div className=''>
           <img src={LayersSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Layers" className="w-[var(--px-38)] h-[var(--px-41)]" />
         </div>
-        <div className="text-center justify-start text-[length:var(--px-14)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-14)]">Resomix goes deeper than anyone else,<br />carefully selecting music that reflects<br />the energy and vibe you're looking for,<br />with a quality-over-quantity approach.</div>
+        <div className="text-center justify-start text-[length:var(--px-13)] font-extrabold font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-90">
+          Precision Over Volume
+        </div>
+        <div className="text-center justify-start text-[length:var(--px-14)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-14)]">Every result earned through 70+<br />dimensions of spectral analysis.<br />Not surfaced by popularity. Not boosted<br />by marketing spend. Fewer results.<br />Higher relevance.</div>
       </div>
       <div className='my-[var(--px-32)]'>
         <img src={VerticalLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Vertical Line" className="w-[var(--px-4)] h-[var(--px-63)]" />
