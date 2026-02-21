@@ -60,20 +60,18 @@ const HomeSix: React.FC = () => {
               style={{ transform: `scale(${scale})`, transformOrigin: "center" }}
               className='relative my-[var(--px-110)] mx-[var(--px-50)]'
             >
-              <div className='absolute inset-0 border-2 border-[var(--color-noise-border)] bg-[var(--color-primary-background)] overflow-hidden z-0'>
+              <div className='absolute inset-0 border-2 border-[var(--color-noise-border)] bg-[var(--color-secondary)] overflow-hidden z-0'>
                 {/* <StaticNoise className='pointer-events-none absolute inset-0' /> */}
               </div>
 
               {/* Text content (keep mobile sizes) */}
               <div className='relative flex-col justify-between h-full w-full py-[var(--px-15)] px-[var(--px-25)] z-10'>
                 <div className='flex w-full justify-center text-[length:var(--px-14)] leading-[var(--px-16)] font-extralight font-auger'>
-                  To all DJs lost in the vastness of the modern sound universe:
-                  let Resomix be the gravitational force that draws you
-                  to the tracks you need.
+                  To all DJs lost in the vastness of the modern sound universe:<br />let Resomix be the gravitational force that draws you to the tracks you need.
                 </div>
                 <div className='flex my-[var(--px-100)] w-full justify-center text-center text-[length:var(--px-20)] font-helvetica uppercase leading-[var(--px-20)]'>
-                  RESOMIX revolutionized music
-                  discovery by putting sound first
+                  Music Discovery<br />
+                  Redesigned Around Sound
                 </div>
                 <div className='flex w-full justify-center text-[length:var(--px-14)] leading-[var(--px-16)] font-extralight font-auger'>
                   Cutting-Edge Signal Processing to Enhance

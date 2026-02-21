@@ -18,8 +18,8 @@ const HomeNine: React.FC = () => {
       {/* Content with higher z-index */}
       <div className="flex flex-col justify-between relative z-15">
         {/* Section 9 A */}
-        <div className="flex justify-between mx-[var(--px-250)] min-h-[var(--px-198-5)]">
-          <div className="mt-[var(--px-40)] text-left text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)]">
+        <div className="flex justify-between mx-[var(--px-250)] min-h-[var(--px-198-5)] font-bold">
+          <div className="mt-[var(--px-40)] text-left text-[length:var(--px-7)] font-fira opacity-70 tracking-[var(--px-2)]">
             <div className="leading-[var(--px-8)]">
               <CodeTyping
                 speed={50}
@@ -61,7 +61,7 @@ const HomeNine: React.FC = () => {
               />
             </div>
           </div>
-          <div className="flex flex-col items-end text-right text-[length:var(--px-7)] font-light font-fira min-h-[var(--px-184)]">
+          <div className="flex flex-col items-end text-right text-[length:var(--px-7)] font-fira min-h-[var(--px-184)]">
             <div className="opacity-70 leading-[var(--px-32)] min-h-[var(--px-32)] tracking-[var(--px-2)]">
               <CodeTyping
                 speed={50}
@@ -94,15 +94,12 @@ const HomeNine: React.FC = () => {
 
         {/* Section 9 B */}
         <div className="mt-[var(--px-180)]">
-          <div className="flex justify-between mx-[var(--px-240)] -mb-[var(--px-6)]">
-            <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)] ml-[var(--px-20)]">
-              A New Era of Music
-            </div>
-            <div className="text-[length:var(--px-7)] font-light font-fira opacity-70 tracking-[var(--px-2)]">
+          <div className="flex w-full justify-center -mb-[var(--px-6)]">
+            <div className="text-[length:var(--px-10)] font-semibold font-fira opacity-70 tracking-[var(--px-1-5)]">
               Tune Into the Unknown
             </div>
           </div>
-          <img src={SectionNineGraphic} aria-hidden="true" loading="lazy" draggable={false} className="max-w-full h-[var(--px-4)]" alt="Section Nine Graphic" />
+          <img src={SectionNineGraphic} aria-hidden="true" loading="lazy" draggable={false} className="max-w-full h-[var(--px-4)] -mt-[var(--px-10)]" alt="Section Nine Graphic" />
         </div>
       </div>
     </div>

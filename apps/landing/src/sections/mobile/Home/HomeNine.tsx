@@ -94,7 +94,7 @@ const HomeNine: React.FC = () => {
         {/* Section 9 B */}
         <div className="flex flex-col justify-between mt-[var(--px-160)] gap-[var(--px-20)] w-full items-center">
           <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-5)]">
-            A New Era of Music
+            Sound-First Discovery
           </div>
           <img src={SectionNineGraphic} draggable={false} aria-hidden="true" loading="lazy" className="w-[var(--px-394)] h-[var(--px-6)]" alt="Section Nine Graphic" />
           <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-1-5)]">

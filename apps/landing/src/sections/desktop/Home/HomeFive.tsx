@@ -2,7 +2,7 @@ import React from "react";
 import SectionFiveGraphicLeft from "@/assets/icons/composites/section_five_graphic_left.svg";
 import SectionFiveGraphicRight from "@/assets/icons/composites/section_five_graphic_right.svg";
 import ArrowBigDownSvg from "@/assets/icons/arrow_big_down_stroke.svg";
-// import SoulOfReference from "@/assets/icons/hero/section_five_soul_of_reference.svg";
+import SoulOfReference from "@/assets/icons/hero/section_five_soul_of_reference.svg";
 import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 import { BASE_BETA_URL } from "@resomix/config";
@@ -23,9 +23,9 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex flex-col w-full justify-center'>
           <div className="relative z-20 mx-auto text-center text-[length:var(--px-25-19)] font-extralight leading-[var(--px-34)] mt-[var(--px-24)] opacity-90 font-helvetica uppercase">
-            Resomix reads the texture of your reference track<br />- rhythm, harmonic content, energy, timbre <span className="font-medium text-white"></span>
+            <span className="font-medium">Resomix reads the texture of your reference track<br />- rhythm, harmonic content, energy, timbre</span> and finds music<br />that matches its sonic character, not just its tags.
           </div>
-          {/* <img src={SoulOfReference} aria-hidden="true" loading="lazy" draggable={false} alt="Soul Of Reference" className="absolute z-5 top-[25.8%] left-[50%] transform -translate-x-1/2 w-[var(--px-775)] h-[var(--px-70)]" /> */}
+          {/* <img src={SoulOfReference} aria-hidden="true" loading="lazy" draggable={false} alt="Soul Of Reference" className="absolute z-5 top-[25.2%] left-[50.8%] transform -translate-x-1/2 w-[var(--px-775)] h-[var(--px-70)]" /> */}
           <div className='mx-auto text-center text-[length:var(--px-13)] font-extralight mt-[var(--px-12)] opacity-60 font-auger'>
             70+ audio features analyzed per track.<br />Zero influence from popularity metrics.
           </div>

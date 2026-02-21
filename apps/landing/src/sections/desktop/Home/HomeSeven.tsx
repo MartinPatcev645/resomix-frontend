@@ -37,16 +37,13 @@ const HomeSeven: React.FC = () => {
               DROP A TRACK
             </div>
           </div>
-          <div className='text-[length:var(--px-13)] font-extralight font-auger opacity-70 text-right'>
-            Simplicity and minimalism.<br />Just upload a sound, and Resomix will listen.
-          </div>
         </div>
         <div className='text-[length:var(--px-59)] font-helvetica uppercase font-light leading-[var(--px-64)]'>
-          AND EXPLORE NEW POSSIBILITIES
+          WE'LL LISTEN
         </div>
       </div>
       <div className="w-full flex justify-center items-center pt-[var(--px-60)] pb-[var(--px-100)] min-h-[var(--px-309)]">
-        <ButtonHeavyRight text="Unlock a Universe of Sounds" onClick={() => {
+        <ButtonHeavyRight text="Upload Your Track" onClick={() => {
           window.location.href = BASE_BETA_URL
         }} link_arrow={true} className="cta-button primary" id="home-seven-unlock-button" />
       </div>

@@ -70,13 +70,11 @@ const HomeSix: React.FC = () => {
               {/* Text content */}
               <div className="relative flex-col justify-between h-full w-full py-[var(--px-15)] px-[var(--px-25)] z-10">
                 <div className='flex w-full justify-end text-[length:var(--px-13)] font-extralight text-right font-auger opacity-70'>
-                  To all DJs lost in the vastness of the modern sound universe:<br />
-                  let Resomix be the gravitational force that draws you<br />
-                  to the tracks you need.
+                  To all DJs lost in the vastness of the modern sound universe:<br />let Resomix be the gravitational force that draws you<br />to the tracks you need.
                 </div>
                 <div className='flex my-[var(--px-100)] w-full justify-center text-center text-[length:var(--px-25)] font-medium font-helvetica uppercase leading-[var(--px-28)]'>
-                  RESOMIX revolutionized music<br />
-                  discovery by putting sound first
+                  Music Discovery<br />
+                  Redesigned Around Sound
                 </div>
                 <div className='flex w-full justify-start text-[length:var(--px-13)] font-extralight text-left font-auger opacity-70'>
                   Cutting-Edge Signal Processing to Enhance<br />
