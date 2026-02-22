@@ -27,13 +27,13 @@ const HomeEight: React.FC = () => (
         </div>
       </div>
       <div className="text-[length:var(--px-14)] font-extralight font-auger mt-[var(--px-50)] text-center leading-[var(--px-14)]">
-        Upload any reference track — released, unreleased, even a rough sketch.<br />PYXIS-1 listens to what makes it unique.
+        Upload any reference track - released, unreleased, even a rough sketch<br />PYXIS-1 listens to what makes it unique
       </div>
     </div>
     <div className="flex justify-start w-full relative mt-[var(--px-80)]">
       {/* Left graphic here */}
       <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-14)] font-auger font-light z-20 -mt-[var(--px-4)] leading-[var(--px-16)] ml-[var(--px-35)] tracking-[var(--px-0-1)]">
-        Resomix is designed<br />to save you time and<br />expand your music taste.
+        Resomix is designed<br />to save you time and<br />expand your music taste
       </div>
       <img src={SectionEightGraphicLeftSvg} aria-hidden="true" loading="lazy" draggable={false} className="w-[var(--px-290)] h-[var(--px-110)]" alt="Section Eight Graphic Left" />
     </div>

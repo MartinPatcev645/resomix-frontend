@@ -22,17 +22,17 @@ const HomeSeven: React.FC = () => {
       >
       </div>
       {/* Content with higher z-index */}
-      <div className='flex flex-col w-full relative z-15'>
+      <div className='flex flex-col w-full relative z-15 mb-[var(--px-200)]'>
         <div className='flex flex-col justify-start items-start w-full'>
           <div className='flex flex-col items-start w-full'>
             <div className='flex items-center justify-start gap-[var(--px-12)]'>
               <img src={ArrowBigDownSvg} draggable={false} aria-hidden="true" loading="lazy" alt="Arrow Big Down" className="w-[var(--px-30)] h-[var(--px-30)]" />
-              <div className='text-[length:var(--px-43)] font-helvetica uppercase font-bold leading-[var(--px-50)]'>
-                DROP
+              <div className='text-[length:var(--px-40)] font-helvetica uppercase font-bold leading-[var(--px-50)]'>
+                DROP A TRACK
               </div>
             </div>
             <div className='text-[length:var(--px-43)] font-helvetica uppercase font-bold leading-[var(--px-50)]'>
-              A TRACK
+              WE'LL LISTEN
             </div>
           </div>
         </div>

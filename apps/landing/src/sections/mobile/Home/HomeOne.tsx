@@ -12,16 +12,16 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-360)] h-[var(--px-100)]" draggable={false} aria-hidden="true" loading="lazy" src={SectionOneGraphicRight} alt="Section One Graphic Right" />
         </div>
-        <div className="items-start w-full text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider">Resomix is a sonic discovery engine. Nothing else like it.</div>
+        <div className="items-start w-full text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider">Resomix is a sonic discovery engine. Nothing else like it</div>
       </div>
       <div className='flex flex-col justify-between mt-[var(--px-48)] w-full'>
         <div className="relative">
           <div className="absolute top-1/3 left-0 transform text-[length:var(--px-12)] font-extralight font-auger text-left z-20 ml-[var(--px-20)] -mt-[var(--px-4)] leading-[var(--px-14)]">
-            Built by DJs,<br />for DJs &gt;&gt;&gt;
+            Built by DJs<br />for DJs &gt;&gt;&gt;
           </div>
           <img className="w-[var(--px-330)] h-[var(--px-100)]" aria-hidden="true" loading="lazy" draggable={false} src={SectionOneGraphicLeft} alt="Section One Graphic Left" />
         </div>
-        <div className="text-right w-full text-[length:var(--px-18)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider mt-[var(--px-30)]">SURFACING TRACKS THAT SHARE<br />ITS SONIC CHARACTER ACROSS<br />GENRES, ERAS, AND CATALOGS.</div>
+        <div className="text-right w-full text-[length:var(--px-18)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider mt-[var(--px-30)]">SURFACING TRACKS THAT SHARE<br />ITS SONIC CHARACTER ACROSS<br />GENRES, ERAS, AND CATALOGS</div>
       </div>
     </div>
   </div>
