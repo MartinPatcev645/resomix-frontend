@@ -33,7 +33,7 @@ const HomeTwo: React.FC = () => (
         <div className="text-center justify-start text-[length:var(--px-13)] font-extrabold font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-90">
           Precision Over Volume
         </div>
-        <div className="text-center justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-70">Every result earned through 70+ dimensions of spectral analysis.<br />Not surfaced by popularity. Not boosted by marketing spend.<br />Fewer results. Higher relevance.</div>
+        <div className="text-center justify-start text-[length:var(--px-13)] font-extralight font-auger mt-[var(--px-24)] leading-[var(--px-16)] opacity-70">Every result earned through 70+ dimensions of spectral analysis<br />Not surfaced by popularity. Not boosted by marketing spend<br />Fewer results, higher relevance</div>
       </div>
       <div className='my-[var(--px-32)]'>
         <img src={VerticalLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Vertical Line" className="w-[var(--px-2)] h-[var(--px-63)]" />

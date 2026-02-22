@@ -67,16 +67,14 @@ const HomeSix: React.FC = () => {
               {/* Text content (keep mobile sizes) */}
               <div className='relative flex-col justify-between h-full w-full py-[var(--px-15)] px-[var(--px-25)] z-10'>
                 <div className='flex w-full justify-center text-[length:var(--px-14)] leading-[var(--px-16)] font-extralight font-auger'>
-                  To all DJs lost in the vastness of the modern sound universe:<br />let Resomix be the gravitational force that draws you to the tracks you need.
+                  To all DJs lost in the vastness of the modern sound universe:<br />let Resomix be the gravitational force that draws you to the tracks you need
                 </div>
                 <div className='flex my-[var(--px-100)] w-full justify-center text-center text-[length:var(--px-20)] font-helvetica uppercase leading-[var(--px-20)]'>
                   Music Discovery<br />
                   Redesigned Around Sound
                 </div>
                 <div className='flex w-full justify-center text-[length:var(--px-14)] leading-[var(--px-16)] font-extralight font-auger'>
-                  Cutting-Edge Signal Processing to Enhance
-                  Human Imagination, Proprietary algorithms designed
-                  to listen like producers, and discover like DJs.
+                  Cutting-Edge Signal Processing to Enhance Human Imagination. Proprietary algorithms designed to listen like producers, and discover like DJs
                 </div>
               </div>
             </div>

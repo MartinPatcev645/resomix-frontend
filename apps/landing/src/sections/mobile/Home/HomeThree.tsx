@@ -29,16 +29,16 @@ const HomeThree: React.FC = () => (
           </div>
         </div>
         <div className="text-[length:var(--px-14)] text-left font-extralight font-auger mt-[var(--px-28)] leading-[var(--px-16)]">
-          The instinct of a crate digger,<br />amplified by spectral analysis. This is what discovery feels like when<br />your trusted tool understands the music.
+          The instinct of a crate digger,<br />amplified by spectral analysis. This is what discovery feels like when<br />your trusted tool understands the music
         </div>
       </div>
     </div>
     <div className='mt-[var(--px-180)] flex flex-col justify-between w-full'>
-      <div className="justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">BEYOND CHARTS. BEYOND TRENDS.<br />BEYOND WHAT'S POPULAR.</div>
+      <div className="justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">BEYOND CHARTS. BEYOND TRENDS<br />BEYOND WHAT'S POPULAR</div>
       <div className="flex items-center justify-center my-[var(--px-40)]">
         <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Sound Waves" className="w-[var(--px-160)] h-[var(--px-131)]" />
       </div>
-      <div className="text-right justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">RESOMIX REVEALS<br />THE SONIC THREADS<br />YOU NEVER KNEW WERE THERE.</div>
+      <div className="text-right justify-start text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-22)]">RESOMIX REVEALS<br />THE SONIC THREADS<br />YOU NEVER KNEW WERE THERE</div>
     </div>
   </div>
 );
