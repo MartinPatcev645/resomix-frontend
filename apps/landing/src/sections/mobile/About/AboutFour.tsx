@@ -26,7 +26,7 @@ const AboutFour: React.FC = () => {
                                     DJs
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — who need the perfect tracks to make their sets unforgettable.
+                                    — who need the right tracks for the right moment in their set
                                 </div>
                             </div>
                         </div>
@@ -37,7 +37,7 @@ const AboutFour: React.FC = () => {
                                     Producers
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — looking for new inspiration to reflect a song's vibe.
+                                    — seeking sonic references for sound design, texture, and creative direction
                                 </div>
                             </div>
                         </div>
@@ -48,7 +48,7 @@ const AboutFour: React.FC = () => {
                                     Curators
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — who create cohesive playlists with their unique taste.
+                                    — who build playlists around sonic cohesion, not genre labels
                                 </div>
                             </div>
                         </div>
@@ -59,7 +59,7 @@ const AboutFour: React.FC = () => {
                                     Music Enthusiasts
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — exploring the boundaries of music, beyond charts or trends.
+                                    — who dig deeper than algorithms will take them
                                 </div>
                             </div>
                         </div>
@@ -69,7 +69,7 @@ const AboutFour: React.FC = () => {
 
             {/* CTA Button */}
             <div className="w-full flex justify-center items-center">
-                <ButtonHeavyRight text="Try it Now" onClick={() => {
+                <ButtonHeavyRight text="Upload a Track" onClick={() => {
                     window.location.href = BASE_BETA_URL
                 }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-four-try-now-button" />
             </div>
