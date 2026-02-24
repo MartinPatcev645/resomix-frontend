@@ -31,31 +31,22 @@
             "card_path_desc": "Within seconds, a precisely matched selection of tracks that share your reference's sonic character - regardless of genre, release date, or popularity"
         },
         "about_three": {
-            "intro": "Every catalog has a hidden layer - tracks that never made it to charts, albums that fell through algorithmic cracks, artists who create brilliant work outside the spotlight. Resomix was built to find them.",
+            "intro": "Every catalog has a hidden layer - tracks that never made it to charts, albums that fell through algorithmic cracks, artists who create brilliant work outside the spotlight. Resomix was built to find them",
             "intro_span": "",
             "heading_beyond": "Beyond<br />Trends",
-            "heading_values_benefits": "Values &<br />Benefits",
+            "heading_values_benefits": "What We Stand For",
 
-            "card_discovery_title": "Discovery Based on Sound",
-            "card_discovery_desc": "Resomix starts off by reading the spectral flow of the audio provided. It compares<br />rhythm, tone, and spectral fingerprints of music until it finds the right fits.",
+            "card_speed_title": "THE ART OF CRATE DIGGING",
+            "card_speed_desc": "You still make the call. We help you get there faster - surfacing tracks that standard search and streaming algorithms miss",
 
-            "card_simplicity_title": "Simplicity and Efficiency",
-            "card_simplicity_desc": "Resomix's interface is fast, focused, and intuitive: simply drag, drop, and dig.",
+            "card_open_title": "REAL INCLUSION",
+            "card_open_desc": "When discovery is based on sonic character alone, every artist competes on equal terms - regardless of label size, marketing budget, or chart history",
 
-            "card_inclusion_title": "Real Inclusion",
-            "card_inclusion_desc": "Here, underrepresented artists and genres can find their audience and thrive,<br />with a discovery engine that prioritizes sonic similarities above all else.",
+            "card_quality_title": "OPEN BY NATURE",
+            "card_quality_desc": "Transparent data, clear licensing, and an open approach to partnerships. Built for labels, platforms, and developers to collaborate with",
 
-            "card_speed_title": "Built For Speed",
-            "card_speed_desc": "By sampling micro-transients in real time, Resomix delivers fast, latency-tested results.",
-
-            "card_open_title": "Open by Nature",
-            "card_open_desc": "Transparent data, open APIs, and clear licensing. Resomix makes it easy for partners,<br />labels, platforms,and developers to collaborate and create a more open music ecosystem.",
-
-            "card_quality_title": "Quality over Quantity",
-            "card_quality_desc": "Resomix filters results with care, and lets you control how many recommendations you <br />see every time.",
-
-            "card_crate_title": "The Art of Crate Digging",
-            "card_crate_desc": "You still make the call; we only help you get there quicker. Resomix is a platform that'll<br />broaden your sonic horizon by exposing you to songs that might never appear through<br />standard search or streaming algorithms."
+            "card_crate_title": "PRECISION OVER VOLUME",
+            "card_crate_desc": "Fewer results, higher relevance. You control how many recommendations you see every time"
         },
         "about_four": {
             "headline_who": "Who",

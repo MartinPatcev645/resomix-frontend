@@ -1,8 +1,5 @@
 import React from "react";
-import AnalysisSvg from "@/assets/icons/analysis.svg"
 import MatchesSvg from "@/assets/icons/matches.svg"
-import CraftSvg from "@/assets/icons/craft.svg"
-import ReferenceSvg from "@/assets/icons/reference.svg"
 import SpeedSvg from "@/assets/icons/speed.svg"
 import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
 import LayersSvg from "@/assets/icons/layers.svg"
@@ -18,7 +15,7 @@ const AboutThree: React.FC = () => {
                 <div className="absolute -top-[var(--px-150)] w-[var(--px-622)] -right-[var(--px-170)] pointer-events-none z-5">
                     <img src={GradientFive} draggable={false} aria-hidden="true" loading="lazy" alt="gradient_five" className="w-full h-auto" />
                 </div>
-                <div className="absolute top-[var(--px-500)] w-[var(--px-394)] -left-[var(--px-20)] pointer-events-none z-5">
+                <div className="absolute top-[var(--px-100)] w-[var(--px-394)] -left-[var(--px-20)] pointer-events-none z-5">
                     <img src={GradientSix} draggable={false} aria-hidden="true" loading="lazy" alt="gradient_six" className="w-full h-[var(--px-1720)]" />
                 </div>
 
@@ -38,50 +35,17 @@ const AboutThree: React.FC = () => {
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-100)] w-full z-15 items-center">
                 <div className="text-[length:var(--px-43)] font-bold font-helvetica uppercase leading-[var(--px-43)] w-full text-center ml-[var(--px-30)]">
-                    Values &<br />Benefits
+                    What We Stand For
                 </div>
                 <div className="flex flex-col gap-[var(--px-100)] items-start">
-                    <div className="flex gap-[var(--px-10)] z-15">
-                        <img src={AnalysisSvg} draggable={false} aria-hidden="true" loading="lazy" alt="analysis" className="w-[var(--px-52)] h-[var(--px-52)]" />
-                        <div className="flex flex-col items-center gap-[var(--px-10)]">
-                            <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                Discovery Based<br />on Sound
-                            </div>
-                            <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                Resomix starts off by reading the spectral flow of the audio provided. It compares rhythm, tone, and spectral fingerprints of music until it finds the right fits.
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={CraftSvg} draggable={false} aria-hidden="true" loading="lazy" alt="craft" className="w-[var(--px-52)] h-[var(--px-52)]" />
-                        <div className="flex flex-col items-center gap-[var(--px-10)]">
-                            <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                Simplicity<br />and Efficiency
-                            </div>
-                            <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                Resomix's interface is fast, focused, and intuitive: simply drag, drop, and dig.
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex gap-[var(--px-20)] z-15">
-                        <img src={ReferenceSvg} draggable={false} aria-hidden="true" loading="lazy" alt="reference" className="w-[var(--px-52)] h-[var(--px-52)]" />
-                        <div className="flex flex-col items-center gap-[var(--px-10)]">
-                            <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                Real Inclusion
-                            </div>
-                            <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                Here, underrepresented artists and genres can find their audience and thrive, with a discovery engine that prioritizes sonic similarities above all else.
-                            </div>
-                        </div>
-                    </div>
                     <div className="flex gap-[var(--px-20)] z-15">
                         <img src={SpeedSvg} draggable={false} aria-hidden="true" loading="lazy" alt="speed" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                Built For Speed
+                                THE ART OF CRATE DIGGING
                             </div>
                             <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                By sampling micro-transients in real time, Resomix delivers fast, latency-tested results.
+                                You still make the call. We help you get there faster - surfacing tracks that standard search and streaming algorithms miss
                             </div>
                         </div>
                     </div>
@@ -89,10 +53,10 @@ const AboutThree: React.FC = () => {
                         <img src={SoundWavesTwo} draggable={false} aria-hidden="true" loading="lazy" alt="sound waves" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                Open by Nature
+                                REAL INCLUSION
                             </div>
                             <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                Transparent data, open APIs, and clear licensing. Resomix makes it easy for partners, labels, platforms,and developers to collaborate and create a more open music ecosystem.
+                                When discovery is based on sonic character alone, every artist competes on equal terms - regardless of label size, marketing budget, or chart history
                             </div>
                         </div>
                     </div>
@@ -100,10 +64,10 @@ const AboutThree: React.FC = () => {
                         <img src={LayersSvg} draggable={false} aria-hidden="true" loading="lazy" alt="layers" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                Quality over Quantity
+                                OPEN BY NATURE
                             </div>
                             <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                Resomix filters results with care, and lets you control how many recommendations you  see every time.
+                                Transparent data, clear licensing, and an open approach to partnerships. Built for labels, platforms, and developers to collaborate with
                             </div>
                         </div>
                     </div>
@@ -111,10 +75,10 @@ const AboutThree: React.FC = () => {
                         <img src={MatchesSvg} draggable={false} aria-hidden="true" loading="lazy" alt="matches" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                The Art<br />of Crate Digging
+                                PRECISION OVER VOLUME
                             </div>
                             <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                You still make the call; we only help you get there quicker. Resomix is a platform that'll broaden your sonic horizon by exposing you to songs that might never appear through standard search or streaming algorithms.
+                                Fewer results, higher relevance. You control how many recommendations you see every time
                             </div>
                         </div>
                     </div>
