@@ -1,37 +1,38 @@
 {
     "about": {
         "about_hero": {
-            "discovery_engine": "A discovery engine",
-            "for_djs_who_feel": "for DJs who feel the music"
+            "discovery_engine": "A sonic discovery engine",
+            "for_djs_who_feel": "for Those who feel the music"
         },
         "about_one": {
             "headline_mission": "Our Mission",
-            "mission_paragraph": "Putting together a set that tells a story is no trivial task.<br />Tracks that perfectly fit (tonally and emotionally) with our mix are often<br />hard to find, especially now that most platforms focus more on tags<br />and popularity metrics rather than intention and vibe.",
-            "headline_alternative_route": "Resomix shows an alternative route<br />to superficial music matches",
-            "tech_paragraph": "We use advanced sonic analysis technology to<br />truly understand a song: from tempo shifts to harmonic<br />tension, dynamic range, and more.",
-            "result_paragraph": "The result is a music recommendation based on emotion<br />and structure, and not just labels or metadata.",
+            "mission_paragraph": "Putting together a set that tells a story is no trivial task.<br />Tracks that fit - tonally, emotionally, energetically - are buried<br />under platforms that rank by popularity rather than<br />sonic character",
+            "mission_paragraph_answer": "We're building the tool we always needed: one that listens<br />to a reference track the way a DJ does and finds what belongs beside it",
+            "headline_alternative_route": "Music Discovery That Goes Deeper<br />Than Tags And Trends",
+            "tech_paragraph": "PYXIS-1 reads the full sonic character of a song<br />tempo shifts, harmonic tension, dynamic range, spectral energy<br />and finds music that matches at the structural level",
+            "result_paragraph": "The result: recommendations based on<br />how music actually sounds, not how it's labeled.",
             "code_text": "run(vibe_exploration_mode)<br />→ output: connection_through_emotion<br />→ status: inspired",
             "cta_find_perfect": "Find the Perfect Sonic Match"
         },
         "about_two": {
-            "preamble_one": "What we care about is that you find the right track for the right moment,<br />the one that can galvanize your audience and make you stand out as a DJ.",
-            "preamble_two": "We're here to make that process faster, more intuitive,<br />and based on what matters the most: the music.",
+            "preamble_one": "We care about one thing: that you find the right track for the right<br />moment - the one that galvanizes your audience and sets you apart",
+            "preamble_two": "We're here to make that process faster, more intuitive,<br />and grounded in what matters most: the music",
             "vision_title": "Our Vision",
-            "vision_intro": "We believe you deserve better tools to craft your set and explore the depth of your musical taste.",
-            "vision_span": "Resomix finds hidden connections because we know that music doesn't need a high chart position to be relevant. The platform<br />analyzes every aspect of a song's structure, to map its sonic DNA and find a perfect match, regardless of who released it or when.",
+            "vision_intro": "A world where every track gets discovered on its own terms<br />Not by chart position, not by marketing budget, not by release date",
+            "vision_span": "Resomix maps the full sonic DNA of a song's structure and finds its perfect match, regardless of who released it or when.<br />That's what music discovery should be",
             "diff_title": "What makes<br />resomix different",
-            "diff_intro": "Our music discovery system is based on a Computational algorithm that identifies musical patterns on a granular level.",
-            "diff_span": "Playing outside of the \"streaming game,\" Resomix can find unknown tunes and hidden gems that reflect the essence<br />of your reference.",
+            "diff_intro": "Our discovery engine uses a computational algorithm that identifies musical patterns at the granular level",
+            "diff_span": "Operating entirely outside the streaming ecosystem's popularity bias",
             "card_analysis_title": "Spectral Feature Analysis",
-            "card_analysis_desc": "No artificial curation, no shortcutting the research; just an innovative way of doing audio analysis through Computational algorithms.",
-            "card_craft_title": "Technology and Craft",
-            "card_craft_desc": "Resomix explores what defines<br />a track: its subtlety, dynamics, flow, rhythm,<br /> texture, energy, and more.<br />Just like when DJs read the room while<br />performing, our computational engine delivers<br />personalized results based on hard data, not trends.",
-            "card_path_title": "A Faster Path<br />to the Right Track",
-            "card_path_desc": "Within seconds, you'll have a carefully crafted<br />selection of tracks that resonate with your<br />reference's vibe, regardless of genre, release<br />date, or popularity."
+            "card_analysis_desc": "Pure signal processing. No artificial curation, no black-box AI - just deterministic audio analysis across 70+ sonic dimensions",
+            "card_craft_title": "READS THE ROOM",
+            "card_craft_desc": "PYXIS-1 maps a track's subtlety, dynamics, flow, rhythm, texture, and energy. Like a DJ reading the room, it responds to what the music actually communicates",
+            "card_path_title": "RESULTS IN SECONDS<br />LIKE A DJ",
+            "card_path_desc": "Within seconds, a precisely matched selection of tracks that share your reference's sonic character - regardless of genre, release date, or popularity"
         },
         "about_three": {
-            "intro": "Resomix searches across catalogs and archives using carefully developed similarity patterns.",
-            "intro_span": "Popularity metrics are not taken into account in the research, which is why our platform makes it easier to<br />uncover hidden gems, unknown albums, and artists flying under the radar.",
+            "intro": "Every catalog has a hidden layer - tracks that never made it to charts, albums that fell through algorithmic cracks, artists who create brilliant work outside the spotlight. Resomix was built to find them.",
+            "intro_span": "",
             "heading_beyond": "Beyond<br />Trends",
             "heading_values_benefits": "Values &<br />Benefits",
 

@@ -14,11 +14,11 @@ const AboutHero: React.FC = () => {
       <div></div>
       <div className="flex flex-col items-start justify-center w-full text-[length:var(--px-35)] font-benzin uppercase my-[var(--px-2)] ml-[var(--px-30)] z-20">
         <div className="">
-          A Discovery<br />Engine
+          A Sonic Discovery<br />Engine
         </div>
         <div className="flex items-center gap-[var(--px-4)]">
           <div className="">
-            For DJs
+            For Those
           </div>
           <img src={ArrowDownRightSvg} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_down_right" className="w-[var(--px-29)] h-[var(--px-29)] transform rotate-90 mb-[var(--px-10)] ml-[var(--px-10)]" />
         </div>

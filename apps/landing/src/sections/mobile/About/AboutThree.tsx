@@ -29,11 +29,7 @@ const AboutThree: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-40)]">
                         <div className="text-[length:var(--px-18)] font-helvetica font-medium flex flex-col gap-[var(--px-10)] text-left">
-                            Resomix searches across catalogs<br />and archives using carefully developed similarity patterns.
-                            <br />
-                            <span className="font-light text-justify">
-                                Popularity metrics are not taken into account in the research, which is why our platform makes it easier to uncover hidden gems, unknown albums, and artists flying under the radar.
-                            </span>
+                            Every catalog has a hidden layer - tracks that never made it to charts, albums that fell through algorithmic cracks, artists who create brilliant work outside the spotlight. Resomix was built to find them
                         </div>
                     </div>
                 </div>

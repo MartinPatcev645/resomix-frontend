@@ -22,6 +22,8 @@ const AboutOne: React.FC = () => {
                     </div>
                 </div>
                 <img src={AboutSeparatorLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)] z-20" />
+                <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center" dangerouslySetInnerHTML={{ __html: t('about.about_one.mission_paragraph_answer') }}>
+                </div>
             </div>
 
             {/* Section 1 B */}
