@@ -77,7 +77,7 @@ const HomeSix: React.FC = () => {
                   Redesigned Around Sound
                 </div>
                 <div className='flex w-full justify-start text-[length:var(--px-13)] font-extralight text-left font-auger opacity-70'>
-                  Cutting-Edge Signal Processing to Enhance<br />Human Imagination. Proprietary algorithms designed<br />to listen like producers, and discover like DJs
+                  Signal processing built for musical intuition.<br />Proprietary algorithms designed to listen like producers,<br />and discover like DJs.
                 </div>
               </div>
             </div>

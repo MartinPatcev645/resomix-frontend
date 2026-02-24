@@ -89,6 +89,8 @@ export const CodeTyping: React.FC<CodeTypingProps> = ({
   React.useEffect(() => {
     if (!isVisible || !rawText) return;
 
+    setDisplay("");
+
     // Helper to clear an array of timeouts
     const timeouts: NodeJS.Timeout[] = [];
     const addTimeout = (t: NodeJS.Timeout) => {
