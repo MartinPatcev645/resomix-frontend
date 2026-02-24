@@ -33,7 +33,7 @@ const HomeEight: React.FC = () => (
     <div className="flex justify-start w-full relative">
       {/* Left graphic here */}
       <div className="absolute top-1/3 left-0 text-left text-[length:var(--px-13)] font-auger font-light z-20 ml-[var(--px-32)] -mt-[var(--px-4)] leading-[var(--px-16)] opacity-70">
-        Resomix is designed<br />to save you time and<br />expand your music taste
+        From one reference<br />track to a full session<br />- in seconds, not hours
       </div>
       <img src={SectionEightGraphicLeftSvg} aria-hidden="true" loading="lazy" draggable={false} className="w-[var(--px-276)] h-[var(--px-108)]" alt="Section Eight Graphic Left" />
     </div>
