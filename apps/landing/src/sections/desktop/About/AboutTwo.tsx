@@ -30,7 +30,7 @@ const AboutTwo: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex flex-col gap-[var(--px-10)] w-full z-15">
-                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]">
+                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)]">
                         {t('about.about_two.vision_title')}
                     </div>
                     <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)]">
