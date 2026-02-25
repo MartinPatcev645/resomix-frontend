@@ -18,26 +18,26 @@ const AboutOne: React.FC = () => {
                     </div>
                 </div>
                 <div className="text-[length:var(--px-18)] font-helvetica leading-[var(--px-20)] text-center mx-[var(--px-10)] font-light tracking-[var(--px-0-5)] z-20">
-                    Putting together a set that tells a story is no trivial task.
-                    Tracks that perfectly fit (tonally and emotionally) with our mix are often hard to find, especially now that most platforms focus more on tags and popularity metrics rather than intention and vibe.
+                    Putting together a set that tells a story is no trivial task. Tracks that fit - tonally, emotionally, energetically - are buried under platforms that rank by popularity rather than sonic character
                 </div>
                 <img src={AboutSeparatorLineSvg} aria-hidden="true" loading="lazy" draggable={false} alt="about_section_one_line" className="mt-[var(--px-30)] w-[var(--px-4)] h-[var(--px-115)] z-20" />
+                <div className="text-[length:var(--px-17)] font-helvetica opacity-90 font-light leading-[var(--px-20)] text-center">
+                    We're building the tool we always needed: one that listens to a reference track the way a DJ does and finds what belongs beside it
+                </div>
             </div>
 
             {/* Section 1 B */}
             <div className="flex flex-col w-full items-center gap-[var(--px-40)] z-20">
                 <div className="text-[length:var(--px-28)] font-helvetica uppercase leading-[var(--px-28)] text-center">
-                    Resomix shows an alternative route<br />
-                    to superficial music matches
+                    Music Discovery That Goes Deeper Than Tags And Trends
                 </div>
                 <img src={AboutSeparatorLineSvg} draggable={false} aria-hidden="true" loading="lazy" alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)]" />
                 <div className="text-[length:var(--px-18)] font-helvetica leading-[var(--px-20)] text-center font-light tracking-[var(--px-0-5)]">
-                    We use advanced sonic analysis technology to<br />truly understand a song: from tempo shifts to harmonic tension, dynamic range, and more.
+                    PYXIS-1 reads the full sonic character of a song tempo shifts, harmonic tension, dynamic range, spectral energy and finds music that matches at the structural level
                 </div>
                 <img src={SoundWavesTwo} draggable={false} aria-hidden="true" loading="lazy" alt="sound_waves_two" className="w-[var(--px-41)] h-[var(--px-50)]" />
                 <div className="text-[length:var(--px-18)] font-helvetica leading-[var(--px-20)] text-center font-light tracking-[var(--px-0-5)] mx-[var(--px-10)]">
-                    The result is a music recommendation based on emotion
-                    and structure, and not just labels or metadata.
+                    The result: recommendations based on how music actually sounds, not how it's labeled.
                 </div>
                 <img src={AboutSeparatorLineTwo} draggable={false} aria-hidden="true" loading="lazy" alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
                 <div className="text-[length:var(--px-10)] font-light font-fira tracking-[var(--px-2)] text-center">

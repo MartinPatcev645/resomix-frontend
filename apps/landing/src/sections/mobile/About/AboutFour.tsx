@@ -11,12 +11,12 @@ const AboutFour: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 <div className="flex flex-col gap-[var(--px-100)] items-start">
                     <div className="text-[length:var(--px-43)] font-medium font-helvetica uppercase leading-[var(--px-45)]">
-                        <span className="ml-[var(--px-100)]">Who<br /></span>
-                        <div className="flex items-center">
-                            <img src={ArrowSmallUp} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_small_up" className="w-[var(--px-32)] h-[var(--px-31)] mb-[var(--px-2)]" />
-                            Resomix<br />
+                        <span className="">Who</span>
+                        <div className="flex items-center gap-[var(--px-10)]">
+                            <img src={ArrowSmallUp} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_small_up" className="w-[var(--px-32)] h-[var(--px-31)] mb-[var(--px-10)]" />
+                            Resomix
                         </div>
-                        <span className="ml-[var(--px-53)]">is for</span>
+                        <span className="">is for</span>
                     </div>
                     <div className="flex flex-col items-start gap-[var(--px-30)]">
                         <div className="flex gap-[var(--px-10)] z-15">
@@ -26,7 +26,7 @@ const AboutFour: React.FC = () => {
                                     DJs
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — who need the perfect tracks to make their sets unforgettable.
+                                    — who need the right tracks for the right moment in their set
                                 </div>
                             </div>
                         </div>
@@ -37,7 +37,7 @@ const AboutFour: React.FC = () => {
                                     Producers
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — looking for new inspiration to reflect a song's vibe.
+                                    — seeking sonic references for sound design, texture, and creative direction ideas
                                 </div>
                             </div>
                         </div>
@@ -48,7 +48,7 @@ const AboutFour: React.FC = () => {
                                     Curators
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — who create cohesive playlists with their unique taste.
+                                    — who build playlists around sonic cohesion, not genre labels
                                 </div>
                             </div>
                         </div>
@@ -59,7 +59,7 @@ const AboutFour: React.FC = () => {
                                     Music Enthusiasts
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — exploring the boundaries of music, beyond charts or trends.
+                                    — who dig deeper than algorithms will take them
                                 </div>
                             </div>
                         </div>
@@ -69,28 +69,9 @@ const AboutFour: React.FC = () => {
 
             {/* CTA Button */}
             <div className="w-full flex justify-center items-center">
-                <ButtonHeavyRight text="Try it Now" onClick={() => {
+                <ButtonHeavyRight text="Upload a Track" onClick={() => {
                     window.location.href = BASE_BETA_URL
                 }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-four-try-now-button" />
-            </div>
-
-            {/* About 2 B */}
-            <div className="flex flex-col gap-[var(--px-100)] w-full z-15">
-                <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-left w-full opacity-80">
-                    Resomix is run<br />by DJs, engineers,<br />and music<br />professionals
-                </div>
-                <div className="flex flex-col items-end w-full">
-                    <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-right w-full opacity-80">
-                        We want to build<br />a better way to<br />discover and enjoy<br />music across genres
-                    </div>
-                    <a
-                      href="mailto:support@resomix.com"
-                      className="text-[length:var(--px-14)] font-helvetica leading-[var(--px-16)] tracking-[var(--px-1)] underline hover:cursor-pointer text-right w-full mt-[var(--px-10)] contact-link"
-                      id="about-four-contact-email"
-                    >
-                        Reach us anytime:<br />support@resomix.com
-                    </a>
-                </div>
             </div>
         </div>
     );

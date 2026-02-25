@@ -17,9 +17,9 @@ const HomeHero: React.FC = () => {
     <div ref={sectionRef} className="relative">
       {/* Hidden SVG defs for clip-path */}
       <svg
-        viewBox="0 0 1152 628"
+        viewBox="0 0 1152 629"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-full h-[length:var(--px-629)] pointer-events-none z-10"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">

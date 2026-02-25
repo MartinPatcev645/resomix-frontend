@@ -30,11 +30,11 @@ const AboutTwo: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex flex-col gap-[var(--px-10)] w-full z-15">
-                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]">
+                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)]">
                         {t('about.about_two.vision_title')}
                     </div>
                     <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)]">
-                        {t('about.about_two.vision_intro')}
+                        A world where every track gets discovered on its own terms - not by chart position, not by marketing budget, not by release date
                         <br />
                         <span className="font-extralight" dangerouslySetInnerHTML={{ __html: t('about.about_two.vision_span') }}>
                         </span>
@@ -45,7 +45,7 @@ const AboutTwo: React.FC = () => {
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-60)] w-full z-15">
                 <div className="flex flex-col gap-[var(--px-10)] w-full z-15">
-                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.diff_title') }}>
+                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.diff_title') }}>
                     </div>
                     <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)]">
                         {t('about.about_two.diff_intro')}
@@ -57,17 +57,14 @@ const AboutTwo: React.FC = () => {
                 <div className="flex gap-[var(--px-30)] w-full items-start justify-start">
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
                         <img src={AnalysisSvg} aria-hidden="true" loading="lazy" draggable={false} alt="analysis" className="w-[var(--px-45)] h-[var(--px-46)]" />
-                        <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]">
-                            {t('about.about_two.card_analysis_title')}
+                        <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_analysis_title') }}>
                         </div>
-                        <div className="flex-1/3 text-[length:var(--px-17)] font-helvetica font-extralight tracking-[var(--px-1)]">
-                            {t('about.about_two.card_analysis_desc')}
+                        <div className="flex-1/3 text-[length:var(--px-17)] font-helvetica font-extralight tracking-[var(--px-1)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_analysis_desc') }}>
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
                         <img src={CraftSvg} aria-hidden="true" loading="lazy" draggable={false} alt="craft" className="w-[var(--px-45)] h-[var(--px-46)]" />
-                        <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]">
-                            {t('about.about_two.card_craft_title')}
+                        <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_craft_title') }}>
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-17)] font-helvetica font-extralight tracking-[var(--px-1)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_craft_desc') }}>
                         </div>

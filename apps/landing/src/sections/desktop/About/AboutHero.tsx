@@ -15,9 +15,9 @@ const AboutHero: React.FC = () => {
     <div ref={sectionRef} className="relative">
       {/* Hidden SVG defs for clip-path */}
       <svg
-        viewBox="0 0 1154 628"
+        viewBox="0 0 1154 629"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-[length:var(--px-1156)] h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-[length:var(--px-1156)] h-[length:var(--px-629)] pointer-events-none z-10"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -46,8 +46,10 @@ const AboutHero: React.FC = () => {
       >
         {/* Overlay content */}
         <div className="absolute inset-0 flex flex-col justify-center w-full h-full select-none py-auto z-15">
-          <div className="text-[length:var(--px-60)] font-benzin uppercase leading-[var(--px-60)]">{t('about.about_hero.discovery_engine')}</div>
-          <div className="text-[length:var(--px-50)] font-benzin uppercase leading-[var(--px-50)] text-right">{t('about.about_hero.for_djs_who_feel')}</div>
+          <div className="text-[length:var(--px-80)] font-benzin uppercase leading-[var(--px-80)]">
+            A sonic<br />discovery engine
+          </div>
+          <div className="text-[length:var(--px-46)] font-benzin uppercase leading-[var(--px-50)] text-right">{t('about.about_hero.for_djs_who_feel')}</div>
         </div>
         <div className="absolute inset-0 flex flex-col justify-end items-end w-full h-full select-none py-auto z-15">
           <div className="flex gap-[var(--px-4)] mr-[var(--px-8)] mb-[var(--px-8)] relative z-15">

@@ -22,13 +22,11 @@ const AboutTwo: React.FC = () => {
                 {/* Content */}
                 <div className="flex flex-col gap-[var(--px-10)] w-full items-center relative z-15">
                     <div className="text-[length:var(--px-18)] font-helvetica font-light leading-[var(--px-18)] text-center">
-                        What we care about is that you find the right track for the right moment,
-                        the one that can galvanize your audience and make you stand out as a DJ.
+                        We care about one thing: that you find the right track for the right moment - the one that galvanizes your audience and sets you apart
                     </div>
                     <img src={AboutSeparatorLineTwo} draggable={false} aria-hidden="true" loading="lazy" alt="about_section_one_line_2" className="w-[var(--px-3)] h-[var(--px-61)]" />
                     <div className="text-[length:var(--px-18)] font-helvetica font-light leading-[var(--px-18)] text-center">
-                        We're here to make that process faster, more intuitive,
-                        and based on what matters the most: the music.
+                        We're here to make that process faster,<br />more intuitive, and grounded in what<br />matters most: the music
                     </div>
                 </div>
                 <div className="flex flex-col gap-[var(--px-10)] w-full z-15">
@@ -36,9 +34,9 @@ const AboutTwo: React.FC = () => {
                         Our Vision
                     </div>
                     <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-medium flex flex-col gap-[var(--px-10)]">
-                        We believe you deserve better tools to craft your set and explore the depth of your musical taste.
-                        <span className="font-light">
-                            Resomix finds hidden connections because we know that music doesn't need a high chart position to be relevant. The platform analyzes every aspect of a song's structure, to map its Acoustic sonic DNA and find a perfect match, regardless of who released it or when.
+                        A world where every track gets discovered on its own terms - not by chart position, not by marketing budget, not by release date
+                        <span className="font-light text-[length:var(--px-17)]">
+                            Resomix maps the full sonic DNA of a song's structure and finds its perfect match, regardless of who released it or when. That's what music discovery should be
                         </span>
                     </div>
                 </div>
@@ -51,9 +49,9 @@ const AboutTwo: React.FC = () => {
                         What makes<br />resomix<br />different
                     </div>
                     <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-medium flex flex-col gap-[var(--px-10)]">
-                        Our music discovery system is ased on a Computational algorithm that identifies musical patterns on a granular level.
+                        Our discovery engine uses a computational algorithm that identifies musical patterns at the granular level
                         <span className="font-light">
-                            Playing outside of the "streaming game," Resomix can find unknown tunes and hidden gems that reflect the essence of your reference.
+                            Operating entirely outside the streaming ecosystem's popularity bias
                         </span>
                     </div>
                 </div>
@@ -64,25 +62,25 @@ const AboutTwo: React.FC = () => {
                             Spectral Feature Analysis
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
-                            No artificial curation, no shortcutting the research; just an innovative way of doing audio analysis through Computational algorithms.
+                            Pure signal processing. No artificial curation, no black-box AI - just deterministic audio analysis across 70+ sonic dimensions
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
                         <img src={CraftSvg} draggable={false} aria-hidden="true" loading="lazy" alt="craft" className="w-[var(--px-54)] h-[var(--px-54)]" />
                         <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
-                            Technology and Craft
+                            READS THE ROOM
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
-                            Resomix explores what defines a track: its subtlety, dynamics, flow, rhythm, texture, energy, and more. Just like when DJs read the room while performing, our computational engine delivers personalized results based on hard data, not trends.
+                            PYXIS-1 maps a track's subtlety, dynamics, flow, rhythm, texture, and energy. Like a DJ reading the room, it responds to what the music actually communicates
                         </div>
                     </div>
                     <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
                         <img src={MatchesSvg} draggable={false} aria-hidden="true" loading="lazy" alt="matches" className="w-[var(--px-54)] h-[var(--px-54)]" />
                         <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
-                            A Faster Path<br />to the Right Track
+                            RESULTS IN SECONDS LIKE A DJ
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
-                            Within seconds, you'll have a carefully crafted selection of tracks that resonate with your reference's vibe, regardless of genre, release date, or popularity.
+                            Within seconds, a precisely matched selection of tracks that share your reference's sonic character - regardless of genre, release date, or popularity
                         </div>
                     </div>
                 </div>
