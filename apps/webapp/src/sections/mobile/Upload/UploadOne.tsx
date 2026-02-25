@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useTrackSimilarity } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
@@ -7,6 +7,7 @@ import TrackSelectSeparatorLine from "@/assets/icons/track_select_separator_line
 import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } from "@/components/index.ts";
 import { Tooltip } from "@resomix/ui";
 import { usePlayerStore } from "@resomix/stores";
+import { savePlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -28,7 +29,12 @@ const UploadOne: React.FC = () => {
 
 
 
-    const { handleSelectTrack } = useTrackSimilarity();
+    // Callback fired by both upload and search flows when analysis results arrive
+    const onAnalysis = useCallback((playlistId: string, stats: Parameters<typeof savePlaylistAnalysis>[1]) => {
+        savePlaylistAnalysis(playlistId, stats);
+    }, []);
+
+    const { handleSelectTrack } = useTrackSimilarity({ onAnalysis });
 
     const onTrackSelect = (track: SearchResult) => {
         handleSelectTrack(track.id);
@@ -109,6 +115,7 @@ const UploadOne: React.FC = () => {
                     ) : (
                         <UploadComponentMobile
                             onSearchClick={handleSearchClick}
+                            onAnalysis={onAnalysis}
                         />
                     )}
                 </div>

@@ -7,9 +7,12 @@ import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
+import TrackSelectSeparatorLine from "@/assets/icons/track_select_separator_line.svg";
+import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 import { resolveLabel } from "@/utils/trackUtils.ts";
+import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
@@ -55,6 +58,17 @@ const PlaylistTable: React.FC = () => {
 
     const tracks = playlistData?.similar_tracks ?? [];
     const demoTracksRestricted = DEMO_MODE && tracks.length > 20;
+
+    // --- Analysis footer stats ---
+    const playlistId = playlistData?.playlist.id;
+    const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
+    const footerResultCount = analysis?.resultCount ?? tracks.length;
+    const footerTopMatch = analysis?.topMatchScore != null
+        ? `${(analysis.topMatchScore * 100).toFixed(2)}%`
+        : tracks.length > 0 ? `${(tracks[0].score * 100).toFixed(2)}%` : null;
+    const footerAnalysisTime = analysis?.analysisSeconds != null
+        ? `${analysis.analysisSeconds.toFixed(1)}s`
+        : null;
 
     const trackIdsKey = useMemo(() => tracks.map(t => t.id).join(","), [tracks]);
 
@@ -249,6 +263,14 @@ const PlaylistTable: React.FC = () => {
                     </div>
                 );
             })}
+            <div className="flex flex-col w-[var(--px-880)] h-auto justify-between mt-[var(--px-40)] w-full items-center justify-center gap-[var(--px-20)]">
+                <img src={TrackSelectSeparatorLine} aria-hidden="true" loading="lazy" draggable={false} alt="track_select_separator_line" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center leading-[var(--px-30)]">
+                    Matched by PYXIS-1<br />
+                    {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
+                </div>
+                <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="sound_waves" className="w-[var(--px-40)] h-[var(--px-40)] my-[var(--px-10)]" />
+            </div>
         </div>
     );
 };

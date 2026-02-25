@@ -14,6 +14,16 @@ export interface UploadResult<T = any> {
     details?: unknown;
 }
 
+export interface UploadAnalysisStats {
+    resultCount: number;
+    topMatchScore: number;
+    analysisSeconds: number;
+}
+
+export interface UseUploadOptions {
+    onAnalysis?: (playlistId: string, stats: UploadAnalysisStats) => void;
+}
+
 interface UploadStoreState {
     isUploading: boolean;
     progress: number;
@@ -56,7 +66,8 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
  * - Validates against API_CONFIG.ALLOWED_AUDIO_TYPES and MAX_FILE_SIZE
  * - Uploads with progress via getSimilarTracks
  */
-export function useUpload() {
+export function useUpload(options?: UseUploadOptions) {
+    const onAnalysis = options?.onAnalysis;
     const inputRef = useRef<HTMLInputElement | null>(null);
     const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
@@ -134,6 +145,7 @@ export function useUpload() {
         setIsFileUpload(true);
 
         try {
+            const uploadStart = Date.now();
             const result = await getSimilarTracks(file, topSk, (p) => {
                 // Ensure progress is properly bounded and rounded
                 const boundedProgress = Math.min(100, Math.max(0, p));
@@ -155,6 +167,24 @@ export function useUpload() {
                 // Keep overlay visible; UploadPage effect will hide after navigation
                 setUploading(false);
                 setProgress(100);
+
+                // Fire analysis callback if provided (upload flow: 60% of actual time, no cap)
+                if (onAnalysis) {
+                    const playlistId: string = (result as any).data?.playlist?.id ?? '';
+                    const similarTracks: Array<{ score: number }> = (result as any).data?.similar_tracks ?? [];
+                    const elapsedSeconds = (Date.now() - uploadStart) / 1000;
+                    const analysisSeconds = parseFloat((elapsedSeconds * 0.6).toFixed(1));
+                    const topMatchScore = similarTracks.length > 0
+                        ? Math.max(...similarTracks.map((t) => t.score))
+                        : 0;
+                    if (playlistId) {
+                        onAnalysis(playlistId, {
+                            resultCount: similarTracks.length,
+                            topMatchScore,
+                            analysisSeconds,
+                        });
+                    }
+                }
             } else {
                 // API indicated failure
                 setError(mapPlaylistErrorMessage(result?.error, "Upload failed."));
@@ -169,7 +199,7 @@ export function useUpload() {
             setUploading(false);
             setOverlay(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt]);
+    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt, onAnalysis]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];

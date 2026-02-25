@@ -3,19 +3,20 @@ import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import { ButtonSleek } from "@resomix/ui";
-import { useUpload } from "@resomix/hooks";
+import { useUpload, type UseUploadOptions } from "@resomix/hooks";
 
 interface UploadComponentProps {
     onSearchClick?: () => void;
+    onAnalysis?: UseUploadOptions['onAnalysis'];
 }
 
 /**
  * Simple structural mock-up of the desktop search section.
  * All copy / visuals are placeholders – tweak freely.
  */
-export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearchClick }) => {
+export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearchClick, onAnalysis }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
-    const { inputRef, inputAccept, onInputChange, openFilePicker } = useUpload();
+    const { inputRef, inputAccept, onInputChange, openFilePicker } = useUpload({ onAnalysis });
 
     return (
         <div ref={sectionRef} className="relative">

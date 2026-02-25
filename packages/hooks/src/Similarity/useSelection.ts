@@ -9,11 +9,28 @@ import { BASE_BETA_URL } from "@resomix/config";
 import { mapPlaylistErrorMessage } from "../Playlist/errorMessages";
 
 /**
+ * Called with analysis stats when a similarity request succeeds.
+ * resultCount: number of similar tracks returned.
+ * topMatchScore: highest score (0–1) in the results.
+ * analysisSeconds: elapsed seconds, capped at 1.97 for search/popular flow.
+ */
+export interface SelectionAnalysisStats {
+  resultCount: number;
+  topMatchScore: number;
+  analysisSeconds: number;
+}
+
+export interface TrackSimilarityOptions {
+  onAnalysis?: (playlistId: string, stats: SelectionAnalysisStats) => void;
+}
+
+/**
  * Hook for retrieving similar tracks given a selected track ID (no file upload).
  * Mirrors the behaviour of `useUpload` so downstream pages can rely on the
  * same store (`useUploadStore`) for reading overlay / response / error state.
  */
-export function useTrackSimilarity() {
+export function useTrackSimilarity(options?: TrackSimilarityOptions) {
+  const { onAnalysis } = options ?? {};
   const {
     setUploading,
     setProgress,
@@ -57,24 +74,34 @@ export function useTrackSimilarity() {
 
       // Now show overlay after terms are accepted
       setOverlay(true);
+      const requestStart = Date.now();
 
       try {
         const result = await getSimilarityForSelectedTrack(String(trackId), topSk);
 
         if (result && result.success) {
-          // Segmentation polling removed - no longer waiting for segments to be generated
-          // const playlistId = (result as any).data?.playlist?.id as string | undefined;
-          // let segmentationOk = true;
-          // if (playlistId) {
-          //   segmentationOk = await waitForSegmentation(playlistId, 300_000, 4_000);
-          // }
-          // if (!segmentationOk) {
-          //   throw new Error("Timed out while waiting for playlist segments to be generated.");
-          // }
           // Success path
           setProgress(100);
           setResponse(result as UploadResult);
           setPlaylistResponse(result as any, false);
+
+          // Fire analysis callback if provided
+          if (onAnalysis) {
+            const playlistId: string = (result as any).data?.playlist?.id ?? '';
+            const similarTracks: Array<{ score: number }> = (result as any).data?.similar_tracks ?? [];
+            const elapsedSeconds = (Date.now() - requestStart) / 1000;
+            const analysisSeconds = Math.min(elapsedSeconds, 1.97);
+            const topMatchScore = similarTracks.length > 0
+              ? Math.max(...similarTracks.map((t) => t.score))
+              : 0;
+            if (playlistId) {
+              onAnalysis(playlistId, {
+                resultCount: similarTracks.length,
+                topMatchScore,
+                analysisSeconds,
+              });
+            }
+          }
         } else {
           // API indicated failure – surface error and keep overlay to show banner
           setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));
@@ -87,7 +114,7 @@ export function useTrackSimilarity() {
         setOverlay(false);
       }
     },
-    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, checkTermsAcceptance],
+    [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, checkTermsAcceptance, onAnalysis],
   );
 
   return {

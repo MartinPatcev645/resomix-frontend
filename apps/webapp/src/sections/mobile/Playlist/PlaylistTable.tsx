@@ -5,8 +5,11 @@ import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
+import TrackSelectSeparatorLine from "@/assets/icons/track_select_separator_line.svg";
+import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
 import { DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
+import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
@@ -16,6 +19,17 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
     const demoTracksRestricted = DEMO_MODE && tracks.length > 20;
+
+    // --- Analysis footer stats ---
+    const playlistId = playlistData?.playlist.id;
+    const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
+    const footerResultCount = analysis?.resultCount ?? tracks.length;
+    const footerTopMatch = analysis?.topMatchScore != null
+        ? `${(analysis.topMatchScore * 100).toFixed(2)}%`
+        : tracks.length > 0 ? `${(tracks[0].score * 100).toFixed(2)}%` : null;
+    const footerAnalysisTime = analysis?.analysisSeconds != null
+        ? `${analysis.analysisSeconds.toFixed(1)}s`
+        : null;
     const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
@@ -201,6 +215,14 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     </div>
                 );
             })}
+            <div className="flex flex-col w-[var(--px-880)] h-auto justify-between mt-[var(--px-40)] w-full items-center justify-center gap-[var(--px-20)]">
+                <img src={TrackSelectSeparatorLine} aria-hidden="true" loading="lazy" draggable={false} alt="track_select_separator_line" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center leading-[var(--px-30)]">
+                    MATCHED BY PYXIS-1<br />
+                    {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
+                </div>
+                <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="sound_waves" className="w-[var(--px-40)] h-[var(--px-40)] my-[var(--px-10)]" />
+            </div>
         </div>
     );
 };
