@@ -59,7 +59,7 @@ const HomeFour: React.FC = () => {
             </div>
           </div>
           <div className='text-[length:var(--px-13)] font-extralight font-auger leading-[var(--px-16)] tracking-[var(--px-0-15)]'>
-            Within seconds, you'll have a carefully crafted selection of tracks that resonate with your reference's vibe, regardless of genre, release date, or popularity
+            Within seconds, PYXIS-1 returns a ranked list of tracks scored by sonic similarity - with waveform preview, one-click feedback, and the ability to chain-discover from any result
           </div>
         </div>
         <div className="mt-[var(--px-90)]">

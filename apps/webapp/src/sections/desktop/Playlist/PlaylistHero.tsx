@@ -3,6 +3,7 @@ import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon,
 import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
+import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport } from "@/components/index.ts";
 import RenameSvg from "@/assets/icons/rename.svg";
@@ -188,13 +189,13 @@ const PlaylistHero: React.FC = () => {
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
               <a
-                aria-label="Generate track similarity"
+                aria-label="Back to Search"
                 href={BASE_BETA_URL}
                 className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
                 id="playlist-hero-back-link"
               >
                 <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
-                Generate track similarity
+                Back to Search
               </a>
               <div className="flex items-center gap-[var(--px-8)]">
                 <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
@@ -266,16 +267,16 @@ const PlaylistHero: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    name="Rate this playlist"
+                    name="Rate these Results"
                     onClick={() => setShowRating(true)}
                     className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button"
                     id="playlist-hero-rating-button"
-                    aria-label="Rate this playlist"
+                    aria-label="Rate these Results"
                     aria-expanded={showRating}
                     data-playlist-id={playlistData?.playlist.id}
                   >
                     <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
-                    <span className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate This Playlist</span>
+                    <span className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate These Results</span>
                   </button>
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-20)] max-w-[var(--px-480)]">
@@ -319,8 +320,12 @@ const PlaylistHero: React.FC = () => {
                       <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
-                      <div>|</div>
-                      <div>{playlistData?.queried_track.label}</div>
+                      {resolveLabel(playlistData?.queried_track.label) && (
+                        <>
+                          <div>|</div>
+                          <div>{resolveLabel(playlistData?.queried_track.label)}</div>
+                        </>
+                      )}
                       <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
                         <button
                           type="button"
@@ -407,7 +412,7 @@ const PlaylistHero: React.FC = () => {
               )}
             </div>
           </div>
-          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
+          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND - SCORED BY PYXIS-1</div>
         </div>
       </div>
 

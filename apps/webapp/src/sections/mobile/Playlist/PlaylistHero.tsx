@@ -14,6 +14,7 @@ import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
+import { resolveLabel } from "@/utils/trackUtils.ts";
 
 const InputTrackStatus = "Loading..."
 
@@ -93,7 +94,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   id="playlist-hero-autoplay-toggle"
                 />
                 <IconButton
-                  text="Rate Playlist"
+                  text="Rate Results"
                   transparent={true}
                   customWidth="min-w-[var(--px-80)]"
                   mobile={true}
@@ -146,8 +147,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
                       <div>|</div>
                       <div>{playlistData?.queried_track.year}</div>
-                      <div>|</div>
-                      <div className="truncate max-w-[var(--px-130)]">{playlistData?.queried_track.label}</div>
+                      {resolveLabel(playlistData?.queried_track.label) && (
+                        <>
+                          <div>|</div>
+                          <div className="truncate max-w-[var(--px-130)]">{resolveLabel(playlistData?.queried_track.label)}</div>
+                        </>
+                      )}
                       <button
                         type="button"
                         onClick={() => setShowMeta((v) => !v)}
@@ -232,7 +237,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
           </div>
         </div>
         <img src={AngleDownSvg} draggable={false} alt="arrow_down" aria-hidden="true" loading="lazy" className="w-[var(--px-50)] h-[var(--px-50)] my-[var(--px-40)]" />
-        <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase">SONIC MATCH FOUND</div>
+        <div className="text-[var(--color-text-secondary)] text-[length:var(--px-20)] font-light font-helvetica uppercase text-center">SONIC MATCH FOUND<br />SCORED BY PYXIS-1</div>
       </div>
 
       {/* Modals */}

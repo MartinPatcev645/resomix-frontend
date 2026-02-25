@@ -9,6 +9,7 @@ import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
+import { resolveLabel } from "@/utils/trackUtils.ts";
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
@@ -93,8 +94,8 @@ const PlaylistTable: React.FC = () => {
                 </div>
                 <div className="ml-[var(--px-60)]" role="columnheader">Duration</div>
                 <div className="ml-[var(--px-20)]" role="columnheader">Score</div>
-                <div className="ml-[var(--px-50)]" role="columnheader">Similar?</div>
-                <div className="ml-[var(--px-30)]" role="columnheader">Get Sonic<br />Discovery</div>
+                <div className="ml-[var(--px-50)]" role="columnheader">Feedback</div>
+                <div className="ml-[var(--px-30)]" role="columnheader">Chain Discover</div>
             </div>
             {tracks.map((track) => {
                 const isRestricted = demoTracksRestricted && track.rank > 20;
@@ -157,7 +158,7 @@ const PlaylistTable: React.FC = () => {
                                         </div>
                                         <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-130)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
                                             <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)]">
-                                                {track.label}
+                                                {resolveLabel(track.label) || null}
                                             </span>
                                             {track.year}
                                         </div>
@@ -226,7 +227,7 @@ const PlaylistTable: React.FC = () => {
                                             data-track-title={track.title}
                                             data-track-name={track.title}
                                         >
-                                            <Tooltip message="Get New Sonic Discovery Playlist For this Track!">
+                                            <Tooltip message="Use this track as a new reference to find more matches">
                                                 <img src={SonicDiscoverySvg} draggable={false} alt="Sonic Discovery" aria-label="Sonic Discovery" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
                                             </Tooltip>
                                         </div>

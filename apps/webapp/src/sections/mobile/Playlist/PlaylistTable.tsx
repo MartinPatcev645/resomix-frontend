@@ -6,6 +6,7 @@ import { HoverFlow } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import { DEMO_MODE } from "@resomix/config";
+import { resolveLabel } from "@/utils/trackUtils.ts";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
@@ -69,7 +70,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         )}
                         <div className={isRestricted ? "pointer-events-none select-none" : ""}>
                             <div
-                                className={`w-full bg-[var(--color-primary-background)] border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] pb-[var(--px-18)] relative ${isRestricted ? "blur-xs" : ""}`}
+                                className={`w-full border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] pb-[var(--px-18)] relative ${isRestricted ? "blur-xs" : ""}`}
                                 role="row"
                             >
                                 <div className="flex flex-col w-full">
@@ -142,7 +143,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             </div>
                                             <div className="w-full flex items-center justify-between">
                                                 <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]" role="cell">
-                                                    {track.label} {track.year ? `- ${track.year}` : ''}
+                                                    {resolveLabel(track.label) || ''} {resolveLabel(track.label) && track.year ? `- ${track.year}` : track.year ?? ''}
                                                 </div>
                                                 <div className="flex items-center justify-between" role="cell">
                                                     <div className="flex items-center">
