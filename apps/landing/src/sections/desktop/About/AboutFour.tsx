@@ -75,19 +75,6 @@ const AboutFour: React.FC = () => {
                     window.location.href = BASE_BETA_URL
                 }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-four-try-now-button" />
             </div>
-
-            {/* About 2 B */}
-            <div className="flex flex-col gap-[var(--px-200)] w-full z-15">
-                <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-left w-full" dangerouslySetInnerHTML={{ __html: t('about.about_four.run_by') }}>
-                </div>
-                <div className="flex flex-col items-end w-full">
-                    <div className="text-[length:var(--px-25)] font-extralight font-helvetica uppercase leading-[var(--px-25)] tracking-[var(--px-5)] text-right" dangerouslySetInnerHTML={{ __html: t('about.about_four.mission') }}>
-                    </div>
-                    <div className="text-[length:var(--px-17)] font-extralight font-helvetica leading-[var(--px-25)] tracking-[var(--px-1)] underline opacity-80 hover:opacity-100 transition-opacity duration-100 hover:cursor-pointer text-right w-full contact-link" id="about-four-contact-email">
-                        {t('about.about_four.contact_reach_us')} support@resomix.com
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };

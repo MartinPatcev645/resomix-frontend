@@ -73,25 +73,6 @@ const AboutFour: React.FC = () => {
                     window.location.href = BASE_BETA_URL
                 }} transparent={true} link_arrow={true} className="cta-button secondary" id="about-four-try-now-button" />
             </div>
-
-            {/* About 2 B */}
-            <div className="flex flex-col gap-[var(--px-100)] w-full z-15">
-                <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-left w-full opacity-80">
-                    Resomix is run<br />by DJs, engineers,<br />and music<br />professionals
-                </div>
-                <div className="flex flex-col items-end w-full">
-                    <div className="text-[length:var(--px-22)] font-helvetica uppercase leading-[var(--px-26)] tracking-[var(--px-0-5)] text-right w-full opacity-80">
-                        We want to build<br />a better way to<br />discover and enjoy<br />music across genres
-                    </div>
-                    <a
-                      href="mailto:support@resomix.com"
-                      className="text-[length:var(--px-14)] font-helvetica leading-[var(--px-16)] tracking-[var(--px-1)] underline hover:cursor-pointer text-right w-full mt-[var(--px-10)] contact-link"
-                      id="about-four-contact-email"
-                    >
-                        Reach us anytime:<br />support@resomix.com
-                    </a>
-                </div>
-            </div>
         </div>
     );
 };

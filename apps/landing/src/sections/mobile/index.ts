@@ -14,6 +14,7 @@ import AboutOne from "./About/AboutOne.tsx";
 import AboutTwo from "./About/AboutTwo.tsx";
 import AboutThree from "./About/AboutThree.tsx";
 import AboutFour from "./About/AboutFour.tsx";
+import AboutFive from "./About/AboutFive.tsx";
 
 export {
   HomeOne,
@@ -32,4 +33,5 @@ export {
   AboutTwo,
   AboutThree,
   AboutFour,
+  AboutFive,
 };

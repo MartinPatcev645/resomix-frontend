@@ -1,13 +1,14 @@
-import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour } from "@/sections/desktop/index.ts";
+import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour, AboutFive } from "@/sections/desktop/index.ts";
 
 export function AboutPage() {
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-hidden">
       <AboutHero />
       <AboutOne />
       <AboutTwo />
       <AboutThree />
       <AboutFour />
+      <AboutFive />
     </div>
   );
 }
