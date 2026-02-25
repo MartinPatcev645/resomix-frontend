@@ -1,4 +1,4 @@
-import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour, AboutFive } from "@/sections/mobile/index.ts";
+import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour, AboutFive, AboutSix } from "@/sections/mobile/index.ts";
 import AngleDown from "@/assets/icons/AngleDown.svg";
 
 export function AboutMobile() {
@@ -11,6 +11,7 @@ export function AboutMobile() {
         <AboutTwo />
         <AboutThree />
         <AboutFour />
+        <AboutSix />
         <AboutFive />
       </div>
     </div>

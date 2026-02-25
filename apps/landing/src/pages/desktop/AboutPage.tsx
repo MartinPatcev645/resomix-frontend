@@ -1,4 +1,4 @@
-import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour, AboutFive } from "@/sections/desktop/index.ts";
+import { AboutHero, AboutOne, AboutTwo, AboutThree, AboutFour, AboutFive, AboutSix } from "@/sections/desktop/index.ts";
 
 export function AboutPage() {
   return (
@@ -8,6 +8,7 @@ export function AboutPage() {
       <AboutTwo />
       <AboutThree />
       <AboutFour />
+      <AboutSix />
       <AboutFive />
     </div>
   );
