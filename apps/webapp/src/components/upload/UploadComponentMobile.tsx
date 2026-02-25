@@ -77,21 +77,21 @@ export const UploadComponentMobile: React.FC<UploadComponentProps> = ({ onSearch
                         </button>
                     </div>
                     <div id="panel-upload-mobile" role="tabpanel" aria-labelledby="tab-upload-mobile" className="m-[var(--px-20)]">
-                        <div className="w-full h-[var(--px-300)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-[var(--px-20)]">
+                        <div className="w-full h-[var(--px-300)] border border-dotted border-slate-200 my-[var(--px-20)]">
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <h3 className="mt-[var(--px-10)] text-[length:var(--px-18)] font-helvetica font-light text-center leading-[var(--px-24)] uppercase">
-                                    Discover the Power of<br />Deep Sonic Analysis
+                                    DROP A REFERENCE TRACK
                                 </h3>
                                 <div className="flex items-center justify-center gap-[var(--px-10)] mt-[var(--px-10)] ml-[var(--px-16)]">
                                     <img src={ReferenceSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-37)] h-[var(--px-37)] my-[var(--px-10)]" />
                                     <div className="text-[length:var(--px-12)] font-fira font-light text-left leading-[var(--px-15)] opacity-70">
-                                        Drop in a reference sound.<br />It can be a released or<br />unreleased song, or just a short<br />sketch from your archive. Resomix<br />will analyze the audio and find<br />perfect matches for you.
+                                        Released or unreleased. A full track, a rough sketch, or a short clip from your archive. PYXIS-1 extracts the sonic profile and finds the closest matches in the catalog.
                                     </div>
                                 </div>
                                 <div className="text-[length:var(--px-12)] opacity-70 font-fira font-light my-[var(--px-20)] text-center">
                                     {/* or */}
                                 </div>
-                                <ButtonSleek className="w-[var(--px-250)] upload-button" text="Upload Your Audio" onClick={openFilePicker} id="upload-component-upload-button" />
+                                <ButtonSleek className="w-[var(--px-250)] upload-button" text="Upload Your Track" onClick={openFilePicker} id="upload-component-upload-button" />
                             </div>
                         </div>
                     </div>

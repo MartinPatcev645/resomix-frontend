@@ -36,7 +36,7 @@ const AboutTwo: React.FC = () => {
                     <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-medium flex flex-col gap-[var(--px-10)]">
                         A world where every track gets discovered on its own terms - not by chart position, not by marketing budget, not by release date
                         <span className="font-light text-[length:var(--px-17)]">
-                            Resomix maps the full sonic DNA of a song's structure and finds its perfect match, regardless of who released it or when. That's what music discovery should be
+                            Resomix maps the full sonic DNA of a track's structure and finds its perfect match, regardless of who released it or when. That's what music discovery should be
                         </span>
                     </div>
                 </div>

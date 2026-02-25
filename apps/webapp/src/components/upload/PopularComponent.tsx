@@ -31,7 +31,7 @@ export const PopularComponent: React.FC<{ onTrackSelect?: (track: SearchResult) 
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
                     <div className="p-4 text-center gap-2">
-                        <h3 className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">Beats Ready For You</h3>
+                        <h3 className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">Demo Catalog Highlights</h3>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-10)]">
                         {popularTracks.map((track) => (

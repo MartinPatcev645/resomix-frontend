@@ -79,11 +79,11 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                         </button>
                     </div>
                     <div id="panel-search-mobile" role="tabpanel" aria-labelledby="tab-search-mobile" className="m-[var(--px-20)]">
-                        <div className="w-full h-[var(--px-300)] bg-[var(--color-primary-background)] border border-dotted border-slate-300 my-[var(--px-20)] relative">
+                        <div className="w-full h-[var(--px-300)] border border-dotted border-slate-300 my-[var(--px-20)] relative">
                             {/* Search Mode Dropdown for Mobile */}
                             <div className="absolute top-[var(--px-8)] right-[var(--px-8)]">
                                 <div className="flex items-center gap-[var(--px-4)]">
-                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (song title only)." displayOnClick={true}>
+                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (track title only)." displayOnClick={true}>
                                         <div className="flex items-center gap-[var(--px-4)] hover:cursor-pointer">
                                             <label 
                                                 htmlFor="search-mode-dropdown-mobile"
@@ -114,7 +114,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] relative">
                                     {/** Search bar & dropdown */}
-                                    <SearchInput value={query} onChange={handleQueryChange} placeholder="Find Existing..." width="w-[var(--px-200)]" />
+                                    <SearchInput value={query} onChange={handleQueryChange} placeholder="Search by keyword..." width="w-[var(--px-200)]" />
                                     <SearchDropdown
                                         show={query.length > 0}
                                         results={results}
@@ -126,11 +126,11 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                     />
                                 </div>
                                 <h3 className="text-[length:var(--px-12)] font-fira font-light text-center mt-[var(--px-30)]">
-                                    Do you have a song<br />in mind?
+                                    Do you have a track<br />in mind?
                                 </h3>
                                 <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-33)] h-[var(--px-40)] my-[var(--px-10)]" />
                                 <div className="text-[length:var(--px-12)] font-fira font-light text-center">
-                                    Let's find tunes that<br />resonate with it!
+                                    Search the catalog,<br />PYXIS-1 handles the rest.
                                 </div>
                             </div>
                         </div>

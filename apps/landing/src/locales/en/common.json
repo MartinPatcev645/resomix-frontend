@@ -9,7 +9,7 @@
             "mission_paragraph": "Putting together a set that tells a story is no trivial task.<br />Tracks that fit - tonally, emotionally, energetically - are buried<br />under platforms that rank by popularity rather than<br />sonic character",
             "mission_paragraph_answer": "We're building the tool we always needed: one that listens<br />to a reference track the way a DJ does and finds what belongs beside it",
             "headline_alternative_route": "Music Discovery That Goes Deeper<br />Than Tags And Trends",
-            "tech_paragraph": "PYXIS-1 reads the full sonic character of a song<br />tempo shifts, harmonic tension, dynamic range, spectral energy<br />and finds music that matches at the structural level",
+            "tech_paragraph": "PYXIS-1 reads the full sonic character of a track<br />tempo shifts, harmonic tension, dynamic range, spectral energy<br />and finds music that matches at the structural level",
             "result_paragraph": "The result: recommendations based on<br />how music actually sounds, not how it's labeled.",
             "code_text": "run(vibe_exploration_mode)<br />→ output: connection_through_emotion<br />→ status: inspired",
             "cta_find_perfect": "Find the Perfect Sonic Match"
@@ -19,7 +19,7 @@
             "preamble_two": "We're here to make that process faster, more intuitive,<br />and grounded in what matters most: the music",
             "vision_title": "Our Vision",
             "vision_intro": "A world where every track gets discovered on its own terms<br />Not by chart position, not by marketing budget, not by release date",
-            "vision_span": "Resomix maps the full sonic DNA of a song's structure and finds its perfect match, regardless of who released it or when.<br />That's what music discovery should be",
+            "vision_span": "Resomix maps the full sonic DNA of a track's structure and finds its perfect match, regardless of who released it or when.<br />That's what music discovery should be",
             "diff_title": "What makes<br />resomix different",
             "diff_intro": "Our discovery engine uses a computational algorithm that identifies musical patterns at the granular level",
             "diff_span": "Operating entirely outside the streaming ecosystem's popularity bias",

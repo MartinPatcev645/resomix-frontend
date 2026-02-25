@@ -84,18 +84,18 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick 
                         >
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <h3 className="mt-[var(--px-10)] text-[length:var(--px-16)] font-helvetica font-light text-center leading-[var(--px-20)] uppercase">
-                                    Discover the Power of<br />Deep Sonic Analysis
+                                    DROP A REFERENCE TRACK
                                 </h3>
                                 <div className="flex items-center justify-center gap-[var(--px-10)] mt-[var(--px-10)]">
                                     <img src={ReferenceSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-33)] h-[var(--px-33)] my-[var(--px-10)]" />
                                     <div className="text-[length:var(--px-9)] font-fira font-light text-left leading-[var(--px-14)] opacity-70">
-                                        Drop in a reference sound.<br />It can be a released or unreleased song, or just a<br />short sketch from your archive. Resomix will analyze<br />the audio and find perfect matches for you.
+                                        Released or unreleased.<br />A full track, a rough sketch, or a short clip<br />from your archive. PYXIS-1 extracts the sonic<br />profile and finds the closest matches in the<br />catalog.
                                     </div>
                                 </div>
                                 <div className="text-[length:var(--px-9)] font-fira font-light my-[var(--px-20)] text-center">
                                     {/* or */}
                                 </div>
-                                <ButtonSleek text="Upload Your Audio" onClick={openFilePicker} id="upload-component-upload-button" className="upload-button" />
+                                <ButtonSleek text="Upload Your Track" onClick={openFilePicker} id="upload-component-upload-button" className="upload-button" />
                             </div>
                         </div>
                     </div>

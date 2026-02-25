@@ -127,7 +127,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                             <div className="w-full flex justify-end p-[var(--px-12)] absolute right-[var(--px-24)]">
                                 {/* Search Mode Dropdown */}
                                 <div className="flex items-center gap-[var(--px-6)]">
-                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (song title only)." displayOnClick={true}>
+                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (track title only)." displayOnClick={true}>
                                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
                                             <label 
                                                 htmlFor="search-mode-dropdown"
@@ -179,7 +179,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                                 value={DEMO_MODE ? "" : query} 
                                                 onChange={handleSearchInputChange} 
                                                 onFocus={handleSearchInputFocus}
-                                                placeholder="Find Existing Tracks..." 
+                                                placeholder="Search by artist or title..." 
                                                 width="w-[var(--px-310)]" 
                                             />
                                         </div>
@@ -196,11 +196,11 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                     )}
                                 </div>
                                 <h3 className="text-[length:var(--px-11)] font-fira font-light text-center mt-[var(--px-30)]">
-                                    Do you have a song in mind?
+                                    Do you have a track in mind?
                                 </h3>
                                 <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-29)] h-[var(--px-36)] my-[var(--px-10)]" />
                                 <div className="text-[length:var(--px-11)] font-fira font-light text-center">
-                                    Let's find tunes that resonate with it!
+                                    Search the catalog, PYXIS-1 handles the rest.
                                 </div>
                             </div>
                         </div>
