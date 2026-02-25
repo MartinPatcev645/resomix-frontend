@@ -131,7 +131,7 @@ const HomeFour: React.FC = () => {
                 3 — Get Perfect Matches
               </div>
               <div className='text-[length:var(--px-17)] font-extralight font-auger opacity-70 leading-[var(--px-20)]'>
-                Within seconds, you'll have a<br />carefully crafted selection of<br />tracks that resonate with your<br />reference's vibe, regardless of<br />genre, release date, or<br />popularity
+                Within seconds, PYXIS-1 returns a<br />ranked list of tracks scored by<br />sonic similarity - with waveform<br />preview, one-click feedback, and<br />the ability to chain-discover from<br />any result
               </div>
             </div>
           </div>

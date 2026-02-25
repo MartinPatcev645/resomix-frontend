@@ -33,7 +33,7 @@ const AboutOne: React.FC = () => {
                 </div>
                 <img src={AboutSeparatorLineSvg} draggable={false} aria-hidden="true" loading="lazy" alt="about_section_one_line" className="w-[var(--px-4)] h-[var(--px-115)]" />
                 <div className="text-[length:var(--px-18)] font-helvetica leading-[var(--px-20)] text-center font-light tracking-[var(--px-0-5)]">
-                    PYXIS-1 reads the full sonic character of a song tempo shifts, harmonic tension, dynamic range, spectral energy and finds music that matches at the structural level
+                    PYXIS-1 reads the full sonic character of a track tempo shifts, harmonic tension, dynamic range, spectral energy and finds music that matches at the structural level
                 </div>
                 <img src={SoundWavesTwo} draggable={false} aria-hidden="true" loading="lazy" alt="sound_waves_two" className="w-[var(--px-41)] h-[var(--px-50)]" />
                 <div className="text-[length:var(--px-18)] font-helvetica leading-[var(--px-20)] text-center font-light tracking-[var(--px-0-5)] mx-[var(--px-10)]">

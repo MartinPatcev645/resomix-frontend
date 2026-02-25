@@ -31,7 +31,7 @@ export const PopularComponentMobile: React.FC<{ onTrackSelect?: (track: SearchRe
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none gap-[var(--px-10)]">
                     <div className="w-full h-[var(--px-70)] text-center gap-2 flex items-center justify-center">
-                        <h3 className="text-[var(--color-primary)] text-[length:var(--px-18)] font-helvetica uppercase font-light">Beats Ready For You</h3>
+                        <h3 className="text-[var(--color-primary)] text-[length:var(--px-18)] font-helvetica uppercase font-light">Explore the Demo Catalog</h3>
                     </div>
                     <div className="flex flex-col gap-[var(--px-10)] mt-[var(--px-10)]">
                         {popularTracks.map((track) => (
@@ -39,7 +39,7 @@ export const PopularComponentMobile: React.FC<{ onTrackSelect?: (track: SearchRe
                                 key={track.id}
                                 type="button"
                                 id={`popular-track-${track.id}`}
-                                className="group w-full h-[var(--px-70)] bg-[var(--color-primary-background)] border border-dotted border-slate-200 my-auto flex justify-between items-center hover:cursor-pointer hover:bg-[var(--color-primary-hover)] transition-colors popular-track-button"
+                                className="group w-full h-[var(--px-70)] border border-dotted border-slate-200 my-auto flex justify-between items-center hover:cursor-pointer transition-colors popular-track-button"
                                 onClick={() => onTrackSelect?.(track)}
                                 aria-label={`Play ${track.title} by ${track.artist}, ${track.duration}`}
                             >

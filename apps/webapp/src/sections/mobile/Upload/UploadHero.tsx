@@ -20,8 +20,8 @@ const UploadHero: React.FC = () => {
         />
       </div>
       <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
-        <h1 className="text-[length:var(--px-35)] font-benzin leading-[var(--px-50)] uppercase">Here's<br />where<br />the journey<br /><span className="italic">begins</span></h1>
-        <div className="text-[length:var(--px-20)] font-helvetica font-extralight leading-[var(--px-24)] uppercase">upload a reference track,<br />and unlock a universe<br />of sounds</div>
+        <h1 className="text-[length:var(--px-38)] font-benzin leading-[var(--px-50)] uppercase">Here's<br />where<br />the search<br /><span className="italic">begins</span></h1>
+        <div className="text-[length:var(--px-20)] font-helvetica tracking-[var(--px-2)] font-extralight leading-[var(--px-24)] uppercase">Drop a reference track,<br />PYXIS-1 will do the rest</div>
         <img src={ArrowDownRightSvg} draggable={false} alt="" aria-hidden="true" loading="lazy" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>
       <div className="text-center text-[length:var(--px-10)] font-fira leading-[var(--px-20)] font-extralight tracking-[var(--px-2)] min-h-[var(--px-33)]">

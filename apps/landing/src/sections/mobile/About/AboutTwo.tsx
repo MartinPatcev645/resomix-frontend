@@ -3,6 +3,7 @@ import AboutSeparatorLineTwo from "@/assets/icons/about_section_one_line_2.svg"
 import AnalysisSvg from "@/assets/icons/analysis.svg"
 import MatchesSvg from "@/assets/icons/matches.svg"
 import CraftSvg from "@/assets/icons/craft.svg"
+import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
 import GradientThree from "@/assets/images/gradient 3.png"
 import GradientFour from "@/assets/images/gradient 4.png"
 
@@ -36,7 +37,7 @@ const AboutTwo: React.FC = () => {
                     <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-medium flex flex-col gap-[var(--px-10)]">
                         A world where every track gets discovered on its own terms - not by chart position, not by marketing budget, not by release date
                         <span className="font-light text-[length:var(--px-17)]">
-                            Resomix maps the full sonic DNA of a song's structure and finds its perfect match, regardless of who released it or when. That's what music discovery should be
+                            Resomix maps the full sonic DNA of a track's structure and finds its perfect match, regardless of who released it or when. That's what music discovery should be
                         </span>
                     </div>
                 </div>
@@ -81,6 +82,15 @@ const AboutTwo: React.FC = () => {
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
                             Within seconds, a precisely matched selection of tracks that share your reference's sonic character - regardless of genre, release date, or popularity
+                        </div>
+                    </div>
+                    <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
+                        <img src={SoundWavesTwo} draggable={false} aria-hidden="true" loading="lazy" alt="matches" className="w-[var(--px-54)] h-[var(--px-54)]" />
+                        <div className="flex-1/3 text-[length:var(--px-20)] font-bold font-helvetica uppercase leading-[var(--px-20)]">
+                            CHAIN DISCOVERY
+                        </div>
+                        <div className="flex-1/3 text-[length:var(--px-18)] font-helvetica font-light tracking-[var(--px-0-5)]">
+                            Every result is a new starting point. Find a match you love? Use it as a new reference and discover what's connected to it. One track leads to the next - the way DJs actually think.
                         </div>
                     </div>
                 </div>

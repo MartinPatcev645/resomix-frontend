@@ -3,6 +3,7 @@ import AboutSeparatorLineTwo from "@/assets/icons/about_section_one_line_2.svg"
 import AnalysisSvg from "@/assets/icons/analysis.svg"
 import MatchesSvg from "@/assets/icons/matches.svg"
 import CraftSvg from "@/assets/icons/craft.svg"
+import SoundWavesTwo from "@/assets/icons/sound_waves_2.svg"
 import GradientThree from "@/assets/images/gradient 3.png"
 import GradientFour from "@/assets/images/gradient 4.png"
 import { useTranslation } from 'react-i18next';
@@ -74,6 +75,15 @@ const AboutTwo: React.FC = () => {
                         <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_path_title') }}>
                         </div>
                         <div className="flex-1/3 text-[length:var(--px-17)] font-helvetica font-extralight tracking-[var(--px-1)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.card_path_desc') }}>
+                        </div>
+                    </div>
+                    <div className="flex-1/3 flex flex-col items-start justify-start w-full gap-[var(--px-20)]">
+                        <img src={SoundWavesTwo} aria-hidden="true" loading="lazy" draggable={false} alt="matches" className="w-[var(--px-45)] h-[var(--px-46)]" />
+                        <div className="flex-1/3 text-[length:var(--px-22)] font-bold font-helvetica uppercase leading-[var(--px-22)]">
+                            CHAIN DISCOVERY
+                        </div>
+                        <div className="flex-1/3 text-[length:var(--px-17)] font-helvetica font-extralight tracking-[var(--px-1)]">
+                            Every result is a new starting point. Find a match you love? Use it as a new reference and discover what's connected to it. One track leads to the next - the way DJs actually think.
                         </div>
                     </div>
                 </div>

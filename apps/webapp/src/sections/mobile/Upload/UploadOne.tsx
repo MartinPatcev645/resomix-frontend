@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useTrackSimilarity } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
+import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
+import TrackSelectSeparatorLine from "@/assets/icons/track_select_separator_line.svg"
 import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } from "@/components/index.ts";
 import { Tooltip } from "@resomix/ui";
 import { usePlayerStore } from "@resomix/stores";
+import { savePlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -26,7 +29,12 @@ const UploadOne: React.FC = () => {
 
 
 
-    const { handleSelectTrack } = useTrackSimilarity();
+    // Callback fired by both upload and search flows when analysis results arrive
+    const onAnalysis = useCallback((playlistId: string, stats: Parameters<typeof savePlaylistAnalysis>[1]) => {
+        savePlaylistAnalysis(playlistId, stats);
+    }, []);
+
+    const { handleSelectTrack } = useTrackSimilarity({ onAnalysis });
 
     const onTrackSelect = (track: SearchResult) => {
         handleSelectTrack(track.id);
@@ -35,7 +43,7 @@ const UploadOne: React.FC = () => {
     return (
         <div className="flex flex-col mx-auto items-center justify-center mt-[var(--px-100)]">
 
-            <div className="w-full bg-[var(--color-primary-background)] flex justify-between py-[var(--px-14)]">
+            <div className="w-full flex justify-between py-[var(--px-14)]">
                 <div className="">
                     <h2 className="text-[length:var(--px-18)] font-semibold font-helvetica uppercase">
                         Set Your Depth
@@ -107,12 +115,20 @@ const UploadOne: React.FC = () => {
                     ) : (
                         <UploadComponentMobile
                             onSearchClick={handleSearchClick}
+                            onAnalysis={onAnalysis}
                         />
                     )}
                 </div>
                 <div className="mt-[var(--px-150)]">
                     <PopularComponentMobile onTrackSelect={onTrackSelect} />
                 </div>
+            </div>
+            <div className="flex flex-col w-[var(--px-880)] h-auto justify-between mt-[var(--px-80)] w-full items-center justify-center gap-[var(--px-20)]">
+                <img src={TrackSelectSeparatorLine} aria-hidden="true" loading="lazy" draggable={false} alt="track_select_separator_line" className="w-[var(--px-3)] h-[var(--px-61)]" />
+                <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center">
+                    After analysis, PYXIS-1 returns scored results ranked by sonic similarity - with waveform preview and chain discovery.
+                </div>
+                <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="sound_waves" className="w-[var(--px-40)] h-[var(--px-40)] my-[var(--px-10)]" />
             </div>
         </div>
     );

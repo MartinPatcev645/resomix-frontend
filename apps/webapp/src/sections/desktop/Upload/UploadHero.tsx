@@ -11,9 +11,9 @@ const UploadHero: React.FC = () => {
       {/* Hidden SVG defs for clip-path */}
       <svg
         aria-hidden="true"
-        viewBox="0 0 1152 628"
+        viewBox="0 0 1152 629"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-full h-[length:var(--px-629)] pointer-events-none z-10"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -62,8 +62,8 @@ const UploadHero: React.FC = () => {
             />
           </div>
           <div className="flex justify-start items-start w-full relative z-15">
-            <div className="text-[length:var(--px-60)] mb-[var(--px-10)] font-benzin uppercase">Here's Where</div>
-            <div className="text-[length:var(--px-8)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] ml-[var(--px-20)] mt-[var(--px-20)]">
+            <div className="text-[length:var(--px-70)] mb-[var(--px-10)] font-benzin uppercase">Here's Where</div>
+            <div className="text-[length:var(--px-10)] font-normal font-fira font-extralight tracking-[var(--px-1-5)] ml-[var(--px-20)] mt-[var(--px-20)]">
               <CodeTyping
                 speed={100}
                 text='>> analyzing_reference_track...'
@@ -71,12 +71,12 @@ const UploadHero: React.FC = () => {
               />
               <CodeTyping
                 speed={100}
-                text='>> extracting sonic signature...'
+                text='>> extracting_sonic_signature...'
                 delay={3500}
               />
               <CodeTyping
                 speed={100}
-                text='>> isolating emotional DNA...'
+                text='>> mapping_spectral_profile...'
                 delay={4000}
               />
             </div>
@@ -84,9 +84,9 @@ const UploadHero: React.FC = () => {
           <div className='flex w-full justify-between items-center -mt-[var(--px-40)] relative z-15'>
             <div className='flex gap-[var(--px-12)]'>
               <img className="w-[var(--px-35)] h-[var(--px-35)]" draggable={false} src={ArrowSmallDown} aria-hidden="true" loading="lazy" alt="" />
-              <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-[var(--px-20)] text-[var(--color-primary)]">Upload a reference track,<br />and unlock a universe of sounds.</div>
+              <div className="justify-start text-[length:var(--px-17)] font-normal font-helvetica uppercase leading-[var(--px-20)] text-[var(--color-primary)]">Drop a reference track,<br />PYXIS-1 will do the rest</div>
             </div>
-            <div className="text-[length:var(--px-50)] font-benzin uppercase text-right mr-[var(--px-6)]">The Journey <span className="italic">Begins</span></div>
+            <div className="text-[length:var(--px-60)] font-benzin uppercase text-right mr-[var(--px-6)]">The Search <span className="italic">Begins</span></div>
           </div>
           <div className="flex justify-center items-center w-full relative z-15">
             <img src={LineThree} className="w-[var(--px-4)] h-[var(--px-60)]" draggable={false} aria-hidden="true" loading="lazy" alt="" />

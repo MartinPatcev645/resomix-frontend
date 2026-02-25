@@ -111,7 +111,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
 
                             {!isInput && (
                                 <div className="flex w-full justify-between mt-[var(--px-20)]">
-                                    <div className="text-left text-[length:var(--px-14)] font-light font-fira">Similar:</div>
+                                    <div className="text-left text-[length:var(--px-14)] font-light font-fira">Feedback:</div>
                                     <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-30)]">
                                         {(() => {
                                             const currentRating = trackId ? trackRatings[trackId] : undefined;
@@ -168,7 +168,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                     <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
                         {!isInput && (
                             <div className="w-full flex flex-col">
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Start Sonic Discovery on this Track" customWidth="w-full" onClick={() => {
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Chain Discover using this Track" customWidth="w-full" onClick={() => {
                                     onClose?.();
                                     window.open(`${BASE_BETA_URL}/?id=${trackId}`, '_blank');
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
