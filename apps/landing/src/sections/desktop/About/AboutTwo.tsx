@@ -45,7 +45,7 @@ const AboutTwo: React.FC = () => {
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-60)] w-full z-15">
                 <div className="flex flex-col gap-[var(--px-10)] w-full z-15">
-                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.diff_title') }}>
+                    <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_two.diff_title') }}>
                     </div>
                     <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)]">
                         {t('about.about_two.diff_intro')}
