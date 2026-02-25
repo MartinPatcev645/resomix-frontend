@@ -7,8 +7,6 @@ import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
-import TrackSelectSeparatorLine from "@/assets/icons/track_select_separator_line.svg";
-import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -263,13 +261,10 @@ const PlaylistTable: React.FC = () => {
                     </div>
                 );
             })}
-            <div className="flex flex-col w-[var(--px-880)] h-auto justify-between mt-[var(--px-40)] w-full items-center justify-center gap-[var(--px-20)]">
-                <img src={TrackSelectSeparatorLine} aria-hidden="true" loading="lazy" draggable={false} alt="track_select_separator_line" className="w-[var(--px-3)] h-[var(--px-61)]" />
-                <div className="text-[length:var(--px-17)] font-helvetica opacity-70 font-light leading-[var(--px-20)] text-center leading-[var(--px-30)]">
-                    Matched by PYXIS-1<br />
-                    {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
+            <div className="flex flex-col w-[var(--px-880)] h-auto justify-between w-full items-end justify-end">
+                <div className="text-[length:var(--px-11)] font-helvetica opacity-80 font-light tracking-[var(--px-1)] text-end leading-[var(--px-30)] border-b border-dotted border-slate-200">
+                    Matched by PYXIS-1 : {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
                 </div>
-                <img src={SoundWavesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="sound_waves" className="w-[var(--px-40)] h-[var(--px-40)] my-[var(--px-10)]" />
             </div>
         </div>
     );
