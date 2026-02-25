@@ -34,7 +34,7 @@ const AboutThree: React.FC = () => {
 
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-100)] w-full z-15 items-center">
-                <div className="text-[length:var(--px-43)] font-bold font-helvetica uppercase leading-[var(--px-43)] w-full text-center ml-[var(--px-30)]">
+                <div className="text-[length:var(--px-43)] font-bold font-helvetica uppercase leading-[var(--px-43)] w-full text-center">
                     What We Stand For
                 </div>
                 <div className="flex flex-col gap-[var(--px-100)] items-start">

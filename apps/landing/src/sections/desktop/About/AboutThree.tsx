@@ -17,7 +17,7 @@ const AboutThree: React.FC = () => {
                 <div className="absolute -top-[var(--px-190)] w-[var(--px-700)] -right-[var(--px-200)] pointer-events-none z-5">
                     <img src={GradientFive} aria-hidden="true" loading="lazy" draggable={false} alt="gradient_five" className="w-full h-auto" />
                 </div>
-                <div className="absolute top-[var(--px-300)] -left-[var(--px-63)] w-[var(--px-800)] pointer-events-none z-5">
+                <div className="absolute top-[var(--px-300)] w-full pointer-events-none z-5">
                     <img src={GradientSix} aria-hidden="true" loading="lazy" draggable={false} alt="gradient_six" style={{ mixBlendMode: "lighten" }} className="w-full h-[var(--px-1200)]" />
                 </div>
 
@@ -36,7 +36,7 @@ const AboutThree: React.FC = () => {
 
             {/* About 2 B */}
             <div className="flex flex-col gap-[var(--px-100)] w-full z-15 items-center">
-                <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.heading_values_benefits') }}>
+                <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)]" dangerouslySetInnerHTML={{ __html: t('about.about_three.heading_values_benefits') }}>
                 </div>
                 <div className="flex flex-col gap-[var(--px-100)] items-start ml-[var(--px-120)]">
                     <div className="flex gap-[var(--px-20)] z-15">

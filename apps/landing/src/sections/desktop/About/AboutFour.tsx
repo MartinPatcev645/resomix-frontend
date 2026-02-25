@@ -13,12 +13,12 @@ const AboutFour: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 <div className="flex justify-between items-start">
                     <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-50)]">
-                        <span className="ml-[var(--px-100)]">{t('about.about_four.headline_who')}<br /></span>
+                        <span className="">{t('about.about_four.headline_who')}</span>
                         <div className="flex items-center gap-[var(--px-10)]">
-                            <img src={ArrowSmallUp} aria-label="arrow_small_up" loading="lazy" draggable={false} alt="arrow_small_up" className="w-[var(--px-43)] h-[var(--px-43)]" />
-                            {t('about.about_four.headline_resomix')}<br />
+                            <img src={ArrowSmallUp} aria-label="arrow_small_up" loading="lazy" draggable={false} alt="arrow_small_up" className="w-[var(--px-43)] h-[var(--px-43)] mb-[var(--px-10)]" />
+                            {t('about.about_four.headline_resomix')}
                         </div>
-                        <span className="ml-[var(--px-53)]">{t('about.about_four.headline_is_for')}</span>
+                        <span className="">{t('about.about_four.headline_is_for')}</span>
                     </div>
                     <div className="flex flex-col items-start mr-[var(--px-100)] gap-[var(--px-20)]">
                         <div className="flex gap-[var(--px-20)] z-15">

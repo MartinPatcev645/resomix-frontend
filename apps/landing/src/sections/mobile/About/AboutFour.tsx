@@ -11,12 +11,12 @@ const AboutFour: React.FC = () => {
             <div className="w-full flex flex-col gap-[var(--px-500)]">
                 <div className="flex flex-col gap-[var(--px-100)] items-start">
                     <div className="text-[length:var(--px-43)] font-medium font-helvetica uppercase leading-[var(--px-45)]">
-                        <span className="ml-[var(--px-100)]">Who<br /></span>
-                        <div className="flex items-center">
-                            <img src={ArrowSmallUp} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_small_up" className="w-[var(--px-32)] h-[var(--px-31)] mb-[var(--px-2)]" />
-                            Resomix<br />
+                        <span className="">Who</span>
+                        <div className="flex items-center gap-[var(--px-10)]">
+                            <img src={ArrowSmallUp} draggable={false} aria-hidden="true" loading="lazy" alt="arrow_small_up" className="w-[var(--px-32)] h-[var(--px-31)] mb-[var(--px-10)]" />
+                            Resomix
                         </div>
-                        <span className="ml-[var(--px-53)]">is for</span>
+                        <span className="">is for</span>
                     </div>
                     <div className="flex flex-col items-start gap-[var(--px-30)]">
                         <div className="flex gap-[var(--px-10)] z-15">
@@ -37,7 +37,7 @@ const AboutFour: React.FC = () => {
                                     Producers
                                 </div>
                                 <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
-                                    — seeking sonic references for sound design, texture, and creative direction
+                                    — seeking sonic references for sound design, texture, and creative direction ideas
                                 </div>
                             </div>
                         </div>
