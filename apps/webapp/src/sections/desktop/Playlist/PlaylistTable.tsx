@@ -262,7 +262,7 @@ const PlaylistTable: React.FC = () => {
                 );
             })}
             <div className="flex flex-col w-[var(--px-880)] h-auto justify-between w-full items-end justify-end">
-                <div className="text-[length:var(--px-11)] font-helvetica opacity-80 font-light tracking-[var(--px-1)] text-end leading-[var(--px-30)] border-b border-dotted border-slate-200">
+                <div className="text-[length:var(--px-8)] font-helvetica opacity-80 font-light tracking-[var(--px-1)] text-end leading-[var(--px-20)] border-b border-dotted border-slate-200">
                     Matched by PYXIS-1 : {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
                 </div>
             </div>
