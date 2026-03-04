@@ -106,8 +106,8 @@ async def start_session_cleanup_worker():
 
                                 # Log it securely instead of dropping the local DB row
                                 log_entry_message = f"Automated cleanup: Hetzner deletion {'succeeded' if delete_result.get('success') else 'failed'}."
-                                await log_svc.async_log(
-                                    db=db_session,
+                                log_svc.log(
+                                    async_db=db_session,
                                     level=(
                                         "INFO"
                                         if delete_result.get("success")
@@ -116,8 +116,8 @@ async def start_session_cleanup_worker():
                                     category="SYSTEM",
                                     action="hetzner_track_cleanup",
                                     message=log_entry_message,
-                                    user_id=user_id,
-                                    details={
+                                    metadata={
+                                        "user_id": user_id,
                                         "track_uuid": track.uuid,
                                         "hetzner_response": delete_result,
                                     },
