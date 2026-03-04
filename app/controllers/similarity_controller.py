@@ -365,10 +365,13 @@ class SimilarityController:
                 # Reset file pointer for track upload service
                 await file.seek(0)
 
+                # Extract user_id if user is logged in
+                user_id = current_user.id if current_user else None
+
                 # STEP 1: Upload track to database with metadata extraction
                 upload_result = (
                     await self.track_upload_service.upload_track_to_database(
-                        db, file, audio_bytes
+                        db, file, audio_bytes, user_id=user_id
                     )
                 )
 
@@ -644,12 +647,13 @@ class SimilarityController:
                 # STEP 1: Upload track to database first (even without FFmpeg)
                 await file.seek(0)
 
-                import asyncio
+                # Extract user_id if user is logged in
+                user_id = current_user.id if current_user else None
 
-                upload_result = await asyncio.to_thread(
-                    self.track_upload_service.upload_track_to_database,
-                    file,
-                    audio_bytes,
+                upload_result = (
+                    await self.track_upload_service.upload_track_to_database(
+                        db, file, audio_bytes, user_id=user_id
+                    )
                 )
 
                 if not upload_result.get("success", False):
