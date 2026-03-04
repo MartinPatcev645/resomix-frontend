@@ -56,17 +56,11 @@ async def start_session_cleanup_worker():
 
         # Continuous listening loop
         async for message in pubsub.listen():
-            logger.debug(f"[CLEANUP_WORKER] Raw message received: {message}")
             if message and message.get("type") in ["pmessage", "message"]:
-                raw_data = message.get("data")
-                key_name = (
-                    raw_data.decode("utf-8")
-                    if isinstance(raw_data, bytes)
-                    else raw_data
-                )
-                logger.debug(
-                    f"[CLEANUP_WORKER] Received keyspace event: type={message.get('type')}, data={key_name}"
-                )
+                key_name = message.get("data")
+                if isinstance(key_name, bytes):
+                    key_name = key_name.decode("utf-8")
+
                 if key_name and key_name.startswith("session:user:"):
                     try:
                         # Extract user ID from the expired TTL key

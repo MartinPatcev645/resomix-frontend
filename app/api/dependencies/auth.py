@@ -81,11 +81,8 @@ async def _refresh_redis_session_ttl(user_id: int):
         if _redis_pool:
             client = aioredis.Redis(connection_pool=_redis_pool)
             session_key = f"session:user:{user_id}"
-            # 120 seconds = 2 minutes for testing
-            await client.setex(session_key, 120, "active")
-            logger.info(
-                f"Refreshed Redis session TTL for user {user_id} to 120 seconds. Key: {session_key}"
-            )
+            # 1200 seconds = 20 minutes
+            await client.setex(session_key, 1200, "active")
             await client.close()
     except Exception as e:
         logger.warning(f"Failed to update Redis user session TTL: {str(e)}")
