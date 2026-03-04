@@ -49,14 +49,17 @@ async def start_session_cleanup_worker():
 
         # Continuous listening loop
         async for message in pubsub.listen():
-            if message and message.get("type") == "pmessage":
+            if message and message.get("type") in ["pmessage", "message"]:
                 key_name = message.get("data")
+                logger.debug(
+                    f"[CLEANUP_WORKER] Received keyspace event: type={message.get('type')}, data={key_name}"
+                )
                 if key_name and key_name.startswith("session:user:"):
                     try:
                         # Extract user ID from the expired TTL key
                         user_id = int(key_name.split(":")[-1])
                         logger.info(
-                            f"Session for user_id={user_id} expired. Triggering track cleanups..."
+                            f"[CLEANUP_WORKER] Session for user_id={user_id} expired. Triggering track cleanups..."
                         )
 
                         # Spin up database session to find their uploaded tracks

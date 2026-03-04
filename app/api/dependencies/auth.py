@@ -72,21 +72,23 @@ async def _refresh_redis_session_ttl(user_id: int):
     This triggers a TTL refresh. If the session expires
     natively in Redis, it triggers cleanup tasks via Keyspace events.
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
     try:
         from app.db.redis import _redis_pool
 
         if _redis_pool:
             client = aioredis.Redis(connection_pool=_redis_pool)
             session_key = f"session:user:{user_id}"
-            # 1200 seconds = 20 minutes
-            await client.setex(session_key, 1200, "active")
+            # 120 seconds = 2 minutes for testing
+            await client.setex(session_key, 120, "active")
+            logger.info(
+                f"Refreshed Redis session TTL for user {user_id} to 120 seconds. Key: {session_key}"
+            )
             await client.close()
     except Exception as e:
-        import logging
-
-        logging.getLogger(__name__).warning(
-            f"Failed to update Redis user session TTL: {str(e)}"
-        )
+        logger.warning(f"Failed to update Redis user session TTL: {str(e)}")
 
 
 # OAuth2 scheme for JWT tokens
