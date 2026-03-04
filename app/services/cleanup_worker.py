@@ -19,6 +19,7 @@ async def start_session_cleanup_worker():
     for user sessions, then aggressively triggers track deletions on Hetzner.
     """
     import redis.asyncio as aioredis
+    from app.db.redis import _redis_pool
 
     if not _redis_pool:
         logger.error(
@@ -26,8 +27,14 @@ async def start_session_cleanup_worker():
         )
         return
 
-    client = aioredis.Redis(connection_pool=_redis_pool)
-    pubsub = client.pubsub()
+    try:
+        client = aioredis.Redis(connection_pool=_redis_pool)
+        pubsub = client.pubsub()
+        await client.ping()
+        logger.info("Session Cleanup Worker successfully pinged Redis pool.")
+    except Exception as e:
+        logger.error(f"Failed to bind Redis client in worker: {e}")
+        return
 
     # Enable Expiry events in Redis config explicitly
     try:
@@ -49,8 +56,14 @@ async def start_session_cleanup_worker():
 
         # Continuous listening loop
         async for message in pubsub.listen():
+            logger.debug(f"[CLEANUP_WORKER] Raw message received: {message}")
             if message and message.get("type") in ["pmessage", "message"]:
-                key_name = message.get("data")
+                raw_data = message.get("data")
+                key_name = (
+                    raw_data.decode("utf-8")
+                    if isinstance(raw_data, bytes)
+                    else raw_data
+                )
                 logger.debug(
                     f"[CLEANUP_WORKER] Received keyspace event: type={message.get('type')}, data={key_name}"
                 )
