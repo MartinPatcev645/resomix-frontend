@@ -68,24 +68,28 @@ CREATE TABLE IF NOT EXISTS albums (
 CREATE TABLE IF NOT EXISTS tracks (
     id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     uuid          VARCHAR(36) NOT NULL UNIQUE,
-    album_id      INT UNSIGNED,                -- NULL for singles
+    album_id      INT UNSIGNED,
     label_id      INT UNSIGNED,
-    genre_id      INT UNSIGNED,                -- Single genre per track
+    genre_id      INT UNSIGNED,
+    user_id       BIGINT UNSIGNED,
     title         VARCHAR(255) NOT NULL,
     year          YEAR,
-    duration_sec  INT UNSIGNED,
+    duration_sec  DECIMAL(8,3),
     bpm           SMALLINT UNSIGNED,
-    musical_key   VARCHAR(5),                  -- e.g. "C#m"
-    file_path     VARCHAR(500) NOT NULL,       -- original / full file
-    preview_path  VARCHAR(500),                -- 30-sec MP3 etc.
-    file_size     BIGINT UNSIGNED,             -- bytes
+    musical_key   VARCHAR(5),
+    file_path     VARCHAR(500) NOT NULL,
+    preview_path  VARCHAR(500),
+    file_size     BIGINT UNSIGNED,
+    type          VARCHAR(50) DEFAULT 'electrobuzz',
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
     FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
     FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
     KEY idx_track_album  (album_id),
     KEY idx_track_label  (label_id),
     KEY idx_track_genre  (genre_id),
+    KEY idx_track_user   (user_id),
     KEY idx_track_title  (title),
     KEY idx_track_bpm    (bpm),
     KEY idx_track_key    (musical_key)

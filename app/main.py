@@ -44,6 +44,11 @@ from app.api.routers import all_routers
 # Import actual database engine for lifecycle management
 from database.connection import async_engine
 
+# Import Redis pool manager
+from app.db.redis import init_redis_pool, close_redis_pool
+from app.services.cleanup_worker import start_session_cleanup_worker
+import asyncio
+
 # Import FFmpeg check utility
 from app.services.audio_service import AudioService
 from app.services.logging_service import LoggingService
@@ -170,6 +175,16 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
             "WARNING: FFmpeg is not installed or not found in PATH. Audio file validation will be skipped."
         )
 
+    # Initialize Redis connection pool
+    print("Application startup: Initializing Redis connection pool...")
+    await init_redis_pool()
+
+    # Start the session background worker task
+    print("Application startup: Starting Session Cleanup Worker...")
+    app_instance.state.cleanup_worker_task = asyncio.create_task(
+        start_session_cleanup_worker()
+    )
+
     print("Application startup: External services initialization complete (lifespan).")
 
     yield
@@ -179,6 +194,19 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     # Close database engine and all connections
     await async_engine.dispose()
     print("MariaDB database connections closed.")
+
+    # Stop Background Worker
+    if hasattr(app_instance.state, "cleanup_worker_task"):
+        app_instance.state.cleanup_worker_task.cancel()
+        try:
+            await app_instance.state.cleanup_worker_task
+        except asyncio.CancelledError:
+            pass
+        print("Session Cleanup Worker stopped.")
+
+    # Close Redis connection pool
+    await close_redis_pool()
+    print("Redis connections closed.")
 
     # Clean up temp directory on shutdown
     if os.path.exists(settings.temp_dir):

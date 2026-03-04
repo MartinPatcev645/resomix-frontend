@@ -15,8 +15,17 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-# Track, TrackArtist models 
-from sqlalchemy import Column, Integer, BigInteger, String, SmallInteger, ForeignKey, DateTime, Numeric
+# Track, TrackArtist models
+from sqlalchemy import (
+    Column,
+    Integer,
+    BigInteger,
+    String,
+    SmallInteger,
+    ForeignKey,
+    DateTime,
+    Numeric,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base
@@ -25,7 +34,7 @@ from . import Base
 class Track(Base):
     """
     Track model representing the tracks table
-    
+
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS tracks (
         id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -33,6 +42,7 @@ class Track(Base):
         album_id      INT UNSIGNED,                -- NULL for singles
         label_id      INT UNSIGNED,
         genre_id      INT UNSIGNED,                -- Single genre per track
+        user_id       BIGINT UNSIGNED,             -- NULL for non-uploaded tracks
         title         VARCHAR(255) NOT NULL,
         year          YEAR,
         duration_sec  INT UNSIGNED,
@@ -46,28 +56,43 @@ class Track(Base):
         FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
         FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
         FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
+        FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
         KEY idx_track_album  (album_id),
         KEY idx_track_label  (label_id),
         KEY idx_track_genre  (genre_id),
+        KEY idx_track_user   (user_id),
         KEY idx_track_title  (title),
         KEY idx_track_bpm    (bpm),
         KEY idx_track_key    (musical_key),
         KEY idx_track_type   (type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
+
     __tablename__ = "tracks"
-    
+
     # Primary key
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
-    
+
     # Unique identifier
     uuid = Column(String(36), nullable=False, unique=True, index=True)
-    
+
     # Foreign keys (all nullable as per schema)
-    album_id = Column(Integer, ForeignKey("albums.id", ondelete="SET NULL"), nullable=True, index=True)
-    label_id = Column(Integer, ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True)
-    genre_id = Column(Integer, ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True)
-    
+    album_id = Column(
+        Integer, ForeignKey("albums.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    label_id = Column(
+        Integer, ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    genre_id = Column(
+        Integer, ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    user_id = Column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Fields
     title = Column(String(255), nullable=False, index=True)
     year = Column(Integer, nullable=True)  # YEAR type maps to Integer
@@ -77,21 +102,33 @@ class Track(Base):
     file_path = Column(String(500), nullable=False)
     preview_path = Column(String(500), nullable=True)
     file_size = Column(BigInteger, nullable=True)
-    type = Column(String(50), nullable=False, default='electrobuzz', index=True)  # Track source type
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    
+    type = Column(
+        String(50), nullable=False, default="electrobuzz", index=True
+    )  # Track source type
+    created_at = Column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
     # Relationships
     album = relationship("Album", back_populates="tracks")
     label = relationship("Label", back_populates="tracks")
     genre = relationship("Genre", back_populates="tracks")
-    
+    uploader = relationship("User", back_populates="uploaded_tracks")
+
     # Many-to-many relationship with artists through track_artists
-    track_artists = relationship("TrackArtist", back_populates="track", cascade="all, delete-orphan")
+    track_artists = relationship(
+        "TrackArtist", back_populates="track", cascade="all, delete-orphan"
+    )
     artists = relationship("Artist", secondary="track_artists", viewonly=True)
-    
+
     # One-to-one relationship with external platform track IDs
-    transfer_track = relationship("PlaylistTransferTrack", back_populates="track", uselist=False, cascade="all, delete-orphan")
-    
+    transfer_track = relationship(
+        "PlaylistTransferTrack",
+        back_populates="track",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self):
         return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}', type='{self.type}')>"
 
@@ -99,7 +136,7 @@ class Track(Base):
 class TrackArtist(Base):
     """
     TrackArtist model representing the track_artists many-to-many table
-    
+
     Schema from SQL:
     CREATE TABLE IF NOT EXISTS track_artists (
         track_id  BIGINT UNSIGNED NOT NULL,
@@ -109,15 +146,20 @@ class TrackArtist(Base):
         FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
+
     __tablename__ = "track_artists"
-    
+
     # Composite primary key
-    track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True)
-    artist_id = Column(Integer, ForeignKey("artists.id", ondelete="CASCADE"), primary_key=True)
-    
+    track_id = Column(
+        BigInteger, ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True
+    )
+    artist_id = Column(
+        Integer, ForeignKey("artists.id", ondelete="CASCADE"), primary_key=True
+    )
+
     # Relationships
     track = relationship("Track", back_populates="track_artists")
     artist = relationship("Artist", back_populates="track_artists")
-    
+
     def __repr__(self):
-        return f"<TrackArtist(track_id={self.track_id}, artist_id={self.artist_id})>" 
+        return f"<TrackArtist(track_id={self.track_id}, artist_id={self.artist_id})>"

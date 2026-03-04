@@ -28,6 +28,10 @@ from app.models.user import User
 from app.repositories.user_repository import UserRepository, UserSessionRepository
 from app.api.dependencies.database import get_database_session
 
+# Redis for session tracking
+import redis.asyncio as aioredis
+from app.db.redis import _redis_pool
+
 
 # ============================================================================
 # API Key Authentication (Existing - for backward compatibility)
@@ -60,6 +64,30 @@ async def get_api_key(
 # ============================================================================
 # JWT Token Authentication (New - for authenticated users)
 # ============================================================================
+
+
+async def _refresh_redis_session_ttl(user_id: int):
+    """
+    Update the user's session activity in Redis.
+    This triggers a TTL refresh. If the session expires
+    natively in Redis, it triggers cleanup tasks via Keyspace events.
+    """
+    try:
+        from app.db.redis import _redis_pool
+
+        if _redis_pool:
+            client = aioredis.Redis(connection_pool=_redis_pool)
+            session_key = f"session:user:{user_id}"
+            # 1200 seconds = 20 minutes
+            await client.setex(session_key, 1200, "active")
+            await client.close()
+    except Exception as e:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            f"Failed to update Redis user session TTL: {str(e)}"
+        )
+
 
 # OAuth2 scheme for JWT tokens
 # auto_error=False allows optional authentication
@@ -129,6 +157,9 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Fast TTL refresh in Redis for activity tracking
+    await _refresh_redis_session_ttl(user.id)
+
     return user
 
 
@@ -139,7 +170,7 @@ async def get_current_user_optional(
     """
     Get current user if authenticated, None if anonymous.
     OPTIONAL auth - returns None only when NO token is provided.
-    
+
     Returns 401 if token is provided but invalid/expired.
 
     Args:
@@ -148,7 +179,7 @@ async def get_current_user_optional(
 
     Returns:
         User object or None if not authenticated (no token provided)
-        
+
     Raises:
         HTTPException: 401 if token is provided but invalid/expired
     """
@@ -187,6 +218,9 @@ async def get_current_user_optional(
                 detail="User not found",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+
+        # Fast TTL refresh in Redis for activity tracking
+        await _refresh_redis_session_ttl(user.id)
 
         return user
 
