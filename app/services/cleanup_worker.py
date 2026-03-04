@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from typing import Optional
-from sqlalchemy.orm import sessionmaker
+import ast
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db.redis import _redis_pool
-from app.api.dependencies.database import async_session_maker
+from sqlalchemy import select
+from typing import Optional
+from database.connection import AsyncSessionLocal
 from app.models.track import Track
 from app.services.hetzner_service import HetznerService
 from app.services.logging_service import LoggingService
@@ -60,7 +60,7 @@ async def start_session_cleanup_worker():
                         )
 
                         # Spin up database session to find their uploaded tracks
-                        async with async_session_maker() as db_session:
+                        async with AsyncSessionLocal() as db_session:
                             from sqlalchemy import select
 
                             # We only delete tracks of type='upload'
