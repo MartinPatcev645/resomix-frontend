@@ -27,7 +27,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const effectiveId = id ?? "uploaded-local";
 
   // 2. Peaks waveform hook
-  const { loading: wfLoading, error: wfError, setTime, attachOverviewElement, setRestrictedRange } = useCustomPeaks(id || "");
+  const { loading: wfLoading, error: wfError, setTime, attachOverviewElement, setRestrictedRange } = useCustomPeaks(id || "", usePlayerStore(s => !!s.deletedTracks[effectiveId]));
 
   // 3. Global audio controller
   const hlsController = useGlobalAudioController();
@@ -40,6 +40,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const volume = usePlayerStore((s) => s.volume);
   const setVolume = usePlayerStore((s) => s.setVolume);
   const restrictedRange = usePlayerStore((s) => (s.snippetMetadata ? s.snippetMetadata[effectiveId] : null) || null);
+  const isDeleted = usePlayerStore((s) => !!s.deletedTracks[effectiveId]);
   const playlistData = usePlaylistStore((s: any) => s.playlistData);
   
   // 4a. Detection for "Upload" tracks that are still loading their manifest to determine range
@@ -48,7 +49,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
     return playlistData?.similar_tracks?.find((t: any) => t.id === effectiveId)?.type === 'upload';
   }, [playlistData, effectiveId]);
 
-  const isSnippetWaiting = isUpload && !restrictedRange;
+  const isSnippetWaiting = isUpload && !restrictedRange && !isDeleted;
 
   // 4b. We treat the track as loading if the snippet metadata is awaited, 
   // or if the underlying peaks are still fetching.
@@ -82,7 +83,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const isPlaying = isCommonPlay && currentTrackId === effectiveId;
 
   const togglePlay = useCallback(() => {
-    if (!withPlayPause) return; // safeguard
+    if (!withPlayPause || isDeleted) return; // safeguard
     if (!hlsController) return;
 
     if (isPlaying) {
@@ -94,24 +95,24 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
         hlsController.play();
       }
     }
-  }, [withPlayPause, hlsController, isPlaying, currentTrackId, effectiveId]);
+  }, [withPlayPause, isDeleted, hlsController, isPlaying, currentTrackId, effectiveId]);
 
   // 7. Skip helpers (±10s)
   const skipBackward = useCallback(() => {
-    if (!hlsController) return;
+    if (!hlsController || isDeleted) return;
     const base = uiTime || 0;
     requestSeek(Math.max(0, base - 10));
-  }, [hlsController, uiTime, requestSeek]);
+  }, [hlsController, isDeleted, uiTime, requestSeek]);
 
   const skipForward = useCallback(() => {
-    if (!hlsController) return;
+    if (!hlsController || isDeleted) return;
     // For snippets, hlsController.getDuration() returns the audible snippet length (e.g. 60s)
     // while totalDuration is the original file length (e.g. 344s). We use the max to allow absolute skipping.
     const hlsDur = hlsController.getDuration();
     const d = (Number.isFinite(hlsDur) && hlsDur > 0) ? Math.max(hlsDur, totalDuration) : totalDuration;
     const base = uiTime || 0;
     requestSeek(Math.min(d, base + 10));
-  }, [hlsController, uiTime, totalDuration, requestSeek]);
+  }, [hlsController, isDeleted, uiTime, totalDuration, requestSeek]);
 
   // 8. Volume helpers
   const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

@@ -9,7 +9,7 @@ export type UsePeaksReturn = {
   setRestrictedRange: (range: { start: number; end: number } | null) => void;
 };
 
-export function useCustomPeaks(uuid: string): UsePeaksReturn {
+export function useCustomPeaks(uuid: string, isDeleted: boolean = false): UsePeaksReturn {
   const [overviewElement, setOverviewElement] = useState<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -61,7 +61,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
   const lowPlayedColor = '#3171fe';
   const lowUnplayedColor = '#b9bcc2';
 
-  const cursorColor = '#ff5714';
+  const cursorColor = isDeleted ? 'transparent' : '#ff5714';
   const hoverColor = '#ffffff';
   const hoverLineWidthDev = 1; // 1 real pixel
   const lowbandScale = 0.4;
@@ -111,7 +111,7 @@ export function useCustomPeaks(uuid: string): UsePeaksReturn {
       const x = i * (barWidthDev + gapWidthDev);
       const isPlayed = x < cursorPositionDev;
       const restrictedColor = '#5c5c5c';
-      const isOutside = restrictedRange && (barTime < restrictedRange.start || barTime > restrictedRange.end);
+      const isOutside = isDeleted || (restrictedRange && (barTime < restrictedRange.start || barTime > restrictedRange.end));
 
       // Fullband
       ctx.fillStyle = isOutside ? restrictedColor : (isPlayed ? playedColor : unplayedColor);
