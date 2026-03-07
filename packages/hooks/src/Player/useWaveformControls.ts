@@ -49,7 +49,7 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
     return playlistData?.similar_tracks?.find((t: any) => t.id === effectiveId)?.type === 'upload';
   }, [playlistData, effectiveId]);
 
-  const isSnippetWaiting = isUpload && !restrictedRange;
+  const isSnippetWaiting = isUpload && !restrictedRange && !isDeleted;
 
   // 4b. We treat the track as loading if the snippet metadata is awaited, 
   // or if the underlying peaks are still fetching.

@@ -55,11 +55,11 @@ export function useCustomPeaks(uuid: string, isDeleted: boolean = false): UsePea
   const barWidthDev = 1;
   const gapWidthDev = 0;
 
-  const playedColor = isDeleted ? '#000000' : '#f15f27';
-  const unplayedColor = isDeleted ? '#000000' : '#eaeff5';
+  const playedColor = '#f15f27';
+  const unplayedColor = '#eaeff5';
 
-  const lowPlayedColor = isDeleted ? '#000000' : '#3171fe';
-  const lowUnplayedColor = isDeleted ? '#000000' : '#b9bcc2';
+  const lowPlayedColor = '#3171fe';
+  const lowUnplayedColor = '#b9bcc2';
 
   const cursorColor = isDeleted ? 'transparent' : '#ff5714';
   const hoverColor = '#ffffff';
@@ -111,7 +111,7 @@ export function useCustomPeaks(uuid: string, isDeleted: boolean = false): UsePea
       const x = i * (barWidthDev + gapWidthDev);
       const isPlayed = x < cursorPositionDev;
       const restrictedColor = '#5c5c5c';
-      const isOutside = restrictedRange && (barTime < restrictedRange.start || barTime > restrictedRange.end);
+      const isOutside = isDeleted || (restrictedRange && (barTime < restrictedRange.start || barTime > restrictedRange.end));
 
       // Fullband
       ctx.fillStyle = isOutside ? restrictedColor : (isPlayed ? playedColor : unplayedColor);

@@ -119,9 +119,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
                 Error: {ctl.wfError}
               </div>
             )}
-            {isDeleted && (
+            {isDeleted && !ctl.wfLoading && !ctl.wfError && (
               <div className="absolute inset-x-0 bottom-[var(--px-10)] flex items-center justify-center pointer-events-none z-20">
-                <span className="text-[length:var(--px-10)] text-[#ff3333] font-semibold bg-black/60 px-[var(--px-8)] py-[var(--px-2)] rounded shadow backdrop-blur-sm">
+                <span className="text-[length:var(--px-10)] text-red-500 font-semibold px-[var(--px-8)] py-[var(--px-2)]">
                   Your Uploaded track has been deleted.
                 </span>
               </div>
