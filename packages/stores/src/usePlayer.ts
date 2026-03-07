@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   topSk: 'resomix.player.topSk',
   trackTimes: 'resomix.player.trackTimes',
   searchMode: 'resomix.player.searchMode',
+  deletedTracks: 'resomix.player.deletedTracks',
 } as const;
 
 
@@ -120,6 +121,12 @@ interface PlayerStore {
    */
   snippetMetadata: Record<string, { start: number; end: number }>
   setSnippetMetadata: (trackId: string, metadata: { start: number; end: number } | null) => void
+
+  /**
+   * Tracking deleted tracks
+   */
+  deletedTracks: Record<string, boolean>
+  setTrackDeleted: (trackId: string, deleted: boolean) => void
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -236,6 +243,14 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         delete next[trackId];
       }
       return { snippetMetadata: next };
+    }),
+
+  deletedTracks: getStoredValue<Record<string, boolean>>(STORAGE_KEYS.deletedTracks, {}),
+  setTrackDeleted: (trackId, deleted) =>
+    set((state) => {
+      const next = { ...state.deletedTracks, [trackId]: deleted };
+      setStoredValue(STORAGE_KEYS.deletedTracks, next);
+      return { deletedTracks: next };
     }),
 }));
 

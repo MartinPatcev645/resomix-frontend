@@ -478,6 +478,7 @@ class HlsPlaylistController implements AudioController {
       if (SERIOUS_NET_DETAILS.has(data?.details)) return true;
       if (data?.details === Hls.ErrorDetails.FRAG_LOAD_ERROR) {
         const code = data?.response?.code ?? data?.response?.status;
+        if (code === 410) return false; // Treat 410 as special, not a retriable serious error
         if (typeof code === 'number' && code >= 400) return true;
       }
       return false;
@@ -487,6 +488,18 @@ class HlsPlaylistController implements AudioController {
       if (isAbortError(data)) return;
 
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        const responseLevel = data.response as any;
+        const code = responseLevel?.code ?? responseLevel?.status;
+        if (data.details === Hls.ErrorDetails.FRAG_LOAD_ERROR && code === 410) {
+          const queriedTrack = usePlaylistStore.getState().playlistData?.queried_track;
+          if (queriedTrack?.id) {
+            usePlayerStore.getState().setTrackDeleted(queriedTrack.id, true);
+            this.pause();
+            setNetworkErrorFlag(true, '410-gone');
+          }
+          return;
+        }
+
         if (isSeriousNetworkError(data)) {
           setNetworkErrorFlag(true, data?.details || (navigator.onLine ? 'network-error' : 'offline'));
           if (this.wantPlaying) {

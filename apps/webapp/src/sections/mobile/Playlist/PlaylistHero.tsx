@@ -113,7 +113,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 <div className="flex flex-col items-start gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
                     {!DEMO_MODE && uploadedCoverArt ? (
-                      <img src={uploadedCoverArt} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                      <img src={uploadedCoverArt} onError={(e) => { e.currentTarget.src = TrackSvg; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     ) : (
                       <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)]" />
                     )}

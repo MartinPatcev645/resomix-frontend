@@ -21,6 +21,7 @@ interface InputPlayerProps {
 const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playButtonDataAttributes }) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
+  const isDeleted = usePlayerStore((s) => !!s.deletedTracks[trackId ?? "uploaded-local"]);
 
   const effectiveId = trackId ?? "uploaded-local";
 
@@ -29,6 +30,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlayClick = useCallback(() => {
+    if (isDeleted) return;
+
     if (!DEMO_MODE) {
       ctl.togglePlay?.();
       return;
@@ -83,8 +86,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
           <button
             type="button"
             id="input-player-play-pause"
-            className="w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer flex-shrink-0 player-control player-control-play-pause"
+            className={`w-[var(--px-35)] aspect-square flex items-center justify-center rounded-full bg-white text-black border border-black hover:bg-[var(--color-primary-hover)] transition-colors ${isDeleted ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex-shrink-0 player-control player-control-play-pause`}
             onClick={handlePlayClick}
+            disabled={isDeleted}
             aria-label="Play"
             {...(playButtonDataAttributes as Record<string, string> | undefined)}
           >
@@ -110,9 +114,16 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
                 <WaveformLoader />
               </div>
             )}
-            {ctl.wfError && (
+            {ctl.wfError && !isDeleted && (
               <div className="text-center text-sm text-red-500 absolute inset-0 flex items-center justify-center">
                 Error: {ctl.wfError}
+              </div>
+            )}
+            {isDeleted && (
+              <div className="absolute inset-x-0 bottom-[var(--px-10)] flex items-center justify-center pointer-events-none z-20">
+                <span className="text-[length:var(--px-10)] text-[#ff3333] font-semibold bg-black/60 px-[var(--px-8)] py-[var(--px-2)] rounded shadow backdrop-blur-sm">
+                  Your Uploaded track has been deleted.
+                </span>
               </div>
             )}
           </div>
