@@ -12,7 +12,7 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-360)] h-[var(--px-100)]" draggable={false} aria-hidden="true" loading="lazy" src={SectionOneGraphicRight} alt="Section One Graphic Right" />
         </div>
-        <div className="items-start w-full text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider">Resomix is a sonic discovery engine. Nothing else like it</div>
+        <div className="items-start w-full text-[length:var(--px-20)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider">Resomix is a sonic discovery engine, Unlike Any Other</div>
       </div>
       <div className='flex flex-col justify-between mt-[var(--px-48)] w-full'>
         <div className="relative">
@@ -21,7 +21,7 @@ const HomeOne: React.FC = () => (
           </div>
           <img className="w-[var(--px-330)] h-[var(--px-100)]" aria-hidden="true" loading="lazy" draggable={false} src={SectionOneGraphicLeft} alt="Section One Graphic Left" />
         </div>
-        <div className="text-right w-full text-[length:var(--px-18)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider mt-[var(--px-30)]">SURFACING TRACKS THAT SHARE<br />ITS SONIC CHARACTER ACROSS<br />GENRES, ERAS, AND CATALOGS</div>
+        <div className="text-right w-full text-[length:var(--px-18)] font-light font-helvetica uppercase leading-[var(--px-20)] tracking-wider mt-[var(--px-30)]">CONNECTING TRACKS THAT SHARE<br />SONIC CHARACTERISTICS ACROSS<br />GENRES, ERAS, AND CATALOGS</div>
       </div>
     </div>
   </div>
