@@ -56,7 +56,7 @@ const HomeFive: React.FC = () => {
         </div>
         <div className='flex flex-col'>
           <div className='text-[length:var(--px-22)] font-fira font-semibold uppercase leading-7 text-right'>
-            Search millions of tracks instantly<br />Find connections no one else can hear
+            Search millions of tracks instantly<br />Find connections no one noticed before
           </div>
           <div className='text-[length:var(--px-13)] font-extralight font-auger text-right opacity-60 leading-[var(--px-16)] my-[var(--px-12)]'>
             From deep cuts to overlooked catalog gems<br />Surface the tracks that belong in your next set

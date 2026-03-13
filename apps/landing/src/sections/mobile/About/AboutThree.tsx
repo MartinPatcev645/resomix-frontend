@@ -75,7 +75,7 @@ const AboutThree: React.FC = () => {
                         <img src={MatchesSvg} draggable={false} aria-hidden="true" loading="lazy" alt="matches" className="w-[var(--px-52)] h-[var(--px-52)]" />
                         <div className="flex flex-col items-center gap-[var(--px-10)]">
                             <div className="text-[length:var(--px-22)] font-medium font-helvetica uppercase leading-[var(--px-22)] text-left w-full">
-                                PRECISION OVER VOLUME
+                                PRECISION OVER QUANTITY
                             </div>
                             <div className="text-[length:var(--px-18)] font-helvetica tracking-[var(--px-0-5)] font-light text-left w-full leading-[var(--px-20)]">
                                 Fewer results, higher relevance. You control how many recommendations you see every time
