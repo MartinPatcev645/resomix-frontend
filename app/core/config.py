@@ -406,6 +406,11 @@ class Settings(BaseModel):
         description="Remote target directory for SCP transfer",
     )
 
+    similarity_auth_required: bool = Field(
+        default=True,
+        description="Whether authentication is mandatory for similarity endpoints",
+    )
+
     def __init__(self, **data):
         # Override with environment variables if they exist
         env_overrides = {}
@@ -418,6 +423,7 @@ class Settings(BaseModel):
             "REDIS_URL": "redis_url",
             "RESOMIX_SERVER_URL": "resomix_server_url",
             "DEMO_MODE": "demo_mode",
+            "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
             "SERVICE_ACCOUNT_FILE": "service_account_file",
             "GOOGLE_SHEET_ID": "google_sheet_id",
             "FEEDBACK_WORKSHEET_NAME": "feedback_worksheet_name",
@@ -473,8 +479,11 @@ class Settings(BaseModel):
         for env_key, config_key in direct_env_vars.items():
             env_value = os.getenv(env_key)
             if env_value is not None:
+                # Handle boolean conversion
+                if config_key in ["demo_mode", "similarity_auth_required"]:
+                    env_overrides[config_key] = env_value.lower() in ("true", "1", "yes", "on")
                 # Handle integer conversion
-                if config_key in [
+                elif config_key in [
                     "preview_audio_url_expires_seconds",
                     "hls_url_expires_seconds",
                     "es_request_timeout",

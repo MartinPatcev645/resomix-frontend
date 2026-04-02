@@ -53,7 +53,7 @@ class SimilarityController:
         db: AsyncSession,
         request: Request,
         file: UploadFile,
-        current_user: User,
+        current_user: Optional[User] = None,
         top_sk: Optional[int] = None,
         engine: Optional[str] = None,
     ) -> JSONResponse:
@@ -64,25 +64,43 @@ class SimilarityController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         # Log authentication status for debugging
-        logger.info(
-            f"SIMILARITY UPLOAD AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}"
-        )
+        if current_user:
+            logger.info(
+                f"SIMILARITY UPLOAD AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}"
+            )
+        else:
+            logger.info("SIMILARITY UPLOAD AUTH: Anonymous user processing")
 
-        # Check operation limits before processing
-        limit_check = await self.operation_limit_evaluator.check(
-            db,
-            user_id=current_user.id,
-            operation_code="playlist_create",
-        )
-        if not limit_check.allowed:
-            response_content = format_response(
-                success=False,
-                error=limit_check.message or "Operation not permitted",
-            )
+        # Enforce authentication if required by settings
+        if settings.similarity_auth_required and not current_user:
+            logger.warning("SIMILARITY UPLOAD: Authentication required but no user provided")
             return JSONResponse(
-                status_code=limit_check.status_code,
-                content=response_content,
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content=format_response(
+                    success=False,
+                    error="Authentication required to access similarity features.",
+                ),
             )
+
+        # Check operation limits before processing - only if user is logged in
+        user_id = current_user.id if current_user else None
+        if user_id:
+            limit_check = await self.operation_limit_evaluator.check(
+                db,
+                user_id=user_id,
+                operation_code="playlist_create",
+            )
+            if not limit_check.allowed:
+                response_content = format_response(
+                    success=False,
+                    error=limit_check.message or "Operation not permitted",
+                )
+                return JSONResponse(
+                    status_code=limit_check.status_code,
+                    content=response_content,
+                )
+        else:
+            logger.info("SIMILARITY UPLOAD: Skipping limit check for anonymous user")
 
         # Validate and get the TOP_SK value using global settings
         validated_top_sk = settings.validate_and_get_top_sk(top_sk)
@@ -529,6 +547,17 @@ class SimilarityController:
                     file_size=file.size,
                     operation="similarity_upload",
                 )
+
+                # Increment usage counter if user is available
+                if user_id:
+                    try:
+                        await self.operation_limit_evaluator._op_repo.async_increment_usage(
+                            db, user_id=user_id, operation_code="playlist_create"
+                        )
+                        logger.info(f"SIMILARITY UPLOAD: Incremented usage for user_id={user_id}")
+                    except Exception as inc_err:
+                        logger.error(f"SIMILARITY UPLOAD: Failed to increment usage: {str(inc_err)}")
+
                 return JSONResponse(
                     status_code=status.HTTP_200_OK, content=response_content
                 )
@@ -830,10 +859,19 @@ class SimilarityController:
                         "ffmpeg_available": False,
                         "response": response_content,
                     },
-                    filename=file.filename,
-                    file_size=file.size,
                     operation="similarity_upload",
                 )
+
+                # Increment usage counter if user is available
+                if user_id:
+                    try:
+                        await self.operation_limit_evaluator._op_repo.async_increment_usage(
+                            db, user_id=user_id, operation_code="playlist_create"
+                        )
+                        logger.info(f"SIMILARITY UPLOAD (Fallback): Incremented usage for user_id={user_id}")
+                    except Exception as inc_err:
+                        logger.error(f"SIMILARITY UPLOAD (Fallback): Failed to increment usage: {str(inc_err)}")
+
                 return JSONResponse(
                     status_code=status.HTTP_200_OK, content=response_content
                 )
@@ -887,7 +925,7 @@ class SimilarityController:
         db: AsyncSession,
         request: Request,
         track_id: str,
-        current_user: User,
+        current_user: Optional[User] = None,
         top_sk: Optional[int] = None,
         engine: Optional[str] = None,
     ) -> JSONResponse:
@@ -907,25 +945,43 @@ class SimilarityController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         # Log authentication status for debugging
-        logger.info(
-            f"SIMILARITY BY ID AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}"
-        )
+        if current_user:
+            logger.info(
+                f"SIMILARITY BY ID AUTH: User authenticated - ID={current_user.id}, UUID={current_user.uuid}, Email={current_user.email}"
+            )
+        else:
+            logger.info("SIMILARITY BY ID AUTH: Anonymous user processing")
 
-        # Check operation limits before processing
-        limit_check = await self.operation_limit_evaluator.check(
-            db,
-            user_id=current_user.id,
-            operation_code="playlist_create",
-        )
-        if not limit_check.allowed:
-            response_content = format_response(
-                success=False,
-                error=limit_check.message or "Operation not permitted",
-            )
+        # Enforce authentication if required by settings
+        if settings.similarity_auth_required and not current_user:
+            logger.warning("SIMILARITY BY ID: Authentication required but no user provided")
             return JSONResponse(
-                status_code=limit_check.status_code,
-                content=response_content,
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content=format_response(
+                    success=False,
+                    error="Authentication required to access similarity features.",
+                ),
             )
+
+        # Check operation limits before processing - only if user is logged in
+        user_id = current_user.id if current_user else None
+        if user_id:
+            limit_check = await self.operation_limit_evaluator.check(
+                db,
+                user_id=user_id,
+                operation_code="playlist_create",
+            )
+            if not limit_check.allowed:
+                response_content = format_response(
+                    success=False,
+                    error=limit_check.message or "Operation not permitted",
+                )
+                return JSONResponse(
+                    status_code=limit_check.status_code,
+                    content=response_content,
+                )
+        else:
+            logger.info("SIMILARITY BY ID: Skipping limit check for anonymous user")
 
         track = await self.playlist_service.track_repository.async_get_by_uuid(
             db, track_id
@@ -1123,6 +1179,17 @@ class SimilarityController:
                 },
                 operation="similarity_by_id",
             )
+
+            # Increment usage counter if user is available
+            if user_id:
+                try:
+                    await self.operation_limit_evaluator._op_repo.async_increment_usage(
+                        db, user_id=user_id, operation_code="playlist_create"
+                    )
+                    logger.info(f"SIMILARITY BY ID: Incremented usage for user_id={user_id}")
+                except Exception as inc_err:
+                    logger.error(f"SIMILARITY BY ID: Failed to increment usage: {str(inc_err)}")
+
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content=response_content
             )

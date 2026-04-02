@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.similarity_controller import SimilarityController
-from app.api.dependencies.auth import get_api_key, get_current_user
+from app.api.dependencies.auth import get_api_key, get_current_user_optional
 from app.api.dependencies.database import get_database_session
 from app.repositories.playlist_repository import PlaylistRepository
 from app.models.user import User
@@ -85,7 +85,7 @@ async def get_similarity_upload_endpoint(
     engine: Optional[str] = Query(None, description="Similarity engine (E1-E6)"),
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Upload an audio track and find similar tracks.
@@ -143,7 +143,7 @@ async def get_similarity_by_id_endpoint(
     request_data: SimilarityByIdRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
     Get similar tracks for a track identified by its database ID.
