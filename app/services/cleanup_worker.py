@@ -119,9 +119,41 @@ async def start_session_cleanup_worker():
                                 # Ensure logs commit per track to trace individual statuses
                                 await db_session.commit()
 
+                        # ... (existing user session logic) ...
                     except Exception as loop_ex:
                         logger.exception(
                             f"Error handling expired session key {key_name}: {str(loop_ex)}"
+                        )
+                elif key_name and key_name.startswith("session:anon:upload:"):
+                    try:
+                        # Extract track UUID from the expired TTL key
+                        track_uuid = key_name.split(":")[-1]
+                        logger.info(
+                            f"[CLEANUP_WORKER] Anonymous upload {track_uuid} expired. Triggering Hetzner deletion..."
+                        )
+
+                        # Do the actual deletion Request to Hetzner
+                        delete_result = await hetzner_svc.delete_track_on_hetzner(track_uuid)
+
+                        # Log the cleanup
+                        async with AsyncSessionLocal() as db_session:
+                            log_entry_message = f"Automated anonymous cleanup: Hetzner deletion {'succeeded' if delete_result.get('success') else 'failed'}."
+                            log_svc.log(
+                                async_db=db_session,
+                                level="INFO" if delete_result.get("success") else "ERROR",
+                                category="SYSTEM",
+                                action="hetzner_anon_track_cleanup",
+                                message=log_entry_message,
+                                metadata={
+                                    "track_uuid": track_uuid,
+                                    "hetzner_response": delete_result,
+                                },
+                            )
+                            await db_session.commit()
+
+                    except Exception as anon_ex:
+                        logger.exception(
+                            f"Error handling expired anonymous upload key {key_name}: {str(anon_ex)}"
                         )
 
     except asyncio.CancelledError:

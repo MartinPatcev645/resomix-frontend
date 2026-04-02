@@ -34,6 +34,8 @@ from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 import time
+import redis.asyncio as aioredis
+from app.db.redis import _redis_pool
 
 logger = logging.getLogger(__name__)
 
@@ -500,6 +502,17 @@ class SimilarityController:
                 )
                 playlist_int_id = playlist.id if playlist else None
 
+                # NEW: For anonymous users, set a Redis TTL key for automated track cleanup
+                if not current_user and _redis_pool:
+                    try:
+                        client = aioredis.Redis(connection_pool=_redis_pool)
+                        anon_key = f"session:anon:upload:{upload_result['uuid']}"
+                        await client.setex(anon_key, settings.anonymous_track_ttl, "active")
+                        await client.close()
+                        logger.info(f"SIMILARITY UPLOAD (Anon): Set cleanup TTL for track {upload_result['uuid']} ({settings.anonymous_track_ttl}s)")
+                    except Exception as redis_err:
+                        logger.error(f"SIMILARITY UPLOAD (Anon): Failed to set Redis cleanup key: {str(redis_err)}")
+
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
                 if settings.demo_mode:
@@ -815,6 +828,17 @@ class SimilarityController:
                     db, generated_playlist_uuid
                 )
                 playlist_int_id = playlist.id if playlist else None
+
+                # NEW: For anonymous users, set a Redis TTL key for automated track cleanup
+                if not current_user and _redis_pool:
+                    try:
+                        client = aioredis.Redis(connection_pool=_redis_pool)
+                        anon_key = f"session:anon:upload:{upload_result['uuid']}"
+                        await client.setex(anon_key, settings.anonymous_track_ttl, "active")
+                        await client.close()
+                        logger.info(f"SIMILARITY UPLOAD (Fallback-Anon): Set cleanup TTL for track {upload_result['uuid']} ({settings.anonymous_track_ttl}s)")
+                    except Exception as redis_err:
+                        logger.error(f"SIMILARITY UPLOAD (Fallback-Anon): Failed to set Redis cleanup key: {str(redis_err)}")
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000

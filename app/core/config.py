@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 import os
 from dotenv import load_dotenv
@@ -410,10 +410,14 @@ class Settings(BaseModel):
         default=True,
         description="Whether authentication is mandatory for similarity endpoints",
     )
+    anonymous_track_ttl: int = Field(
+        default=3600,
+        description="TTL in seconds for anonymous track storage on Hetzner (default: 1 hour)",
+    )
 
     def __init__(self, **data):
         # Override with environment variables if they exist
-        env_overrides = {}
+        env_overrides: Dict[str, Any] = {}
 
         # Direct environment variable mappings (no prefix)
         direct_env_vars = {
@@ -474,6 +478,7 @@ class Settings(BaseModel):
             "SCP_REMOTE_HOST": "scp_remote_host",
             "SCP_REMOTE_PORT": "scp_remote_port",
             "SCP_REMOTE_DIR": "scp_remote_dir",
+            "ANONYMOUS_TRACK_TTL": "anonymous_track_ttl",
         }
 
         for env_key, config_key in direct_env_vars.items():
@@ -492,6 +497,7 @@ class Settings(BaseModel):
                     "jwt_refresh_token_expire_days",
                     "smtp_port",
                     "apple_token_ttl",
+                    "anonymous_track_ttl",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)
