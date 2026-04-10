@@ -160,7 +160,8 @@ vec2 seagullShapeStart(vec2 p, float t) {
   float wingArc = abs(p.y - amplitude * sin(p.x * 2.0)); 
   float wings = smoothstep(0.5 * widthFactor, 0.0, wingArc) * smoothstep(lengthVal, 0.0, abs(p.x));
   
-  return vec2(head * 0.8 + wings * 0.6, brightness);
+  // Reduced wings multiplier from 0.6 to 0.35 to make the tail/wing less bright overall
+  return vec2(head * 0.8 + wings * 0.35, brightness);
 }
 
 void main() {
@@ -183,13 +184,9 @@ void main() {
   float starAngle = u_time * u_speed * 0.02; 
   mat2 starRot = rotate(starAngle);
   
-  // Layer 1a: STATIC — no rotation, no drift. Provides steady, flicker-free background.
-  vec2 uvStar1 = uv; 
-  starsBack += starLayer(uvStar1, 80.0, u_seed, vec3(1.0), 0.0225);
-  
-  // Layer 1b: Rotates slowly. Drift removed to minimize cell-boundary crossings.
+  // Layer 1: Rotates slowly. Drift removed to minimize cell-boundary crossings.
   vec2 uvStar2 = starRot * uv + vec2(0.5); 
-  starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(1.0), 0.0225);
+  starsBack += starLayer(uvStar2, 50.0, u_seed + 12.0, vec3(0.89), 0.01125);
 
   // ── NEBULA (Volumetric) ───────────────────────────────────────────────────
   
@@ -225,21 +222,22 @@ void main() {
   nebulaCol = mix(nebulaCol, colMagenta, dust * 0.5); 
   
   // Abundant orange base (mixed in at low intensity to increase presence without brightness)
-  nebulaCol = mix(nebulaCol, colOrange * 0.12, detail2); 
+  nebulaCol = mix(nebulaCol, colOrange * 0.04, detail2); 
   
   // The Red/Pink/Magenta core pulses with densityMult
   vec3 core = nebulaCol * densityMult;
   
   // Independent Orange highlights (Abundant dim glow, decoupled from pulsing core)
-  vec3 highlights = colOrange * detail2 * mask * 0.22;
+  // Toned down significantly to avoid bright concentrated "wings" or "tails"
+  vec3 highlights = colOrange * detail2 * mask * 0.08;
   
-  vec3 finalCloud = core * cloud * 1.8 + highlights * 1.6; 
+  vec3 finalCloud = core * cloud * 1.8 + highlights * 0.8; 
 
   // ── ORANGE STARS ──────────────────────────────────────────────────────────
   // These are "part" of the nebula structurally, but we render them with the NEW anti-aliased star logic
   vec3 orangeStars = vec3(0.0);
   if (cloud * densityMult > 0.3) {
-    orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2), 0.0225);
+    orangeStars = starLayer(nebulaUV, 12.0, u_seed + 777.0, vec3(1.0, 0.6, 0.2), 0.01125);
     orangeStars *= smoothstep(0.3, 0.6, cloud * densityMult);
   }
 
@@ -251,11 +249,11 @@ void main() {
   
   mat2 rotFast = rotate(starAngle * 1.2);
   vec2 uvStar3 = rotFast * uv + vec2(0.2, 0.8);
-  starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(1.0), 0.0675); 
+  starsFront += starLayer(uvStar3, 20.0, u_seed + 55.0, vec3(0.89), 0.03375); 
   
   mat2 rotVeryFast = rotate(starAngle * 1.5);
   vec2 uvStar4 = rotVeryFast * uv + vec2(0.9, 0.3); 
-  starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(1.0), 0.0675); 
+  starsFront += starLayer(uvStar4, 10.0, u_seed + 99.0, vec3(0.89), 0.03375); 
   
   // ── SHOOTING STARS ────────────────────────────────────────────────────────
   float shoot = 0.0;
