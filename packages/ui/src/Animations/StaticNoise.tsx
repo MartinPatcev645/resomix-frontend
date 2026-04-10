@@ -160,8 +160,7 @@ vec2 seagullShapeStart(vec2 p, float t) {
   float wingArc = abs(p.y - amplitude * sin(p.x * 2.0)); 
   float wings = smoothstep(0.5 * widthFactor, 0.0, wingArc) * smoothstep(lengthVal, 0.0, abs(p.x));
   
-  // Reduced wings multiplier from 0.6 to 0.35 to make the tail/wing less bright overall
-  return vec2(head * 0.8 + wings * 0.35, brightness);
+  return vec2(head * 0.8 + wings * 0.6, brightness);
 }
 
 void main() {
