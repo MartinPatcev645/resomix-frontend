@@ -53,3 +53,35 @@ def generate_edge_token(playlist_id: str, client_ip: str) -> str:
     except Exception as e:
         logger.error(f"Failed to generate edge token for playlist {playlist_id}: {e}")
         raise
+
+
+def verify_edge_token(token: str, playlist_id: str, client_ip: str) -> bool:
+    """
+    Verify a cryptographic Edge Authorization JWT.
+    
+    Args:
+        token: The JWT string to verify
+        playlist_id: The UUID of the playlist being requested
+        client_ip: The IP address of the requesting client
+        
+    Returns:
+        True if the token is valid, False otherwise
+    """
+    try:
+        # Note: jwt.decode handles expiration (exp) automatically
+        payload = jwt.decode(token, settings.edge_jwt_secret, algorithms=["HS256"])
+        
+        # Verify playlist ID matches
+        if payload.get("playlist") != playlist_id:
+            logger.warning(f"Edge token playlist mismatch: expected {playlist_id}, got {payload.get('playlist')}")
+            return False
+            
+        # Verify IP matches (Optional: Some environments might have floating IPs, but for now we lock it)
+        if payload.get("ip") != client_ip:
+            logger.warning(f"Edge token IP mismatch: expected {client_ip}, got {payload.get('ip')}")
+            return False
+            
+        return True
+    except Exception as e:
+        logger.warning(f"Edge token verification failed: {e}")
+        return False

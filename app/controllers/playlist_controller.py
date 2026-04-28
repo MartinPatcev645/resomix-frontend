@@ -575,7 +575,12 @@ class PlaylistController:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
             )
         try:
-            result = await self.playlist_service.get_playlist_hls_data(db, playlist_id)
+            # Extract Edge Authorization token if present (to propagate to manifest segments)
+            # Use getlist and index 0 to strictly take the first token if multiple are provided
+            all_tokens = request.query_params.getlist("token")
+            token = all_tokens[0] if all_tokens else None
+            
+            result = await self.playlist_service.get_playlist_hls_data(db, playlist_id, token)
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
                 # Extract playlist integer ID if available

@@ -36,6 +36,26 @@ class LogRepository(BaseRepository[SystemLog]):
         """Initialize the log repository"""
         super().__init__(SystemLog)
     
+    # --- Helper Methods ---
+    
+    def _truncate_log_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Truncate log data to fit database column limits"""
+        limits = {
+            'endpoint': 500,
+            'path': 500,
+            'action': 100,
+            'client_ip': 45,
+            'user_agent': 500,
+            'referer': 500,
+            'method': 10
+        }
+        
+        for field, limit in limits.items():
+            if field in data and isinstance(data[field], str) and len(data[field]) > limit:
+                data[field] = data[field][:limit]
+                
+        return data
+
     # --- Synchronous Operations ---
     
     def create_log(
@@ -72,6 +92,9 @@ class LogRepository(BaseRepository[SystemLog]):
             
             # Remove None values to use database defaults
             log_data = {k: v for k, v in log_data.items() if v is not None}
+            
+            # Truncate strings that exceed column limits
+            log_data = self._truncate_log_data(log_data)
             
             return self.create(db, **log_data)
             
@@ -327,6 +350,9 @@ class LogRepository(BaseRepository[SystemLog]):
             
             # Remove None values
             log_data = {k: v for k, v in log_data.items() if v is not None}
+            
+            # Truncate strings that exceed column limits
+            log_data = self._truncate_log_data(log_data)
             
             log_entry = SystemLog(**log_data)
             db.add(log_entry)

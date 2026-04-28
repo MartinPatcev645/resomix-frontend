@@ -296,7 +296,7 @@ class PlaylistService:
             }
 
     async def get_playlist_hls_data(
-        self, db: AsyncSession, playlist_uuid: str
+        self, db: AsyncSession, playlist_uuid: str, token: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get playlist as HLS M3U8 format by calling media server.
@@ -305,6 +305,7 @@ class PlaylistService:
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
+            token: Optional Edge Authorization JWT to propagate to segments
 
         Returns:
             Dictionary with M3U8 content or error
@@ -335,6 +336,19 @@ class PlaylistService:
                 "/hls-m3u8/",
                 {"uuids": uuid_list, "reference_track_type": seed_track_type},
             )
+
+            # Phase 3.5: Edge Authorization - Propagate the token to all URLs in the manifest
+            if token and m3u8_content:
+                lines = []
+                for line in m3u8_content.splitlines():
+                    # If line is a URL or path (not a comment/tag)
+                    if line and not line.startswith("#"):
+                        # Append token - handle existing query params
+                        separator = "&" if "?" in line else "?"
+                        lines.append(f"{line}{separator}token={token}")
+                    else:
+                        lines.append(line)
+                m3u8_content = "\n".join(lines)
 
             return {
                 "success": True,

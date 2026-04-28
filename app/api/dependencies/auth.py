@@ -27,6 +27,7 @@ from app.core.security import decode_token
 from app.models.user import User
 from app.repositories.user_repository import UserRepository, UserSessionRepository
 from app.api.dependencies.database import get_database_session
+from app.utils.edge_auth import verify_edge_token
 
 # Redis for session tracking
 import redis.asyncio as aioredis
@@ -282,3 +283,4 @@ async def verify_session_active(
         )
 
     return current_user
+
