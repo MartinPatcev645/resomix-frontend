@@ -33,12 +33,35 @@ export const getSimilarityPlaylistHls = async (playlistUuid: string) => {
   }
 };
 
+/**
+ * DEPRECATED: The static similarity HLS playlist generator.
+ * Use `getPlaylistPlaybackSession` instead to retrieve an Edge Authorized token URL.
+ */
 export const getSimilarityPlaylistHlsUrl = (
   playlistUuid: string,
   extraParams: Record<string, unknown> = {},
 ): string => {
   const endpoint = `${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY_HLS}${playlistUuid}.m3u8`;
-  // const endpoint = `/dummy/dummy-hls/${playlistUuid}.m3u8`;
   return getUrl(endpoint, extraParams);
+};
+
+export interface PlaybackSessionResponse {
+  playback_url: string;
+}
+
+/**
+ * Pre-flights a playlist playback session with the backend.
+ * Returns the Edge Authorized playback URL (which includes the JWT token).
+ */
+export const getPlaylistPlaybackSession = async (
+  playlistUuid: string
+): Promise<PlaybackSessionResponse> => {
+  try {
+    const endpoint = API_CONFIG.ENDPOINTS.PLAYLIST_PLAY_SESSION.replace("{id}", playlistUuid);
+    const { data } = await axiosInstance.post<PlaybackSessionResponse>(endpoint);
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 

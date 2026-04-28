@@ -19,6 +19,7 @@ export interface ApiConfig {
     PLAYLIST_RATING: string;
     PLAYLIST_SIMILARITY_HLS: string;
     PLAYLIST_FORK: string;
+    PLAYLIST_PLAY_SESSION: string;
     WAITLIST: string;
     // SEGMENT_STATUS: string; // Commented out - segmentation polling no longer needed
     // Admin endpoints
@@ -111,6 +112,7 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_RATING: "/ratings/playlists/",
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     PLAYLIST_FORK: "/playlists/fork/",
+    PLAYLIST_PLAY_SESSION: "/api/playlists/{id}/play-session",
     WAITLIST: "/waitlist/",
     // Telemetry
     TELEMETRY_SYNC: "/api/telemetry/sync",
