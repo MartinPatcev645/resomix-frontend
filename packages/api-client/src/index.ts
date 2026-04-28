@@ -7,6 +7,7 @@ export * from "./audio";
 export * from "./playlists";
 export * from "./peaks";
 export * from "./waitlist";
+export * from "./telemetry";
 export * from "./admin/feedback";
 export * from "./admin/contact";
 export * from "./admin/waitlist";

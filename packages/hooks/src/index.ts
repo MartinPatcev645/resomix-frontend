@@ -34,3 +34,6 @@ export * from './Auth';
 
 // Validation hooks
 export * from './validation';
+
+// Telemetry
+export * from './Telemetry';

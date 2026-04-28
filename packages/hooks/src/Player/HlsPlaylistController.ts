@@ -8,7 +8,7 @@ import {
   msUpdatePositionState,
   msReset,
 } from './mediaSessionActions';
-import { getSimilarityPlaylistHlsUrl } from "@resomix/api-client";
+import { getPlaylistPlaybackSession, API_CONFIG } from "@resomix/api-client";
 import {DEMO_MODE} from "@resomix/config";
 
 // ================== Config ==================
@@ -71,6 +71,7 @@ class HlsPlaylistController implements AudioController {
   private wiredGlobalEvents = false;
   private wiredAudioEvents = false;
   private volumeUnsubscribe: (() => void) | null = null;
+  private sessionPromise: Promise<any> | null = null;
 
   constructor() {
     this.audio = new Audio();
@@ -114,34 +115,40 @@ class HlsPlaylistController implements AudioController {
       this.scheduleColdRetry('offline');
     }
 
-    this.ensureHlsLoaded();
+    const continueLoading = () => {
+      if (isPlayAfter) {
+        this.wantPlaying = true;
+        this.msInitSession(trackId);
+        this.selectCurrent(trackId);
+        usePlayerStore.getState().setIsPlaying(true);
+      }
+      this.playAfterLoad = isPlayAfter;
 
-    if (isPlayAfter) {
-      this.wantPlaying = true;
-      this.msInitSession(trackId);
-      this.selectCurrent(trackId);
-      usePlayerStore.getState().setIsPlaying(true);
-    }
-    this.playAfterLoad = isPlayAfter;
+      // Remove any pending loadedmetadata handler to prevent stacking
+      if (this.pendingOnReady) {
+        this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
+        this.pendingOnReady = null;
+      }
 
-    // Remove any pending loadedmetadata handler to prevent stacking
-    if (this.pendingOnReady) {
-      this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
-      this.pendingOnReady = null;
-    }
+      const onReady = () => {
+        this.audio.removeEventListener('loadedmetadata', onReady);
+        this.pendingOnReady = null;
+        this.goToTrack(trackId, this.playAfterLoad, true);
+        this.playAfterLoad = false;
+      };
 
-    const onReady = () => {
-      this.audio.removeEventListener('loadedmetadata', onReady);
-      this.pendingOnReady = null;
-      this.goToTrack(trackId, this.playAfterLoad, true);
-      this.playAfterLoad = false;
+      if (this.audio.readyState >= 1) {
+        this.goToTrack(trackId, isPlayAfter, true);
+      } else {
+        this.pendingOnReady = onReady;
+        this.audio.addEventListener('loadedmetadata', onReady);
+      }
     };
 
-    if (this.audio.readyState >= 1) {
-      this.goToTrack(trackId, isPlayAfter, true);
+    if (!this.isPlaylistLoaded) {
+      this.ensureHlsLoaded().then(continueLoading).catch(() => {});
     } else {
-      this.pendingOnReady = onReady;
-      this.audio.addEventListener('loadedmetadata', onReady);
+      continueLoading();
     }
   };
 
@@ -318,14 +325,26 @@ class HlsPlaylistController implements AudioController {
 
   // =============== Private: HLS lifecycle ===============
 
-  private ensureHlsLoaded() {
+  private async ensureHlsLoaded() {
     if (this.isPlaylistLoaded) return;
     if (!this.tracks.length) this.initPlaylist();
     if (!this.tracksIds.length) return;
 
-    this.playlistUrl = getSimilarityPlaylistHlsUrl(this.playlistId);
+    try {
+      await this.fetchPlaybackSession();
+    } catch (e) {
+      console.error("[HLS] Failed to pre-flight playlist session", e);
+      setNetworkErrorFlag(true, "session-failed");
+      return;
+    }
 
     if (Hls.isSupported()) {
+      const urlObj = new URL(this.playlistUrl);
+      const token = urlObj.searchParams.get("token");
+
+      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const apiKey = API_CONFIG.API_KEY;
+
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -333,6 +352,28 @@ class HlsPlaylistController implements AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
+        xhrSetup: function (xhr, url) {
+          const requestUrl = new URL(url);
+          const isBserver = requestUrl.hostname === bserverHostname;
+
+          if (token && url.includes(urlObj.hostname)) {
+            // Only append if token is not already in the URL
+            if (!url.includes('token=')) {
+              const sep = url.includes('?') ? '&' : '?';
+              url += sep + 'token=' + token;
+            }
+          }
+
+          // Attach api_key for bserver requests
+          if (isBserver && apiKey && !url.includes('api_key=')) {
+            const sep = url.includes('?') ? '&' : '?';
+            url += sep + 'api_key=' + apiKey;
+          }
+
+          if (url !== requestUrl.toString()) {
+             xhr.open('GET', url, true);
+          }
+        }
         // only for testing
         /*
         maxBufferLength: 1,
@@ -358,7 +399,7 @@ class HlsPlaylistController implements AudioController {
     }
   }
 
-  private restartHls() {
+  private async restartHls() {
     if (!this.playlistUrl) return;
 
     if (this.hls) {
@@ -366,7 +407,20 @@ class HlsPlaylistController implements AudioController {
       this.hls = null;
     }
 
+    try {
+      await this.fetchPlaybackSession();
+    } catch (e) {
+      console.error("[HLS] Failed to refresh playlist session", e);
+      return;
+    }
+
     if (Hls.isSupported()) {
+      const urlObj = new URL(this.playlistUrl);
+      const token = urlObj.searchParams.get("token");
+
+      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const apiKey = API_CONFIG.API_KEY;
+
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -374,6 +428,28 @@ class HlsPlaylistController implements AudioController {
         levelLoadingMaxRetry: 0,
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
+        xhrSetup: function (xhr, url) {
+          const requestUrl = new URL(url);
+          const isBserver = requestUrl.hostname === bserverHostname;
+
+          if (token && url.includes(urlObj.hostname)) {
+            // Only append if token is not already in the URL
+            if (!url.includes('token=')) {
+              const sep = url.includes('?') ? '&' : '?';
+              url += sep + 'token=' + token;
+            }
+          }
+
+          // Attach api_key for bserver requests
+          if (isBserver && apiKey && !url.includes('api_key=')) {
+            const sep = url.includes('?') ? '&' : '?';
+            url += sep + 'api_key=' + apiKey;
+          }
+
+          if (url !== requestUrl.toString()) {
+             xhr.open('GET', url, true);
+          }
+        }
       });
       this.hls.attachMedia(this.audio);
       this.hls.loadSource(this.playlistUrl);
@@ -450,6 +526,38 @@ class HlsPlaylistController implements AudioController {
     });
   }
 
+  private async fetchPlaybackSession() {
+    if (this.sessionPromise) return this.sessionPromise;
+
+    this.sessionPromise = getPlaylistPlaybackSession(this.playlistId);
+    try {
+      const response = await this.sessionPromise;
+      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+      return response;
+    } catch (e) {
+      this.playlistUrl = ''; // invalidate
+      throw e;
+    } finally {
+      this.sessionPromise = null;
+    }
+  }
+
+  private updatePlaylistUrlWithAuth(rawUrl: string): string {
+    try {
+      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const apiKey = API_CONFIG.API_KEY;
+      let url = rawUrl;
+
+      if (url.includes(bserverHostname) && apiKey && !url.includes('api_key=')) {
+        const sep = url.includes('?') ? '&' : '?';
+        url += sep + 'api_key=' + apiKey;
+      }
+      return url;
+    } catch {
+      return rawUrl;
+    }
+  }
+
   private wireHlsErrorHandlers() {
     if (!this.hls) return;
 
@@ -490,6 +598,30 @@ class HlsPlaylistController implements AudioController {
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
         const responseLevel = data.response as any;
         const code = responseLevel?.code ?? responseLevel?.status;
+
+        // --- Edge Authorization Token Expiration Handling (403) ---
+        if (code === 403) {
+          // eslint-disable-next-line no-console
+          console.warn("[HLS] Token expired (403). Refreshing Edge Auth session...");
+          const savedTime = this.audio.currentTime;
+
+          getPlaylistPlaybackSession(this.playlistId).then((res) => {
+            this.playlistUrl = res.playback_url;
+            this.restartHls().then(() => {
+              this.audio.currentTime = savedTime;
+              if (this.wantPlaying) {
+                this.audio.play();
+              }
+            });
+          }).catch((err) => {
+            console.error("[HLS] Failed to refresh token", err);
+            setNetworkErrorFlag(true, '403-refresh-failed');
+          });
+
+          return; // Prevent standard error/retry logic
+        }
+        // ----------------------------------------------------------
+
         if (data.details === Hls.ErrorDetails.FRAG_LOAD_ERROR && code === 410) {
           const queriedTrack = usePlaylistStore.getState().playlistData?.queried_track;
           if (queriedTrack?.id) {
@@ -520,12 +652,13 @@ class HlsPlaylistController implements AudioController {
             break;
           default:
             setNetworkErrorFlag(true, 'fatal-error');
-            this.restartHls();
-            if (this.wantPlaying) {
-              this.scheduleRetry(true, 'fatal-error');
-            } else {
-              this.scheduleColdRetry('fatal-error');
-            }
+            this.restartHls().then(() => {
+              if (this.wantPlaying) {
+                this.scheduleRetry(true, 'fatal-error');
+              } else {
+                this.scheduleColdRetry('fatal-error');
+              }
+            });
             break;
         }
       }
@@ -626,22 +759,23 @@ class HlsPlaylistController implements AudioController {
 
   // =============== Private: resume/retry ===============
 
-  private attemptResume(immediate = false, allowCold = false) {
+  private attemptResume = async (immediate = false, allowCold = false) => {
     if (!allowCold && !this.wantPlaying) return;
     if (!navigator.onLine) return;
 
     if (!this.isPlaylistLoaded) {
-      this.ensureHlsLoaded();
+      await this.ensureHlsLoaded();
     }
 
     if (Hls.isSupported()) {
       const t = this.audio.currentTime || 0;
 
       if (!this.hls) {
-        this.hls = this.restartHls() || null;
+        await this.restartHls();
         try {
-          if (this.hls && typeof this.hls.startLoad === 'function') {
-            this.hls.startLoad(t || -1);
+          const hlsInstance = this.hls as Hls | null;
+          if (hlsInstance && typeof hlsInstance.startLoad === 'function') {
+            hlsInstance.startLoad(t || -1);
           }
         } catch { /* noop */ }
       } else {
@@ -652,7 +786,7 @@ class HlsPlaylistController implements AudioController {
         try {
           this.hls.startLoad(this.audio.currentTime || -1);
         } catch {
-          this.restartHls();
+          await this.restartHls();
           try { this.hls?.startLoad(this.audio.currentTime || -1); } catch { /* noop */ }
         }
       }
