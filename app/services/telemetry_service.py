@@ -52,6 +52,7 @@ class TelemetryService:
         Returns:
             Redis client or None if pool is unavailable.
         """
+        from app.db.redis import _redis_pool
         try:
             if _redis_pool is not None:
                 return aioredis.Redis(connection_pool=_redis_pool)
