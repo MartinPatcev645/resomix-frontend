@@ -57,6 +57,10 @@ export interface TelemetryStore {
    * call on another microtask won't lose data.
    */
   drainQueue: () => TelemetryEvent[];
+  /**
+   * Remove the oldest N events from the queue. Called after a successful sync.
+   */
+  removeEvents: (count: number) => void;
 
   // ── Active Session ─────────────────────────────────────────────────────────
   activeSession: ActiveSession | null;
@@ -101,6 +105,9 @@ export const useTelemetryStore = create<TelemetryStore>((set, get) => ({
     set({ queue: [] });
     return current;
   },
+
+  removeEvents: (count) =>
+    set((state) => ({ queue: state.queue.slice(count) })),
 
   // ── Active Session ─────────────────────────────────────────────────────────
   activeSession: null,

@@ -61,55 +61,54 @@ export interface TelemetryBatch {
  * Fire-and-forget POST of a batch of telemetry events.
  *
  * Uses the shared Axios instance (which already appends `api_key` and
- * `withCredentials`). Errors are silently swallowed — telemetry must never
- * block or degrade the user experience.
+ * `withCredentials`). Returns true if the request was successful (200 OK),
+ * allowing the caller to safely clear the queue.
  */
-export async function syncTelemetry(events: TelemetryEvent[]): Promise<void> {
-  if (!events.length) return;
+export async function syncTelemetry(events: TelemetryEvent[]): Promise<boolean> {
+  if (!events.length) return true;
 
   try {
     const payload: TelemetryBatch = { events };
-    await axiosInstance.post(API_CONFIG.ENDPOINTS.TELEMETRY_SYNC, payload);
+    const res = await axiosInstance.post(API_CONFIG.ENDPOINTS.TELEMETRY_SYNC, payload);
+    return res.status >= 200 && res.status < 300;
   } catch {
     // Intentionally swallowed.  Telemetry loss is acceptable;
     // user-experience degradation is not.
     if (typeof console !== "undefined") {
       // eslint-disable-next-line no-console
-      console.debug("[Telemetry] sync failed — batch of", events.length, "events dropped");
+      console.debug("[Telemetry] sync failed — batch of", events.length, "events dropped/retained");
     }
+    return false;
   }
 }
 
 /**
- * Transmit a telemetry batch via `navigator.sendBeacon`.
+ * Transmit a telemetry batch via `fetch` with `keepalive: true`.
  *
  * This is the last-resort flush used during `visibilitychange` / `pagehide`.
- * `sendBeacon` is physically guaranteed to enqueue the request even after the
- * user has closed the tab, unlike a normal `fetch` or XHR which the browser
- * may cancel.
- *
- * Falls back to a synchronous `syncTelemetry` call if the Beacon API is
- * unavailable (very old browsers).
+ * `keepalive` is physically guaranteed to enqueue the request even after the
+ * user has closed the tab. Unlike `navigator.sendBeacon`, it natively
+ * preserves `application/json` content type.
  */
 export function beaconTelemetry(events: TelemetryEvent[]): void {
   if (!events.length) return;
 
   const payload: TelemetryBatch = { events };
-  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TELEMETRY_SYNC}?api_key=${encodeURIComponent(API_CONFIG.API_KEY)}`;
+  const baseUrl = API_CONFIG.BASE_URL ? API_CONFIG.BASE_URL.replace(/\/$/, "") : "";
+  const endpoint = API_CONFIG.ENDPOINTS.TELEMETRY_SYNC;
+  const url = `${baseUrl}${endpoint}?api_key=${encodeURIComponent(API_CONFIG.API_KEY)}`;
 
-  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-    try {
-      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-      const queued = navigator.sendBeacon(url, blob);
-
-      if (!queued) {
-        // Browser rejected the beacon (payload too large or quota hit).
-        // Fall back to async POST — it may or may not complete before unload.
-        syncTelemetry(events);
-      }
-    } catch {
-      syncTelemetry(events);
-    }
+  if (typeof fetch !== "undefined") {
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore failures on unload
+    });
   } else {
     // Beacon API not available — best-effort async POST.
     syncTelemetry(events);

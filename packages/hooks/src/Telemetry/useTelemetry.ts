@@ -77,12 +77,12 @@ function createEvent(
 
   return {
     tab_id: TAB_ID,
-    track_id: trackId,
-    playlist_id: playlistId,
+    track_id: trackId || "unknown",
+    playlist_id: playlistId || "unknown",
     user_id: user?.uuid ?? null,
     event_type: eventType,
     start_time: startTime,
-    duration_seconds: Math.round(durationSeconds),
+    duration_seconds: eventType === "stream_start" || eventType === "download_success" ? 0 : Math.round(durationSeconds),
     context,
     client_ts: Date.now(),
   };
@@ -238,9 +238,15 @@ export function useTelemetry(): void {
 
     // ── 3. Heartbeat Flush ─────────────────────────────────────────────────
     heartbeatTimerRef.current = setInterval(() => {
-      const events = useTelemetryStore.getState().drainQueue();
-      if (events.length > 0) {
-        syncTelemetry(events);
+      const allEvents = useTelemetryStore.getState().queue;
+      if (allEvents.length > 0) {
+        // Send max 500 items per request as per backend constraint
+        const batch = allEvents.slice(0, 500);
+        syncTelemetry(batch).then((success) => {
+          if (success) {
+            useTelemetryStore.getState().removeEvents(batch.length);
+          }
+        });
       }
     }, HEARTBEAT_MS);
 
@@ -254,7 +260,8 @@ export function useTelemetry(): void {
 
       const events = useTelemetryStore.getState().drainQueue();
       if (events.length > 0) {
-        beaconTelemetry(events);
+        // Send up to 500 on unload as well
+        beaconTelemetry(events.slice(0, 500));
       }
     };
 
