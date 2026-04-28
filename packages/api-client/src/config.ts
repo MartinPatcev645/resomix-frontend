@@ -52,6 +52,8 @@ export interface ApiConfig {
     ADMIN_SPOTIFY_APPS: string;
     ADMIN_SPOTIFY_APP_USERS: string;
     ADMIN_USER_SEARCH: string;
+    // Telemetry
+    TELEMETRY_SYNC: string;
     // unused beta endpoints
     // SPOTIFY_TRANSFER: string;
     // TIDAL_AUTH_TOKEN: string;
@@ -110,6 +112,8 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     PLAYLIST_FORK: "/playlists/fork/",
     WAITLIST: "/waitlist/",
+    // Telemetry
+    TELEMETRY_SYNC: "/api/telemetry/sync",
     // SEGMENT_STATUS: "/segment_status/", // Commented out - segmentation polling no longer needed
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: "/admin/feedback/",
