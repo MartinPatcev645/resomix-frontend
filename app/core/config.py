@@ -442,6 +442,10 @@ class Settings(BaseModel):
         default=14400,
         description="TTL in seconds for playlist session tokens (default 4 hours)",
     )
+    public_alwyzon_url: str = Field(
+        default="https://bserver.resomix.com",
+        description="The public URL of this Alwyzon server (used for playback manifest generation)",
+    )
 
     def __init__(self, **data):
         # Override with environment variables if they exist
@@ -454,6 +458,7 @@ class Settings(BaseModel):
             "HETZNER_INTERNAL_API_KEY": "hetzner_internal_api_key",
             "REDIS_URL": "redis_url",
             "RESOMIX_SERVER_URL": "resomix_server_url",
+            "PUBLIC_ALWYZON_URL": "public_alwyzon_url",
             "DEMO_MODE": "demo_mode",
             "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
             "SERVICE_ACCOUNT_FILE": "service_account_file",

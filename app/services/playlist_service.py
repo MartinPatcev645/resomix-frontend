@@ -709,7 +709,7 @@ class PlaylistService:
             token = generate_edge_token(playlist_id, client_ip)
             
             # The Similarity server handles the stitched HLS playlists
-            base_url = settings.similarity_server_url.rstrip("/")
+            base_url = settings.public_alwyzon_url.rstrip("/")
             playback_url = f"{base_url}/playlists/similarity-hls/{playlist_id}.m3u8?token={token}"
             
             return {
