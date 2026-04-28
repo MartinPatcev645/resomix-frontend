@@ -415,6 +415,24 @@ class Settings(BaseModel):
         description="TTL in seconds for anonymous track storage on Hetzner (default: 1 hour)",
     )
 
+    # Telemetry Configuration
+    telemetry_flush_interval_seconds: int = Field(
+        default=120,
+        description="Interval in seconds for the background worker to flush the Redis telemetry queue to DB",
+    )
+    telemetry_max_batch_size: int = Field(
+        default=500,
+        description="Maximum number of telemetry events allowed per single sync request",
+    )
+    telemetry_redis_key: str = Field(
+        default="telemetry:stream_events_queue",
+        description="Redis list key for the telemetry event queue",
+    )
+    telemetry_worker_pop_size: int = Field(
+        default=1000,
+        description="Maximum number of batches to pop from Redis per flush cycle",
+    )
+
     def __init__(self, **data):
         # Override with environment variables if they exist
         env_overrides: Dict[str, Any] = {}
@@ -479,6 +497,11 @@ class Settings(BaseModel):
             "SCP_REMOTE_PORT": "scp_remote_port",
             "SCP_REMOTE_DIR": "scp_remote_dir",
             "ANONYMOUS_TRACK_TTL": "anonymous_track_ttl",
+            # Telemetry
+            "TELEMETRY_FLUSH_INTERVAL_SECONDS": "telemetry_flush_interval_seconds",
+            "TELEMETRY_MAX_BATCH_SIZE": "telemetry_max_batch_size",
+            "TELEMETRY_REDIS_KEY": "telemetry_redis_key",
+            "TELEMETRY_WORKER_POP_SIZE": "telemetry_worker_pop_size",
         }
 
         for env_key, config_key in direct_env_vars.items():
@@ -498,6 +521,9 @@ class Settings(BaseModel):
                     "smtp_port",
                     "apple_token_ttl",
                     "anonymous_track_ttl",
+                    "telemetry_flush_interval_seconds",
+                    "telemetry_max_batch_size",
+                    "telemetry_worker_pop_size",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)

@@ -47,6 +47,7 @@ from database.connection import async_engine
 # Import Redis pool manager
 from app.db.redis import init_redis_pool, close_redis_pool
 from app.services.cleanup_worker import start_session_cleanup_worker
+from app.services.telemetry_worker import start_telemetry_flush_worker
 import asyncio
 
 # Import FFmpeg check utility
@@ -185,6 +186,12 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
         start_session_cleanup_worker()
     )
 
+    # Start the Telemetry Flush background worker task
+    print("Application startup: Starting Telemetry Flush Worker...")
+    app_instance.state.telemetry_worker_task = asyncio.create_task(
+        start_telemetry_flush_worker()
+    )
+
     print("Application startup: External services initialization complete (lifespan).")
 
     yield
@@ -203,6 +210,15 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
         except asyncio.CancelledError:
             pass
         print("Session Cleanup Worker stopped.")
+
+    # Stop Telemetry Flush Worker
+    if hasattr(app_instance.state, "telemetry_worker_task"):
+        app_instance.state.telemetry_worker_task.cancel()
+        try:
+            await app_instance.state.telemetry_worker_task
+        except asyncio.CancelledError:
+            pass
+        print("Telemetry Flush Worker stopped.")
 
     # Close Redis connection pool
     await close_redis_pool()

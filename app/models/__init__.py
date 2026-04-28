@@ -33,6 +33,7 @@ from .log import SystemLog
 from .waitlist import Waitlist
 from .operation_limit import OperationType, UserOperationLimit
 from .spotify_app import SpotifyApp, UserSpotifyApp
+from .consumption_event import ConsumptionEvent
 
 # Make models available at package level
 __all__ = [
@@ -69,4 +70,5 @@ __all__ = [
     "UserOperationLimit",
     "SpotifyApp",
     "UserSpotifyApp",
+    "ConsumptionEvent",
 ]
