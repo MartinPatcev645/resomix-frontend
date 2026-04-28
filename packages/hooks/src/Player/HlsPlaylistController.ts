@@ -8,7 +8,7 @@ import {
   msUpdatePositionState,
   msReset,
 } from './mediaSessionActions';
-import { getPlaylistPlaybackSession } from "@resomix/api-client";
+import { getPlaylistPlaybackSession, API_CONFIG } from "@resomix/api-client";
 import {DEMO_MODE} from "@resomix/config";
 
 // ================== Config ==================
@@ -331,7 +331,7 @@ class HlsPlaylistController implements AudioController {
 
     try {
       const response = await getPlaylistPlaybackSession(this.playlistId);
-      this.playlistUrl = response.playback_url;
+      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
     } catch (e) {
       console.error("[HLS] Failed to pre-flight playlist session", e);
       setNetworkErrorFlag(true, "session-failed");
@@ -342,6 +342,9 @@ class HlsPlaylistController implements AudioController {
       const urlObj = new URL(this.playlistUrl);
       const token = urlObj.searchParams.get("token");
 
+      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const apiKey = API_CONFIG.API_KEY;
+
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -350,9 +353,25 @@ class HlsPlaylistController implements AudioController {
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
         xhrSetup: function (xhr, url) {
+          const requestUrl = new URL(url);
+          const isBserver = requestUrl.hostname === bserverHostname;
+
           if (token && url.includes(urlObj.hostname)) {
+            // Only append if token is not already in the URL
+            if (!url.includes('token=')) {
+              const sep = url.includes('?') ? '&' : '?';
+              url += sep + 'token=' + token;
+            }
+          }
+
+          // Attach api_key for bserver requests
+          if (isBserver && apiKey && !url.includes('api_key=')) {
             const sep = url.includes('?') ? '&' : '?';
-            xhr.open('GET', url + sep + 'token=' + token, true);
+            url += sep + 'api_key=' + apiKey;
+          }
+
+          if (url !== requestUrl.toString()) {
+             xhr.open('GET', url, true);
           }
         }
         // only for testing
@@ -390,7 +409,7 @@ class HlsPlaylistController implements AudioController {
 
     try {
       const response = await getPlaylistPlaybackSession(this.playlistId);
-      this.playlistUrl = response.playback_url;
+      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
     } catch (e) {
       console.error("[HLS] Failed to refresh playlist session", e);
       return;
@@ -400,6 +419,9 @@ class HlsPlaylistController implements AudioController {
       const urlObj = new URL(this.playlistUrl);
       const token = urlObj.searchParams.get("token");
 
+      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const apiKey = API_CONFIG.API_KEY;
+
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -408,9 +430,25 @@ class HlsPlaylistController implements AudioController {
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
         xhrSetup: function (xhr, url) {
+          const requestUrl = new URL(url);
+          const isBserver = requestUrl.hostname === bserverHostname;
+
           if (token && url.includes(urlObj.hostname)) {
+            // Only append if token is not already in the URL
+            if (!url.includes('token=')) {
+              const sep = url.includes('?') ? '&' : '?';
+              url += sep + 'token=' + token;
+            }
+          }
+
+          // Attach api_key for bserver requests
+          if (isBserver && apiKey && !url.includes('api_key=')) {
             const sep = url.includes('?') ? '&' : '?';
-            xhr.open('GET', url + sep + 'token=' + token, true);
+            url += sep + 'api_key=' + apiKey;
+          }
+
+          if (url !== requestUrl.toString()) {
+             xhr.open('GET', url, true);
           }
         }
       });
@@ -487,6 +525,22 @@ class HlsPlaylistController implements AudioController {
       setNetworkErrorFlag(true, 'offline');
       this.scheduleRetry();
     });
+  }
+
+  private updatePlaylistUrlWithAuth(rawUrl: string): string {
+    try {
+      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const apiKey = API_CONFIG.API_KEY;
+      let url = rawUrl;
+
+      if (url.includes(bserverHostname) && apiKey && !url.includes('api_key=')) {
+        const sep = url.includes('?') ? '&' : '?';
+        url += sep + 'api_key=' + apiKey;
+      }
+      return url;
+    } catch {
+      return rawUrl;
+    }
   }
 
   private wireHlsErrorHandlers() {
