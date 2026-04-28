@@ -71,6 +71,7 @@ class HlsPlaylistController implements AudioController {
   private wiredGlobalEvents = false;
   private wiredAudioEvents = false;
   private volumeUnsubscribe: (() => void) | null = null;
+  private sessionPromise: Promise<any> | null = null;
 
   constructor() {
     this.audio = new Audio();
@@ -330,8 +331,7 @@ class HlsPlaylistController implements AudioController {
     if (!this.tracksIds.length) return;
 
     try {
-      const response = await getPlaylistPlaybackSession(this.playlistId);
-      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+      await this.fetchPlaybackSession();
     } catch (e) {
       console.error("[HLS] Failed to pre-flight playlist session", e);
       setNetworkErrorFlag(true, "session-failed");
@@ -408,8 +408,7 @@ class HlsPlaylistController implements AudioController {
     }
 
     try {
-      const response = await getPlaylistPlaybackSession(this.playlistId);
-      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+      await this.fetchPlaybackSession();
     } catch (e) {
       console.error("[HLS] Failed to refresh playlist session", e);
       return;
@@ -525,6 +524,22 @@ class HlsPlaylistController implements AudioController {
       setNetworkErrorFlag(true, 'offline');
       this.scheduleRetry();
     });
+  }
+
+  private async fetchPlaybackSession() {
+    if (this.sessionPromise) return this.sessionPromise;
+
+    this.sessionPromise = getPlaylistPlaybackSession(this.playlistId);
+    try {
+      const response = await this.sessionPromise;
+      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+      return response;
+    } catch (e) {
+      this.playlistUrl = ''; // invalidate
+      throw e;
+    } finally {
+      this.sessionPromise = null;
+    }
   }
 
   private updatePlaylistUrlWithAuth(rawUrl: string): string {
