@@ -433,6 +433,16 @@ class Settings(BaseModel):
         description="Maximum number of batches to pop from Redis per flush cycle",
     )
 
+    # Edge Authorization (Phase 3.5)
+    edge_jwt_secret: str = Field(
+        default="YOUR_SUPER_SECURE_SHARED_SECRET",
+        description="JWT Secret for signing Edge Auth tokens. Must match Hetzner OpenResty configuration.",
+    )
+    edge_token_ttl_seconds: int = Field(
+        default=14400,
+        description="TTL in seconds for playlist session tokens (default 4 hours)",
+    )
+
     def __init__(self, **data):
         # Override with environment variables if they exist
         env_overrides: Dict[str, Any] = {}
@@ -502,6 +512,9 @@ class Settings(BaseModel):
             "TELEMETRY_MAX_BATCH_SIZE": "telemetry_max_batch_size",
             "TELEMETRY_REDIS_KEY": "telemetry_redis_key",
             "TELEMETRY_WORKER_POP_SIZE": "telemetry_worker_pop_size",
+            # Edge Authorization
+            "EDGE_JWT_SECRET": "edge_jwt_secret",
+            "EDGE_TOKEN_TTL_SECONDS": "edge_token_ttl_seconds",
         }
 
         for env_key, config_key in direct_env_vars.items():
@@ -524,6 +537,7 @@ class Settings(BaseModel):
                     "telemetry_flush_interval_seconds",
                     "telemetry_max_batch_size",
                     "telemetry_worker_pop_size",
+                    "edge_token_ttl_seconds",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)

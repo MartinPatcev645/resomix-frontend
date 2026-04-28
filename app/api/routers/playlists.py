@@ -384,3 +384,36 @@ async def get_all_user_playlists_endpoint(
     )
     return await playlist_controller.get_all_user_playlists(db, request, current_user, page, page_size, filters)
 
+
+@router.post(
+    "/{playlist_id}/play-session",
+    summary="Get Edge Authorization Playback Session",
+    description="Evaluate territory restrictions and generate a signed JWT session token for gapless HLS playback.",
+    responses={
+        200: {
+            "description": "Session generated successfully",
+            "content": {
+                "application/json": {
+                    "example": {"playback_url": "https://similarity.resomix.net/playlists/similarity-hls/1234.m3u8?token=eyJ..."}
+                }
+            }
+        },
+        400: {
+            "description": "Failed to generate session"
+        }
+    }
+)
+async def get_playlist_playback_session_endpoint(
+    request: Request,
+    playlist_id: str,
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    """
+    Generate an Edge Authorization JWT session token.
+    
+    This endpoint acts as the "Pre-Flight Check". It evaluates DDEX territory 
+    restrictions and takedowns for the playlist. If allowed, it mints a 
+    cryptographic JWT token that grants the client direct access to the 
+    Hetzner Edge Node for gapless HLS streaming without hitting the database again.
+    """
+    return await playlist_controller.get_playlist_playback_session(request, playlist_id)
