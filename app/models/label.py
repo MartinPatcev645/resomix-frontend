@@ -16,8 +16,9 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Label model 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from . import Base
 
 
@@ -36,12 +37,22 @@ class Label(Base):
     __tablename__ = "labels"
     
     # Primary key
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+
+    # Foreign keys
+    party_id = Column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
     
     # Fields
-    name = Column(String(120), nullable=False, unique=True, index=True)
-    website = Column(String(255), nullable=True)
-    
+    dpid = Column(String(100), nullable=True)
+    label_name = Column(String(512), nullable=False, index=True)
+    label_type = Column(
+        Enum('RecordLabel','MusicPublisher','OriginalPublisher','SubPublisher','Other', name="label_type_enum"),
+        default='RecordLabel'
+    )
+    created_at = Column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
     # Relationships
     tracks = relationship("Track", back_populates="label")
     

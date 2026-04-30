@@ -99,6 +99,14 @@ class Settings(BaseModel):
         default=None, description="Tidal client secret for API access"
     )
 
+    # Stripe Configuration
+    stripe_secret_key: str = Field(
+        default="sk_test_mock", description="Stripe secret key"
+    )
+    stripe_publishable_key: str = Field(
+        default="pk_test_mock", description="Stripe publishable key"
+    )
+
     # Apple Music Configuration
     apple_team_id: str = Field(
         default="", description="Apple Developer Team ID for MusicKit"

@@ -6,15 +6,18 @@ Base = declarative_base()
 
 # Import all models to register them with SQLAlchemy
 from .artist import Artist
+from .party import Party
 from .label import Label
 from .genre import Genre
-from .album import Album
+from .release import Release
+from .message import Message
 from .track import Track, TrackArtist
 from .playlist import Playlist, PlaylistTrack
 from .playlist_engagement import UserPlaylistEngagement
 from .playlist_transfer_track import PlaylistTransferTrack
 from .rating import TrackRating, PlaylistRating
-from .purchase import Purchase, UserSubscription
+from .purchase import UserSubscription
+from .ecommerce import TrackFormat, PromoCode, Cart, CartItem, Order, Purchase
 from .feedback import Feedback
 from .contact import Contact
 from .user import (
@@ -39,9 +42,11 @@ from .consumption_event import ConsumptionEvent
 __all__ = [
     "Base",
     "Artist",
+    "Party",
     "Label",
     "Genre",
-    "Album",
+    "Release",
+    "Message",
     "Track",
     "TrackArtist",
     "Playlist",
@@ -50,6 +55,11 @@ __all__ = [
     "PlaylistTransferTrack",
     "TrackRating",
     "PlaylistRating",
+    "TrackFormat",
+    "PromoCode",
+    "Cart",
+    "CartItem",
+    "Order",
     "Purchase",
     "UserSubscription",
     "Feedback",

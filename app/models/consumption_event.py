@@ -57,6 +57,14 @@ class ConsumptionEvent(Base):
         index=True,
     )
 
+    # Track Format reference (identifies exactly which version was downloaded)
+    track_format_id = Column(
+        BigInteger,
+        ForeignKey("track_formats.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # ──────────────────────────────────────────────────────────────
     # ⚠️ DON'T DELETE — Server-Side Resolved Fields
     # These fields are NOT sent by the frontend. They are populated
@@ -129,6 +137,7 @@ class ConsumptionEvent(Base):
 
     # Relationships (read-only, no back_populates needed)
     track = relationship("Track", back_populates=None)
+    track_format = relationship("TrackFormat", back_populates=None)
     label = relationship("Label", back_populates=None)
     user = relationship("User", back_populates=None)
 

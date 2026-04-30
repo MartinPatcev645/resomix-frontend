@@ -25,6 +25,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     Numeric,
+    Enum,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -77,8 +78,8 @@ class Track(Base):
     uuid = Column(String(36), nullable=False, unique=True, index=True)
 
     # Foreign keys (all nullable as per schema)
-    album_id = Column(
-        Integer, ForeignKey("albums.id", ondelete="SET NULL"), nullable=True, index=True
+    release_id = Column(
+        BigInteger, ForeignKey("releases.id", ondelete="SET NULL"), nullable=True, index=True
     )
     label_id = Column(
         Integer, ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True
@@ -92,19 +93,33 @@ class Track(Base):
         nullable=True,
         index=True,
     )
+    party_id = Column(
+        String(100), ForeignKey("parties.party_id"), nullable=True, index=True
+    )
 
     # Fields
-    title = Column(String(255), nullable=False, index=True)
-    year = Column(Integer, nullable=True)  # YEAR type maps to Integer
+    isrc = Column(String(30), nullable=False, index=True)
+    title = Column(String(1024), nullable=False, index=True)
+    version_title = Column(String(512), nullable=True)
+    display_artist = Column(String(512), nullable=True)
+    track_number = Column(SmallInteger, nullable=True)
+    disk_number = Column(SmallInteger, nullable=True, default=1)
+    duration_seconds = Column(Integer, nullable=True)
     duration_sec = Column(Numeric(8, 3), nullable=True)
     bpm = Column(SmallInteger, nullable=True, index=True)
-    musical_key = Column(String(5), nullable=True, index=True)
-    file_path = Column(String(500), nullable=False)
+    musical_key = Column(String(10), nullable=True, index=True)
+    file_path = Column(String(1024), nullable=False)
     preview_path = Column(String(500), nullable=True)
+    audio_path = Column(String(1024), nullable=True)
     file_size = Column(BigInteger, nullable=True)
     type = Column(
         String(50), nullable=False, default="electrobuzz", index=True
     )  # Track source type
+    ingestion_source = Column(
+        Enum("ddex", "cc_by", "user_upload", "csv", name="ingestion_source_type"),
+        default="user_upload",
+        index=True
+    )
     created_at = Column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
