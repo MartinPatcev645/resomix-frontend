@@ -601,9 +601,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.year,
                         t.duration_sec as duration,
                         t.type,
-                        COALESCE(l.name, '') as label,
+                        COALESCE(l.label_name, '') as label,
                         COALESCE(
-                            GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                            GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                             ''
                         ) as artist
                     FROM tracks t
@@ -650,9 +650,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.year,
                         t.duration_sec as duration,
                         t.type,
-                        COALESCE(l.name, '') as label,
+                        COALESCE(l.label_name, '') as label,
                         COALESCE(
-                            GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                            GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                             ''
                         ) as artist
                     FROM tracks t
@@ -804,7 +804,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.duration_sec,
                         t.type,
                         COALESCE(
-                            GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                            GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                             'Unknown Artist'
                         ) as artist
                     FROM tracks t
@@ -846,7 +846,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     t.title,
                     t.duration_sec,
                     COALESCE(
-                        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                        GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                         'Unknown Artist'
                     ) as artist,
                     pt.position
@@ -1300,7 +1300,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             from app.models.artist import Artist
             from app.models.genre import Genre
             from app.models.label import Label
-            from app.models.album import Album
+            from app.models.release import Release
             from app.models.playlist import PlaylistTrack
 
             # Get playlist
@@ -1333,7 +1333,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         Track.musical_key,
                         Track.year,
                         Genre.name.label("genre_name"),
-                        Label.name.label("label_name"),
+                        Label.label_name,
                     )
                     .outerjoin(Genre, Track.genre_id == Genre.id)
                     .outerjoin(Label, Track.label_id == Label.id)
@@ -1348,7 +1348,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     from app.models.track import TrackArtist
 
                     artists_query = (
-                        select(Artist.name)
+                        select(Artist.full_name)
                         .join(TrackArtist, Artist.id == TrackArtist.artist_id)
                         .where(TrackArtist.track_id == seed_row.id)
                     )
@@ -1383,20 +1383,19 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     Track.duration_sec,
                     Track.file_size,
                     Track.type,
-                    Track.year,
                     Track.bpm,
                     Track.musical_key,
                     Track.file_path,
                     Track.preview_path,
                     Track.created_at,
                     Genre.name.label("genre_name"),
-                    Label.name.label("label_name"),
-                    Album.title.label("album_name"),
+                    Label.label_name,
+                    Release.title.label("release_title"),
                 )
                 .join(Track, PlaylistTrack.track_id == Track.id)
                 .outerjoin(Genre, Track.genre_id == Genre.id)
                 .outerjoin(Label, Track.label_id == Label.id)
-                .outerjoin(Album, Track.album_id == Album.id)
+                .outerjoin(Release, Track.release_id == Release.id)
                 .where(PlaylistTrack.playlist_id == playlist.id)
                 .order_by(PlaylistTrack.position.asc())
             )
@@ -1411,7 +1410,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 from app.models.track import TrackArtist
 
                 artists_query = (
-                    select(Artist.name)
+                    select(Artist.full_name)
                     .join(TrackArtist, Artist.id == TrackArtist.artist_id)
                     .where(TrackArtist.track_id == row.id)
                 )
@@ -1436,8 +1435,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             "type": row.type or "electrobuzz",
                             "genre": row.genre_name,
                             "label": row.label_name,
-                            "album": row.album_name,
-                            "year": row.year,
+                            "release": row.release_title,
                             "bpm": row.bpm,
                             "musical_key": row.musical_key,
                             "file_path": row.file_path,

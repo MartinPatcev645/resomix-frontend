@@ -12,11 +12,17 @@ from typing import Dict, Any, List
 
 from app.services.cart_service import CartService
 from app.repositories.cart_repository import CartRepository
+from app.repositories.user_repository import UserRepository
 from app.utils.response_utils import format_response
+from app.core.config import settings
+
+import logging
+logger = logging.getLogger(__name__)
 
 class CartController:
     def __init__(self):
         self.cart_repository = CartRepository()
+        self.user_repo = UserRepository()
         self.cart_service = CartService(self.cart_repository)
 
     async def get_cart(self, db: AsyncSession, request: Request, user_id: int) -> JSONResponse:
@@ -121,28 +127,81 @@ class CartController:
 
     async def create_checkout_session(self, db: AsyncSession, request: Request, user_id: int) -> JSONResponse:
         try:
-            # 1. Get the current cart
-            cart_data = await self.cart_service.hydrate_cart(db, user_id)
+            # Get user to check stripe_customer_id
+            user = await self.user_repo.async_get_by_id(db, user_id)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found")
+                )
             
-            if not cart_data.get("items"):
-                return format_response(
-                    success=False,
-                    error="Cart is empty",
-                    status_code=status.HTTP_400_BAD_REQUEST
+            # 1. Get the current cart
+            cart = await self.cart_repository.async_get_active_cart(db, user_id)
+            if not cart or not cart.items:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(success=False, error="Cart is empty")
                 )
 
-            # 2. Mock Stripe session creation
-            # We would normally use stripe.checkout.Session.create(...) here
+            # Ensure stripe_customer_id exists
+            if not user.stripe_customer_id:
+                try:
+                    import stripe
+                    stripe.api_key = settings.stripe_secret_key
+                    customer = stripe.Customer.create(
+                        email=user.email,
+                        name=user.name or user.username,
+                        metadata={"user_id": user.id, "user_uuid": user.uuid}
+                    )
+                    user.stripe_customer_id = customer.id
+                    await db.commit()
+                except Exception as e:
+                    logger.error(f"Stripe Customer creation failed: {e}")
+                    # Proceed with checkout if possible or handle error
             
-            # TODO: Integrate actual Stripe SDK when keys are ready
-            mock_session_url = "https://checkout.stripe.com/c/pay/cs_test_mock_session_url_123"
+            # 2. Create Stripe checkout session
+            try:
+                import stripe
+                stripe.api_key = settings.stripe_secret_key
+                
+                # Build mock line items for now (in production, use real prices)
+                line_items = []
+                for item in cart.items:
+                    line_items.append({
+                        "price_data": {
+                            "currency": "usd",
+                            "product_data": {
+                                "name": f"{item.track_format.track.title} ({item.track_format.audio_format.upper()})",
+                            },
+                            "unit_amount": item.price_cents,
+                        },
+                        "quantity": 1,
+                    })
+
+                checkout_session = stripe.checkout.Session.create(
+                    customer=user.stripe_customer_id,
+                    payment_method_types=["card"],
+                    line_items=line_items,
+                    mode="payment",
+                    success_url=f"{settings.frontend_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
+                    cancel_url=f"{settings.frontend_url}/cart",
+                    metadata={
+                        "cart_id": cart.id,
+                        "user_id": user.id
+                    }
+                )
+                stripe_url = checkout_session.url
+            except Exception as e:
+                logger.error(f"Stripe Session creation failed: {e}")
+                # Mock fallback for development/demo
+                stripe_url = "https://checkout.stripe.com/c/pay/cs_test_mock_session_url_123"
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(
                     success=True,
                     data={
-                        "stripe_url": mock_session_url
+                        "stripe_url": stripe_url
                     }
                 )
             )

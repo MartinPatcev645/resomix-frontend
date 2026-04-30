@@ -195,6 +195,9 @@ class User(Base):
         Enum("email", "app", name="two_factor_method"), nullable=False, default="email"
     )
 
+    # Stripe Integration
+    stripe_customer_id = Column(String(255), nullable=True, unique=True)
+
     # Timestamps
     created_at = Column(
         DateTime, nullable=False, server_default=func.current_timestamp()
@@ -232,6 +235,9 @@ class User(Base):
         cascade="all, delete-orphan",
         foreign_keys="Track.user_id",
     )
+    tokens = relationship(
+        "UserToken", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __init__(self, **kwargs):
         if "uuid" not in kwargs:
@@ -242,66 +248,29 @@ class User(Base):
         return f"<User(id={self.id}, uuid='{self.uuid}', email='{self.email}', username='{self.username}')>"
 
 
-class EmailVerificationToken(Base):
-    """Email verification tokens"""
+class UserToken(Base):
+    """Consolidated user tokens (email verification, password reset, 2fa)"""
 
-    __tablename__ = "email_verification_tokens"
+    __tablename__ = "user_tokens"
 
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     user_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    token = Column(
-        String(64), nullable=False, unique=True, index=True
-    )  # Increased from 36 to 64 for token_urlsafe(32)
-    expires_at = Column(DateTime, nullable=False)
-
-    user = relationship("User", foreign_keys=[user_id])
-
-    def __repr__(self):
-        return f"<EmailVerificationToken(user_id={self.user_id}, token='{self.token[:8]}...')>"
-
-
-class PasswordResetToken(Base):
-    """Password reset tokens"""
-
-    __tablename__ = "password_reset_tokens"
-
-    user_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    token = Column(
-        String(64), nullable=False, unique=True, index=True
-    )  # Increased from 36 to 64 for token_urlsafe(32)
-    expires_at = Column(DateTime, nullable=False)
-    consumed_at = Column(DateTime, nullable=True)
-
-    user = relationship("User", foreign_keys=[user_id])
-
-    def __repr__(self):
-        return f"<PasswordResetToken(user_id={self.user_id}, consumed={self.consumed_at is not None})>"
-
-
-class TwoFactorEmailCode(Base):
-    """2FA email codes"""
-
-    __tablename__ = "two_factor_email_codes"
-
-    user_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    code = Column(String(10), nullable=False, primary_key=True)
-    purpose = Column(
-        Enum("login", "password_change", name="two_factor_purpose"),
+    token = Column(String(255), nullable=False, index=True)
+    token_type = Column(
+        Enum("email_verification", "password_reset", "2fa", name="user_token_type"),
         nullable=False,
-        default="login",
     )
     expires_at = Column(DateTime, nullable=False)
-    consumed_at = Column(DateTime, nullable=True)
+    created_at = Column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", back_populates="tokens")
 
     def __repr__(self):
-        return f"<TwoFactorEmailCode(user_id={self.user_id}, purpose='{self.purpose}')>"
+        return f"<UserToken(user_id={self.user_id}, type='{self.token_type}', token='{self.token[:8]}...')>"
 
 
 class UserSession(Base):

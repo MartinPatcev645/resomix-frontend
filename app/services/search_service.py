@@ -79,7 +79,7 @@ class SearchService:
                     .where(
                         or_(
                             Track.title.ilike(f"%{query_clean}%"),
-                            Artist.name.ilike(f"%{query_clean}%")
+                            Artist.full_name.ilike(f"%{query_clean}%")
                         )
                     )
                     .limit(limit)
@@ -99,7 +99,7 @@ class SearchService:
                     
                     # Re-fetch with eager loading to be safe or rely on lazy loading if session is open
                     # Let's try to use the object directly as session is active
-                    artist_names = [ta.artist.name for ta in track_obj.track_artists]
+                    artist_names = [ta.artist.full_name for ta in track_obj.track_artists]
                     artist_display = ", ".join(artist_names) if artist_names else "N/A"
                     
                     formatted_results.append({
@@ -169,7 +169,7 @@ class SearchService:
         #             continue
 
         #         # Get all artist names
-        #         artist_names = [ta.artist.name for ta in track_obj.track_artists]
+        #         artist_names = [ta.artist.full_name for ta in track_obj.track_artists]
         #         artist_display = ", ".join(artist_names) if artist_names else "N/A"
         #         
         #         formatted_results.append({

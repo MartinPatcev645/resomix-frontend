@@ -23,9 +23,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.track import Track, TrackArtist
 from app.models.artist import Artist
-from app.models.album import Album
-from app.models.genre import Genre
-from app.models.constants import TrackType
+from .genre import Genre
+from .constants import TrackType
 from app.repositories.base_repository import BaseRepository
 
 
@@ -125,7 +124,6 @@ class TrackRepository(BaseRepository[Track]):
         return (
             db.query(self.model)
             .options(
-                joinedload(self.model.album),
                 joinedload(self.model.label),
                 joinedload(self.model.genre),
                 joinedload(self.model.track_artists).joinedload(TrackArtist.artist)
@@ -139,7 +137,6 @@ class TrackRepository(BaseRepository[Track]):
         stmt = (
             select(self.model)
             .options(
-                joinedload(self.model.album),
                 joinedload(self.model.label),
                 joinedload(self.model.genre),
                 joinedload(self.model.track_artists).joinedload(TrackArtist.artist)
@@ -169,7 +166,7 @@ class TrackRepository(BaseRepository[Track]):
             self.model.title.ilike(f"%{query}%"),
             self.model.file_path.ilike(f"%{query}%"),
             # Search in artist names through relationship
-            Artist.name.ilike(f"%{query}%")
+            Artist.full_name.ilike(f"%{query}%")
         )
         
         tracks = (
@@ -189,7 +186,7 @@ class TrackRepository(BaseRepository[Track]):
             # Get primary artist (first artist in track_artists)
             artist_name = "N/A"
             if track.track_artists:
-                artist_name = track.track_artists[0].artist.name
+                artist_name = track.track_artists[0].artist.full_name
             
             # Extract filename from file_path
             filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
@@ -211,7 +208,7 @@ class TrackRepository(BaseRepository[Track]):
         search_conditions = or_(
             self.model.title.ilike(f"%{query}%"),
             self.model.file_path.ilike(f"%{query}%"),
-            Artist.name.ilike(f"%{query}%")
+            Artist.full_name.ilike(f"%{query}%")
         )
         
         stmt = (
@@ -231,7 +228,7 @@ class TrackRepository(BaseRepository[Track]):
         for track in tracks:
             # Get artists for this track
             artist_stmt = (
-                select(Artist.name)
+                select(Artist.full_name)
                 .join(TrackArtist)
                 .where(TrackArtist.track_id == track.id)
                 .limit(1)
@@ -270,29 +267,14 @@ class TrackRepository(BaseRepository[Track]):
             db.query(self.model)
             .join(TrackArtist)
             .join(Artist)
-            .filter(Artist.name.ilike(f"%{artist_name}%"))
+            .filter(Artist.full_name.ilike(f"%{artist_name}%"))
             .limit(limit)
             .all()
         )
     
     def search_by_album(self, db: Session, album_title: str, limit: int = 100) -> List[Track]:
-        """Search tracks by album title.
-        
-        Args:
-            db: Database session
-            album_title: Album title to search for
-            limit: Maximum number of results
-            
-        Returns:
-            List of Track instances
-        """
-        return (
-            db.query(self.model)
-            .join(Album)
-            .filter(Album.title.ilike(f"%{album_title}%"))
-            .limit(limit)
-            .all()
-        )
+        """Search tracks by album title (REMOVED: Use Release search instead)."""
+        return []
     
     def search_by_genre(self, db: Session, genre_name: str, limit: int = 100) -> List[Track]:
         """Search tracks by genre name.
@@ -419,7 +401,6 @@ class TrackRepository(BaseRepository[Track]):
         stmt = (
             select(self.model)
             .options(
-                joinedload(self.model.album),
                 joinedload(self.model.label),
                 joinedload(self.model.genre),
                 joinedload(self.model.track_artists).joinedload(TrackArtist.artist)
@@ -566,7 +547,6 @@ class TrackRepository(BaseRepository[Track]):
         stmt = (
             select(self.model)
             .options(
-                joinedload(self.model.album),
                 joinedload(self.model.label),
                 joinedload(self.model.genre),
                 joinedload(self.model.track_artists).joinedload(TrackArtist.artist)

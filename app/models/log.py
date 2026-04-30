@@ -70,7 +70,6 @@ class SystemLog(Base):
     # Related Entities - Foreign keys
     track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True)
     playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="SET NULL"), nullable=True, index=True)
-    album_id = Column(Integer, ForeignKey("albums.id", ondelete="SET NULL"), nullable=True, index=True)
     artist_id = Column(Integer, ForeignKey("artists.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Additional Context
@@ -83,7 +82,6 @@ class SystemLog(Base):
     # Relationships
     track = relationship("Track", back_populates=None)
     playlist = relationship("Playlist", back_populates=None)
-    album = relationship("Album", back_populates=None)
     artist = relationship("Artist", back_populates=None)
     
     def __repr__(self):
@@ -112,7 +110,6 @@ class SystemLog(Base):
             'memory_percent': float(self.memory_percent) if self.memory_percent else None,
             'track_id': self.track_id,
             'playlist_id': self.playlist_id,
-            'album_id': self.album_id,
             'artist_id': self.artist_id,
             'log_metadata': self.log_metadata,
             'stack_trace': self.stack_trace,

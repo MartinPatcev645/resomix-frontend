@@ -18,9 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import (
     User,
-    EmailVerificationToken,
-    PasswordResetToken,
-    TwoFactorEmailCode,
+    UserToken,
     UserSession
 )
 from app.repositories.base_repository import BaseRepository
@@ -191,177 +189,77 @@ class UserRepository(BaseRepository[User]):
         return user
 
 
-class EmailVerificationTokenRepository:
-    """Repository for email verification tokens"""
+class UserTokenRepository:
+    """Repository for consolidated user tokens (email verification, password reset, 2fa)"""
     
     async def async_create_token(
         self,
         db: AsyncSession,
         user_id: int,
         token: str,
+        token_type: str,
         expires_at: datetime
-    ) -> EmailVerificationToken:
-        """Create email verification token"""
-        # Delete existing token for user (one token per user)
+    ) -> UserToken:
+        """Create a user token, removing any existing token of the same type for this user."""
+        # Delete existing tokens of same type for user
         await db.execute(
-            delete(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)
-        )
-        
-        verification_token = EmailVerificationToken(
-            user_id=user_id,
-            token=token,
-            expires_at=expires_at
-        )
-        
-        db.add(verification_token)
-        await db.commit()
-        await db.refresh(verification_token)
-        return verification_token
-    
-    async def async_get_by_token(
-        self,
-        db: AsyncSession,
-        token: str
-    ) -> Optional[EmailVerificationToken]:
-        """Get verification token by token string"""
-        stmt = select(EmailVerificationToken).where(EmailVerificationToken.token == token)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
-    
-    async def async_delete_token(self, db: AsyncSession, user_id: int) -> bool:
-        """Delete verification token for user"""
-        stmt = delete(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)
-        result = await db.execute(stmt)
-        await db.commit()
-        return result.rowcount > 0
-
-
-class PasswordResetTokenRepository:
-    """Repository for password reset tokens"""
-    
-    async def async_create_token(
-        self,
-        db: AsyncSession,
-        user_id: int,
-        token: str,
-        expires_at: datetime
-    ) -> PasswordResetToken:
-        """Create password reset token"""
-        # Delete existing token for user
-        await db.execute(
-            delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
-        )
-        
-        reset_token = PasswordResetToken(
-            user_id=user_id,
-            token=token,
-            expires_at=expires_at,
-            consumed_at=None
-        )
-        
-        db.add(reset_token)
-        await db.commit()
-        await db.refresh(reset_token)
-        return reset_token
-    
-    async def async_get_by_token(
-        self,
-        db: AsyncSession,
-        token: str
-    ) -> Optional[PasswordResetToken]:
-        """Get reset token by token string"""
-        stmt = select(PasswordResetToken).where(PasswordResetToken.token == token)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
-    
-    async def async_consume_token(
-        self,
-        db: AsyncSession,
-        token: str
-    ) -> Optional[PasswordResetToken]:
-        """Mark token as consumed"""
-        reset_token = await self.async_get_by_token(db, token)
-        if reset_token:
-            reset_token.consumed_at = datetime.utcnow()
-            await db.commit()
-            await db.refresh(reset_token)
-        return reset_token
-    
-    async def async_delete_token(self, db: AsyncSession, user_id: int) -> bool:
-        """Delete reset token for user"""
-        stmt = delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
-        result = await db.execute(stmt)
-        await db.commit()
-        return result.rowcount > 0
-
-
-class TwoFactorCodeRepository:
-    """Repository for 2FA email codes"""
-    
-    async def async_create_code(
-        self,
-        db: AsyncSession,
-        user_id: int,
-        code: str,
-        purpose: str,
-        expires_at: datetime
-    ) -> TwoFactorEmailCode:
-        """Create 2FA code"""
-        # Delete existing codes for this user and purpose
-        await db.execute(
-            delete(TwoFactorEmailCode).where(
+            delete(UserToken).where(
                 and_(
-                    TwoFactorEmailCode.user_id == user_id,
-                    TwoFactorEmailCode.purpose == purpose
+                    UserToken.user_id == user_id,
+                    UserToken.token_type == token_type
                 )
             )
         )
         
-        two_fa_code = TwoFactorEmailCode(
+        user_token = UserToken(
             user_id=user_id,
-            code=code,
-            purpose=purpose,
-            expires_at=expires_at,
-            consumed_at=None
+            token=token,
+            token_type=token_type,
+            expires_at=expires_at
         )
         
-        db.add(two_fa_code)
+        db.add(user_token)
         await db.commit()
-        await db.refresh(two_fa_code)
-        return two_fa_code
+        await db.refresh(user_token)
+        return user_token
     
-    async def async_verify_code(
+    async def async_get_by_token(
         self,
         db: AsyncSession,
-        user_id: int,
-        code: str,
-        purpose: str
-    ) -> bool:
-        """Verify 2FA code and consume it"""
-        stmt = select(TwoFactorEmailCode).where(
+        token: str,
+        token_type: str
+    ) -> Optional[UserToken]:
+        """Get valid token by string and type"""
+        stmt = select(UserToken).where(
             and_(
-                TwoFactorEmailCode.user_id == user_id,
-                TwoFactorEmailCode.code == code,
-                TwoFactorEmailCode.purpose == purpose,
-                TwoFactorEmailCode.consumed_at.is_(None),
-                TwoFactorEmailCode.expires_at > datetime.utcnow()
+                UserToken.token == token,
+                UserToken.token_type == token_type,
+                UserToken.expires_at > datetime.utcnow()
             )
         )
         result = await db.execute(stmt)
-        two_fa_code = result.scalar_one_or_none()
-        
-        if two_fa_code:
-            two_fa_code.consumed_at = datetime.utcnow()
-            await db.commit()
-            return True
-        
-        return False
+        return result.scalar_one_or_none()
     
-    async def async_cleanup_expired(self, db: AsyncSession) -> int:
-        """Delete expired codes"""
-        stmt = delete(TwoFactorEmailCode).where(
-            TwoFactorEmailCode.expires_at < datetime.utcnow()
+    async def async_delete_token(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        token_type: str
+    ) -> bool:
+        """Delete tokens of a specific type for a user"""
+        stmt = delete(UserToken).where(
+            and_(
+                UserToken.user_id == user_id,
+                UserToken.token_type == token_type
+            )
         )
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.rowcount > 0
+
+    async def async_cleanup_expired(self, db: AsyncSession) -> int:
+        """Delete all expired tokens"""
+        stmt = delete(UserToken).where(UserToken.expires_at < datetime.utcnow())
         result = await db.execute(stmt)
         await db.commit()
         return result.rowcount

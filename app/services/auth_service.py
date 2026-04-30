@@ -18,9 +18,7 @@ from fastapi import HTTPException, status
 from app.models.user import User
 from app.repositories.user_repository import (
     UserRepository,
-    EmailVerificationTokenRepository,
-    PasswordResetTokenRepository,
-    TwoFactorCodeRepository,
+    UserTokenRepository,
     UserSessionRepository,
 )
 from app.repositories.operation_limit_repository import OperationLimitRepository
@@ -43,9 +41,7 @@ class AuthService:
 
     def __init__(self):
         self.user_repo = UserRepository()
-        self.email_verification_repo = EmailVerificationTokenRepository()
-        self.password_reset_repo = PasswordResetTokenRepository()
-        self.two_fa_repo = TwoFactorCodeRepository()
+        self.user_token_repo = UserTokenRepository()
         self.session_repo = UserSessionRepository()
         self.operation_limit_repo = OperationLimitRepository()
 
@@ -121,8 +117,8 @@ class AuthService:
             hours=settings.email_verification_token_expire_hours
         )
 
-        await self.email_verification_repo.async_create_token(
-            db=db, user_id=user.id, token=token, expires_at=expires_at
+        await self.user_token_repo.async_create_token(
+            db=db, user_id=user.id, token=token, token_type="email_verification", expires_at=expires_at
         )
 
         # TEMPORARY: Grant high playlist creation limit (1000) for testing phase
@@ -201,11 +197,11 @@ class AuthService:
                 minutes=settings.two_factor_code_expire_minutes
             )
 
-            await self.two_fa_repo.async_create_code(
+            await self.user_token_repo.async_create_token(
                 db=db,
                 user_id=user.id,
-                code=code,
-                purpose="login",
+                token=code,
+                token_type="2fa",
                 expires_at=expires_at,
             )
 
@@ -246,15 +242,18 @@ class AuthService:
             HTTPException: If code is invalid or expired
         """
         # Verify code
-        is_valid = await self.two_fa_repo.async_verify_code(
-            db=db, user_id=user_id, code=code, purpose="login"
+        token_record = await self.user_token_repo.async_get_by_token(
+            db=db, token=code, token_type="2fa"
         )
 
-        if not is_valid:
+        if not token_record or token_record.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired 2FA code",
             )
+        
+        # Delete code after use
+        await self.user_token_repo.async_delete_token(db, user_id, "2fa")
 
         # Get user
         user = await self.user_repo.async_get_by_id(db, user_id)
@@ -334,27 +333,14 @@ class AuthService:
             HTTPException: If token is invalid or expired
         """
         # Get token
-        verification_token = await self.email_verification_repo.async_get_by_token(
-            db, token
+        verification_token = await self.user_token_repo.async_get_by_token(
+            db, token, "email_verification"
         )
 
         if not verification_token:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid verification token",
-            )
-
-        # Check expiration (DB stores naive UTC; normalize to aware UTC before compare)
-        expires_at_db = verification_token.expires_at
-        if expires_at_db.tzinfo is None:
-            expires_at_utc = expires_at_db.replace(tzinfo=timezone.utc)
-        else:
-            expires_at_utc = expires_at_db.astimezone(timezone.utc)
-
-        if expires_at_utc < datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Verification token has expired",
+                detail="Invalid or expired verification token",
             )
 
         # Mark email as verified
@@ -362,9 +348,9 @@ class AuthService:
             db=db, user_id=verification_token.user_id, is_verified=True
         )
 
-        # Delete token
-        await self.email_verification_repo.async_delete_token(
-            db, verification_token.user_id
+        # Delete token (fetch-validate-delete pattern)
+        await self.user_token_repo.async_delete_token(
+            db, verification_token.user_id, "email_verification"
         )
 
         return user
@@ -404,8 +390,8 @@ class AuthService:
             hours=settings.email_verification_token_expire_hours
         )
 
-        await self.email_verification_repo.async_create_token(
-            db=db, user_id=user.id, token=token, expires_at=expires_at
+        await self.user_token_repo.async_create_token(
+            db=db, user_id=user.id, token=token, token_type="email_verification", expires_at=expires_at
         )
 
         return user, token
@@ -435,8 +421,8 @@ class AuthService:
             hours=settings.password_reset_token_expire_hours
         )
 
-        await self.password_reset_repo.async_create_token(
-            db=db, user_id=user.id, token=token, expires_at=expires_at
+        await self.user_token_repo.async_create_token(
+            db=db, user_id=user.id, token=token, token_type="password_reset", expires_at=expires_at
         )
 
         return user, token
@@ -464,31 +450,11 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
 
         # Get token
-        reset_token = await self.password_reset_repo.async_get_by_token(db, token)
+        reset_token = await self.user_token_repo.async_get_by_token(db, token, "password_reset")
 
         if not reset_token:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token"
-            )
-
-        # Check if already consumed
-        if reset_token.consumed_at:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Reset token already used",
-            )
-
-        # Check expiration
-        expires_at_db = reset_token.expires_at
-        if expires_at_db.tzinfo is None:
-            reset_expires_at_utc = expires_at_db.replace(tzinfo=timezone.utc)
-        else:
-            reset_expires_at_utc = expires_at_db.astimezone(timezone.utc)
-
-        if reset_expires_at_utc < datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Reset token has expired",
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token"
             )
 
         # Update password
@@ -497,8 +463,8 @@ class AuthService:
             db=db, user_id=reset_token.user_id, new_password_hash=password_hash
         )
 
-        # Consume token
-        await self.password_reset_repo.async_consume_token(db, token)
+        # Delete token (fetch-validate-delete pattern)
+        await self.user_token_repo.async_delete_token(db, reset_token.user_id, "password_reset")
 
         # Revoke all user sessions (force re-login)
         await self.session_repo.async_revoke_all_user_sessions(db, user.id)

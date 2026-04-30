@@ -22,6 +22,8 @@ class PromoCode(Base):
     uses_count = Column(Integer, default=0)
     expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
+    stripe_coupon_id = Column(String(255), nullable=True, unique=True)
+    stripe_promo_code_id = Column(String(255), nullable=True, unique=True)
 
 
 class TrackFormat(Base):
@@ -50,6 +52,8 @@ class Order(Base):
     discount_cents = Column(Integer, default=0)
     total_cents = Column(Integer, nullable=False)
     status = Column(Enum("pending", "paid", "failed", "refunded"), default="pending")
+    payment_intent_id = Column(String(255), unique=True, nullable=True)
+    base_currency = Column(String(3), default="USD")
     created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
 
     user = relationship("User")
@@ -65,7 +69,7 @@ class Purchase(Base):
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     track_format_id = Column(BigInteger, ForeignKey("track_formats.id", ondelete="RESTRICT"), nullable=True)
     source_playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="SET NULL"), nullable=True)
-    release_id = Column(Integer, nullable=True) # Assuming release is an Integer
+    release_id = Column(BigInteger, ForeignKey("releases.id", ondelete="RESTRICT"), nullable=True)
     price_cents = Column(Integer, nullable=True)
     purchased_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
 

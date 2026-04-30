@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Artist model 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, BigInteger, String, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from . import Base
 
@@ -35,16 +35,19 @@ class Artist(Base):
     __tablename__ = "artists"
     
     # Primary key
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     
     # Fields
-    name = Column(String(100), nullable=False, unique=True, index=True)
+    party_id = Column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
+    full_name = Column(String(512), nullable=False, index=True)
+    isni = Column(String(30), nullable=True)
+    ipn = Column(String(30), nullable=True)
+    artist_type = Column(Enum("MainArtist","FeaturedArtist","Remixer","Composer","Lyricist","Producer","Conductor","Orchestra","Other", name="artist_type_enum"), default="MainArtist")
     
     # Relationships
-    albums = relationship("Album", back_populates="artist", cascade="all, delete-orphan")
     # Many-to-many relationship with tracks through track_artists
     track_artists = relationship("TrackArtist", back_populates="artist", cascade="all, delete-orphan")
     tracks = relationship("Track", secondary="track_artists", viewonly=True)
     
     def __repr__(self):
-        return f"<Artist(id={self.id}, name='{self.name}')>" 
+        return f"<Artist(id={self.id}, full_name='{self.full_name}', type='{self.artist_type}')>"

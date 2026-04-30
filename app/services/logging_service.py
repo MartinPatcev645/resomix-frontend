@@ -252,13 +252,20 @@ class LoggingService:
                 'referer': referer,
                 'track_id': track_id,
                 'playlist_id': playlist_id,
-                'album_id': album_id,
                 'artist_id': artist_id,
                 'stack_trace': stack_trace,
                 'cpu_percent': cpu_percent,
                 'memory_percent': memory_percent,
-                'log_metadata': metadata
             }
+
+            # album_id no longer has its own DB column (system_logs uses release_id now).
+            # Preserve it in log_metadata for backward-compatibility.
+            if album_id is not None:
+                if metadata is None:
+                    metadata = {}
+                metadata['album_id'] = album_id
+
+            log_data['log_metadata'] = metadata
             
             # Remove None values to avoid unnecessary database fields
             log_data = {k: v for k, v in log_data.items() if v is not None}

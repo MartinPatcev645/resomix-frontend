@@ -36,76 +36,47 @@ class ArtistRepository(BaseRepository[Artist]):
         super().__init__(Artist)
     
     def _find_existing(self, db: Session, **kwargs) -> Optional[Artist]:
-        """Find existing artist by name (case-insensitive).
-        
-        Implements the lookup logic from Cache.artist() which uses
-        case-insensitive name matching.
-        
-        Args:
-            db: Database session
-            **kwargs: Should contain 'name' field
-            
-        Returns:
-            Existing Artist instance or None
-        """
-        name = kwargs.get('name')
-        if not name:
+        """Find existing artist by name (case-insensitive)."""
+        full_name = kwargs.get('full_name') or kwargs.get('name')
+        if not full_name:
             return None
             
-        # Case-insensitive lookup like Cache._get_or_create
         return db.query(self.model).filter(
-            self.model.name.ilike(name)
+            self.model.full_name.ilike(full_name)
         ).first()
     
     async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Artist]:
         """Async version of _find_existing."""
-        name = kwargs.get('name')
-        if not name:
+        full_name = kwargs.get('full_name') or kwargs.get('name')
+        if not full_name:
             return None
             
-        stmt = select(self.model).where(self.model.name.ilike(name))
+        stmt = select(self.model).where(self.model.full_name.ilike(full_name))
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     
     # --- Artist-specific methods ---
     
-    def get_by_name(self, db: Session, name: str) -> Optional[Artist]:
-        """Get artist by exact name match.
-        
-        Args:
-            db: Database session
-            name: Artist name to search for
-            
-        Returns:
-            Artist instance or None
-        """
-        return db.query(self.model).filter(self.model.name == name).first()
+    def get_by_full_name(self, db: Session, full_name: str) -> Optional[Artist]:
+        """Get artist by exact name match."""
+        return db.query(self.model).filter(self.model.full_name == full_name).first()
     
-    async def async_get_by_name(self, db: AsyncSession, name: str) -> Optional[Artist]:
-        """Async version of get_by_name."""
-        stmt = select(self.model).where(self.model.name == name)
+    async def async_get_by_full_name(self, db: AsyncSession, full_name: str) -> Optional[Artist]:
+        """Async version of get_by_full_name."""
+        stmt = select(self.model).where(self.model.full_name == full_name)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     
     def search_by_name(self, db: Session, name_pattern: str, limit: int = 10) -> list[Artist]:
-        """Search artists by name pattern.
-        
-        Args:
-            db: Database session
-            name_pattern: Pattern to search for (supports wildcards)
-            limit: Maximum results to return
-            
-        Returns:
-            List of matching artists
-        """
+        """Search artists by name pattern."""
         return db.query(self.model).filter(
-            self.model.name.ilike(f"%{name_pattern}%")
+            self.model.full_name.ilike(f"%{name_pattern}%")
         ).limit(limit).all()
     
     async def async_search_by_name(self, db: AsyncSession, name_pattern: str, limit: int = 10) -> list[Artist]:
         """Async version of search_by_name."""
         stmt = select(self.model).where(
-            self.model.name.ilike(f"%{name_pattern}%")
+            self.model.full_name.ilike(f"%{name_pattern}%")
         ).limit(limit)
         result = await db.execute(stmt)
-        return result.scalars().all() 
+        return result.scalars().all()

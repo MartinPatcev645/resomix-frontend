@@ -26,6 +26,8 @@ from sqlalchemy import (
     DateTime,
     Numeric,
     Enum,
+    Boolean,
+    JSON,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -40,7 +42,7 @@ class Track(Base):
     CREATE TABLE IF NOT EXISTS tracks (
         id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         uuid          VARCHAR(36) NOT NULL UNIQUE,
-        album_id      INT UNSIGNED,                -- NULL for singles
+        release_id      INT UNSIGNED,                -- NULL for singles
         label_id      INT UNSIGNED,
         genre_id      INT UNSIGNED,                -- Single genre per track
         user_id       BIGINT UNSIGNED,             -- NULL for non-uploaded tracks
@@ -54,11 +56,11 @@ class Track(Base):
         file_size     BIGINT UNSIGNED,             -- bytes
         type          VARCHAR(50) NOT NULL DEFAULT 'electrobuzz', -- Track source type
         created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
+        FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE SET NULL,
         FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
         FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
-        KEY idx_track_album  (album_id),
+        KEY idx_track_release  (release_id),
         KEY idx_track_label  (label_id),
         KEY idx_track_genre  (genre_id),
         KEY idx_track_user   (user_id),
@@ -100,18 +102,41 @@ class Track(Base):
     # Fields
     isrc = Column(String(30), nullable=False, index=True)
     title = Column(String(1024), nullable=False, index=True)
+    resource_ref = Column(String(100), nullable=True)
+    proprietary_id = Column(String(100), nullable=True)
     version_title = Column(String(512), nullable=True)
     display_artist = Column(String(512), nullable=True)
     track_number = Column(SmallInteger, nullable=True)
     disk_number = Column(SmallInteger, nullable=True, default=1)
     duration_seconds = Column(Integer, nullable=True)
+    duration_iso = Column(String(30), nullable=True)
     duration_sec = Column(Numeric(8, 3), nullable=True)
     bpm = Column(SmallInteger, nullable=True, index=True)
     musical_key = Column(String(10), nullable=True, index=True)
+    key_signature = Column(String(10), nullable=True)
+    audio_language = Column(String(2), default="xx")
+    language_of_lyrics = Column(String(10), nullable=True)
+    genre = Column(String(255), nullable=True)
+    sub_genre = Column(String(255), nullable=True)
+    price_cents = Column(Integer, default=99)
+    mix_name = Column(String(150), default="Original Mix")
     file_path = Column(String(1024), nullable=False)
     preview_path = Column(String(500), nullable=True)
     audio_path = Column(String(1024), nullable=True)
     file_size = Column(BigInteger, nullable=True)
+    file_size_bytes = Column(BigInteger, nullable=True)
+    audio_codec = Column(String(50), nullable=True)
+    bit_depth = Column(SmallInteger, nullable=True)
+    sample_rate = Column(Integer, nullable=True)
+    channels = Column(SmallInteger, nullable=True)
+    p_line_year = Column(Integer, nullable=True)
+    p_line_text = Column(String(512), nullable=True)
+    deal_terms = Column(JSON, nullable=True)
+    parental_warning = Column(Enum("NoAdviceAvailable","NotExplicit","Explicit","ExplicitContentEdited", name="parental_warning_enum"), default="NotExplicit")
+    is_explicit = Column(Boolean, default=False)
+    is_instrumental = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, index=True)
+    
     type = Column(
         String(50), nullable=False, default="electrobuzz", index=True
     )  # Track source type
@@ -123,9 +148,11 @@ class Track(Base):
     created_at = Column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
+    updated_at = Column(
+        DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
+    )
 
     # Relationships
-    album = relationship("Album", back_populates="tracks")
     label = relationship("Label", back_populates="tracks")
     genre = relationship("Genre", back_populates="tracks")
     uploader = relationship("User", back_populates="uploaded_tracks")

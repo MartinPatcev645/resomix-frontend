@@ -41,7 +41,7 @@ class CartService:
         for item in cart.items:
             track = item.track_format.track
             # Combine artist names from relationship
-            artists_list = [ta.artist.name for ta in track.track_artists if ta.artist]
+            artists_list = [ta.artist.full_name for ta in track.track_artists if ta.artist]
             artist_name = ", ".join(artists_list) if artists_list else "Unknown Artist"
 
             items.append({

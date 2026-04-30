@@ -57,4 +57,4 @@ class Label(Base):
     tracks = relationship("Track", back_populates="label")
     
     def __repr__(self):
-        return f"<Label(id={self.id}, name='{self.name}', website='{self.website}')>" 
+        return f"<Label(id={self.id}, label_name='{self.label_name}', type='{self.label_type}')>"

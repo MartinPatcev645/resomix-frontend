@@ -166,6 +166,7 @@ class TelemetryRepository:
                     db_obj = ConsumptionEvent(
                         event_category=event.get("event_type"),
                         track_id=track_info.get("id"),
+                        track_format_id=event.get("track_format_id"),
                         isrc=track_info.get("isrc"),
                         label_id=track_info.get("label_id"),
                         user_id=resolved_user_id,
