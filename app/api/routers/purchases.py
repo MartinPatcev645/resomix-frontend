@@ -26,6 +26,13 @@ class AddToCartRequest(BaseModel):
 class PromoRequest(BaseModel):
     code: str
 
+class InitiateCheckoutRequest(BaseModel):
+    cart_id: Optional[int] = None
+
+
+class InitiateCheckoutRequest(BaseModel):
+    cart_id: Optional[int] = None
+
 
 @router.get("/cart")
 async def get_cart(
@@ -91,11 +98,26 @@ async def apply_promo(
     return await cart_controller.apply_promo(db, request, current_user.id, payload.code)
 
 
-@router.post("/checkout/create-session")
+@router.post("/api/checkout/init")
+async def initiate_checkout(
+    request: Request,
+    payload: InitiateCheckoutRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Phase 2: The Pre-Flight Checkout
+    Initializes a pending order and creates a Stripe Checkout Session.
+    """
+    return await cart_controller.initiate_checkout(db, request, current_user.id, payload.dict())
+
+
+@router.post("/api/checkout/create-session")
 async def create_checkout_session(
     request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Create a Stripe checkout session."""
-    return await cart_controller.create_checkout_session(db, request, current_user.id)
+    return await cart_controller.initiate_checkout(db, request, current_user.id, {})
+

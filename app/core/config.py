@@ -106,6 +106,9 @@ class Settings(BaseModel):
     stripe_publishable_key: str = Field(
         default="pk_test_mock", description="Stripe publishable key"
     )
+    stripe_webhook_secret: str = Field(
+        default="whsec_mock", description="Stripe webhook signing secret"
+    )
 
     # Apple Music Configuration
     apple_team_id: str = Field(
@@ -528,6 +531,10 @@ class Settings(BaseModel):
             # Edge Authorization
             "EDGE_JWT_SECRET": "edge_jwt_secret",
             "EDGE_TOKEN_TTL_SECONDS": "edge_token_ttl_seconds",
+            # Stripe
+            "STRIPE_SECRET_KEY": "stripe_secret_key",
+            "STRIPE_PUBLISHABLE_KEY": "stripe_publishable_key",
+            "STRIPE_WEBHOOK_SECRET": "stripe_webhook_secret",
         }
 
         for env_key, config_key in direct_env_vars.items():

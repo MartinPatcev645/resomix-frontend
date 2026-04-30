@@ -24,6 +24,7 @@ from .admin.playlist import router as admin_playlist_router
 from .admin.waitlist import router as admin_waitlist_router
 from .admin.operation_limits import router as admin_operation_limits_router
 from .admin.spotify_apps import router as admin_spotify_apps_router
+from .admin.promo import router as admin_promo_router
 from .contact import router as contact_router
 from .health import router as health_router
 from .preview import router as preview_router
@@ -42,6 +43,7 @@ from .playlist_engagement import router as playlist_engagement_router
 from .open_tracks_pipeline import router as open_tracks_pipeline_router
 from .telemetry import router as telemetry_router
 from .purchases import router as purchases_router
+from .webhooks import router as webhooks_router
 
 # List of all routers for easy inclusion
 all_routers = [
@@ -57,6 +59,7 @@ all_routers = [
     admin_playlist_router,
     admin_operation_limits_router,
     admin_spotify_apps_router,
+    admin_promo_router,
     contact_router,
     health_router,
     preview_router,
@@ -73,4 +76,5 @@ all_routers = [
     open_tracks_pipeline_router,
     telemetry_router,
     purchases_router,
+    webhooks_router,
 ]

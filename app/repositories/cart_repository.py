@@ -140,3 +140,10 @@ class CartRepository(BaseRepository[Cart]):
         cart.promo_code_id = promo_code_id
         await db.flush()
         return True
+
+    async def async_create_promo_code(self, db: AsyncSession, promo_data: dict) -> PromoCode:
+        """Create a new promo code."""
+        promo = PromoCode(**promo_data)
+        db.add(promo)
+        await db.flush()
+        return promo
