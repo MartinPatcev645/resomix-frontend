@@ -109,12 +109,15 @@ class DatabaseManager:
         try:
             print("🚀 Setting up database...")
             
-            # Run migrations
-            print("\n📦 Running migrations...")
-            if not self.migration_manager.run_migrations():
+            # Run migrations (using Alembic)
+            print("\n📦 Running migrations (Alembic)...")
+            import subprocess
+            try:
+                subprocess.run(["alembic", "upgrade", "head"], check=True)
+                print("✅ Migrations completed")
+            except subprocess.CalledProcessError:
                 print("❌ Migration failed")
                 return False
-            print("✅ Migrations completed")
             
             # Seed data if requested
             if with_sample_data:
@@ -310,10 +313,12 @@ Examples:
             success = db_manager.setup(with_sample_data=args.with_data)
         
         elif args.command == 'migrate':
-            success = db_manager.migration_manager.run_migrations(
-                target_version=args.to,
-                dry_run=args.dry_run
-            )
+            import subprocess
+            try:
+                subprocess.run(["alembic", "upgrade", "head"], check=True)
+                success = True
+            except subprocess.CalledProcessError:
+                success = False
         
         elif args.command == 'rollback':
             success = db_manager.migration_manager.rollback_migration(

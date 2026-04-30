@@ -3,24 +3,19 @@ Database Seeding Utilities
 ===========================
 
 This module contains utilities for seeding the MariaDB database with initial data
-for the Resomix Audio Similarity API. It provides functions for populating
-test data, reference data, and sample content for development and testing.
+for the Resomix project. It provides functions for populating
+test data, reference data, and sample content for the fresh normalized schema.
 
-Manages initial data creation, sample user insertion, RBAC setup,
-and database initialization for development environments.
-
-Version: 3.2.0
-Init Date: June 11, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
+Version: 4.0.0
 """
 
 import uuid
 import logging
 import json
 import os
+import random
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from database.connection import engine
@@ -40,1095 +35,342 @@ class SeedDataManager:
     def _hash_password(self, password: str) -> str:
         """Hash password using application security context (bcrypt)."""
         return hash_password(password)
-    
-    def seed_users(self) -> bool:
-        """Seed sample users with various profiles."""
+
+    def seed_rbac_data(self) -> bool:
+        """Seed RBAC (roles, permissions, and relationships)."""
         try:
             with self.engine.begin() as conn:
-                users_data = [
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'admin',
-                        'email': 'admin@resomix.com',
-                        'password_hash': self._hash_password('Admin@123'),
-                        'name': 'System Administrator',
-                        'profile_picture': '/avatars/admin.png',
-                        'language': 'en',
-                        'timezone': 'UTC',
-                        'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,
-                        'two_factor_method': 'email'
-                    },
-                    {
-                        'uuid': str(uuid.uuid4()),
-                        'username': 'user',
-                        'email': 'user@resomix.com',
-                        'password_hash': self._hash_password('User@123'),
-                        'name': 'Resomix User',
-                        'profile_picture': '/avatars/user.png',
-                        'language': 'en',
-                        'timezone': 'UTC',
-                        'is_email_verified': 1,
-                        'is_two_factor_enabled': 0,
-                        'two_factor_method': 'email'
-                    }
+                # 1. Insert roles
+                roles = [
+                    ('admin', 'System administrator with full access'),
+                    ('listener', 'Standard user with basic playback and playlist features'),
+                    ('creator', 'User who can upload and manage content'),
+                    ('distributor', 'B2B partner with access to reports and ingestion')
                 ]
+                for name, desc in roles:
+                    conn.execute(text("INSERT IGNORE INTO roles (name, description) VALUES (:name, :desc)"), {'name': name, 'desc': desc})
+
+                # 2. Insert core permissions
+                perms = [
+                    ('track.view', 'View tracks'),
+                    ('track.stream', 'Stream audio'),
+                    ('track.download', 'Download tracks'),
+                    ('admin.all', 'Root access')
+                ]
+                for name, desc in perms:
+                    conn.execute(text("INSERT IGNORE INTO permissions (name, description) VALUES (:name, :desc)"), {'name': name, 'desc': desc})
+
+                # 3. Assign all perms to admin
+                conn.execute(text("""
+                    INSERT IGNORE INTO role_permissions (role_id, permission_id)
+                    SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'admin'
+                """))
                 
-                for user in users_data:
-                    conn.execute(text("""
-                        INSERT IGNORE INTO users (
-                            uuid, username, email, password_hash, name, profile_picture,
-                            language, timezone, is_email_verified, is_two_factor_enabled,
-                            two_factor_method
-                        )
-                        VALUES (
-                            :uuid, :username, :email, :password_hash, :name, :profile_picture,
-                            :language, :timezone, :is_email_verified, :is_two_factor_enabled,
-                            :two_factor_method
-                        )
-                    """), user)
-                
-                logger.info(f"Seeded {len(users_data)} users successfully")
+                logger.info("✓ RBAC data seeded")
                 return True
-                
-        except SQLAlchemyError as e:
+        except Exception as e:
+            logger.error(f"Failed to seed RBAC: {e}")
+            return False
+
+    def seed_users(self) -> bool:
+        """Seed Admin and John Doe flow."""
+        try:
+            with self.engine.begin() as conn:
+                # 1. Admin User
+                admin_uuid = str(uuid.uuid4())
+                conn.execute(text("""
+                    INSERT INTO users (uuid, username, email, password_hash, name, is_email_verified)
+                    VALUES (:uuid, 'admin', 'admin@resomix.com', :pw, 'System Admin', 1)
+                """), {'uuid': admin_uuid, 'pw': self._hash_password('Admin@123')})
+
+                # 2. John Doe (Standard User)
+                john_uuid = 'user-001-uuid-abcd'
+                conn.execute(text("""
+                    INSERT INTO users (uuid, username, email, password_hash, name, is_email_verified, stripe_customer_id)
+                    VALUES (:uuid, 'john_doe', 'john@example.com', :pw, 'John Doe', 1, 'cus_Qwert123')
+                """), {'uuid': john_uuid, 'pw': self._hash_password('User@123')})
+
+                # Assign roles
+                conn.execute(text("""
+                    INSERT IGNORE INTO user_roles (user_id, role_id)
+                    SELECT u.id, r.id FROM users u, roles r WHERE u.username = 'admin' AND r.name = 'admin'
+                """))
+                conn.execute(text("""
+                    INSERT IGNORE INTO user_roles (user_id, role_id)
+                    SELECT u.id, r.id FROM users u, roles r WHERE u.username = 'john_doe' AND r.name = 'listener'
+                """))
+
+                # Seed John's verification token history
+                john_id = conn.execute(text("SELECT id FROM users WHERE username = 'john_doe'")).scalar()
+                conn.execute(text("""
+                    INSERT IGNORE INTO user_tokens (user_id, token, token_type, expires_at)
+                    VALUES (:uid, 'verify_token_xyz123', 'email_verification', :exp)
+                """), {'uid': john_id, 'exp': datetime.now() + timedelta(days=1)})
+
+                # Seed John's active session
+                conn.execute(text("""
+                    INSERT IGNORE INTO user_sessions (user_id, session_id, user_agent, ip_address, expires_at)
+                    VALUES (:uid, 'sess-unique-001', 'Mozilla/5.0...', '192.168.1.1', :exp)
+                """), {'uid': john_id, 'exp': datetime.now() + timedelta(days=30)})
+
+                user_count = conn.execute(text("SELECT COUNT(*) FROM users")).scalar()
+                logger.info(f"✓ Users and Auth flow seeded ({user_count} users)")
+                return True
+        except Exception as e:
             logger.error(f"Failed to seed users: {e}")
             return False
-    
-    def seed_auth_tokens(self) -> bool:
-        """Seed sample auth tokens for demonstration."""
+
+    def seed_catalog_data(self) -> bool:
+        """Seed the 10 tracks, releases, artists, and labels."""
         try:
             with self.engine.begin() as conn:
-                # Email verification tokens for unverified users
-                result = conn.execute(text("""
-                    SELECT id FROM users WHERE is_email_verified = 0 LIMIT 1
+                # 1. Parties
+                conn.execute(text("INSERT INTO parties (party_id, party_name, dpid) VALUES ('DIST_001', 'Global Beats Distribution', 'DPID12345')"))
+
+                # 2. Ingest Log
+                conn.execute(text("""
+                    INSERT INTO ingest_log (party_id, package_folder, batch_filename, status) 
+                    VALUES ('DIST_001', 'ERN_2026_COLLECTION_001', 'ERN_2026_COLLECTION_001.xml', 'COMPLETED')
                 """))
-                unverified_user = result.fetchone()
-                
-                if unverified_user:
+                ingest_id = conn.execute(text("SELECT id FROM ingest_log WHERE batch_filename = 'ERN_2026_COLLECTION_001.xml'")).scalar()
+
+                # 3. Messages (Required for Releases)
+                for i in range(1, 4):
                     conn.execute(text("""
-                        INSERT INTO email_verification_tokens (user_id, token, expires_at)
-                        VALUES (:user_id, :token, :expires_at)
-                        ON DUPLICATE KEY UPDATE token=VALUES(token), expires_at=VALUES(expires_at)
-                    """), {
-                        'user_id': unverified_user[0],
-                        'token': uuid.uuid4().hex[:43],  # VARCHAR(64) supports up to 43 chars
-                        'expires_at': datetime.now() + timedelta(hours=24)
-                    })
+                        INSERT INTO messages (message_id, party_id, ingest_log_id, message_type, created_at) 
+                        VALUES (:mid, 'DIST_001', :log_id, 'NewReleaseMessage', CURRENT_TIMESTAMP)
+                    """), {'mid': f'MSG_REF_00{i}', 'log_id': ingest_id})
                 
-                # Password reset tokens (sample - would be expired)
-                result = conn.execute(text("""
-                    SELECT id FROM users WHERE username = 'john_doe'
+                # 4. Labels
+                conn.execute(text("INSERT INTO labels (party_id, label_name, label_type) VALUES ('DIST_001', 'Echo Chamber Records', 'RecordLabel')"))
+                conn.execute(text("INSERT INTO labels (party_id, label_name, label_type) VALUES ('DIST_001', 'Neon Horizon Music', 'RecordLabel')"))
+                
+                # 3. Artists
+                artists = [
+                    ('Solaris Collective', 'MainArtist'),
+                    ('Luna Drift', 'MainArtist'),
+                    ('Ghost Producer X', 'Producer'),
+                    ('Nova Vox', 'FeaturedArtist')
+                ]
+                for name, atype in artists:
+                    conn.execute(text("INSERT IGNORE INTO artists (party_id, full_name, artist_type) VALUES ('DIST_001', :name, :atype)"), {'name': name, 'atype': atype})
+
+                # 4. Releases
+                # We need IDs for these, so we'll fetch or set them
+                conn.execute(text("""
+                    INSERT INTO releases (id, party_id, title, release_type, label_id, artist_id, message_id)
+                    VALUES (1, 'DIST_001', 'Atmospheres Vol. 1', 'Album', 1, 1, 'MSG_REF_001'),
+                           (2, 'DIST_001', 'Midnight City', 'Single', 2, 2, 'MSG_REF_002'),
+                           (3, 'DIST_001', 'The Remixes EP', 'EP', 1, 1, 'MSG_REF_003')
                 """))
-                user = result.fetchone()
-                
-                if user:
-                    conn.execute(text("""
-                        INSERT INTO password_reset_tokens (user_id, token, expires_at, consumed_at)
-                        VALUES (:user_id, :token, :expires_at, :consumed_at)
-                        ON DUPLICATE KEY UPDATE token=VALUES(token)
-                    """), {
-                        'user_id': user[0],
-                        'token': uuid.uuid4().hex[:43],  # VARCHAR(64) supports up to 43 chars
-                        'expires_at': datetime.now() - timedelta(hours=1),  # Expired
-                        'consumed_at': None
-                    })
-                
-                logger.info("Seeded auth tokens successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed auth tokens: {e}")
-            return False
-    
-    def seed_user_sessions(self) -> bool:
-        """Seed sample user sessions."""
-        try:
-            with self.engine.begin() as conn:
-                # Get some users
-                result = conn.execute(text("""
-                    SELECT id FROM users LIMIT 5
-                """))
-                users = result.fetchall()
-                
-                user_agents = [
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                    'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X)',
-                    'Mozilla/5.0 (iPad; CPU OS 14_7_1 like Mac OS X)',
-                    'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36'
+
+                # 5. Genres
+                for g in ['Melodic Techno', 'Progressive House', 'Deep House', 'Trance', 'Synthwave', 'Techno', 'Ambient']:
+                    conn.execute(text("INSERT IGNORE INTO genres (name) VALUES (:name)"), {'name': g})
+
+                # 6. Tracks (The 10 Tracks)
+                tracks = [
+                    (1, 'Celestial Drift', 'QM-XXX-24-00001', 1, 124, 'Am', 345, 'Melodic Techno'),
+                    (2, 'Solar Wind', 'QM-XXX-24-00002', 1, 126, 'C#m', 412, 'Progressive House'),
+                    (3, 'Event Horizon', 'QM-XXX-24-00003', 1, 122, 'F', 388, 'Deep House'),
+                    (4, 'Nebula Pulse', 'QM-XXX-24-00004', 1, 128, 'G', 320, 'Trance'),
+                    (5, 'Midnight City (Original Mix)', 'QM-XXX-24-00005', 2, 124, 'Bm', 360, 'Synthwave'),
+                    (6, 'Midnight City (Radio Edit)', 'QM-XXX-24-00006', 2, 124, 'Bm', 210, 'Synthwave'),
+                    (7, 'Celestial Drift (Ghost Producer X Remix)', 'QM-XXX-24-00007', 3, 130, 'Am', 430, 'Techno'),
+                    (8, 'Solar Wind (Dub Version)', 'QM-XXX-24-00008', 3, 126, 'C#m', 400, 'Progressive House'),
+                    (9, 'Ether', 'QM-XXX-24-00009', 3, 120, 'D', 300, 'Ambient'),
+                    (10, 'Final Frontier', 'QM-XXX-24-00010', 3, 124, 'Em', 380, 'Melodic Techno')
                 ]
-                
-                ip_addresses = [
-                    '192.168.1.100',
-                    '10.0.0.50',
-                    '172.16.0.10',
-                    '203.0.113.45',
-                    '198.51.100.78'
-                ]
-                
-                for idx, user in enumerate(users):
-                    # Active session
+                for tid, title, isrc, rid, bpm, mkey, dur, genre in tracks:
                     conn.execute(text("""
-                        INSERT INTO user_sessions (
-                            user_id, session_id, refresh_token_hash, user_agent,
-                            ip_address, expires_at, revoked_at
-                        )
-                        VALUES (
-                            :user_id, :session_id, :refresh_token_hash, :user_agent,
-                            :ip_address, :expires_at, :revoked_at
-                        )
-                    """), {
-                        'user_id': user[0],
-                        'session_id': str(uuid.uuid4()),
-                        'refresh_token_hash': hash_password(f'refresh_token_{idx}'),
-                        'user_agent': user_agents[idx % len(user_agents)],
-                        'ip_address': ip_addresses[idx % len(ip_addresses)],
-                        'expires_at': datetime.now() + timedelta(days=30),
-                        'revoked_at': None
-                    })
-                    
-                    # Revoked session (old session)
-                    conn.execute(text("""
-                        INSERT INTO user_sessions (
-                            user_id, session_id, refresh_token_hash, user_agent,
-                            ip_address, expires_at, revoked_at
-                        )
-                        VALUES (
-                            :user_id, :session_id, :refresh_token_hash, :user_agent,
-                            :ip_address, :expires_at, :revoked_at
-                        )
-                    """), {
-                        'user_id': user[0],
-                        'session_id': str(uuid.uuid4()),
-                        'refresh_token_hash': hash_password(f'old_refresh_token_{idx}'),
-                        'user_agent': user_agents[idx % len(user_agents)],
-                        'ip_address': ip_addresses[idx % len(ip_addresses)],
-                        'expires_at': datetime.now() + timedelta(days=30),
-                        'revoked_at': datetime.now() - timedelta(days=5)
-                    })
-                
-                logger.info("Seeded user sessions successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed user sessions: {e}")
-            return False
-    
-    def seed_oauth_providers(self) -> bool:
-        """Seed OAuth provider connections."""
-        try:
-            with self.engine.begin() as conn:
-                # Get some users for OAuth linkage
-                result = conn.execute(text("""
-                    SELECT id FROM users WHERE username IN ('jane_smith', 'dj_mike', 'sarah_producer')
-                """))
-                users = result.fetchall()
-                
-                providers_data = [
-                    {'provider': 'google', 'provider_uid': 'google_12345678901234567890'},
-                    {'provider': 'google', 'provider_uid': 'google_98765432109876543210'},
-                    {'provider': 'spotify', 'provider_uid': 'spotify_abcdef123456'},
+                        INSERT INTO tracks (id, uuid, release_id, party_id, isrc, title, bpm, musical_key, duration_seconds, track_type, file_path)
+                        VALUES (:id, :uuid, :rid, 'DIST_001', :isrc, :title, :bpm, :mkey, :dur, 'electrobuzz', :path)
+                    """), {'id': tid, 'uuid': str(uuid.uuid4()), 'rid': rid, 'isrc': isrc, 'title': title, 'bpm': bpm, 'mkey': mkey, 'dur': dur, 'path': f'/storage/tracks/{tid:05d}.wav'})
+
+                # 7. Recording Artists (Mappings)
+                mappings = [
+                    (1, 1), (2, 1), (2, 4), (3, 1), (4, 1), (5, 2), (6, 2), (7, 1), (7, 3), (8, 1), (9, 2), (10, 1), (10, 2)
                 ]
-                
-                for idx, user in enumerate(users):
-                    if idx < len(providers_data):
-                        conn.execute(text("""
-                            INSERT IGNORE INTO user_auth_providers (user_id, provider, provider_uid)
-                            VALUES (:user_id, :provider, :provider_uid)
-                        """), {
-                            'user_id': user[0],
-                            **providers_data[idx]
-                        })
-                
-                logger.info("Seeded OAuth providers successfully")
+                for tid, aid in mappings:
+                    conn.execute(text("INSERT IGNORE INTO recording_artists (track_id, artist_id) VALUES (:tid, :aid)"), {'tid': tid, 'aid': aid})
+
+                # 8. Track Formats
+                for tid in range(1, 11):
+                    conn.execute(text("INSERT IGNORE INTO track_formats (track_id, audio_format, price_cents, file_path) VALUES (:tid, 'mp3', 199, :path)"), {'tid': tid, 'path': f'/storage/tracks/{tid:05d}.mp3'})
+                    if tid != 6: # Track 6 is MP3 only in reference
+                        conn.execute(text("INSERT IGNORE INTO track_formats (track_id, audio_format, price_cents, file_path) VALUES (:tid, 'wav', 299, :path)"), {'tid': tid, 'path': f'/storage/tracks/{tid:05d}.wav'})
+
+                track_count = conn.execute(text("SELECT COUNT(*) FROM tracks")).scalar()
+                logger.info(f"✓ Catalog data seeded ({track_count} tracks)")
                 return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed OAuth providers: {e}")
-            return False
-    
-    def seed_rbac_data(self) -> bool:
-        """Seed RBAC (roles, permissions, and relationships) data."""
-        try:
-            with self.engine.begin() as conn:
-                # Insert roles
-                roles_data = [
-                    {'name': 'admin', 'description': 'System administrator with full access to all features and user management'},
-                    {'name': 'user', 'description': 'Regular user with basic access to search, similarity, and playlist features'},
-                    {'name': 'premium', 'description': 'Premium user with enhanced features including downloads and advanced filters'},
-                    {'name': 'moderator', 'description': 'Content moderator with permissions to review and manage user content and feedback'},
-                    {'name': 'api_user', 'description': 'API-only user with programmatic access rights'},
-                    {'name': 'content_creator', 'description': 'Users who can upload and manage their own content'}
-                ]
-                
-                for role in roles_data:
-                    conn.execute(text("""
-                        INSERT IGNORE INTO roles (name, description) 
-                        VALUES (:name, :description)
-                    """), role)
-                
-                # Insert comprehensive permissions
-                permissions_data = [
-                    # Track permissions
-                    {'name': 'track.view', 'description': 'View track information and metadata'},
-                    {'name': 'track.download', 'description': 'Download tracks for offline use'},
-                    {'name': 'track.upload', 'description': 'Upload new tracks to the platform'},
-                    {'name': 'track.edit', 'description': 'Edit track metadata and information'},
-                    {'name': 'track.delete', 'description': 'Delete tracks from the system'},
-                    {'name': 'track.rate', 'description': 'Rate and review tracks'},
-                    {'name': 'track.preview', 'description': 'Access track preview/samples'},
-                    
-                    # Playlist permissions
-                    {'name': 'playlist.view', 'description': 'View playlists'},
-                    {'name': 'playlist.create', 'description': 'Create new playlists'},
-                    {'name': 'playlist.edit', 'description': 'Edit existing playlists'},
-                    {'name': 'playlist.delete', 'description': 'Delete playlists'},
-                    {'name': 'playlist.share', 'description': 'Share playlists with others'},
-                    {'name': 'playlist.export', 'description': 'Export playlists to external platforms'},
-                    {'name': 'playlist.rate', 'description': 'Rate playlists'},
-                    
-                    # Similarity permissions
-                    {'name': 'similarity.calculate', 'description': 'Calculate track similarity scores'},
-                    {'name': 'similarity.advanced', 'description': 'Access advanced similarity filters and options'},
-                    {'name': 'similarity.bulk', 'description': 'Perform bulk similarity operations'},
-                    
-                    # Search permissions
-                    {'name': 'search.basic', 'description': 'Basic search functionality'},
-                    {'name': 'search.advanced', 'description': 'Advanced search with filters'},
-                    
-                    # User management permissions
-                    {'name': 'user.view', 'description': 'View user profiles'},
-                    {'name': 'user.edit_own', 'description': 'Edit own profile'},
-                    {'name': 'user.manage', 'description': 'Manage other users (admin)'},
-                    {'name': 'user.delete', 'description': 'Delete user accounts'},
-                    
-                    # Admin permissions
-                    {'name': 'admin.users', 'description': 'Full user management access'},
-                    {'name': 'admin.system', 'description': 'System administration and configuration'},
-                    {'name': 'admin.logs', 'description': 'View and manage system logs'},
-                    {'name': 'admin.analytics', 'description': 'Access system analytics and reports'},
-                    
-                    # Feedback permissions
-                    {'name': 'feedback.submit', 'description': 'Submit feedback and suggestions'},
-                    {'name': 'feedback.view', 'description': 'View feedback submissions'},
-                    {'name': 'feedback.manage', 'description': 'Manage and respond to feedback'},
-                    
-                    # Contact permissions
-                    {'name': 'contact.submit', 'description': 'Submit contact messages'},
-                    {'name': 'contact.view', 'description': 'View contact submissions'},
-                    {'name': 'contact.manage', 'description': 'Manage contact messages'},
-                    
-                    # Purchase permissions
-                    {'name': 'purchase.make', 'description': 'Purchase tracks and albums'},
-                    {'name': 'purchase.view_history', 'description': 'View purchase history'},
-                    {'name': 'purchase.manage', 'description': 'Manage all purchases (admin)'},
-                    
-                    # Subscription permissions
-                    {'name': 'subscription.view', 'description': 'View subscription details'},
-                    {'name': 'subscription.manage', 'description': 'Manage subscription status'},
-                    
-                    # API permissions
-                    {'name': 'api.access', 'description': 'Access API endpoints'},
-                    {'name': 'api.rate_limit_high', 'description': 'Higher API rate limits'},
-                ]
-                
-                for permission in permissions_data:
-                    conn.execute(text("""
-                        INSERT IGNORE INTO permissions (name, description) 
-                        VALUES (:name, :description)
-                    """), permission)
-                
-                # Assign permissions to roles
-                role_permissions = [
-                    # Admin gets all permissions
-                    ('admin', [
-                        'track.view', 'track.download', 'track.upload', 'track.edit', 'track.delete', 'track.rate', 'track.preview',
-                        'playlist.view', 'playlist.create', 'playlist.edit', 'playlist.delete', 'playlist.share', 'playlist.export', 'playlist.rate',
-                        'similarity.calculate', 'similarity.advanced', 'similarity.bulk',
-                        'search.basic', 'search.advanced',
-                        'user.view', 'user.edit_own', 'user.manage', 'user.delete',
-                        'admin.users', 'admin.system', 'admin.logs', 'admin.analytics',
-                        'feedback.submit', 'feedback.view', 'feedback.manage',
-                        'contact.submit', 'contact.view', 'contact.manage',
-                        'purchase.make', 'purchase.view_history', 'purchase.manage',
-                        'subscription.view', 'subscription.manage',
-                        'api.access', 'api.rate_limit_high'
-                    ]),
-                    
-                    # Premium user gets enhanced features
-                    ('premium', [
-                        'track.view', 'track.download', 'track.upload', 'track.rate', 'track.preview',
-                        'playlist.view', 'playlist.create', 'playlist.edit', 'playlist.delete', 'playlist.share', 'playlist.export', 'playlist.rate',
-                        'similarity.calculate', 'similarity.advanced',
-                        'search.basic', 'search.advanced',
-                        'user.view', 'user.edit_own',
-                        'feedback.submit',
-                        'contact.submit',
-                        'purchase.make', 'purchase.view_history',
-                        'subscription.view', 'subscription.manage',
-                        'api.access', 'api.rate_limit_high'
-                    ]),
-                    
-                    # Regular user gets basic features
-                    ('user', [
-                        'track.view', 'track.rate', 'track.preview',
-                        'playlist.view', 'playlist.create', 'playlist.edit', 'playlist.delete', 'playlist.share', 'playlist.rate',
-                        'similarity.calculate',
-                        'search.basic',
-                        'user.view', 'user.edit_own',
-                        'feedback.submit',
-                        'contact.submit',
-                        'purchase.make', 'purchase.view_history',
-                        'subscription.view',
-                        'api.access'
-                    ]),
-                    
-                    # Moderator gets content management
-                    ('moderator', [
-                        'track.view', 'track.edit', 'track.delete', 'track.rate', 'track.preview',
-                        'playlist.view', 'playlist.create', 'playlist.edit', 'playlist.delete', 'playlist.rate',
-                        'similarity.calculate',
-                        'search.basic', 'search.advanced',
-                        'user.view',
-                        'feedback.view', 'feedback.manage',
-                        'contact.view', 'contact.manage',
-                        'admin.logs'
-                    ]),
-                    
-                    # API user
-                    ('api_user', [
-                        'track.view', 'track.preview',
-                        'playlist.view',
-                        'similarity.calculate',
-                        'search.basic', 'search.advanced',
-                        'api.access', 'api.rate_limit_high'
-                    ]),
-                    
-                    # Content creator
-                    ('content_creator', [
-                        'track.view', 'track.upload', 'track.edit', 'track.rate', 'track.preview',
-                        'playlist.view', 'playlist.create', 'playlist.edit', 'playlist.delete', 'playlist.share', 'playlist.rate',
-                        'similarity.calculate',
-                        'search.basic', 'search.advanced',
-                        'user.view', 'user.edit_own',
-                        'feedback.submit'
-                    ])
-                ]
-                
-                for role_name, permission_names in role_permissions:
-                    for permission_name in permission_names:
-                        conn.execute(text("""
-                            INSERT IGNORE INTO role_permissions (role_id, permission_id)
-                            SELECT r.id, p.id 
-                            FROM roles r, permissions p 
-                            WHERE r.name = :role_name AND p.name = :permission_name
-                        """), {'role_name': role_name, 'permission_name': permission_name})
-                
-                logger.info("RBAC data seeded successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed RBAC data: {e}")
-            return False
-    
-    def seed_user_roles(self) -> bool:
-        """Assign roles to seeded users."""
-        try:
-            with self.engine.begin() as conn:
-                user_role_assignments = [
-                    ('admin', 'admin'),
-                    ('user', 'user'),
-                ]
-                
-                for username, role_name in user_role_assignments:
-                    conn.execute(text("""
-                        INSERT IGNORE INTO user_roles (user_id, role_id)
-                        SELECT u.id, r.id
-                        FROM users u, roles r
-                        WHERE u.username = :username AND r.name = :role_name
-                    """), {'username': username, 'role_name': role_name})
-                
-                logger.info("User roles assigned successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed user roles: {e}")
-            return False
-    
-    def seed_waitlist(self) -> bool:
-        """Seed waitlist entries."""
-        try:
-            with self.engine.begin() as conn:
-                waitlist_data = [
-                    {'email': 'newuser1@example.com', 'status': 'pending'},
-                    {'email': 'newuser2@example.com', 'status': 'pending'},
-                    {'email': 'approved_user@example.com', 'status': 'approved'},
-                    {'email': 'rejected_user@example.com', 'status': 'rejected'},
-                    {'email': 'beta_tester@example.com', 'status': 'approved'},
-                    {'email': 'interested_dj@musicworld.com', 'status': 'pending'},
-                    {'email': 'producer_waiting@studio.com', 'status': 'pending'},
-                    {'email': 'music_enthusiast@fan.com', 'status': 'approved'},
-                ]
-                
-                for entry in waitlist_data:
-                    conn.execute(text("""
-                        INSERT IGNORE INTO waitlist (email, status)
-                        VALUES (:email, :status)
-                    """), entry)
-                
-                logger.info(f"Seeded {len(waitlist_data)} waitlist entries successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed waitlist: {e}")
-            return False
-    
-    def seed_subscriptions(self) -> bool:
-        """Seed user subscriptions."""
-        try:
-            with self.engine.begin() as conn:
-                # Get premium users
-                result = conn.execute(text("""
-                    SELECT u.id 
-                    FROM users u
-                    JOIN user_roles ur ON u.id = ur.user_id
-                    JOIN roles r ON ur.role_id = r.id
-                    WHERE r.name = 'premium'
-                """))
-                premium_users = result.fetchall()
-                
-                for user in premium_users:
-                    conn.execute(text("""
-                        INSERT IGNORE INTO user_subscriptions (user_id, stripe_subscription_id)
-                        VALUES (:user_id, :stripe_subscription_id)
-                    """), {
-                        'user_id': user[0],
-                        'stripe_subscription_id': f'sub_{uuid.uuid4().hex[:24]}'
-                    })
-                
-                logger.info("Seeded subscriptions successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed subscriptions: {e}")
-            return False
-    
-    def seed_feedback(self) -> bool:
-        """Seed comprehensive feedback entries."""
-        try:
-            with self.engine.begin() as conn:
-                # Get user IDs
-                result = conn.execute(text("""
-                    SELECT id FROM users WHERE username IN ('admin', 'user')
-                """))
-                users = result.fetchall()
-                
-                feedback_data = [
-                    {
-                        'user_id': users[0][0] if len(users) > 0 else None,
-                        'category': 'performance',
-                        'message': 'The similarity search is incredibly accurate and fast! Love how quickly I can find tracks that match my vibe.',
-                        'satisfaction': 9,
-                        'recommendation': 9,
-                        'status': 'resolved'
-                    },
-                    {
-                        'user_id': users[1][0] if len(users) > 1 else None,
-                        'category': 'feature_request',
-                        'message': 'Would love to see more genre filters in search. Also, a mobile app would be amazing!',
-                        'satisfaction': 8,
-                        'recommendation': 8,
-                        'status': 'open'
-                    },
-                    {
-                        'user_id': None,  # Anonymous feedback
-                        'category': 'bug_report',
-                        'message': 'Sometimes the metadata extraction fails for certain file types, especially FLAC files with complex tags.',
-                        'satisfaction': 6,
-                        'recommendation': 7,
-                        'status': 'open'
-                    },
-                    {
-                        'user_id': users[2][0] if len(users) > 2 else None,
-                        'category': 'user_experience',
-                        'message': 'The playlist export feature to Spotify is a game-changer! Works flawlessly.',
-                        'satisfaction': 10,
-                        'recommendation': 10,
-                        'status': 'resolved'
-                    },
-                    {
-                        'user_id': users[3][0] if len(users) > 3 else None,
-                        'category': 'feature_request',
-                        'message': 'Can we get key detection for uploaded tracks? Also, BPM range filters would be helpful for DJs.',
-                        'satisfaction': 7,
-                        'recommendation': 8,
-                        'status': 'open'
-                    },
-                    {
-                        'user_id': users[0][0] if len(users) > 0 else None,
-                        'category': 'general',
-                        'message': 'Great platform overall. The audio similarity algorithm is top-notch!',
-                        'satisfaction': 9,
-                        'recommendation': 9,
-                        'status': 'resolved'
-                    },
-                    {
-                        'user_id': None,
-                        'category': 'bug_report',
-                        'message': 'Download links sometimes expire too quickly. Could we get longer validity?',
-                        'satisfaction': 7,
-                        'recommendation': 8,
-                        'status': 'open'
-                    }
-                ]
-                
-                for feedback in feedback_data:
-                    conn.execute(text("""
-                        INSERT INTO feedback (user_id, category, message, satisfaction, recommendation, status)
-                        VALUES (:user_id, :category, :message, :satisfaction, :recommendation, :status)
-                    """), feedback)
-                
-                logger.info("Seeded feedback data successfully")
-                return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed feedback data: {e}")
-            return False
-    
-    def seed_production_tracks(self, json_file: str = "tracks_seed.json") -> bool:
-        """
-        Seed tracks and related data from production export.
-        
-        Args:
-            json_file: Path to JSON file with exported production data
-        """
-        try:
-            # Make path absolute if relative (check in scripts directory first, then project root)
-            if not os.path.isabs(json_file):
-                # First try in scripts directory (where extract script puts it)
-                scripts_dir = Path(__file__).parent
-                scripts_json_file = str(scripts_dir / json_file)
-                
-                if os.path.exists(scripts_json_file):
-                    json_file = scripts_json_file
-                else:
-                    # Fallback to project root
-                    project_root = Path(__file__).parent.parent
-                    json_file = str(project_root / json_file)
-            
-            # Check if file exists
-            if not os.path.exists(json_file):
-                logger.warning(f"❌ Production data file not found: {json_file}")
-                logger.info("ℹ️  To extract production data, run:")
-                logger.info("   python scripts/extract_production_data.py --output tracks_seed.json")
-                logger.info("📝 Skipping production track seeding (this is optional)")
-                return True
-            
-            logger.info(f"Loading production data from {json_file}...")
-            with open(json_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            with self.engine.begin() as conn:
-                # Disable foreign key checks to allow inserting in any order with custom IDs
-                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-                
-                try:
-                    # 1. Seed Artists (preserve IDs from JSON)
-                    if data.get('artists'):
-                        logger.info(f"Seeding {len(data['artists'])} artists...")
-                        for artist in data['artists']:
-                            conn.execute(text("""
-                                INSERT INTO artists (id, name)
-                                VALUES (:id, :name)
-                                ON DUPLICATE KEY UPDATE name=VALUES(name)
-                            """), {'id': artist['id'], 'name': artist['name']})
-                        logger.info(f"✓ Seeded {len(data['artists'])} artists")
-                    
-                    # 2. Seed Labels (preserve IDs from JSON)
-                    if data.get('labels'):
-                        logger.info(f"Seeding {len(data['labels'])} labels...")
-                        for label in data['labels']:
-                            conn.execute(text("""
-                                INSERT INTO labels (id, name, website)
-                                VALUES (:id, :name, :website)
-                                ON DUPLICATE KEY UPDATE name=VALUES(name), website=VALUES(website)
-                            """), {
-                                'id': label['id'],
-                                'name': label['name'],
-                                'website': label.get('website')
-                            })
-                        logger.info(f"✓ Seeded {len(data['labels'])} labels")
-                    
-                    # 3. Seed Genres (preserve IDs from JSON)
-                    if data.get('genres'):
-                        logger.info(f"Seeding {len(data['genres'])} genres...")
-                        for genre in data['genres']:
-                            conn.execute(text("""
-                                INSERT INTO genres (id, name)
-                                VALUES (:id, :name)
-                                ON DUPLICATE KEY UPDATE name=VALUES(name)
-                            """), {'id': genre['id'], 'name': genre['name']})
-                        logger.info(f"✓ Seeded {len(data['genres'])} genres")
-                    
-                    # 4. Seed Albums (preserve IDs from JSON, use artist_id directly from JSON)
-                    if data.get('albums'):
-                        logger.info(f"Seeding {len(data['albums'])} albums...")
-                        for album in data['albums']:
-                            conn.execute(text("""
-                                INSERT INTO albums (id, artist_id, title, release_date, cover_image)
-                                VALUES (:id, :artist_id, :title, :release_date, :cover_image)
-                                ON DUPLICATE KEY UPDATE 
-                                    artist_id=VALUES(artist_id),
-                                    title=VALUES(title),
-                                    release_date=VALUES(release_date),
-                                    cover_image=VALUES(cover_image)
-                            """), {
-                                'id': album['id'],
-                                'artist_id': album.get('artist_id'),
-                                'title': album['title'],
-                                'release_date': album.get('release_date'),
-                                'cover_image': album.get('cover_image')
-                            })
-                        logger.info(f"✓ Seeded {len(data['albums'])} albums")
-                    
-                    # 5. Seed Tracks (preserve IDs from JSON, use foreign keys directly from JSON)
-                    if data.get('tracks'):
-                        logger.info(f"Seeding {len(data['tracks'])} tracks...")
-                        for idx, track in enumerate(data['tracks'], 1):
-                            conn.execute(text("""
-                                INSERT INTO tracks (
-                                    id, uuid, album_id, label_id, genre_id, title, year, duration_sec,
-                                    bpm, musical_key, file_path, preview_path, file_size, type
-                                )
-                                VALUES (
-                                    :id, :uuid, :album_id, :label_id, :genre_id, :title, :year, :duration_sec,
-                                    :bpm, :musical_key, :file_path, :preview_path, :file_size, :type
-                                )
-                                ON DUPLICATE KEY UPDATE
-                                    uuid=VALUES(uuid),
-                                    album_id=VALUES(album_id),
-                                    label_id=VALUES(label_id),
-                                    genre_id=VALUES(genre_id),
-                                    title=VALUES(title),
-                                    year=VALUES(year),
-                                    duration_sec=VALUES(duration_sec),
-                                    bpm=VALUES(bpm),
-                                    musical_key=VALUES(musical_key),
-                                    file_path=VALUES(file_path),
-                                    preview_path=VALUES(preview_path),
-                                    file_size=VALUES(file_size),
-                                    type=VALUES(type)
-                            """), {
-                                'id': track['id'],
-                                'uuid': track['uuid'],
-                                'album_id': track.get('album_id'),
-                                'label_id': track.get('label_id'),
-                                'genre_id': track.get('genre_id'),
-                                'title': track['title'],
-                                'year': track.get('year'),
-                                'duration_sec': track.get('duration_sec'),
-                                'bpm': track.get('bpm'),
-                                'musical_key': track.get('musical_key'),
-                                'file_path': track['file_path'],
-                                'preview_path': track.get('preview_path'),
-                                'file_size': track.get('file_size'),
-                                'type': track.get('type', 'electrobuzz')
-                            })
-                            
-                            if idx % 100 == 0:
-                                logger.info(f"  Processed {idx}/{len(data['tracks'])} tracks")
-                        
-                        logger.info(f"✓ Seeded {len(data['tracks'])} tracks")
-                    
-                    # 6. Seed Track-Artist relationships (use IDs directly from JSON)
-                    if data.get('track_artists'):
-                        logger.info(f"Seeding {len(data['track_artists'])} track-artist relationships...")
-                        for ta in data['track_artists']:
-                            conn.execute(text("""
-                                INSERT IGNORE INTO track_artists (track_id, artist_id)
-                                VALUES (:track_id, :artist_id)
-                            """), {
-                                'track_id': ta['track_id'],
-                                'artist_id': ta['artist_id']
-                            })
-                        logger.info(f"✓ Seeded {len(data['track_artists'])} track-artist relationships")
-                    
-                    # 7. Seed Playlists (preserve IDs from JSON, use seed_track_id directly from JSON)
-                    if data.get('playlists'):
-                        logger.info(f"Seeding {len(data['playlists'])} playlists...")
-                        
-                        # Check if fork columns exist in the playlists table
-                        result = conn.execute(text("""
-                            SELECT COLUMN_NAME 
-                            FROM INFORMATION_SCHEMA.COLUMNS 
-                            WHERE TABLE_NAME = 'playlists' 
-                            AND COLUMN_NAME IN ('fork_id', 'forked_at', 'fork_count')
-                        """))
-                        existing_columns = {row[0] for row in result.fetchall()}
-                        has_fork_columns = 'fork_id' in existing_columns
-                        
-                        if not has_fork_columns:
-                            logger.warning("⚠️  Fork columns not found in playlists table. Using basic playlist structure.")
-                        
-                        for playlist in data['playlists']:
-                            # Use user_id and seed_track_id directly from JSON
-                            user_id = playlist.get('user_id')
-                            seed_track_id = playlist.get('seed_track_id')
-                            
-                            if has_fork_columns:
-                                # Use full schema with fork columns
-                                conn.execute(text("""
-                                    INSERT INTO playlists (
-                                        id, uuid, user_id, name, is_public, type, seed_track_id,
-                                        fork_id, forked_at, fork_count
-                                    )
-                                    VALUES (
-                                        :id, :uuid, :user_id, :name, :is_public, :type, :seed_track_id,
-                                        :fork_id, :forked_at, :fork_count
-                                    )
-                                    ON DUPLICATE KEY UPDATE
-                                        uuid=VALUES(uuid),
-                                        user_id=VALUES(user_id),
-                                        name=VALUES(name),
-                                        is_public=VALUES(is_public),
-                                        type=VALUES(type),
-                                        seed_track_id=VALUES(seed_track_id),
-                                        fork_id=VALUES(fork_id),
-                                        forked_at=VALUES(forked_at),
-                                        fork_count=VALUES(fork_count)
-                                """), {
-                                    'id': playlist['id'],
-                                    'uuid': playlist['uuid'],
-                                    'user_id': user_id,
-                                    'name': playlist['name'],
-                                    'is_public': playlist['is_public'],
-                                    'type': playlist['type'],
-                                    'seed_track_id': seed_track_id,
-                                    'fork_id': playlist.get('fork_id'),
-                                    'forked_at': playlist.get('forked_at'),
-                                    'fork_count': playlist.get('fork_count', 0)
-                                })
-                            else:
-                                # Use basic schema without fork columns
-                                conn.execute(text("""
-                                    INSERT INTO playlists (
-                                        id, uuid, user_id, name, is_public, type, seed_track_id
-                                    )
-                                    VALUES (
-                                        :id, :uuid, :user_id, :name, :is_public, :type, :seed_track_id
-                                    )
-                                    ON DUPLICATE KEY UPDATE
-                                        uuid=VALUES(uuid),
-                                        user_id=VALUES(user_id),
-                                        name=VALUES(name),
-                                        is_public=VALUES(is_public),
-                                        type=VALUES(type),
-                                        seed_track_id=VALUES(seed_track_id)
-                                """), {
-                                    'id': playlist['id'],
-                                    'uuid': playlist['uuid'],
-                                    'user_id': user_id,
-                                    'name': playlist['name'],
-                                    'is_public': playlist['is_public'],
-                                    'type': playlist['type'],
-                                    'seed_track_id': seed_track_id
-                                })
-                        
-                        logger.info(f"✓ Seeded {len(data['playlists'])} playlists")
-                    
-                    # 8. Seed Playlist Tracks (use IDs directly from JSON)
-                    if data.get('playlist_tracks'):
-                        logger.info(f"Seeding {len(data['playlist_tracks'])} playlist tracks...")
-                        
-                        # Check if position column is DECIMAL(12,6) or INT
-                        result = conn.execute(text("""
-                            SELECT DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
-                            FROM INFORMATION_SCHEMA.COLUMNS 
-                            WHERE TABLE_NAME = 'playlist_tracks' 
-                            AND COLUMN_NAME = 'position'
-                        """))
-                        position_info = result.fetchone()
-                        is_decimal_position = position_info and position_info[0] == 'decimal'
-                        
-                        for pt in data['playlist_tracks']:
-                            # Convert position based on column type
-                            position_value = pt['position']
-                            if is_decimal_position:
-                                # Ensure it's a proper decimal value
-                                position_value = float(position_value)
-                            else:
-                                # Convert to integer for old INT column
-                                position_value = int(float(position_value))
-                            
-                            conn.execute(text("""
-                                INSERT INTO playlist_tracks (playlist_id, track_id, position, score)
-                                VALUES (:playlist_id, :track_id, :position, :score)
-                                ON DUPLICATE KEY UPDATE
-                                    position=VALUES(position),
-                                    score=VALUES(score)
-                            """), {
-                                'playlist_id': pt['playlist_id'],
-                                'track_id': pt['track_id'],
-                                'position': position_value,
-                                'score': pt.get('score')
-                            })
-                        logger.info(f"✓ Seeded {len(data['playlist_tracks'])} playlist tracks")
-                
-                finally:
-                    # Re-enable foreign key checks
-                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
-            
-            logger.info("=" * 60)
-            logger.info("✓ Production track data seeded successfully!")
-            logger.info("=" * 60)
-            return True
-            
         except Exception as e:
-            logger.error(f"Failed to seed production tracks: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Failed to seed catalog: {e}")
             return False
-    
-    def seed_contact(self) -> bool:
-        """Seed contact message entries."""
+
+    def seed_engagement_data(self) -> bool:
+        """Seed Playlists and User Interactions."""
         try:
             with self.engine.begin() as conn:
-                # Get user IDs
-                result = conn.execute(text("""
-                    SELECT id FROM users LIMIT 3
+                # 1. Playlist
+                conn.execute(text("""
+                    INSERT IGNORE INTO playlists (id, uuid, user_id, name, is_public, playlist_type)
+                    VALUES (1, 'plist-001', (SELECT id FROM users WHERE username='john_doe'), 'Techno Summer 2026', 1, 'custom')
                 """))
-                users = result.fetchall()
                 
-                contact_data = [
-                    {
-                        'user_id': users[0][0] if len(users) > 0 else None,
-                        'name': 'John Doe',
-                        'email': 'john.doe@example.com',
-                        'subject': 'API Integration Question',
-                        'phone': '+1-555-0123',
-                        'message': 'Hi, I\'m interested in integrating your API into my music streaming app. Can you provide more details about rate limits and pricing?',
-                        'status': 'open'
-                    },
-                    {
-                        'user_id': None,  # Anonymous contact
-                        'name': 'Music Studio Pro',
-                        'email': 'contact@musicstudiopro.com',
-                        'subject': 'Business Partnership Inquiry',
-                        'phone': '+1-555-0456',
-                        'message': 'We run a professional music production studio and would like to discuss potential partnership opportunities for bulk licensing.',
-                        'status': 'resolved'
-                    },
-                    {
-                        'user_id': users[1][0] if len(users) > 1 else None,
-                        'name': 'Jane Smith',
-                        'email': 'jane.smith@example.com',
-                        'subject': 'Technical Support',
-                        'phone': '+1-555-0789',
-                        'message': 'Having issues with playlist export to Tidal. The authentication keeps failing. Can you help?',
-                        'status': 'resolved'
-                    },
-                    {
-                        'user_id': None,
-                        'name': 'DJ Events Agency',
-                        'email': 'bookings@djevents.com',
-                        'subject': 'Enterprise Plan Information',
-                        'phone': '+1-555-0321',
-                        'message': 'We\'re an agency representing 50+ DJs. Looking for information on enterprise plans with multiple user accounts.',
-                        'status': 'open'
-                    },
-                    {
-                        'user_id': users[2][0] if len(users) > 2 else None,
-                        'name': 'Carlos Musician',
-                        'email': 'carlos@musician.com',
-                        'subject': 'Content Upload Guidelines',
-                        'phone': '+1-555-0654',
-                        'message': 'What are the guidelines for uploading my own produced tracks? Are there any format or quality requirements?',
-                        'status': 'resolved'
-                    },
-                    {
-                        'user_id': None,
-                        'name': 'Radio Station Manager',
-                        'email': 'manager@radiostation.fm',
-                        'subject': 'Licensing Inquiry',
-                        'phone': '+1-555-0987',
-                        'message': 'We operate an online radio station and are interested in licensing tracks from your catalog. What are the terms?',
-                        'status': 'open'
-                    }
-                ]
-                
-                for contact in contact_data:
-                    conn.execute(text("""
-                        INSERT INTO contact (user_id, name, email, subject, phone, message, status)
-                        VALUES (:user_id, :name, :email, :subject, :phone, :message, :status)
-                    """), contact)
-                
-                logger.info("Seeded contact data successfully")
+                # 2. Playlist Tracks
+                for tid in range(1, 11):
+                    conn.execute(text("INSERT IGNORE INTO playlist_tracks (playlist_id, track_id, position) VALUES (1, :tid, :pos)"), {'tid': tid, 'pos': float(tid)})
+
+                # 3. Engagements
+                john_id = conn.execute(text("SELECT id FROM users WHERE username='john_doe'")).scalar()
+                conn.execute(text("INSERT IGNORE INTO user_playlist_engagements (user_id, playlist_id, is_following) VALUES (:uid, 1, 1)"), {'uid': john_id})
+                conn.execute(text("INSERT IGNORE INTO track_ratings (user_id, track_id, rating) VALUES (:uid, 1, 5)"), {'uid': john_id})
+
+                logger.info("✓ Engagement data seeded")
                 return True
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to seed contact data: {e}")
+        except Exception as e:
+            logger.error(f"Failed to seed engagement: {e}")
             return False
-    
-    def seed_all(self) -> bool:
-        """Seed all sample data in correct order."""
-        logger.info("Starting comprehensive database seeding...")
-        
-        success = True
-        
-        # Seed in dependency order
-        logger.info("Step 1: Seeding users...")
-        success &= self.seed_users()
-        
-        logger.info("Step 2: Seeding RBAC data...")
-        success &= self.seed_rbac_data()
-        
-        logger.info("Step 3: Assigning user roles...")
-        success &= self.seed_user_roles()
-        
-        logger.info("Step 4: Seeding auth tokens...")
-        success &= self.seed_auth_tokens()
-        
-        logger.info("Step 5: Seeding user sessions...")
-        success &= self.seed_user_sessions()
-        
-        logger.info("Step 6: Seeding OAuth providers...")
-        success &= self.seed_oauth_providers()
-        
-        logger.info("Step 7: Seeding subscriptions...")
-        success &= self.seed_subscriptions()
-        
-        logger.info("Step 8: Seeding waitlist...")
-        success &= self.seed_waitlist()
-        
-        logger.info("Step 9: Seeding production tracks and playlists...")
-        success &= self.seed_production_tracks()
-        
-        logger.info("Step 10: Seeding feedback...")
-        success &= self.seed_feedback()
-        
-        logger.info("Step 11: Seeding contact messages...")
-        success &= self.seed_contact()
-        
-        if success:
-            logger.info("=" * 60)
-            logger.info("All sample data seeded successfully!")
-            logger.info("=" * 60)
-            logger.info("\nSample Credentials:")
-            logger.info("  Admin: admin@resomix.com / Admin@123")
-            logger.info("  User: user@resomix.com / User@123")
-            logger.info("=" * 60)
-        else:
-            logger.error("Some seeding operations failed")
-        
-        return success
-    
-    def clear_all_data(self) -> bool:
-        """Clear all data from tables (for testing/reset)."""
+
+    def seed_telemetry_data(self) -> bool:
+        """Seed Consumption Events (Telemetry)."""
         try:
             with self.engine.begin() as conn:
-                # Disable foreign key checks temporarily
-                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+                john_id = conn.execute(text("SELECT id FROM users WHERE username='john_doe'")).scalar()
+                track_id = conn.execute(text("SELECT id FROM tracks LIMIT 1")).scalar()
                 
-                # Clear all tables in reverse dependency order
-                tables = [
-                    'playlist_transfer_tracks', 'track_artists', 'playlist_tracks', 
-                    'track_ratings', 'playlist_ratings', 'purchases', 'user_subscriptions',
-                    'system_logs', 'feedback', 'contact', 'waitlist',
-                    'tracks', 'albums', 'playlists', 'artists', 'labels', 'genres',
-                    'user_auth_providers', 'user_sessions', 'two_factor_email_codes',
-                    'password_reset_tokens', 'email_verification_tokens',
-                    'role_permissions', 'user_roles', 'permissions', 'roles',
-                    'users'
-                ]
-                
-                for table in tables:
-                    try:
-                        conn.execute(text(f"DELETE FROM {table}"))
-                        logger.info(f"✓ Cleared table: {table}")
-                    except Exception as e:
-                        logger.warning(f"⚠ Could not clear {table}: {e}")
-                
-                # Re-enable foreign key checks
-                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
-                
-                logger.info("=" * 60)
-                logger.info("All data cleared successfully")
-                logger.info("=" * 60)
+                if not track_id:
+                    logger.warning("⚠️ No tracks found to seed telemetry. Skipping.")
+                    return True
+
+                # Stream event
+                conn.execute(text("""
+                    INSERT INTO consumption_events (event_category, track_id, user_id, client_ip, source_device, duration_seconds)
+                    VALUES ('stream_complete', :tid, :uid, '192.168.1.1', 'web', 345)
+                """), {'uid': john_id, 'tid': track_id})
+                # Download event
+                conn.execute(text("""
+                    INSERT INTO consumption_events (event_category, track_id, user_id, country_code, duration_seconds)
+                    VALUES ('download_success', :tid, :uid, 'US', 0)
+                """), {'uid': john_id, 'tid': track_id})
+
+                logger.info("✓ Telemetry data seeded")
                 return True
+        except Exception as e:
+            logger.error(f"Failed to seed telemetry: {e}")
+            return False
+
+    def seed_admin_data(self) -> bool:
+        """Seed Feedback, Contact, and Logs."""
+        try:
+            with self.engine.begin() as conn:
+                john_id = conn.execute(text("SELECT id FROM users WHERE username='john_doe'")).scalar()
                 
-        except SQLAlchemyError as e:
+                # Feedback
+                conn.execute(text("""
+                    INSERT INTO feedback (user_id, category, message, satisfaction, status)
+                    VALUES (:uid, 'feature_request', 'Would love a Dark Mode for the player!', 9, 'open')
+                """), {'uid': john_id})
+                
+                # Contact
+                conn.execute(text("""
+                    INSERT INTO contact (name, email, subject, message, status)
+                    VALUES ('Jane Smith', 'jane.smith@example.com', 'Support', 'I can''t reset my password.', 'open')
+                """))
+
+                # Ingestion Log (System Log)
+                conn.execute(text("""
+                    INSERT INTO system_logs (level, category, action, message, log_metadata)
+                    VALUES ('INFO', 'ingestion', 'package_processed', 'ERN_20240430_GLOBAL_001.zip processed successfully', :meta)
+                """), {'meta': json.dumps({"track_count": 10, "message_id": "MSG_82374982374"})})
+
+                logger.info("✓ Admin and Support data seeded")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to seed admin data: {e}")
+            return False
+
+    def seed_all(self) -> bool:
+        """Seed everything in order."""
+        logger.info("🚀 Starting Database Seeding...")
+        
+        # 0. Clear existing data to ensure fresh start
+        logger.info("🔄 Clearing existing data...")
+        if not self.clear_all_data(): return False
+
+        # 1. RBAC
+        if not self.seed_rbac_data(): return False
+        
+        # 2. Users
+        if not self.seed_users(): return False
+        
+        # 3. Catalog
+        if not self.seed_catalog_data(): return False
+        
+        # 4. Engagements
+        if not self.seed_engagement_data(): return False
+        
+        # 5. Telemetry
+        if not self.seed_telemetry_data(): return False
+        
+        # 6. Admin
+        if not self.seed_admin_data(): return False
+
+        logger.info("🎉 Database Seeding Completed Successfully!")
+        return True
+
+    def clear_all_data(self) -> bool:
+        """Clear all data (destructive)."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+                # List of tables to clear
+                tables = [
+                    'acr_infringement_logs', 'label_payouts', 'generated_reports', 
+                    'consumption_events', 'manual_takedowns', 'ingestion_errors', 
+                    'sftp_users', 'user_spotify_apps', 'spotify_apps', 
+                    'user_operation_limits', 'operation_types', 'contact', 'feedback', 
+                    'system_logs', 'cart_items', 'carts', 'user_subscriptions', 
+                    'purchases', 'orders', 'track_formats', 'promo_codes', 
+                    'waitlist', 'playlist_ratings', 'track_ratings', 
+                    'user_track_engagements', 'user_playlist_engagements', 
+                    'playlist_transfer_tracks', 'playlist_tracks', 'playlists', 
+                    'publisher_shares', 'recording_contributors', 'contributors', 
+                    'resources', 'release_deals', 'royalty_rates', 'deal_use_types', 
+                    'deal_territories', 'deals', 'recording_artists', 'tracks', 
+                    'release_artists', 'releases', 'labels', 'artists', 
+                    'messages', 'ingest_log', 'parties', 'genres', 
+                    'user_roles', 'role_permissions', 'permissions', 'roles', 
+                    'user_auth_providers', 'user_sessions', 'user_tokens', 'users',
+                    'rights_controllers'
+                ]
+                for t in tables:
+                    conn.execute(text(f"TRUNCATE TABLE {t}"))
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+                logger.info("🗑️ All data cleared.")
+                return True
+        except Exception as e:
             logger.error(f"Failed to clear data: {e}")
             return False
 
 
 def main():
-    """CLI interface for seeding operations."""
     import sys
+    seeder = SeedDataManager()
     
     if len(sys.argv) < 2:
-        print("Usage: python seed_data.py <command> [options]")
-        print("\nCommands:")
-        print("  seed-all         - Seed all sample data (recommended)")
-        print("  seed-users       - Seed users only")
-        print("  seed-rbac        - Seed RBAC data only")
-        print("  seed-auth        - Seed auth tokens only")
-        print("  seed-sessions    - Seed user sessions only")
-        print("  seed-oauth       - Seed OAuth providers only")
-        print("  seed-subscriptions - Seed subscriptions only")
-        print("  seed-waitlist    - Seed waitlist only")
-        print("  seed-tracks      - Seed production tracks only")
-        print("  seed-feedback    - Seed feedback only")
-        print("  seed-contact     - Seed contact messages only")
-        print("  clear-all        - Clear all data (WARNING: destructive)")
+        print("Usage: python scripts/seed_data.py [seed-all | clear-all]")
         return
-    
-    seeder = SeedDataManager()
-    command = sys.argv[1]
-    
-    try:
-        if command == "seed-all":
-            success = seeder.seed_all()
-        elif command == "seed-users":
-            success = seeder.seed_users()
-        elif command == "seed-rbac":
-            success = seeder.seed_rbac_data()
-        elif command == "seed-auth":
-            success = seeder.seed_auth_tokens()
-        elif command == "seed-sessions":
-            success = seeder.seed_user_sessions()
-        elif command == "seed-oauth":
-            success = seeder.seed_oauth_providers()
-        elif command == "seed-subscriptions":
-            success = seeder.seed_subscriptions()
-        elif command == "seed-waitlist":
-            success = seeder.seed_waitlist()
-        elif command == "seed-tracks":
-            json_file = sys.argv[2] if len(sys.argv) > 2 else "tracks_seed.json"
-            success = seeder.seed_production_tracks(json_file)
-        elif command == "seed-feedback":
-            success = seeder.seed_feedback()
-        elif command == "seed-contact":
-            success = seeder.seed_contact()
-        elif command == "clear-all":
-            confirm = input("⚠️  This will delete ALL data. Type 'yes' to confirm: ")
-            if confirm.lower() == 'yes':
-                success = seeder.clear_all_data()
-            else:
-                print("Operation cancelled")
-                return
-        else:
-            print(f"Unknown command: {command}")
-            sys.exit(1)
-        
-        sys.exit(0 if success else 1)
-        
-    except Exception as e:
-        logger.error(f"Command failed: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
 
+    command = sys.argv[1]
+    if command == "seed-all":
+        seeder.seed_all()
+    elif command == "clear-all":
+        confirm = input("⚠️ This will DELETE everything. Type 'yes' to confirm: ")
+        if confirm.lower() == 'yes':
+            seeder.clear_all_data()
+    else:
+        print(f"Unknown command: {command}")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,190 @@
+# RESOMIX SEED DATA REFERENCE
+# ===========================
+# This file contains 10 tracks with logical connections to Releases, Artists, and Labels.
+# Use this as a reference for future seeding operations.
+
+# --- 1. PARTIES (Distributors) ---
+- ID: 1, PartyID: 'DIST_001', Name: 'Global Beats Distribution', DPID: 'DPID12345'
+
+# --- 2. LABELS ---
+- ID: 1, PartyID: 'DIST_001', Name: 'Echo Chamber Records', Type: 'RecordLabel'
+- ID: 2, PartyID: 'DIST_001', Name: 'Neon Horizon Music', Type: 'RecordLabel'
+
+# --- 3. ARTISTS ---
+- ID: 1, PartyID: 'DIST_001', FullName: 'Solaris Collective', Type: 'MainArtist'
+- ID: 2, PartyID: 'DIST_001', FullName: 'Luna Drift', Type: 'MainArtist'
+- ID: 3, PartyID: 'DIST_001', FullName: 'Ghost Producer X', Type: 'Producer'
+- ID: 4, PartyID: 'DIST_001', FullName: 'Nova Vox', Type: 'FeaturedArtist'
+
+# --- 4. RELEASES (Albums/Singles) ---
+- ID: 1, Title: 'Atmospheres Vol. 1', Type: 'Album', ArtistID: 1, LabelID: 1, PartyID: 'DIST_001'
+- ID: 2, Title: 'Midnight City', Type: 'Single', ArtistID: 2, LabelID: 2, PartyID: 'DIST_001'
+- ID: 3, Title: 'The Remixes EP', Type: 'EP', ArtistID: 1, LabelID: 1, PartyID: 'DIST_001'
+
+# --- 5. TRACKS & FORMATS ---
+
+# Release 1: Atmospheres Vol. 1 (Album)
+1.  Title: 'Celestial Drift'
+    ISRC: 'QM-XXX-24-00001'
+    BPM: 124, Key: 'Am', Duration: 345s
+    Genre: 'Melodic Techno'
+    ReleaseID: 1, Artists: [Solaris Collective]
+    Formats:
+      - MP3: 199 cents ($1.99), Path: '/storage/tracks/00001.mp3'
+      - WAV: 299 cents ($2.99), Path: '/storage/tracks/00001.wav'
+
+2.  Title: 'Solar Wind'
+    ISRC: 'QM-XXX-24-00002'
+    BPM: 126, Key: 'C#m', Duration: 412s
+    Genre: 'Progressive House'
+    ReleaseID: 1, Artists: [Solaris Collective, Nova Vox (Featured)]
+    Formats:
+      - MP3: 199 cents, Path: '/storage/tracks/00002.mp3'
+      - WAV: 299 cents, Path: '/storage/tracks/00002.wav'
+
+3.  Title: 'Event Horizon'
+    ISRC: 'QM-XXX-24-00003'
+    BPM: 122, Key: 'F', Duration: 388s
+    Genre: 'Deep House'
+    ReleaseID: 1, Artists: [Solaris Collective]
+    Formats:
+      - MP3: 199 cents, Path: '/storage/tracks/00003.mp3'
+      - WAV: 299 cents, Path: '/storage/tracks/00003.wav'
+
+4.  Title: 'Nebula Pulse'
+    ISRC: 'QM-XXX-24-00004'
+    BPM: 128, Key: 'G', Duration: 320s
+    Genre: 'Trance'
+    ReleaseID: 1, Artists: [Solaris Collective]
+    Formats:
+      - MP3: 199 cents, Path: '/storage/tracks/00004.mp3'
+      - WAV: 299 cents, Path: '/storage/tracks/00004.wav'
+
+# Release 2: Midnight City (Single)
+5.  Title: 'Midnight City (Original Mix)'
+    ISRC: 'QM-XXX-24-00005'
+    BPM: 124, Key: 'Bm', Duration: 360s
+    Genre: 'Synthwave'
+    ReleaseID: 2, Artists: [Luna Drift]
+    Formats:
+      - MP3: 249 cents ($2.49), Path: '/storage/tracks/00005.mp3'
+      - WAV: 349 cents ($3.49), Path: '/storage/tracks/00005.wav'
+
+6.  Title: 'Midnight City (Radio Edit)'
+    ISRC: 'QM-XXX-24-00006'
+    BPM: 124, Key: 'Bm', Duration: 210s
+    Genre: 'Synthwave'
+    ReleaseID: 2, Artists: [Luna Drift]
+    Formats:
+      - MP3: 149 cents, Path: '/storage/tracks/00006.mp3'
+
+# Release 3: The Remixes EP
+7.  Title: 'Celestial Drift (Ghost Producer X Remix)'
+    ISRC: 'QM-XXX-24-00007'
+    BPM: 130, Key: 'Am', Duration: 430s
+    Genre: 'Techno'
+    ReleaseID: 3, Artists: [Solaris Collective, Ghost Producer X (Remixer)]
+    Formats:
+      - MP3: 199 cents, Path: '/storage/tracks/00007.mp3'
+      - WAV: 299 cents, Path: '/storage/tracks/00007.wav'
+
+8.  Title: 'Solar Wind (Dub Version)'
+    ISRC: 'QM-XXX-24-00008'
+    BPM: 126, Key: 'C#m', Duration: 400s
+    Genre: 'Progressive House'
+    ReleaseID: 3, Artists: [Solaris Collective]
+    Formats:
+      - MP3: 199 cents, Path: '/storage/tracks/00008.mp3'
+      - WAV: 299 cents, Path: '/storage/tracks/00008.wav'
+
+9.  Title: 'Ether'
+    ISRC: 'QM-XXX-24-00009'
+    BPM: 120, Key: 'D', Duration: 300s
+    Genre: 'Ambient'
+    ReleaseID: 3, Artists: [Luna Drift]
+    Formats:
+      - MP3: 99 cents, Path: '/storage/tracks/00009.mp3'
+      - FLAC: 299 cents, Path: '/storage/tracks/00009.flac'
+
+10. Title: 'Final Frontier'
+    ISRC: 'QM-XXX-24-00010'
+    BPM: 124, Key: 'Em', Duration: 380s
+    Genre: 'Melodic Techno'
+    ReleaseID: 3, Artists: [Solaris Collective, Luna Drift]
+    Formats:
+      - MP3: 199 cents, Path: '/storage/tracks/00010.mp3'
+      - WAV: 299 cents, Path: '/storage/tracks/00010.wav'
+
+# --- 6. PROMO CODES ---
+- Code: 'WELCOME20', Type: 'percentage', Value: 20, Active: True
+- Code: 'FREESONG', Type: 'fixed_amount', Value: 200, Active: True (Valid for $2.00 off)
+
+# --- 7. DDEX INGESTION PIPELINE (Ingestion Reference) ---
+- SFTP User: 'echo_chamber_sftp', HomeDir: '/home/sftp/echo_chamber', LabelID: 1
+- Ingest Package: 'ERN_20240430_GLOBAL_001.zip'
+- Message ID: 'MSG_82374982374', Type: 'NewReleaseMessage', Version: '4.3'
+- Ingest Log Entry:
+    - Status: 'COMPLETED'
+    - Started: '2026-04-30 10:00:00'
+    - Completed: '2026-04-30 10:05:00'
+    - TrackCount: 10
+- Deal Terms Example (JSON):
+    {
+      "territory": "Worldwide",
+      "valid_from": "2026-01-01",
+      "rights_type": "SubscriptionAndDownload"
+    }
+
+# --- 8. DUMMY USER & AUTH FLOW ---
+# Case: Standard User Registration & Verification
+
+- USER:
+    - ID: 1, UUID: 'user-001-uuid-abcd'
+    - Username: 'john_doe', Email: 'john@example.com'
+    - Password: 'hashed_password_here'
+    - StripeID: 'cus_Qwert123'
+
+- ROLE ASSIGNMENT:
+    - User: 'john_doe', Role: 'Listener' (Standard Role)
+
+- AUTH FLOW RECORDS:
+    1. Registration -> Token Generated:
+        - Token: 'verify_token_xyz123', Type: 'email_verification', Expires: '+24h'
+    2. Verification -> User updated `is_email_verified = 1`
+    3. Session -> User logged in from Web:
+        - SessionID: 'sess-unique-001'
+        - UserAgent: 'Mozilla/5.0...', IP: '192.168.1.1'
+
+# --- 9. OPERATION LIMITS (Usage Control) ---
+- Operation: 'track_download', Limit: 50 per month, CurrentUsage: 5
+- Operation: 'stream_high_quality', Limit: Unlimited, CurrentUsage: 120
+
+# --- 10. PLAYLISTS & ENGAGEMENTS ---
+- PLAYLIST:
+    - ID: 1, UUID: 'plist-001', Name: 'Techno Summer 2026', UserID: 1, Type: 'custom'
+- PLAYLIST TRACKS (The 10 tracks seeded above):
+    - Track IDs [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] added to Playlist 1 with positions [1.0, 2.0, ... 10.0]
+- ENGAGEMENTS:
+    - User 1 Likes Track 1 ('Celestial Drift')
+    - User 1 Follows Playlist 1
+
+# --- 11. RATINGS & FEEDBACK ---
+- TRACK RATING: User 1 rates Track 1 as '5 Stars'
+- FEEDBACK: User 1 submits 'Feature Request' - "Would love a Dark Mode for the player!"
+- CONTACT: Unauthenticated user 'Jane Smith' submits 'Support' - "I can't reset my password."
+
+# --- 12. CONSUMPTION & TELEMETRY (DSRF Ready) ---
+- EVENT: 'stream_complete', Track: 1, User: 1, IP: '192.168.1.1', Device: 'web', Duration: 345s
+- EVENT: 'download_success', Track: 1 (WAV), User: 1, Country: 'US'
+
+# --- 13. REPORTING & PAYOUTS (B2B Flow) ---
+- REPORT: 'Global Beats' (Label 1) Period: '2026-04', TotalStreams: 15400, Status: 'generated'
+- PAYOUT: 'Global Beats' Report 1, Amount: 1240.50 EUR, Status: 'paid', Ref: 'STRIPE_TX_999'
+
+# --- 14. SECURITY & COPYRIGHT (ACR) ---
+- ACR LOG: User 1 attempted to upload 'Unreleased_Track.mp3'. Match: 'Sony Music - Artist X', Score: 0.98, Status: 'blocked'
+
+# --- 15. EXTERNAL PLATFORMS ---
+- SPOTIFY APP: 'Resomix Sync', ClientID: 'sp_client_777', Active: True
+- USER SPOTIFY: User 1 linked to 'Resomix Sync'
+- EXTERNAL MAPPING: Track 1 (Celestial Drift) -> SpotifyID: '4uLU6hMC6I', BeatportID: '12345'

@@ -13,7 +13,7 @@ db:
 	mysql -h 127.0.0.1 -P 3307 -u resomix -psecret resomix_db
 
 migrate:
-	python -m database.manage setup
+	alembic upgrade head
 
 seed:
 	python -m database.manage setup --with-data
