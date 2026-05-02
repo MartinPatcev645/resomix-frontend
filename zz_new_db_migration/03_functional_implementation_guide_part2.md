@@ -19,7 +19,7 @@ The catalog domain has undergone a major normalization process:
 **1. `app/models/track.py`**
 *   **Target Models**: `Track`, `TrackContributor` (New)
 *   **Required Updates**:
-    *   **Primary Keys**: Update `id` to `mysql.INTEGER(unsigned=True)`.
+    *   **Primary Keys**: Update `id` to `id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True)`.
     *   **Removed Columns**: Delete `duration_seconds`, `duration_iso`, `file_size_bytes`, `checksum_md5`, `checksum_sha256`, `audio_codec`, `sample_rate`, `bit_depth`, `channels`, `release_id`, `label_id`, `genre_id`.
     *   **Added Columns**: Add `duration_ms` (`INTEGER(unsigned=True)`).
     *   **New Junction Model**: Create the `TrackContributor` model to map `track_id` and `person_id` (both `INT UNSIGNED`).
@@ -27,13 +27,13 @@ The catalog domain has undergone a major normalization process:
 **2. `app/models/genre.py`**
 *   **Target Models**: `Genre`
 *   **Required Updates**:
-    *   **Primary Keys**: Update `id` to `mysql.INTEGER(unsigned=True)`.
+    *   **Primary Keys**: Update `id` to `id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True)`.
     *   **Note**: `genre_id` has been removed from `tracks`. Tracks are now classified via Playlist/Release context rather than a strict, single `genre_id`.
 
 **3. `app/models/release.py`**
 *   **Target Models**: `Release`, `ReleaseTrack` (New), `ReleaseContributor` (New)
 *   **Required Updates**:
-    *   **Primary Keys**: Update `id` to `mysql.INTEGER(unsigned=True)`.
+    *   **Primary Keys**: Update `id` to `id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True)`.
     *   **New Junction Models**: 
         - Create `ReleaseTrack` to map `release_id` and `track_id`, including `disc_num` and `track_num`.
         - Create `ReleaseContributor` to map `release_id` and `person_id`.
@@ -48,8 +48,8 @@ The catalog domain has undergone a major normalization process:
 **5. `app/models/playlist.py` & Engagements (New additions)**
 *   **Target Models**: `Playlist`, `PlaylistTrack`, `UserTrackEngagement`, `TrackRating`
 *   **Required Updates**:
-    *   **Primary Keys**: Update `id` to `mysql.INTEGER(unsigned=True)`.
-    *   **Foreign Keys**: Ensure `user_id`, `track_id`, and `playlist_id` use `mysql.INTEGER(unsigned=True)`. 
+    *   **Primary Keys**: Update `id` to `id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True)`.
+    *   **Foreign Keys**: Ensure `user_id`, `track_id`, and `playlist_id` use `Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey(...))`. 
     *   **Engagements**: Ensure `UserTrackEngagement` uses a composite primary key (`user_id`, `track_id`) to prevent duplicate favorites.
 
 #### B. Pydantic Schemas (`app/schemas/`)
@@ -68,7 +68,8 @@ The catalog domain has undergone a major normalization process:
 **1. `app/repositories/track_repository.py`**
 *   **Target Functions**: `get_track_with_metadata()`
 *   **Required Updates**:
-    *   Rewrite `JOIN` logic. Instead of joining a generic `files` table, explicitly join `audio_files` where `asset_class='Master'`.
+    *   **Async execution**: Require `AsyncSession` for executing the queries via `await session.execute(select(...))`.
+    *   Rewrite `JOIN` logic using SQLAlchemy 2.0 explicit joins (`select(Track).join(AudioFile)...`). Instead of joining a generic `files` table, explicitly join `audio_files` where `asset_class='Master'`.
     *   Instead of joining `artists`, join `track_contributors` to get the master artist list.
 
 **2. `app/repositories/release_repository.py`**

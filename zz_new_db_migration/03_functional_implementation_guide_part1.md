@@ -6,7 +6,7 @@ This document outlines the exact, file-by-file codebase updates required to supp
 ### 1. Overview of Changes
 The core structure of the Identity domain (`users`, `roles`, `permissions`, `user_sessions`, `user_tokens`, `user_auth_providers`, `user_operation_limits`, `sftp_users`, `spotify_apps`, `user_spotify_apps`) remains architecturally identical to the legacy database. However, strict database constraints (`INT UNSIGNED` for identities, `utf8mb4_unicode_ci` collation) have been introduced globally in the new schema to dramatically optimize index memory footprints. 
 
-Therefore, the primary task for this domain is updating the **SQLAlchemy ORM Models** to strictly enforce these new MariaDB constraints, preventing silent ingestion failures or foreign key mismatches.
+Therefore, the primary task for this domain is updating the **SQLAlchemy ORM Models** to strictly enforce these new MariaDB constraints, preventing silent ingestion failures or foreign key mismatches. We will implement these using the modern **SQLAlchemy 2.0 `Mapped` and `mapped_column` syntax** for strict type hinting and the Data Mapper pattern, along with injecting `AsyncSession` into our repositories.
 
 ---
 
@@ -17,8 +17,8 @@ Therefore, the primary task for this domain is updating the **SQLAlchemy ORM Mod
 **1. `app/models/user.py`**
 *   **Target Models**: `User`, `UserSession`, `UserToken`, `UserAuthProvider`
 *   **Required Updates**:
-    *   **Primary Keys**: Update all `User`, `UserAuthProvider` `id` columns to explicitly use MariaDB's unsigned integers: `Column(dialects.mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)`. Note: High-velocity logs like `UserSession` and `UserToken` still use `BIGINT UNSIGNED` for their primary keys.
-    *   **Foreign Keys**: Update all `user_id` foreign keys to use `mysql.INTEGER(unsigned=True)`. Failure to match the unsigned constraint will result in `FOREIGN KEY constraint failed` errors when generating Alembic migrations.
+    *   **Primary Keys**: Update all `User`, `UserAuthProvider` `id` columns to explicitly use MariaDB's unsigned integers with SQLAlchemy 2.0 syntax: `id: Mapped[int] = mapped_column(dialects.mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)`. Note: High-velocity logs like `UserSession` and `UserToken` still use `BIGINT UNSIGNED` mapped as `Mapped[int] = mapped_column(dialects.mysql.BIGINT(unsigned=True), primary_key=True)`.
+    *   **Foreign Keys**: Update all `user_id` foreign keys to use `user_id: Mapped[int] = mapped_column(dialects.mysql.INTEGER(unsigned=True), ForeignKey('users.id'))`. Failure to match the unsigned constraint will result in `FOREIGN KEY constraint failed` errors when generating Alembic migrations.
     *   **String Constraints**: Ensure `uuid` is mapped as `CHAR(36)` instead of a generic `String(36)`.
     *   **Collation Enforcement**: Add `__table_args__` to all models to enforce the new strict collation:
         ```python
@@ -30,8 +30,8 @@ Therefore, the primary task for this domain is updating the **SQLAlchemy ORM Mod
 **2. `app/models/role.py` (and related permissions)**
 *   **Target Models**: `Role`, `Permission`, `UserRole`, `RolePermission`
 *   **Required Updates**:
-    *   **Primary Keys**: Roles and Permissions use `INT UNSIGNED` in the new database. Update the ORM to use `mysql.INTEGER(unsigned=True)`.
-    *   **Foreign Keys**: Update `role_id` and `permission_id` to `mysql.INTEGER(unsigned=True)`. Update `user_id` to `mysql.INTEGER(unsigned=True)`.
+    *   **Primary Keys**: Roles and Permissions use `INT UNSIGNED` in the new database. Update the ORM to use `id: Mapped[int] = mapped_column(dialects.mysql.INTEGER(unsigned=True), primary_key=True)`.
+    *   **Foreign Keys**: Update `role_id` and `permission_id` to `Mapped[int] = mapped_column(dialects.mysql.INTEGER(unsigned=True), ForeignKey(...))`. Update `user_id` similarly.
     *   **Collation Enforcement**: Apply the same `utf8mb4_unicode_ci` table arguments.
 
 **3. `app/models/integrations.py` & Limits**
@@ -51,7 +51,8 @@ Therefore, the primary task for this domain is updating the **SQLAlchemy ORM Mod
 **1. `app/repositories/user_repository.py`**
 *   **Target Functions**: `get_by_email()`, `get_by_uuid()`, `create_user()`
 *   **Required Updates**:
-    *   **None**. The underlying SQLAlchemy query logic (`db.query(User).filter(...)`) is 100% compatible with the new schema since column names did not change.
+    *   **Dependency Injection**: Ensure the repository uses `AsyncSession` injected from `app.core.database` (or equivalent `get_async_db`).
+    *   **Queries**: The underlying SQLAlchemy query logic (`select(User).where(...)`) is 100% compatible with the new schema since column names did not change. Ensure asynchronous execution via `await session.execute(...)`.
 
 **2. `app/repositories/user_session_repository.py`**
 *   **Target Functions**: `create_session()`, `revoke_session()`, `get_by_session_id()`

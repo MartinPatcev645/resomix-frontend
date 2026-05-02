@@ -18,7 +18,7 @@ This final guide outlines the file-by-file codebase updates required for the rem
 **1. `app/models/commerce.py` (or `order.py`, `cart.py`)**
 *   **Target Models**: `PromoCode`, `Order`, `Purchase`, `Cart`, `CartItem`, `UserSubscription`
 *   **Required Updates**:
-    *   **Primary Keys**: Update all `id` columns to explicitly use `mysql.INTEGER(unsigned=True)`.
+    *   **Primary Keys**: Update all `id` columns to explicitly use `id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True)`.
     *   **Foreign Keys**: 
         *   `Purchase` must now include `order_id` (`INT UNSIGNED`, nullable=False).
         *   `Order` must include `promo_code_id` (`INT UNSIGNED`, nullable=True).
@@ -28,20 +28,20 @@ This final guide outlines the file-by-file codebase updates required for the rem
 **2. `app/models/b2b.py` (New DDEX Models)**
 *   **Target Models**: `Deal`, `Message`, `ReleaseDeal`, `DealTerritory`, `DealUseType`, `RoyaltyRate`
 *   **Required Updates**:
-    *   These are entirely new models that need to be scaffolded. Ensure all primary keys (`id`) and foreign keys (`deal_id`, `message_id`) are mapped as `mysql.INTEGER(unsigned=True)`. 
+    *   These are entirely new models that need to be scaffolded. Ensure all primary keys (`id`) and foreign keys (`deal_id`, `message_id`) are mapped as `Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True))`. 
     *   `RoyaltyRate` must map the `rate_type` Enum properly (`FixedRate`, `RevenueShare`, `PerStream`, `PerDownload`, `MinGuarantee`, `Other`).
 
 **3. `app/models/telemetry.py` (Logging & Security)**
 *   **Target Models**: `SystemLog`, `ConsumptionEvent`, `IngestLog`, `IngestionError`, `AcrInfringementLog`
 *   **Required Updates**:
-    *   **CRITICAL EXCEPTION**: Ensure the primary key `id` for these specific models is mapped as **`mysql.BIGINT(unsigned=True)`**. These tables handle massive throughput and must not be downsized.
-    *   **Foreign Keys**: Any foreign keys pointing to standard entities (e.g., `user_id`, `track_id` inside `SystemLog` or `ConsumptionEvent`) must be mapped as `mysql.INTEGER(unsigned=True)` to match the new optimized schema.
+    *   **CRITICAL EXCEPTION**: Ensure the primary key `id` for these specific models is mapped as **`id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)`**. These tables handle massive throughput and must not be downsized.
+    *   **Foreign Keys**: Any foreign keys pointing to standard entities (e.g., `user_id`, `track_id` inside `SystemLog` or `ConsumptionEvent`) must be mapped as `Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey(...))` to match the new optimized schema.
 
 **4. `app/models/admin.py` (Support & Integrations)**
 *   **Target Models**: `Waitlist`, `Feedback`, `Contact`, `ManualTakedown`, `PlaylistTransferTrack`
 *   **Required Updates**:
-    *   **Primary Keys**: Update `id` columns to explicitly use `mysql.INTEGER(unsigned=True)`.
-    *   **Foreign Keys**: Ensure `user_id` and `track_id` (in `ManualTakedown` and `PlaylistTransferTrack`) are mapped as `mysql.INTEGER(unsigned=True)`.
+    *   **Primary Keys**: Update `id` columns to explicitly use `id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True)`.
+    *   **Foreign Keys**: Ensure `user_id` and `track_id` (in `ManualTakedown` and `PlaylistTransferTrack`) are mapped as `Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey(...))`.
 
 #### B. Pydantic Schemas (`app/schemas/`)
 
@@ -56,6 +56,7 @@ This final guide outlines the file-by-file codebase updates required for the rem
 **1. `app/repositories/commerce_repository.py`**
 *   **Target Functions**: `checkout_cart()`, `record_purchase()`
 *   **Required Updates**:
+    *   **Async execution**: Require `AsyncSession` for executing the queries via `await session.execute(select(...))`.
     *   **Transactional Integrity**: The `checkout_cart` logic must now explicitly create an `Order` record *before* the Stripe session is completed (as `status='pending'`). Once the webhook returns success, it updates the `Order` to `status='paid'` and then batch-inserts the `Purchases` using the newly generated `order_id`.
 
 **2. `app/repositories/telemetry_repository.py`**

@@ -10,10 +10,9 @@ A minimal, step-by-step guide to get the API running locally. No extra services,
 2. Clone repo & create virtual env
 3. Create and fill `.env`
 4. Start MariaDB in Docker
-5. Run DB setup/migrations
+5. Create local database and run Alembic migrations
 6. Start API (Uvicorn)
-7. (Optional) Use `make` instead of full commands
-8. Run final checklist
+7. Run final checklist
 
 ---
 
@@ -104,13 +103,12 @@ Edit `.env` and keep only what’s needed:
 # API
 RESOMIX_API_KEY=your-dev-api-key-here
 
-# MariaDB (Docker)
+# MariaDB (Docker Default)
 MARIA_DB_HOST=127.0.0.1
 MARIA_DB_PORT=3307
-MARIA_DB_USER=resomix
-MARIA_DB_PASS=secret
+MARIA_DB_USER=root
+MARIA_DB_PASS=test
 MARIA_DB_NAME=resomix_db
-MARIA_DB_ROOT_PASS=rootpass
 
 # Dev
 RESOMIX_USE_DEVELOPMENT_CORS=true
@@ -124,22 +122,21 @@ SIMILARITY_SERVER_URL=
 
 ---
 
-## 4. Setup & Migrate (make)
+## 4. Setup & Migrate (Alembic)
 
-Run these from the project root:
-
+Start MariaDB locally using Docker:
 ```bash
-make up       # start MariaDB in Docker
-make migrate  # run DB migrations
-make seed     # (optional) seed sample data
+docker run --name resomix-test-db -e MYSQL_ROOT_PASSWORD=test -p 3307:3306 -d mariadb:10.5
 ```
 
-Optional (equivalent without make):
-
+Create the database schema natively (wait a few seconds after running the previous command):
 ```bash
-docker compose up -d mariadb
-python -m database.manage setup
-python -m database.manage setup --with-data   # (optional) seed
+docker exec -i resomix-test-db mariadb -uroot -ptest -e "CREATE DATABASE IF NOT EXISTS resomix_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+Run Alembic to create the tables based on the baseline schema:
+```bash
+alembic upgrade head
 ```
 
 ---
@@ -169,7 +166,7 @@ Open:
 
 * [ ] Docker Desktop is running
 * [ ] `.env` exists and uses **3307**
-* [ ] `python -m database.manage setup` ran without errors
+* [ ] `alembic upgrade head` ran without errors and generated tables
 * [ ] FFmpeg is installed (`ffmpeg -version`)
 * [ ] On Windows, MariaDB Connector/C was installed **before** `pip install`
 * [ ] API reachable at `http://localhost:8005/docs`

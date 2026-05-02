@@ -17,9 +17,8 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
-    # Path to the SQL file relative to the project root
-    # Since alembic is usually run from the project root
-    sql_file_path = 'new_database.sql'
+    # Path to the SQL file relative to this script
+    sql_file_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
     
     if not os.path.exists(sql_file_path):
         raise FileNotFoundError(f"SQL file not found at {sql_file_path}")
