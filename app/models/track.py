@@ -4,10 +4,10 @@ Track Models
 
 This module defines the Track SQLAlchemy model for the Resomix application.
 It handles track metadata storage including title, duration, BPM, musical key, and file paths,
-with support for many-to-many relationships between tracks and artists.
+with support for many-to-many relationships between tracks and contributors.
 
 Provides comprehensive track data modeling with proper foreign key relationships
-to releases, labels, genres, and artists for the audio similarity system.
+to releases, genres, and contributors for the audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -15,154 +15,102 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    BigInteger,
-    String,
-    SmallInteger,
-    ForeignKey,
-    DateTime,
-    Numeric,
-    Enum,
-    Boolean,
-    JSON,
-)
-from sqlalchemy.orm import relationship
+from typing import List, Optional
+from sqlalchemy import String, SmallInteger, ForeignKey, DateTime, JSON, Boolean, Numeric, Enum
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
 
 
 class Track(Base):
     """
-    Track model representing the tracks table
-
-    Schema from SQL:
-    CREATE TABLE IF NOT EXISTS tracks (
-        id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        uuid          VARCHAR(36) NOT NULL UNIQUE,
-        release_id    BIGINT UNSIGNED,             -- NULL for singles
-        label_id      BIGINT UNSIGNED,
-        genre_id      BIGINT UNSIGNED,             -- Single genre per track
-        user_id       BIGINT UNSIGNED,             -- NULL for non-uploaded tracks
-        title         VARCHAR(255) NOT NULL,
-        isrc          VARCHAR(30) NOT NULL,
-        duration_sec  DECIMAL(8,3),
-        bpm           SMALLINT UNSIGNED,
-        musical_key   VARCHAR(10),                 -- e.g. "C#m"
-        file_path     VARCHAR(500) NOT NULL,       -- original / full file
-        preview_path  VARCHAR(500),                -- 128kbps MP3 etc.
-        file_size     BIGINT UNSIGNED,             -- bytes
-        track_type    VARCHAR(50) NOT NULL DEFAULT 'electrobuzz', -- Track source type
-        created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE SET NULL,
-        FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
-        FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
-        FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
-        KEY idx_track_release  (release_id),
-        KEY idx_track_title  (title),
-        KEY idx_track_bpm    (bpm),
-        KEY idx_track_key    (musical_key),
-        KEY idx_track_type   (track_type)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    Track model representing the tracks table.
+    Stores recording-level metadata decoupled from releases and contributors.
     """
 
     __tablename__ = "tracks"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci", "mysql_row_format": "DYNAMIC"},
+    )
 
     # Primary key
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
 
     # Unique identifier
-    uuid = Column(String(36), nullable=False, unique=True, index=True)
+    uuid: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
 
-    # Foreign keys (all nullable as per schema)
-    release_id = Column(
-        BigInteger, ForeignKey("releases.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-    label_id = Column(
-        BigInteger, ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-    genre_id = Column(
-        BigInteger, ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-    user_id = Column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-    party_id = Column(
+    # Foreign keys
+    party_id: Mapped[Optional[str]] = mapped_column(
         String(100), ForeignKey("parties.party_id"), nullable=True, index=True
     )
 
     # Fields
-    isrc = Column(String(30), nullable=False, index=True)
-    title = Column(String(1024), nullable=False, index=True)
-    resource_ref = Column(String(100), nullable=True)
-    proprietary_id = Column(String(100), nullable=True)
-    version_title = Column(String(512), nullable=True)
-    display_artist = Column(String(512), nullable=True)
-    track_number = Column(SmallInteger, nullable=True)
-    disk_number = Column(SmallInteger, nullable=True, default=1)
-    duration_seconds = Column(Integer, nullable=True)
-    duration_iso = Column(String(30), nullable=True)
-    duration_sec = Column(Numeric(8, 3), nullable=True)
-    bpm = Column(SmallInteger, nullable=True, index=True)
-    musical_key = Column(String(10), nullable=True, index=True)
-    key_signature = Column(String(10), nullable=True)
-    audio_language = Column(String(2), default="xx")
-    language_of_lyrics = Column(String(10), nullable=True)
-    genre_text = Column("genre", String(255), nullable=True) # Map to 'genre' column but rename attribute to avoid conflict with relationship
-    sub_genre = Column(String(255), nullable=True)
-    price_cents = Column(Integer, default=99)
-    mix_name = Column(String(150), default="Original Mix")
-    file_path = Column(String(1024), nullable=False)
-    preview_path = Column(String(500), nullable=True)
-    audio_path = Column(String(1024), nullable=True)
-    file_size = Column(BigInteger, nullable=True)
-    file_size_bytes = Column(BigInteger, nullable=True)
-    audio_codec = Column(String(50), nullable=True)
-    bit_depth = Column(SmallInteger, nullable=True)
-    sample_rate = Column(Integer, nullable=True)
-    channels = Column(SmallInteger, nullable=True)
-    p_line_year = Column(Integer, nullable=True)
-    p_line_text = Column(String(512), nullable=True)
-    deal_terms = Column(JSON, nullable=True)
-    parental_warning = Column(Enum("NoAdviceAvailable","NotExplicit","Explicit","ExplicitContentEdited", name="parental_warning_enum"), default="NotExplicit")
-    is_explicit = Column(Boolean, default=False)
-    is_instrumental = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True, index=True)
+    resource_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    proprietary_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    isrc: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
+    version_title: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    display_artist: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     
-    track_type = Column(
-        String(50), nullable=False, default="electrobuzz", index=True
+    duration_ms: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), nullable=True)
+    
+    bpm: Mapped[Optional[int]] = mapped_column(mysql.SMALLINT(unsigned=True), nullable=True, index=True)
+    musical_key: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, index=True)
+    key_signature: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    audio_language: Mapped[Optional[str]] = mapped_column(String(2), default="xx")
+    language_of_lyrics: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    
+    # Metadata
+    genre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    sub_genre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    price_cents: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), default=99)
+    mix_name: Mapped[Optional[str]] = mapped_column(String(150), default="Original Mix")
+    track_type: Mapped[Optional[str]] = mapped_column("type", String(50), default="electrobuzz")
+    
+    p_line_year: Mapped[Optional[int]] = mapped_column(mysql.YEAR, nullable=True)
+    p_line_text: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    deal_terms: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    
+    parental_warning: Mapped[Optional[str]] = mapped_column(
+        Enum("NoAdviceAvailable", "NotExplicit", "Explicit", "ExplicitContentEdited"), 
+        default="NotExplicit"
     )
+    is_explicit: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_instrumental: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     
-    ingestion_source = Column(
-        Enum("ddex", "cc_by", "user_upload", "csv", name="ingestion_source_type"),
+    is_active: Mapped[Optional[bool]] = mapped_column(Boolean, default=True, index=True)
+    
+    ingestion_source: Mapped[Optional[str]] = mapped_column(
+        Enum("ddex", "cc_by", "user_upload", "csv"),
         default="user_upload",
         index=True
     )
-    created_at = Column(
-        DateTime, nullable=False, server_default=func.current_timestamp()
+    
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.current_timestamp()
     )
-    updated_at = Column(
-        DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
 
-    # Relationships
-    label = relationship("Label", back_populates="tracks")
-    genre = relationship("Genre", back_populates="tracks")
-    uploader = relationship("User", back_populates="uploaded_tracks")
-    release = relationship("Release", back_populates="tracks")
-
-    # Many-to-many relationship with artists through recording_artists
-    recording_artists = relationship(
-        "RecordingArtist", back_populates="track", cascade="all, delete-orphan"
+    # Audio files associated with this track
+    audio_files: Mapped[List["AudioFile"]] = relationship(
+        "AudioFile", back_populates="track", cascade="all, delete-orphan", uselist=True
     )
-    artists = relationship("Artist", secondary="recording_artists", viewonly=True, overlaps="recording_artists")
+
+    # Many-to-many relationship with releases through ReleaseTrack
+    release_assocs: Mapped[List["ReleaseTrack"]] = relationship(
+        "ReleaseTrack", back_populates="track", cascade="all, delete-orphan"
+    )
+
+    # Many-to-many relationship with contributors through TrackContributor
+    recording_contributors: Mapped[List["TrackContributor"]] = relationship(
+        "TrackContributor", back_populates="track", cascade="all, delete-orphan"
+    )
 
     # One-to-one relationship with external platform track IDs
-    transfer_track = relationship(
+    transfer_track: Mapped[Optional["PlaylistTransferTrack"]] = relationship(
         "PlaylistTransferTrack",
         back_populates="track",
         uselist=False,
@@ -170,4 +118,4 @@ class Track(Base):
     )
 
     def __repr__(self):
-        return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}', type='{self.track_type}')>"
+        return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}')>"

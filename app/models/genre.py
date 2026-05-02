@@ -3,46 +3,34 @@ Genre Model
 ===========
 
 This module defines the Genre SQLAlchemy model for the Resomix application.
-It handles music genre classification with relationships to tracks
-for categorization and filtering purposes.
-
-Provides genre data modeling for track classification and search
-functionality in the audio similarity system.
-
-Version: 3.0.1
-Init Date: June 11, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
+It handles music genre classification.
 """
 
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, ForeignKey
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.dialects import mysql
+from typing import List, Optional
 from . import Base
 
 
 class Genre(Base):
     """
     Genre model representing the genres table
-    
-    Schema from SQL:
-    CREATE TABLE IF NOT EXISTS genres (
-        id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(80) NOT NULL,
-        UNIQUE KEY uk_genre_name (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "genres"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
     
     # Primary key
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, index=True, autoincrement=True)
     
     # Fields
-    name = Column(String(80), nullable=False, unique=True, index=True)
-    parent_id = Column(Integer, ForeignKey("genres.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False, unique=True, index=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("genres.id"), nullable=True)
     
     # Relationships
-    tracks = relationship("Track", back_populates="genre")
-    subgenres = relationship("Genre", backref="parent", remote_side=[id])
+    subgenres: Mapped[List["Genre"]] = relationship("Genre", backref="parent", remote_side=[id])
     
     def __repr__(self):
-        return f"<Genre(id={self.id}, name='{self.name}')>" 
+        return f"<Genre(id={self.id}, name='{self.name}')>"

@@ -9,12 +9,19 @@ class Base(AsyncAttrs, DeclarativeBase):
 # Import all models to register them with SQLAlchemy
 from .party import Party
 from .label import Label
-from .artist import Artist
 from .genre import Genre
+from .contributor import Contributor
 from .message import Message
 from .release import Release
 from .track import Track
-from .recording_artist import RecordingArtist
+from .track_contributor import TrackContributor
+from .release_track import ReleaseTrack
+from .release_contributor import ReleaseContributor
+from .audio_file import AudioFile
+from .image_file import ImageFile
+from .document_file import DocumentFile
+from .release_file import ReleaseFile
+from .user_track_engagement import UserTrackEngagement
 from .playlist import Playlist, PlaylistTrack
 from .playlist_engagement import UserPlaylistEngagement
 from .playlist_transfer_track import PlaylistTransferTrack
@@ -45,12 +52,19 @@ __all__ = [
     "Base",
     "Party",
     "Label",
-    "Artist",
     "Genre",
+    "Contributor",
     "Release",
     "Message",
     "Track",
-    "RecordingArtist",
+    "TrackContributor",
+    "ReleaseTrack",
+    "ReleaseContributor",
+    "AudioFile",
+    "ImageFile",
+    "DocumentFile",
+    "ReleaseFile",
+    "UserTrackEngagement",
     "Playlist",
     "PlaylistTrack",
     "UserPlaylistEngagement",

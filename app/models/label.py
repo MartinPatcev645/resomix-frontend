@@ -51,7 +51,7 @@ class Label(Base):
     )
 
     # Relationships
-    tracks: Mapped[List["Track"]] = relationship("Track", back_populates="label")
+    releases: Mapped[List["Release"]] = relationship("Release", back_populates="label")
     sftp_users: Mapped[List["SftpUser"]] = relationship("SftpUser", back_populates="label", cascade="all, delete-orphan")
     
     def __repr__(self):

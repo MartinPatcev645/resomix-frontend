@@ -4,20 +4,13 @@ Playlist Models
 
 This module defines the Playlist and PlaylistTrack SQLAlchemy models for the Resomix application.
 It handles playlist creation and management with support for track ordering and user associations.
-
-Provides playlist data modeling with many-to-many relationships between playlists
-and tracks for music organization in the audio similarity system.
-
-Version: 3.0.1
-Init Date: June 11, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
 """
 
-# Playlist, PlaylistTrack models 
 import uuid
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Enum, ForeignKey, DateTime, DECIMAL
-from sqlalchemy.orm import relationship
+from typing import List, Optional
+from sqlalchemy import String, Boolean, Enum, ForeignKey, DateTime, DECIMAL
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
 
@@ -25,57 +18,40 @@ from . import Base
 class Playlist(Base):
     """
     Playlist model representing the playlists table
-    
-    Schema from SQL:
-    CREATE TABLE IF NOT EXISTS playlists (
-        id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        uuid          VARCHAR(36) NOT NULL UNIQUE,
-        user_id       BIGINT UNSIGNED,                 -- nullable (anon)
-        name          VARCHAR(150) NOT NULL,
-        is_public     TINYINT(1) DEFAULT 0,
-        type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
-        seed_track_id BIGINT UNSIGNED,
-        fork_id       VARCHAR(36) NULL,                -- UUID of original playlist if forked
-        forked_at     DATETIME NULL,                   -- when the fork was created
-        fork_count    INT UNSIGNED NOT NULL DEFAULT 0, -- how many times this playlist has been forked
-        created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
-        FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
-        FOREIGN KEY (fork_id)      REFERENCES playlists(uuid) ON DELETE SET NULL,
-        KEY idx_playlist_user (user_id),
-        KEY idx_playlist_uuid (uuid)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "playlists"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
     
     # Primary key
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
     
     # Unique identifier
-    uuid = Column(String(36), nullable=False, unique=True, index=True)
+    uuid: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
     
     # Fields
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    name = Column(String(150), nullable=False)
-    is_public = Column(Boolean, nullable=False, default=False)
-    type = Column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')
+    user_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    type: Mapped[str] = mapped_column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')
     
     # Foreign keys
-    seed_track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True)
-    fork_id = Column(String(36), ForeignKey("playlists.uuid", ondelete="SET NULL"), nullable=True)
-    forked_at = Column(DateTime, nullable=True)
-    fork_count = Column(Integer, nullable=False, default=0)
-    num_tracks = Column(Integer, nullable=False, default=0)  # number of tracks in playlist_tracks
-    play_time = Column(Integer, nullable=False, default=0)  # total play time in seconds (sum of track durations)
+    seed_track_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True)
+    fork_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("playlists.uuid", ondelete="SET NULL"), nullable=True)
+    forked_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    fork_count: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
+    num_tracks: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
+    play_time: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
     
     # Timestamps
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
     
     # Relationships
-    seed_track = relationship("Track", foreign_keys=[seed_track_id])
-    fork = relationship("Playlist", foreign_keys=[fork_id])
-    playlist_tracks = relationship("PlaylistTrack", back_populates="playlist", cascade="all, delete-orphan")
-    tracks = relationship("Track", secondary="playlist_tracks", viewonly=True)
+    seed_track: Mapped[Optional["Track"]] = relationship("Track", foreign_keys=[seed_track_id])
+    # The fork relationship to another Playlist object uses the fork_id string referencing the uuid string
+    fork: Mapped[Optional["Playlist"]] = relationship("Playlist", remote_side=[uuid], foreign_keys=[fork_id])
+    playlist_tracks: Mapped[List["PlaylistTrack"]] = relationship("PlaylistTrack", back_populates="playlist", cascade="all, delete-orphan")
     
     def __init__(self, **kwargs):
         """Initialize playlist with auto-generated UUID if not provided."""
@@ -90,32 +66,23 @@ class Playlist(Base):
 class PlaylistTrack(Base):
     """
     PlaylistTrack model representing the playlist_tracks table
-    
-    Schema from SQL:
-    CREATE TABLE IF NOT EXISTS playlist_tracks (
-        playlist_id BIGINT UNSIGNED NOT NULL,
-        track_id    BIGINT UNSIGNED NOT NULL,
-        position    DECIMAL(12,6) NOT NULL,            -- high precision for efficient reordering
-        score       DECIMAL(10, 8) NULL,
-        PRIMARY KEY (playlist_id, track_id),
-        FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
-        FOREIGN KEY (track_id)    REFERENCES tracks(id)    ON DELETE CASCADE,
-        KEY idx_pt_track (track_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "playlist_tracks"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
     
     # Composite primary key
-    playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="CASCADE"), primary_key=True)
-    track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True, index=True)
+    playlist_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("playlists.id", ondelete="CASCADE"), primary_key=True)
+    track_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True, index=True)
     
     # Fields
-    position = Column(DECIMAL(12, 6), nullable=False)  # High precision for efficient reordering
-    score = Column(DECIMAL(10, 8), nullable=True)  # Store similarity scores as decimal values
+    position: Mapped[float] = mapped_column(DECIMAL(12, 6), nullable=False)  # High precision for efficient reordering
+    score: Mapped[Optional[float]] = mapped_column(DECIMAL(10, 8), nullable=True)  # Store similarity scores as decimal values
     
     # Relationships
-    playlist = relationship("Playlist", back_populates="playlist_tracks")
-    track = relationship("Track")
+    playlist: Mapped["Playlist"] = relationship("Playlist", back_populates="playlist_tracks")
+    track: Mapped["Track"] = relationship("Track")
     
     def __repr__(self):
-        return f"<PlaylistTrack(playlist_id={self.playlist_id}, track_id={self.track_id}, position={self.position}, score={self.score})>"
+        return f"<PlaylistTrack(playlist_id={self.playlist_id}, track_id={self.track_id}, position={self.position})>"
