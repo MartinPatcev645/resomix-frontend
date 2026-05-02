@@ -16,45 +16,43 @@ Email: usman.naeem2212@gmail.com
 """
 
 # Label model 
-from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, DateTime, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, ForeignKey, DateTime, Enum
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
+from typing import List, Optional
 from . import Base
 
 
 class Label(Base):
     """
     Label model representing the labels table
-    
-    Schema from SQL:
-    CREATE TABLE IF NOT EXISTS labels (
-        id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(120)  NOT NULL,
-        website VARCHAR(255),
-        UNIQUE KEY uk_label_name (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     __tablename__ = "labels"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
     
     # Primary key
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, index=True, autoincrement=True)
 
     # Foreign keys
-    party_id = Column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
+    party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
     
     # Fields
-    dpid = Column(String(100), nullable=True)
-    label_name = Column(String(512), nullable=False, index=True)
-    label_type = Column(
+    dpid: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    label_name: Mapped[str] = mapped_column(String(512), nullable=False, index=True)
+    label_type: Mapped[str] = mapped_column(
         Enum('RecordLabel','MusicPublisher','OriginalPublisher','SubPublisher','Other', name="label_type_enum"),
         default='RecordLabel'
     )
-    created_at = Column(
+    created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
 
     # Relationships
-    tracks = relationship("Track", back_populates="label")
+    tracks: Mapped[List["Track"]] = relationship("Track", back_populates="label")
+    sftp_users: Mapped[List["SftpUser"]] = relationship("SftpUser", back_populates="label", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Label(id={self.id}, label_name='{self.label_name}', type='{self.label_type}')>"

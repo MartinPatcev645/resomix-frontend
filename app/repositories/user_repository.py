@@ -32,14 +32,16 @@ class UserRepository(BaseRepository[User]):
         super().__init__(User)
     
     def _find_existing(self, db: Session, **kwargs) -> Optional[User]:
-        """Find existing user by email or username"""
+        """Find existing user by email or username (Sync)"""
         email = kwargs.get('email')
         username = kwargs.get('username')
         
         if email:
-            return db.query(User).filter(User.email == email).first()
+            stmt = select(User).where(User.email == email)
+            return db.execute(stmt).scalar_one_or_none()
         elif username:
-            return db.query(User).filter(User.username == username).first()
+            stmt = select(User).where(User.username == username)
+            return db.execute(stmt).scalar_one_or_none()
         return None
     
     async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[User]:

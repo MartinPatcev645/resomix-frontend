@@ -17,18 +17,19 @@ Email: usman.naeem2212@gmail.com
 
 # UserRole, Role, Permission models
 from sqlalchemy import (
-    Column,
-    Integer,
-    BigInteger,
     String,
     Boolean,
     Enum,
     ForeignKey,
     DateTime,
+    CHAR,
+    text
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.dialects import mysql
 from . import Base
 from sqlalchemy.sql import func
+from typing import List, Optional
 import uuid as uuid_lib
 
 
@@ -45,22 +46,25 @@ class Role(Base):
     """
 
     __tablename__ = "roles"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, index=True, autoincrement=True)
 
     # Fields
-    name = Column(String(50), nullable=False, unique=True)
-    description = Column(String(255), nullable=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Relationships
-    role_permissions = relationship(
+    role_permissions: Mapped[List["RolePermission"]] = relationship(
         "RolePermission", back_populates="role", cascade="all, delete-orphan"
     )
-    user_roles = relationship(
+    user_roles: Mapped[List["UserRole"]] = relationship(
         "UserRole", back_populates="role", cascade="all, delete-orphan"
     )
-    permissions = relationship(
+    permissions: Mapped[List["Permission"]] = relationship(
         "Permission", secondary="role_permissions", viewonly=True
     )
 
@@ -81,19 +85,22 @@ class Permission(Base):
     """
 
     __tablename__ = "permissions"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, index=True, autoincrement=True)
 
     # Fields
-    name = Column(String(100), nullable=False, unique=True)
-    description = Column(String(255), nullable=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Relationships
-    role_permissions = relationship(
+    role_permissions: Mapped[List["RolePermission"]] = relationship(
         "RolePermission", back_populates="permission", cascade="all, delete-orphan"
     )
-    roles = relationship("Role", secondary="role_permissions", viewonly=True)
+    roles: Mapped[List["Role"]] = relationship("Role", secondary="role_permissions", viewonly=True)
 
     def __repr__(self):
         return f"<Permission(id={self.id}, name='{self.name}')>"
@@ -114,18 +121,21 @@ class RolePermission(Base):
     """
 
     __tablename__ = "role_permissions"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     # Composite primary key
-    role_id = Column(
-        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    role_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
     )
-    permission_id = Column(
-        Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
+    permission_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
     )
 
     # Relationships
-    role = relationship("Role", back_populates="role_permissions")
-    permission = relationship("Permission", back_populates="role_permissions")
+    role: Mapped["Role"] = relationship("Role", back_populates="role_permissions")
+    permission: Mapped["Permission"] = relationship("Permission", back_populates="role_permissions")
 
     def __repr__(self):
         return f"<RolePermission(role_id={self.role_id}, permission_id={self.permission_id})>"
@@ -146,18 +156,21 @@ class UserRole(Base):
     """
 
     __tablename__ = "user_roles"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     # Composite primary key
-    user_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    user_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    role_id = Column(
-        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    role_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
     )
 
     # Relationships
-    role = relationship("Role", back_populates="user_roles")
-    user = relationship("User", back_populates="roles")
+    role: Mapped["Role"] = relationship("Role", back_populates="user_roles")
+    user: Mapped["User"] = relationship("User", back_populates="roles")
 
     def __repr__(self):
         return f"<UserRole(user_id={self.user_id}, role_id={self.role_id})>"
@@ -172,70 +185,73 @@ class User(Base):
     """User model representing the users table (dual ID system)"""
 
     __tablename__ = "users"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     # Primary keys
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
-    uuid = Column(String(36), nullable=False, unique=True, index=True)
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, index=True, autoincrement=True)
+    uuid: Mapped[str] = mapped_column(CHAR(36), nullable=False, unique=True, index=True)
 
     # Authentication
-    username = Column(String(50), nullable=False, unique=True, index=True)
-    email = Column(String(100), nullable=False, unique=True, index=True)
-    password_hash = Column(String(255), nullable=False)
+    username: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Profile
-    name = Column(String(100), nullable=True)
-    profile_picture = Column(String(255), nullable=True)
-    language = Column(String(10), nullable=True, default="en")
-    timezone = Column(String(50), nullable=True, default="UTC")
+    name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    profile_picture: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    language: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, default="en")
+    timezone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="UTC")
 
     # Security flags
-    is_email_verified = Column(Boolean, nullable=False, default=False)
-    is_two_factor_enabled = Column(Boolean, nullable=False, default=False)
-    two_factor_method = Column(
+    is_email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_two_factor_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    two_factor_method: Mapped[str] = mapped_column(
         Enum("email", "app", name="two_factor_method"), nullable=False, default="email"
     )
 
     # Stripe Integration
-    stripe_customer_id = Column(String(255), nullable=True, unique=True)
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, unique=True)
 
     # Timestamps
-    created_at = Column(
+    created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
-    updated_at = Column(
+    updated_at: Mapped[DateTime] = mapped_column(
         DateTime,
         nullable=False,
         server_default=func.current_timestamp(),
         onupdate=func.current_timestamp(),
     )
 
-    # Relationships (defined later to avoid circular refs)
-    sessions = relationship(
+    # Relationships
+    sessions: Mapped[List["UserSession"]] = relationship(
         "UserSession", back_populates="user", cascade="all, delete-orphan"
     )
-    roles = relationship(
+    roles: Mapped[List["UserRole"]] = relationship(
         "UserRole", back_populates="user", cascade="all, delete-orphan"
     )
-    operation_limits = relationship(
+    operation_limits: Mapped[List["UserOperationLimit"]] = relationship(
         "UserOperationLimit",
         back_populates="user",
         cascade="all, delete-orphan",
         foreign_keys="UserOperationLimit.user_id",
     )
-    spotify_app_association = relationship(
+    spotify_app_association: Mapped[Optional["UserSpotifyApp"]] = relationship(
         "UserSpotifyApp",
         back_populates="user",
         cascade="all, delete-orphan",
         foreign_keys="UserSpotifyApp.user_id",
-        uselist=False,  # One-to-one relationship
+        uselist=False,
     )
-    uploaded_tracks = relationship(
+    uploaded_tracks: Mapped[List["Track"]] = relationship(
         "Track",
         back_populates="uploader",
         cascade="all, delete-orphan",
         foreign_keys="Track.user_id",
     )
-    tokens = relationship(
+    tokens: Mapped[List["UserToken"]] = relationship(
         "UserToken", back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -252,22 +268,25 @@ class UserToken(Base):
     """Consolidated user tokens (email verification, password reset, 2fa)"""
 
     __tablename__ = "user_tokens"
-
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
-    token = Column(String(255), nullable=False, index=True)
-    token_type = Column(
+
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, index=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    token_type: Mapped[str] = mapped_column(
         Enum("email_verification", "password_reset", "2fa", name="user_token_type"),
         nullable=False,
     )
-    expires_at = Column(DateTime, nullable=False)
-    created_at = Column(
+    expires_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
 
-    user = relationship("User", back_populates="tokens")
+    user: Mapped["User"] = relationship("User", back_populates="tokens")
 
     def __repr__(self):
         return f"<UserToken(user_id={self.user_id}, type='{self.token_type}', token='{self.token[:8]}...')>"
@@ -277,29 +296,32 @@ class UserSession(Base):
     """User sessions for refresh tokens and device tracking"""
 
     __tablename__ = "user_sessions"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(
-        BigInteger,
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, index=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    session_id = Column(String(36), nullable=False, unique=True, index=True)
-    refresh_token_hash = Column(String(255), nullable=True)
+    session_id: Mapped[str] = mapped_column(CHAR(36), nullable=False, unique=True, index=True)
+    refresh_token_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Device tracking
-    user_agent = Column(String(255), nullable=True)
-    ip_address = Column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
 
     # Session lifecycle
-    created_at = Column(
+    created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
-    expires_at = Column(DateTime, nullable=True, index=True)
-    revoked_at = Column(DateTime, nullable=True, index=True)
+    expires_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True)
+    revoked_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True)
 
-    user = relationship("User", back_populates="sessions")
+    user: Mapped["User"] = relationship("User", back_populates="sessions")
 
     def __repr__(self):
         return f"<UserSession(id={self.id}, user_id={self.user_id}, revoked={self.revoked_at is not None})>"
@@ -309,14 +331,15 @@ class UserAuthProvider(Base):
     """OAuth/Social login providers (future use)"""
 
     __tablename__ = "user_auth_providers"
-
-    user_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
-    provider = Column(String(50), nullable=False, primary_key=True)
-    provider_uid = Column(String(100), nullable=False)
 
-    __table_args__ = ({"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4"},)
+    user_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    provider: Mapped[str] = mapped_column(String(50), nullable=False, primary_key=True)
+    provider_uid: Mapped[str] = mapped_column(String(100), nullable=False)
 
     def __repr__(self):
         return f"<UserAuthProvider(user_id={self.user_id}, provider='{self.provider}')>"

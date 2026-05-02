@@ -1,8 +1,10 @@
 # ruff: noqa: E402
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncAttrs
 
 # Create SQLAlchemy Base class
-Base = declarative_base()
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
 
 # Import all models to register them with SQLAlchemy
 from .party import Party
@@ -36,6 +38,7 @@ from .waitlist import Waitlist
 from .operation_limit import OperationType, UserOperationLimit
 from .spotify_app import SpotifyApp, UserSpotifyApp
 from .consumption_event import ConsumptionEvent
+from .sftp_user import SftpUser
 
 # Make models available at package level
 __all__ = [
@@ -78,4 +81,5 @@ __all__ = [
     "SpotifyApp",
     "UserSpotifyApp",
     "ConsumptionEvent",
+    "SftpUser",
 ]
