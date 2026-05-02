@@ -13,7 +13,8 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime
 
 from app.models.ecommerce import Cart, CartItem, PromoCode, TrackFormat
-from app.models.track import Track, TrackArtist
+from app.models.track import Track
+from app.models.recording_artist import RecordingArtist
 from app.repositories.base_repository import BaseRepository
 
 class CartRepository(BaseRepository[Cart]):
@@ -28,8 +29,8 @@ class CartRepository(BaseRepository[Cart]):
                 selectinload(Cart.items)
                     .selectinload(CartItem.track_format)
                     .selectinload(TrackFormat.track)
-                    .selectinload(Track.track_artists)
-                    .selectinload(TrackArtist.artist),
+                    .selectinload(Track.recording_artists)
+                    .selectinload(RecordingArtist.artist),
                 selectinload(Cart.promo_code)
             )
             .where(

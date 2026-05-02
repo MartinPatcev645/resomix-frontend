@@ -70,7 +70,7 @@ class SystemLog(Base):
     # Related Entities - Foreign keys
     track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True)
     playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="SET NULL"), nullable=True, index=True)
-    artist_id = Column(Integer, ForeignKey("artists.id", ondelete="SET NULL"), nullable=True, index=True)
+    artist_id = Column(BigInteger, ForeignKey("artists.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Additional Context
     log_metadata = Column(JSON, nullable=True)  # Additional structured data

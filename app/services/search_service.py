@@ -63,18 +63,19 @@ class SearchService:
                 # We'll use a simple LIKE query on title or artist
                 # Note: This is a basic implementation for demo purposes
                 from sqlalchemy import select, or_, and_
-                from app.models.track import Track, TrackArtist
+                from app.models.track import Track
+                from app.models.recording_artist import RecordingArtist
                 from app.models.artist import Artist
                 from app.models.constants import TrackType
                 
                 # Join with artists to search by artist name
                 stmt = (
                     select(Track)
-                    .outerjoin(TrackArtist)
+                    .outerjoin(RecordingArtist)
                     .outerjoin(Artist)
                     .where(and_(
-                        Track.type == TrackType.OPEN,
-                        Track.type != TrackType.UPLOAD
+                        Track.track_type == TrackType.OPEN,
+                        Track.track_type != TrackType.UPLOAD
                     ))
                     .where(
                         or_(
@@ -99,7 +100,7 @@ class SearchService:
                     
                     # Re-fetch with eager loading to be safe or rely on lazy loading if session is open
                     # Let's try to use the object directly as session is active
-                    artist_names = [ta.artist.full_name for ta in track_obj.track_artists]
+                    artist_names = [ra.artist.full_name for ra in track_obj.recording_artists]
                     artist_display = ", ".join(artist_names) if artist_names else "N/A"
                     
                     formatted_results.append({

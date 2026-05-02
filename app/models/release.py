@@ -6,7 +6,7 @@ This module defines the Release SQLAlchemy model for the Resomix application.
 It maps to the releases table which replaces the old albums table for DDEX compliance.
 """
 
-from sqlalchemy import Column, Integer, BigInteger, String, Date, ForeignKey, DateTime, Enum, Numeric
+from sqlalchemy import Column, Integer, BigInteger, String, Date, ForeignKey, DateTime, Enum, Numeric, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base
@@ -64,13 +64,16 @@ class Release(Base):
     genre = Column(String(255), nullable=True)
     sub_genre = Column(String(255), nullable=True)
     
+    p_line = Column(String(255), nullable=True)
+    c_line = Column(String(255), nullable=True)
+    
     parental_warning = Column(
         Enum('NoAdviceAvailable','NotExplicit','Explicit','ExplicitContentEdited', name="parental_warning_enum"),
         default='NotExplicit'
     )
     
-    is_compilation = Column(Integer, default=0) # TINYINT(1)
-    is_active = Column(Integer, default=1, index=True) # TINYINT(1)
+    is_compilation = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, index=True)
     price_cents = Column(Integer, nullable=True)
     artwork_path = Column(String(1024), nullable=True)
     cover_image = Column(String(255), nullable=True)
@@ -82,6 +85,9 @@ class Release(Base):
     updated_at = Column(
         DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
+    
+    # Relationships
+    tracks = relationship("Track", back_populates="release", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Release(id={self.id}, title='{self.title}', icpn='{self.icpn}')>"

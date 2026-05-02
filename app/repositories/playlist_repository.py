@@ -598,9 +598,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     SELECT 
                         t.uuid as id,
                         t.title,
-                        t.year,
+                        t.p_line_year as year,
                         t.duration_sec as duration,
-                        t.type,
+                        t.track_type as type,
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
@@ -608,10 +608,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         ) as artist
                     FROM tracks t
                     LEFT JOIN labels l ON t.label_id = l.id
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    LEFT JOIN recording_artists ra ON t.id = ra.track_id
+                    LEFT JOIN artists a ON ra.artist_id = a.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, t.type, l.name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
                     LIMIT 1
                 """
                 )
@@ -647,9 +647,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.id as track_id,
                         t.uuid as id,
                         t.title,
-                        t.year,
+                        t.p_line_year as year,
                         t.duration_sec as duration,
-                        t.type,
+                        t.track_type as type,
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
@@ -657,10 +657,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         ) as artist
                     FROM tracks t
                     LEFT JOIN labels l ON t.label_id = l.id
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    LEFT JOIN recording_artists ra ON t.id = ra.track_id
+                    LEFT JOIN artists a ON ra.artist_id = a.id
                     WHERE t.id IN :track_ids
-                    GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, t.type, l.name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
                 """
                 )
 
@@ -802,16 +802,16 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.uuid,
                         t.title,
                         t.duration_sec,
-                        t.type,
+                        t.track_type as type,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                             'Unknown Artist'
                         ) as artist
                     FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    LEFT JOIN recording_artists ra ON t.id = ra.track_id
+                    LEFT JOIN artists a ON ra.artist_id = a.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.duration_sec, t.type
+                    GROUP BY t.id, t.uuid, t.title, t.duration_sec, t.track_type
                     LIMIT 1
                 """
                 )
@@ -852,8 +852,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     pt.position
                 FROM playlist_tracks pt
                 JOIN tracks t ON pt.track_id = t.id
-                LEFT JOIN track_artists ta ON t.id = ta.track_id
-                LEFT JOIN artists a ON ta.artist_id = a.id
+                LEFT JOIN recording_artists ra ON t.id = ra.track_id
+                LEFT JOIN artists a ON ra.artist_id = a.id
                 WHERE pt.playlist_id = :playlist_id
                 GROUP BY t.id, t.uuid, t.title, t.duration_sec, pt.position
                 ORDER BY pt.position
@@ -1345,12 +1345,12 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
                 if seed_row:
                     # Get seed track artists
-                    from app.models.track import TrackArtist
+                    from app.models.recording_artist import RecordingArtist
 
                     artists_query = (
                         select(Artist.full_name)
-                        .join(TrackArtist, Artist.id == TrackArtist.artist_id)
-                        .where(TrackArtist.track_id == seed_row.id)
+                        .join(RecordingArtist, Artist.id == RecordingArtist.artist_id)
+                        .where(RecordingArtist.track_id == seed_row.id)
                     )
                     artists_result = await db.execute(artists_query)
                     artist_names = [row[0] for row in artists_result.fetchall()]
@@ -1407,12 +1407,12 @@ class PlaylistRepository(BaseRepository[Playlist]):
             tracks_data = []
             for row in track_rows:
                 # Get artists for this track
-                from app.models.track import TrackArtist
+                from app.models.recording_artist import RecordingArtist
 
                 artists_query = (
                     select(Artist.full_name)
-                    .join(TrackArtist, Artist.id == TrackArtist.artist_id)
-                    .where(TrackArtist.track_id == row.id)
+                    .join(RecordingArtist, Artist.id == RecordingArtist.artist_id)
+                    .where(RecordingArtist.track_id == row.id)
                 )
                 artists_result = await db.execute(artists_query)
                 artist_names = [a[0] for a in artists_result.fetchall()]

@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from . import Base
 
@@ -38,9 +38,11 @@ class Genre(Base):
     
     # Fields
     name = Column(String(80), nullable=False, unique=True, index=True)
+    parent_id = Column(Integer, ForeignKey("genres.id"), nullable=True)
     
     # Relationships
     tracks = relationship("Track", back_populates="genre")
+    subgenres = relationship("Genre", backref="parent", remote_side=[id])
     
     def __repr__(self):
         return f"<Genre(id={self.id}, name='{self.name}')>" 

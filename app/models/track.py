@@ -2,12 +2,12 @@
 Track Models
 ============
 
-This module defines the Track and TrackArtist SQLAlchemy models for the Resomix application.
+This module defines the Track SQLAlchemy model for the Resomix application.
 It handles track metadata storage including title, duration, BPM, musical key, and file paths,
 with support for many-to-many relationships between tracks and artists.
 
 Provides comprehensive track data modeling with proper foreign key relationships
-to albums, labels, genres, and artists for the audio similarity system.
+to releases, labels, genres, and artists for the audio similarity system.
 
 Version: 3.0.1
 Init Date: June 11, 2025
@@ -15,7 +15,6 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-# Track, TrackArtist models
 from sqlalchemy import (
     Column,
     Integer,
@@ -42,32 +41,29 @@ class Track(Base):
     CREATE TABLE IF NOT EXISTS tracks (
         id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         uuid          VARCHAR(36) NOT NULL UNIQUE,
-        release_id      INT UNSIGNED,                -- NULL for singles
-        label_id      INT UNSIGNED,
-        genre_id      INT UNSIGNED,                -- Single genre per track
+        release_id    BIGINT UNSIGNED,             -- NULL for singles
+        label_id      BIGINT UNSIGNED,
+        genre_id      BIGINT UNSIGNED,             -- Single genre per track
         user_id       BIGINT UNSIGNED,             -- NULL for non-uploaded tracks
         title         VARCHAR(255) NOT NULL,
-        year          YEAR,
-        duration_sec  INT UNSIGNED,
+        isrc          VARCHAR(30) NOT NULL,
+        duration_sec  DECIMAL(8,3),
         bpm           SMALLINT UNSIGNED,
-        musical_key   VARCHAR(5),                  -- e.g. "C#m"
+        musical_key   VARCHAR(10),                 -- e.g. "C#m"
         file_path     VARCHAR(500) NOT NULL,       -- original / full file
         preview_path  VARCHAR(500),                -- 128kbps MP3 etc.
         file_size     BIGINT UNSIGNED,             -- bytes
-        type          VARCHAR(50) NOT NULL DEFAULT 'electrobuzz', -- Track source type
+        track_type    VARCHAR(50) NOT NULL DEFAULT 'electrobuzz', -- Track source type
         created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE SET NULL,
         FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
         FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL,
         KEY idx_track_release  (release_id),
-        KEY idx_track_label  (label_id),
-        KEY idx_track_genre  (genre_id),
-        KEY idx_track_user   (user_id),
         KEY idx_track_title  (title),
         KEY idx_track_bpm    (bpm),
         KEY idx_track_key    (musical_key),
-        KEY idx_track_type   (type)
+        KEY idx_track_type   (track_type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
 
@@ -84,10 +80,10 @@ class Track(Base):
         BigInteger, ForeignKey("releases.id", ondelete="SET NULL"), nullable=True, index=True
     )
     label_id = Column(
-        Integer, ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True
+        BigInteger, ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True
     )
     genre_id = Column(
-        Integer, ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True
+        BigInteger, ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True
     )
     user_id = Column(
         BigInteger,
@@ -116,7 +112,7 @@ class Track(Base):
     key_signature = Column(String(10), nullable=True)
     audio_language = Column(String(2), default="xx")
     language_of_lyrics = Column(String(10), nullable=True)
-    genre = Column(String(255), nullable=True)
+    genre_text = Column("genre", String(255), nullable=True) # Map to 'genre' column but rename attribute to avoid conflict with relationship
     sub_genre = Column(String(255), nullable=True)
     price_cents = Column(Integer, default=99)
     mix_name = Column(String(150), default="Original Mix")
@@ -137,9 +133,10 @@ class Track(Base):
     is_instrumental = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True, index=True)
     
-    type = Column(
+    track_type = Column(
         String(50), nullable=False, default="electrobuzz", index=True
-    )  # Track source type
+    )
+    
     ingestion_source = Column(
         Enum("ddex", "cc_by", "user_upload", "csv", name="ingestion_source_type"),
         default="user_upload",
@@ -156,12 +153,13 @@ class Track(Base):
     label = relationship("Label", back_populates="tracks")
     genre = relationship("Genre", back_populates="tracks")
     uploader = relationship("User", back_populates="uploaded_tracks")
+    release = relationship("Release", back_populates="tracks")
 
-    # Many-to-many relationship with artists through track_artists
-    track_artists = relationship(
-        "TrackArtist", back_populates="track", cascade="all, delete-orphan"
+    # Many-to-many relationship with artists through recording_artists
+    recording_artists = relationship(
+        "RecordingArtist", back_populates="track", cascade="all, delete-orphan"
     )
-    artists = relationship("Artist", secondary="track_artists", viewonly=True)
+    artists = relationship("Artist", secondary="recording_artists", viewonly=True, overlaps="recording_artists")
 
     # One-to-one relationship with external platform track IDs
     transfer_track = relationship(
@@ -172,36 +170,4 @@ class Track(Base):
     )
 
     def __repr__(self):
-        return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}', type='{self.type}')>"
-
-
-class TrackArtist(Base):
-    """
-    TrackArtist model representing the track_artists many-to-many table
-
-    Schema from SQL:
-    CREATE TABLE IF NOT EXISTS track_artists (
-        track_id  BIGINT UNSIGNED NOT NULL,
-        artist_id INT UNSIGNED    NOT NULL,
-        PRIMARY KEY (track_id, artist_id),
-        FOREIGN KEY (track_id)  REFERENCES tracks(id)  ON DELETE CASCADE,
-        FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """
-
-    __tablename__ = "track_artists"
-
-    # Composite primary key
-    track_id = Column(
-        BigInteger, ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True
-    )
-    artist_id = Column(
-        Integer, ForeignKey("artists.id", ondelete="CASCADE"), primary_key=True
-    )
-
-    # Relationships
-    track = relationship("Track", back_populates="track_artists")
-    artist = relationship("Artist", back_populates="track_artists")
-
-    def __repr__(self):
-        return f"<TrackArtist(track_id={self.track_id}, artist_id={self.artist_id})>"
+        return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}', type='{self.track_type}')>"

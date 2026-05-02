@@ -11,7 +11,7 @@ from .artist import Artist
 from .genre import Genre
 from .message import Message
 from .release import Release
-from .track import Track, TrackArtist
+from .track import Track
 from .recording_artist import RecordingArtist
 from .playlist import Playlist, PlaylistTrack
 from .playlist_engagement import UserPlaylistEngagement
@@ -47,7 +47,6 @@ __all__ = [
     "Release",
     "Message",
     "Track",
-    "TrackArtist",
     "RecordingArtist",
     "Playlist",
     "PlaylistTrack",

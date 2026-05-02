@@ -66,20 +66,20 @@ class SimilarityRepository(BaseRepository[Track]):
                 SELECT 
                     t.uuid as id,
                     t.title,
-                    t.year,
+                    t.p_line_year as year,
                     t.duration_sec as duration,
-                    t.type,
-                    COALESCE(l.name, '') as label,
+                    t.track_type as type,
+                    COALESCE(l.label_name, '') as label,
                     COALESCE(
-                        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                        GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                         ''
                     ) as artist
                 FROM tracks t
                 LEFT JOIN labels l ON t.label_id = l.id
-                LEFT JOIN track_artists ta ON t.id = ta.track_id
-                LEFT JOIN artists a ON ta.artist_id = a.id
+                LEFT JOIN recording_artists ra ON t.id = ra.track_id
+                LEFT JOIN artists a ON ra.artist_id = a.id
                 WHERE t.file_path = :track_path OR t.preview_path = :track_path
-                GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, t.type, l.name
+                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
                 LIMIT 1
             """
             )
@@ -123,20 +123,20 @@ class SimilarityRepository(BaseRepository[Track]):
                 SELECT 
                     t.uuid as id,
                     t.title,
-                    t.year,
+                    t.p_line_year as year,
                     t.duration_sec as duration,
-                    t.type,
-                    COALESCE(l.name, '') as label,
+                    t.track_type as type,
+                    COALESCE(l.label_name, '') as label,
                     COALESCE(
-                        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', '),
+                        GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
                         ''
                     ) as artist
                 FROM tracks t
                 LEFT JOIN labels l ON t.label_id = l.id
-                LEFT JOIN track_artists ta ON t.id = ta.track_id
-                LEFT JOIN artists a ON ta.artist_id = a.id
+                LEFT JOIN recording_artists ra ON t.id = ra.track_id
+                LEFT JOIN artists a ON ra.artist_id = a.id
                 WHERE t.uuid = :track_uuid
-                GROUP BY t.id, t.uuid, t.title, t.year, t.duration_sec, t.type, l.name
+                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
                 LIMIT 1
             """
             )
@@ -196,14 +196,14 @@ class SimilarityRepository(BaseRepository[Track]):
             )
 
             for track in tracks:
-                # Get primary artist (first artist in track_artists) for backward compatibility
+                # Get primary artist (first artist in recording_artists) for backward compatibility
                 artist_name = "N/A"
                 all_artists = []
 
-                if track.track_artists:
-                    artist_name = track.track_artists[0].artist.name
+                if track.recording_artists:
+                    artist_name = track.recording_artists[0].artist.full_name
                     # Collect all artists for deduplication purposes
-                    all_artists = [ta.artist.name for ta in track.track_artists]
+                    all_artists = [ra.artist.full_name for ra in track.recording_artists]
 
                 # Extract filename from file_path
                 # filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
@@ -212,7 +212,7 @@ class SimilarityRepository(BaseRepository[Track]):
                 # album_name = track.album.title if track.album else "N/A"
 
                 # Get label name
-                label_name = track.label.name if track.label else "N/A"
+                label_name = track.label.label_name if track.label else "N/A"
 
                 # Get genre name
                 # genre_name = track.genre.name if track.genre else "N/A"
@@ -230,7 +230,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "all_artists": all_artists,  # All artists for deduplication
                     "title": track.title or "N/A",
                     "year": track.year,
-                    "type": "upload" if track.type == "upload" else "internal",
+                    "type": "upload" if track.track_type == "upload" else "internal",
                 }
                 details_map[track.file_path] = track_data
 
@@ -278,14 +278,14 @@ class SimilarityRepository(BaseRepository[Track]):
             )
 
             for track in tracks:
-                # Get primary artist (first artist in track_artists) for backward compatibility
+                # Get primary artist (first artist in recording_artists) for backward compatibility
                 artist_name = "N/A"
                 all_artists = []
 
-                if track.track_artists:
-                    artist_name = track.track_artists[0].artist.name
+                if track.recording_artists:
+                    artist_name = track.recording_artists[0].artist.full_name
                     # Collect all artists for deduplication purposes
-                    all_artists = [ta.artist.name for ta in track.track_artists]
+                    all_artists = [ra.artist.full_name for ra in track.recording_artists]
 
                 # Extract filename from file_path
                 # filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
@@ -294,7 +294,7 @@ class SimilarityRepository(BaseRepository[Track]):
                 # album_name = track.album.title if track.album else "N/A"
 
                 # Get label name
-                label_name = track.label.name if track.label else "N/A"
+                label_name = track.label.label_name if track.label else "N/A"
 
                 # Get genre name
                 # genre_name = track.genre.name if track.genre else "N/A"
@@ -312,7 +312,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "all_artists": all_artists,  # All artists for deduplication
                     "title": track.title or "N/A",
                     "year": track.year,
-                    "type": "upload" if track.type == "upload" else "internal",
+                    "type": "upload" if track.track_type == "upload" else "internal",
                 }
                 details_map[track.uuid] = track_data
 

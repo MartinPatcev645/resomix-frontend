@@ -1,14 +1,31 @@
-1. Create empty DB
+Create empty db with just schema.
 
-CREATE DATABASE resomix_db_open CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON resomix_db_open.* TO 'resomixAdmin'@'localhost';
+create an .sql schema file in usman/mariadb
+`sudo mariadb`
+`CREATE DATABASE resomix_db_ddex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+`GRANT ALL PRIVILEGES ON resomix_db_ddex.* TO 'resomixAdmin'@'localhost';`
+FLUSH PRIVILEGES;
+ALTER USER 'resomixAdmin'@'localhost' IDENTIFIED BY 'password_here';
+FLUSH PRIVILEGES;
+EXITL;
+mysql -u resomixAdmin -p resomix_db_ddex < new_database.sql
+mysql -u resomixAdmin -p resomix_db_ddex -e "SHOW TABLES;"
+
+
+
+
+
+1. Create empty DB, and insert data as well.
+
+CREATE DATABASE resomix_db_ddex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON resomix_db_ddex.* TO 'resomixAdmin'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 
 2. Import full schema with empty tables
 
 mysqldump -u resomixAdmin -p --no-data resomix_db > schema.sql
-mysql -u resomixAdmin -p resomix_db_open < schema.sql
+mysql -u resomixAdmin -p resomix_db_ddex < schema.sql
 
 3. Dump only user tables' data
 
@@ -36,7 +53,7 @@ mysqldump -u resomixAdmin -p \
 
 4. Import dumped data to new database
 
-mysql -u resomixAdmin -p resomix_db_open < user_data.sql
+mysql -u resomixAdmin -p resomix_db_ddex < user_data.sql
 
 5. Fix Autoincrement tables dumped one by one (If empty table skip alter)
 
@@ -45,7 +62,7 @@ ALTER TABLE table AUTO_INCREMENT = <max_id + 100>;
 
 6. Change the db name in env
 
-MARIA_DB_NAME=resomix_db_open
+MARIA_DB_NAME=resomix_db_ddex
 
 
 
@@ -58,7 +75,7 @@ Switching back in future:
 mysqldump -u resomixAdmin -p \
   --single-transaction \
   --no-create-info \
-  resomix_db_open \
+  resomix_db_ddex \
   users \
   email_verification_tokens \
   password_reset_tokens \

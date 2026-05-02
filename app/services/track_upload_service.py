@@ -25,7 +25,8 @@ from fastapi import UploadFile
 from sqlalchemy import text, select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.constants import TrackType
-from app.models.track import Track, TrackArtist
+from app.models.track import Track
+from app.models.recording_artist import RecordingArtist
 from app.services.metadata_service import MetadataService
 from app.utils.sanitization import (
     sanitize_artist_name,
@@ -88,7 +89,7 @@ class Cache:
         self.artists: Dict[str, int] = {}
         self.labels: Dict[str, int] = {}
         self.genres: Dict[str, int] = {}
-        self.albums: Dict[Tuple[str, int], int] = {}
+        self.releases: Dict[Tuple[str, int], int] = {}
 
     # --- generic helpers -----------------------------------------------------
 
@@ -98,14 +99,20 @@ class Cache:
         return {name.lower(): id_ for name, id_ in result.fetchall()}
 
     async def preload(self, db: AsyncSession):
-        self.artists = await self._fetch_table(db, "artists")
-        self.labels = await self._fetch_table(db, "labels")
-        self.genres = await self._fetch_table(db, "genres")
-        # albums: (title, artist_id) fetch
-        result = await db.execute(text("SELECT title, artist_id, id FROM albums"))
-        self.albums = {
+        result_artists = await db.execute(text("SELECT full_name, id FROM artists"))
+        self.artists = {name.lower(): id_ for name, id_ in result_artists.fetchall()}
+        
+        result_labels = await db.execute(text("SELECT label_name, id FROM labels"))
+        self.labels = {name.lower(): id_ for name, id_ in result_labels.fetchall()}
+        
+        result_genres = await db.execute(text("SELECT name, id FROM genres"))
+        self.genres = {name.lower(): id_ for name, id_ in result_genres.fetchall()}
+        
+        # releases: (title, artist_id) fetch
+        result_releases = await db.execute(text("SELECT title, artist_id, id FROM releases"))
+        self.releases = {
             (title.lower(), artist_id): id_
-            for title, artist_id, id_ in result.fetchall()
+            for title, artist_id, id_ in result_releases.fetchall()
         }
 
     # --- get-or-create helpers ----------------------------------------------
@@ -138,12 +145,18 @@ class Cache:
             return cache[key]
 
         try:
-            insert_sql = text(f"INSERT IGNORE INTO {table} (name) VALUES (:name)")
+            col_name = "name"
+            if table == "artists":
+                col_name = "full_name"
+            elif table == "labels":
+                col_name = "label_name"
+                
+            insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}) VALUES (:name)")
             await db.execute(insert_sql, {"name": sanitized_name})
 
             # Get the ID - handle potential duplicates
             select_result = await db.execute(
-                text(f"SELECT id FROM {table} WHERE name = :name"),
+                text(f"SELECT id FROM {table} WHERE {col_name} = :name"),
                 {"name": sanitized_name},
             )
             row = select_result.first()
@@ -169,7 +182,7 @@ class Cache:
     async def genre(self, db: AsyncSession, name: str) -> int:
         return await self._get_or_create(db, "genres", self.genres, name)
 
-    async def album(self, db: AsyncSession, title: str, primary_artist_id: int) -> int:
+    async def release(self, db: AsyncSession, title: str, primary_artist_id: int) -> int:
         # Sanitize the album title
         original_title = title
         sanitized_title = sanitize_album_title(title)
@@ -177,16 +190,16 @@ class Cache:
         # Log if sanitization changed the title
         if original_title != sanitized_title:
             logger.warning(
-                f"Sanitized album title: '{original_title}' -> '{sanitized_title}'"
+                f"Sanitized release title: '{original_title}' -> '{sanitized_title}'"
             )
 
         key = (sanitized_title.lower(), primary_artist_id)
-        if key in self.albums:
-            return self.albums[key]
+        if key in self.releases:
+            return self.releases[key]
 
         try:
             insert_sql = text(
-                """INSERT IGNORE INTO albums (artist_id, title) 
+                """INSERT IGNORE INTO releases (artist_id, title) 
                        VALUES (:artist_id, :title) """
             )
             await db.execute(
@@ -196,7 +209,7 @@ class Cache:
             # Get the ID - handle potential duplicates
             select_result = await db.execute(
                 text(
-                    "SELECT id FROM albums WHERE artist_id = :artist_id AND title = :title"
+                    "SELECT id FROM releases WHERE artist_id = :artist_id AND title = :title"
                 ),
                 {"artist_id": primary_artist_id, "title": sanitized_title},
             )
@@ -207,7 +220,7 @@ class Cache:
                 )
 
             id_ = row[0]
-            self.albums[key] = id_
+            self.releases[key] = id_
             return id_
 
         except Exception as e:
@@ -387,16 +400,16 @@ class TrackUploadService:
             # Get or create genre
             genre_id = await self.cache.genre(db, genre_name)
 
-            # Get or create album (optional)
-            album_id = None
+            # Get or create release (optional)
+            release_id = None
             if album_title:
-                album_id = await self.cache.album(db, album_title, primary_artist_id)
+                release_id = await self.cache.release(db, album_title, primary_artist_id)
 
             # Insert track
             track_data = {
                 "uuid": track_uuid,
                 "user_id": user_id,
-                "album_id": album_id,
+                "release_id": release_id,
                 "label_id": label_id,
                 "genre_id": genre_id,
                 "title": title[:255],  # Ensure it fits in the column
@@ -405,7 +418,7 @@ class TrackUploadService:
                 "file_path": file_path[:500],  # Ensure it fits in the column
                 "preview_path": preview_path,
                 "file_size": file_size,
-                "type": track_type,
+                "track_type": track_type,
             }
 
             logger.info(f"Inserting track with type '{track_type}': {track_data}")
@@ -414,7 +427,7 @@ class TrackUploadService:
             track_insert = insert(Track).values(
                 uuid=track_data["uuid"],
                 user_id=track_data["user_id"],
-                album_id=track_data["album_id"],
+                release_id=track_data["release_id"],
                 label_id=track_data["label_id"],
                 genre_id=track_data["genre_id"],
                 title=track_data["title"],
@@ -423,7 +436,7 @@ class TrackUploadService:
                 file_path=track_data["file_path"],
                 preview_path=track_data["preview_path"],
                 file_size=track_data["file_size"],
-                type=track_data["type"],
+                track_type=track_data["track_type"],
             )
             await db.execute(track_insert)
 
@@ -439,7 +452,7 @@ class TrackUploadService:
 
             # Insert track-artist relationships using ORM
             for artist_id in artist_ids:
-                ta_insert = insert(TrackArtist).values(
+                ta_insert = insert(RecordingArtist).values(
                     track_id=track_id, artist_id=artist_id
                 )
                 await db.execute(ta_insert)

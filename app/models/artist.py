@@ -45,9 +45,9 @@ class Artist(Base):
     artist_type = Column(Enum("MainArtist","FeaturedArtist","Remixer","Composer","Lyricist","Producer","Conductor","Orchestra","Other", name="artist_type_enum"), default="MainArtist")
     
     # Relationships
-    # Many-to-many relationship with tracks through track_artists
-    track_artists = relationship("TrackArtist", back_populates="artist", cascade="all, delete-orphan")
-    tracks = relationship("Track", secondary="track_artists", viewonly=True)
+    # Many-to-many relationship with tracks through recording_artists
+    recording_artists = relationship("RecordingArtist", back_populates="artist", cascade="all, delete-orphan")
+    tracks = relationship("Track", secondary="recording_artists", viewonly=True, overlaps="recording_artists")
     
     def __repr__(self):
         return f"<Artist(id={self.id}, full_name='{self.full_name}', type='{self.artist_type}')>"
