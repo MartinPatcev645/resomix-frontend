@@ -845,11 +845,13 @@ CREATE TABLE IF NOT EXISTS purchases (
     order_id INT UNSIGNED NOT NULL,
     track_id INT UNSIGNED,
     release_id   INT UNSIGNED,
+    source_playlist_id INT UNSIGNED,
     price_cents  INT UNSIGNED NOT NULL,
     purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT,
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE RESTRICT,
     FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE RESTRICT,
+    FOREIGN KEY (source_playlist_id) REFERENCES playlists(id) ON DELETE SET NULL,
     FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1015,11 +1017,13 @@ CREATE TABLE IF NOT EXISTS cart_items (
     cart_id INT UNSIGNED NOT NULL,
     track_id INT UNSIGNED NOT NULL,
     release_id   INT UNSIGNED NULL,                -- Grouping tag for "Complete My Album"
+    source_playlist_id INT UNSIGNED NULL,
     price_cents  INT UNSIGNED NOT NULL,
     added_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (cart_id)    REFERENCES carts(id)      ON DELETE CASCADE,
     FOREIGN KEY (track_id)   REFERENCES tracks(id)     ON DELETE RESTRICT,
     FOREIGN KEY (release_id) REFERENCES releases(id)   ON DELETE SET NULL,
+    FOREIGN KEY (source_playlist_id) REFERENCES playlists(id) ON DELETE SET NULL,
     INDEX idx_cart_release (release_id),
     UNIQUE KEY uk_cart_track (cart_id, track_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

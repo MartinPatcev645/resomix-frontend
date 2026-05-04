@@ -5,17 +5,12 @@ Consumption Event Model
 This module defines the ConsumptionEvent SQLAlchemy model for the Resomix application.
 It maps to the consumption_events table which stores DSRF-compliant stream telemetry
 events including stream starts, completions, skips, and download successes.
-
-Used for royalty reporting (DDEX DSRF), fraud detection, and analytics.
-
-Version: 3.3.0
-Date: April 2026
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
 """
 
-from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, DateTime, Enum
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import String, ForeignKey, DateTime, Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
 
@@ -33,12 +28,15 @@ class ConsumptionEvent(Base):
     """
 
     __tablename__ = "consumption_events"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
-    # Primary key
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    # Primary key (BIGINT UNSIGNED for high volume)
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
 
     # Event type
-    event_category = Column(
+    event_category: Mapped[str] = mapped_column(
         Enum(
             "stream_start",
             "stream_complete",
@@ -49,97 +47,61 @@ class ConsumptionEvent(Base):
         nullable=False,
     )
 
-    # Track reference (resolved from UUID during bulk insert)
-    track_id = Column(
-        BigInteger,
+    # Track reference (INT UNSIGNED)
+    track_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True),
         ForeignKey("tracks.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
-    # Track Format reference (identifies exactly which version was downloaded)
-    track_format_id = Column(
-        BigInteger,
-        ForeignKey("track_formats.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-
     # ──────────────────────────────────────────────────────────────
-    # ⚠️ DON'T DELETE — Server-Side Resolved Fields
-    # These fields are NOT sent by the frontend. They are populated
-    # server-side during the background worker's bulk-insert phase.
+    # ⚠️ Server-Side Resolved Fields
     # ──────────────────────────────────────────────────────────────
 
-    # ISRC: Resolved from tracks.isrc by joining on track_id during bulk insert.
-    # Required for DSRF report generation (labels group royalties by ISRC).
-    # Source: tracks.isrc (via track_id lookup)
-    isrc = Column(String(15), nullable=True)
+    # ISRC: Resolved from tracks.isrc
+    isrc: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
 
-    # Label ID: Resolved from tracks.label_id by joining on track_id during bulk insert.
-    # Required for per-label DSRF aggregation and revenue splitting.
-    # Source: tracks.label_id (via track_id lookup)
-    label_id = Column(
-        Integer,
+    # Label ID: Resolved from releases.label_id
+    label_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True),
         ForeignKey("labels.id", ondelete="SET NULL"),
         nullable=True,
     )
 
-    # User ID: Resolved from users.id by matching the frontend's user UUID.
-    # Source: users.id (via users.uuid lookup from frontend user_id field)
-    user_id = Column(
-        BigInteger,
+    # User ID: Resolved from users.id
+    user_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
 
-    # Country Code: Will be populated via GeoIP lookup on client_ip.
-    # Required for DSRF territorial reporting (streams grouped by country).
-    # Source: GeoIP service (e.g., MaxMind) applied to client_ip — NOT YET IMPLEMENTED
-    country_code = Column(String(2), nullable=True)
+    # Country Code: Populated via GeoIP lookup
+    country_code: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
 
-    # ──────────────────────────────────────────────────────────────
-    # End of server-side resolved fields
-    # ──────────────────────────────────────────────────────────────
-
-    # Client IP: Captured from the HTTP request on the hot path (controller layer).
-    # Used for fraud analysis and future GeoIP resolution.
-    client_ip = Column(String(45), nullable=True)
-
-    # Playback context: Maps from the frontend "context" field.
-    # Describes where in the UI the user triggered playback.
-    # Values: "playlist_view", "search_results", "upload_page", "direct_link"
-    playback_context = Column(String(50), nullable=True)
-
-    # Source device: Hardcoded to 'web' for now (frontend is web-only).
-    # Will be dynamically set when iOS/Android clients are introduced.
-    # Source: Determined by client type — currently always 'web'
-    source_device = Column(
+    # Context Data
+    client_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    playback_context: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    source_device: Mapped[str] = mapped_column(
         Enum("web", "ios", "android", "desktop", "other", name="source_device_type"),
         default="web",
     )
 
-    # Session ID: Maps from the frontend "tab_id" field.
-    # Unique per browser tab session, used for deduplication and fraud detection.
-    session_id = Column(String(36), nullable=True, index=True)
+    # Session ID: Per browser tab session
+    session_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
 
-    # Duration: Actual seconds of audio consumed (pause doesn't reset).
-    # For stream_start: always 0.
-    # For stream_complete: >= 30 (royalty threshold).
-    # For stream_skip: < 30.
-    # For download_success: always 0.
-    duration_seconds = Column(Integer, nullable=False)
+    # Duration: Actual seconds of audio consumed
+    duration_seconds: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False)
 
-    # Timestamp: When the event was persisted to DB (server time).
-    timestamp = Column(
+    # Timestamp: Server time
+    timestamp: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp(), index=True
     )
 
-    # Relationships (read-only, no back_populates needed)
-    track = relationship("Track", back_populates=None)
-    track_format = relationship("TrackFormat", back_populates=None)
-    label = relationship("Label", back_populates=None)
-    user = relationship("User", back_populates=None)
+    # Relationships
+    track: Mapped[Optional["Track"]] = relationship("Track")
+    label: Mapped[Optional["Label"]] = relationship("Label")
+    user: Mapped[Optional["User"]] = relationship("User")
 
     def __repr__(self):
         return (

@@ -5,18 +5,12 @@ Log Model
 This module defines the SystemLog SQLAlchemy model for the Resomix application.
 It handles comprehensive system logging and audit trail storage with support for 
 request tracking, error logging, user actions, and system events.
-
-Provides detailed logging data modeling for monitoring, debugging, and admin 
-dashboard operations in the audio similarity system.
-
-Version: 3.0.1
-Init Date: June 11, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
 """
 
-from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, DateTime, Text, JSON, Enum, DECIMAL
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import String, ForeignKey, DateTime, Text, JSON, Enum, DECIMAL
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
 
@@ -29,60 +23,67 @@ class SystemLog(Base):
     and system monitoring with support for admin dashboard queries.
     """
     __tablename__ = "system_logs"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
     
-    # Primary key
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    # Primary key (BIGINT UNSIGNED for high volume)
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
     
     # Request tracking
-    correlation_id = Column(String(36), nullable=True, index=True)
+    correlation_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     
     # Request Information
-    method = Column(String(10), nullable=True)  # HTTP method (GET, POST, etc.)
-    endpoint = Column(String(500), nullable=True, index=True)  # API endpoint path
-    path = Column(String(500), nullable=True)  # Full request path with params
-    query_params = Column(JSON, nullable=True)  # Query parameters as JSON
+    method: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    endpoint: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, index=True)
+    path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    query_params: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     # Response Information
-    status_code = Column(Integer, nullable=True, index=True)  # HTTP status code
-    response_size = Column(Integer, nullable=True)  # Response size in bytes
-    duration_ms = Column(DECIMAL(10, 3), nullable=True)  # Request duration in milliseconds
+    status_code: Mapped[Optional[int]] = mapped_column(mysql.SMALLINT(unsigned=True), nullable=True, index=True)
+    response_size: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), nullable=True)
+    duration_ms: Mapped[Optional[float]] = mapped_column(DECIMAL(10, 3), nullable=True)
     
     # Log Details
-    level = Column(
+    level: Mapped[str] = mapped_column(
         Enum('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', name='log_level'),
         nullable=False,
         default='INFO',
         index=True
     )
-    category = Column(String(50), nullable=True, index=True)  # REQUEST, ERROR, USER_ACTION, SYSTEM, etc.
-    action = Column(String(100), nullable=True, index=True)  # Specific action taken
-    message = Column(Text, nullable=True)  # Detailed log message
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    action: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Context Data
-    client_ip = Column(String(45), nullable=True, index=True)  # IPv4/IPv6 address
-    user_agent = Column(String(500), nullable=True)  # Browser/client info
-    referer = Column(String(500), nullable=True)  # Request referer
+    client_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True, index=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    referer: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     
     # System Metrics
-    cpu_percent = Column(DECIMAL(5, 2), nullable=True)  # CPU usage at request time
-    memory_percent = Column(DECIMAL(5, 2), nullable=True)  # Memory usage percentage
+    cpu_percent: Mapped[Optional[float]] = mapped_column(DECIMAL(5, 2), nullable=True)
+    memory_percent: Mapped[Optional[float]] = mapped_column(DECIMAL(5, 2), nullable=True)
     
-    # Related Entities - Foreign keys
-    track_id = Column(BigInteger, ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True)
-    playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="SET NULL"), nullable=True, index=True)
-    artist_id = Column(BigInteger, ForeignKey("artists.id", ondelete="SET NULL"), nullable=True, index=True)
+    # Related Entities - Foreign keys (INT UNSIGNED)
+    track_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True)
+    playlist_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("playlists.id", ondelete="SET NULL"), nullable=True, index=True)
+    release_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("releases.id", ondelete="SET NULL"), nullable=True, index=True)
+    contributor_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("contributors.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Additional Context
-    log_metadata = Column(JSON, nullable=True)  # Additional structured data
-    stack_trace = Column(Text, nullable=True)  # For error logs
+    log_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    stack_trace: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp(), index=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp(), index=True
+    )
     
     # Relationships
-    track = relationship("Track", back_populates=None)
-    playlist = relationship("Playlist", back_populates=None)
-    artist = relationship("Artist", back_populates=None)
+    track: Mapped[Optional["Track"]] = relationship("Track")
+    playlist: Mapped[Optional["Playlist"]] = relationship("Playlist")
+    release: Mapped[Optional["Release"]] = relationship("Release")
+    contributor: Mapped[Optional["Contributor"]] = relationship("Contributor")
     
     def __repr__(self):
         return f"<SystemLog(id={self.id}, level={self.level}, action={self.action}, endpoint={self.endpoint})>"
@@ -110,9 +111,9 @@ class SystemLog(Base):
             'memory_percent': float(self.memory_percent) if self.memory_percent else None,
             'track_id': self.track_id,
             'playlist_id': self.playlist_id,
-            'artist_id': self.artist_id,
+            'release_id': self.release_id,
+            'contributor_id': self.contributor_id,
             'log_metadata': self.log_metadata,
             'stack_trace': self.stack_trace,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
-

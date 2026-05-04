@@ -74,21 +74,23 @@ class PlaylistRepository(BaseRepository[Playlist]):
             play_time_float = 0.0
             if all_track_ids:
                 # Fetch durations for all tracks in one query
-                stmt = select(Track.id, Track.duration_sec).where(
+                stmt = select(Track.id, Track.duration_ms).where(
                     Track.id.in_(all_track_ids)
                 )
                 result = await db.execute(stmt)
                 track_durations = {
-                    row.id: row.duration_sec for row in result.fetchall()
+                    row.id: row.duration_ms for row in result.fetchall()
                 }
 
-                # Sum up all durations (including seed track)
+                # Sum up all durations (including seed track) in milliseconds
+                play_time_ms = 0
                 for track_id in all_track_ids:
                     duration = track_durations.get(track_id)
                     if duration is not None:
-                        # Accumulate as float to preserve fractional seconds during summation
-                        play_time_float += float(duration)
-            play_time = int(play_time_float)
+                        play_time_ms += int(duration)
+                
+                # Convert to seconds for play_time
+                play_time = play_time_ms // 1000
 
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
@@ -217,21 +219,23 @@ class PlaylistRepository(BaseRepository[Playlist]):
             play_time_float = 0.0
             if all_track_ids:
                 # Fetch durations for all tracks in one query
-                duration_stmt = select(Track.id, Track.duration_sec).where(
+                duration_stmt = select(Track.id, Track.duration_ms).where(
                     Track.id.in_(all_track_ids)
                 )
                 duration_result = await db.execute(duration_stmt)
                 track_durations = {
-                    row.id: row.duration_sec for row in duration_result.fetchall()
+                    row.id: row.duration_ms for row in duration_result.fetchall()
                 }
 
-                # Sum up all durations (including seed track)
+                # Sum up all durations (including seed track) in milliseconds
+                play_time_ms = 0
                 for track_id in all_track_ids:
                     duration = track_durations.get(track_id)
                     if duration is not None:
-                        # Accumulate as float to preserve fractional seconds during summation
-                        play_time_float += float(duration)
-            play_time = int(play_time_float)
+                        play_time_ms += int(duration)
+                
+                # Convert to seconds for play_time
+                play_time = play_time_ms // 1000
 
             # Update forked playlist with calculated values
             forked_playlist.num_tracks = num_tracks
@@ -340,19 +344,21 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if all_track_ids:
                 # Fetch durations for all tracks in one query
                 tracks = (
-                    db.query(Track.id, Track.duration_sec)
+                    db.query(Track.id, Track.duration_ms)
                     .filter(Track.id.in_(all_track_ids))
                     .all()
                 )
-                track_durations = {track.id: track.duration_sec for track in tracks}
+                track_durations = {track.id: track.duration_ms for track in tracks}
 
-                # Sum up all durations (including seed track)
+                # Sum up all durations (including seed track) in milliseconds
+                play_time_ms = 0
                 for track_id in all_track_ids:
                     duration = track_durations.get(track_id)
                     if duration is not None:
-                        # Accumulate as float to preserve fractional seconds during summation
-                        play_time_float += float(duration)
-            play_time = int(play_time_float)
+                        play_time_ms += int(duration)
+                
+                # Convert to seconds for play_time
+                play_time = play_time_ms // 1000
 
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
@@ -599,19 +605,21 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.uuid as id,
                         t.title,
                         t.p_line_year as year,
-                        t.duration_sec as duration,
+                        (t.duration_ms / 1000.0) as duration,
                         t.track_type as type,
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
-                            GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
+                            GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                             ''
                         ) as artist
                     FROM tracks t
-                    LEFT JOIN labels l ON t.label_id = l.id
-                    LEFT JOIN recording_artists ra ON t.id = ra.track_id
-                    LEFT JOIN artists a ON ra.artist_id = a.id
+                    LEFT JOIN release_tracks rt ON t.id = rt.track_id
+                    LEFT JOIN releases r ON rt.release_id = r.id
+                    LEFT JOIN labels l ON r.label_id = l.id
+                    LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                    LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.track_type, l.label_name
                     LIMIT 1
                 """
                 )
@@ -648,19 +656,21 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.uuid as id,
                         t.title,
                         t.p_line_year as year,
-                        t.duration_sec as duration,
+                        (t.duration_ms / 1000.0) as duration,
                         t.track_type as type,
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
-                            GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
+                            GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                             ''
                         ) as artist
                     FROM tracks t
-                    LEFT JOIN labels l ON t.label_id = l.id
-                    LEFT JOIN recording_artists ra ON t.id = ra.track_id
-                    LEFT JOIN artists a ON ra.artist_id = a.id
+                    LEFT JOIN release_tracks rt ON t.id = rt.track_id
+                    LEFT JOIN releases r ON rt.release_id = r.id
+                    LEFT JOIN labels l ON r.label_id = l.id
+                    LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                    LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id IN :track_ids
-                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.track_type, l.label_name
                 """
                 )
 
@@ -801,17 +811,17 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     SELECT 
                         t.uuid,
                         t.title,
-                        t.duration_sec,
+                        (t.duration_ms / 1000.0) as duration_sec,
                         t.track_type as type,
                         COALESCE(
-                            GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
+                            GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                             'Unknown Artist'
                         ) as artist
                     FROM tracks t
-                    LEFT JOIN recording_artists ra ON t.id = ra.track_id
-                    LEFT JOIN artists a ON ra.artist_id = a.id
+                    LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                    LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.duration_sec, t.track_type
+                    GROUP BY t.id, t.uuid, t.title, t.duration_ms, t.track_type
                     LIMIT 1
                 """
                 )
@@ -844,18 +854,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 SELECT 
                     t.uuid,
                     t.title,
-                    t.duration_sec,
+                    (t.duration_ms / 1000.0) as duration_sec,
                     COALESCE(
-                        GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
+                        GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                         'Unknown Artist'
                     ) as artist,
                     pt.position
                 FROM playlist_tracks pt
                 JOIN tracks t ON pt.track_id = t.id
-                LEFT JOIN recording_artists ra ON t.id = ra.track_id
-                LEFT JOIN artists a ON ra.artist_id = a.id
+                LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE pt.playlist_id = :playlist_id
-                GROUP BY t.id, t.uuid, t.title, t.duration_sec, pt.position
+                GROUP BY t.id, t.uuid, t.title, t.duration_ms, pt.position
                 ORDER BY pt.position
             """
             )
@@ -1297,11 +1307,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
         try:
             from sqlalchemy import func
             from app.models.track import Track
-            from app.models.artist import Artist
+            from app.models.contributor import Contributor
             from app.models.genre import Genre
             from app.models.label import Label
             from app.models.release import Release
             from app.models.playlist import PlaylistTrack
+            from app.models.release_track import ReleaseTrack
+            from app.models.track_contributor import TrackContributor
+            from app.models.audio_file import AudioFile
 
             # Get playlist
             query = select(Playlist).where(Playlist.uuid == playlist_uuid)
@@ -1328,16 +1341,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         Track.id,
                         Track.uuid,
                         Track.title,
-                        Track.duration_sec,
+                        Track.duration_ms,
                         Track.bpm,
                         Track.musical_key,
-                        Track.year,
-                        Genre.name.label("genre_name"),
+                        Track.p_line_year.label("year"),
+                        Track.genre.label("genre_name"),
                         Label.label_name,
                     )
-                    .outerjoin(Genre, Track.genre_id == Genre.id)
-                    .outerjoin(Label, Track.label_id == Label.id)
+                    .outerjoin(ReleaseTrack, Track.id == ReleaseTrack.track_id)
+                    .outerjoin(Release, ReleaseTrack.release_id == Release.id)
+                    .outerjoin(Label, Release.label_id == Label.id)
                     .where(Track.id == playlist.seed_track_id)
+                    .limit(1)
                 )
 
                 seed_result = await db.execute(seed_query)
@@ -1345,12 +1360,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
                 if seed_row:
                     # Get seed track artists
-                    from app.models.recording_artist import RecordingArtist
-
                     artists_query = (
-                        select(Artist.full_name)
-                        .join(RecordingArtist, Artist.id == RecordingArtist.artist_id)
-                        .where(RecordingArtist.track_id == seed_row.id)
+                        select(Contributor.full_name)
+                        .join(TrackContributor, Contributor.id == TrackContributor.person_id)
+                        .where(TrackContributor.track_id == seed_row.id)
                     )
                     artists_result = await db.execute(artists_query)
                     artist_names = [row[0] for row in artists_result.fetchall()]
@@ -1361,8 +1374,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         "title": seed_row.title,
                         "artists": artist_names if artist_names else [],
                         "duration_sec": (
-                            float(seed_row.duration_sec)
-                            if seed_row.duration_sec
+                            float(seed_row.duration_ms / 1000.0)
+                            if seed_row.duration_ms
                             else 0.0
                         ),
                         "bpm": seed_row.bpm,
@@ -1380,22 +1393,22 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     Track.id,
                     Track.uuid,
                     Track.title,
-                    Track.duration_sec,
-                    Track.file_size,
-                    Track.type,
+                    Track.duration_ms,
+                    AudioFile.file_size_bytes.label("file_size"),
+                    Track.track_type.label("type"),
                     Track.bpm,
                     Track.musical_key,
-                    Track.file_path,
-                    Track.preview_path,
+                    AudioFile.stored_path.label("file_path"),
                     Track.created_at,
-                    Genre.name.label("genre_name"),
+                    Track.genre.label("genre_name"),
                     Label.label_name,
                     Release.title.label("release_title"),
                 )
                 .join(Track, PlaylistTrack.track_id == Track.id)
-                .outerjoin(Genre, Track.genre_id == Genre.id)
-                .outerjoin(Label, Track.label_id == Label.id)
-                .outerjoin(Release, Track.release_id == Release.id)
+                .outerjoin(AudioFile, and_(Track.id == AudioFile.track_id, AudioFile.asset_class == 'Master'))
+                .outerjoin(ReleaseTrack, Track.id == ReleaseTrack.track_id)
+                .outerjoin(Release, ReleaseTrack.release_id == Release.id)
+                .outerjoin(Label, Release.label_id == Label.id)
                 .where(PlaylistTrack.playlist_id == playlist.id)
                 .order_by(PlaylistTrack.position.asc())
             )
@@ -1407,12 +1420,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             tracks_data = []
             for row in track_rows:
                 # Get artists for this track
-                from app.models.recording_artist import RecordingArtist
-
                 artists_query = (
-                    select(Artist.full_name)
-                    .join(RecordingArtist, Artist.id == RecordingArtist.artist_id)
-                    .where(RecordingArtist.track_id == row.id)
+                    select(Contributor.full_name)
+                    .join(TrackContributor, Contributor.id == TrackContributor.person_id)
+                    .where(TrackContributor.track_id == row.id)
                 )
                 artists_result = await db.execute(artists_query)
                 artist_names = [a[0] for a in artists_result.fetchall()]
@@ -1429,7 +1440,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             "title": row.title,
                             "artists": artist_names if artist_names else [],
                             "duration_sec": (
-                                float(row.duration_sec) if row.duration_sec else 0.0
+                                float(row.duration_ms / 1000.0) if row.duration_ms else 0.0
                             ),
                             "file_size": row.file_size or 0,
                             "type": row.type or "electrobuzz",
@@ -1439,7 +1450,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             "bpm": row.bpm,
                             "musical_key": row.musical_key,
                             "file_path": row.file_path,
-                            "preview_path": row.preview_path,
                             "created_at": (
                                 row.created_at.isoformat() if row.created_at else None
                             ),

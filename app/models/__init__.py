@@ -27,7 +27,7 @@ from .playlist_engagement import UserPlaylistEngagement
 from .playlist_transfer_track import PlaylistTransferTrack
 from .rating import TrackRating, PlaylistRating
 from .purchase import UserSubscription
-from .ecommerce import TrackFormat, PromoCode, Cart, CartItem, Order, Purchase
+from .ecommerce import PromoCode, Cart, CartItem, Order, Purchase
 from .feedback import Feedback
 from .contact import Contact
 from .user import (
@@ -46,6 +46,7 @@ from .operation_limit import OperationType, UserOperationLimit
 from .spotify_app import SpotifyApp, UserSpotifyApp
 from .consumption_event import ConsumptionEvent
 from .sftp_user import SftpUser
+from .b2b import IngestLog, Deal, ReleaseDeal, DealTerritory, DealUseType, RoyaltyRate
 
 # Make models available at package level
 __all__ = [
@@ -71,7 +72,6 @@ __all__ = [
     "PlaylistTransferTrack",
     "TrackRating",
     "PlaylistRating",
-    "TrackFormat",
     "PromoCode",
     "Cart",
     "CartItem",
@@ -96,4 +96,10 @@ __all__ = [
     "UserSpotifyApp",
     "ConsumptionEvent",
     "SftpUser",
+    "IngestLog",
+    "Deal",
+    "ReleaseDeal",
+    "DealTerritory",
+    "DealUseType",
+    "RoyaltyRate",
 ]
