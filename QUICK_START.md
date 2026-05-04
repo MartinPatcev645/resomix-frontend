@@ -6,10 +6,10 @@ A minimal, step-by-step guide to get the API running locally. No extra services,
 
 ## 0. Steps at a Glance
 
-1. Install prerequisites (Docker, Python 3.12, FFmpeg, MariaDB Connector/C, Git)
+1. Install prerequisites (Docker, Python 3.12, Redis, FFmpeg, MariaDB Connector/C, Git)
 2. Clone repo & create virtual env
 3. Create and fill `.env`
-4. Start MariaDB in Docker
+4. Start MariaDB & Redis in Docker
 5. Create local database and run Alembic migrations
 6. Start API (Uvicorn)
 7. Run final checklist
@@ -35,6 +35,9 @@ brew install mariadb-connector-c
 # FFmpeg (audio utils)
 brew install ffmpeg
 
+# Redis
+brew install redis
+
 # Git
 brew install git
 ````
@@ -57,6 +60,8 @@ winget install -e --id Git.Git
 # FFmpeg
 winget install -e --id Gyan.FFmpeg
 # (or: choco install ffmpeg)
+
+# Redis (using Docker is recommended for Windows)
 
 # MariaDB Connector/C
 # 1) Download MariaDB Connector/C for Windows (MSI)
@@ -124,9 +129,15 @@ SIMILARITY_SERVER_URL=
 
 ## 4. Setup & Migrate (Alembic)
 
-Start MariaDB locally using Docker:
+Start MariaDB and Redis locally using Docker:
 ```bash
 docker run --name resomix-test-db -e MYSQL_ROOT_PASSWORD=test -p 3307:3306 -d mariadb:10.5
+docker run --name resomix-redis -p 6379:6379 -d redis:7.2-alpine
+```
+
+**Note:** If using `docker-compose.yml`, you can simply run:
+```bash
+docker compose up -d mariadb redis
 ```
 
 Create the database schema natively (wait a few seconds after running the previous command):
@@ -173,6 +184,7 @@ Open:
 * [ ] Docker Desktop is running
 * [ ] `.env` exists and uses **3307**
 * [ ] `alembic upgrade head` ran without errors and generated tables
+* [ ] Redis is running (`redis-cli ping` returns PONG)
 * [ ] FFmpeg is installed (`ffmpeg -version`)
 * [ ] On Windows, MariaDB Connector/C was installed **before** `pip install`
 * [ ] API reachable at `http://localhost:8005/docs`

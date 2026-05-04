@@ -5,6 +5,8 @@ Order Repository
 This repository handles CRUD operations for the Order model.
 """
 
+from typing import Optional
+from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.ecommerce import Order
@@ -13,6 +15,24 @@ from app.repositories.base_repository import BaseRepository
 class OrderRepository(BaseRepository[Order]):
     def __init__(self):
         super().__init__(Order)
+
+    def _find_existing(self, db: Session, **kwargs) -> Optional[Order]:
+        """Find existing order by ID or stripe_session_id."""
+        if "id" in kwargs:
+            return db.query(Order).filter(Order.id == kwargs["id"]).first()
+        if "stripe_session_id" in kwargs:
+            return db.query(Order).filter(Order.stripe_session_id == kwargs["stripe_session_id"]).first()
+        return None
+
+    async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Order]:
+        """Find existing order by ID or stripe_session_id (async)."""
+        if "id" in kwargs:
+            result = await db.execute(select(Order).where(Order.id == kwargs["id"]))
+            return result.scalars().first()
+        if "stripe_session_id" in kwargs:
+            result = await db.execute(select(Order).where(Order.stripe_session_id == kwargs["stripe_session_id"]))
+            return result.scalars().first()
+        return None
 
     async def async_get_by_id(self, db: AsyncSession, order_id: int) -> Order:
         result = await db.execute(select(Order).where(Order.id == order_id))

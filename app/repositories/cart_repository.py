@@ -21,6 +21,23 @@ class CartRepository(BaseRepository[Cart]):
     def __init__(self):
         super().__init__(Cart)
 
+    def _find_existing(self, db: Session, **kwargs) -> Optional[Cart]:
+        """Find existing cart based on provided fields (multi-field lookup)."""
+        query = db.query(self.model)
+        for field, value in kwargs.items():
+            if hasattr(self.model, field):
+                query = query.filter(getattr(self.model, field) == value)
+        return query.first()
+
+    async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Cart]:
+        """Find existing cart based on provided fields (async multi-field lookup)."""
+        stmt = select(self.model)
+        for field, value in kwargs.items():
+            if hasattr(self.model, field):
+                stmt = stmt.where(getattr(self.model, field) == value)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def async_get_active_cart(self, db: AsyncSession, user_id: int) -> Optional[Cart]:
         """Get the user's active cart with all items."""
         stmt = (

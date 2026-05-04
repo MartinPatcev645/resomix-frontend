@@ -51,9 +51,12 @@ services:
     environment:
       MARIA_DB_HOST: mariadb
       MARIA_DB_PORT: 3306
+      REDIS_URL: redis://redis:6379/0
       RESOMIX_API_KEY: ${RESOMIX_API_KEY:-dev-key}
     depends_on:
       mariadb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports: [ "8005:8005" ]
     volumes:
@@ -61,6 +64,19 @@ services:
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8005", "--reload" ]
     profiles: [ "api" ]
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: resomix-redis
+    ports: [ "6379:6379" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis_data:/data
+
 volumes:
   mariadb_data:
   elasticsearch_data:
+  redis_data:
