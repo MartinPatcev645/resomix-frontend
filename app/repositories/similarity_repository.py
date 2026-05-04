@@ -51,11 +51,12 @@ class SimilarityRepository(BaseRepository[Track]):
         self, db: AsyncSession, track_path: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Fetch complete track details from the database by path for reference track formatting.
+        Fetch complete track details from the database by audio file stored_path
+        for reference track formatting.
 
         Args:
             db: Database session
-            track_path: The file path to lookup in the database
+            track_path: The stored_path to lookup in audio_files table
 
         Returns:
             Dictionary with track details or None if not found
@@ -67,19 +68,18 @@ class SimilarityRepository(BaseRepository[Track]):
                     t.uuid as id,
                     t.title,
                     t.p_line_year as year,
-                    t.duration_sec as duration,
-                    t.track_type as type,
-                    COALESCE(l.label_name, '') as label,
+                    t.duration_ms as duration,
+                    t.type as type,
                     COALESCE(
-                        GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
-                        ''
+                        GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
+                        COALESCE(t.display_artist, '')
                     ) as artist
                 FROM tracks t
-                LEFT JOIN labels l ON t.label_id = l.id
-                LEFT JOIN recording_artists ra ON t.id = ra.track_id
-                LEFT JOIN artists a ON ra.artist_id = a.id
-                WHERE t.file_path = :track_path OR t.preview_path = :track_path
-                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
+                LEFT JOIN audio_files af ON t.id = af.track_id
+                LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                LEFT JOIN contributors c ON tc.person_id = c.id
+                WHERE af.stored_path = :track_path
+                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type
                 LIMIT 1
             """
             )
@@ -95,7 +95,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "duration": (
                         float(row.duration) if row.duration is not None else 0.0
                     ),
-                    "label": row.label,
+                    "label": "",  # Label is now on releases, not tracks
                     "artist": row.artist or "Unknown",
                     "type": "upload" if row.type == "upload" else "internal",
                 }
@@ -124,19 +124,17 @@ class SimilarityRepository(BaseRepository[Track]):
                     t.uuid as id,
                     t.title,
                     t.p_line_year as year,
-                    t.duration_sec as duration,
-                    t.track_type as type,
-                    COALESCE(l.label_name, '') as label,
+                    t.duration_ms as duration,
+                    t.type as type,
                     COALESCE(
-                        GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', '),
-                        ''
+                        GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
+                        COALESCE(t.display_artist, '')
                     ) as artist
                 FROM tracks t
-                LEFT JOIN labels l ON t.label_id = l.id
-                LEFT JOIN recording_artists ra ON t.id = ra.track_id
-                LEFT JOIN artists a ON ra.artist_id = a.id
+                LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE t.uuid = :track_uuid
-                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_sec, t.track_type, l.label_name
+                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type
                 LIMIT 1
             """
             )
@@ -152,7 +150,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "duration": (
                         float(row.duration) if row.duration is not None else 0.0
                     ),
-                    "label": row.label,
+                    "label": "",  # Label is now on releases, not tracks
                     "artist": row.artist or "Unknown",
                     "type": "upload" if row.type == "upload" else "internal",
                 }
@@ -196,43 +194,42 @@ class SimilarityRepository(BaseRepository[Track]):
             )
 
             for track in tracks:
-                # Get primary artist (first artist in recording_artists) for backward compatibility
-                artist_name = "N/A"
+                # Get primary artist from display_artist or first contributor
+                artist_name = track.display_artist or "N/A"
                 all_artists = []
 
-                if track.recording_artists:
-                    artist_name = track.recording_artists[0].artist.full_name
+                if track.recording_contributors:
+                    if artist_name == "N/A":
+                        artist_name = track.recording_contributors[0].contributor.full_name
                     # Collect all artists for deduplication purposes
-                    all_artists = [ra.artist.full_name for ra in track.recording_artists]
+                    all_artists = [tc.contributor.full_name for tc in track.recording_contributors]
 
-                # Extract filename from file_path
-                # filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
-
-                # Get album name
-                # album_name = track.album.title if track.album else "N/A"
-
-                # Get label name
-                label_name = track.label.label_name if track.label else "N/A"
-
-                # Get genre name
-                # genre_name = track.genre.name if track.genre else "N/A"
+                # Get the stored_path from master audio file for mapping key
+                stored_path = None
+                for af in track.audio_files:
+                    if af.asset_class == 'Master':
+                        stored_path = af.stored_path
+                        break
+                if not stored_path and track.audio_files:
+                    stored_path = track.audio_files[0].stored_path
 
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API
                     "track_id": track.id,  # Add database ID for playlist creation
-                    "label": label_name,
+                    "label": "",  # Label is now on releases, not tracks
                     "duration": (
-                        float(track.duration_sec)
-                        if track.duration_sec is not None
+                        float(track.duration_ms)
+                        if track.duration_ms is not None
                         else 0.0
                     ),
                     "artist": artist_name,  # Primary artist for display
                     "all_artists": all_artists,  # All artists for deduplication
                     "title": track.title or "N/A",
-                    "year": track.year,
+                    "year": track.p_line_year,
                     "type": "upload" if track.track_type == "upload" else "internal",
                 }
-                details_map[track.file_path] = track_data
+                if stored_path:
+                    details_map[stored_path] = track_data
 
             print(
                 f"MariaDB: Fetched details for {len(details_map)} out of {len(paths_to_query)} unique paths."
@@ -278,40 +275,29 @@ class SimilarityRepository(BaseRepository[Track]):
             )
 
             for track in tracks:
-                # Get primary artist (first artist in recording_artists) for backward compatibility
-                artist_name = "N/A"
+                # Get primary artist from display_artist or first contributor
+                artist_name = track.display_artist or "N/A"
                 all_artists = []
 
-                if track.recording_artists:
-                    artist_name = track.recording_artists[0].artist.full_name
+                if track.recording_contributors:
+                    if artist_name == "N/A":
+                        artist_name = track.recording_contributors[0].contributor.full_name
                     # Collect all artists for deduplication purposes
-                    all_artists = [ra.artist.full_name for ra in track.recording_artists]
-
-                # Extract filename from file_path
-                # filename = track.file_path.split("/")[-1] if track.file_path else "N/A"
-
-                # Get album name
-                # album_name = track.album.title if track.album else "N/A"
-
-                # Get label name
-                label_name = track.label.label_name if track.label else "N/A"
-
-                # Get genre name
-                # genre_name = track.genre.name if track.genre else "N/A"
+                    all_artists = [tc.contributor.full_name for tc in track.recording_contributors]
 
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API
                     "track_id": track.id,  # Add database ID for playlist creation
-                    "label": label_name,
+                    "label": "",  # Label is now on releases, not tracks
                     "duration": (
-                        float(track.duration_sec)
-                        if track.duration_sec is not None
+                        float(track.duration_ms)
+                        if track.duration_ms is not None
                         else 0.0
                     ),
                     "artist": artist_name,  # Primary artist for display
                     "all_artists": all_artists,  # All artists for deduplication
                     "title": track.title or "N/A",
-                    "year": track.year,
+                    "year": track.p_line_year,
                     "type": "upload" if track.track_type == "upload" else "internal",
                 }
                 details_map[track.uuid] = track_data
@@ -335,25 +321,25 @@ class SimilarityRepository(BaseRepository[Track]):
         Args:
             db: Database session
             track_uuid: Track UUID
-            duration: New duration in seconds
+            duration: New duration in milliseconds
 
         Returns:
             True if updated successfully, False otherwise
         """
         try:
-            # Ensure it is 3 decimal float
-            duration_sec = round(duration, 3) if duration is not None else None
+            # Store as integer milliseconds
+            duration_ms = int(round(duration)) if duration is not None else None
 
             query = text(
                 """
                 UPDATE tracks
-                SET duration_sec = :duration
+                SET duration_ms = :duration
                 WHERE uuid = :track_uuid
             """
             )
 
             result = await db.execute(
-                query, {"duration": duration_sec, "track_uuid": track_uuid}
+                query, {"duration": duration_ms, "track_uuid": track_uuid}
             )
             await db.commit()
             return result.rowcount > 0

@@ -22,10 +22,11 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.models.track import Track
-from app.models.recording_artist import RecordingArtist
-from app.models.artist import Artist
-from .genre import Genre
-from .constants import TrackType
+from app.models.track_contributor import TrackContributor
+from app.models.contributor import Contributor
+from app.models.audio_file import AudioFile
+from app.models.genre import Genre
+from app.models.constants import TrackType
 from app.repositories.base_repository import BaseRepository
 
 
@@ -91,9 +92,9 @@ class TrackRepository(BaseRepository[Track]):
         return result.scalar_one_or_none()
     
     def get_track_path_by_uuid(self, db: Session, uuid: str) -> Optional[str]:
-        """Get track file path by UUID.
+        """Get track's primary audio file path by UUID.
         
-        Mirrors get_track_path_by_id from src/search.py functionality.
+        Looks up the master audio file stored_path via AudioFile join.
         
         Args:
             db: Database session
@@ -102,12 +103,23 @@ class TrackRepository(BaseRepository[Track]):
         Returns:
             File path string or None if not found
         """
-        track = db.query(self.model.file_path).filter(self.model.uuid == uuid).first()
-        return track.file_path if track else None
+        result = (
+            db.query(AudioFile.stored_path)
+            .join(Track, AudioFile.track_id == Track.id)
+            .filter(Track.uuid == uuid)
+            .filter(AudioFile.asset_class == 'Master')
+            .first()
+        )
+        return result[0] if result else None
     
     async def async_get_track_path_by_uuid(self, db: AsyncSession, uuid: str) -> Optional[str]:
         """Async version of get_track_path_by_uuid."""
-        stmt = select(self.model.file_path).where(self.model.uuid == uuid)
+        stmt = (
+            select(AudioFile.stored_path)
+            .join(Track, AudioFile.track_id == Track.id)
+            .where(Track.uuid == uuid)
+            .where(AudioFile.asset_class == 'Master')
+        )
         result = await db.execute(stmt)
         path = result.scalar_one_or_none()
         return path
@@ -120,14 +132,13 @@ class TrackRepository(BaseRepository[Track]):
             uuid: Track UUID
             
         Returns:
-            Track with album, label, genre, and artists loaded
+            Track with audio_files and recording_contributors loaded
         """
         return (
             db.query(self.model)
             .options(
-                joinedload(self.model.label),
-                joinedload(self.model.genre),
-                joinedload(self.model.recording_artists).joinedload(RecordingArtist.artist)
+                joinedload(self.model.audio_files),
+                joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
             )
             .filter(self.model.uuid == uuid)
             .first()
@@ -138,9 +149,8 @@ class TrackRepository(BaseRepository[Track]):
         stmt = (
             select(self.model)
             .options(
-                joinedload(self.model.label),
-                joinedload(self.model.genre),
-                joinedload(self.model.track_artists).joinedload(TrackArtist.artist)
+                joinedload(self.model.audio_files),
+                joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
             )
             .where(self.model.uuid == uuid)
         )
@@ -162,18 +172,18 @@ class TrackRepository(BaseRepository[Track]):
         Returns:
             List of track dictionaries with search-relevant fields
         """
-        # Build search conditions similar to MongoDB $or query
+        # Build search conditions — search title and contributor names
         search_conditions = or_(
             self.model.title.ilike(f"%{query}%"),
-            self.model.file_path.ilike(f"%{query}%"),
-            # Search in artist names through relationship
-            Artist.full_name.ilike(f"%{query}%")
+            self.model.display_artist.ilike(f"%{query}%"),
+            # Search in contributor names through relationship
+            Contributor.full_name.ilike(f"%{query}%")
         )
         
         tracks = (
             db.query(self.model)
-            .join(RecordingArtist, RecordingArtist.track_id == self.model.id, isouter=True)
-            .join(Artist, Artist.id == RecordingArtist.artist_id, isouter=True)
+            .join(TrackContributor, TrackContributor.track_id == self.model.id, isouter=True)
+            .join(Contributor, Contributor.id == TrackContributor.person_id, isouter=True)
             .filter(search_conditions)
             .filter(self.model.track_type != TrackType.UPLOAD)
             .distinct()
@@ -184,21 +194,14 @@ class TrackRepository(BaseRepository[Track]):
         # Format results similar to src/search.py format
         results = []
         for track in tracks:
-            # Get primary artist (first artist in recording_artists)
-            artist_name = "N/A"
-            if track.recording_artists:
-                artist_name = track.recording_artists[0].artist.full_name
-            
-            # Extract filename from file_path
-            filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
+            # Get primary artist from display_artist or first contributor
+            artist_name = track.display_artist or "N/A"
             
             track_data = {
                 "id": track.uuid,  # Use UUID for compatibility with existing API
                 "artist": artist_name,
-                "duration": float(track.duration_sec) if track.duration_sec is not None else 0.0,
-                "filename": filename,
+                "duration": float(track.duration_ms) if track.duration_ms is not None else 0.0,
                 "title": track.title,
-                "file_path": track.file_path
             }
             results.append(track_data)
         
@@ -208,14 +211,14 @@ class TrackRepository(BaseRepository[Track]):
         """Async version of search_tracks."""
         search_conditions = or_(
             self.model.title.ilike(f"%{query}%"),
-            self.model.file_path.ilike(f"%{query}%"),
-            Artist.full_name.ilike(f"%{query}%")
+            self.model.display_artist.ilike(f"%{query}%"),
+            Contributor.full_name.ilike(f"%{query}%")
         )
         
         stmt = (
             select(self.model)
-            .join(RecordingArtist, RecordingArtist.track_id == self.model.id, isouter=True)
-            .join(Artist, Artist.id == RecordingArtist.artist_id, isouter=True)
+            .join(TrackContributor, TrackContributor.track_id == self.model.id, isouter=True)
+            .join(Contributor, Contributor.id == TrackContributor.person_id, isouter=True)
             .where(and_(search_conditions, self.model.track_type != TrackType.UPLOAD))
             .distinct()
             .limit(limit)
@@ -224,28 +227,27 @@ class TrackRepository(BaseRepository[Track]):
         result = await db.execute(stmt)
         tracks = result.scalars().all()
         
-        # Format results (need to load relationships separately in async)
+        # Format results
         results = []
         for track in tracks:
-            # Get artists for this track
-            artist_stmt = (
-                select(Artist.full_name)
-                .join(RecordingArtist)
-                .where(RecordingArtist.track_id == track.id)
-                .limit(1)
-            )
-            artist_result = await db.execute(artist_stmt)
-            artist_name = artist_result.scalar_one_or_none() or "N/A"
-            
-            filename = track.file_path.split('/')[-1] if track.file_path else "N/A"
+            # Get primary artist from display_artist or first contributor
+            artist_name = track.display_artist or "N/A"
+            if artist_name == "N/A":
+                # Fallback: fetch first contributor
+                artist_stmt = (
+                    select(Contributor.full_name)
+                    .join(TrackContributor)
+                    .where(TrackContributor.track_id == track.id)
+                    .limit(1)
+                )
+                artist_result = await db.execute(artist_stmt)
+                artist_name = artist_result.scalar_one_or_none() or "N/A"
             
             track_data = {
                 "id": track.uuid,
                 "artist": artist_name,
-                "duration": float(track.duration_sec) if track.duration_sec is not None else 0.0,
-                "filename": filename,
+                "duration": float(track.duration_ms) if track.duration_ms is not None else 0.0,
                 "title": track.title,
-                "file_path": track.file_path
             }
             results.append(track_data)
         
@@ -254,11 +256,11 @@ class TrackRepository(BaseRepository[Track]):
     # --- Advanced search methods ---
     
     def search_by_artist(self, db: Session, artist_name: str, limit: int = 100) -> List[Track]:
-        """Search tracks by artist name.
+        """Search tracks by artist/contributor name.
         
         Args:
             db: Database session
-            artist_name: Artist name to search for
+            artist_name: Artist/contributor name to search for
             limit: Maximum number of results
             
         Returns:
@@ -266,9 +268,9 @@ class TrackRepository(BaseRepository[Track]):
         """
         return (
             db.query(self.model)
-            .join(RecordingArtist)
-            .join(Artist)
-            .filter(Artist.full_name.ilike(f"%{artist_name}%"))
+            .join(TrackContributor, TrackContributor.track_id == self.model.id)
+            .join(Contributor, Contributor.id == TrackContributor.person_id)
+            .filter(Contributor.full_name.ilike(f"%{artist_name}%"))
             .limit(limit)
             .all()
         )
@@ -280,6 +282,8 @@ class TrackRepository(BaseRepository[Track]):
     def search_by_genre(self, db: Session, genre_name: str, limit: int = 100) -> List[Track]:
         """Search tracks by genre name.
         
+        Genre is now a string field on Track, not a FK relationship.
+        
         Args:
             db: Database session
             genre_name: Genre name to search for
@@ -290,8 +294,7 @@ class TrackRepository(BaseRepository[Track]):
         """
         return (
             db.query(self.model)
-            .join(Genre)
-            .filter(Genre.name.ilike(f"%{genre_name}%"))
+            .filter(self.model.genre.ilike(f"%{genre_name}%"))
             .limit(limit)
             .all()
         )
@@ -402,121 +405,126 @@ class TrackRepository(BaseRepository[Track]):
         stmt = (
             select(self.model)
             .options(
-                joinedload(self.model.label),
-                joinedload(self.model.genre),
-                joinedload(self.model.recording_artists).joinedload(RecordingArtist.artist)
+                joinedload(self.model.audio_files),
+                joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
             )
             .where(self.model.uuid.in_(uuids))
         )
         result = await db.execute(stmt)
         return result.scalars().unique().all()
     
-    # --- TrackArtist relationship methods ---
+    # --- TrackContributor relationship methods ---
     
-    def add_artist_to_track(self, db: Session, track_id: int, artist_id: int) -> RecordingArtist:
-        """Add artist to track (create RecordingArtist relationship).
+    def add_contributor_to_track(self, db: Session, track_id: int, person_id: int, role: str = 'MainArtist', royalty_type: str = 'NeighboringRights') -> TrackContributor:
+        """Add contributor to track (create TrackContributor relationship).
         
         Args:
             db: Database session
             track_id: Track ID
-            artist_id: Artist ID
+            person_id: Contributor ID
+            role: DDEX role enum value
+            royalty_type: Royalty type enum value
             
         Returns:
-            Created RecordingArtist instance
+            Created TrackContributor instance
             
         Raises:
             IntegrityError: If relationship already exists
         """
-        recording_artist = RecordingArtist(track_id=track_id, artist_id=artist_id)
-        db.add(recording_artist)
+        track_contributor = TrackContributor(
+            track_id=track_id, person_id=person_id, role=role, royalty_type=royalty_type
+        )
+        db.add(track_contributor)
         try:
             db.commit()
-            db.refresh(recording_artist)
-            return recording_artist
+            db.refresh(track_contributor)
+            return track_contributor
         except IntegrityError:
             db.rollback()
             # Return existing relationship
             existing = (
-                db.query(RecordingArtist)
+                db.query(TrackContributor)
                 .filter(
                     and_(
-                        RecordingArtist.track_id == track_id,
-                        RecordingArtist.artist_id == artist_id
+                        TrackContributor.track_id == track_id,
+                        TrackContributor.person_id == person_id,
+                        TrackContributor.role == role
                     )
                 )
                 .first()
             )
             return existing
     
-    def remove_artist_from_track(self, db: Session, track_id: int, artist_id: int) -> bool:
-        """Remove artist from track.
+    def remove_contributor_from_track(self, db: Session, track_id: int, person_id: int, role: str = None) -> bool:
+        """Remove contributor from track.
         
         Args:
             db: Database session
             track_id: Track ID
-            artist_id: Artist ID
+            person_id: Contributor ID
+            role: Optional role filter (if None, removes all roles for this person on this track)
             
         Returns:
             True if removed, False if not found
         """
-        recording_artist = (
-            db.query(RecordingArtist)
-            .filter(
-                and_(
-                    RecordingArtist.track_id == track_id,
-                    RecordingArtist.artist_id == artist_id
-                )
+        query = db.query(TrackContributor).filter(
+            and_(
+                TrackContributor.track_id == track_id,
+                TrackContributor.person_id == person_id
             )
-            .first()
         )
+        if role:
+            query = query.filter(TrackContributor.role == role)
         
-        if recording_artist:
-            db.delete(recording_artist)
+        track_contributor = query.first()
+        
+        if track_contributor:
+            db.delete(track_contributor)
             db.commit()
             return True
         return False
     
-    def get_artists_for_track(self, db: Session, track_id: int) -> List[Artist]:
-        """Get all artists for a track.
+    def get_contributors_for_track(self, db: Session, track_id: int) -> List[Contributor]:
+        """Get all contributors for a track.
         
         Args:
             db: Database session
             track_id: Track ID
             
         Returns:
-            List of Artist instances
+            List of Contributor instances
         """
         return (
-            db.query(Artist)
-            .join(RecordingArtist)
-            .filter(RecordingArtist.track_id == track_id)
+            db.query(Contributor)
+            .join(TrackContributor, TrackContributor.person_id == Contributor.id)
+            .filter(TrackContributor.track_id == track_id)
             .all()
         )
     
-    async def async_get_track_artists(self, db: AsyncSession, track_id: int) -> List[Artist]:
-        """Get all artists for a track (async version).
+    async def async_get_track_contributors(self, db: AsyncSession, track_id: int) -> List[Contributor]:
+        """Get all contributors for a track (async version).
         
         Args:
             db: Database session
             track_id: Track ID
             
         Returns:
-            List of Artist instances
+            List of Contributor instances
         """
         stmt = (
-            select(Artist)
-            .join(RecordingArtist)
-            .where(RecordingArtist.track_id == track_id)
+            select(Contributor)
+            .join(TrackContributor, TrackContributor.person_id == Contributor.id)
+            .where(TrackContributor.track_id == track_id)
         )
         result = await db.execute(stmt)
         return result.scalars().all()
     
-    def get_tracks_for_artist(self, db: Session, artist_id: int, skip: int = 0, limit: int = 100) -> List[Track]:
-        """Get all tracks for an artist.
+    def get_tracks_for_contributor(self, db: Session, person_id: int, skip: int = 0, limit: int = 100) -> List[Track]:
+        """Get all tracks for a contributor.
         
         Args:
             db: Database session
-            artist_id: Artist ID
+            person_id: Contributor ID
             skip: Number of records to skip
             limit: Maximum number of records to return
             
@@ -525,19 +533,42 @@ class TrackRepository(BaseRepository[Track]):
         """
         return (
             db.query(self.model)
-            .join(RecordingArtist)
-            .filter(RecordingArtist.artist_id == artist_id)
+            .join(TrackContributor, TrackContributor.track_id == self.model.id)
+            .filter(TrackContributor.person_id == person_id)
             .offset(skip)
             .limit(limit)
             .all()
         )
+    
+    # --- Backward-compatible aliases ---
+    # These preserve the old method names for callers that haven't been updated yet
+    
+    def add_artist_to_track(self, db: Session, track_id: int, artist_id: int) -> TrackContributor:
+        """Backward-compatible alias for add_contributor_to_track."""
+        return self.add_contributor_to_track(db, track_id, artist_id)
+    
+    def remove_artist_from_track(self, db: Session, track_id: int, artist_id: int) -> bool:
+        """Backward-compatible alias for remove_contributor_from_track."""
+        return self.remove_contributor_from_track(db, track_id, artist_id)
+    
+    def get_artists_for_track(self, db: Session, track_id: int) -> List[Contributor]:
+        """Backward-compatible alias for get_contributors_for_track."""
+        return self.get_contributors_for_track(db, track_id)
+    
+    async def async_get_track_artists(self, db: AsyncSession, track_id: int) -> List[Contributor]:
+        """Backward-compatible alias for async_get_track_contributors."""
+        return await self.async_get_track_contributors(db, track_id)
+    
+    def get_tracks_for_artist(self, db: Session, artist_id: int, skip: int = 0, limit: int = 100) -> List[Track]:
+        """Backward-compatible alias for get_tracks_for_contributor."""
+        return self.get_tracks_for_contributor(db, artist_id, skip, limit)
 
     async def async_get_tracks_by_file_paths(self, db: AsyncSession, file_paths: List[str]) -> List[Track]:
-        """Get tracks with full relationships by file paths.
+        """Get tracks with full relationships by audio file stored_paths.
         
         Args:
             db: Database session
-            file_paths: List of file paths to search for
+            file_paths: List of stored_path values to search for in audio_files
             
         Returns:
             List of Track instances with relationships loaded
@@ -547,12 +578,12 @@ class TrackRepository(BaseRepository[Track]):
             
         stmt = (
             select(self.model)
+            .join(AudioFile, AudioFile.track_id == self.model.id)
             .options(
-                joinedload(self.model.label),
-                joinedload(self.model.genre),
-                joinedload(self.model.recording_artists).joinedload(RecordingArtist.artist)
+                joinedload(self.model.audio_files),
+                joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
             )
-            .where(self.model.file_path.in_(file_paths))
+            .where(AudioFile.stored_path.in_(file_paths))
         )
         result = await db.execute(stmt)
         # Use unique() to deduplicate rows when using joinedload with collections

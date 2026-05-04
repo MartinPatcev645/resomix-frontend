@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from app.models.release import Release
+from app.models.release_track import ReleaseTrack
 from app.repositories.base_repository import BaseRepository
 
 
@@ -35,44 +36,44 @@ class ReleaseRepository(BaseRepository[Release]):
         super().__init__(Release)
     
     def _find_existing(self, db: Session, **kwargs) -> Optional[Release]:
-        """Find existing release by title and artist_id (case-insensitive title).
+        """Find existing release by title and party_id (case-insensitive title).
         
         Implements the lookup logic from Cache.release() which uses
-        case-insensitive title matching with exact artist_id match.
+        case-insensitive title matching with exact party_id match.
         
         Args:
             db: Database session
-            **kwargs: Should contain 'title' and 'artist_id' fields
+            **kwargs: Should contain 'title' and 'party_id' fields
             
         Returns:
             Existing Release instance or None
         """
         title = kwargs.get('title')
-        artist_id = kwargs.get('artist_id')
+        party_id = kwargs.get('party_id')
         
-        if not title or not artist_id:
+        if not title or not party_id:
             return None
             
-        # Case-insensitive title lookup with exact artist_id match
+        # Case-insensitive title lookup with exact party_id match
         return db.query(self.model).filter(
             and_(
                 self.model.title.ilike(title),
-                self.model.artist_id == artist_id
+                self.model.party_id == party_id
             )
         ).first()
     
     async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Release]:
         """Async version of _find_existing."""
         title = kwargs.get('title')
-        artist_id = kwargs.get('artist_id')
+        party_id = kwargs.get('party_id')
         
-        if not title or not artist_id:
+        if not title or not party_id:
             return None
             
         stmt = select(self.model).where(
             and_(
                 self.model.title.ilike(title),
-                self.model.artist_id == artist_id
+                self.model.party_id == party_id
             )
         )
         result = await db.execute(stmt)
@@ -80,13 +81,13 @@ class ReleaseRepository(BaseRepository[Release]):
     
     # --- Release-specific methods ---
     
-    def get_by_title_and_artist(self, db: Session, title: str, artist_id: int) -> Optional[Release]:
-        """Get release by exact title and artist ID match.
+    def get_by_title_and_party(self, db: Session, title: str, party_id: str) -> Optional[Release]:
+        """Get release by exact title and party ID match.
         
         Args:
             db: Database session
             title: Release title to search for
-            artist_id: Artist ID
+            party_id: Party ID
             
         Returns:
             Release instance or None
@@ -94,46 +95,46 @@ class ReleaseRepository(BaseRepository[Release]):
         return db.query(self.model).filter(
             and_(
                 self.model.title == title,
-                self.model.artist_id == artist_id
+                self.model.party_id == party_id
             )
         ).first()
     
-    async def async_get_by_title_and_artist(self, db: AsyncSession, title: str, artist_id: int) -> Optional[Release]:
-        """Async version of get_by_title_and_artist."""
+    async def async_get_by_title_and_party(self, db: AsyncSession, title: str, party_id: str) -> Optional[Release]:
+        """Async version of get_by_title_and_party."""
         stmt = select(self.model).where(
             and_(
                 self.model.title == title,
-                self.model.artist_id == artist_id
+                self.model.party_id == party_id
             )
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     
-    def get_by_artist_id(self, db: Session, artist_id: int, skip: int = 0, limit: int = 100) -> list[Release]:
-        """Get all releases by artist ID.
+    def get_by_party_id(self, db: Session, party_id: str, skip: int = 0, limit: int = 100) -> list[Release]:
+        """Get all releases by party ID.
         
         Args:
             db: Database session
-            artist_id: Artist ID to filter by
+            party_id: Party ID to filter by
             skip: Number of records to skip
             limit: Maximum number of records to return
             
         Returns:
-            List of releases by the artist
+            List of releases by the party
         """
         return (
             db.query(self.model)
-            .filter(self.model.artist_id == artist_id)
+            .filter(self.model.party_id == party_id)
             .offset(skip)
             .limit(limit)
             .all()
         )
     
-    async def async_get_by_artist_id(self, db: AsyncSession, artist_id: int, skip: int = 0, limit: int = 100) -> list[Release]:
-        """Async version of get_by_artist_id."""
+    async def async_get_by_party_id(self, db: AsyncSession, party_id: str, skip: int = 0, limit: int = 100) -> list[Release]:
+        """Async version of get_by_party_id."""
         stmt = (
             select(self.model)
-            .where(self.model.artist_id == artist_id)
+            .where(self.model.party_id == party_id)
             .offset(skip)
             .limit(limit)
         )
@@ -163,13 +164,13 @@ class ReleaseRepository(BaseRepository[Release]):
         result = await db.execute(stmt)
         return result.scalars().all()
     
-    def get_or_create_by_title_and_artist(self, db: Session, title: str, artist_id: int, **extra_fields) -> Tuple[Release, bool]:
+    def get_or_create_by_title_and_party(self, db: Session, title: str, party_id: str, **extra_fields) -> Tuple[Release, bool]:
         """Convenience method for release get-or-create pattern.
         
         Args:
             db: Database session
             title: Release title
-            artist_id: Primary artist ID
+            party_id: Party ID (owning distributor)
             **extra_fields: Additional fields for release creation
             
         Returns:
@@ -177,19 +178,45 @@ class ReleaseRepository(BaseRepository[Release]):
         """
         release_data = {
             'title': title,
-            'artist_id': artist_id,
+            'party_id': party_id,
             **extra_fields
         }
         return self.get_or_create(db, **release_data)
     
-    async def async_get_or_create_by_title_and_artist(self, db: AsyncSession, title: str, artist_id: int, **extra_fields) -> Tuple[Release, bool]:
-        """Async version of get_or_create_by_title_and_artist."""
+    async def async_get_or_create_by_title_and_party(self, db: AsyncSession, title: str, party_id: str, **extra_fields) -> Tuple[Release, bool]:
+        """Async version of get_or_create_by_title_and_party."""
         release_data = {
             'title': title,
-            'artist_id': artist_id,
+            'party_id': party_id,
             **extra_fields
         }
         return await self.async_get_or_create(db, **release_data)
+    
+    # --- Backward-compatible aliases ---
+    
+    def get_by_title_and_artist(self, db: Session, title: str, artist_id: int) -> Optional[Release]:
+        """Backward-compatible alias — uses party_id internally."""
+        return self.get_by_title_and_party(db, title, str(artist_id))
+    
+    async def async_get_by_title_and_artist(self, db: AsyncSession, title: str, artist_id: int) -> Optional[Release]:
+        """Backward-compatible alias — uses party_id internally."""
+        return await self.async_get_by_title_and_party(db, title, str(artist_id))
+    
+    def get_by_artist_id(self, db: Session, artist_id: int, skip: int = 0, limit: int = 100) -> list[Release]:
+        """Backward-compatible alias — uses party_id internally."""
+        return self.get_by_party_id(db, str(artist_id), skip, limit)
+    
+    async def async_get_by_artist_id(self, db: AsyncSession, artist_id: int, skip: int = 0, limit: int = 100) -> list[Release]:
+        """Backward-compatible alias — uses party_id internally."""
+        return await self.async_get_by_party_id(db, str(artist_id), skip, limit)
+    
+    def get_or_create_by_title_and_artist(self, db: Session, title: str, artist_id: int, **extra_fields) -> Tuple[Release, bool]:
+        """Backward-compatible alias."""
+        return self.get_or_create_by_title_and_party(db, title, str(artist_id), **extra_fields)
+    
+    async def async_get_or_create_by_title_and_artist(self, db: AsyncSession, title: str, artist_id: int, **extra_fields) -> Tuple[Release, bool]:
+        """Backward-compatible alias."""
+        return await self.async_get_or_create_by_title_and_party(db, title, str(artist_id), **extra_fields)
     
     def get_releases_with_tracks_count(self, db: Session, skip: int = 0, limit: int = 100) -> list[dict]:
         """Get releases with their track counts.
@@ -202,14 +229,12 @@ class ReleaseRepository(BaseRepository[Release]):
         Returns:
             List of dictionaries with release info and track count
         """
-        from app.models.track import Track
-        
         results = (
             db.query(
                 self.model,
-                db.func.count(Track.id).label('track_count')
+                db.func.count(ReleaseTrack.id).label('track_count')
             )
-            .outerjoin(Track, Track.release_id == self.model.id)
+            .outerjoin(ReleaseTrack, ReleaseTrack.release_id == self.model.id)
             .group_by(self.model.id)
             .offset(skip)
             .limit(limit)
@@ -226,15 +251,14 @@ class ReleaseRepository(BaseRepository[Release]):
     
     async def async_get_releases_with_tracks_count(self, db: AsyncSession, skip: int = 0, limit: int = 100) -> list[dict]:
         """Async version of get_releases_with_tracks_count."""
-        from app.models.track import Track
         from sqlalchemy import func
         
         stmt = (
             select(
                 self.model,
-                func.count(Track.id).label('track_count')
+                func.count(ReleaseTrack.id).label('track_count')
             )
-            .outerjoin(Track, Track.release_id == self.model.id)
+            .outerjoin(ReleaseTrack, ReleaseTrack.release_id == self.model.id)
             .group_by(self.model.id)
             .offset(skip)
             .limit(limit)
