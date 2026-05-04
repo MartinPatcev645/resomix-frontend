@@ -23,7 +23,9 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     CHAR,
-    text
+    text,
+    UniqueConstraint,
+    func
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects import mysql
@@ -332,6 +334,7 @@ class UserAuthProvider(Base):
 
     __tablename__ = "user_auth_providers"
     __table_args__ = (
+        UniqueConstraint("provider", "provider_uid", name="uk_provider_uid"),
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
 

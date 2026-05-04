@@ -159,3 +159,22 @@ class RoyaltyRate(Base):
     effective_to: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     deal: Mapped["Deal"] = relationship("Deal", back_populates="royalty_rates")
+
+
+class IngestionError(Base):
+    """Specific validation or delivery errors during ingestion."""
+    __tablename__ = "ingestion_errors"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
+    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_log.id", ondelete="CASCADE"), nullable=False)
+    error_code: Mapped[str] = mapped_column(String(50), nullable=False)
+    error_message: Mapped[str] = mapped_column(mysql.TEXT, nullable=False)
+    error_severity: Mapped[str] = mapped_column(Enum('warning', 'critical'), default='critical', nullable=False, index=True)
+    reference_node: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, comment='E.g., <ReleaseId> or specific ISRC string')
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
+
+    log: Mapped["IngestLog"] = relationship("IngestLog")
+

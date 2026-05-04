@@ -93,8 +93,8 @@ class ConsumptionEvent(Base):
     # Duration: Actual seconds of audio consumed
     duration_seconds: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False)
 
-    # Timestamp: Server time
-    timestamp: Mapped[DateTime] = mapped_column(
+    # event_timestamp: Server time
+    event_timestamp: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp(), index=True
     )
 
@@ -124,5 +124,5 @@ class ConsumptionEvent(Base):
             "source_device": self.source_device,
             "session_id": self.session_id,
             "duration_seconds": self.duration_seconds,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "event_timestamp": self.event_timestamp.isoformat() if self.event_timestamp else None,
         }

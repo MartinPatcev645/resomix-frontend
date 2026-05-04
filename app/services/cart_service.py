@@ -39,19 +39,19 @@ class CartService:
         subtotal = 0
         
         for item in cart.items:
-            track = item.track_format.track
+            track = item.track
             # Combine artist names from relationship
-            artists_list = [ta.artist.full_name for ta in track.track_artists if ta.artist]
+            artists_list = [tc.contributor.full_name for tc in track.recording_contributors if tc.contributor]
             artist_name = ", ".join(artists_list) if artists_list else "Unknown Artist"
 
             items.append({
                 "id": item.id,
                 "track_id": track.uuid,
-                "track_format_id": item.track_format_id,
+                "track_id_internal": item.track_id,
                 "source_playlist_id": item.source_playlist_id,
                 "title": track.title,
                 "artist": artist_name,
-                "format_name": item.track_format.audio_format.upper() if item.track_format else "AIFF",
+                "format_name": "AIFF",
                 "price_cents": item.price_cents
             })
             subtotal += item.price_cents
@@ -127,31 +127,24 @@ class CartService:
                 plist_row = plist_res.first()
                 if plist_row: playlist_id_internal = plist_row.id
 
-            # Find default format (AIFF)
-            fmt_res = await db.execute(
-                text("SELECT id FROM track_formats WHERE track_id = :tid AND audio_format = 'aiff'"), 
-                {"tid": track_row.id}
+            # Add directly to cart using track_id
+            await self.cart_repository.async_add_item(
+                db, 
+                cart.id, 
+                track_row.id, 
+                playlist_id_internal
             )
-            fmt_row = fmt_res.first()
-            
-            if fmt_row:
-                await self.cart_repository.async_add_item(
-                    db, 
-                    cart.id, 
-                    fmt_row.id, 
-                    playlist_id_internal
-                )
             
         await db.commit()
             
         # Hydrate will re-fetch and update cache
         return await self.hydrate_cart(db, user_id)
 
-    async def remove_item(self, db: AsyncSession, user_id: int, track_format_id: int) -> Dict[str, Any]:
+    async def remove_item(self, db: AsyncSession, user_id: int, track_id: int) -> Dict[str, Any]:
         """Remove item from cart."""
         cart = await self.cart_repository.async_get_active_cart(db, user_id)
         if cart:
-            await self.cart_repository.async_remove_item(db, cart.id, track_format_id)
+            await self.cart_repository.async_remove_item(db, cart.id, track_id)
             await db.commit()
             
         return await self.hydrate_cart(db, user_id)

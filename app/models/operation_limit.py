@@ -63,7 +63,7 @@ class UserOperationLimit(Base):
     window_seconds: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), nullable=True)
     # Tracks how many times the user has consumed this operation (e.g., number of transfers performed)
     # Backed by an UNSIGNED INT column in DB; default 0.
-    usage: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, server_default=func.cast(0, mysql.INTEGER(unsigned=True)))
+    usage_count: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, server_default=func.cast(0, mysql.INTEGER(unsigned=True)))
     created_by: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
     updated_at: Mapped[DateTime] = mapped_column(

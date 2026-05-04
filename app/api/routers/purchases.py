@@ -55,15 +55,15 @@ async def add_to_cart(
     return await cart_controller.add_to_cart(db, request, current_user.id, payload.dict())
 
 
-@router.delete("/cart/remove/{track_format_id}")
+@router.delete("/cart/remove/{track_id}")
 async def remove_from_cart(
     request: Request,
-    track_format_id: int,
+    track_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Remove a specific track-format variant from the cart."""
-    return await cart_controller.remove_from_cart(db, request, current_user.id, track_format_id)
+    """Remove a specific track from the cart."""
+    return await cart_controller.remove_from_cart(db, request, current_user.id, track_id)
 
 
 @router.delete("/cart/remove-playlist/{playlist_id}")

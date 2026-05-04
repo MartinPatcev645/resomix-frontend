@@ -77,9 +77,9 @@ class CartController:
                 content=format_response(success=False, error=f"Failed to remove playlist from cart: {str(e)}")
             )
 
-    async def remove_from_cart(self, db: AsyncSession, request: Request, user_id: int, track_format_id: int) -> JSONResponse:
+    async def remove_from_cart(self, db: AsyncSession, request: Request, user_id: int, track_id: int) -> JSONResponse:
         try:
-            await self.cart_service.remove_item(db, user_id, track_format_id)
+            await self.cart_service.remove_item(db, user_id, track_id)
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(success=True)
@@ -169,19 +169,19 @@ class CartController:
             line_items = []
             
             for item in cart.items:
-                # Each item.track_format is already loaded via selectinload in repository
-                price = item.track_format.price_cents
+                # Each item.track is already loaded via selectinload in repository
+                price = item.price_cents
                 subtotal_cents += price
                 
                 line_items.append({
                     "price_data": {
                         "currency": "usd",
                         "product_data": {
-                            "name": f"{item.track_format.track.title} ({item.track_format.audio_format.upper()})",
-                            "description": f"Artist: {item.track_format.track.display_artist or 'Various'}",
+                            "name": f"{item.track.title} (AIFF)",
+                            "description": f"Artist: {item.track.display_artist or 'Various'}",
                             "metadata": {
-                                "track_uuid": item.track_format.track.uuid,
-                                "format_id": item.track_format.id
+                                "track_uuid": item.track.uuid,
+                                "track_id": item.track.id
                             }
                         },
                         "unit_amount": price,

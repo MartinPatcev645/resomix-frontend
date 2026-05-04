@@ -9,12 +9,12 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, delete
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from datetime import datetime
 
-from app.models.ecommerce import Cart, CartItem, PromoCode, TrackFormat
+from app.models.ecommerce import Cart, CartItem, PromoCode
 from app.models.track import Track
-from app.models.recording_artist import RecordingArtist
+from app.models.track_contributor import TrackContributor
 from app.repositories.base_repository import BaseRepository
 
 class CartRepository(BaseRepository[Cart]):
@@ -27,10 +27,9 @@ class CartRepository(BaseRepository[Cart]):
             select(Cart)
             .options(
                 selectinload(Cart.items)
-                    .selectinload(CartItem.track_format)
-                    .selectinload(TrackFormat.track)
-                    .selectinload(Track.recording_artists)
-                    .selectinload(RecordingArtist.artist),
+                    .selectinload(CartItem.track)
+                    .selectinload(Track.recording_contributors)
+                    .selectinload(TrackContributor.contributor),
                 selectinload(Cart.promo_code)
             )
             .where(
@@ -54,23 +53,23 @@ class CartRepository(BaseRepository[Cart]):
         self, 
         db: AsyncSession, 
         cart_id: int, 
-        track_format_id: int, 
+        track_id: int,
         source_playlist_id: Optional[int] = None
     ) -> Optional[CartItem]:
-        """Add an item to the cart if the track format exists."""
-        # 1. Fetch the track format to get price
-        stmt = select(TrackFormat).where(TrackFormat.id == track_format_id)
+        """Add an item to the cart if the track exists."""
+        # 1. Fetch the track to get price
+        stmt = select(Track).where(Track.id == track_id)
         result = await db.execute(stmt)
-        track_format = result.scalar_one_or_none()
+        track = result.scalar_one_or_none()
         
-        if not track_format:
+        if not track:
             return None
 
         # 2. Check if already exists in cart to prevent duplicates
         check_stmt = select(CartItem).where(
             and_(
                 CartItem.cart_id == cart_id,
-                CartItem.track_format_id == track_format_id
+                CartItem.track_id == track_id
             )
         )
         check_result = await db.execute(check_stmt)
@@ -80,20 +79,20 @@ class CartRepository(BaseRepository[Cart]):
         # 3. Add to cart
         item = CartItem(
             cart_id=cart_id,
-            track_format_id=track_format_id,
+            track_id=track_id,
             source_playlist_id=source_playlist_id,
-            price_cents=track_format.price_cents
+            price_cents=track.price_cents or 99
         )
         db.add(item)
         await db.flush()
         return item
 
-    async def async_remove_item(self, db: AsyncSession, cart_id: int, track_format_id: int) -> bool:
+    async def async_remove_item(self, db: AsyncSession, cart_id: int, track_id: int) -> bool:
         """Remove an item from the cart."""
         stmt = delete(CartItem).where(
             and_(
                 CartItem.cart_id == cart_id,
-                CartItem.track_format_id == track_format_id
+                CartItem.track_id == track_id
             )
         )
         result = await db.execute(stmt)

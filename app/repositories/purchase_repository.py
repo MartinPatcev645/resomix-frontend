@@ -30,7 +30,7 @@ class PurchaseRepository(BaseRepository[Purchase]):
             purchase = Purchase(
                 order_id=order_id,
                 user_id=user_id,
-                track_format_id=item.track_format_id,
+                track_id=item.track_id,
                 price_cents=item.price_cents,
                 # Additional fields like discount_cents could be mapped here if needed
             )

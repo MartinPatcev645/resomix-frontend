@@ -139,6 +139,12 @@ Run Alembic to create the tables based on the baseline schema:
 alembic upgrade head
 ```
 
+Create migrations in future:
+```bash
+alembic revision --autogenerate -m "message_describing_the_changes"
+alembic upgrade head
+```
+
 ---
 
 ## 5. Run the API (Hot Reload)

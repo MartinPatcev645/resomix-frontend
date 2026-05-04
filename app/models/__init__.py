@@ -46,7 +46,9 @@ from .operation_limit import OperationType, UserOperationLimit
 from .spotify_app import SpotifyApp, UserSpotifyApp
 from .consumption_event import ConsumptionEvent
 from .sftp_user import SftpUser
-from .b2b import IngestLog, Deal, ReleaseDeal, DealTerritory, DealUseType, RoyaltyRate
+from .b2b import IngestLog, IngestionError, Deal, ReleaseDeal, DealTerritory, DealUseType, RoyaltyRate
+from .copyright import ManualTakedown, ACRInfringementLog
+from .report import GeneratedReport, LabelPayout
 
 # Make models available at package level
 __all__ = [
@@ -97,9 +99,14 @@ __all__ = [
     "ConsumptionEvent",
     "SftpUser",
     "IngestLog",
+    "IngestionError",
     "Deal",
     "ReleaseDeal",
     "DealTerritory",
     "DealUseType",
     "RoyaltyRate",
+    "ManualTakedown",
+    "ACRInfringementLog",
+    "GeneratedReport",
+    "LabelPayout",
 ]
