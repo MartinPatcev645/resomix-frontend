@@ -11,8 +11,9 @@ A minimal, step-by-step guide to get the API running locally. No extra services,
 3. Create and fill `.env`
 4. Start MariaDB & Redis in Docker
 5. Create local database and run Alembic migrations
-6. Start API (Uvicorn)
-7. Run final checklist
+6. Seed the database with sample data
+7. Start API (Uvicorn)
+8. Run final checklist
 
 ---
 
@@ -150,6 +151,11 @@ Run Alembic to create the tables based on the baseline schema:
 alembic upgrade head
 ```
 
+Seed the database with high-fidelity sample data (20 tracks, users, engagement):
+```bash
+python scripts/seed_data.py seed-all
+```
+
 Create migrations in future:
 ```bash
 alembic revision --autogenerate -m "message_describing_the_changes"
@@ -184,6 +190,7 @@ Open:
 * [ ] Docker Desktop is running
 * [ ] `.env` exists and uses **3307**
 * [ ] `alembic upgrade head` ran without errors and generated tables
+* [ ] Database seeded successfully (`python scripts/seed_data.py seed-all`)
 * [ ] Redis is running (`redis-cli ping` returns PONG)
 * [ ] FFmpeg is installed (`ffmpeg -version`)
 * [ ] On Windows, MariaDB Connector/C was installed **before** `pip install`
