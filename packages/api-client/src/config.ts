@@ -55,6 +55,14 @@ export interface ApiConfig {
     ADMIN_USER_SEARCH: string;
     // Telemetry
     TELEMETRY_SYNC: string;
+    // Cart & Checkout
+    CART_GET: string;
+    CART_ADD: string;
+    CART_REMOVE: string;
+    CART_REMOVE_PLAYLIST: string;
+    CART_PROMO: string;
+    CART_CLEAR: string;
+    CHECKOUT_CREATE_SESSION: string;
     // unused beta endpoints
     // SPOTIFY_TRANSFER: string;
     // TIDAL_AUTH_TOKEN: string;
@@ -116,6 +124,14 @@ export const API_CONFIG: ApiConfig = {
     WAITLIST: "/waitlist/",
     // Telemetry
     TELEMETRY_SYNC: "/api/telemetry/sync",
+    // Cart & Checkout
+    CART_GET: "/api/cart",
+    CART_ADD: "/api/cart/add",
+    CART_REMOVE: "/api/cart/remove/",
+    CART_REMOVE_PLAYLIST: "/api/cart/remove-playlist/",
+    CART_PROMO: "/api/cart/promo",
+    CART_CLEAR: "/api/cart/clear",
+    CHECKOUT_CREATE_SESSION: "/api/checkout/create-session",
     // SEGMENT_STATUS: "/segment_status/", // Commented out - segmentation polling no longer needed
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: "/admin/feedback/",

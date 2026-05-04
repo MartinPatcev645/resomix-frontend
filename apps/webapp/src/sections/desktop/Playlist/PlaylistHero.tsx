@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport, usePlaylistFork } from "@resomix/hooks";
+import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, ToggleButton } from "@resomix/ui";
+import { formatDuration, usePlaylistExport, useCart } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -15,6 +15,9 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
+import CartAddIcon from '@/assets/icons/cart_add.svg';
+import CartAddWhiteIcon from '@/assets/icons/cart_add_white.svg';
+import CartRemoveWhiteIcon from '@/assets/icons/cart_remove_white.svg';
 import { CCLicenseGroup } from "@/components/index.ts";
 
 const InputTrackStatus = "Loading..."
@@ -33,9 +36,10 @@ const PlaylistHero: React.FC = () => {
   const [statusTitle, setStatusTitle] = React.useState('');
   const [showLoginButton, setShowLoginButton] = React.useState(false);
   const [forkedPlaylistId, setForkedPlaylistId] = React.useState<string | null>(null);
-  const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
+  // const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
+  const { toggleItem, addPlaylist, isInCart, isLoading: isCartLoading } = useCart();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   const navigate = useNavigate();
@@ -46,7 +50,7 @@ const PlaylistHero: React.FC = () => {
 
   // Reset fork state when playlist changes
   useEffect(() => {
-    setHasForkedThisPlaylist(false);
+    // setHasForkedThisPlaylist(false);
     setForkedPlaylistId(null);
   }, [playlistData?.playlist.id]);
 
@@ -60,6 +64,17 @@ const PlaylistHero: React.FC = () => {
   const handleRenameClose = () => setShowRename(false);
   const handleRatingClose = () => setShowRating(false);
   const handleDownloadExportClose = () => setShowDownloadExport(false);
+
+  const handlePlaylistCartClick = async () => {
+    if (!playlistData?.playlist.id) return;
+    await addPlaylist(playlistData.playlist.id);
+  };
+
+  const handleQueriedTrackCartClick = async () => {
+    if (!playlistData?.queried_track.id) return;
+    await toggleItem(playlistData.queried_track.id, playlistData?.playlist.id || undefined);
+  };
+
   const handleStatusClose = () => {
     setShowStatus(false);
     // Don't clear forkedPlaylistId or hasForkedThisPlaylist here - keep them for the button to work
@@ -106,31 +121,31 @@ const PlaylistHero: React.FC = () => {
     };
   }, [showExportMenu]);
 
-  // Fork functionality with StatusMessage
-  const { fork, forking } = usePlaylistFork({
-    onError: (title, message) => {
-      // Check if the error is authentication related
-      const isAuthError = message.toLowerCase().includes('not authenticated') ||
-        message.toLowerCase().includes('log in');
-      setShowLoginButton(isAuthError);
-      setForkedPlaylistId(null); // Clear forked playlist ID on error
-      handleStatusChange('error', message, title);
-    },
-    onSuccess: (title, message, response) => {
-      setShowLoginButton(false);
-      setHasForkedThisPlaylist(true); // Mark as forked locally
-      // Store the forked playlist ID from the response
-      if (response?.data?.playlist?.id) {
-        setForkedPlaylistId(response.data.playlist.id);
-      }
-      handleStatusChange('success', message, title);
-    },
-  });
+  // // Fork functionality with StatusMessage
+  // const { fork, forking } = usePlaylistFork({
+  //   onError: (title, message) => {
+  //     // Check if the error is authentication related
+  //     const isAuthError = message.toLowerCase().includes('not authenticated') ||
+  //       message.toLowerCase().includes('log in');
+  //     setShowLoginButton(isAuthError);
+  //     setForkedPlaylistId(null); // Clear forked playlist ID on error
+  //     handleStatusChange('error', message, title);
+  //   },
+  //   onSuccess: (title, message, response) => {
+  //     setShowLoginButton(false);
+  //     setHasForkedThisPlaylist(true); // Mark as forked locally
+  //     // Store the forked playlist ID from the response
+  //     if (response?.data?.playlist?.id) {
+  //       setForkedPlaylistId(response.data.playlist.id);
+  //     }
+  //     handleStatusChange('success', message, title);
+  //   },
+  // });
 
-  const handleForkClick = async () => {
-    if (DEMO_MODE || !playlistData?.playlist.id || forking) return;
-    await fork(playlistData.playlist.id);
-  };
+  // const handleForkClick = async () => {
+  //   if (DEMO_MODE || !playlistData?.playlist.id || forking) return;
+  //   await fork(playlistData.playlist.id);
+  // };
 
   const handleLoginClick = () => {
     setShowLoginButton(false);
@@ -147,7 +162,7 @@ const PlaylistHero: React.FC = () => {
   };
 
   // Check if playlist is already forked (either from server or locally)
-  const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '' || hasForkedThisPlaylist;
+  // const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '' || hasForkedThisPlaylist;
 
 
   return (
@@ -252,6 +267,18 @@ const PlaylistHero: React.FC = () => {
                     </div>
                   )}
                 </div>
+                <Tooltip message="Add entire playlist to cart">
+                  <IconButton
+                    text="Add to Cart"
+                    transparent={true}
+                    customWidth="min-w-[var(--px-100)]"
+                    onClick={handlePlaylistCartClick}
+                    icon={<img src={CartAddWhiteIcon} draggable={false} alt="Add to Cart" aria-label="Add to Cart" className={`w-[var(--px-16)] h-[var(--px-16)] ${isCartLoading ? 'animate-pulse' : ''}`} />}
+                    hoverIcon={<img src={CartAddIcon} aria-label="Add to Cart" draggable={false} alt="Add to Cart" className="w-[var(--px-16)] h(--px-16)] scale-110" />}
+                    className="playlist-action-button"
+                    id="playlist-hero-cart-button"
+                  />
+                </Tooltip>
               </div>
             </div>
 
@@ -373,21 +400,21 @@ const PlaylistHero: React.FC = () => {
                 </div>
               </div>
               <div className="absolute right-[var(--px-10)] top-[var(--px-10)] flex items-center gap-[var(--px-8)]">
-                {DEMO_MODE ? (
-                  <Tooltip message="Add to favorites coming soon!">
-                    <HeartStrokeIcon
-                      customWidth="24"
-                      customHeight="24"
-                      className="text-white/60 mt-[var(--px-6)] cursor-not-allowed"
-                    />
-                  </Tooltip>
-                ) : isForked ? (
+                {/* {DEMO_MODE ? ( */}
+                <Tooltip message="Add to favorites coming soon!">
+                  <HeartStrokeIcon
+                    customWidth="24"
+                    customHeight="24"
+                    className="text-white/60 mt-[var(--px-6)] cursor-not-allowed"
+                  />
+                </Tooltip>
+                {/* ) : isForked ? (
                   <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
                 ) : (
                   <Tooltip message="Fork this playlist as your own">
                     <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white mt-[var(--px-6)]" onClick={handleForkClick} />
                   </Tooltip>
-                )}
+                )} */}
                 <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private!"}>
                   <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
                     {playlistData?.playlist.is_public ? (
@@ -403,6 +430,23 @@ const PlaylistHero: React.FC = () => {
                     )}
                   </div>
                 </Tooltip>
+                {playlistData?.queried_track?.type !== 'upload' && playlistData?.queried_track && (
+                  <Tooltip message={isInCart(playlistData.queried_track.id) ? "Remove from Cart" : "Add to Cart"}>
+                    <div
+                      className={`transition-all duration-300 hover:cursor-pointer flex items-center justify-center ${isInCart(playlistData.queried_track.id) ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQueriedTrackCartClick();
+                      }}
+                    >
+                      <img
+                        src={isInCart(playlistData.queried_track.id) ? CartRemoveWhiteIcon : CartAddWhiteIcon}
+                        alt={isInCart(playlistData.queried_track.id) ? "Remove from Cart" : "Add to Cart"}
+                        className={`w-[var(--px-20)] h-[var(--px-20)] hover:scale-110 transition-transform duration-200 ${isCartLoading ? 'animate-pulse' : ''}`}
+                      />
+                    </div>
+                  </Tooltip>
+                )}
               </div>
               {/* Creative Commons License Icons - Bottom Right */}
               {playlistData?.queried_track?.type === 'internal' && (

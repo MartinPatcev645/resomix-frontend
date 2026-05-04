@@ -15,3 +15,7 @@ export type { User } from '@resomix/api-client'
 
 // Cookie storage utilities
 export { setCookie, getCookie, deleteCookie, cookieStorage, hybridStorage, TAB_ID } from './cookieStorage'
+
+// Cart store
+export { useCartStore } from './useCart'
+export type { CartStore } from './useCart'

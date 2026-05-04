@@ -61,6 +61,7 @@ import { PasswordInput } from "./Elements/PasswordInput";
 import { FormError } from "./Elements/FormError";
 import { AuthStatusBanner } from "./Elements/AuthStatusBanner";
 import { DemoStageBanner } from "./Elements/DemoStageBanner";
+import { CartIcon } from "./Elements/CartIcon";
 import LoginContent from "./Content/LoginContent";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
@@ -147,6 +148,8 @@ export {
   PrivateIcon,
   HeartFilledIcon,
   HeartStrokeIcon,
+  // Cart
+  CartIcon,
   fetchSessionId,
   fetchGenerationTime,
 };

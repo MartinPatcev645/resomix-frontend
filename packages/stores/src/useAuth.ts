@@ -109,6 +109,12 @@ const useAuthStore = create<AuthState>()(
 
             // Logout
             logout: (options?: LogoutOptions) => {
+                // Clear cart state on logout
+                try {
+                    const cartModule = require('./useCart');
+                    cartModule.useCartStore.getState().reset();
+                } catch { /* noop if cart store not loaded */ }
+
                 set({
                     user: null,
                     accessToken: null,

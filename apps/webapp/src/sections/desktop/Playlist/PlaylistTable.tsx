@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
-import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController, useCart } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
+import CartAddWhiteIcon from '@/assets/icons/cart_add_white.svg';
+import CartRemoveWhiteIcon from '@/assets/icons/cart_remove_white.svg';
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -19,6 +21,7 @@ const PlaylistTable: React.FC = () => {
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
+    const { toggleItem, isInCart, isLoading: isCartLoading } = useCart();
 
     const handlePlayButtonClick = useCallback((trackId: string) => {
         if (!DEMO_MODE) {
@@ -91,6 +94,11 @@ const PlaylistTable: React.FC = () => {
         } catch (error) {
             console.error('Failed to rate track:', error);
         }
+    };
+
+    const handleCartIconClick = async (trackId: string) => {
+        const playlistId = playlistData?.playlist.id || undefined;
+        await toggleItem(trackId, playlistId);
     };
 
     return (
@@ -250,6 +258,25 @@ const PlaylistTable: React.FC = () => {
                                             isPlaying={currentTrackId === track.id && isPlaying}
                                             totalDuration={track.duration}
                                         />
+                                    )}
+                                </div>
+                                <div className="absolute -right-[var(--px-30)] top-[37%]">
+                                    {track.type !== 'upload' && (
+                                        <Tooltip message={isInCart(track.id) ? "Remove from Cart" : "Add to Cart"}>
+                                            <div
+                                                className={`transition-all duration-300 hover:cursor-pointer flex items-center justify-center ${isInCart(track.id) ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCartIconClick(track.id);
+                                                }}
+                                            >
+                                                <img
+                                                    src={isInCart(track.id) ? CartRemoveWhiteIcon : CartAddWhiteIcon}
+                                                    alt={isInCart(track.id) ? "Remove from Cart" : "Add to Cart"}
+                                                    className={`w-[var(--px-20)] h-[var(--px-20)] hover:scale-110 transition-transform duration-200 ${isCartLoading ? 'animate-pulse' : ''}`}
+                                                />
+                                            </div>
+                                        </Tooltip>
                                     )}
                                 </div>
                             </div>
