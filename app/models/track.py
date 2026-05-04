@@ -41,6 +41,9 @@ class Track(Base):
     uuid: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
 
     # Foreign keys
+    user_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id"), nullable=True, index=True
+    )
     party_id: Mapped[Optional[str]] = mapped_column(
         String(100), ForeignKey("parties.party_id"), nullable=True, index=True
     )
@@ -94,6 +97,8 @@ class Track(Base):
         DateTime, nullable=True, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
 
+
+
     # Audio files associated with this track
     audio_files: Mapped[List["AudioFile"]] = relationship(
         "AudioFile", back_populates="track", cascade="all, delete-orphan", uselist=True
@@ -115,6 +120,11 @@ class Track(Base):
         back_populates="track",
         uselist=False,
         cascade="all, delete-orphan",
+    )
+    
+    # Uploader
+    uploader: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="uploaded_tracks", foreign_keys=[user_id]
     )
 
     def __repr__(self):

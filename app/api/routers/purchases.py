@@ -94,7 +94,7 @@ async def apply_promo(
     return await cart_controller.apply_promo(db, request, current_user.id, payload.code)
 
 
-@router.post("/api/checkout/init")
+@router.post("/checkout/init")
 async def initiate_checkout(
     request: Request,
     payload: InitiateCheckoutRequest,
@@ -108,7 +108,7 @@ async def initiate_checkout(
     return await cart_controller.initiate_checkout(db, request, current_user.id, payload.dict())
 
 
-@router.post("/api/checkout/create-session")
+@router.post("/checkout/create-session")
 async def create_checkout_session(
     request: Request,
     db: AsyncSession = Depends(get_database_session),

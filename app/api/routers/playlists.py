@@ -45,11 +45,7 @@ router = APIRouter(
     }
 )
 
-# Separate router for /api/playlists/* namespaced endpoints
-api_router = APIRouter(
-    prefix="/api/playlists",
-    tags=["playlists"],
-)
+
 
 # Initialize controller
 playlist_controller = PlaylistController()
@@ -391,7 +387,7 @@ async def get_all_user_playlists_endpoint(
     return await playlist_controller.get_all_user_playlists(db, request, current_user, page, page_size, filters)
 
 
-@api_router.post(
+@router.post(
     "/{playlist_id}/play-session",
     summary="Get Edge Authorization Playback Session",
     description="Evaluate territory restrictions and generate a signed JWT session token for gapless HLS playback.",

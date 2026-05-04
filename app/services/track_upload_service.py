@@ -26,7 +26,8 @@ from sqlalchemy import text, select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.constants import TrackType
 from app.models.track import Track
-from app.models.recording_artist import RecordingArtist
+from app.models.track_contributor import TrackContributor
+from app.models.contributor import Contributor
 from app.services.metadata_service import MetadataService
 from app.utils.sanitization import (
     sanitize_artist_name,
@@ -99,8 +100,8 @@ class Cache:
         return {name.lower(): id_ for name, id_ in result.fetchall()}
 
     async def preload(self, db: AsyncSession):
-        result_artists = await db.execute(text("SELECT full_name, id FROM artists"))
-        self.artists = {name.lower(): id_ for name, id_ in result_artists.fetchall()}
+        result_contributors = await db.execute(text("SELECT full_name, id FROM contributors"))
+        self.artists = {name.lower(): id_ for name, id_ in result_contributors.fetchall()}
         
         result_labels = await db.execute(text("SELECT label_name, id FROM labels"))
         self.labels = {name.lower(): id_ for name, id_ in result_labels.fetchall()}
@@ -123,7 +124,7 @@ class Cache:
         # Sanitize the name for database insertion based on table type
         original_name = name
 
-        if table == "artists":
+        if table == "contributors":
             sanitized_name = sanitize_artist_name(name)
         elif table == "labels":
             sanitized_name = sanitize_label_name(name)
@@ -146,7 +147,7 @@ class Cache:
 
         try:
             col_name = "name"
-            if table == "artists":
+            if table == "contributors":
                 col_name = "full_name"
             elif table == "labels":
                 col_name = "label_name"
@@ -174,7 +175,7 @@ class Cache:
             raise
 
     async def artist(self, db: AsyncSession, name: str) -> int:
-        return await self._get_or_create(db, "artists", self.artists, name)
+        return await self._get_or_create(db, "contributors", self.artists, name)
 
     async def label(self, db: AsyncSession, name: str) -> int:
         return await self._get_or_create(db, "labels", self.labels, name)
@@ -370,6 +371,11 @@ class TrackUploadService:
             # Extract album
             album_title = metadata.get("Album", "").strip()
 
+            # Extract ISRC (if available) or generate a fallback
+            isrc = metadata.get("ISRC", "").strip()
+            if not isrc:
+                isrc = f"USER-{track_uuid[:18].upper()}" # Fallback ISRC
+
             # Set file paths - use full_path if provided (for monthly pipeline), otherwise use secure filename
             file_path = full_path if full_path else f"upload_{track_uuid}.tmp"
 
@@ -409,15 +415,11 @@ class TrackUploadService:
             track_data = {
                 "uuid": track_uuid,
                 "user_id": user_id,
-                "release_id": release_id,
-                "label_id": label_id,
-                "genre_id": genre_id,
+                "isrc": isrc,
+                "genre": genre_name[:255],
                 "title": title[:255],  # Ensure it fits in the column
                 "year": year,
-                "duration_sec": duration_sec,
-                "file_path": file_path[:500],  # Ensure it fits in the column
-                "preview_path": preview_path,
-                "file_size": file_size,
+                "duration_ms": int(duration_sec * 1000) if duration_sec else None,
                 "track_type": track_type,
             }
 
@@ -427,16 +429,12 @@ class TrackUploadService:
             track_insert = insert(Track).values(
                 uuid=track_data["uuid"],
                 user_id=track_data["user_id"],
-                release_id=track_data["release_id"],
-                label_id=track_data["label_id"],
-                genre_id=track_data["genre_id"],
+                isrc=track_data["isrc"],
                 title=track_data["title"],
-                year=track_data["year"],
-                duration_sec=track_data["duration_sec"],
-                file_path=track_data["file_path"],
-                preview_path=track_data["preview_path"],
-                file_size=track_data["file_size"],
+                p_line_year=track_data["year"],
+                duration_ms=track_data["duration_ms"],
                 track_type=track_data["track_type"],
+                genre=track_data["genre"]
             )
             await db.execute(track_insert)
 
@@ -452,10 +450,18 @@ class TrackUploadService:
 
             # Insert track-artist relationships using ORM
             for artist_id in artist_ids:
-                ta_insert = insert(RecordingArtist).values(
-                    track_id=track_id, artist_id=artist_id
+                ta_insert = insert(TrackContributor).values(
+                    track_id=track_id, person_id=artist_id, role='MainArtist', sequence_num=1
                 )
                 await db.execute(ta_insert)
+
+            # Insert release relationship if exists
+            if release_id:
+                from app.models.release_track import ReleaseTrack
+                rt_insert = insert(ReleaseTrack).values(
+                    release_id=release_id, track_id=track_id, sequence_num=1
+                )
+                await db.execute(rt_insert)
 
             # Commit the transaction
             await db.commit()

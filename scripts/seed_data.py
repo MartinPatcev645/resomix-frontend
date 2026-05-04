@@ -59,7 +59,7 @@ class SeedDataManager:
                     'playlist_transfer_tracks', 'playlist_tracks', 'playlists', 
                     'publisher_shares', 'track_contributors', 'contributors', 
                     'release_deals', 'royalty_rates', 'deals', 'release_tracks', 
-                    'release_contributors', 'releases', 'audio_files', 'image_files',
+                    'release_contributors', 'releases', 'tracks', 'audio_files', 'image_files',
                     'labels', 'messages', 'ingest_log', 'parties', 'genres', 
                     'user_roles', 'role_permissions', 'permissions', 'roles', 
                     'user_auth_providers', 'user_sessions', 'user_tokens', 'users'
@@ -274,7 +274,7 @@ class SeedDataManager:
                 conn.execute(text("""
                     INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified)
                     VALUES (1, :uuid, 'admin', 'dj@argo.fm', :pw, 'DJ Argo (Admin)', 1)
-                """), {'uuid': admin_uuid, 'pw': self._hash_password('Admin@123')})
+                """), {'uuid': admin_uuid, 'pw': self._hash_password('dj@argo.fm')})
                 
                 # 2. Listener
                 user_uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d480'
@@ -298,14 +298,14 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 # 1. Playlist
                 conn.execute(text("""
-                    INSERT INTO playlists (id, uuid, user_id, name, is_public, type)
-                    VALUES (1, 'a623405c-18df-4835-8666-4d22384a5142', 1, 'Ultimate Argo Collection', 1, 'custom')
+                    INSERT INTO playlists (id, uuid, user_id, name, is_public, type, seed_track_id)
+                    VALUES (1, 'a623405c-18df-4835-8666-4d22384a5142', 1, 'Ultimate Argo Collection', 1, 'custom', 1)
                 """))
                 
                 # 2. Playlist Tracks
-                for tid in [1, 2, 3, 5, 7]:
+                for i, tid in enumerate(range(1, 11)):
                     conn.execute(text("INSERT INTO playlist_tracks (playlist_id, track_id, position, score) VALUES (1, :tid, :pos, :score)"),
-                                 {'tid': tid, 'pos': float(tid), 'score': 1.0 - (tid * 0.05)})
+                                 {'tid': tid, 'pos': float(i + 1), 'score': round(1.0 - (i * 0.05), 2)})
                 return True
         except Exception as e:
             logger.error(f"Failed to seed engagement: {e}")

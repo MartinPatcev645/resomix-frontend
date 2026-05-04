@@ -606,7 +606,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.title,
                         t.p_line_year as year,
                         (t.duration_ms / 1000.0) as duration,
-                        t.track_type as type,
+                        t.type as type,
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
@@ -619,7 +619,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.track_type, l.label_name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
                     LIMIT 1
                 """
                 )
@@ -657,7 +657,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.title,
                         t.p_line_year as year,
                         (t.duration_ms / 1000.0) as duration,
-                        t.track_type as type,
+                        t.type as type,
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
@@ -670,7 +670,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id IN :track_ids
-                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.track_type, l.label_name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
                 """
                 )
 
@@ -812,7 +812,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.uuid,
                         t.title,
                         (t.duration_ms / 1000.0) as duration_sec,
-                        t.track_type as type,
+                        t.type as type,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                             'Unknown Artist'
@@ -821,7 +821,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
-                    GROUP BY t.id, t.uuid, t.title, t.duration_ms, t.track_type
+                    GROUP BY t.id, t.uuid, t.title, t.duration_ms, t.type
                     LIMIT 1
                 """
                 )

@@ -75,7 +75,7 @@ async def start_session_cleanup_worker():
 
                             # We only delete tracks of type='upload'
                             stmt = select(Track).where(
-                                Track.user_id == user_id, Track.type == "upload"
+                                Track.user_id == user_id, Track.track_type == "upload"
                             )
                             result = await db_session.execute(stmt)
                             tracks = result.scalars().all()

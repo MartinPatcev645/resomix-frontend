@@ -29,7 +29,6 @@ from .contact import router as contact_router
 from .health import router as health_router
 from .preview import router as preview_router
 from .playlists import router as playlists_router
-from .playlists import api_router as playlists_api_router
 from .monthly_pipeline import router as monthly_pipeline_router
 from .ratings import router as ratings_router
 from .spotify_transfer import router as spotify_transfer_router
@@ -64,7 +63,6 @@ all_routers = [
     health_router,
     preview_router,
     playlists_router,
-    playlists_api_router,
     monthly_pipeline_router,
     ratings_router,
     spotify_transfer_router,

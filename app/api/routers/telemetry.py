@@ -29,7 +29,7 @@ from app.schemas.telemetry import (
 )
 
 router = APIRouter(
-    prefix="/api/telemetry",
+    prefix="/telemetry",
     tags=["telemetry"],
     responses={
         422: {"model": TelemetryErrorResponse},

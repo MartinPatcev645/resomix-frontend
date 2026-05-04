@@ -40,6 +40,7 @@ class MetadataService:
         "TDRC": "Year",  # v2.4 Recording time
         "TYER": "Year",  # v2.3 Year
         "TPUB": "Label",  # Publisher → Label
+        "TSRC": "ISRC",
     }
 
     _LIMITED_VORBIS_MAP: Dict[str, str] = {
@@ -51,6 +52,7 @@ class MetadataService:
         "DATE": "Year",      # Some FLACs use DATE for year
         "LABEL": "Label",
         "PUBLISHER": "Label",
+        "ISRC": "ISRC",
     }
 
     # Comprehensive extraction mapping

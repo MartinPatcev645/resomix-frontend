@@ -247,6 +247,7 @@ class User(Base):
         foreign_keys="UserSpotifyApp.user_id",
         uselist=False,
     )
+    # Uploaded tracks 
     uploaded_tracks: Mapped[List["Track"]] = relationship(
         "Track",
         back_populates="uploader",

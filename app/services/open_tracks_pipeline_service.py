@@ -97,7 +97,7 @@ class OpenTracksPipelineService:
 
         # Step 1: Fetch uuid and file_path for OPEN tracks only
         try:
-            result = await db.execute(text("SELECT uuid, file_path FROM tracks WHERE track_type = 'open'"))
+            result = await db.execute(text("SELECT uuid, file_path FROM tracks WHERE type = 'open'"))
             rows = result.fetchall()
         except Exception as e:
             print(f"Error querying tracks for update_embeddings: {e}")

@@ -64,15 +64,15 @@ class SearchService:
                 # Note: This is a basic implementation for demo purposes
                 from sqlalchemy import select, or_, and_
                 from app.models.track import Track
-                from app.models.recording_artist import RecordingArtist
-                from app.models.artist import Artist
+                from app.models.track_contributor import TrackContributor
+                from app.models.contributor import Contributor
                 from app.models.constants import TrackType
                 
-                # Join with artists to search by artist name
+                # Join with contributors to search by artist name
                 stmt = (
                     select(Track)
-                    .outerjoin(RecordingArtist)
-                    .outerjoin(Artist)
+                    .outerjoin(TrackContributor)
+                    .outerjoin(Contributor)
                     .where(and_(
                         Track.track_type == TrackType.OPEN,
                         Track.track_type != TrackType.UPLOAD
@@ -80,7 +80,7 @@ class SearchService:
                     .where(
                         or_(
                             Track.title.ilike(f"%{query_clean}%"),
-                            Artist.full_name.ilike(f"%{query_clean}%")
+                            Contributor.full_name.ilike(f"%{query_clean}%")
                         )
                     )
                     .limit(limit)
@@ -100,7 +100,7 @@ class SearchService:
                     
                     # Re-fetch with eager loading to be safe or rely on lazy loading if session is open
                     # Let's try to use the object directly as session is active
-                    artist_names = [ra.artist.full_name for ra in track_obj.recording_artists]
+                    artist_names = [tc.contributor.full_name for tc in track_obj.recording_contributors]
                     artist_display = ", ".join(artist_names) if artist_names else "N/A"
                     
                     formatted_results.append({
