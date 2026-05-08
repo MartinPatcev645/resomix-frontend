@@ -354,9 +354,10 @@ class HlsPlaylistController implements AudioController {
         fragLoadingTimeOut: RETRY_EVERY,
         xhrSetup: function (xhr, url) {
           const requestUrl = new URL(url);
-          const isBserver = requestUrl.hostname === bserverHostname;
+          const isLocal = requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1';
+          const isBserver = requestUrl.hostname === bserverHostname || isLocal;
 
-          if (token && url.includes(urlObj.hostname)) {
+          if (token && (url.includes(urlObj.hostname) || isLocal)) {
             // Only append if token is not already in the URL
             if (!url.includes('token=')) {
               const sep = url.includes('?') ? '&' : '?';
@@ -544,12 +545,13 @@ class HlsPlaylistController implements AudioController {
 
   private updatePlaylistUrlWithAuth(rawUrl: string): string {
     try {
-      if (!API_CONFIG.BASE_URL) return rawUrl;
-      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
+      const bserverHostname = API_CONFIG.BASE_URL ? new URL(API_CONFIG.BASE_URL).hostname : '';
       const apiKey = API_CONFIG.API_KEY;
       let url = rawUrl;
+      const isLocal = new URL(url).hostname === 'localhost' || new URL(url).hostname === '127.0.0.1';
+      const isInternal = (bserverHostname && url.includes(bserverHostname)) || isLocal;
 
-      if (url.includes(bserverHostname) && apiKey && !url.includes('api_key=')) {
+      if (isInternal && apiKey && !url.includes('api_key=')) {
         const sep = url.includes('?') ? '&' : '?';
         url += sep + 'api_key=' + apiKey;
       }
