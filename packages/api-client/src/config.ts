@@ -175,7 +175,7 @@ export const API_CONFIG: ApiConfig = {
 export const APPLE_CONFIG = {
   MUSIC_KIT_SRC: 'https://js-cdn.music.apple.com/musickit/v1/musickit.js',
   GUARD_PREFIX: 'apple_auth_guard_',
-  REDIRECT_URI: 'https://beta.resomix.com/apple-redirect',
+  REDIRECT_URI: `${getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com")}/apple-redirect`,
   APPLE_AUTH_TOKEN: '/apple/auth/token',
   APPLE_TRANSFER: "/apple/transfer-playlist/",
   APP_NAME:  "ResomiX",
@@ -188,7 +188,7 @@ export const SPOTIFY_CONFIG = {
   CLIENT_ID: getEnv("VITE_SPOTIFY_CLIENT_ID") || '9df225a14080472c8c4ea5fc85b3eb6b',
   // REDIRECT_URI: `${window.location.origin}/test`, // Callback URL
   // REDIRECT_URI: 'https://beta-old.resomix.com/test',
-  REDIRECT_URI: 'https://beta.resomix.com/spotify-redirect',
+  REDIRECT_URI: `${getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com")}/spotify-redirect`,
   SCOPES: 'playlist-modify-public playlist-modify-private',
   AUTH_URL: 'https://accounts.spotify.com/authorize',
   TOKEN_URL: 'https://accounts.spotify.com/api/token',
@@ -209,7 +209,7 @@ export const TIDAL_CONFIG = {
 
 export const TIDAL_CONFIG = {
   CLIENT_ID: getEnv("VITE_TIDAL_CLIENT_ID") || 'ds7LnGkxqwFXUE6s',
-  REDIRECT_URI: 'https://beta.resomix.com/tidal-redirect',
+  REDIRECT_URI: `${getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com")}/tidal-redirect`,
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
   TIDAL_AUTH_TOKEN: '/tidal/auth/token',

@@ -544,6 +544,7 @@ class HlsPlaylistController implements AudioController {
 
   private updatePlaylistUrlWithAuth(rawUrl: string): string {
     try {
+      if (!API_CONFIG.BASE_URL) return rawUrl;
       const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
       const apiKey = API_CONFIG.API_KEY;
       let url = rawUrl;

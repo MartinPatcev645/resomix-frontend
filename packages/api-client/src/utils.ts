@@ -80,7 +80,8 @@ export const handleApiError = (error: AxiosError | Error): {
 
 // Helper to construct full URL including path (for cases where we need absolute link)
 export const getUrl = (endpoint: string, queryParams: Record<string, unknown> = {}): string => {
-  const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
+  const base = API_CONFIG.BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+  const url = new URL(`${base}${endpoint}`);
   url.searchParams.append("api_key", API_CONFIG.API_KEY);
   Object.entries(queryParams).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {

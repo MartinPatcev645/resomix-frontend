@@ -22,10 +22,11 @@ export interface UseHowlerResult {
  * - Per-instance volume
  */
 export function useHowler2(uuid?: string): UseHowlerResult {
-  const url = useMemo(
-    () => (uuid ? `https://media.resomix.com/signed-audio/?uuid=${uuid}` : undefined),
-    [uuid]
-  );
+  const url = useMemo(() => {
+    if (!uuid) return undefined;
+    const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
+    return `${mediaBase}/signed-audio/?uuid=${uuid}`;
+  }, [uuid]);
 
   const howlRef = useRef<Howl | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);

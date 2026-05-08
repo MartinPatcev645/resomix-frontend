@@ -11,7 +11,7 @@ GET /admin/playlist/{uuid}
 
 ### URL Structure
 ```
-GET https://bserver.resomix.com/admin/playlist/{uuid}
+GET {BASE_URL}/admin/playlist/{uuid}
 ```
 
 ### Path Parameter

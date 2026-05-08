@@ -8,7 +8,7 @@
 
 This document specifies the backend API endpoints required for the Admin Dashboard. All endpoints require authentication via `api_key` query parameter (handled automatically by the client).
 
-**Base URL**: `https://bserver.resomix.com`
+**Base URL**: Configured via `VITE_SERVER_BACKEND` environment variable.
 
 ---
 

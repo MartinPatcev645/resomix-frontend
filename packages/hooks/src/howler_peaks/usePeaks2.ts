@@ -86,7 +86,8 @@ export function usePeaks2(
     const loadData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`https://media.resomix.com/peaks/?uuid=${uuid}`, {
+        const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
+        const res = await fetch(`${mediaBase}/peaks/?uuid=${uuid}`, {
           cache: 'no-store'
         });
 
