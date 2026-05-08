@@ -156,6 +156,11 @@ Seed the database with high-fidelity sample data (20 tracks, users, engagement):
 python scripts/seed_data.py seed-all
 ```
 
+Check data:
+```bash
+docker exec -i resomix-test-db mariadb -uroot -ptest resomix_db -e "SELECT * FROM tracks;"
+```
+
 Create migrations in future:
 ```bash
 alembic revision --autogenerate -m "message_describing_the_changes"

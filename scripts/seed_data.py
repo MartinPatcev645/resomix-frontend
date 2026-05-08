@@ -13,6 +13,7 @@ import uuid
 import logging
 import os
 import sys
+import json
 from datetime import datetime, timedelta
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -53,11 +54,11 @@ class SeedDataManager:
                     'sftp_users', 'user_spotify_apps', 'spotify_apps', 
                     'user_operation_limits', 'operation_types', 'contact', 'feedback', 
                     'system_logs', 'cart_items', 'carts', 'user_subscriptions', 
-                    'purchases', 'orders', 'track_formats', 'promo_codes', 
+                    'purchases', 'orders', 'promo_codes', 
                     'waitlist', 'playlist_ratings', 'track_ratings', 
                     'user_track_engagements', 'user_playlist_engagements', 
                     'playlist_transfer_tracks', 'playlist_tracks', 'playlists', 
-                    'publisher_shares', 'track_contributors', 'contributors', 
+                    'track_contributors', 'contributors', 
                     'release_deals', 'royalty_rates', 'deals', 'release_tracks', 
                     'release_contributors', 'releases', 'tracks', 'audio_files', 'image_files',
                     'labels', 'messages', 'ingest_log', 'parties', 'genres', 
@@ -153,6 +154,24 @@ class SeedDataManager:
             logger.error(f"Failed to seed genres: {e}")
             return False
 
+    def seed_operation_types(self) -> bool:
+        """Seed default operation types for rate limiting."""
+        logger.info("⚙️ Seeding Operation Types...")
+        try:
+            with self.engine.begin() as conn:
+                ops = [
+                    ('track_stream', 'Streaming a track'),
+                    ('track_download', 'Downloading a track'),
+                    ('api_call', 'General API request')
+                ]
+                for code, desc in ops:
+                    conn.execute(text("INSERT IGNORE INTO operation_types (code, description) VALUES (:code, :desc)"),
+                                 {'code': code, 'desc': desc})
+                return True
+        except Exception as e:
+            logger.error(f"Failed to seed operation types: {e}")
+            return False
+
     def seed_ingestion_chain(self) -> bool:
         """Seed IngestLog, Messages, and Deals."""
         logger.info("📦 Seeding Ingestion Chain...")
@@ -181,87 +200,99 @@ class SeedDataManager:
             return False
 
     def seed_catalog(self) -> bool:
-        """Seed Contributors, Releases, and Tracks."""
-        logger.info("🎵 Seeding Catalog (20 tracks)...")
+        """Seed Contributors, Releases, and Tracks from extracted_track_info.json."""
+        logger.info("🎵 Seeding Catalog from JSON...")
         try:
-            with self.engine.begin() as conn:
-                # 1. Contributors
-                contributors = [
-                    (1, 'ARGO_01', 'Alpha Base', '0000000123456789'),
-                    (2, 'ARGO_01', 'Neon Pulse', '0000000987654321'),
-                    (3, 'ARGO_01', 'Dr. Synth', '0000000000000000'),
-                    (4, 'ARGO_01', 'Stellar', '0000000111111111'),
-                    (5, 'ARGO_01', 'Orbit', '0000000222222222')
-                ]
-                for cid, pid, name, isni in contributors:
-                    conn.execute(text("INSERT INTO contributors (id, party_id, full_name, isni) VALUES (:id, :pid, :name, :isni)"),
-                                 {'id': cid, 'pid': pid, 'name': name, 'isni': isni})
+            # Load the JSON data
+            json_path = os.path.join('scripts', 'extracted_track_info.json')
+            if not os.path.exists(json_path):
+                logger.error(f"❌ Metadata file {json_path} not found.")
+                return False
                 
-                # 2. Releases
-                releases = [
-                    (1, 1, 'ARGO_01', 'MSG_2026_001', '111111111111', 'Deep Space', 'Album'),
-                    (2, 2, 'ARGO_01', 'MSG_2026_001', '222222222222', 'Techno Pulse', 'EP'),
-                    (3, 1, 'ARGO_01', 'MSG_2026_001', '333333333333', 'Neon Night', 'Single')
-                ]
-                for rid, lid, pid, mid, upc, title, rtype in releases:
-                    conn.execute(text("""
-                        INSERT INTO releases (id, label_id, party_id, message_id, upc_ean, title, release_type)
-                        VALUES (:id, :lid, :pid, :mid, :upc, :title, :rtype)
-                    """), {'id': rid, 'lid': lid, 'pid': pid, 'mid': mid, 'upc': upc, 'title': title, 'rtype': rtype})
-                
-                # 3. Tracks
-                tracks_data = [
-                    (1, '550e8400-e29b-41d4-a716-446655440000', 'US-AR1-26-00001', 'Void Explorer', 300000, 124, 'Am', 'Original Mix', 'Techno'),
-                    (2, '550e8400-e29b-41d4-a716-446655440001', 'US-AR1-26-00002', 'Gravity Well', 240000, 128, 'C#m', 'Original Mix', 'Techno'),
-                    (3, '550e8400-e29b-41d4-a716-446655440002', 'US-AR1-26-00003', 'Event Horizon', 320000, 122, 'Dm', 'Extended Mix', 'Progressive'),
-                    (4, '550e8400-e29b-41d4-a716-446655440003', 'US-AR1-26-00004', 'Nebula Drift', 180000, 110, 'Fmaj', 'Original Mix', 'Ambient'),
-                    (5, '550e8400-e29b-41d4-a716-446655440004', 'US-AR1-26-00005', 'Pulsar Beats', 210000, 126, 'G', 'Club Mix', 'Electronic'),
-                    (6, '550e8400-e29b-41d4-a716-446655440005', 'US-AR1-26-00006', 'Solar Wind', 275000, 125, 'Am', 'Original Mix', 'Electronic'),
-                    (7, '550e8400-e29b-41d4-a716-446655440006', 'US-AR1-26-00007', 'Dark Matter', 310000, 130, 'Bm', 'Dub Mix', 'Techno'),
-                    (8, '550e8400-e29b-41d4-a716-446655440007', 'US-AR1-26-00008', 'Light Speed', 220000, 132, 'E', 'Original Mix', 'Electronic'),
-                    (9, '550e8400-e29b-41d4-a716-446655440008', 'US-AR1-26-00009', 'Asteroid Belt', 195000, 128, 'Cm', 'Original Mix', 'Electronic'),
-                    (10, '550e8400-e29b-41d4-a716-446655440009', 'US-AR1-26-00010', 'Galactic Core', 340000, 124, 'F#', 'Original Mix', 'Electronic'),
-                    (11, '550e8400-e29b-41d4-a716-446655440010', 'US-AR1-26-00011', 'Supernova', 290000, 128, 'Am', '2026 Remaster', 'Electronic'),
-                    (12, '550e8400-e29b-41d4-a716-446655440011', 'US-AR1-26-00012', 'Black Hole', 400000, 120, 'Em', 'Original Mix', 'Ambient'),
-                    (13, '550e8400-e29b-41d4-a716-446655440012', 'US-AR1-26-00013', 'Techno Heart', 360000, 132, 'C', 'Original Mix', 'Techno'),
-                    (14, '550e8400-e29b-41d4-a716-446655440013', 'US-AR1-26-00014', 'Digital Soul', 245000, 126, 'G#', 'Original Mix', 'Electronic'),
-                    (15, '550e8400-e29b-41d4-a716-446655440014', 'US-AR1-26-00015', 'Neon Pulse', 230000, 122, 'D', 'Radio Edit', 'Electronic'),
-                    (16, '550e8400-e29b-41d4-a716-446655440015', 'US-AR1-26-00016', 'Cyber Night', 215000, 118, 'B', 'Original Mix', 'Electronic'),
-                    (17, '550e8400-e29b-41d4-a716-446655440016', 'US-AR1-26-00017', 'Silicon Dreams', 190000, 115, 'F', 'Original Mix', 'Electronic'),
-                    (18, '550e8400-e29b-41d4-a716-446655440017', 'US-AR1-26-00018', 'Data Stream', 260000, 128, 'Am', 'Original Mix', 'Electronic'),
-                    (19, '550e8400-e29b-41d4-a716-446655440018', 'US-AR1-26-00019', 'Logic Gate', 255000, 130, 'Dm', 'Original Mix', 'Electronic'),
-                    (20, '550e8400-e29b-41d4-a716-446655440019', 'US-AR1-26-00020', 'End of Line', 300000, 124, 'C', 'Outro Mix', 'Electronic')
-                ]
-                
-                for tid, tuid, isrc, title, dur, bpm, mkey, mix, genre in tracks_data:
-                    conn.execute(text("""
-                        INSERT INTO tracks (id, uuid, party_id, isrc, title, duration_ms, bpm, musical_key, mix_name, genre, price_cents)
-                        VALUES (:id, :uuid, 'ARGO_01', :isrc, :title, :dur, :bpm, :mkey, :mix, :genre, 99)
-                    """), {'id': tid, 'uuid': tuid, 'isrc': isrc, 'title': title, 'dur': dur, 'bpm': bpm, 'mkey': mkey, 'mix': mix, 'genre': genre})
+            with open(json_path, 'r', encoding='utf-8') as f:
+                tracks_data = json.load(f)
 
-                # 4. Track-Contributor Mapping
-                # Assign Alpha Base (1) as MainArtist to all tracks
-                for tid in range(1, 21):
-                    conn.execute(text("INSERT INTO track_contributors (track_id, person_id, role, sequence_num) VALUES (:tid, 1, 'MainArtist', 1)"), {'tid': tid})
+            with self.engine.begin() as conn:
+                # Helper to track seen entities
+                seen_contributors = {} # name -> id
+                seen_releases = {}     # title -> id
                 
-                # 5. Release-Track Mapping
-                for tid in range(1, 13):
-                    conn.execute(text("INSERT INTO release_tracks (release_id, track_id, sequence_num) VALUES (1, :tid, :seq)"), {'tid': tid, 'seq': tid})
-                for tid in range(13, 17):
-                    conn.execute(text("INSERT INTO release_tracks (release_id, track_id, sequence_num) VALUES (2, :tid, :seq)"), {'tid': tid, 'seq': tid-12})
-                conn.execute(text("INSERT INTO release_tracks (release_id, track_id, sequence_num) VALUES (3, 17, 1)"))
-                
-                # 6. Audio Files
-                # For Track 1
-                conn.execute(text("""
-                    INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, original_filename, stored_path, audio_codec)
-                    VALUES ('ARGO_01', 1, 1, 'Master', 'master.flac', '/argo/trk1/master.flac', 'FLAC'),
-                           ('ARGO_01', 1, 1, 'StreamingProfile', 'index.m3u8', '/argo/trk1/hls/index.m3u8', 'AAC')
-                """))
-                
+                for track_info in tracks_data:
+                    # 1. Ensure Contributors exist
+                    artist_ids = []
+                    for artist_name in track_info.get('artists', []):
+                        if artist_name not in seen_contributors:
+                            conn.execute(text("""
+                                INSERT INTO contributors (party_id, full_name) 
+                                VALUES ('ARGO_01', :name)
+                                ON DUPLICATE KEY UPDATE full_name=full_name
+                            """), {'name': artist_name})
+                            cid = conn.execute(text("SELECT id FROM contributors WHERE full_name = :name"), {'name': artist_name}).scalar()
+                            seen_contributors[artist_name] = cid
+                        artist_ids.append(seen_contributors[artist_name])
+
+                    # 2. Ensure Release exists
+                    album_title = track_info.get('album_title') or 'Unknown Album'
+                    if album_title not in seen_releases:
+                        conn.execute(text("""
+                            INSERT INTO releases (label_id, party_id, message_id, title, release_type)
+                            VALUES (1, 'ARGO_01', 'MSG_2026_001', :title, 'Album')
+                            ON DUPLICATE KEY UPDATE title=title
+                        """), {'title': album_title})
+                        rid = conn.execute(text("SELECT id FROM releases WHERE title = :title"), {'title': album_title}).scalar()
+                        seen_releases[album_title] = rid
+                    rid = seen_releases[album_title]
+
+                    # 3. Insert Track
+                    duration_ms = int(float(track_info.get('duration_sec') or 0) * 1000)
+                    tuid = track_info.get('uuid')
+                    
+                    conn.execute(text("""
+                        INSERT INTO tracks (uuid, party_id, isrc, title, duration_ms, bpm, musical_key, genre, p_line_year, ingestion_source)
+                        VALUES (:uuid, 'ARGO_01', :isrc, :title, :dur, :bpm, :mkey, :genre, :year, 'csv')
+                        ON DUPLICATE KEY UPDATE title=:title
+                    """), {
+                        'uuid': tuid,
+                        'isrc': f"SEED-{tuid[:10]}", # Placeholder ISRC (max 15 chars)
+                        'title': track_info.get('title'),
+                        'dur': duration_ms,
+                        'bpm': track_info.get('bpm'),
+                        'mkey': track_info.get('musical_key'),
+                        'genre': track_info.get('genre_name'),
+                        'year': track_info.get('year')
+                    })
+                    tid = conn.execute(text("SELECT id FROM tracks WHERE uuid = :uuid"), {'uuid': tuid}).scalar()
+
+                    # 4. Link Track to Contributors
+                    for seq, cid in enumerate(artist_ids, 1):
+                        conn.execute(text("""
+                            INSERT IGNORE INTO track_contributors (track_id, person_id, role, royalty_type, sequence_num)
+                            VALUES (:tid, :cid, 'MainArtist', 'MasterRights', :seq)
+                        """), {'tid': tid, 'cid': cid, 'seq': seq})
+
+                    # 5. Link Track to Release
+                    conn.execute(text("""
+                        INSERT IGNORE INTO release_tracks (release_id, track_id, sequence_num)
+                        VALUES (:rid, :tid, 1)
+                    """), {'rid': rid, 'tid': tid})
+
+                    # 6. Audio Files (Using local_file_path)
+                    local_path = track_info.get('local_file_path')
+                    if local_path:
+                        conn.execute(text("""
+                            INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, original_filename, stored_path, audio_codec)
+                            VALUES ('ARGO_01', 1, :tid, 'Master', :orig, :path, :codec)
+                            ON DUPLICATE KEY UPDATE stored_path=:path
+                        """), {
+                            'tid': tid,
+                            'orig': os.path.basename(local_path),
+                            'path': local_path,
+                            'codec': local_path.split('.')[-1].upper() if '.' in local_path else 'FLAC'
+                        })
+
                 return True
         except Exception as e:
-            logger.error(f"Failed to seed catalog: {e}")
+            logger.error(f"Failed to seed catalog: {e}", exc_info=True)
             return False
 
     def seed_users(self) -> bool:
@@ -312,42 +343,60 @@ class SeedDataManager:
             return False
 
     def seed_commerce(self) -> bool:
-        """Seed Orders and Purchases."""
+        """Seed Orders and Purchases using dynamic track IDs."""
         logger.info("💰 Seeding Commerce...")
         try:
             with self.engine.begin() as conn:
+                # Get a valid track and its release
+                track = conn.execute(text("SELECT id FROM tracks LIMIT 1")).fetchone()
+                if not track:
+                    logger.warning("No tracks found for commerce seeding.")
+                    return True
+                
+                release_id = conn.execute(text("SELECT release_id FROM release_tracks WHERE track_id = :tid"), {'tid': track.id}).scalar()
+
                 # 1. Order
                 conn.execute(text("""
-                    INSERT INTO orders (id, user_id, subtotal_cents, total_cents, status)
-                    VALUES (1, 2, 297, 297, 'paid')
+                    INSERT INTO orders (user_id, subtotal_cents, total_cents, status)
+                    VALUES (2, 99, 99, 'paid')
                 """))
+                order_id = conn.execute(text("SELECT LAST_INSERT_ID()")).scalar()
                 
                 # 2. Purchases
-                for tid in [1, 2, 13]:
-                    conn.execute(text("""
-                        INSERT INTO purchases (order_id, user_id, track_id, source_playlist_id, price_cents)
-                        VALUES (1, 2, :tid, 1, 99)
-                    """), {'tid': tid})
+                conn.execute(text("""
+                    INSERT INTO purchases (order_id, user_id, track_id, release_id, price_cents)
+                    VALUES (:oid, 2, :tid, :rid, 99)
+                """), {'oid': order_id, 'tid': track.id, 'rid': release_id})
                 return True
         except Exception as e:
             logger.error(f"Failed to seed commerce: {e}")
             return False
 
     def seed_telemetry(self) -> bool:
-        """Seed Consumption Events."""
+        """Seed Consumption Events using dynamic track and label data."""
         logger.info("📊 Seeding Telemetry...")
         try:
             with self.engine.begin() as conn:
+                track = conn.execute(text("SELECT id, isrc FROM tracks LIMIT 1")).fetchone()
+                if not track:
+                    logger.warning("No tracks found for telemetry seeding.")
+                    return True
+
+                label_id = conn.execute(text("""
+                    SELECT label_id FROM releases r 
+                    JOIN release_tracks rt ON r.id = rt.release_id 
+                    WHERE rt.track_id = :tid
+                """), {'tid': track.id}).scalar()
+
                 events = [
-                    ('stream_complete', 1, 2, 300, 'playlist:1', '2026-05-04 10:00:00'),
-                    ('stream_complete', 13, 2, 360, 'home_search', '2026-05-04 10:10:00'),
-                    ('stream_skip', 2, 2, 15, 'playlist:1', '2026-05-04 10:20:00')
+                    ('stream_complete', track.id, track.isrc, label_id, 2, 300, 'home_search'),
+                    ('stream_skip', track.id, track.isrc, label_id, 2, 15, 'home_search')
                 ]
-                for cat, tid, uid, dur, ctx, ts in events:
+                for cat, tid, isrc, lid, uid, dur, ctx in events:
                     conn.execute(text("""
-                        INSERT INTO consumption_events (event_category, track_id, user_id, duration_seconds, playback_context, event_timestamp)
-                        VALUES (:cat, :tid, :uid, :dur, :ctx, :ts)
-                    """), {'cat': cat, 'tid': tid, 'uid': uid, 'dur': dur, 'ctx': ctx, 'ts': ts})
+                        INSERT INTO consumption_events (event_category, track_id, isrc, label_id, user_id, duration_seconds, playback_context)
+                        VALUES (:cat, :tid, :isrc, :lid, :uid, :dur, :ctx)
+                    """), {'cat': cat, 'tid': tid, 'isrc': isrc, 'lid': lid, 'uid': uid, 'dur': dur, 'ctx': ctx})
                 return True
         except Exception as e:
             logger.error(f"Failed to seed telemetry: {e}")
@@ -360,10 +409,10 @@ class SeedDataManager:
         if not self.seed_rbac(): return
         if not self.seed_parties_and_labels(): return
         if not self.seed_genres(): return
+        if not self.seed_operation_types(): return
         if not self.seed_ingestion_chain(): return
         if not self.seed_catalog(): return
         if not self.seed_users(): return
-        if not self.seed_engagement(): return
         if not self.seed_commerce(): return
         if not self.seed_telemetry(): return
         logger.info("🎉 Seeding Completed Successfully!")
