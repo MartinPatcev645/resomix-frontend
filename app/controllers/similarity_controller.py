@@ -496,7 +496,8 @@ class SimilarityController:
                         ),
                     )
 
-                generated_playlist_uuid = similarity_results.get("playlist")["id"]
+                playlist_data = similarity_results.get("playlist")
+                generated_playlist_uuid = playlist_data.get("id") if playlist_data else None
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
                     db, generated_playlist_uuid
                 )
@@ -823,7 +824,8 @@ class SimilarityController:
                         ),
                     )
 
-                generated_playlist_uuid = similarity_results.get("playlist")["id"]
+                playlist_data = similarity_results.get("playlist")
+                generated_playlist_uuid = playlist_data.get("id") if playlist_data else None
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
                     db, generated_playlist_uuid
                 )
@@ -1163,11 +1165,16 @@ class SimilarityController:
                 except Exception:
                     track_int_id = None
 
-            generated_playlist_uuid = similarity_results.get("playlist")["id"]
-            playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
-                db, generated_playlist_uuid
-            )
-            playlist_int_id = playlist.id if playlist else None
+            # Safely get playlist ID
+            playlist_data = similarity_results.get("playlist")
+            generated_playlist_uuid = playlist_data.get("id") if playlist_data else None
+            playlist_int_id = None
+            
+            if generated_playlist_uuid:
+                playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+                    db, generated_playlist_uuid
+                )
+                playlist_int_id = playlist.id if playlist else None
 
             duration_ms = (time.time() - start_time) * 1000
             if settings.demo_mode:

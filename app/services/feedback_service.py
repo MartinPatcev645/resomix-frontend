@@ -567,7 +567,7 @@ class FeedbackService:
                     ])
             
             # Generate public URL
-            base_url = getattr(settings, 'base_url', 'https://bserver.resomix.com')
+            base_url = settings.resomix_server_url
             download_url = f"{base_url}/exports/{filename}"
             
             # Calculate expiration time (24 hours from now)

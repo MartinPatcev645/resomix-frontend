@@ -408,7 +408,7 @@ class WaitlistService:
                         ]
                     )
 
-            base_url = getattr(settings, "base_url", "https://bserver.resomix.com")
+            base_url = settings.resomix_server_url
             return {
                 "success": True,
                 "download_url": f"{base_url}/exports/{filename}",

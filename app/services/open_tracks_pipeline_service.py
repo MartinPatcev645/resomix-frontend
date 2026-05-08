@@ -211,7 +211,7 @@ class OpenTracksPipelineService:
         target_url = f"{self.similarity_server_url.rstrip('/')}{endpoint}"
         print(f"Calling similarity server for open pipeline: {target_url} with data: {data}")
 
-        async with httpx.AsyncClient(timeout=300.0, headers={"Origin": "https://bserver.resomix.com"}) as client:
+        async with httpx.AsyncClient(timeout=300.0, headers={"Origin": settings.resomix_server_url}) as client:
             try:
                 if files:
                     response = await client.post(target_url, files=files, data=data)

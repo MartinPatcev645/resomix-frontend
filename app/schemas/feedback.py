@@ -366,7 +366,7 @@ class AdminFeedbackExportResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "success": True,
-                "download_url": "https://bserver.resomix.com/exports/feedback_20250102_123456.csv",
+                "download_url": "/exports/feedback_20250102_123456.csv",
                 "filename": "feedback_20250102_123456.csv",
                 "expires_at": "2025-01-03T12:34:56Z"
             }

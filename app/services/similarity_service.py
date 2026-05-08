@@ -575,7 +575,7 @@ class SimilarityService:
         print(f"Calling similarity server: {target_url} with data: {data}")
 
         async with httpx.AsyncClient(
-            timeout=300.0, headers={"Origin": "https://bserver.resomix.com"}
+            timeout=300.0, headers={"Origin": settings.resomix_server_url}
         ) as client:
             try:
                 if files:

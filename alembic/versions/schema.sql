@@ -331,6 +331,7 @@ CREATE TABLE deals (
 CREATE TABLE tracks (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     uuid                VARCHAR(36) NOT NULL UNIQUE,
+    user_id             INT UNSIGNED,                  -- Uploader
     party_id            VARCHAR(100),
     resource_ref        VARCHAR(100),
     proprietary_id      VARCHAR(100),
@@ -374,6 +375,7 @@ CREATE TABLE tracks (
     KEY idx_isrc         (isrc),
     KEY idx_party        (party_id),
 
+    FOREIGN KEY (user_id)    REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (party_id)   REFERENCES parties(party_id)
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

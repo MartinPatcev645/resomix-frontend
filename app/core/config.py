@@ -27,6 +27,8 @@ load_dotenv()
 class Settings(BaseModel):
     """Application configuration settings"""
 
+    resomix_env: str = Field(default="production", description="Current environment (development or production)")
+
     # API Configuration
     api_key: str = Field(
         default="bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ",
@@ -232,10 +234,11 @@ class Settings(BaseModel):
     # Development: Allow localhost and common dev ports
     allowed_origins_development: List[str] = Field(
         default=[
-            "http://localhost:5172",
             "http://localhost:5173",
             "http://localhost:5174",
             "http://localhost:5175",
+            "http://localhost:8004",
+            "http://127.0.0.1:8004",
         ],
         description="Allowed origins for development",
     )
@@ -454,7 +457,7 @@ class Settings(BaseModel):
         description="TTL in seconds for playlist session tokens (default 4 hours)",
     )
     public_alwyzon_url: str = Field(
-        default="https://bserver.resomix.com",
+        default="http://localhost:8001",
         description="The public URL of this Alwyzon server (used for playback manifest generation)",
     )
 
