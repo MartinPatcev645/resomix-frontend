@@ -128,10 +128,10 @@ docker compose up -d mariadb
 python -m database.manage setup
 
 # Start API with auto-reload
-uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 # Open docs
-open http://localhost:8005/docs
+open http://localhost:8001/docs
 ```
 
 ---
@@ -446,12 +446,12 @@ All endpoints support **dual authentication:**
 
 #### **API Key (Anonymous/Public)**
 ```bash
-curl "http://localhost:8005/get_similarity/?api_key=your-api-key" -F "file=@track.mp3"
+curl "http://localhost:8001/get_similarity/?api_key=your-api-key" -F "file=@track.mp3"
 ```
 
 #### **JWT Token (Authenticated Users)**
 ```bash
-curl -H "Authorization: Bearer <JWT>" http://localhost:8005/users/me
+curl -H "Authorization: Bearer <JWT>" http://localhost:8001/users/me
 ```
 
 #### **Getting User in Code**
@@ -1034,7 +1034,7 @@ python -m database.connection
 
 ## 📞 Support
 
-- **API Docs**: Available at `http://localhost:8005/docs`
+- **API Docs**: Available at `http://localhost:8001/docs`
 - **Health Check**: `GET /health/`
 - **Issues**: Check existing documentation and examples first
 

@@ -65,7 +65,7 @@ class Settings(BaseModel):
         description="Internal API key for securely deleting tracks on the Hetzner Audio Processing Server",
     )
     resomix_server_url: str = Field(
-        default="http://localhost:8000", description="URL of the Resomix server"
+        default="http://localhost:8001", description="URL of the Resomix server"
     )
 
     # Google Sheets Configuration

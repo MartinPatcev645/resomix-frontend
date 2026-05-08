@@ -22,7 +22,7 @@ clear-db:
 	python -m scripts.seed_data clear-all
 
 api:
-	uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
+	uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 test:
 	pytest -q

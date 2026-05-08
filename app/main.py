@@ -240,12 +240,12 @@ servers = []
 if settings.use_development_cors:
     # In development, include localhost
     servers.append(
-        {"url": "http://localhost:8000", "description": "Development server"}
+        {"url": "http://localhost:8001", "description": "Development server"}
     )
 # Always include production URL if available
 if (
     settings.resomix_server_url
-    and settings.resomix_server_url != "http://localhost:8000"
+    and settings.resomix_server_url != "http://localhost:8001"
 ):
     servers.append(
         {"url": settings.resomix_server_url, "description": "Production server"}

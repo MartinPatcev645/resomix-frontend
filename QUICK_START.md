@@ -180,13 +180,13 @@ make api
 Optional (equivalent without make):
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 Open:
 
-* `http://localhost:8005/`
-* `http://localhost:8005/docs`
+* `http://localhost:8001/`
+* `http://localhost:8001/docs`
 
 ---
 
@@ -199,6 +199,6 @@ Open:
 * [ ] Redis is running (`redis-cli ping` returns PONG)
 * [ ] FFmpeg is installed (`ffmpeg -version`)
 * [ ] On Windows, MariaDB Connector/C was installed **before** `pip install`
-* [ ] API reachable at `http://localhost:8005/docs`
+* [ ] API reachable at `http://localhost:8001/docs`
 
 That’s the full, minimal setup.
