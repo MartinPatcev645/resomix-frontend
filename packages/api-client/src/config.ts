@@ -120,18 +120,18 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_RATING: "/ratings/playlists/",
     PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
     PLAYLIST_FORK: "/playlists/fork/",
-    PLAYLIST_PLAY_SESSION: "/api/playlists/{id}/play-session",
+    PLAYLIST_PLAY_SESSION: "/playlists/{id}/play-session",
     WAITLIST: "/waitlist/",
     // Telemetry
-    TELEMETRY_SYNC: "/api/telemetry/sync",
+    TELEMETRY_SYNC: "/telemetry/sync",
     // Cart & Checkout
-    CART_GET: "/api/cart",
-    CART_ADD: "/api/cart/add",
-    CART_REMOVE: "/api/cart/remove/",
-    CART_REMOVE_PLAYLIST: "/api/cart/remove-playlist/",
-    CART_PROMO: "/api/cart/promo",
-    CART_CLEAR: "/api/cart/clear",
-    CHECKOUT_CREATE_SESSION: "/api/checkout/create-session",
+    CART_GET: "/cart",
+    CART_ADD: "/cart/add",
+    CART_REMOVE: "/cart/remove/",
+    CART_REMOVE_PLAYLIST: "/cart/remove-playlist/",
+    CART_PROMO: "/cart/promo",
+    CART_CLEAR: "/cart/clear",
+    CHECKOUT_CREATE_SESSION: "/checkout/create-session",
     // SEGMENT_STATUS: "/segment_status/", // Commented out - segmentation polling no longer needed
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: "/admin/feedback/",

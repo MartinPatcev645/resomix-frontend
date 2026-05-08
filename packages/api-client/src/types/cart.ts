@@ -31,7 +31,7 @@ export interface CartItem {
 }
 
 /**
- * Full cart state returned by `GET /api/cart`.
+ * Full cart state returned by `GET /cart`.
  */
 export interface CartResponse {
   items: CartItem[];
@@ -62,7 +62,7 @@ export interface AddCartRequest {
 }
 
 /**
- * Response from `POST /api/checkout/create-session`.
+ * Response from `POST /checkout/create-session`.
  */
 export interface CheckoutSessionResponse {
   stripe_url: string;
@@ -70,7 +70,7 @@ export interface CheckoutSessionResponse {
 }
 
 /**
- * Response from `POST /api/cart/promo`.
+ * Response from `POST /cart/promo`.
  */
 export interface PromoCodeResponse {
   subtotal_cents: number;
