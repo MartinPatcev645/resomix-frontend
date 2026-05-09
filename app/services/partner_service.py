@@ -16,6 +16,7 @@ import logging
 from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.repositories.partner_repository import PartnerRepository, PartnerApiKeyRepository
 from app.models.partner import Partner, PartnerApiKey
@@ -162,3 +163,35 @@ class PartnerService:
         )
         
         return await self.issue_api_key(db, issue_request)
+
+    async def validate_api_key(self, db: AsyncSession, api_key_string: str) -> Tuple[Partner, PartnerApiKey]:
+        """
+        Validate an API key string against the database.
+        
+        Returns:
+            Tuple of (Partner, PartnerApiKey)
+            
+        Raises:
+            ValueError: If key is invalid, revoked, expired, or partner is inactive.
+        """
+        # 1. Hash the key for lookup
+        key_hash = hashlib.sha256(api_key_string.encode()).hexdigest()
+        
+        # 2. Lookup key
+        api_key = await self.api_key_repo.async_get_by_hash(db, key_hash)
+        
+        if not api_key:
+            raise ValueError("Invalid API key")
+            
+        if not api_key.is_active:
+            raise ValueError("API key has been revoked")
+            
+        if api_key.expires_at and api_key.expires_at < datetime.utcnow():
+            raise ValueError("API key has expired")
+            
+        # 3. Check partner status
+        partner = await self.partner_repo.async_get_by_id(db, api_key.partner_id)
+        if not partner or not partner.is_active:
+            raise ValueError("Partner account is inactive or disabled")
+            
+        return partner, api_key

@@ -188,11 +188,16 @@ partner_api_key_hash_algorithm: str = Field(default="sha256")
 # No new secrets needed — SHA-256 is deterministic and keyless
 # The "secret" IS the key itself (high-entropy random string)
 ```
-No breaking changes to existing config consumers.
+No breaking changes to existing code.
 
 ---
 
 ## W1-3 — `get_current_partner()` FastAPI Dependency (5 hours)
+
+- [x] **W1-3: Partner Auth Dependency**
+    - [x] Create `get_current_partner` FastAPI dependency
+    - [x] Validate API key status, expiration, and partner status
+    - [x] Update `last_used_at` and `last_used_ip` in DB
 
 ### Goal
 A reusable FastAPI dependency that:
@@ -202,6 +207,12 @@ A reusable FastAPI dependency that:
 4. Validates: `is_active=True`, not expired, not revoked
 5. Populates `request.state.partner_id` and `request.state.api_key_id`
 6. Returns a typed `PartnerContext` dataclass
+
+### Helpful Commands
+
+- **Query Database**: `docker exec -i resomix-test-db mariadb -uroot -ptest resomix_db -e "SELECT * FROM partners;"`
+- **Run Unit Tests**: `pytest tests/unit/test_api/test_dependencies/test_partner_auth.py`
+- **Run Integration Tests**: `pytest tests/integration/test_partner_api.py`
 
 ### Files to CREATE
 
