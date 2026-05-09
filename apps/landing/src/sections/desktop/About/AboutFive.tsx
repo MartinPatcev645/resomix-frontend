@@ -28,7 +28,7 @@ const AboutFive: React.FC = () => {
                 <div className="flex w-full z-15 items-start justify-between">
                     <div className="text-[length:var(--px-17)] font-helvetica tracking-[var(--px-1)] flex flex-col gap-[var(--px-20)] font-extralight">
                         <div>
-                            <span className="font-normal">“</span> I discovered electronic music through Italian progressive house radio in<br />the late 1990s. Two decades of DJing, producing, and running Reform Studios<br />taught me one thing: finding the right track is the hardest part of the creative process.
+                            <span className="font-normal">“</span> I discovered electronic music through Italian progressive house radio in<br />the late 1990s. Two decades of DJing and producing<br />taught me one thing: finding the right track is the hardest part of the creative process.
                         </div>
                         <div>
                             <span className="font-normal">Resomix is the tool I needed and couldn't find. Built on signal processing, not hype.”</span>
