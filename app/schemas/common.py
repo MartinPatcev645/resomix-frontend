@@ -94,9 +94,11 @@ class PaginationRequest(BaseModel):
 class PaginationResponse(BaseModel):
     """Standard pagination response metadata."""
     total: int = Field(..., description="Total number of available records")
-    skip: int = Field(..., description="Number of records skipped")
-    limit: int = Field(..., description="Maximum number of records requested")
-    count: int = Field(..., description="Number of records returned in this response")
+    page: int = Field(..., description="Current page number (1-indexed)")
+    size: int = Field(..., description="Number of records per page")
+    pages: int = Field(..., description="Total number of pages available")
+    has_next: bool = Field(False, description="Whether there is a next page")
+    has_prev: bool = Field(False, description="Whether there is a previous page")
 
 
 class PaginatedResponse(BaseModel):

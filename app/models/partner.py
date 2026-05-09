@@ -102,6 +102,12 @@ class Partner(Base):
     webhooks: Mapped[List["PartnerWebhook"]] = relationship(
         "PartnerWebhook", back_populates="partner", cascade="all, delete-orphan"
     )
+    tracks: Mapped[List["Track"]] = relationship(
+        "Track", back_populates="partner", cascade="all, delete-orphan"
+    )
+    releases: Mapped[List["Release"]] = relationship(
+        "Release", back_populates="partner", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Partner(id={self.id}, display_name='{self.display_name}', tier='{self.tier}')>"

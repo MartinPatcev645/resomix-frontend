@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import Optional
 from fastapi import HTTPException, Security, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.security.api_key import APIKeyQuery
+from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,24 +38,30 @@ from app.db.redis import _redis_pool
 # API Key Authentication (Existing - for backward compatibility)
 # ============================================================================
 
-# Set up API key security - using query parameter as specified in frontend
+# Set up API key security - using both query parameter and header for flexibility
 api_key_query = APIKeyQuery(name="api_key", auto_error=False)
+api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 
 async def get_api_key(
     request: Request,
-    api_key_query: str = Security(api_key_query),
+    api_key_query: Optional[str] = Security(api_key_query),
+    api_key_header: Optional[str] = Security(api_key_header),
 ):
     """
     Validate API key for admin endpoints.
+    Checks both query parameter and X-API-KEY header.
 
     Allows CORS preflight (OPTIONS) to pass through without credentials.
     """
     if request.method == "OPTIONS":
-        return api_key_query
+        return api_key_query or api_key_header
 
-    if api_key_query == settings.api_key:
-        return api_key_query
+    # Extract key from either source
+    key = api_key_query or api_key_header
+
+    if key == settings.api_key:
+        return key
 
     raise HTTPException(
         status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"

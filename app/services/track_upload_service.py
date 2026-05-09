@@ -203,7 +203,7 @@ class Cache:
     async def genre(self, db: AsyncSession, name: str) -> int:
         return await self._get_or_create(db, "genres", self.genres, name)
 
-    async def release(self, db: AsyncSession, title: str, primary_artist_id: int) -> int:
+    async def release(self, db: AsyncSession, title: str, primary_artist_id: int, partner_id: int) -> int:
         # Sanitize the album title
         original_title = title
         sanitized_title = sanitize_album_title(title)
@@ -221,14 +221,15 @@ class Cache:
         try:
             # Insert into releases table
             insert_sql = text(
-                """INSERT IGNORE INTO releases (title, party_id, message_id) 
-                       VALUES (:title, :party_id, :message_id) """
+                """INSERT IGNORE INTO releases (title, party_id, message_id, partner_id) 
+                       VALUES (:title, :party_id, :message_id, :partner_id) """
             )
             await db.execute(
                 insert_sql, {
                     "title": sanitized_title, 
                     "party_id": self.party_id, 
-                    "message_id": self.message_id
+                    "message_id": self.message_id,
+                    "partner_id": partner_id
                 }
             )
 
@@ -274,6 +275,7 @@ class TrackUploadService:
         db: AsyncSession,
         file: UploadFile,
         file_content: bytes,
+        partner_id: int,
         user_id: Optional[int] = None,
     ) -> Dict[str, any]:
         """
@@ -284,6 +286,7 @@ class TrackUploadService:
             file: The uploaded file object
             file_content: The file content as bytes
             user_id: ID of the user uploading the track
+            partner_id: ID of the partner tenant owning the track
 
         Returns:
             Dict containing the track UUID and insertion status
@@ -294,6 +297,7 @@ class TrackUploadService:
             file_content=file_content,
             track_type=TrackType.UPLOAD,
             user_id=user_id,
+            partner_id=partner_id,
         )
 
     def _parse_year(self, year_str: Optional[str]) -> Optional[int]:
@@ -319,6 +323,7 @@ class TrackUploadService:
         file: UploadFile,
         file_content: bytes,
         track_uuid: str,
+        partner_id: int,
         track_type: str = TrackType.UPLOAD,
         duration_sec: Optional[float] = None,
         full_path: Optional[str] = None,
@@ -336,6 +341,7 @@ class TrackUploadService:
             duration_sec: Track duration in seconds with decimal precision (optional)
             full_path: Full file path for monthly pipeline (optional, defaults to filename)
             user_id: ID of the user uploading the track
+            partner_id: ID of the partner tenant owning the track
 
         Returns:
             Dict containing the track UUID and insertion status
@@ -349,6 +355,7 @@ class TrackUploadService:
             duration_sec=duration_sec,
             full_path=full_path,
             user_id=user_id,
+            partner_id=partner_id,
         )
 
     async def _process_and_insert_track(
@@ -356,6 +363,7 @@ class TrackUploadService:
         db: AsyncSession,
         file: UploadFile,
         file_content: bytes,
+        partner_id: int,
         track_uuid: Optional[str] = None,
         track_type: str = TrackType.UPLOAD,
         duration_sec: Optional[float] = None,
@@ -442,7 +450,7 @@ class TrackUploadService:
             # Get or create release (optional)
             release_id = None
             if album_title:
-                release_id = await self.cache.release(db, album_title, primary_artist_id)
+                release_id = await self.cache.release(db, album_title, primary_artist_id, partner_id=partner_id)
 
             # Insert track
             track_data = {
@@ -454,6 +462,7 @@ class TrackUploadService:
                 "year": year,
                 "duration_ms": int(duration_sec * 1000) if duration_sec else None,
                 "track_type": track_type,
+                "partner_id": partner_id,
             }
 
             logger.info(f"Inserting track with type '{track_type}': {track_data}")
@@ -467,7 +476,8 @@ class TrackUploadService:
                 p_line_year=track_data["year"],
                 duration_ms=track_data["duration_ms"],
                 track_type=track_data["track_type"],
-                genre=track_data["genre"]
+                genre=track_data["genre"],
+                partner_id=track_data["partner_id"]
             )
             await db.execute(track_insert)
 

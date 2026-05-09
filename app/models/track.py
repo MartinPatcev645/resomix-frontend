@@ -47,6 +47,9 @@ class Track(Base):
     party_id: Mapped[Optional[str]] = mapped_column(
         String(100), ForeignKey("parties.party_id"), nullable=True, index=True
     )
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True
+    )
 
     # Fields
     resource_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -125,6 +128,11 @@ class Track(Base):
     # Uploader
     uploader: Mapped[Optional["User"]] = relationship(
         "User", back_populates="uploaded_tracks", foreign_keys=[user_id]
+    )
+
+    # Partner tenant owning this track
+    partner: Mapped["Partner"] = relationship(
+        "Partner", foreign_keys=[partner_id]
     )
 
     @property
