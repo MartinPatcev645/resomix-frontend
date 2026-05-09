@@ -7,11 +7,13 @@ import type { CartItem } from "@resomix/api-client";
 
 /** Format cents to display price string (e.g. 149 → "$1.49") */
 function formatPrice(cents: number): string {
+  if (cents === undefined || cents === null || isNaN(cents)) return "$0.00";
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 /** Format duration in seconds to "M:SS" */
-function formatDuration(seconds: number): string {
+function formatDuration(seconds?: number): string {
+  if (seconds === undefined || seconds === null || isNaN(seconds)) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -21,28 +23,32 @@ function formatDuration(seconds: number): string {
 
 interface CartItemRowProps {
   item: CartItem;
-  onRemove: (trackFormatId: number) => void;
+  onRemove: (id: number) => void;
   isLoading: boolean;
 }
 
 function CartItemRow({ item, onRemove, isLoading }: CartItemRowProps) {
+  const displayTitle = item.title || item.track_title || "Unknown Track";
+  const displayArtist = item.artist || item.track_artist || "Unknown Artist";
+  const displayFormat = item.format_name || item.audio_format || "Digital";
+
   return (
     <div
       className="flex items-center justify-between py-[var(--px-12)] border-b"
-      style={{ borderColor: "var(--color-border, rgba(0,0,0,0.08))" }}
+      style={{ borderColor: "rgba(255,255,255,0.1)" }}
     >
       <div className="flex-1 min-w-0 pr-[var(--px-16)]">
         <p
           className="text-[var(--px-14)] font-medium truncate"
-          style={{ color: "var(--color-text-primary)" }}
+          style={{ color: "#ffffff" }}
         >
-          {item.track_title}
+          {displayTitle}
         </p>
         <p
           className="text-[var(--px-12)] truncate"
-          style={{ color: "var(--color-text-secondary)" }}
+          style={{ color: "rgba(255,255,255,0.5)" }}
         >
-          {item.track_artist} &middot; {formatDuration(item.track_duration)}
+          {displayArtist} &middot; {formatDuration(item.track_duration)}
         </p>
       </div>
 
@@ -51,31 +57,31 @@ function CartItemRow({ item, onRemove, isLoading }: CartItemRowProps) {
         <span
           className="text-[var(--px-11)] font-semibold uppercase px-[var(--px-8)] py-[2px] rounded"
           style={{
-            backgroundColor: "var(--color-primary, #000)",
-            color: "var(--color-secondary, #fff)",
+            backgroundColor: "#ffffff",
+            color: "#000000",
           }}
         >
-          {item.audio_format}
+          {displayFormat}
         </span>
 
         {/* Price */}
         <span
           className="text-[var(--px-14)] font-medium min-w-[var(--px-60)] text-right"
-          style={{ color: "var(--color-text-primary)" }}
+          style={{ color: "#ffffff" }}
         >
           {formatPrice(item.price_cents)}
         </span>
 
         {/* Remove button */}
         <button
-          onClick={() => onRemove(item.track_format_id)}
+          onClick={() => onRemove(item.id)}
           disabled={isLoading}
           className="ml-[var(--px-8)] text-[var(--px-18)] leading-none transition-colors"
           style={{
-            color: "var(--color-text-secondary)",
+            color: "rgba(255,255,255,0.4)",
             cursor: isLoading ? "not-allowed" : "pointer",
           }}
-          aria-label={`Remove ${item.track_title}`}
+          aria-label={`Remove ${displayTitle}`}
           title="Remove from cart"
         >
           ×
@@ -99,15 +105,16 @@ function groupCartItems(items: CartItem[]): GroupedItems {
   const playlists = new Map<string, { name: string; items: CartItem[] }>();
 
   for (const item of items) {
-    if (!item.source_playlist_id) {
+    if (item.source_playlist_id === null || item.source_playlist_id === undefined) {
       individual.push(item);
     } else {
-      const existing = playlists.get(item.source_playlist_id);
+      const key = String(item.source_playlist_id);
+      const existing = playlists.get(key);
       if (existing) {
         existing.items.push(item);
       } else {
-        playlists.set(item.source_playlist_id, {
-          name: item.playlist_name || "Untitled Playlist",
+        playlists.set(key, {
+          name: item.playlist_name || `Playlist #${key}`,
           items: [item],
         });
       }
@@ -153,14 +160,14 @@ export function CartPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-[var(--px-20)]">
         <p
-          className="text-[var(--px-18)]"
-          style={{ color: "var(--color-text-secondary)" }}
+          className="text-[var(--px-18)] font-medium"
+          style={{ color: "#ffffff" }}
         >
           Your cart is empty
         </p>
         <p
           className="text-[var(--px-14)]"
-          style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}
+          style={{ color: "rgba(255,255,255,0.5)" }}
         >
           Discover music and add tracks to your cart to purchase.
         </p>
@@ -177,7 +184,7 @@ export function CartPage() {
       <div className="flex items-center justify-between mb-[var(--px-30)]">
         <h1
           className="text-[var(--px-24)] font-bold"
-          style={{ color: "var(--color-text-primary)" }}
+          style={{ color: "#ffffff" }}
         >
           Cart ({itemCount})
         </h1>
@@ -187,7 +194,7 @@ export function CartPage() {
             disabled={isLoading}
             className="text-[var(--px-13)] transition-opacity hover:opacity-80"
             style={{
-              color: "var(--color-text-secondary)",
+              color: "rgba(255,255,255,0.6)",
               cursor: isLoading ? "not-allowed" : "pointer",
             }}
           >
@@ -201,8 +208,8 @@ export function CartPage() {
         <div
           className="mb-[var(--px-16)] p-[var(--px-12)] rounded text-[var(--px-13)]"
           style={{
-            backgroundColor: "rgba(220, 38, 38, 0.08)",
-            color: "rgb(220, 38, 38)",
+            backgroundColor: "rgba(220, 38, 38, 0.2)",
+            color: "#ff4444",
           }}
         >
           {error}
@@ -215,7 +222,7 @@ export function CartPage() {
           <div className="flex items-center justify-between mb-[var(--px-8)]">
             <h2
               className="text-[var(--px-13)] font-semibold uppercase tracking-wider"
-              style={{ color: "var(--color-text-secondary)", opacity: 0.7 }}
+              style={{ color: "rgba(255,255,255,0.4)" }}
             >
               Playlist: {group.name}
             </h2>
@@ -223,7 +230,7 @@ export function CartPage() {
               onClick={() => removePlaylist(playlistId)}
               disabled={isLoading}
               className="text-[var(--px-11)] font-medium underline opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: "var(--color-text-secondary)" }}
+              style={{ color: "#ffffff" }}
             >
               Remove All
             </button>
@@ -245,7 +252,7 @@ export function CartPage() {
           {grouped.playlists.size > 0 && (
             <h2
               className="text-[var(--px-13)] font-semibold uppercase tracking-wider mb-[var(--px-8)]"
-              style={{ color: "var(--color-text-secondary)", opacity: 0.7 }}
+              style={{ color: "rgba(255,255,255,0.4)" }}
             >
               Individual Tracks
             </h2>
@@ -274,9 +281,9 @@ export function CartPage() {
           disabled={isLoading}
           className="flex-1 px-[var(--px-12)] py-[var(--px-8)] text-[var(--px-14)] rounded outline-none"
           style={{
-            border: "1px solid var(--color-border, rgba(0,0,0,0.12))",
-            backgroundColor: "transparent",
-            color: "var(--color-text-primary)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            backgroundColor: "rgba(255,255,255,0.05)",
+            color: "#ffffff",
           }}
           id="cart-promo-input"
         />
@@ -293,7 +300,7 @@ export function CartPage() {
       {promoCode && (
         <div
           className="mb-[var(--px-16)] text-[var(--px-13)]"
-          style={{ color: "var(--color-text-secondary)" }}
+          style={{ color: "rgba(255,255,255,0.7)" }}
         >
           Applied: <strong>{promoCode}</strong>
         </div>
@@ -303,28 +310,28 @@ export function CartPage() {
       <div
         className="py-[var(--px-16)] mb-[var(--px-24)] space-y-[var(--px-8)]"
         style={{
-          borderTop: "1px solid var(--color-border, rgba(0,0,0,0.08))",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
         }}
       >
         <div className="flex justify-between text-[var(--px-14)]">
-          <span style={{ color: "var(--color-text-secondary)" }}>Subtotal</span>
-          <span style={{ color: "var(--color-text-primary)" }}>
+          <span style={{ color: "rgba(255,255,255,0.6)" }}>Subtotal</span>
+          <span style={{ color: "#ffffff" }}>
             {formatPrice(subtotalCents)}
           </span>
         </div>
         {discountCents > 0 && (
           <div className="flex justify-between text-[var(--px-14)]">
-            <span style={{ color: "var(--color-text-secondary)" }}>
+            <span style={{ color: "rgba(255,255,255,0.6)" }}>
               Discount
             </span>
-            <span style={{ color: "rgb(34, 197, 94)" }}>
+            <span style={{ color: "#4ade80" }}>
               -{formatPrice(discountCents)}
             </span>
           </div>
         )}
         <div className="flex justify-between text-[var(--px-16)] font-bold">
-          <span style={{ color: "var(--color-text-primary)" }}>Total</span>
-          <span style={{ color: "var(--color-text-primary)" }}>
+          <span style={{ color: "#ffffff" }}>Total</span>
+          <span style={{ color: "#ffffff" }}>
             {formatPrice(totalCents)}
           </span>
         </div>

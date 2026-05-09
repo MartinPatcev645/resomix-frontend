@@ -17,17 +17,22 @@ export interface TrackFormat {
  */
 export interface CartItem {
   id: number;
-  track_format_id: number;
-  source_playlist_id: string | null;
-  price_cents: number;
-  added_at: string;
-  // Hydrated fields (joined from tracks + track_formats)
   track_id: string;
-  track_title: string;
-  track_artist: string;
-  track_duration: number;
-  audio_format: "mp3" | "wav" | "flac" | "aiff";
+  track_id_internal?: number;
+  source_playlist_id: string | number | null;
+  price_cents: number;
+  // Hydrated fields
+  title: string;
+  artist: string;
+  format_name: string;
+  // Legacy or optional fields
+  track_title?: string;
+  track_artist?: string;
+  track_duration?: number;
+  audio_format?: string;
   playlist_name?: string | null;
+  added_at?: string;
+  track_format_id?: number;
 }
 
 /**
