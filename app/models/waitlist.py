@@ -19,7 +19,7 @@ class Waitlist(Base):
     Waitlist model representing the waitlist table.
     Handles user email submissions for early access.
     """
-    __tablename__ = "waitlist"
+    __tablename__ = "waitlists"
     __table_args__ = (
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )

@@ -20,7 +20,7 @@ class IngestLog(Base):
     IngestLog model representing the ingest_log table.
     Tracks the lifecycle of an ingestion package (DDEX/CSV/etc).
     """
-    __tablename__ = "ingest_log"
+    __tablename__ = "ingest_logs"
     __table_args__ = (
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
@@ -169,7 +169,7 @@ class IngestionError(Base):
     )
 
     id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
-    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_log.id", ondelete="CASCADE"), nullable=False)
+    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id", ondelete="CASCADE"), nullable=False)
     error_code: Mapped[str] = mapped_column(String(50), nullable=False)
     error_message: Mapped[str] = mapped_column(mysql.TEXT, nullable=False)
     error_severity: Mapped[str] = mapped_column(Enum('warning', 'critical'), default='critical', nullable=False, index=True)

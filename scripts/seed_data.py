@@ -50,20 +50,20 @@ class SeedDataManager:
                 conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
                 # List of tables to clear (ordered for safety)
                 tables = [
-                    'partner_usage_log', 'webhook_delivery_log', 'partner_webhooks',
+                    'partner_usage_logs', 'webhook_delivery_logs', 'partner_webhooks',
                     'partner_api_keys', 'partners',
                     'consumption_events', 'manual_takedowns', 'ingestion_errors', 
                     'sftp_users', 'user_spotify_apps', 'spotify_apps', 
-                    'user_operation_limits', 'operation_types', 'contact', 'feedback', 
+                    'user_operation_limits', 'operation_types', 'contacts', 'feedbacks', 
                     'system_logs', 'cart_items', 'carts', 'user_subscriptions', 
                     'purchases', 'orders', 'promo_codes', 
-                    'waitlist', 'playlist_ratings', 'track_ratings', 
+                    'waitlists', 'playlist_ratings', 'track_ratings', 
                     'user_track_engagements', 'user_playlist_engagements', 
                     'playlist_transfer_tracks', 'playlist_tracks', 'playlists', 
                     'track_contributors', 'contributors', 
                     'release_deals', 'royalty_rates', 'deals', 'release_tracks', 
                     'release_contributors', 'releases', 'tracks', 'audio_files', 'image_files',
-                    'labels', 'messages', 'ingest_log', 'parties', 'genres', 
+                    'labels', 'messages', 'ingest_logs', 'parties', 'genres', 
                     'user_roles', 'role_permissions', 'permissions', 'roles', 
                     'user_auth_providers', 'user_sessions', 'user_tokens', 'users'
                 ]
@@ -209,7 +209,7 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 # 1. Ingest Log
                 conn.execute(text("""
-                    INSERT INTO ingest_log (id, party_id, package_folder, status)
+                    INSERT INTO ingest_logs (id, party_id, package_folder, status)
                     VALUES (1, 'ARGO_01', '/sftp/argo/batch_001', 'COMPLETED')
                 """))
                 

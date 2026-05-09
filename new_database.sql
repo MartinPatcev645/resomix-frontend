@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS partner_quotas (
 -- 55. PARTNER USAGE LOG
 -- Per-request audit trail written by the audit-log middleware (W2-1).
 -- Partitioned by created_at for hot-partition management.
-CREATE TABLE IF NOT EXISTS partner_usage_log (
+CREATE TABLE IF NOT EXISTS partner_usage_logs (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     correlation_id  CHAR(36)        DEFAULT NULL,
     partner_id      INT UNSIGNED    NOT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS partner_webhooks (
 
 -- 57. WEBHOOK DELIVERY LOG
 -- Individual delivery attempt written by the Celery dispatcher (W4-1).
-CREATE TABLE IF NOT EXISTS webhook_delivery_log (
+CREATE TABLE IF NOT EXISTS webhook_delivery_logs (
     id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     correlation_id      CHAR(36)        DEFAULT NULL,
     webhook_id          INT UNSIGNED    NOT NULL,
@@ -349,7 +349,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 
 -- 14. INGEST LOG
 -- Audit trail for every DDEX package or batch upload received.
-CREATE TABLE ingest_log (
+CREATE TABLE ingest_logs (
   id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   party_id        VARCHAR(100)  NOT NULL,
   package_folder  VARCHAR(512)  NOT NULL,          -- relative SFTP path
@@ -440,7 +440,7 @@ CREATE TABLE messages (
   is_update           TINYINT(1)      DEFAULT 0,   -- UpdateIndicator
   created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_party_id  (party_id),
-  FOREIGN KEY (ingest_log_id) REFERENCES ingest_log(id),
+  FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -622,7 +622,7 @@ CREATE TABLE audio_files (
   INDEX idx_audio_expires (expires_at),
   UNIQUE KEY uq_audio_path (stored_path(512)),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id),
-  FOREIGN KEY (ingest_log_id) REFERENCES ingest_log(id),
+  FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id),
   FOREIGN KEY (track_id)      REFERENCES tracks(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -654,7 +654,7 @@ CREATE TABLE image_files (
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_image_path (stored_path(512)),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id),
-  FOREIGN KEY (ingest_log_id) REFERENCES ingest_log(id)
+  FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 21c. DOCUMENT FILES (Strictly for DDEX XMLs, PDFs, Lyrics, etc.)
@@ -681,7 +681,7 @@ CREATE TABLE document_files (
   INDEX idx_doc_track (track_id),
   UNIQUE KEY uq_doc_path (stored_path(512)),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id),
-  FOREIGN KEY (ingest_log_id) REFERENCES ingest_log(id),
+  FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id),
   FOREIGN KEY (track_id)      REFERENCES tracks(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1136,7 +1136,7 @@ CREATE TABLE IF NOT EXISTS playlist_ratings (
 
 -- 40. WAITLIST
 -- Early access signup tracking for prospective users.
-CREATE TABLE IF NOT EXISTS waitlist (
+CREATE TABLE IF NOT EXISTS waitlists (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     email     VARCHAR(255) NOT NULL UNIQUE,
     status    ENUM('pending','approved','rejected') DEFAULT 'pending',
@@ -1182,7 +1182,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
 
 -- 43. FEEDBACK
 -- User-submitted application feedback and satisfaction scores.
-CREATE TABLE IF NOT EXISTS feedback (
+CREATE TABLE IF NOT EXISTS feedbacks (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED,
     category      VARCHAR(50),
@@ -1197,7 +1197,7 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 -- 44. CONTACT
 -- General inquiry and support contact submissions.
-CREATE TABLE IF NOT EXISTS contact (
+CREATE TABLE IF NOT EXISTS contacts (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED,
     name        VARCHAR(100),
@@ -1239,7 +1239,7 @@ CREATE TABLE IF NOT EXISTS ingestion_errors (
     reference_node VARCHAR(255) COMMENT 'E.g., <ReleaseId> or specific ISRC string',
     error_message TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ingest_log_id) REFERENCES ingest_log(id) ON DELETE CASCADE,
+    FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id) ON DELETE CASCADE,
     INDEX idx_ie_severity (error_severity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

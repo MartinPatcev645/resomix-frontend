@@ -270,7 +270,7 @@ class PartnerUsageLog(Base):
     billing reconciliation (W4-4).
     """
 
-    __tablename__ = "partner_usage_log"
+    __tablename__ = "partner_usage_logs"
     __table_args__ = (
         Index("idx_usage_partner_time", "partner_id", "created_at"),
         Index("idx_usage_endpoint", "endpoint", "created_at"),
@@ -415,7 +415,7 @@ class WebhookDeliveryLog(Base):
     connection was refused.
     """
 
-    __tablename__ = "webhook_delivery_log"
+    __tablename__ = "webhook_delivery_logs"
     __table_args__ = (
         Index("idx_delivery_partner_event", "partner_id", "event_type", "created_at"),
         Index("idx_delivery_status", "response_status", "created_at"),

@@ -29,7 +29,7 @@ class Message(Base):
     id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
     
     # References
-    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
     
     # DDEX Fields

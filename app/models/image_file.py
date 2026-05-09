@@ -29,7 +29,7 @@ class ImageFile(Base):
     
     # Foreign keys
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False)
-    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_log.id"), nullable=False)
+    ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
     
     # Storage location
     original_filename: Mapped[str] = mapped_column(String(512), nullable=False)

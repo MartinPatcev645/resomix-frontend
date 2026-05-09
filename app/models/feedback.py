@@ -22,7 +22,7 @@ class Feedback(Base):
     """
     Feedback model representing the feedback table
     """
-    __tablename__ = "feedback"
+    __tablename__ = "feedbacks"
     __table_args__ = (
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
