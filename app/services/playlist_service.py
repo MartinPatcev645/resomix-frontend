@@ -333,7 +333,7 @@ class PlaylistService:
 
             # Call media server to generate segmented M3U8
             m3u8_content = await self._call_media_server(
-                "/hls-m3u8/",
+                "/signed-audio/hls-m3u8/",
                 {"uuids": uuid_list, "reference_track_type": seed_track_type},
             )
 
@@ -706,7 +706,9 @@ class PlaylistService:
                 "total": 0,
             }
 
-    async def get_playlist_playback_session(self, playlist_id: str, client_ip: str) -> dict:
+    async def get_playlist_playback_session(
+        self, playlist_id: str, client_ip: str
+    ) -> dict:
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
         for playing a server-stitched playlist.
@@ -715,23 +717,22 @@ class PlaylistService:
         # Once Redis deal_terms and GeoIP are integrated, evaluate takedowns
         # and territory restrictions here for all tracks in the playlist.
         # For now, we mock the territory check to True.
-        
+
         from app.utils.edge_auth import generate_edge_token
         from app.core.config import settings
-        
+
         try:
             token = generate_edge_token(playlist_id, client_ip)
-            
+
             # The Similarity server handles the stitched HLS playlists
             base_url = settings.public_alwyzon_url.rstrip("/")
-            playback_url = f"{base_url}/playlists/similarity-hls/{playlist_id}.m3u8?token={token}"
-            
-            return {
-                "success": True,
-                "playback_url": playback_url
-            }
+            playback_url = (
+                f"{base_url}/playlists/similarity-hls/{playlist_id}.m3u8?token={token}"
+            )
+
+            return {"success": True, "playback_url": playback_url}
         except Exception as e:
             return {
                 "success": False,
-                "error": f"Failed to generate playback session: {e}"
+                "error": f"Failed to generate playback session: {e}",
             }

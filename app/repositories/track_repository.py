@@ -200,7 +200,7 @@ class TrackRepository(BaseRepository[Track]):
             track_data = {
                 "id": track.uuid,  # Use UUID for compatibility with existing API
                 "artist": artist_name,
-                "duration": float(track.duration_ms) if track.duration_ms is not None else 0.0,
+                "duration": float(track.duration_ms) / 1000.0 if track.duration_ms is not None else 0.0,
                 "title": track.title,
             }
             results.append(track_data)
@@ -246,7 +246,7 @@ class TrackRepository(BaseRepository[Track]):
             track_data = {
                 "id": track.uuid,
                 "artist": artist_name,
-                "duration": float(track.duration_ms) if track.duration_ms is not None else 0.0,
+                "duration": float(track.duration_ms) / 1000.0 if track.duration_ms is not None else 0.0,
                 "title": track.title,
             }
             results.append(track_data)

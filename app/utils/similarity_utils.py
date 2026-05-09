@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional
 from mutagen import File as MutagenFile, MutagenError
 
 
-def get_duration_from_bytes_sync(audio_bytes: bytes) -> Optional[int]:
+def get_duration_from_bytes_sync(audio_bytes: bytes) -> Optional[float]:
     """
     Calculates the duration of audio from bytes using mutagen.
     
@@ -25,13 +25,13 @@ def get_duration_from_bytes_sync(audio_bytes: bytes) -> Optional[int]:
         audio_bytes: The raw bytes of the audio file
         
     Returns:
-        Duration in seconds (rounded to int) or None if can't be determined
+        Duration in seconds (float with precision) or None if can't be determined
     """
     try:
         file_like_object = io.BytesIO(audio_bytes)
         audio = MutagenFile(file_like_object)
         if audio and audio.info and hasattr(audio.info, 'length') and audio.info.length is not None:
-            return int(round(audio.info.length))
+            return round(float(audio.info.length), 3)
     except MutagenError:
         print("MutagenError: Could not load audio from bytes to get duration.")
     except Exception as e:

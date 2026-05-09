@@ -127,5 +127,10 @@ class Track(Base):
         "User", back_populates="uploaded_tracks", foreign_keys=[user_id]
     )
 
+    @property
+    def duration(self) -> Optional[float]:
+        """Convert duration_ms to seconds for API responses."""
+        return self.duration_ms / 1000.0 if self.duration_ms is not None else None
+
     def __repr__(self):
         return f"<Track(id={self.id}, title='{self.title}', uuid='{self.uuid}')>"

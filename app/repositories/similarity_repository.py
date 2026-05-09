@@ -93,7 +93,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "title": row.title or "Unknown",
                     "year": row.year,
                     "duration": (
-                        float(row.duration) if row.duration is not None else 0.0
+                        float(row.duration) / 1000.0 if row.duration is not None else 0.0
                     ),
                     "label": "",  # Label is now on releases, not tracks
                     "artist": row.artist or "Unknown",
@@ -148,7 +148,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "title": row.title or "Unknown",
                     "year": row.year,
                     "duration": (
-                        float(row.duration) if row.duration is not None else 0.0
+                        float(row.duration) / 1000.0 if row.duration is not None else 0.0
                     ),
                     "label": "",  # Label is now on releases, not tracks
                     "artist": row.artist or "Unknown",
@@ -218,7 +218,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "track_id": track.id,  # Add database ID for playlist creation
                     "label": "",  # Label is now on releases, not tracks
                     "duration": (
-                        float(track.duration_ms)
+                        float(track.duration_ms) / 1000.0
                         if track.duration_ms is not None
                         else 0.0
                     ),
@@ -290,7 +290,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "track_id": track.id,  # Add database ID for playlist creation
                     "label": "",  # Label is now on releases, not tracks
                     "duration": (
-                        float(track.duration_ms)
+                        float(track.duration_ms) / 1000.0
                         if track.duration_ms is not None
                         else 0.0
                     ),
@@ -327,8 +327,8 @@ class SimilarityRepository(BaseRepository[Track]):
             True if updated successfully, False otherwise
         """
         try:
-            # Store as integer milliseconds
-            duration_ms = int(round(duration)) if duration is not None else None
+            # Store as integer milliseconds (input duration is in seconds)
+            duration_ms = int(round(duration * 1000.0)) if duration is not None else None
 
             query = text(
                 """

@@ -46,6 +46,7 @@ class TrackBase(BaseModel):
     version_title: Optional[str] = None
     display_artist: Optional[str] = None
     duration_ms: Optional[int] = None
+    duration: Optional[float] = None
     bpm: Optional[int] = None
     musical_key: Optional[str] = None
     key_signature: Optional[str] = None

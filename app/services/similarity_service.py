@@ -124,6 +124,8 @@ class SimilarityService:
         if similarity_response.get("status") == "success":
             raw_results = similarity_response.get("results", [])
             server_duration = similarity_response.get("duration")
+            if server_duration is not None and server_duration > 10000:
+                server_duration = server_duration / 1000.0
 
             # Extract UUIDs from similarity server response
             track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
