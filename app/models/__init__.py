@@ -49,6 +49,14 @@ from .sftp_user import SftpUser
 from .b2b import IngestLog, IngestionError, Deal, ReleaseDeal, DealTerritory, DealUseType, RoyaltyRate
 from .copyright import ManualTakedown, ACRInfringementLog
 from .report import GeneratedReport, LabelPayout
+from .partner import (
+    Partner,
+    PartnerApiKey,
+    PartnerQuota,
+    PartnerUsageLog,
+    PartnerWebhook,
+    WebhookDeliveryLog,
+)
 
 # Make models available at package level
 __all__ = [
@@ -109,4 +117,11 @@ __all__ = [
     "ACRInfringementLog",
     "GeneratedReport",
     "LabelPayout",
+    # W1-1: Partner / B2B multi-tenancy tables
+    "Partner",
+    "PartnerApiKey",
+    "PartnerQuota",
+    "PartnerUsageLog",
+    "PartnerWebhook",
+    "WebhookDeliveryLog",
 ]

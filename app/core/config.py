@@ -464,6 +464,16 @@ class Settings(BaseModel):
         description="The public URL of this Alwyzon server (used for playback manifest generation)",
     )
 
+    # === NEW: Partner API Configuration ===
+    partner_api_key_signing_secret: str = Field(
+        default="default-partner-api-key-signing-secret-change-me",
+        description="Secret key for signing partner-related sensitive operations",
+    )
+    partner_api_key_hash_algorithm: str = Field(
+        default="sha256",
+        description="Algorithm used for hashing partner API keys (default: sha256)",
+    )
+
     def __init__(self, **data):
         # Override with environment variables if they exist
         env_overrides: Dict[str, Any] = {}
@@ -541,6 +551,9 @@ class Settings(BaseModel):
             "STRIPE_SECRET_KEY": "stripe_secret_key",
             "STRIPE_PUBLISHABLE_KEY": "stripe_publishable_key",
             "STRIPE_WEBHOOK_SECRET": "stripe_webhook_secret",
+            # Partner API
+            "PARTNER_API_KEY_SIGNING_SECRET": "partner_api_key_signing_secret",
+            "PARTNER_API_KEY_HASH_ALGORITHM": "partner_api_key_hash_algorithm",
         }
 
         for env_key, config_key in direct_env_vars.items():

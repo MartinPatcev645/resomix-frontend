@@ -1189,3 +1189,149 @@ CREATE TABLE IF NOT EXISTS acr_infringement_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TIER 6: B2B PARTNER / MULTI-TENANCY LAYER  (W1-1 — 35-Day Roadmap v3.0)
+-- Additive tables — no existing tables modified.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- 52. PARTNERS
+-- Top-level tenant identity. id=1 = public sandbox tenant.
+CREATE TABLE IF NOT EXISTS partners (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    partner_uuid    CHAR(36)     NOT NULL UNIQUE         COMMENT 'Public UUID exposed in API responses',
+    legal_name      VARCHAR(255) NOT NULL,
+    display_name    VARCHAR(255) NOT NULL,
+    contact_email   VARCHAR(255) NOT NULL UNIQUE,
+    vat_number      VARCHAR(64)  DEFAULT NULL            COMMENT 'EU VAT number; validated via VIES (W4-4)',
+    country_code    CHAR(2)      DEFAULT NULL            COMMENT 'ISO 3166-1 alpha-2',
+    tier            ENUM('sandbox','starter','growth','enterprise')
+                    NOT NULL DEFAULT 'sandbox'           COMMENT 'Drives quota limits and feature flags',
+    is_active       TINYINT(1)   NOT NULL DEFAULT 1,
+    onboarded_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    notes           TEXT         DEFAULT NULL,
+    INDEX idx_partner_uuid (partner_uuid),
+    INDEX idx_partner_tier (tier, is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed: public sandbox tenant
+INSERT IGNORE INTO partners
+    (partner_uuid, legal_name, display_name, contact_email, tier)
+VALUES
+    ('00000000-0000-0000-0000-000000000000',
+     'Resomix Sandbox', 'Sandbox', 'sandbox@resomix.com', 'sandbox');
+
+
+-- 53. PARTNER API KEYS
+-- Hashed API keys. Plaintext NEVER stored.
+-- Formats: rmx_live_<urlsafe_32> / rmx_sandbox_<urlsafe_32>
+CREATE TABLE IF NOT EXISTS partner_api_keys (
+    id                  INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
+    partner_id          INT UNSIGNED    NOT NULL,
+    key_prefix          VARCHAR(16)     NOT NULL                    COMMENT 'Short prefix safe to display (e.g. rmx_live_abc1)',
+    key_hash            CHAR(64)        NOT NULL UNIQUE             COMMENT 'SHA-256 hex digest of the full API key',
+    label               VARCHAR(100)    DEFAULT NULL                COMMENT 'Human label: Production / Sandbox / Dev',
+    scopes              JSON            NOT NULL                    COMMENT '["search:read","ingest:write"]',
+    rate_limit_rps      INT UNSIGNED    NOT NULL DEFAULT 10         COMMENT 'Token-bucket burst limit req/sec (W1-7)',
+    rate_limit_monthly  INT UNSIGNED    NOT NULL DEFAULT 100000     COMMENT 'Rolling-30-day request cap (W1-8)',
+    is_active           TINYINT(1)      NOT NULL DEFAULT 1,
+    created_at          DATETIME        DEFAULT CURRENT_TIMESTAMP,
+    last_used_at        DATETIME        DEFAULT NULL,
+    last_used_ip        VARCHAR(45)     DEFAULT NULL,
+    expires_at          DATETIME        DEFAULT NULL,
+    revoked_at          DATETIME        DEFAULT NULL,
+    revoked_reason      VARCHAR(255)    DEFAULT NULL,
+    FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE CASCADE,
+    INDEX idx_apikey_hash   (key_hash),
+    INDEX idx_apikey_active (is_active, partner_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- 54. PARTNER QUOTAS
+-- Rolling-30-day quota tracking. Incremented atomically via Redis (W1-8),
+-- flushed to this table every 5 minutes.
+CREATE TABLE IF NOT EXISTS partner_quotas (
+    id              INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
+    partner_id      INT UNSIGNED    NOT NULL,
+    api_key_id      INT UNSIGNED    DEFAULT NULL                    COMMENT 'NULL = aggregate across all keys',
+    period_start    DATE            NOT NULL,
+    period_end      DATE            NOT NULL,
+    requests_made   BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    quota_limit     BIGINT UNSIGNED NOT NULL,
+    is_overage      TINYINT(1)      NOT NULL DEFAULT 0,
+    last_synced_at  DATETIME        DEFAULT NULL,
+    FOREIGN KEY (partner_id) REFERENCES partners(id)          ON DELETE CASCADE,
+    FOREIGN KEY (api_key_id) REFERENCES partner_api_keys(id)  ON DELETE CASCADE,
+    UNIQUE KEY uk_quota_period (partner_id, api_key_id, period_start),
+    INDEX idx_quota_period (period_start, period_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- 55. PARTNER USAGE LOG
+-- Per-request audit trail written by the audit-log middleware (W2-1).
+-- Partitioned by created_at for hot-partition management.
+CREATE TABLE IF NOT EXISTS partner_usage_log (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    correlation_id  CHAR(36)        DEFAULT NULL,
+    partner_id      INT UNSIGNED    NOT NULL,
+    api_key_id      INT UNSIGNED    NOT NULL,
+    endpoint        VARCHAR(255)    NOT NULL,
+    method          VARCHAR(10)     DEFAULT NULL,
+    status_code     SMALLINT UNSIGNED DEFAULT NULL,
+    latency_ms      DECIMAL(10,3)   DEFAULT NULL,
+    request_bytes   INT UNSIGNED    DEFAULT NULL,
+    response_bytes  INT UNSIGNED    DEFAULT NULL,
+    client_ip       VARCHAR(45)     DEFAULT NULL,
+    user_agent      VARCHAR(500)    DEFAULT NULL,
+    error_code      VARCHAR(64)     DEFAULT NULL,
+    created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (partner_id)  REFERENCES partners(id)         ON DELETE CASCADE,
+    FOREIGN KEY (api_key_id)  REFERENCES partner_api_keys(id) ON DELETE CASCADE,
+    INDEX idx_usage_partner_time (partner_id, created_at),
+    INDEX idx_usage_endpoint     (endpoint, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+-- 56. PARTNER WEBHOOKS
+-- Webhook subscription configuration per partner.
+-- Supported events (W4-2): ingestion.started | ingestion.completed |
+-- ingestion.failed | track.indexed | quota.warning | quota.exceeded |
+-- embedding.deleted
+CREATE TABLE IF NOT EXISTS partner_webhooks (
+    id                          INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
+    partner_id                  INT UNSIGNED    NOT NULL,
+    url                         VARCHAR(500)    NOT NULL,
+    secret_hash                 CHAR(64)        NOT NULL                COMMENT 'SHA-256 of signing secret for HMAC (W4-1)',
+    events                      JSON            NOT NULL,
+    is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
+    last_delivery_at            DATETIME        DEFAULT NULL,
+    last_delivery_status_code   SMALLINT        DEFAULT NULL,
+    consecutive_failures        INT UNSIGNED    NOT NULL DEFAULT 0,
+    created_at                  DATETIME        DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE CASCADE,
+    INDEX idx_webhook_partner_active (partner_id, is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- 57. WEBHOOK DELIVERY LOG
+-- Individual delivery attempt written by the Celery dispatcher (W4-1).
+-- attempt_number: 1=initial 2=1m 3=5m 4=30m 5=2h 6=8h
+CREATE TABLE IF NOT EXISTS webhook_delivery_log (
+    id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    correlation_id      CHAR(36)        DEFAULT NULL,
+    webhook_id          INT UNSIGNED    NOT NULL,
+    partner_id          INT UNSIGNED    NOT NULL,
+    event_type          VARCHAR(64)     NOT NULL,
+    payload             JSON            NOT NULL,
+    attempt_number      TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    response_status     SMALLINT        DEFAULT NULL                COMMENT 'NULL on connection failure/timeout',
+    response_latency_ms INT UNSIGNED    DEFAULT NULL,
+    error_message       TEXT            DEFAULT NULL,
+    delivered_at        DATETIME        DEFAULT NULL                COMMENT 'Set when response_status is 2xx',
+    created_at          DATETIME        DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (webhook_id)  REFERENCES partner_webhooks(id) ON DELETE CASCADE,
+    FOREIGN KEY (partner_id)  REFERENCES partners(id)         ON DELETE CASCADE,
+    INDEX idx_delivery_partner_event (partner_id, event_type, created_at),
+    INDEX idx_delivery_status        (response_status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
