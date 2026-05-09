@@ -12,7 +12,9 @@ import {
   Typography, 
   Tooltip, 
   Alert,
-  message
+  message,
+  List,
+  Badge
 } from 'antd';
 import { 
   Plus, 
@@ -22,7 +24,12 @@ import {
   Copy, 
   CheckCircle2,
   Edit,
-  Trash2
+  Trash2,
+  Calendar,
+  Shield,
+  Clock,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
 import { useStatusModals, usePartners } from '@resomix/hooks';
 import { StatusModal } from '@resomix/ui';
@@ -38,6 +45,7 @@ const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
 function PartnersPage() {
+  const [modal, modalContextHolder] = Modal.useModal();
   const {
     errorModalVisible,
     errorDetails,
@@ -83,6 +91,7 @@ function PartnersPage() {
   const [newKeyVisible, setNewKeyVisible] = useState(false);
   const [revealedKey, setRevealedKey] = useState<{ plaintext_key: string; label: string } | null>(null);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
@@ -112,9 +121,9 @@ function PartnersPage() {
   };
 
   const handleDeletePartner = (partner: Partner) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Partner',
-      content: `Are you sure you want to delete ${partner.display_name}? This will revoke all associated API keys.`,
+      content: `Are you sure you want to delete ${partner.display_name}? This will revoke all associated API keys and remove all data.`,
       okText: 'Delete',
       okType: 'danger',
       onOk: async () => {
@@ -146,7 +155,7 @@ function PartnersPage() {
   };
 
   const handleRotateKey = (key: PartnerApiKey) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Rotate API Key',
       content: `Are you sure you want to rotate the key "${key.label}"? The old key will be revoked immediately and a new one will be issued.`,
       okText: 'Rotate',
@@ -163,7 +172,7 @@ function PartnersPage() {
 
   const handleRevokeKey = (key: PartnerApiKey) => {
     let reason = '';
-    Modal.confirm({
+    modal.confirm({
       title: 'Revoke API Key',
       content: (
         <div className="mt-4">
@@ -193,6 +202,8 @@ function PartnersPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     message.success('Copied to clipboard');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const columns = [
@@ -279,6 +290,7 @@ function PartnersPage() {
   
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
+      {modalContextHolder}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
           <Title level={2} className="!mb-1 !text-primary">Partner Management</Title>
@@ -505,98 +517,125 @@ function PartnersPage() {
           </Button>
         ]}
       >
-        <div className="py-4">
-          <Table
+        <div className="py-2">
+          <List
             dataSource={apiKeys}
             loading={keysLoading}
             rowKey="id"
-            pagination={false}
-            columns={[
-              {
-                title: 'Label',
-                dataIndex: 'label',
-                key: 'label',
-                render: (text: string) => <Text strong>{text}</Text>
-              },
-              {
-                title: 'Prefix',
-                dataIndex: 'key_prefix',
-                key: 'key_prefix',
-                render: (prefix: string) => <code className="bg-background-secondary text-primary px-2 py-1 rounded-md font-mono text-sm border border-default">{prefix}...</code>
-              },
-              {
-                title: 'Usage (Monthly)',
-                key: 'usage',
-                render: (_: unknown, record: PartnerApiKey) => {
-                  const usage = record.usage_count || 0;
-                  const limit = record.rate_limit_monthly || 0;
-                  const percentage = limit > 0 ? Math.min(100, (usage / limit) * 100) : 0;
-                  const isNearLimit = percentage > 80;
-                  return (
-                    <div className="w-48">
-                      <div className="flex justify-between mb-1">
-                        <Text className="text-[10px] font-medium uppercase text-secondary">
-                          {usage.toLocaleString()} / {limit.toLocaleString()}
-                        </Text>
-                        <Text className={`text-[10px] font-bold ${isNearLimit ? 'text-error' : 'text-primary'}`}>
-                          {Math.round(percentage)}%
-                        </Text>
+            renderItem={(key: PartnerApiKey) => {
+              const usage = key.usage_count || 0;
+              const limit = key.rate_limit_monthly || 0;
+              const percentage = limit > 0 ? Math.min(100, (usage / limit) * 100) : 0;
+              const isNearLimit = percentage > 80;
+
+              return (
+                <Card 
+                  className={`mb-4 border-default rounded-xl shadow-sm hover:shadow-md transition-shadow ${!key.is_active ? 'opacity-75 grayscale-[0.5]' : ''}`}
+                  styles={{ body: { padding: '20px' } }}
+                >
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Title level={4} className="!m-0 !text-primary">{key.label}</Title>
+                        <Badge status={key.is_active ? 'success' : 'default'} text={key.is_active ? 'Active' : 'Revoked'} />
+                        <code className="bg-background-secondary text-primary px-2 py-0.5 rounded text-xs font-mono border border-default">
+                          {key.key_prefix}...
+                        </code>
                       </div>
-                      <div className="h-1.5 w-full bg-background-secondary rounded-full overflow-hidden border border-default">
-                        <div 
-                          className={`h-full transition-all duration-500 ${isNearLimit ? 'bg-error' : 'bg-primary'}`}
-                          style={{ width: `${percentage}%` }}
+                      
+                      <div className="flex flex-wrap gap-x-6 gap-y-3 mb-4">
+                        <div className="flex items-center gap-2 text-secondary text-xs">
+                          <Calendar size={14} />
+                          <span>Created: {new Date(key.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-secondary text-xs">
+                          <Clock size={14} />
+                          <span>Last Used: {key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</span>
+                        </div>
+                        {key.expires_at && (
+                          <div className="flex items-center gap-2 text-secondary text-xs">
+                            <AlertTriangle size={14} className={new Date(key.expires_at) < new Date() ? 'text-error' : 'text-warning'} />
+                            <span>Expires: {new Date(key.expires_at).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Shield size={14} className="text-secondary" />
+                          <Text className="text-xs font-medium text-secondary uppercase tracking-wider">Authorized Scopes</Text>
+                        </div>
+                        <Space wrap size={4}>
+                          {key.scopes?.map(scope => (
+                            <Tag key={scope} className="m-0 bg-primary/5 text-primary border-primary/10 px-2 py-0.5 rounded">
+                              {scope}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </div>
+
+                      {!key.is_active && key.revoked_at && (
+                        <Alert
+                          type="error"
+                          showIcon
+                          className="py-2 px-3 rounded-lg bg-error/5 border-error/10"
+                          message={
+                            <div className="text-xs">
+                              <Text strong className="text-error">Revoked on {new Date(key.revoked_at).toLocaleString()}</Text>
+                              <div className="mt-1 text-secondary italic">Reason: {key.revoked_reason || 'No reason provided'}</div>
+                            </div>
+                          }
                         />
-                      </div>
-                      <Text className="text-[10px] text-secondary mt-1 block">RPS: {record.rate_limit_rps || 0}</Text>
+                      )}
                     </div>
-                  );
-                }
-              },
-              {
-                title: 'Last Used',
-                dataIndex: 'last_used_at',
-                key: 'last_used_at',
-                render: (date?: string) => date ? new Date(date).toLocaleString() : 'Never'
-              },
-              {
-                title: 'Status',
-                dataIndex: 'is_active',
-                key: 'is_active',
-                render: (active: boolean, record: PartnerApiKey) => (
-                  active ? <Tag color="success">ACTIVE</Tag> : (
-                    <Tooltip title={`Revoked: ${record.revoked_reason || 'No reason provided'}`}>
-                      <Tag color="error">REVOKED</Tag>
-                    </Tooltip>
-                  )
-                )
-              },
-              {
-                title: 'Actions',
-                key: 'actions',
-                render: (_: unknown, record: PartnerApiKey) => (
-                  record.is_active && (
-                    <Space>
-                      <Tooltip title="Rotate Key">
-                        <Button 
-                          icon={<RotateCw size={14} />} 
-                          size="small" 
-                          onClick={() => handleRotateKey(record)}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Revoke Key">
-                        <Button 
-                          danger 
-                          icon={<Ban size={14} />} 
-                          size="small" 
-                          onClick={() => handleRevokeKey(record)}
-                        />
-                      </Tooltip>
-                    </Space>
-                  )
-                )
-              }
-            ]}
+
+                    <div className="md:w-64 flex flex-col justify-between border-l border-default pl-0 md:pl-6">
+                      <div>
+                        <Text className="text-xs font-medium text-secondary uppercase tracking-wider mb-2 block">Monthly Consumption</Text>
+                        <div className="flex justify-between mb-1">
+                          <Text className="text-[10px] font-bold text-primary">
+                            {usage.toLocaleString()} / {limit.toLocaleString()}
+                          </Text>
+                          <Text className={`text-[10px] font-bold ${isNearLimit ? 'text-error' : 'text-primary'}`}>
+                            {Math.round(percentage)}%
+                          </Text>
+                        </div>
+                        <div className="h-2 w-full bg-background-secondary rounded-full overflow-hidden border border-default shadow-inner">
+                          <div 
+                            className={`h-full transition-all duration-500 ${isNearLimit ? 'bg-error' : 'bg-primary'}`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <Text className="text-[10px] text-secondary mt-1.5 block">Burst Rate Limit: <Text strong>{key.rate_limit_rps} RPS</Text></Text>
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-4">
+                        {key.is_active && (
+                          <>
+                            <Button 
+                              type="default"
+                              icon={<RotateCw size={16} />} 
+                              onClick={() => handleRotateKey(key)}
+                              className="rounded-lg flex items-center gap-2"
+                            >
+                              Rotate
+                            </Button>
+                            <Button 
+                              danger
+                              icon={<Ban size={16} />} 
+                              onClick={() => handleRevokeKey(key)}
+                              className="rounded-lg flex items-center gap-2"
+                            >
+                              Revoke
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            }}
           />
         </div>
       </Modal>
@@ -676,15 +715,19 @@ function PartnersPage() {
           showIcon
           className="mb-6 rounded-lg border-warning/20 bg-warning/5"
         />
-        <div className="bg-gray-950 p-6 rounded-xl relative group border border-gray-800 shadow-inner">
-          <Paragraph className="!mb-0 text-white font-mono text-lg leading-relaxed break-all pr-12 tracking-wide">
+        <div className="bg-surface-secondary p-6 rounded-xl relative group border border-default shadow-inner">
+          <Paragraph className="!mb-0 text-primary font-mono text-lg leading-relaxed break-all pr-12 tracking-wide">
             {revealedKey?.plaintext_key}
           </Paragraph>
-          <Tooltip title="Copy to clipboard">
+          <Tooltip title={copied ? "Copied!" : "Copy to clipboard"}>
             <Button 
-              className="absolute top-6 right-6 bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700" 
+              className={`absolute top-6 right-6 flex items-center justify-center transition-all duration-300 ${
+                copied 
+                  ? 'bg-success/10 border-success text-success' 
+                  : 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 hover:border-primary'
+              }`}
               size="middle"
-              icon={<Copy size={18} />}
+              icon={copied ? <Check size={18} /> : <Copy size={18} />}
               onClick={() => copyToClipboard(revealedKey?.plaintext_key || '')}
             />
           </Tooltip>
