@@ -21,6 +21,7 @@ from app.schemas.partner import (
     PartnerResponse,
     PartnerListResponse,
     PartnerCreateRequest,
+    PartnerUpdateRequest,
     ApiKeyIssueRequest,
     ApiKeyIssueSuccessResponse,
     ApiKeyListResponse,
@@ -55,6 +56,34 @@ async def create_partner(
     api_key: str = Security(get_api_key)
 ) -> JSONResponse:
     return await partner_controller.create_partner(db, request, payload)
+
+
+@router.patch(
+    "/{partner_id}",
+    response_model=PartnerResponse,
+    summary="Update Partner",
+    description="Updates existing partner details. Supports partial updates."
+)
+async def update_partner(
+    partner_id: int,
+    payload: PartnerUpdateRequest,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    return await partner_controller.update_partner(db, partner_id, payload)
+
+
+@router.delete(
+    "/{partner_id}",
+    summary="Delete Partner",
+    description="Deletes a partner and revokes all associated API keys."
+)
+async def delete_partner(
+    partner_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    api_key: str = Security(get_api_key)
+) -> JSONResponse:
+    return await partner_controller.delete_partner(db, partner_id)
 
 
 @router.get(

@@ -54,6 +54,18 @@ class PartnerBaseResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PartnerUpdateRequest(BaseModel):
+    """Payload to update an existing partner's details."""
+    legal_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    display_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    contact_email: Optional[EmailStr] = None
+    tier: Optional[PartnerTier] = None
+    country_code: Optional[str] = Field(None, min_length=2, max_length=2)
+    vat_number: Optional[str] = Field(None, max_length=64)
+    is_active: Optional[bool] = None
+    notes: Optional[str] = None
+
+
 class PartnerResponse(APIResponse):
     """Response wrapper for a single partner."""
     data: PartnerBaseResponse
@@ -102,6 +114,7 @@ class ApiKeyPublicDetail(BaseModel):
     scopes: List[str]
     rate_limit_rps: int
     rate_limit_monthly: int
+    usage_count: int = 0  # Total calls in current billing month
     is_active: bool
     created_at: datetime
     last_used_at: Optional[datetime] = None

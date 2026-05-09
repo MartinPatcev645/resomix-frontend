@@ -22,6 +22,7 @@ from app.repositories.partner_repository import PartnerRepository, PartnerApiKey
 from app.models.partner import Partner, PartnerApiKey
 from app.schemas.partner import (
     PartnerCreateRequest, 
+    PartnerUpdateRequest,
     ApiKeyIssueRequest, 
     ApiKeyRotateRequest
 )
@@ -87,6 +88,49 @@ class PartnerService:
         skip = (page - 1) * page_size
         return await self.partner_repo.async_list_partners(db, skip, page_size, tier, is_active)
 
+    async def update_partner(self, db: AsyncSession, partner_id: int, request: PartnerUpdateRequest) -> Optional[Partner]:
+        """Update an existing partner's details."""
+        update_data = request.model_dump(exclude_unset=True)
+        if not update_data:
+            return await self.partner_repo.async_get_by_id(db, partner_id)
+            
+        partner = await self.partner_repo.async_update(db, partner_id, **update_data)
+        if partner:
+            self.logging_service.log(
+                async_db=db,
+                category="PARTNER",
+                action="UPDATE",
+                message=f"Partner updated: {partner.display_name} ({partner.partner_uuid})",
+                metadata={"partner_id": partner.id, "updates": list(update_data.keys())}
+            )
+        return partner
+
+    async def delete_partner(self, db: AsyncSession, partner_id: int) -> bool:
+        """
+        Delete a partner. Performs a hard delete in this implementation.
+        Revokes all associated API keys as well.
+        """
+        partner = await self.partner_repo.async_get_by_id(db, partner_id)
+        if not partner:
+            return False
+            
+        # Revoke all keys first (audit trail)
+        keys = await self.api_key_repo.async_list_keys_for_partner(db, partner_id)
+        for key in keys:
+            if key.is_active:
+                await self.api_key_repo.async_revoke_key(db, key.id, "Partner deleted")
+        
+        success = await self.partner_repo.async_delete(db, partner_id)
+        if success:
+            self.logging_service.log(
+                async_db=db,
+                category="PARTNER",
+                action="DELETE",
+                message=f"Partner deleted: {partner.display_name} ({partner.partner_uuid})",
+                metadata={"partner_id": partner_id}
+            )
+        return success
+
     async def issue_api_key(self, db: AsyncSession, request: ApiKeyIssueRequest) -> Tuple[PartnerApiKey, str]:
         """Issue a new API key for a partner."""
         partner = await self.partner_repo.async_get_by_id(db, request.partner_id)
@@ -120,8 +164,33 @@ class PartnerService:
         return api_key, plaintext
 
     async def list_api_keys(self, db: AsyncSession, partner_id: int) -> List[PartnerApiKey]:
-        """List all keys for a partner."""
-        return await self.api_key_repo.async_list_keys_for_partner(db, partner_id)
+        """List all keys for a partner, including usage stats."""
+        keys = await self.api_key_repo.async_list_keys_for_partner(db, partner_id)
+        
+        # Populate usage_count for each key
+        for key in keys:
+            key.usage_count = await self.get_api_key_usage_count(db, key.id)
+            
+        return keys
+
+    async def get_api_key_usage_count(self, db: AsyncSession, api_key_id: int) -> int:
+        """Get the number of requests made with an API key in the current calendar month."""
+        from sqlalchemy import text
+        from datetime import datetime
+        
+        # Start of current month
+        start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Raw SQL to count from partner_usage_logs
+        # Note: We use raw SQL to avoid needing a full Model for the logs if not already defined
+        stmt = text("""
+            SELECT COUNT(*) FROM partner_usage_logs 
+            WHERE api_key_id = :key_id 
+            AND created_at >= :since
+        """)
+        
+        result = await db.execute(stmt, {"key_id": api_key_id, "since": start_of_month})
+        return result.scalar() or 0
 
     async def revoke_api_key(self, db: AsyncSession, api_key_id: int, reason: str) -> bool:
         """Revoke an API key."""

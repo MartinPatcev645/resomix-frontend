@@ -20,6 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from app.services.partner_service import PartnerService
 from app.schemas.partner import (
     PartnerCreateRequest,
+    PartnerUpdateRequest,
     PartnerBaseResponse,
     ApiKeyIssueRequest,
     ApiKeyIssueResponse,
@@ -65,6 +66,53 @@ class PartnerController:
                 content=jsonable_encoder(format_response(
                     success=False, error="Failed to create partner"
                 )),
+            )
+
+    async def update_partner(
+        self, db: AsyncSession, partner_id: int, payload: PartnerUpdateRequest
+    ) -> JSONResponse:
+        """Update an existing partner."""
+        try:
+            partner = await self.partner_service.update_partner(db, partner_id, payload)
+            if not partner:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=jsonable_encoder(format_response(success=False, error="Partner not found")),
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder(format_response(
+                    success=True,
+                    data=PartnerBaseResponse.model_validate(partner).model_dump(),
+                )),
+            )
+        except Exception as e:
+            logger.error(f"Failed to update partner: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=jsonable_encoder(format_response(success=False, error="Failed to update partner")),
+            )
+
+    async def delete_partner(self, db: AsyncSession, partner_id: int) -> JSONResponse:
+        """Delete a partner."""
+        try:
+            success = await self.partner_service.delete_partner(db, partner_id)
+            if success:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=jsonable_encoder(format_response(
+                        success=True, message="Partner successfully deleted"
+                    )),
+                )
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=jsonable_encoder(format_response(success=False, error="Partner not found")),
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete partner: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=jsonable_encoder(format_response(success=False, error="Failed to delete partner")),
             )
 
     async def list_partners(
