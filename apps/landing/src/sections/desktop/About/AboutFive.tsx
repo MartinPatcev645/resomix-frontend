@@ -14,7 +14,7 @@ const AboutFive: React.FC = () => {
                         We're a small team of DJs, signal processing engineers, and music industry professionals based in Greece,<br />building the discovery tool we always wished existed
                     </span>
                     <span className="font-extralight">
-                        Reform Studios · Thessaloniki, Greece Reach us anytime: <a href="mailto:support@resomix.com" className="font-light hover:underline">support@resomix.com</a>
+                        Resomix · Thessaloniki, Greece Reach us anytime: <a href="mailto:support@resomix.com" className="font-light hover:underline">support@resomix.com</a>
                     </span>
                 </div>
             </div>
@@ -34,7 +34,7 @@ const AboutFive: React.FC = () => {
                             <span className="font-normal">Resomix is the tool I needed and couldn't find. Built on signal processing, not hype.”</span>
                         </div>
                         <div className="font-extralight">
-                            — Georgios<br />Founder & CEO, Reform Studios
+                            — Georgios<br />Founder & CEO, Resomix
                         </div>
                     </div>
                     <div className="text-[length:var(--px-52)] font-medium font-helvetica uppercase leading-[var(--px-60)] ml-[var(--px-60)] text-right">
