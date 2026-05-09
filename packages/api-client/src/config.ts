@@ -54,6 +54,12 @@ export interface ApiConfig {
     ADMIN_SPOTIFY_APPS: string;
     ADMIN_SPOTIFY_APP_USERS: string;
     ADMIN_USER_SEARCH: string;
+    ADMIN_PARTNER_LIST: string;
+    ADMIN_PARTNER_CREATE: string;
+    ADMIN_PARTNER_API_KEY_ISSUE: string;
+    ADMIN_PARTNER_API_KEY_LIST: string;
+    ADMIN_PARTNER_API_KEY_REVOKE: string;
+    ADMIN_PARTNER_API_KEY_ROTATE: string;
     // Telemetry
     TELEMETRY_SYNC: string;
     // Cart & Checkout
@@ -166,6 +172,13 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_SPOTIFY_APPS: "/admin/spotify-apps/",
     ADMIN_SPOTIFY_APP_USERS: "/admin/spotify-apps/users",
     ADMIN_USER_SEARCH: "/users/search",
+    // Partner Management
+    ADMIN_PARTNER_LIST: "/admin/partners/",
+    ADMIN_PARTNER_CREATE: "/admin/partners/",
+    ADMIN_PARTNER_API_KEY_ISSUE: "/admin/partners/api-keys/issue",
+    ADMIN_PARTNER_API_KEY_LIST: "/admin/partners/api-keys/",
+    ADMIN_PARTNER_API_KEY_REVOKE: "/admin/partners/api-keys/revoke",
+    ADMIN_PARTNER_API_KEY_ROTATE: "/admin/partners/api-keys/rotate",
     // Unused beta endpoints
     // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
     // TIDAL_AUTH_TOKEN: "/tidal/auth/token",

@@ -134,13 +134,14 @@ export function useCart() {
   const toggleItem = useCallback(
     async (trackId: string, sourcePlaylistId?: string) => {
       const existing = getCartItem(trackId);
-      if (existing) {
+      if (existing && existing.track_format_id) {
         return removeItem(existing.track_format_id);
-      } else {
+      } else if (!existing) {
         return addItem({
           items: [{ track_id: trackId, source_playlist_id: sourcePlaylistId }],
         });
       }
+      return false;
     },
     [getCartItem, addItem, removeItem],
   );

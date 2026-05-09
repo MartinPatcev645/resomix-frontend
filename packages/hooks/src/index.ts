@@ -40,3 +40,6 @@ export * from './Telemetry';
 
 // Cart
 export * from './Cart';
+
+// Admin
+export * from './Admin/usePartners';

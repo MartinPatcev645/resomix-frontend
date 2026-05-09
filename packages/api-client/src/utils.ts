@@ -17,6 +17,10 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (!config.params.api_key) {
     (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
   }
+  
+  // Also include in headers for better security and backend compatibility
+  config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
+  
   return config;
 });
 

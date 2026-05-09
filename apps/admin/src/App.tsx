@@ -12,6 +12,7 @@ import TracksPage from '@/pages/TracksPage.tsx'
 import LogsPage from '@/pages/LogsPage.tsx'
 import OperationsPage from '@/pages/OperationsPage.tsx'
 import SpotifyAppsPage from '@/pages/SpotifyAppsPage.tsx'
+import PartnersPage from '@/pages/PartnersPage.tsx'
 import { useTheme } from '@/hooks/useTheme.ts'
 import { lightTheme, darkTheme } from '@/lib/antdTheme.ts'
 
@@ -36,6 +37,7 @@ function App() {
               <Route path="logs" element={<LogsPage />} />
               <Route path="operations" element={<OperationsPage />} />
               <Route path="spotify-apps" element={<SpotifyAppsPage />} />
+              <Route path="partners" element={<PartnersPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

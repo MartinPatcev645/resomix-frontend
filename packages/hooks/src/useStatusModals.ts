@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 interface StatusDetails {
   title: string
@@ -11,25 +11,25 @@ export function useStatusModals() {
   const [successModalVisible, setSuccessModalVisible] = useState(false)
   const [successDetails, setSuccessDetails] = useState<StatusDetails | null>(null)
 
-  const showErrorModal = (title: string, message: string) => {
+  const showErrorModal = useCallback((title: string, message: string) => {
     setErrorDetails({ title, message })
     setErrorModalVisible(true)
-  }
+  }, [])
 
-  const closeErrorModal = () => {
+  const closeErrorModal = useCallback(() => {
     setErrorModalVisible(false)
     setErrorDetails(null)
-  }
+  }, [])
 
-  const showSuccessModal = (title: string, message: string) => {
+  const showSuccessModal = useCallback((title: string, message: string) => {
     setSuccessDetails({ title, message })
     setSuccessModalVisible(true)
-  }
+  }, [])
 
-  const closeSuccessModal = () => {
+  const closeSuccessModal = useCallback(() => {
     setSuccessModalVisible(false)
     setSuccessDetails(null)
-  }
+  }, [])
 
   return {
     // Error modal
