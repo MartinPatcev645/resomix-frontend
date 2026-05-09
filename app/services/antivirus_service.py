@@ -104,6 +104,17 @@ class AntivirusService:
                 - method (str): Scan method used ('clamd' or 'clamscan')
                 - error (str): Error message if scan failed
         """
+        # Skip antivirus check in development environment
+        if os.getenv("RESOMIX_ENV") == "development":
+            print(f"[AntiVirus] Skipping scan for '{filename}' because RESOMIX_ENV is 'development'")
+            return {
+                "success": True,
+                "clean": True,
+                "threat": None,
+                "method": "skipped_dev",
+                "filename": filename,
+            }
+
         if not file_bytes:
             return {
                 "success": False,

@@ -28,6 +28,8 @@ from app.models.constants import TrackType
 from app.models.track import Track
 from app.models.track_contributor import TrackContributor
 from app.models.contributor import Contributor
+from app.models.release import Release
+from app.models.release_contributor import ReleaseContributor
 from app.services.metadata_service import MetadataService
 from app.utils.sanitization import (
     sanitize_artist_name,
@@ -90,7 +92,9 @@ class Cache:
         self.artists: Dict[str, int] = {}
         self.labels: Dict[str, int] = {}
         self.genres: Dict[str, int] = {}
-        self.releases: Dict[Tuple[str, int], int] = {}
+        self.releases: Dict[str, int] = {}  # title.lower() -> id
+        self.party_id: str = "ARGO_01"
+        self.message_id: str = "MSG_2026_001"
 
     # --- generic helpers -----------------------------------------------------
 
@@ -100,6 +104,17 @@ class Cache:
         return {name.lower(): id_ for name, id_ in result.fetchall()}
 
     async def preload(self, db: AsyncSession):
+        # Fetch default party and message for manual uploads
+        res_party = await db.execute(text("SELECT party_id FROM parties LIMIT 1"))
+        party_row = res_party.first()
+        if party_row:
+            self.party_id = party_row[0]
+
+        res_msg = await db.execute(text("SELECT message_id FROM messages LIMIT 1"))
+        msg_row = res_msg.first()
+        if msg_row:
+            self.message_id = msg_row[0]
+
         result_contributors = await db.execute(text("SELECT full_name, id FROM contributors"))
         self.artists = {name.lower(): id_ for name, id_ in result_contributors.fetchall()}
         
@@ -109,11 +124,11 @@ class Cache:
         result_genres = await db.execute(text("SELECT name, id FROM genres"))
         self.genres = {name.lower(): id_ for name, id_ in result_genres.fetchall()}
         
-        # releases: (title, artist_id) fetch
-        result_releases = await db.execute(text("SELECT title, artist_id, id FROM releases"))
+        # releases: title fetch (artist_id is no longer a column in releases)
+        result_releases = await db.execute(text("SELECT title, id FROM releases"))
         self.releases = {
-            (title.lower(), artist_id): id_
-            for title, artist_id, id_ in result_releases.fetchall()
+            title.lower(): id_
+            for title, id_ in result_releases.fetchall()
         }
 
     # --- get-or-create helpers ----------------------------------------------
@@ -152,8 +167,13 @@ class Cache:
             elif table == "labels":
                 col_name = "label_name"
                 
-            insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}) VALUES (:name)")
-            await db.execute(insert_sql, {"name": sanitized_name})
+            # Only contributors and labels tables use party_id
+            if table in ["contributors", "labels"]:
+                insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}, party_id) VALUES (:name, :party_id)")
+                await db.execute(insert_sql, {"name": sanitized_name, "party_id": self.party_id})
+            else:
+                insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}) VALUES (:name)")
+                await db.execute(insert_sql, {"name": sanitized_name})
 
             # Get the ID - handle potential duplicates
             select_result = await db.execute(
@@ -194,33 +214,46 @@ class Cache:
                 f"Sanitized release title: '{original_title}' -> '{sanitized_title}'"
             )
 
-        key = (sanitized_title.lower(), primary_artist_id)
+        key = sanitized_title.lower()
         if key in self.releases:
             return self.releases[key]
 
         try:
+            # Insert into releases table
             insert_sql = text(
-                """INSERT IGNORE INTO releases (artist_id, title) 
-                       VALUES (:artist_id, :title) """
+                """INSERT IGNORE INTO releases (title, party_id, message_id) 
+                       VALUES (:title, :party_id, :message_id) """
             )
             await db.execute(
-                insert_sql, {"artist_id": primary_artist_id, "title": sanitized_title}
+                insert_sql, {
+                    "title": sanitized_title, 
+                    "party_id": self.party_id, 
+                    "message_id": self.message_id
+                }
             )
 
-            # Get the ID - handle potential duplicates
+            # Get the ID
             select_result = await db.execute(
-                text(
-                    "SELECT id FROM releases WHERE artist_id = :artist_id AND title = :title"
-                ),
-                {"artist_id": primary_artist_id, "title": sanitized_title},
+                text("SELECT id FROM releases WHERE title = :title"),
+                {"title": sanitized_title},
             )
             row = select_result.first()
             if row is None:
                 raise Exception(
-                    f"Failed to insert or find album record for: '{sanitized_title}' by artist_id {primary_artist_id} (original: '{original_title}')"
+                    f"Failed to insert or find album record for: '{sanitized_title}' (original: '{original_title}')"
                 )
 
             id_ = row[0]
+            
+            # Also link the primary artist in release_contributors junction table
+            rc_insert = insert(ReleaseContributor).values(
+                release_id=id_,
+                person_id=primary_artist_id,
+                role='MainArtist',
+                sequence_num=1
+            )
+            await db.execute(rc_insert)
+            
             self.releases[key] = id_
             return id_
 
@@ -451,7 +484,11 @@ class TrackUploadService:
             # Insert track-artist relationships using ORM
             for artist_id in artist_ids:
                 ta_insert = insert(TrackContributor).values(
-                    track_id=track_id, person_id=artist_id, role='MainArtist', sequence_num=1
+                    track_id=track_id, 
+                    person_id=artist_id, 
+                    role='MainArtist', 
+                    royalty_type='MasterRights',
+                    sequence_num=1
                 )
                 await db.execute(ta_insert)
 

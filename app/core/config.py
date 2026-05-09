@@ -27,7 +27,10 @@ load_dotenv()
 class Settings(BaseModel):
     """Application configuration settings"""
 
-    resomix_env: str = Field(default="production", description="Current environment (development or production)")
+    resomix_env: str = Field(
+        default="production",
+        description="Current environment (development or production)",
+    )
 
     # API Configuration
     api_key: str = Field(
@@ -545,7 +548,12 @@ class Settings(BaseModel):
             if env_value is not None:
                 # Handle boolean conversion
                 if config_key in ["demo_mode", "similarity_auth_required"]:
-                    env_overrides[config_key] = env_value.lower() in ("true", "1", "yes", "on")
+                    env_overrides[config_key] = env_value.lower() in (
+                        "true",
+                        "1",
+                        "yes",
+                        "on",
+                    )
                 # Handle integer conversion
                 elif config_key in [
                     "preview_audio_url_expires_seconds",
