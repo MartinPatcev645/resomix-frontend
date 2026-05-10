@@ -213,6 +213,15 @@ class User(Base):
         Enum("email", "app", name="two_factor_method"), nullable=False, default="email"
     )
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
     # Stripe Integration
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, unique=True)
 
@@ -257,6 +266,7 @@ class User(Base):
     tokens: Mapped[List["UserToken"]] = relationship(
         "UserToken", back_populates="user", cascade="all, delete-orphan"
     )
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 
     def __init__(self, **kwargs):
         if "uuid" not in kwargs:

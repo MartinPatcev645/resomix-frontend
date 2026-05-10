@@ -58,6 +58,7 @@ class SimilarityController:
         current_user: Optional[User] = None,
         top_sk: Optional[int] = None,
         engine: Optional[str] = None,
+        partner_id: Optional[int] = None,
     ) -> JSONResponse:
         """
         Process an audio file: first upload to database, then return similar tracks.
@@ -391,7 +392,7 @@ class SimilarityController:
                 # STEP 1: Upload track to database with metadata extraction
                 upload_result = (
                     await self.track_upload_service.upload_track_to_database(
-                        db, file, audio_bytes, user_id=user_id
+                        db, file, audio_bytes, partner_id=partner_id, user_id=user_id
                     )
                 )
 
@@ -449,6 +450,7 @@ class SimilarityController:
                         top_k=actual_top_k,
                         similarity_duplication_threshold=duplication_threshold,
                         user_id=user_id,
+                        partner_id=partner_id,
                     )
                 )
 
@@ -695,7 +697,7 @@ class SimilarityController:
 
                 upload_result = (
                     await self.track_upload_service.upload_track_to_database(
-                        db, file, audio_bytes, user_id=user_id
+                        db, file, audio_bytes, partner_id=partner_id, user_id=user_id
                     )
                 )
 
@@ -777,6 +779,7 @@ class SimilarityController:
                         top_k=actual_top_k,
                         similarity_duplication_threshold=duplication_threshold,
                         user_id=user_id,
+                        partner_id=partner_id,
                     )
                 )
 
@@ -954,6 +957,7 @@ class SimilarityController:
         current_user: Optional[User] = None,
         top_sk: Optional[int] = None,
         engine: Optional[str] = None,
+        partner_id: Optional[int] = None,
     ) -> JSONResponse:
         """
         Get similar tracks for a track identified by its UUID.
@@ -1052,7 +1056,7 @@ class SimilarityController:
         try:
             # Get file path from MariaDB using track UUID
             server_track_path = await self.similarity_service.track_repository.async_get_track_path_by_uuid(
-                db, track_id
+                db, track_id, partner_id=partner_id
             )
             duration_ms = (time.time() - start_time) * 1000
             if server_track_path is None:
@@ -1109,6 +1113,7 @@ class SimilarityController:
                 similarity_duplication_threshold=duplication_threshold,
                 user_id=user_id,
                 engine=engine,
+                partner_id=partner_id,
             )
             duration_ms = (time.time() - start_time) * 1000
             # Check if similarity processing failed

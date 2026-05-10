@@ -192,6 +192,11 @@ async def get_current_user_optional(
     # No token provided - treat as anonymous (this is OK)
     if not token:
         return None
+        
+    # If this is a B2B Partner API key (rmx_...), ignore it here.
+    # It will be handled by the get_current_partner dependency.
+    if token.startswith("rmx_"):
+        return None
 
     try:
         # Decode token - will raise HTTPException if expired/invalid

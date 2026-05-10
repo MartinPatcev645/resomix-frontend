@@ -30,7 +30,7 @@ class SearchController:
     def __init__(self):
         self.search_service = SearchService()
 
-    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto") -> JSONResponse:
+    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto", partner_id: Optional[int] = None) -> JSONResponse:
         """
         Search for tracks based on a query string.
         """
@@ -38,7 +38,7 @@ class SearchController:
         
         try:
             # Call the search function with mode parameter
-            search_results = await self.search_service.search_tracks(db, query, mode)
+            search_results = await self.search_service.search_tracks(db, query, mode, partner_id=partner_id)
             
             # Return success response with the search results
             return JSONResponse(

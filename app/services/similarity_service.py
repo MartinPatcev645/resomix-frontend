@@ -62,6 +62,7 @@ class SimilarityService:
         similarity_duplication_threshold: int = 0,
         user_id: Optional[int] = None,
         engine: Optional[str] = None,
+        partner_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Sends uploaded audio bytes to the similarity server and returns enriched similar tracks.
@@ -178,7 +179,7 @@ class SimilarityService:
             # NEW: Fetch uploaded track details to use as reference track and update duration
             try:
                 uploaded_track_details = await self.similarity_repository.async_get_reference_track_details_by_uuid(
-                    db, track_uuid
+                    db, track_uuid, partner_id=partner_id
                 )
             except Exception as e:
                 print(f"Error fetching uploaded track details: {e}")
@@ -244,7 +245,7 @@ class SimilarityService:
                 try:
                     # Get the uploaded track's database ID
                     uploaded_track = await self.track_repository.async_get_by_uuid(
-                        db, track_uuid
+                        db, track_uuid, partner_id=partner_id
                     )
                     if uploaded_track:
                         # Generate playlist name based on uploaded track details
@@ -334,6 +335,7 @@ class SimilarityService:
         similarity_duplication_threshold: int = 0,
         user_id: Optional[int] = None,
         engine: Optional[str] = None,
+        partner_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Gets similar tracks for a given server-side file path by calling the similarity server.
@@ -354,7 +356,7 @@ class SimilarityService:
 
         try:
             queried_track_data = await self.similarity_repository.async_get_reference_track_details_by_path(
-                db, server_track_path
+                db, server_track_path, partner_id=partner_id
             )
             if not queried_track_data:
                 print(
@@ -396,7 +398,7 @@ class SimilarityService:
             # Get track details from database using UUIDs
             db_details_map = (
                 await self.similarity_repository.async_get_track_details_by_uuids(
-                    db, track_uuids
+                    db, track_uuids, partner_id=partner_id
                 )
             )
 
@@ -468,7 +470,7 @@ class SimilarityService:
                     queried_track_uuid = queried_track_data.get("id")
                     if queried_track_uuid:
                         queried_track = await self.track_repository.async_get_by_uuid(
-                            db, queried_track_uuid
+                            db, queried_track_uuid, partner_id=partner_id
                         )
                         if queried_track:
                             # Generate playlist name based on queried track details

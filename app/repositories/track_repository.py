@@ -85,41 +85,48 @@ class TrackRepository(BaseRepository[Track]):
         """
         return db.query(self.model).filter(self.model.uuid == uuid).first()
     
-    async def async_get_by_uuid(self, db: AsyncSession, uuid: str) -> Optional[Track]:
-        """Async version of get_by_uuid."""
+    async def async_get_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
+        """Async version of get_by_uuid with optional partner scoping."""
         stmt = select(self.model).where(self.model.uuid == uuid)
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     
-    def get_track_path_by_uuid(self, db: Session, uuid: str) -> Optional[str]:
-        """Get track's primary audio file path by UUID.
-        
-        Looks up the master audio file stored_path via AudioFile join.
+    def get_track_path_by_uuid(self, db: Session, uuid: str, partner_id: Optional[int] = None) -> Optional[str]:
+        """Get the absolute master audio file path for a track by its UUID.
         
         Args:
             db: Database session
             uuid: Track UUID
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             File path string or None if not found
         """
-        result = (
+        query = (
             db.query(AudioFile.stored_path)
             .join(Track, AudioFile.track_id == Track.id)
             .filter(Track.uuid == uuid)
             .filter(AudioFile.asset_class == 'Master')
-            .first()
         )
+        if partner_id is not None:
+            query = query.filter(Track.partner_id == partner_id)
+            
+        result = query.first()
         return result[0] if result else None
     
-    async def async_get_track_path_by_uuid(self, db: AsyncSession, uuid: str) -> Optional[str]:
-        """Async version of get_track_path_by_uuid."""
+    async def async_get_track_path_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[str]:
+        """Async version of get_track_path_by_uuid with partner scoping."""
         stmt = (
             select(AudioFile.stored_path)
             .join(Track, AudioFile.track_id == Track.id)
             .where(Track.uuid == uuid)
             .where(AudioFile.asset_class == 'Master')
         )
+        if partner_id is not None:
+            stmt = stmt.where(Track.partner_id == partner_id)
+            
         result = await db.execute(stmt)
         path = result.scalar_one_or_none()
         return path
@@ -156,6 +163,26 @@ class TrackRepository(BaseRepository[Track]):
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None) -> List[Track]:
+        """Async version of get_tracks_by_uuids with partner scoping."""
+        if not uuids:
+            return []
+            
+        stmt = (
+            select(self.model)
+            .options(
+                joinedload(self.model.audio_files),
+                joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
+            )
+            .where(self.model.uuid.in_(uuids))
+        )
+        
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
+        result = await db.execute(stmt)
+        return result.scalars().unique().all()
     
     # --- Search methods (from src/search.py logic) ---
     
@@ -207,8 +234,8 @@ class TrackRepository(BaseRepository[Track]):
         
         return results
     
-    async def async_search_tracks(self, db: AsyncSession, query: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """Async version of search_tracks."""
+    async def async_search_tracks(self, db: AsyncSession, query: str, limit: int = 20, partner_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Async version of search_tracks with partner scoping."""
         search_conditions = or_(
             self.model.title.ilike(f"%{query}%"),
             self.model.display_artist.ilike(f"%{query}%"),
@@ -220,9 +247,12 @@ class TrackRepository(BaseRepository[Track]):
             .join(TrackContributor, TrackContributor.track_id == self.model.id, isouter=True)
             .join(Contributor, Contributor.id == TrackContributor.person_id, isouter=True)
             .where(and_(search_conditions, self.model.track_type != TrackType.UPLOAD))
-            .distinct()
-            .limit(limit)
         )
+        
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
+        stmt = stmt.distinct().limit(limit)
         
         result = await db.execute(stmt)
         tracks = result.scalars().all()
@@ -371,47 +401,26 @@ class TrackRepository(BaseRepository[Track]):
         
         return created_tracks
     
-    def get_tracks_by_uuids(self, db: Session, uuids: List[str]) -> Dict[str, int]:
-        """Get track ID mapping by UUIDs.
+    def get_tracks_by_uuids(self, db: Session, uuids: List[str], partner_id: Optional[int] = None) -> Dict[str, int]:
+        """Get track ID mapping by UUIDs with partner scoping.
         
         Mirrors the UUID->ID mapping logic from migration.
         
         Args:
             db: Database session
             uuids: List of track UUIDs
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             Dictionary mapping UUID to track ID
         """
-        tracks = (
-            db.query(self.model.uuid, self.model.id)
-            .filter(self.model.uuid.in_(uuids))
-            .all()
-        )
-        
+        query = db.query(self.model.uuid, self.model.id).filter(self.model.uuid.in_(uuids))
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        tracks = query.all()
         return {uuid: track_id for uuid, track_id in tracks}
     
-    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str]) -> List[Track]:
-        """Bulk fetch tracks by a list of UUIDs (async).
-        Args:
-            db: AsyncSession
-            uuids: list of track UUID strings
-        Returns:
-            List[Track] objects corresponding to given UUIDs.
-        """
-        if not uuids:
-            return []
-
-        stmt = (
-            select(self.model)
-            .options(
-                joinedload(self.model.audio_files),
-                joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
-            )
-            .where(self.model.uuid.in_(uuids))
-        )
-        result = await db.execute(stmt)
-        return result.scalars().unique().all()
     
     # --- TrackContributor relationship methods ---
     
@@ -563,12 +572,13 @@ class TrackRepository(BaseRepository[Track]):
         """Backward-compatible alias for get_tracks_for_contributor."""
         return self.get_tracks_for_contributor(db, artist_id, skip, limit)
 
-    async def async_get_tracks_by_file_paths(self, db: AsyncSession, file_paths: List[str]) -> List[Track]:
-        """Get tracks with full relationships by audio file stored_paths.
+    async def async_get_tracks_by_file_paths(self, db: AsyncSession, file_paths: List[str], partner_id: Optional[int] = None) -> List[Track]:
+        """Get tracks with full relationships by audio file stored_paths with partner scoping.
         
         Args:
             db: Database session
             file_paths: List of stored_path values to search for in audio_files
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of Track instances with relationships loaded
@@ -585,6 +595,10 @@ class TrackRepository(BaseRepository[Track]):
             )
             .where(AudioFile.stored_path.in_(file_paths))
         )
+        
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
         result = await db.execute(stmt)
         # Use unique() to deduplicate rows when using joinedload with collections
         return result.scalars().unique().all()

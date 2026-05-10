@@ -48,7 +48,7 @@ class SimilarityRepository(BaseRepository[Track]):
         return result.scalar_one_or_none()
 
     async def async_get_reference_track_details_by_path(
-        self, db: AsyncSession, track_path: str
+        self, db: AsyncSession, track_path: str, partner_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Fetch complete track details from the database by audio file stored_path
@@ -79,12 +79,13 @@ class SimilarityRepository(BaseRepository[Track]):
                 LEFT JOIN track_contributors tc ON t.id = tc.track_id
                 LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE af.stored_path = :track_path
+                AND t.partner_id = :partner_id
                 GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type
                 LIMIT 1
             """
             )
 
-            result = await db.execute(query, {"track_path": track_path})
+            result = await db.execute(query, {"track_path": track_path, "partner_id": partner_id})
             row = result.first()
 
             if row:
@@ -105,7 +106,7 @@ class SimilarityRepository(BaseRepository[Track]):
             raise e
 
     async def async_get_reference_track_details_by_uuid(
-        self, db: AsyncSession, track_uuid: str
+        self, db: AsyncSession, track_uuid: str, partner_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Fetch complete track details from the database by UUID for reference track formatting.
@@ -134,12 +135,13 @@ class SimilarityRepository(BaseRepository[Track]):
                 LEFT JOIN track_contributors tc ON t.id = tc.track_id
                 LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE t.uuid = :track_uuid
+                AND t.partner_id = :partner_id
                 GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type
                 LIMIT 1
             """
             )
 
-            result = await db.execute(query, {"track_uuid": track_uuid})
+            result = await db.execute(query, {"track_uuid": track_uuid, "partner_id": partner_id})
             row = result.first()
 
             if row:
@@ -242,7 +244,7 @@ class SimilarityRepository(BaseRepository[Track]):
         return details_map
 
     async def async_get_track_details_by_uuids(
-        self, db: AsyncSession, track_uuids: List[str]
+        self, db: AsyncSession, track_uuids: List[str], partner_id: Optional[int] = None
     ) -> Dict[str, Dict[str, Any]]:
         """
         Fetches full track details from MariaDB based on a list of UUIDs
@@ -271,7 +273,7 @@ class SimilarityRepository(BaseRepository[Track]):
 
             track_repo = TrackRepository()
             tracks = await track_repo.async_get_tracks_by_uuids(
-                db, list(uuids_to_query)
+                db, list(uuids_to_query), partner_id=partner_id
             )
 
             for track in tracks:

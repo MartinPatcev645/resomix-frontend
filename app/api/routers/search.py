@@ -22,7 +22,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Literal
 
 from app.controllers.search_controller import SearchController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.partner import get_current_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.search import (
     SearchSuccessResponse,
@@ -61,7 +62,7 @@ async def search_tracks_endpoint(
     query: str = Query(..., description="The search term to find matching tracks", min_length=1, max_length=200),
     mode: Optional[Literal["artist", "title", "auto"]] = Query("auto", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'auto' (search both)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Search for tracks based on a query string.
@@ -69,4 +70,4 @@ async def search_tracks_endpoint(
     - **query**: Search term to find matching tracks across titles, artists, albums, and other metadata
     - **mode**: Search mode - 'artist' for artist-only search, 'title' for title-only search, 'auto' for both (default)
     """
-    return await search_controller.search_tracks(db, query, mode)
+    return await search_controller.search_tracks(db, query, mode, partner_id=partner.id)

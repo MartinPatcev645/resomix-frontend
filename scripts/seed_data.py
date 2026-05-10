@@ -120,10 +120,10 @@ class SeedDataManager:
         logger.info("🏢 Seeding Partners...")
         try:
             with self.engine.begin() as conn:
-                # 1. Sandbox Partner (id=1)
+                # 1. Resomix System Partner (id=1) - Global System Tenant
                 conn.execute(text("""
                     INSERT IGNORE INTO partners (id, partner_uuid, legal_name, display_name, contact_email, tier)
-                    VALUES (1, '00000000-0000-0000-0000-000000000000', 'Resomix Sandbox', 'Sandbox', 'sandbox@resomix.com', 'sandbox')
+                    VALUES (1, '00000000-0000-0000-0000-000000000000', 'Resomix Global B.V.', 'Resomix System', 'system@resomix.com', 'enterprise')
                 """))
                 
                 # 2. Test Partner (id=2)
@@ -133,10 +133,13 @@ class SeedDataManager:
                 """))
                 
                 # 3. Seed an API key for Test Partner
-                # Key: rmx_test_V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ (hash below is for this key)
-                key_hash = "64c71b2e-d9d2-40f9-b0f5-c4c62602dd39" # placeholder for seed
-                # Actually I'll just seed a known hash or let it be.
-                # For seeding, we usually want a predictable key for testing.
+                # Key: rmx_test_V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ
+                # Hash for rmx_test_V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ
+                key_hash = "c4a8dbb7e2ad9901f334e949931a51cffba0f51cc5f37bdb085e86d2766285af" 
+                conn.execute(text("""
+                    INSERT IGNORE INTO partner_api_keys (partner_id, key_prefix, key_hash, label, scopes)
+                    VALUES (2, 'rmx_test', :hash, 'Test Key', '["search:read", "similarity:read"]')
+                """), {'hash': key_hash})
                 
                 return True
         except Exception as e:
@@ -150,8 +153,8 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 # 1. Party
                 conn.execute(text("""
-                    INSERT INTO parties (party_id, party_name, dpid, is_active)
-                    VALUES ('ARGO_01', 'ArgoRhythm', 'DPID_ARGO_001', 1)
+                    INSERT INTO parties (party_id, party_name, dpid, is_active, partner_id)
+                    VALUES ('ARGO_01', 'ArgoRhythm', 'DPID_ARGO_001', 1, 1)
                 """))
                 
                 # 2. Labels
@@ -253,8 +256,8 @@ class SeedDataManager:
                     for artist_name in track_info.get('artists', []):
                         if artist_name not in seen_contributors:
                             conn.execute(text("""
-                                INSERT INTO contributors (party_id, full_name) 
-                                VALUES ('ARGO_01', :name)
+                                INSERT INTO contributors (party_id, full_name, partner_id) 
+                                VALUES ('ARGO_01', :name, 1)
                                 ON DUPLICATE KEY UPDATE full_name=full_name
                             """), {'name': artist_name})
                             cid = conn.execute(text("SELECT id FROM contributors WHERE full_name = :name"), {'name': artist_name}).scalar()
@@ -310,8 +313,8 @@ class SeedDataManager:
                     local_path = track_info.get('local_file_path')
                     if local_path:
                         conn.execute(text("""
-                            INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, original_filename, stored_path, audio_codec)
-                            VALUES ('ARGO_01', 1, :tid, 'Master', :orig, :path, :codec)
+                            INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, original_filename, stored_path, audio_codec, partner_id)
+                            VALUES ('ARGO_01', 1, :tid, 'Master', :orig, :path, :codec, 1)
                             ON DUPLICATE KEY UPDATE stored_path=:path
                         """), {
                             'tid': tid,
@@ -359,8 +362,8 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 # 1. Playlist
                 conn.execute(text("""
-                    INSERT INTO playlists (id, uuid, user_id, name, is_public, type, seed_track_id)
-                    VALUES (1, 'a623405c-18df-4835-8666-4d22384a5142', 1, 'Ultimate Argo Collection', 1, 'custom', 1)
+                    INSERT INTO playlists (id, uuid, user_id, name, is_public, type, seed_track_id, partner_id)
+                    VALUES (1, 'a623405c-18df-4835-8666-4d22384a5142', 1, 'Ultimate Argo Collection', 1, 'custom', 1, 1)
                 """))
                 
                 # 2. Playlist Tracks
@@ -424,8 +427,8 @@ class SeedDataManager:
                 ]
                 for cat, tid, isrc, lid, uid, dur, ctx in events:
                     conn.execute(text("""
-                        INSERT INTO consumption_events (event_category, track_id, isrc, label_id, user_id, duration_seconds, playback_context)
-                        VALUES (:cat, :tid, :isrc, :lid, :uid, :dur, :ctx)
+                        INSERT INTO consumption_events (event_category, track_id, isrc, label_id, user_id, duration_seconds, playback_context, partner_id)
+                        VALUES (:cat, :tid, :isrc, :lid, :uid, :dur, :ctx, 1)
                     """), {'cat': cat, 'tid': tid, 'isrc': isrc, 'lid': lid, 'uid': uid, 'dur': dur, 'ctx': ctx})
                 return True
         except Exception as e:

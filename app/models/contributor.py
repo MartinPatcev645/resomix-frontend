@@ -30,6 +30,7 @@ class Contributor(Base):
     
     # Foreign keys
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
+    partner_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True)
     
     # Fields
     full_name: Mapped[str] = mapped_column(String(512), nullable=False)

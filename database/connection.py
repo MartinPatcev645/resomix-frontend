@@ -20,7 +20,7 @@ import logging
 from typing import Dict, Any
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, with_loader_criteria
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import QueuePool
 import urllib.parse
@@ -156,6 +156,33 @@ async_engine = create_async_engine(ASYNC_DB_URL, **config.get_async_engine_kwarg
 # Session factories (match existing configuration)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 AsyncSessionLocal = async_sessionmaker(bind=async_engine, class_=AsyncSession, expire_on_commit=False)
+
+
+# --- Multi-Tenancy Global Failsafe ---
+
+@event.listens_for(Session, "do_orm_execute")
+def _do_orm_execute(execute_state):
+    """
+    Global failsafe to ensure all queries are scoped by partner_id.
+    This listener automatically injects a WHERE partner_id = :pid clause
+    to any query involving a model that has a partner_id attribute,
+    provided a partner context is currently active.
+    """
+    from app.core.context import get_current_partner_id
+    
+    pid = get_current_partner_id()
+    
+    # Only inject if we have a partner context and it's an ORM statement
+    if pid is not None and execute_state.is_orm_statement:
+        from app.models import Base
+        execute_state.statement = execute_state.statement.options(
+            with_loader_criteria(
+                Base,
+                lambda cls: getattr(cls, "partner_id", None) == pid,
+                include_aliases=True
+            )
+        )
+        logger.debug(f"SQL Failsafe: Injected partner_id={pid} into query")
 
 
 # Connection event handlers for better monitoring and debugging

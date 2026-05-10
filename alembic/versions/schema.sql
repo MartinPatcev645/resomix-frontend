@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS partners (
     legal_name      VARCHAR(255) NOT NULL,
     display_name    VARCHAR(255) NOT NULL,
     contact_email   VARCHAR(255) NOT NULL UNIQUE,
-    vat_number      VARCHAR(64)  DEFAULT NULL            COMMENT 'EU VAT number; validated via VIES (W4-4)',
+    vat_number      VARCHAR(64)  DEFAULT NULL            COMMENT 'EU VAT number - validated via VIES (W4-4)',
     country_code    CHAR(2)      DEFAULT NULL            COMMENT 'ISO 3166-1 alpha-2',
     tier            ENUM('sandbox','starter','growth','enterprise')
                     NOT NULL DEFAULT 'sandbox'           COMMENT 'Drives quota limits and feature flags',
@@ -176,10 +176,13 @@ CREATE TABLE IF NOT EXISTS users (
     is_two_factor_enabled  TINYINT(1) DEFAULT 0,
     two_factor_method      ENUM('email','app') DEFAULT 'email',
     stripe_customer_id     VARCHAR(255) UNIQUE COMMENT 'External Stripe billing mapping',
+    partner_id             INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
     created_at             DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at             DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_users_partner (partner_id),
     KEY idx_users_email (email),
-    KEY idx_users_username (username)
+    KEY idx_users_username (username),
+    FOREIGN KEY (partner_id) REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -278,9 +281,12 @@ CREATE TABLE parties (
   dpid            VARCHAR(100),                    -- DDEX Party ID (DPID)
   email           VARCHAR(255),
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
+  partner_id      INT UNSIGNED  NOT NULL DEFAULT 1  COMMENT 'Multi-tenant isolation (W1-4)',
   created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_party_id (party_id)
+  INDEX idx_party_id (party_id),
+  INDEX idx_party_partner (partner_id),
+  FOREIGN KEY (partner_id) REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -399,6 +405,7 @@ CREATE TABLE contributors (
   pro_affiliation  VARCHAR(100),                    -- ASCAP, BMI, SESAC, PRS…
   -- Optional artist-facing metadata
   artist_name      VARCHAR(512),                    -- stage name if different
+  partner_id       INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
   created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                    ON UPDATE CURRENT_TIMESTAMP,
@@ -408,7 +415,9 @@ CREATE TABLE contributors (
   INDEX idx_ipi        (ipi),
   INDEX idx_isni       (isni),
   INDEX idx_party      (party_id),
-  FOREIGN KEY (party_id) REFERENCES parties(party_id)
+  INDEX idx_contributor_partner (partner_id),
+  FOREIGN KEY (party_id) REFERENCES parties(party_id),
+  FOREIGN KEY (partner_id) REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -616,14 +625,17 @@ CREATE TABLE audio_files (
   channels            TINYINT UNSIGNED,            -- e.g., 1, 2
   bitrate_kbps        SMALLINT UNSIGNED,           -- e.g., 1411, 320
   ddex_resource_ref   VARCHAR(100),
+  partner_id          INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
   
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_audio_track (track_id),
   INDEX idx_audio_expires (expires_at),
+  INDEX idx_audio_partner (partner_id),
   UNIQUE KEY uq_audio_path (stored_path(512)),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id),
   FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id),
-  FOREIGN KEY (track_id)      REFERENCES tracks(id) ON DELETE CASCADE
+  FOREIGN KEY (track_id)      REFERENCES tracks(id) ON DELETE CASCADE,
+  FOREIGN KEY (partner_id)    REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 21b. IMAGE FILES (Strictly for artwork and profiles)
@@ -650,11 +662,14 @@ CREATE TABLE image_files (
   
   -- DDEX Traceability
   ddex_resource_ref   VARCHAR(100),
+  partner_id          INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
   
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_image_partner (partner_id),
   UNIQUE KEY uq_image_path (stored_path(512)),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id),
-  FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id)
+  FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id),
+  FOREIGN KEY (partner_id)    REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 21c. DOCUMENT FILES (Strictly for DDEX XMLs, PDFs, Lyrics, etc.)
@@ -676,13 +691,16 @@ CREATE TABLE document_files (
   
   -- DDEX Traceability
   ddex_resource_ref   VARCHAR(100),
+  partner_id          INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
   
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_doc_track (track_id),
+  INDEX idx_doc_partner (partner_id),
   UNIQUE KEY uq_doc_path (stored_path(512)),
   FOREIGN KEY (party_id)      REFERENCES parties(party_id),
   FOREIGN KEY (ingest_log_id) REFERENCES ingest_logs(id),
-  FOREIGN KEY (track_id)      REFERENCES tracks(id) ON DELETE SET NULL
+  FOREIGN KEY (track_id)      REFERENCES tracks(id) ON DELETE SET NULL,
+  FOREIGN KEY (partner_id)    REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -906,6 +924,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     name          VARCHAR(150) NOT NULL,
     is_public     TINYINT(1) DEFAULT 0,
     type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
+    partner_id    INT UNSIGNED NOT NULL DEFAULT 1,
     seed_track_id INT UNSIGNED,
     fork_id       VARCHAR(36) NULL,
     forked_at     DATETIME NULL,
@@ -916,9 +935,11 @@ CREATE TABLE IF NOT EXISTS playlists (
     FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
     FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (fork_id)      REFERENCES playlists(uuid) ON DELETE SET NULL,
+    FOREIGN KEY (partner_id)   REFERENCES partners(id),
     KEY idx_playlist_user (user_id),
     KEY idx_playlist_uuid (uuid),
-    KEY idx_playlist_fork (fork_id)
+    KEY idx_playlist_fork (fork_id),
+    KEY idx_playlist_partner (partner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -1271,16 +1292,19 @@ CREATE TABLE IF NOT EXISTS consumption_events (
     client_ip VARCHAR(45) COMMENT 'Hashed or raw IP for fraud analysis',
     playback_context VARCHAR(50) COMMENT 'e.g., search, playlist, artist_profile',
     source_device ENUM('web', 'ios', 'android', 'desktop', 'other') DEFAULT 'web',
+    partner_id INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
     session_id CHAR(36) COMMENT 'Cryptographic session. Identifies and deduplicates bot-farms.',
     duration_seconds INT UNSIGNED NOT NULL,
     event_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_agg_label (label_id, event_category, event_timestamp),
     INDEX idx_agg_isrc (isrc, event_category, event_timestamp),
     INDEX idx_ce_session (session_id),
+    INDEX idx_ce_partner (partner_id),
     INDEX idx_dsrf_report (label_id, event_timestamp, isrc, country_code, event_category),
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE SET NULL,
     FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (partner_id) REFERENCES partners(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

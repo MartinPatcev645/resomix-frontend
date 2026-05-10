@@ -31,6 +31,9 @@ class AudioFile(Base):
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False)
     ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
     track_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="CASCADE"), nullable=False, index=True)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True
+    )
     
     # Fields
     asset_class: Mapped[str] = mapped_column(
@@ -65,6 +68,7 @@ class AudioFile(Base):
 
     # Relationships
     track: Mapped["Track"] = relationship("Track", back_populates="audio_files")
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 
     def __repr__(self):
         return f"<AudioFile(id={self.id}, track_id={self.track_id}, asset_class='{self.asset_class}')>"

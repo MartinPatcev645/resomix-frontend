@@ -8,7 +8,7 @@ It strictly handles artwork and profile images.
 
 from typing import Optional
 from sqlalchemy import String, ForeignKey, DateTime, BigInteger
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
@@ -30,6 +30,12 @@ class ImageFile(Base):
     # Foreign keys
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False)
     ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True
+    )
+    
+    # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     
     # Storage location
     original_filename: Mapped[str] = mapped_column(String(512), nullable=False)

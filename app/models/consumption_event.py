@@ -76,6 +76,15 @@ class ConsumptionEvent(Base):
         nullable=True,
     )
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
     # Country Code: Populated via GeoIP lookup
     country_code: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
 

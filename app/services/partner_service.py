@@ -233,7 +233,7 @@ class PartnerService:
         
         return await self.issue_api_key(db, issue_request)
 
-    async def validate_api_key(self, db: AsyncSession, api_key_string: str) -> Tuple[Partner, PartnerApiKey]:
+    async def validate_api_key(self, db: AsyncSession, api_key_string: str, required_scope: Optional[str] = None) -> Tuple[Partner, PartnerApiKey]:
         """
         Validate an API key string against the database.
         
@@ -241,7 +241,7 @@ class PartnerService:
             Tuple of (Partner, PartnerApiKey)
             
         Raises:
-            ValueError: If key is invalid, revoked, expired, or partner is inactive.
+            ValueError: If key is invalid, revoked, expired, or partner is inactive, or missing required scope.
         """
         # 1. Hash the key for lookup
         key_hash = hashlib.sha256(api_key_string.encode()).hexdigest()
@@ -258,7 +258,13 @@ class PartnerService:
         if api_key.expires_at and api_key.expires_at < datetime.utcnow():
             raise ValueError("API key has expired")
             
-        # 3. Check partner status
+        # 3. Check scope if required
+        if required_scope:
+            scopes = api_key.scopes or []
+            if required_scope not in scopes:
+                raise ValueError(f"API key missing required scope: {required_scope}")
+
+        # 4. Check partner status
         partner = await self.partner_repo.async_get_by_id(db, api_key.partner_id)
         if not partner or not partner.is_active:
             raise ValueError("Partner account is inactive or disabled")

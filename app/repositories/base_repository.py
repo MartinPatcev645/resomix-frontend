@@ -16,10 +16,10 @@ Email: usman.naeem2212@gmail.com
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Type, TypeVar, Generic, Any
+from typing import Dict, List, Optional, Type, TypeVar, Generic, Any, Union
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Base

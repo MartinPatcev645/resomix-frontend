@@ -31,6 +31,12 @@ class DocumentFile(Base):
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False)
     ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
     track_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True
+    )
+    
+    # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     
     # Storage location
     original_filename: Mapped[str] = mapped_column(String(512), nullable=False)

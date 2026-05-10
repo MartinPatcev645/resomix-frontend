@@ -37,10 +37,12 @@ class SearchService:
         """Initialize search service."""
         self.track_repository = TrackRepository()
     
-    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto") -> Dict[str, Any]:
+    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto", partner_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Search for tracks via Elasticsearch first, then fetch full details from MariaDB.
         If DEMO_MODE is enabled, search only OPEN tracks directly from MariaDB.
+        
+        Now includes partner_id scoping for tenant isolation.
         """
         # Set default limits
         limit = settings.es_search_limit
@@ -202,7 +204,7 @@ class SearchService:
         overall_start = time.perf_counter()
         formatted_results: List[Dict[str, Any]] = []
         
-        db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
+        db_results = await self.track_repository.async_search_tracks(db, query_clean, limit, partner_id=partner_id)
         print(f"[DB Search] Found {len(db_results)} tracks in {(time.perf_counter()-overall_start):.3f}s")
         
         for track_data in db_results:

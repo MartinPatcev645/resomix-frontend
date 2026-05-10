@@ -7,7 +7,7 @@ It maps to the parties table which stores distributors, aggregators, or labels.
 """
 
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
@@ -30,6 +30,7 @@ class Party(Base):
     
     # DDEX PartyId (unique string identifier)
     party_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    partner_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True)
     
     # Descriptive fields
     party_name: Mapped[str] = mapped_column(String(255), nullable=False)
