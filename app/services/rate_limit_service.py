@@ -190,11 +190,14 @@ class RateLimitService:
             year, month = map(int, year_month.split("-"))
             period_start = date(year, month, 1)
             
-            stmt = text("""
-                SELECT requests_made FROM partner_quotas 
-                WHERE api_key_id = :akid AND period_start = :start
-            """)
-            result = await db.execute(stmt, {"akid": api_key_id, "start": period_start})
+            from app.models.partner import PartnerQuota
+            from sqlalchemy import select
+            
+            stmt = select(PartnerQuota.requests_made).where(
+                PartnerQuota.api_key_id == api_key_id,
+                PartnerQuota.period_start == period_start
+            )
+            result = await db.execute(stmt)
             return result.scalar() or 0
         except Exception as e:
             logger.error(f"Failed to warm quota cache from DB: {e}")

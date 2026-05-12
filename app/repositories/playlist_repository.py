@@ -629,13 +629,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
+                    AND t.partner_id = :partner_id
                     GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
                     LIMIT 1
                 """
                 )
 
                 seed_result = await db.execute(
-                    seed_query, {"track_id": playlist.seed_track_id}
+                    seed_query, {"track_id": playlist.seed_track_id, "partner_id": partner_id}
                 )
                 seed_row = seed_result.first()
 
@@ -680,12 +681,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id IN :track_ids
+                    AND t.partner_id = :partner_id
                     GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
                 """
                 )
 
                 tracks_result = await db.execute(
-                    tracks_query, {"track_ids": tuple(track_ids)}
+                    tracks_query, {"track_ids": tuple(track_ids), "partner_id": partner_id}
                 )
                 tracks_data = {row.track_id: row for row in tracks_result.fetchall()}
 

@@ -116,14 +116,18 @@ class CartService:
             track_id_uuid = item.get("track_id")
             source_playlist_id_uuid = item.get("source_playlist_id")
             
-            # Resolve UUIDs to internal IDs
-            track_res = await db.execute(text("SELECT id FROM tracks WHERE uuid = :uuid"), {"uuid": track_id_uuid})
+            from app.models.track import Track
+            from sqlalchemy import select
+            
+            # Resolve UUIDs to internal IDs using ORM (enables auto-scoping)
+            track_res = await db.execute(select(Track.id).where(Track.uuid == track_id_uuid))
             track_row = track_res.first()
             if not track_row: continue
             
             playlist_id_internal = None
             if source_playlist_id_uuid:
-                plist_res = await db.execute(text("SELECT id FROM playlists WHERE uuid = :uuid"), {"uuid": source_playlist_id_uuid})
+                from app.models.playlist import Playlist
+                plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == source_playlist_id_uuid))
                 plist_row = plist_res.first()
                 if plist_row: playlist_id_internal = plist_row.id
 
@@ -176,8 +180,10 @@ class CartService:
 
     async def add_playlist(self, db: AsyncSession, user_id: int, playlist_uuid: str) -> Dict[str, Any]:
         """Add an entire playlist to the cart."""
-        # 1. Get playlist internal ID and its tracks
-        plist_res = await db.execute(text("SELECT id FROM playlists WHERE uuid = :uuid"), {"uuid": playlist_uuid})
+        from app.models.playlist import Playlist
+        from sqlalchemy import select
+        
+        plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == playlist_uuid))
         plist_row = plist_res.first()
         if not plist_row:
             return await self.hydrate_cart(db, user_id)
@@ -190,7 +196,8 @@ class CartService:
         # 3. Add each track (AIFF format) to cart
         items_to_add = []
         for pt in tracks:
-            t_res = await db.execute(text("SELECT uuid FROM tracks WHERE id = :id"), {"id": pt.track_id})
+            from app.models.track import Track
+            t_res = await db.execute(select(Track.uuid).where(Track.id == pt.track_id))
             t_row = t_res.first()
             if t_row:
                 items_to_add.append({
@@ -206,7 +213,8 @@ class CartService:
         if not cart:
             return await self.hydrate_cart(db, user_id)
 
-        plist_res = await db.execute(text("SELECT id FROM playlists WHERE uuid = :uuid"), {"uuid": playlist_uuid})
+        from app.models.playlist import Playlist
+        plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == playlist_uuid))
         plist_row = plist_res.first()
         if not plist_row:
             return await self.hydrate_cart(db, user_id)

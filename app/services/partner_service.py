@@ -181,15 +181,16 @@ class PartnerService:
         # Start of current month
         start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        # Raw SQL to count from partner_usage_logs
-        # Note: We use raw SQL to avoid needing a full Model for the logs if not already defined
-        stmt = text("""
-            SELECT COUNT(*) FROM partner_usage_logs 
-            WHERE api_key_id = :key_id 
-            AND created_at >= :since
-        """)
+        from app.models.partner import PartnerUsageLog
+        from sqlalchemy import select, func
         
-        result = await db.execute(stmt, {"key_id": api_key_id, "since": start_of_month})
+        # Use ORM for automatic tenant isolation and cleaner syntax
+        stmt = select(func.count(PartnerUsageLog.id)).where(
+            PartnerUsageLog.api_key_id == api_key_id,
+            PartnerUsageLog.created_at >= start_of_month
+        )
+        
+        result = await db.execute(stmt)
         return result.scalar() or 0
 
     async def revoke_api_key(self, db: AsyncSession, api_key_id: int, reason: str) -> bool:
