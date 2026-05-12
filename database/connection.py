@@ -167,22 +167,40 @@ def _do_orm_execute(execute_state):
     This listener automatically injects a WHERE partner_id = :pid clause
     to any query involving a model that has a partner_id attribute,
     provided a partner context is currently active.
+
+    If no partner context is active (pid is None) and the query targets a
+    partner-scoped model, it raises a RuntimeError to prevent data leakage.
     """
     from app.core.context import get_current_partner_id
-    
+
     pid = get_current_partner_id()
-    
-    # Only inject if we have a partner context and it's an ORM statement
-    if pid is not None and execute_state.is_orm_statement:
+
+    # Only process ORM statements
+    if execute_state.is_orm_statement:
         from app.models import Base
-        execute_state.statement = execute_state.statement.options(
-            with_loader_criteria(
-                Base,
-                lambda cls: getattr(cls, "partner_id", None) == pid,
-                include_aliases=True
+
+        if pid is not None:
+            # Inject the loader criteria (automatic WHERE partner_id = :pid)
+            execute_state.statement = execute_state.statement.options(
+                with_loader_criteria(
+                    Base,
+                    lambda cls: getattr(cls, "partner_id", None) == pid,
+                    include_aliases=True
+                )
             )
-        )
-        logger.debug(f"SQL Failsafe: Injected partner_id={pid} into query")
+            logger.debug(f"SQL Failsafe: Injected partner_id={pid} into query")
+        else:
+            # STRICT CHECK: If pid is None, verify no partner-scoped models are targeted
+            for mapper in execute_state.all_mappers:
+                if hasattr(mapper.class_, "partner_id"):
+                    # This model REQUIRES partner_id, but none was provided in context!
+                    error_msg = (
+                        f"Multi-tenancy violation: Query targeting partner-scoped model '{mapper.class_.__name__}' "
+                        f"attempted without an active partner context (partner_id is None). "
+                        f"This is a critical security failure."
+                    )
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg)
 
 
 # Connection event handlers for better monitoring and debugging
