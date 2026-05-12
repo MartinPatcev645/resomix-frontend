@@ -21,6 +21,7 @@ from sqlalchemy.sql import func
 from typing import List, Optional
 
 from . import Base
+from .partner import Partner
 
 
 class SftpUser(Base):
@@ -41,11 +42,22 @@ class SftpUser(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     home_directory: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+    
     created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
 
     # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     label: Mapped["Label"] = relationship("Label", back_populates="sftp_users")
 
     def __repr__(self) -> str:

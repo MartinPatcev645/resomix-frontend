@@ -13,6 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
+from .partner import Partner
 
 
 class IngestLog(Base):
@@ -27,6 +28,13 @@ class IngestLog(Base):
 
     id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), 
+        ForeignKey("partners.id", ondelete="RESTRICT"), 
+        nullable=False, 
+        default=1, 
+        index=True
+    )
     package_folder: Mapped[str] = mapped_column(String(512), nullable=False)
     message_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     ddex_version: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
@@ -45,6 +53,9 @@ class IngestLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
+    
+    # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 
 
 class Deal(Base):
@@ -73,7 +84,17 @@ class Deal(Base):
     
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
     # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     release_deals: Mapped[List["ReleaseDeal"]] = relationship("ReleaseDeal", back_populates="deal")
     territories: Mapped[List["DealTerritory"]] = relationship("DealTerritory", back_populates="deal")
     use_types: Mapped[List["DealUseType"]] = relationship("DealUseType", back_populates="deal")
@@ -94,6 +115,16 @@ class ReleaseDeal(Base):
     release_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("releases.id", ondelete="CASCADE"), nullable=False)
     deal_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     deal: Mapped["Deal"] = relationship("Deal", back_populates="release_deals")
     release: Mapped["Release"] = relationship("Release")
 
@@ -113,6 +144,16 @@ class DealTerritory(Base):
     territory: Mapped[str] = mapped_column(String(10), nullable=False)
     is_excluded: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     deal: Mapped["Deal"] = relationship("Deal", back_populates="territories")
 
 
@@ -130,6 +171,16 @@ class DealUseType(Base):
     deal_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False, index=True)
     use_type: Mapped[str] = mapped_column(String(100), nullable=False)
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     deal: Mapped["Deal"] = relationship("Deal", back_populates="use_types")
 
 
@@ -158,6 +209,16 @@ class RoyaltyRate(Base):
     effective_from: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     effective_to: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     deal: Mapped["Deal"] = relationship("Deal", back_populates="royalty_rates")
 
 
@@ -170,6 +231,15 @@ class IngestionError(Base):
 
     id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
     ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id", ondelete="CASCADE"), nullable=False)
+    
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
     error_code: Mapped[str] = mapped_column(String(50), nullable=False)
     error_message: Mapped[str] = mapped_column(mysql.TEXT, nullable=False)
     error_severity: Mapped[str] = mapped_column(Enum('warning', 'critical'), default='critical', nullable=False, index=True)
@@ -177,4 +247,5 @@ class IngestionError(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
     log: Mapped["IngestLog"] = relationship("IngestLog")
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 

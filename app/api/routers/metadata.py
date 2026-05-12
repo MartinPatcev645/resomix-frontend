@@ -21,7 +21,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.controllers.metadata_controller import MetadataController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.partner import get_current_partner
+from app.models.partner import Partner
 from app.schemas.metadata import (
     MetadataSuccessResponse,
     MetadataErrorResponse
@@ -69,7 +70,7 @@ async def get_metadata_endpoint(
     request: Request,
     file: UploadFile = File(..., description="Audio file to extract metadata from"),
     db: Session = Depends(get_database_session),
-    _: str = Security(get_api_key)  # Authentication required but not used in controller
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Extracts and returns metadata from an uploaded audio file using Mutagen.

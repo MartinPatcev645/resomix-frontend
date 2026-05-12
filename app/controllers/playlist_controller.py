@@ -123,14 +123,17 @@ class PlaylistController:
             )
 
         try:
+            # Extract partner_id from request state (set by get_current_partner dependency)
+            partner_id = getattr(request.state, "partner_id", None)
+
             # First, get the playlist to obtain the integer ID for logging
             playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
-                db, playlist_id
+                db, playlist_id, partner_id=partner_id
             )
             playlist_int_id = playlist.id if playlist else None
 
             result = await self.playlist_service.rename_playlist(
-                db, playlist_id, new_name.strip()
+                db, playlist_id, new_name.strip(), partner_id=partner_id
             )
 
             # Calculate operation duration
@@ -192,8 +195,9 @@ class PlaylistController:
             duration_ms = (time.time() - start_time) * 1000
             playlist_int_id = None
             try:
+                partner_id = getattr(request.state, "partner_id", None)
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
-                    db, playlist_id
+                    db, playlist_id, partner_id=partner_id
                 )
                 playlist_int_id = playlist.id if playlist else None
             except Exception:
@@ -281,12 +285,15 @@ class PlaylistController:
             )
 
         try:
+            # Extract partner_id from request state
+            partner_id = getattr(request.state, "partner_id", None)
+
             result = await self.playlist_service.change_playlist_visibility(
-                db, playlist_id, is_public
+                db, playlist_id, is_public, partner_id=partner_id
             )
             duration_ms = (time.time() - start_time) * 1000
             playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
-                db, playlist_id
+                db, playlist_id, partner_id=partner_id
             )
             playlist_int_id = playlist.id if playlist else None
 
@@ -418,10 +425,14 @@ class PlaylistController:
             )
 
         try:
+            # Extract partner_id from request state
+            partner_id = getattr(request.state, "partner_id", None)
+
             result = await self.playlist_service.get_playlist_similarity_data(
                 db,
                 playlist_id,
                 current_user.id if current_user else None,
+                partner_id=partner_id,
             )
             duration_ms = (time.time() - start_time) * 1000
 
@@ -575,17 +586,20 @@ class PlaylistController:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
             )
         try:
+            # Extract partner_id from request state
+            partner_id = getattr(request.state, "partner_id", None)
+
             # Extract Edge Authorization token if present (to propagate to manifest segments)
             # Use getlist and index 0 to strictly take the first token if multiple are provided
             all_tokens = request.query_params.getlist("token")
             token = all_tokens[0] if all_tokens else None
             
-            result = await self.playlist_service.get_playlist_hls_data(db, playlist_id, token)
+            result = await self.playlist_service.get_playlist_hls_data(db, playlist_id, token, partner_id=partner_id)
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
                 # Extract playlist integer ID if available
                 playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
-                    db, playlist_id
+                    db, playlist_id, partner_id=partner_id
                 )
                 playlist_int_id = playlist.id if playlist else None
 
@@ -1745,8 +1759,10 @@ class PlaylistController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
+            # Extract partner_id from request state
+            partner_id = getattr(request.state, "partner_id", None)
             result = await self.playlist_service.get_all_user_playlists(
-                db, current_user.id, page, page_size, filters
+                db, current_user.id, page, page_size, filters, partner_id=partner_id
             )
             duration_ms = (time.time() - start_time) * 1000
 

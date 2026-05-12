@@ -36,22 +36,23 @@ class PlaylistService:
         self.track_repository = TrackRepository()
 
     async def rename_playlist(
-        self, db: AsyncSession, playlist_uuid: str, new_name: str
+        self, db: AsyncSession, playlist_uuid: str, new_name: str, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Rename a playlist by UUID.
+        Rename a playlist by UUID with partner scoping.
 
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
             new_name: New playlist name
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with success status, message, and old_name
         """
         try:
             result = await self.playlist_repository.async_rename_playlist(
-                db, playlist_uuid, new_name
+                db, playlist_uuid, new_name, partner_id=partner_id
             )
 
             if result["success"]:
@@ -76,22 +77,23 @@ class PlaylistService:
             }
 
     async def change_playlist_visibility(
-        self, db: AsyncSession, playlist_uuid: str, is_public: bool
+        self, db: AsyncSession, playlist_uuid: str, is_public: bool, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Change playlist visibility (public/private) by UUID.
+        Change playlist visibility (public/private) by UUID with partner scoping.
 
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
             is_public: Whether to make the playlist public
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with success status and message
         """
         try:
             success = await self.playlist_repository.async_make_playlist_public(
-                db, playlist_uuid, is_public
+                db, playlist_uuid, is_public, partner_id=partner_id
             )
 
             if success:
@@ -204,16 +206,18 @@ class PlaylistService:
                 raise ValueError(f"An unexpected error occurred: {e}")
 
     async def get_playlist_similarity_data(
-        self, db: AsyncSession, playlist_uuid: str, user_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, user_id: Optional[int] = None, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get playlist with similarity data formatted like similarity endpoints.
         Only returns data for public playlists, or private playlists if user is the owner.
+        Enforces partner scoping.
 
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
             user_id: Optional user ID - if provided, allows access to user's own private playlists
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with similarity-formatted data or error
@@ -221,7 +225,7 @@ class PlaylistService:
         try:
             similarity_data = (
                 await self.playlist_repository.async_get_playlist_similarity_data(
-                    db, playlist_uuid, user_id=user_id
+                    db, playlist_uuid, user_id=user_id, partner_id=partner_id
                 )
             )
 
@@ -296,24 +300,25 @@ class PlaylistService:
             }
 
     async def get_playlist_hls_data(
-        self, db: AsyncSession, playlist_uuid: str, token: Optional[str] = None
+        self, db: AsyncSession, playlist_uuid: str, token: Optional[str] = None, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get playlist as HLS M3U8 format by calling media server.
-        Only works with public playlists.
+        Only works with public playlists. Enforces partner scoping.
 
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
             token: Optional Edge Authorization JWT to propagate to segments
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with M3U8 content or error
         """
         try:
-            # Get playlist tracks with metadata (includes public check)
+            # Get playlist tracks with metadata (includes public check and partner scoping)
             hls_data = await self.playlist_repository.async_get_playlist_hls_data(
-                db, playlist_uuid
+                db, playlist_uuid, partner_id=partner_id
             )
 
             if not hls_data:
@@ -369,21 +374,22 @@ class PlaylistService:
     # ============================================================================
 
     async def get_playlist_list_admin(
-        self, db: AsyncSession, filters: Dict[str, Any]
+        self, db: AsyncSession, filters: Dict[str, Any], partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Get paginated playlist list for admin with filters.
+        Get paginated playlist list for admin with filters and partner scoping.
 
         Args:
             db: Database session
             filters: Dictionary containing filter parameters
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with success status and playlist data
         """
         try:
             result = await self.playlist_repository.async_get_playlist_list_admin(
-                db, filters
+                db, filters, partner_id=partner_id
             )
             return {"success": True, **result}
         except Exception as e:
@@ -394,21 +400,22 @@ class PlaylistService:
             }
 
     async def delete_playlist_admin(
-        self, db: AsyncSession, playlist_id: int
+        self, db: AsyncSession, playlist_id: int, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Delete a playlist by ID.
+        Delete a playlist by ID with partner scoping.
 
         Args:
             db: Database session
             playlist_id: Playlist ID to delete
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with success status and message
         """
         try:
             deleted = await self.playlist_repository.async_delete_playlist_admin(
-                db, playlist_id
+                db, playlist_id, partner_id=partner_id
             )
 
             if deleted:
@@ -676,9 +683,10 @@ class PlaylistService:
         page: int = 1,
         page_size: int = 20,
         filters=None,
+        partner_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        Get all playlists owned by a user with optional filters.
+        Get all playlists owned by a user with optional filters and partner scoping.
 
         Args:
             db: Database session
@@ -686,6 +694,7 @@ class PlaylistService:
             page: Page number
             page_size: Items per page
             filters: Optional UserPlaylistsFilters object
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with success status and list of playlists
@@ -693,7 +702,7 @@ class PlaylistService:
         try:
             playlists, total = (
                 await self.playlist_repository.async_get_all_user_playlists(
-                    db, user_id, page, page_size, filters
+                    db, user_id, page, page_size, filters, partner_id=partner_id
                 )
             )
             return {"success": True, "data": playlists, "total": total}

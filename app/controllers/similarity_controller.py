@@ -1014,7 +1014,7 @@ class SimilarityController:
             logger.info("SIMILARITY BY ID: Skipping limit check for anonymous user")
 
         track = await self.playlist_service.track_repository.async_get_by_uuid(
-            db, track_id
+            db, track_id, partner_id=partner_id
         )
         track_int_id = track.id if track else None
 

@@ -15,6 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
+from typing import Optional
 from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,13 +40,13 @@ class OpenTracksPipelineController:
         self.track_upload_service = TrackUploadService()
         self.logging_service = LoggingService()
 
-    async def update_embeddings(self, db: AsyncSession, request: Request = None) -> JSONResponse:
+    async def update_embeddings(self, db: AsyncSession, request: Request = None, partner_id: Optional[int] = None) -> JSONResponse:
         """Trigger bulk update of embeddings for OPEN tracks."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            service_resp = await self.open_tracks_service.update_embeddings(db)
+            service_resp = await self.open_tracks_service.update_embeddings(db, partner_id=partner_id)
 
             if service_resp.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
@@ -122,7 +123,8 @@ class OpenTracksPipelineController:
         db: AsyncSession,
         request: Request,
         file: UploadFile,
-        path: str
+        path: str,
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """
         Process an audio file for the open tracks pipeline.
@@ -161,8 +163,8 @@ class OpenTracksPipelineController:
             
             with engine.begin() as conn:
                 check_result = conn.execute(
-                    text("SELECT COUNT(*) FROM tracks WHERE file_path = :path"),
-                    {"path": path}
+                    text("SELECT COUNT(*) FROM tracks WHERE file_path = :path AND partner_id = :partner_id"),
+                    {"path": path, "partner_id": partner_id}
                 )
                 count = check_result.scalar()
                 
@@ -445,6 +447,7 @@ class OpenTracksPipelineController:
                 file, 
                 audio_bytes,
                 track_uuid,
+                partner_id=partner_id,
                 track_type=TrackType.OPEN,  # <--- CRITICAL: Use OPEN type
                 duration_sec=duration_sec,
                 full_path=path

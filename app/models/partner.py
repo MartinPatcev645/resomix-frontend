@@ -47,8 +47,11 @@ class Partner(Base):
     The ``tier`` column drives quota limits and feature flags resolved
     later by the quota-enforcement middleware (W1-8).
 
-    ``partner_id = 1`` is reserved for the public sandbox tenant so that
-    existing demo/cc_by tracks can be tagged without a real partner.
+    **Canonical Sandbox (`partner_id = 1`):**
+    ID 1 is reserved for the "Resomix Sandbox" tenant. All B2C consumer data, 
+    public demo tracks, and sandbox-key authenticated requests map here. 
+    Refer to [ADR-001](/docs/may_2026/ADR-001-canonical-sandbox-tenant.md) 
+    for strict isolation rules.
     """
 
     __tablename__ = "partners"

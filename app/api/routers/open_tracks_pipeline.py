@@ -19,7 +19,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.open_tracks_pipeline_controller import OpenTracksPipelineController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.partner import get_current_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.monthly_pipeline import (
     MonthlyPipelineTrackSuccessResponse,
@@ -61,10 +62,10 @@ open_tracks_controller = OpenTracksPipelineController()
 async def open_tracks_pipeline_update_embeddings_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
 ) -> JSONResponse:
     """Trigger bulk embeddings update on similarity server for OPEN tracks."""
-    return await open_tracks_controller.update_embeddings(db, request)
+    return await open_tracks_controller.update_embeddings(db, request, partner_id=partner.id)
 
 
 @router.post(
@@ -100,7 +101,7 @@ async def open_tracks_pipeline_track_endpoint(
     file: UploadFile = File(..., description="Audio file to process for open tracks pipeline"),
     path: str = Form(..., description="File path for the track"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Process an audio file for the open tracks pipeline.
@@ -113,4 +114,4 @@ async def open_tracks_pipeline_track_endpoint(
     - **file**: The audio file to process
     - **path**: The file path for the track
     """
-    return await open_tracks_controller.process_track(db, request, file, path)
+    return await open_tracks_controller.process_track(db, request, file, path, partner_id=partner.id)

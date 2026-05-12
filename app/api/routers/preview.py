@@ -25,7 +25,8 @@ from app.schemas.preview import (
 )
 from app.controllers.preview_controller import PreviewController
 from app.api.dependencies.database import get_database_session
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.partner import get_current_partner
+from app.models.partner import Partner
 
 # Create router instance
 router = APIRouter(prefix="/preview", tags=["Preview"])
@@ -61,11 +62,11 @@ preview_controller = PreviewController()
 async def get_preview_endpoint(
     track_id: str = Query(..., description="The database ID of the track to generate preview URL for", min_length=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Generate a secure download URL for a track preview.
     
     - **track_id**: The database ID of the track to generate preview URL for
     """
-    return await preview_controller.get_preview_download_url(db, track_id)
+    return await preview_controller.get_preview_download_url(db, track_id, partner_id=partner.id)

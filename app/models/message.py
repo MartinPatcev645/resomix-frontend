@@ -8,10 +8,11 @@ It maps to the messages table which stores DDEX ERN MessageHeader data.
 
 from typing import Optional
 from sqlalchemy import String, ForeignKey, DateTime, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
+from .partner import Partner
 
 
 class Message(Base):
@@ -44,10 +45,22 @@ class Message(Base):
     message_created_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     is_update: Mapped[bool] = mapped_column(Boolean, default=False)
     
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
+    
     # Timestamps
     created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
+
+    # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 
     def __repr__(self):
         return f"<Message(id={self.id}, message_id='{self.message_id}', type='{self.message_type}')>"

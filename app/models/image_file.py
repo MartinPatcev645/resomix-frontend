@@ -31,7 +31,11 @@ class ImageFile(Base):
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False)
     ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
     partner_id: Mapped[int] = mapped_column(
-        mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True
+        mysql.INTEGER(unsigned=True), 
+        ForeignKey("partners.id", ondelete="RESTRICT"), 
+        nullable=False, 
+        default=1, 
+        index=True
     )
     
     # Relationships

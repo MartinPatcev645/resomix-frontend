@@ -32,7 +32,11 @@ class AudioFile(Base):
     ingest_log_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), ForeignKey("ingest_logs.id"), nullable=False)
     track_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="CASCADE"), nullable=False, index=True)
     partner_id: Mapped[int] = mapped_column(
-        mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True
+        mysql.INTEGER(unsigned=True), 
+        ForeignKey("partners.id", ondelete="RESTRICT"), 
+        nullable=False, 
+        default=1, 
+        index=True
     )
     
     # Fields

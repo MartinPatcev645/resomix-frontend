@@ -21,7 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.feedback_controller import FeedbackController
-from app.api.dependencies.auth import get_api_key, get_current_user_optional
+from app.api.dependencies.partner import get_current_partner
+from app.models.partner import Partner
+from app.api.dependencies.auth import get_current_user_optional
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.feedback import (
@@ -65,7 +67,7 @@ async def submit_feedback(
     request: Request,
     feedback_request: FeedbackRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
@@ -81,7 +83,7 @@ async def submit_feedback(
     Returns success confirmation or validation errors.
     """
     feedback_data = feedback_request.dict()
-    return await feedback_controller.submit_feedback(db, request, feedback_data, current_user)
+    return await feedback_controller.submit_feedback(db, request, feedback_data, current_user, partner_id=partner.id)
 
 
 @router.get(
@@ -100,7 +102,7 @@ async def get_feedback(
     request: Request,
     feedback_id: int = Path(..., description="The ID of the feedback to retrieve", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ):
     """
     Get a feedback submission by ID.
@@ -108,7 +110,7 @@ async def get_feedback(
     This endpoint retrieves a specific feedback submission using its unique ID.
     Useful for administrators to view feedback details.
     """
-    return await feedback_controller.get_feedback_by_id(db, request, feedback_id)
+    return await feedback_controller.get_feedback_by_id(db, request, feedback_id, partner_id=partner.id)
 
 
 @router.patch(
@@ -128,7 +130,7 @@ async def update_feedback_status(
     status_request: FeedbackUpdateRequest,
     feedback_id: int = Path(..., description="The ID of the feedback to update", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ):
     """
     Update feedback submission status.
@@ -137,4 +139,4 @@ async def update_feedback_status(
     Status can be changed between 'open' and 'resolved'.
     """
     status_data = status_request.dict()
-    return await feedback_controller.update_feedback_status(db, request, feedback_id, status_data)
+    return await feedback_controller.update_feedback_status(db, request, feedback_id, status_data, partner_id=partner.id)

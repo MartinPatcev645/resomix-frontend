@@ -13,6 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
+from .partner import Partner
 
 if TYPE_CHECKING:
     from .user import User
@@ -37,6 +38,15 @@ class Feedback(Base):
         nullable=True, 
         index=True
     )
+
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
     
     # Fields
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
@@ -55,6 +65,7 @@ class Feedback(Base):
     
     # Relationship
     user: Mapped[Optional["User"]] = relationship("User")
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 
     def __repr__(self):
         return f"<Feedback(id={self.id}, user_id={self.user_id}, status='{self.status}')>"

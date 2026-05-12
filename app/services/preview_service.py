@@ -147,14 +147,16 @@ class PreviewService:
     async def generate_download_url(
         self, 
         db: AsyncSession,
-        track_id: str
+        track_id: str,
+        partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Generate signed download URL for a track by its UUID.
+        Generate signed download URL for a track by its UUID with partner scoping.
         
         Args:
             db: Database session
             track_id: Track UUID to generate download URL for
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             Dictionary containing signed download URL or error information
@@ -163,8 +165,8 @@ class PreviewService:
             return {"success": False, "error": "Track ID cannot be empty"}
         
         try:
-            # Validate track exists in database
-            track_exists = await self._validate_track_exists(db, track_id.strip())
+            # Validate track exists in database with partner scoping
+            track_exists = await self._validate_track_exists(db, track_id.strip(), partner_id=partner_id)
             
             if not track_exists:
                 return {"success": False, "error": "Track not found"}
@@ -180,19 +182,20 @@ class PreviewService:
             print(f"Error in generate_download_url: {e}")
             return {"success": False, "error": "Internal server error"}
 
-    async def _validate_track_exists(self, db: AsyncSession, track_id: str) -> bool:
+    async def _validate_track_exists(self, db: AsyncSession, track_id: str, partner_id: Optional[int] = None) -> bool:
         """
-        Validate that a track exists in the database.
+        Validate that a track exists in the database with partner scoping.
         
         Args:
             db: Database session
             track_id: Track UUID to validate
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             bool: True if track exists, False otherwise
         """
         try:
-            track = await self.track_repository.async_get_by_uuid(db, track_id)
+            track = await self.track_repository.async_get_by_uuid(db, track_id, partner_id=partner_id)
             return track is not None
         except Exception as e:
             print(f"Error validating track existence: {e}")

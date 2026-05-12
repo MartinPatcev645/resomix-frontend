@@ -162,15 +162,16 @@ class SimilarityRepository(BaseRepository[Track]):
             raise e
 
     async def async_get_track_details_by_paths(
-        self, db: AsyncSession, track_paths: List[str]
+        self, db: AsyncSession, track_paths: List[str], partner_id: Optional[int] = None
     ) -> Dict[str, Dict[str, Any]]:
         """
         Fetches full track details from MariaDB based on a list of file paths
-        returned by the similarity server.
+        returned by the similarity server. Enforces partner scoping.
 
         Args:
             db: Database session
             track_paths: A list of file paths (e.g., veggera/public_html/audio.mp3).
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             A dictionary mapping file_path to track_details_dict.
@@ -192,7 +193,7 @@ class SimilarityRepository(BaseRepository[Track]):
 
             track_repo = TrackRepository()
             tracks = await track_repo.async_get_tracks_by_file_paths(
-                db, list(paths_to_query)
+                db, list(paths_to_query), partner_id=partner_id
             )
 
             for track in tracks:
@@ -315,15 +316,16 @@ class SimilarityRepository(BaseRepository[Track]):
         return details_map
 
     async def async_update_track_duration(
-        self, db: AsyncSession, track_uuid: str, duration: float
+        self, db: AsyncSession, track_uuid: str, duration: float, partner_id: Optional[int] = None
     ) -> bool:
         """
-        Updates the duration of a track in the database.
+        Updates the duration of a track in the database. Enforces partner scoping.
 
         Args:
             db: Database session
             track_uuid: Track UUID
             duration: New duration in milliseconds
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             True if updated successfully, False otherwise
@@ -337,11 +339,12 @@ class SimilarityRepository(BaseRepository[Track]):
                 UPDATE tracks
                 SET duration_ms = :duration
                 WHERE uuid = :track_uuid
+                AND partner_id = :partner_id
             """
             )
 
             result = await db.execute(
-                query, {"duration": duration_ms, "track_uuid": track_uuid}
+                query, {"duration": duration_ms, "track_uuid": track_uuid, "partner_id": partner_id}
             )
             await db.commit()
             return result.rowcount > 0

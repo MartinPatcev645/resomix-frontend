@@ -32,7 +32,13 @@ class Release(Base):
     label_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("labels.id", ondelete="SET NULL"), nullable=True, index=True)
     party_id: Mapped[str] = mapped_column(String(100), ForeignKey("parties.party_id"), nullable=False, index=True)
     message_id: Mapped[str] = mapped_column(String(255), ForeignKey("messages.message_id"), nullable=False, index=True)
-    partner_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), 
+        ForeignKey("partners.id", ondelete="RESTRICT"), 
+        nullable=False, 
+        default=1, 
+        index=True
+    )
     
     # DDEX specific
     release_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

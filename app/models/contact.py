@@ -13,6 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
+from .partner import Partner
 
 if TYPE_CHECKING:
     from .user import User
@@ -38,7 +39,14 @@ class Contact(Base):
         index=True
     )
     
-    # Fields
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
     name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     subject: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
@@ -56,6 +64,7 @@ class Contact(Base):
     
     # Relationship
     user: Mapped[Optional["User"]] = relationship("User")
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
 
     def __repr__(self):
         return f"<Contact(id={self.id}, email='{self.email}', status='{self.status}')>"

@@ -21,7 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.feedback_controller import FeedbackController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.partner import get_current_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.feedback import (
     AdminFeedbackListResponse,
@@ -72,7 +73,7 @@ async def get_feedback_list(
     sort_by: str = Query("submitted_at", description="Column to sort by"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Get paginated feedback list with filters.
@@ -110,7 +111,8 @@ async def get_feedback_list(
         "date_from": date_from,
         "date_to": date_to,
         "sort_by": sort_by,
-        "sort_order": sort_order
+        "sort_order": sort_order,
+        "partner_id": partner.id
     }
     
     return await feedback_controller.get_feedback_list_admin(db, request, filters)
@@ -133,7 +135,7 @@ async def delete_feedback(
     request: Request,
     feedback_id: int = Path(..., description="The ID of the feedback to delete", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Delete a single feedback entry.
@@ -141,7 +143,7 @@ async def delete_feedback(
     This endpoint permanently deletes a feedback entry by its ID.
     Useful for removing spam, test entries, or inappropriate content.
     """
-    return await feedback_controller.delete_feedback_admin(db, request, feedback_id)
+    return await feedback_controller.delete_feedback_admin(db, request, feedback_id, partner_id=partner.id)
 
 
 @router.post(
@@ -156,7 +158,7 @@ async def batch_delete_feedback(
     request: Request,
     delete_request: AdminBatchDeleteRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Delete multiple feedback entries.
@@ -168,7 +170,7 @@ async def batch_delete_feedback(
     
     Returns the count of successfully deleted entries.
     """
-    return await feedback_controller.batch_delete_feedback_admin(db, request, delete_request.ids)
+    return await feedback_controller.batch_delete_feedback_admin(db, request, delete_request.ids, partner_id=partner.id)
 
 
 @router.post(
@@ -189,7 +191,7 @@ async def mark_feedback_status(
     status_request: AdminFeedbackUpdateRequest,
     feedback_id: int = Path(..., description="The ID of the feedback to update", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Mark feedback status as open or resolved.
@@ -210,7 +212,7 @@ async def mark_feedback_status(
         )
     
     return await feedback_controller.mark_feedback_status_admin(
-        db, request, feedback_id, status_request.status
+        db, request, feedback_id, status_request.status, partner_id=partner.id
     )
 
 
@@ -232,7 +234,7 @@ async def update_feedback(
     update_request: AdminFeedbackUpdateRequest,
     feedback_id: int = Path(..., description="The ID of the feedback to update", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Update feedback entry.
@@ -254,7 +256,7 @@ async def update_feedback(
             }
         )
     
-    return await feedback_controller.update_feedback_admin(db, request, feedback_id, update_data)
+    return await feedback_controller.update_feedback_admin(db, request, feedback_id, update_data, partner_id=partner.id)
 
 
 @router.get(
@@ -268,7 +270,7 @@ async def update_feedback(
 async def get_feedback_statistics(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Get feedback statistics.
@@ -283,7 +285,7 @@ async def get_feedback_statistics(
     
     Useful for admin dashboard and reporting.
     """
-    return await feedback_controller.get_feedback_statistics_admin(db, request)
+    return await feedback_controller.get_feedback_statistics_admin(db, request, partner_id=partner.id)
 
 
 @router.post(
@@ -298,7 +300,7 @@ async def export_feedback(
     request: Request,
     export_request: AdminFeedbackExportRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Export feedback to CSV.
@@ -329,4 +331,5 @@ async def export_feedback(
         )
     
     filters = export_request.dict()
+    filters["partner_id"] = partner.id
     return await feedback_controller.export_feedback_csv_admin(db, request, filters)

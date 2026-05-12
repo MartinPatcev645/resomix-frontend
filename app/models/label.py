@@ -22,6 +22,7 @@ from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from typing import List, Optional
 from . import Base
+from .partner import Partner
 
 
 class Label(Base):
@@ -49,8 +50,18 @@ class Label(Base):
     created_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
     )
+    
+    # Partner ID: Multi-tenant isolation (W1-4)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("partners.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=1,
+        index=True,
+    )
 
     # Relationships
+    partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     releases: Mapped[List["Release"]] = relationship("Release", back_populates="label")
     sftp_users: Mapped[List["SftpUser"]] = relationship("SftpUser", back_populates="label", cascade="all, delete-orphan")
     

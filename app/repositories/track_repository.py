@@ -71,19 +71,23 @@ class TrackRepository(BaseRepository[Track]):
     
     # --- Track-specific CRUD methods ---
     
-    def get_by_uuid(self, db: Session, uuid: str) -> Optional[Track]:
-        """Get track by UUID.
+    def get_by_uuid(self, db: Session, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
+        """Get track by UUID with optional partner scoping.
         
         This mirrors get_track_path_by_id from src/search.py but for full track data.
         
         Args:
             db: Database session
             uuid: Track UUID to search for
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             Track instance or None
         """
-        return db.query(self.model).filter(self.model.uuid == uuid).first()
+        query = db.query(self.model).filter(self.model.uuid == uuid)
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+        return query.first()
     
     async def async_get_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
         """Async version of get_by_uuid with optional partner scoping."""
@@ -131,28 +135,31 @@ class TrackRepository(BaseRepository[Track]):
         path = result.scalar_one_or_none()
         return path
     
-    def get_with_relationships(self, db: Session, uuid: str) -> Optional[Track]:
-        """Get track with all relationships loaded.
+    def get_with_relationships(self, db: Session, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
+        """Get track with all relationships loaded and optional partner scoping.
         
         Args:
             db: Database session
             uuid: Track UUID
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             Track with audio_files and recording_contributors loaded
         """
-        return (
+        query = (
             db.query(self.model)
             .options(
                 joinedload(self.model.audio_files),
                 joinedload(self.model.recording_contributors).joinedload(TrackContributor.contributor)
             )
             .filter(self.model.uuid == uuid)
-            .first()
         )
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+        return query.first()
     
-    async def async_get_with_relationships(self, db: AsyncSession, uuid: str) -> Optional[Track]:
-        """Async version of get_with_relationships."""
+    async def async_get_with_relationships(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
+        """Async version of get_with_relationships with partner scoping."""
         stmt = (
             select(self.model)
             .options(
@@ -161,6 +168,9 @@ class TrackRepository(BaseRepository[Track]):
             )
             .where(self.model.uuid == uuid)
         )
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -285,32 +295,35 @@ class TrackRepository(BaseRepository[Track]):
     
     # --- Advanced search methods ---
     
-    def search_by_artist(self, db: Session, artist_name: str, limit: int = 100) -> List[Track]:
-        """Search tracks by artist/contributor name.
+    def search_by_artist(self, db: Session, artist_name: str, limit: int = 100, partner_id: Optional[int] = None) -> List[Track]:
+        """Search tracks by artist/contributor name with optional partner scoping.
         
         Args:
             db: Database session
             artist_name: Artist/contributor name to search for
             limit: Maximum number of results
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of Track instances
         """
-        return (
+        query = (
             db.query(self.model)
             .join(TrackContributor, TrackContributor.track_id == self.model.id)
             .join(Contributor, Contributor.id == TrackContributor.person_id)
             .filter(Contributor.full_name.ilike(f"%{artist_name}%"))
-            .limit(limit)
-            .all()
         )
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.limit(limit).all()
     
     def search_by_album(self, db: Session, album_title: str, limit: int = 100) -> List[Track]:
         """Search tracks by album title (REMOVED: Use Release search instead)."""
         return []
     
-    def search_by_genre(self, db: Session, genre_name: str, limit: int = 100) -> List[Track]:
-        """Search tracks by genre name.
+    def search_by_genre(self, db: Session, genre_name: str, limit: int = 100, partner_id: Optional[int] = None) -> List[Track]:
+        """Search tracks by genre name with optional partner scoping.
         
         Genre is now a string field on Track, not a FK relationship.
         
@@ -318,30 +331,31 @@ class TrackRepository(BaseRepository[Track]):
             db: Database session
             genre_name: Genre name to search for
             limit: Maximum number of results
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of Track instances
         """
-        return (
-            db.query(self.model)
-            .filter(self.model.genre.ilike(f"%{genre_name}%"))
-            .limit(limit)
-            .all()
-        )
+        query = db.query(self.model).filter(self.model.genre.ilike(f"%{genre_name}%"))
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.limit(limit).all()
     
-    def get_by_bpm_range(self, db: Session, min_bpm: int, max_bpm: int, limit: int = 100) -> List[Track]:
-        """Get tracks within BPM range.
+    def get_by_bpm_range(self, db: Session, min_bpm: int, max_bpm: int, limit: int = 100, partner_id: Optional[int] = None) -> List[Track]:
+        """Get tracks within BPM range with optional partner scoping.
         
         Args:
             db: Database session
             min_bpm: Minimum BPM
             max_bpm: Maximum BPM
             limit: Maximum number of results
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of Track instances
         """
-        return (
+        query = (
             db.query(self.model)
             .filter(
                 and_(
@@ -349,27 +363,29 @@ class TrackRepository(BaseRepository[Track]):
                     self.model.bpm <= max_bpm
                 )
             )
-            .limit(limit)
-            .all()
         )
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.limit(limit).all()
     
-    def get_by_key(self, db: Session, musical_key: str, limit: int = 100) -> List[Track]:
-        """Get tracks by musical key.
+    def get_by_key(self, db: Session, musical_key: str, limit: int = 100, partner_id: Optional[int] = None) -> List[Track]:
+        """Get tracks by musical key with optional partner scoping.
         
         Args:
             db: Database session
             musical_key: Musical key (e.g., "C#m")
             limit: Maximum number of results
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of Track instances
         """
-        return (
-            db.query(self.model)
-            .filter(self.model.musical_key == musical_key)
-            .limit(limit)
-            .all()
-        )
+        query = db.query(self.model).filter(self.model.musical_key == musical_key)
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.limit(limit).all()
     
     # --- Migration-style bulk operations ---
     

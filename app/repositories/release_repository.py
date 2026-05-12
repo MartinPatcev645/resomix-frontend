@@ -36,36 +36,41 @@ class ReleaseRepository(BaseRepository[Release]):
         super().__init__(Release)
     
     def _find_existing(self, db: Session, **kwargs) -> Optional[Release]:
-        """Find existing release by title and party_id (case-insensitive title).
+        """Find existing release by title, party_id, and partner_id (case-insensitive title).
         
         Implements the lookup logic from Cache.release() which uses
-        case-insensitive title matching with exact party_id match.
+        case-insensitive title matching with exact party_id and partner_id match.
         
         Args:
             db: Database session
-            **kwargs: Should contain 'title' and 'party_id' fields
+            **kwargs: Should contain 'title', 'party_id', and optional 'partner_id' fields
             
         Returns:
             Existing Release instance or None
         """
         title = kwargs.get('title')
         party_id = kwargs.get('party_id')
+        partner_id = kwargs.get('partner_id')
         
         if not title or not party_id:
             return None
             
-        # Case-insensitive title lookup with exact party_id match
-        return db.query(self.model).filter(
+        query = db.query(self.model).filter(
             and_(
                 self.model.title.ilike(title),
                 self.model.party_id == party_id
             )
-        ).first()
+        )
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.first()
     
     async def _async_find_existing(self, db: AsyncSession, **kwargs) -> Optional[Release]:
         """Async version of _find_existing."""
         title = kwargs.get('title')
         party_id = kwargs.get('party_id')
+        partner_id = kwargs.get('partner_id')
         
         if not title or not party_id:
             return None
@@ -76,30 +81,38 @@ class ReleaseRepository(BaseRepository[Release]):
                 self.model.party_id == party_id
             )
         )
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     
     # --- Release-specific methods ---
     
-    def get_by_title_and_party(self, db: Session, title: str, party_id: str) -> Optional[Release]:
-        """Get release by exact title and party ID match.
+    def get_by_title_and_party(self, db: Session, title: str, party_id: str, partner_id: Optional[int] = None) -> Optional[Release]:
+        """Get release by exact title and party ID match with optional partner scoping.
         
         Args:
             db: Database session
             title: Release title to search for
             party_id: Party ID
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             Release instance or None
         """
-        return db.query(self.model).filter(
+        query = db.query(self.model).filter(
             and_(
                 self.model.title == title,
                 self.model.party_id == party_id
             )
-        ).first()
+        )
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.first()
     
-    async def async_get_by_title_and_party(self, db: AsyncSession, title: str, party_id: str) -> Optional[Release]:
+    async def async_get_by_title_and_party(self, db: AsyncSession, title: str, party_id: str, partner_id: Optional[int] = None) -> Optional[Release]:
         """Async version of get_by_title_and_party."""
         stmt = select(self.model).where(
             and_(
@@ -107,60 +120,73 @@ class ReleaseRepository(BaseRepository[Release]):
                 self.model.party_id == party_id
             )
         )
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     
-    def get_by_party_id(self, db: Session, party_id: str, skip: int = 0, limit: int = 100) -> list[Release]:
-        """Get all releases by party ID.
+    def get_by_party_id(self, db: Session, party_id: str, skip: int = 0, limit: int = 100, partner_id: Optional[int] = None) -> list[Release]:
+        """Get all releases by party ID with optional partner scoping.
         
         Args:
             db: Database session
             party_id: Party ID to filter by
             skip: Number of records to skip
             limit: Maximum number of records to return
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of releases by the party
         """
-        return (
-            db.query(self.model)
-            .filter(self.model.party_id == party_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        query = db.query(self.model).filter(self.model.party_id == party_id)
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.offset(skip).limit(limit).all()
     
-    async def async_get_by_party_id(self, db: AsyncSession, party_id: str, skip: int = 0, limit: int = 100) -> list[Release]:
+    async def async_get_by_party_id(self, db: AsyncSession, party_id: str, skip: int = 0, limit: int = 100, partner_id: Optional[int] = None) -> list[Release]:
         """Async version of get_by_party_id."""
         stmt = (
             select(self.model)
             .where(self.model.party_id == party_id)
-            .offset(skip)
-            .limit(limit)
         )
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
+        stmt = stmt.offset(skip).limit(limit)
         result = await db.execute(stmt)
         return result.scalars().all()
     
-    def search_by_title(self, db: Session, title_pattern: str, limit: int = 10) -> list[Release]:
-        """Search releases by title pattern.
+    def search_by_title(self, db: Session, title_pattern: str, limit: int = 10, partner_id: Optional[int] = None) -> list[Release]:
+        """Search releases by title pattern with optional partner scoping.
         
         Args:
             db: Database session
             title_pattern: Pattern to search for (supports wildcards)
             limit: Maximum results to return
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             List of matching releases
         """
-        return db.query(self.model).filter(
+        query = db.query(self.model).filter(
             self.model.title.ilike(f"%{title_pattern}%")
-        ).limit(limit).all()
+        )
+        if partner_id is not None:
+            query = query.filter(self.model.partner_id == partner_id)
+            
+        return query.limit(limit).all()
     
-    async def async_search_by_title(self, db: AsyncSession, title_pattern: str, limit: int = 10) -> list[Release]:
+    async def async_search_by_title(self, db: AsyncSession, title_pattern: str, limit: int = 10, partner_id: Optional[int] = None) -> list[Release]:
         """Async version of search_by_title."""
         stmt = select(self.model).where(
             self.model.title.ilike(f"%{title_pattern}%")
-        ).limit(limit)
+        )
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
+            
+        stmt = stmt.limit(limit)
         result = await db.execute(stmt)
         return result.scalars().all()
     

@@ -32,7 +32,13 @@ class Playlist(Base):
     
     # Fields
     user_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    partner_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("partners.id"), nullable=False, default=1, index=True)
+    partner_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), 
+        ForeignKey("partners.id", ondelete="RESTRICT"), 
+        nullable=False, 
+        default=1, 
+        index=True
+    )
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     type: Mapped[str] = mapped_column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')

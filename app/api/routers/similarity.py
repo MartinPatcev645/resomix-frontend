@@ -175,14 +175,15 @@ async def get_similarity_by_id_endpoint(
 @router.get(
     "/segment_status/{playlist_uuid}",
     summary="Check if segment preview processing completed for a playlist",
-    description="Returns segmentation_completed true/false based on playlist type.",
+    description="Returns segmentation_completed true/false based on playlist type. Enforces partner scoping.",
     response_model=dict,
 )
 async def segment_status_endpoint(
     playlist_uuid: str,
     db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
-    playlist = await playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
+    playlist = await playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner.id)
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
     completed = playlist.type != "waiting_segments"

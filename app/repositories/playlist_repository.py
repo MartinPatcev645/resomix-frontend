@@ -43,6 +43,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         name: str = "Playlist",
         playlist_type: str = PlaylistType.SIMILARITY,
         user_id: Optional[int] = None,
+        partner_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a similarity playlist with tracks.
@@ -94,7 +95,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
-                user_id=user_id,  # Associate with user if logged in, otherwise anonymous
+                user_id=user_id, partner_id=partner_id,  # Associate with user if logged in
                 name=name,
                 is_public=False,  # Keep is_public as 0
                 type=playlist_type,
@@ -147,7 +148,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_fork_playlist(
-        self, db: AsyncSession, original_playlist_uuid: str, user_id: int
+        self, db: AsyncSession, original_playlist_uuid: str, user_id: int, partner_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Fork (copy) a public playlist for a user.
@@ -164,7 +165,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         try:
             # 1. Fetch Original Playlist
             original_playlist = await self.async_get_playlist_by_uuid(
-                db, original_playlist_uuid
+                db, original_playlist_uuid, partner_id=partner_id
             )
             if not original_playlist:
                 return None
@@ -183,6 +184,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             forked_playlist = Playlist(
                 uuid=new_uuid,
                 user_id=user_id,
+                partner_id=partner_id,
                 name=original_playlist.name,
                 is_public=False,  # Forked playlists default to private
                 type=original_playlist.type,
@@ -482,24 +484,27 @@ class PlaylistRepository(BaseRepository[Playlist]):
         return None
 
     async def async_get_playlist_by_uuid(
-        self, db: AsyncSession, playlist_uuid: str
+        self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None
     ) -> Optional[Playlist]:
         """
-        Get playlist by UUID.
+        Get playlist by UUID with optional partner scoping.
 
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Playlist instance or None if not found
         """
         stmt = select(self.model).where(self.model.uuid == playlist_uuid)
+        if partner_id is not None:
+            stmt = stmt.where(self.model.partner_id == partner_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def async_rename_playlist(
-        self, db: AsyncSession, playlist_uuid: str, new_name: str
+        self, db: AsyncSession, playlist_uuid: str, new_name: str, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Rename a playlist by UUID.
@@ -513,7 +518,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Dict with success status and old_name if successful
         """
         try:
-            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
+            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
             if not playlist:
                 return {"success": False, "old_name": None}
 
@@ -528,7 +533,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_make_playlist_public(
-        self, db: AsyncSession, playlist_uuid: str, is_public: bool = True
+        self, db: AsyncSession, playlist_uuid: str, is_public: bool = True, partner_id: Optional[int] = None
     ) -> bool:
         """
         Make a playlist public or private by UUID.
@@ -542,7 +547,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             True if successful, False if playlist not found
         """
         try:
-            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
+            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
             if not playlist:
                 return False
 
@@ -561,16 +566,19 @@ class PlaylistRepository(BaseRepository[Playlist]):
         playlist_uuid: str,
         allow_private: bool = False,
         user_id: Optional[int] = None,
+        partner_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Get playlist with all tracks and similarity data formatted like similarity response.
         Only returns data for public playlists (is_public = 1) unless allow_private is True or user is the owner.
+        Includes optional partner scoping.
 
         Args:
             db: Database session
             playlist_uuid: Playlist UUID
             allow_private: If True, allows access to private playlists (used for fork operations)
             user_id: Optional user ID - if provided, allows access to user's own private playlists
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with similarity-formatted data or None if not found or not accessible
@@ -585,6 +593,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 .options(selectinload(self.model.playlist_tracks))
                 .where(self.model.uuid == playlist_uuid)
             )
+            if partner_id is not None:
+                stmt = stmt.where(self.model.partner_id == partner_id)
             result = await db.execute(stmt)
             playlist = result.scalar_one_or_none()
 
@@ -781,7 +791,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_get_playlist_hls_data(
-        self, db: AsyncSession, playlist_uuid: str
+        self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Get playlist tracks with metadata formatted for HLS playlist generation.
@@ -798,7 +808,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             from sqlalchemy import text
 
             # Get playlist basic info
-            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid)
+            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
             if not playlist:
                 return None
 
@@ -899,14 +909,16 @@ class PlaylistRepository(BaseRepository[Playlist]):
     # ============================================================================
 
     async def async_get_playlist_list_admin(
-        self, db: AsyncSession, filters: Dict[str, Any]
+        self, db: AsyncSession, filters: Dict[str, Any], partner_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get paginated playlist list with filters for admin.
+        Mandatory partner scoping is enforced if partner_id is provided.
 
         Args:
             db: Database session
             filters: Dictionary containing filter parameters
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Dictionary with playlists and pagination metadata
@@ -929,6 +941,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             # Build base query
             query = select(Playlist)
             conditions = []
+            
+            # Apply partner scoping
+            if partner_id is not None:
+                conditions.append(Playlist.partner_id == partner_id)
 
             # Search filter
             if search:
@@ -1044,14 +1060,15 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_delete_playlist_admin(
-        self, db: AsyncSession, playlist_id: int
+        self, db: AsyncSession, playlist_id: int, partner_id: Optional[int] = None
     ) -> bool:
         """
-        Delete a playlist by ID.
+        Delete a playlist by ID with optional partner scoping.
 
         Args:
             db: Database session
             playlist_id: Playlist ID to delete
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             True if deleted, False if not found
@@ -1059,6 +1076,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         try:
             # Get playlist
             query = select(Playlist).where(Playlist.id == playlist_id)
+            if partner_id is not None:
+                query = query.where(Playlist.partner_id == partner_id)
             result = await db.execute(query)
             playlist = result.scalar_one_or_none()
 
@@ -1105,7 +1124,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_change_playlist_visibility_by_id(
-        self, db: AsyncSession, playlist_id: int, is_public: bool
+        self, db: AsyncSession, playlist_id: int, is_public: bool, partner_id: Optional[int] = None
     ) -> bool:
         """
         Change playlist visibility by ID.
@@ -1120,6 +1139,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         """
         try:
             stmt = select(Playlist).where(Playlist.id == playlist_id)
+            if partner_id is not None:
+                stmt = stmt.where(Playlist.partner_id == partner_id)
             result = await db.execute(stmt)
             playlist = result.scalar_one_or_none()
 
@@ -1136,7 +1157,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_batch_change_playlist_visibility(
-        self, db: AsyncSession, playlist_ids: List[int], is_public: bool
+        self, db: AsyncSession, playlist_ids: List[int], is_public: bool, partner_id: Optional[int] = None
     ) -> int:
         """
         Change visibility for multiple playlists by IDs.
@@ -1153,11 +1174,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             from sqlalchemy import update
 
             # Update playlists
-            stmt = (
-                update(Playlist)
-                .where(Playlist.id.in_(playlist_ids))
-                .values(is_public=is_public)
-            )
+            stmt = update(Playlist).where(Playlist.id.in_(playlist_ids))
+            if partner_id is not None:
+                stmt = stmt.where(Playlist.partner_id == partner_id)
+            stmt = stmt.values(is_public=is_public)
             result = await db.execute(stmt)
             await db.commit()
 
@@ -1169,7 +1189,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_get_all_playlists_for_export(
-        self, db: AsyncSession, filters: Dict[str, Any]
+        self, db: AsyncSession, filters: Dict[str, Any], partner_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         Get all playlists matching filters for export (no pagination).
@@ -1197,6 +1217,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
             # Build base query
             query = select(Playlist)
             conditions = []
+
+            if partner_id is not None:
+                conditions.append(Playlist.partner_id == partner_id)
+
 
             # Search filter
             if search:
@@ -1292,7 +1316,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_get_playlist_detail_by_uuid_admin(
-        self, db: AsyncSession, playlist_uuid: str
+        self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Get detailed playlist information by UUID for admin.
@@ -1318,6 +1342,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
             # Get playlist
             query = select(Playlist).where(Playlist.uuid == playlist_uuid)
+            if partner_id is not None:
+                query = query.where(Playlist.partner_id == partner_id)
             result = await db.execute(query)
             playlist = result.scalar_one_or_none()
 
@@ -1492,9 +1518,11 @@ class PlaylistRepository(BaseRepository[Playlist]):
         page: int = 1,
         page_size: int = 20,
         filters=None,
+        partner_id: Optional[int] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         """
         Get all playlists owned by a user with all required information and optional filters.
+        Enforces partner scoping.
 
         Args:
             db: Database session
@@ -1502,6 +1530,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             page: Page number
             page_size: Items per page
             filters: Optional UserPlaylistsFilters object
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             Tuple of (list of playlist dictionaries, total count)
@@ -1513,6 +1542,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
             # Build base query conditions
             conditions = []
+            if partner_id is not None:
+                conditions.append(Playlist.partner_id == partner_id)
             needs_engagement_join = False
 
             # Handle all_favorites filter - if true, include playlists user favorited but doesn't own

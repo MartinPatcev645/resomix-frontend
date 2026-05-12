@@ -159,9 +159,9 @@ class SeedDataManager:
                 
                 # 2. Labels
                 conn.execute(text("""
-                    INSERT INTO labels (id, party_id, label_name, label_type)
-                    VALUES (1, 'ARGO_01', 'Argo Deep', 'RecordLabel'),
-                           (2, 'ARGO_01', 'Argo Techno', 'RecordLabel')
+                    INSERT INTO labels (id, party_id, label_name, label_type, partner_id)
+                    VALUES (1, 'ARGO_01', 'Argo Deep', 'RecordLabel', 1),
+                           (2, 'ARGO_01', 'Argo Techno', 'RecordLabel', 1)
                 """))
                 return True
         except Exception as e:
@@ -212,20 +212,20 @@ class SeedDataManager:
             with self.engine.begin() as conn:
                 # 1. Ingest Log
                 conn.execute(text("""
-                    INSERT INTO ingest_logs (id, party_id, package_folder, status)
-                    VALUES (1, 'ARGO_01', '/sftp/argo/batch_001', 'COMPLETED')
+                    INSERT INTO ingest_logs (id, party_id, package_folder, status, partner_id)
+                    VALUES (1, 'ARGO_01', '/sftp/argo/batch_001', 'COMPLETED', 1)
                 """))
                 
                 # 2. Message
                 conn.execute(text("""
-                    INSERT INTO messages (id, ingest_log_id, party_id, message_id, message_type, ddex_version)
-                    VALUES (1, 1, 'ARGO_01', 'MSG_2026_001', 'ERN', '4.3')
+                    INSERT INTO messages (id, ingest_log_id, party_id, message_id, message_type, ddex_version, partner_id)
+                    VALUES (1, 1, 'ARGO_01', 'MSG_2026_001', 'ERN', '4.3', 1)
                 """))
                 
                 # 3. Deal
                 conn.execute(text("""
-                    INSERT INTO deals (id, party_id, message_id, deal_ref, commercial_model, is_perpetual)
-                    VALUES (1, 'ARGO_01', 'MSG_2026_001', 'DEAL_001', 'PayAsYouGoModel', 1)
+                    INSERT INTO deals (id, party_id, message_id, deal_ref, commercial_model, is_perpetual, partner_id)
+                    VALUES (1, 'ARGO_01', 'MSG_2026_001', 'DEAL_001', 'PayAsYouGoModel', 1, 1)
                 """))
                 return True
         except Exception as e:
@@ -336,15 +336,15 @@ class SeedDataManager:
                 # 1. Admin
                 admin_uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
                 conn.execute(text("""
-                    INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified)
-                    VALUES (1, :uuid, 'admin', 'dj@argo.fm', :pw, 'DJ Argo (Admin)', 1)
+                    INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
+                    VALUES (1, :uuid, 'admin', 'dj@argo.fm', :pw, 'DJ Argo (Admin)', 1, 1)
                 """), {'uuid': admin_uuid, 'pw': self._hash_password('dj@argo.fm')})
                 
                 # 2. Listener
                 user_uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d480'
                 conn.execute(text("""
-                    INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified)
-                    VALUES (2, :uuid, 'listener_01', 'listener@resomix.com', :pw, 'Music Lover', 1)
+                    INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
+                    VALUES (2, :uuid, 'listener_01', 'listener@resomix.com', :pw, 'Music Lover', 1, 1)
                 """), {'uuid': user_uuid, 'pw': self._hash_password('User@123')})
                 
                 # Assign Roles

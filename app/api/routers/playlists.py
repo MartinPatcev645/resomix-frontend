@@ -21,9 +21,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
-from app.api.dependencies.auth import get_api_key, get_current_user_optional, get_current_user
+from app.api.dependencies.auth import get_current_user_optional, get_current_user, get_api_key
+from app.api.dependencies.partner import get_current_partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
+from app.models.partner import Partner
 from app.schemas.playlist import (
     PlaylistRenameRequest,
     PlaylistVisibilityRequest,
@@ -79,7 +81,7 @@ async def rename_playlist_endpoint(
     request: Request,
     request_data: PlaylistRenameRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
@@ -121,7 +123,7 @@ async def change_playlist_visibility_endpoint(
     request: Request,
     request_data: PlaylistVisibilityRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
@@ -167,7 +169,7 @@ async def get_playlist_similarity_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
@@ -224,7 +226,7 @@ async def fork_playlist_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
     current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """
@@ -339,7 +341,7 @@ async def get_playlist_hls_endpoint(
 async def get_all_user_playlists_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),
     current_user: User = Depends(get_current_user),  # REQUIRED auth
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -408,7 +410,7 @@ async def get_all_user_playlists_endpoint(
 async def get_playlist_playback_session_endpoint(
     request: Request,
     playlist_id: str,
-    api_key: str = Security(get_api_key)
+    partner: Partner = Depends(get_current_partner)
 ) -> JSONResponse:
     """
     Generate an Edge Authorization JWT session token.

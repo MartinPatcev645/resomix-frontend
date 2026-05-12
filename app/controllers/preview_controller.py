@@ -31,7 +31,8 @@ class PreviewController:
     async def get_preview_download_url(
         self,
         db: AsyncSession,
-        track_id: str
+        track_id: str,
+        partner_id: int = None
     ) -> JSONResponse:
         """
         Generate download URL for a track preview by its ID.
@@ -39,11 +40,12 @@ class PreviewController:
         Args:
             db: Database session
             track_id: The track UUID to generate preview URL for
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             JSON response with preview URL or error
         """
-        log_request("get_preview", "GET", {"track_id": track_id})
+        log_request("get_preview", "GET", {"track_id": track_id, "partner_id": partner_id})
         
         try:
             # Validate track_id
@@ -57,7 +59,7 @@ class PreviewController:
                 )
             
             # Call preview service to generate download URL
-            preview_result = await self.preview_service.generate_download_url(db, track_id)
+            preview_result = await self.preview_service.generate_download_url(db, track_id, partner_id=partner_id)
             
             # Check if the result contains an error
             if preview_result.get("success") is False:

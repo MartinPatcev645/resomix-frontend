@@ -51,7 +51,8 @@ class FeedbackRepository(BaseRepository[Feedback]):
     async def create_feedback(
         self,
         db: AsyncSession,
-        user_id: Optional[str],
+        user_id: Optional[int],
+        partner_id: int,
         category: Optional[str],
         message: Optional[str],
         satisfaction: int,
@@ -73,6 +74,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         """
         feedback = Feedback(
             user_id=user_id,
+            partner_id=partner_id,
             category=category,
             message=message,
             satisfaction=satisfaction,
@@ -89,7 +91,8 @@ class FeedbackRepository(BaseRepository[Feedback]):
     async def get_feedback_by_user(
         self,
         db: AsyncSession,
-        user_id: str,
+        user_id: int,
+        partner_id: Optional[int] = None,
         limit: int = 10,
         offset: int = 0
     ) -> List[Feedback]:
@@ -105,9 +108,13 @@ class FeedbackRepository(BaseRepository[Feedback]):
         Returns:
             List of feedback records
         """
+        filters = [Feedback.user_id == user_id]
+        if partner_id:
+            filters.append(Feedback.partner_id == partner_id)
+            
         stmt = (
             select(Feedback)
-            .where(Feedback.user_id == user_id)
+            .where(and_(*filters))
             .order_by(Feedback.submitted_at.desc())
             .limit(limit)
             .offset(offset)
@@ -215,7 +222,8 @@ class FeedbackRepository(BaseRepository[Feedback]):
         self,
         db: AsyncSession,
         feedback_id: int,
-        status: str
+        status: str,
+        partner_id: Optional[int] = None
     ) -> Optional[Feedback]:
         """
         Update feedback status.
@@ -228,13 +236,23 @@ class FeedbackRepository(BaseRepository[Feedback]):
         Returns:
             Updated feedback record or None if not found
         """
-        feedback = await self.async_get_by_id(db, feedback_id)
+        feedback = await self.async_get_by_id(db, feedback_id, partner_id=partner_id)
         if feedback:
             feedback.status = status
             await db.commit()
             await db.refresh(feedback)
         
         return feedback
+
+    async def async_get_by_id(self, db: AsyncSession, id: int, partner_id: Optional[int] = None) -> Optional[Feedback]:
+        """Async version of get_by_id with partner scoping."""
+        filters = [Feedback.id == id]
+        if partner_id:
+            filters.append(Feedback.partner_id == partner_id)
+            
+        stmt = select(Feedback).where(and_(*filters))
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
     
     # ============================================================================
     # Admin Methods
@@ -251,7 +269,8 @@ class FeedbackRepository(BaseRepository[Feedback]):
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         sort_by: str = "submitted_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
+        partner_id: Optional[int] = None
     ) -> Tuple[List[Feedback], int]:
         """
         Get paginated feedback list with filters for admin.
@@ -278,6 +297,10 @@ class FeedbackRepository(BaseRepository[Feedback]):
         # Apply filters
         filters = []
         
+        # Partner filter
+        if partner_id:
+            filters.append(Feedback.partner_id == partner_id)
+            
         # Status filter
         if status != "all":
             filters.append(Feedback.status == status)
@@ -344,7 +367,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         
         return feedback_list, total
     
-    async def delete_feedback(self, db: AsyncSession, feedback_id: int) -> bool:
+    async def delete_feedback(self, db: AsyncSession, feedback_id: int, partner_id: Optional[int] = None) -> bool:
         """
         Delete a single feedback entry.
         
@@ -355,25 +378,30 @@ class FeedbackRepository(BaseRepository[Feedback]):
         Returns:
             True if deleted, False if not found
         """
-        feedback = await self.async_get_by_id(db, feedback_id)
+        feedback = await self.async_get_by_id(db, feedback_id, partner_id=partner_id)
         if feedback:
             await db.delete(feedback)
             await db.commit()
             return True
         return False
     
-    async def batch_delete_feedback(self, db: AsyncSession, feedback_ids: List[int]) -> int:
+    async def batch_delete_feedback(self, db: AsyncSession, feedback_ids: List[int], partner_id: Optional[int] = None) -> int:
         """
         Delete multiple feedback entries.
         
         Args:
             db: Database session
             feedback_ids: List of feedback IDs to delete
+            partner_id: Optional partner ID for scoping
             
         Returns:
             Number of deleted entries
         """
-        stmt = delete(Feedback).where(Feedback.id.in_(feedback_ids))
+        filters = [Feedback.id.in_(feedback_ids)]
+        if partner_id:
+            filters.append(Feedback.partner_id == partner_id)
+            
+        stmt = delete(Feedback).where(and_(*filters))
         result = await db.execute(stmt)
         await db.commit()
         return result.rowcount
@@ -382,7 +410,8 @@ class FeedbackRepository(BaseRepository[Feedback]):
         self,
         db: AsyncSession,
         feedback_id: int,
-        update_data: Dict[str, Any]
+        update_data: Dict[str, Any],
+        partner_id: Optional[int] = None
     ) -> Optional[Feedback]:
         """
         Update feedback fields.
@@ -405,7 +434,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         
         return feedback
     
-    async def get_feedback_statistics(self, db: AsyncSession) -> Dict[str, Any]:
+    async def get_feedback_statistics(self, db: AsyncSession, partner_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Get feedback statistics for admin dashboard.
         
@@ -420,9 +449,18 @@ class FeedbackRepository(BaseRepository[Feedback]):
         open_query = select(func.count(Feedback.id)).where(Feedback.status == 'open')
         resolved_query = select(func.count(Feedback.id)).where(Feedback.status == 'resolved')
         
+        if partner_id:
+            total_query = total_query.where(Feedback.partner_id == partner_id)
+            open_query = open_query.where(Feedback.partner_id == partner_id)
+            resolved_query = resolved_query.where(Feedback.partner_id == partner_id)
+            
         # Get averages
         avg_satisfaction_query = select(func.avg(Feedback.satisfaction))
         avg_recommendation_query = select(func.avg(Feedback.recommendation))
+        
+        if partner_id:
+            avg_satisfaction_query = avg_satisfaction_query.where(Feedback.partner_id == partner_id)
+            avg_recommendation_query = avg_recommendation_query.where(Feedback.partner_id == partner_id)
         
         # Execute queries
         total_result = await db.execute(total_query)
@@ -441,7 +479,12 @@ class FeedbackRepository(BaseRepository[Feedback]):
         category_query = select(
             Feedback.category,
             func.count(Feedback.id).label('count')
-        ).group_by(Feedback.category)
+        )
+        
+        if partner_id:
+            category_query = category_query.where(Feedback.partner_id == partner_id)
+            
+        category_query = category_query.group_by(Feedback.category)
         
         category_result = await db.execute(category_query)
         category_stats = {}
@@ -468,7 +511,8 @@ class FeedbackRepository(BaseRepository[Feedback]):
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         sort_by: str = "submitted_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
+        partner_id: Optional[int] = None
     ) -> List[Feedback]:
         """
         Get all feedback for export (no pagination).
@@ -492,6 +536,10 @@ class FeedbackRepository(BaseRepository[Feedback]):
         # Apply filters
         filters = []
         
+        # Partner filter
+        if partner_id:
+            filters.append(Feedback.partner_id == partner_id)
+            
         # Status filter
         if status != "all":
             filters.append(Feedback.status == status)

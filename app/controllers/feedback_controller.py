@@ -36,7 +36,7 @@ class FeedbackController:
         self.feedback_service = FeedbackService()
         self.logging_service = LoggingService()
     
-    async def submit_feedback(self, db: AsyncSession, request: Request, feedback_data: Dict[str, Any], current_user: Optional[User] = None) -> JSONResponse:
+    async def submit_feedback(self, db: AsyncSession, request: Request, feedback_data: Dict[str, Any], current_user: Optional[User] = None, partner_id: Optional[int] = None) -> JSONResponse:
         """
         Submit feedback.
         
@@ -44,6 +44,7 @@ class FeedbackController:
             db: Database session
             feedback_data: Feedback form data
             current_user: Optional authenticated user from JWT
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             JSON response with submission result
@@ -61,6 +62,9 @@ class FeedbackController:
             # Prioritize JWT user over request body user_id
             if current_user:
                 feedback_data['user_id'] = current_user.id  # Use integer ID, not UUID
+            
+            # Set partner_id
+            feedback_data['partner_id'] = partner_id
             
             # Process feedback submission
             result = await self.feedback_service.process_feedback_submission(db, feedback_data)
@@ -165,13 +169,14 @@ class FeedbackController:
                 content=response_data
             )
     
-    async def get_feedback_by_id(self, db: AsyncSession, request: Request, feedback_id: int) -> JSONResponse:
+    async def get_feedback_by_id(self, db: AsyncSession, request: Request, feedback_id: int, partner_id: Optional[int] = None) -> JSONResponse:
         """
         Get a feedback by ID.
         
         Args:
             db: Database session
             feedback_id: Feedback ID
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             JSON response with feedback data
@@ -179,7 +184,7 @@ class FeedbackController:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
-            feedback = await self.feedback_service.get_feedback_by_id(db, feedback_id)
+            feedback = await self.feedback_service.get_feedback_by_id(db, feedback_id, partner_id=partner_id)
             
             if feedback:
                 feedback_data = {
@@ -280,7 +285,7 @@ class FeedbackController:
                 content=response_data
             )
     
-    async def update_feedback_status(self, db: AsyncSession, request: Request, feedback_id: int, status_data: Dict[str, Any]) -> JSONResponse:
+    async def update_feedback_status(self, db: AsyncSession, request: Request, feedback_id: int, status_data: Dict[str, Any], partner_id: Optional[int] = None) -> JSONResponse:
         """
         Update feedback status.
         
@@ -288,6 +293,7 @@ class FeedbackController:
             db: Database session
             feedback_id: Feedback ID
             status_data: Status update data
+            partner_id: Optional partner ID for tenant scoping
             
         Returns:
             JSON response with update result
@@ -325,7 +331,7 @@ class FeedbackController:
                     content=response_data
                 )
             
-            result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status)
+            result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status, partner_id=partner_id)
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
@@ -424,14 +430,15 @@ class FeedbackController:
         self,
         db: AsyncSession,
         request: Request,
-        filters: Dict[str, Any]
+        filters: Dict[str, Any],
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """Get paginated feedback list with filters for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.get_feedback_list_admin(db, filters)
+            result = await self.feedback_service.get_feedback_list_admin(db, filters, partner_id=partner_id)
             
             if result.get("success"):
                 # Convert feedback objects to dictionaries
@@ -541,14 +548,15 @@ class FeedbackController:
         self,
         db: AsyncSession,
         request: Request,
-        feedback_id: int
+        feedback_id: int,
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """Delete a single feedback entry."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.delete_feedback_admin(db, feedback_id)
+            result = await self.feedback_service.delete_feedback_admin(db, feedback_id, partner_id=partner_id)
             
             if result.get("success"):
                 duration_ms = (time.time() - start_time) * 1000
@@ -641,14 +649,15 @@ class FeedbackController:
         self,
         db: AsyncSession,
         request: Request,
-        feedback_ids: List[int]
+        feedback_ids: List[int],
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """Delete multiple feedback entries."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.batch_delete_feedback_admin(db, feedback_ids)
+            result = await self.feedback_service.batch_delete_feedback_admin(db, feedback_ids, partner_id=partner_id)
             
             duration_ms = (time.time() - start_time) * 1000
             response_data = {
@@ -738,14 +747,15 @@ class FeedbackController:
         db: AsyncSession,
         request: Request,
         feedback_id: int,
-        status_value: str
+        status_value: str,
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """Mark feedback status for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.mark_feedback_status_admin(db, feedback_id, status_value)
+            result = await self.feedback_service.mark_feedback_status_admin(db, feedback_id, status_value, partner_id=partner_id)
             
             if result.get("success"):
                 feedback = result.get("data")
@@ -849,20 +859,20 @@ class FeedbackController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=response_data
             )
-    
     async def update_feedback_admin(
         self,
         db: AsyncSession,
         request: Request,
         feedback_id: int,
-        update_data: Dict[str, Any]
+        update_data: Dict[str, Any],
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """Update feedback for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.update_feedback_admin(db, feedback_id, update_data)
+            result = await self.feedback_service.update_feedback_admin(db, feedback_id, update_data, partner_id=partner_id)
             
             if result.get("success"):
                 feedback = result.get("data")
@@ -970,14 +980,15 @@ class FeedbackController:
     async def get_feedback_statistics_admin(
         self,
         db: AsyncSession,
-        request: Request
+        request: Request,
+        partner_id: Optional[int] = None
     ) -> JSONResponse:
         """Get feedback statistics for admin dashboard."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.get_feedback_statistics_admin(db)
+            result = await self.feedback_service.get_feedback_statistics_admin(db, partner_id=partner_id)
             
             duration_ms = (time.time() - start_time) * 1000
             response_data = {

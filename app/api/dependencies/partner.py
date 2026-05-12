@@ -65,17 +65,13 @@ async def _get_partner_core(
         partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
         request.state.partner_id = SYSTEM_PARTNER_ID
 
-    # 3. Anonymous Public Traffic
-    # All non-authenticated requests default to the System Partner (Tenant ID 1)
+    # 3. Deny Anonymous Public Traffic
+    # Unauthenticated requests to scoped endpoints MUST fail with 401.
     if not partner:
-        logger.debug("AUTH: Defaulting to System Partner (Tenant ID 1) for public/anonymous traffic")
-        partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
-
-    if not partner:
-        logger.error(f"FATAL: System Partner (ID {SYSTEM_PARTNER_ID}) is missing from the database!")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="System configuration error: Default partner not found."
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a Partner API key or user session.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Set the partner_id in the request context for global failsafe

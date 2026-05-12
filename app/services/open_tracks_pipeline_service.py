@@ -18,9 +18,12 @@ Email: usman.naeem2212@gmail.com
 import os
 import httpx
 from typing import Dict, Any, Optional
+import logging
 
 from app.core.config import settings
 from sqlalchemy import text
+
+logger = logging.getLogger(__name__)
 
 
 class OpenTracksPipelineService:
@@ -81,12 +84,13 @@ class OpenTracksPipelineService:
     #  Update Embeddings (bulk)
     # -------------------------------------------------------------------------
 
-    async def update_embeddings(self, db) -> Dict[str, Any]:
+    async def update_embeddings(self, db, partner_id: Optional[int] = None) -> Dict[str, Any]:
         """Generate a UUID↔path NDJSON mapping for OPEN tracks and send to the
         similarity server's /open-tracks-pipeline/update_embeddings endpoint.
 
         Args:
             db: Async SQLAlchemy session
+            partner_id: Optional partner ID for tenant scoping
 
         Returns:
             JSON response from the similarity server or structured error dict.
@@ -95,9 +99,16 @@ class OpenTracksPipelineService:
         import tempfile
         import subprocess
 
-        # Step 1: Fetch uuid and file_path for OPEN tracks only
+        # Step 1: Fetch uuid and file_path for OPEN tracks only, scoped by partner
         try:
-            result = await db.execute(text("SELECT uuid, file_path FROM tracks WHERE type = 'open'"))
+            if partner_id is not None:
+                stmt = text("SELECT uuid, file_path FROM tracks WHERE type = 'open' AND partner_id = :partner_id")
+                result = await db.execute(stmt, {"partner_id": partner_id})
+            else:
+                # If no partner_id provided, return nothing for safety in multi-tenant environment
+                logger.warning("[OPEN_PIPELINE] No partner_id provided for bulk embeddings update")
+                return {"success": False, "error": "No partner context provided for embeddings update."}
+            
             rows = result.fetchall()
         except Exception as e:
             print(f"Error querying tracks for update_embeddings: {e}")
