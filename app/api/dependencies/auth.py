@@ -43,6 +43,8 @@ api_key_query = APIKeyQuery(name="api_key", auto_error=False)
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 
+from app.core.context import set_admin_context
+
 async def get_api_key(
     request: Request,
     api_key_query: Optional[str] = Security(api_key_query),
@@ -61,6 +63,8 @@ async def get_api_key(
     key = api_key_query or api_key_header
 
     if key == settings.api_key:
+        # Flag this request as administrative to allow multi-tenant bypass
+        set_admin_context(True)
         return key
 
     raise HTTPException(

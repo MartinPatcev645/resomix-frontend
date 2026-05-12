@@ -171,13 +171,19 @@ def _do_orm_execute(execute_state):
     If no partner context is active (pid is None) and the query targets a
     partner-scoped model, it raises a RuntimeError to prevent data leakage.
     """
-    from app.core.context import get_current_partner_id
+    from app.core.context import get_current_partner_id, is_admin_context
 
     pid = get_current_partner_id()
+    is_admin = is_admin_context()
 
     # Only process ORM statements
     if execute_state.is_orm_statement:
         from app.models import Base
+
+        # ADMIN BYPASS: If this is an administrative request, do not enforce strict partner filtering
+        if is_admin:
+            logger.debug("SQL Failsafe: Admin context active - bypassing tenant isolation")
+            return
 
         if pid is not None:
             # Inject the loader criteria (automatic WHERE partner_id = :pid)
@@ -191,11 +197,15 @@ def _do_orm_execute(execute_state):
             logger.debug(f"SQL Failsafe: Injected partner_id={pid} into query")
         else:
             # STRICT CHECK: If pid is None, verify no partner-scoped models are targeted
+            # EXCEPT for models used in tenant discovery (authentication)
+            EXEMPT_MODELS = {"PartnerApiKey", "Partner"}
+            
             for mapper in execute_state.all_mappers:
-                if hasattr(mapper.class_, "partner_id"):
+                model_name = mapper.class_.__name__
+                if hasattr(mapper.class_, "partner_id") and model_name not in EXEMPT_MODELS:
                     # This model REQUIRES partner_id, but none was provided in context!
                     error_msg = (
-                        f"Multi-tenancy violation: Query targeting partner-scoped model '{mapper.class_.__name__}' "
+                        f"Multi-tenancy violation: Query targeting partner-scoped model '{model_name}' "
                         f"attempted without an active partner context (partner_id is None). "
                         f"This is a critical security failure."
                     )

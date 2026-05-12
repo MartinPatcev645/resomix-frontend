@@ -16,7 +16,7 @@ async def init_redis_pool() -> None:
         try:
             redis_url = getattr(settings, "redis_url", "redis://localhost:6379/0")
             _redis_pool = redis.ConnectionPool.from_url(
-                redis_url, decode_responses=True, max_connections=10
+                redis_url, decode_responses=True, max_connections=100
             )
             # Test connection
             client = redis.Redis(connection_pool=_redis_pool)

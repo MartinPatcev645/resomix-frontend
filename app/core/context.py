@@ -12,6 +12,9 @@ from typing import Optional
 # ContextVar to store the current partner ID for the duration of a request
 partner_id_context: ContextVar[Optional[int]] = ContextVar("partner_id_context", default=None)
 
+# ContextVar to track if the current request is an administrative operation
+admin_context: ContextVar[bool] = ContextVar("admin_context", default=False)
+
 def set_current_partner_id(partner_id: Optional[int]) -> None:
     """Set the current partner ID in the context."""
     partner_id_context.set(partner_id)
@@ -19,3 +22,11 @@ def set_current_partner_id(partner_id: Optional[int]) -> None:
 def get_current_partner_id() -> Optional[int]:
     """Get the current partner ID from the context."""
     return partner_id_context.get()
+
+def set_admin_context(is_admin: bool) -> None:
+    """Set the administrative status in the context."""
+    admin_context.set(is_admin)
+
+def is_admin_context() -> bool:
+    """Check if the current context is administrative."""
+    return admin_context.get()
