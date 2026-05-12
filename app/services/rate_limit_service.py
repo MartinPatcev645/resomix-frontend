@@ -115,12 +115,10 @@ class RateLimitService:
             - error_code (str): "RATE_LIMIT_EXCEEDED" or "QUOTA_EXCEEDED" if blocked
             - retry_after (float): Recommended wait time in seconds (for burst)
         """
-        logger.error(f"DEBUG: check_rate_limits called for key_id={api_key_id}, rps={rps_limit}")
         pool = redis_module._redis_pool
         if not pool:
-            logger.warning("Redis pool not initialized, bypass rate limiting")
             return True, "", None
-
+        
         try:
             async with aioredis.Redis(connection_pool=pool) as client:
                 # 1. Evaluate Layer 1 (Burst - Token Bucket)
@@ -170,7 +168,7 @@ class RateLimitService:
                     monthly_limit, 1, 35 * 86400 # 35 days TTL
                 )
                 
-                allowed_quota_int, _ = res_quota
+                allowed_quota_int = res_quota[0]
                 
                 if not bool(allowed_quota_int):
                     return False, "QUOTA_EXCEEDED", None

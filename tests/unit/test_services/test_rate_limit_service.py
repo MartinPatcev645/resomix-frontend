@@ -23,17 +23,21 @@ async def test_burst_rate_limit_allowed():
         mock_redis_cls.return_value = mock_redis_instance
         mock_redis_instance.__aenter__ = AsyncMock(return_value=mock_redis_instance)
         mock_redis_instance.__aexit__ = AsyncMock()
-        mock_redis_instance.register_script.return_value = mock_script
+        mock_redis_instance.eval = AsyncMock(return_value=[1, 9, 0.0])
+        mock_redis_instance.exists = AsyncMock(return_value=True)
         
-        with patch("app.services.rate_limit_service._redis_pool", MagicMock()):
+        with patch("app.db.redis._redis_pool", MagicMock()):
             allowed, error, retry = await service.check_rate_limits(
-                api_key_id=1, rps_limit=10, monthly_limit=1000
+                db=AsyncMock(),
+                api_key_id=1,
+                partner_id=1,
+                rps_limit=10,
+                monthly_limit=1000
             )
             
             assert allowed is True
             assert error == ""
             assert retry is None
-            assert mock_script.called is True
 
 @pytest.mark.asyncio
 async def test_burst_rate_limit_exceeded():
@@ -47,17 +51,21 @@ async def test_burst_rate_limit_exceeded():
         mock_redis_cls.return_value = mock_redis_instance
         mock_redis_instance.__aenter__ = AsyncMock(return_value=mock_redis_instance)
         mock_redis_instance.__aexit__ = AsyncMock()
-        mock_redis_instance.register_script.return_value = mock_script
+        mock_redis_instance.eval = AsyncMock(return_value=[0, 0, 0.1])
+        mock_redis_instance.exists = AsyncMock(return_value=True)
         
-        with patch("app.services.rate_limit_service._redis_pool", MagicMock()):
+        with patch("app.db.redis._redis_pool", MagicMock()):
             allowed, error, retry = await service.check_rate_limits(
-                api_key_id=1, rps_limit=10, monthly_limit=1000
+                db=AsyncMock(),
+                api_key_id=1,
+                partner_id=1,
+                rps_limit=10,
+                monthly_limit=1000
             )
             
             assert allowed is False
             assert error == "RATE_LIMIT_EXCEEDED"
             assert retry == 0.1
-            assert mock_script.called is True
 
 @pytest.mark.asyncio
 async def test_monthly_quota_exceeded():
@@ -78,15 +86,24 @@ async def test_monthly_quota_exceeded():
         mock_redis_cls.return_value = mock_redis_instance
         mock_redis_instance.__aenter__ = AsyncMock(return_value=mock_redis_instance)
         mock_redis_instance.__aexit__ = AsyncMock()
-        mock_redis_instance.register_script.side_effect = mock_register
         
-        with patch("app.services.rate_limit_service._redis_pool", MagicMock()):
+        # mock_register replacement: 
+        # First call (burst) succeeds, second call (quota) fails
+        mock_redis_instance.eval = AsyncMock(side_effect=[
+            [1, 10, 0.0], # Burst success
+            [0, 1000]     # Quota failure
+        ])
+        mock_redis_instance.exists = AsyncMock(return_value=True)
+        
+        with patch("app.db.redis._redis_pool", MagicMock()):
             allowed, error, retry = await service.check_rate_limits(
-                api_key_id=1, rps_limit=10, monthly_limit=1000
+                db=AsyncMock(),
+                api_key_id=1,
+                partner_id=1,
+                rps_limit=10,
+                monthly_limit=1000
             )
             
             assert allowed is False
             assert error == "QUOTA_EXCEEDED"
             assert retry is None
-            assert mock_burst_script.called is True
-            assert mock_quota_script.called is True

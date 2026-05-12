@@ -16,8 +16,13 @@ async def test_calculate_similarity_for_upload_passes_partner_id():
     partner_id = 123
     
     # Mock internal methods and external calls
-    with patch.object(service, "_call_similarity_server", new_callable=AsyncMock) as mock_call:
+    with patch.object(service, "_call_similarity_server", new_callable=AsyncMock) as mock_call, \
+         patch.object(service.similarity_repository, "async_get_track_details_by_uuids", new_callable=AsyncMock) as mock_uuids, \
+         patch.object(service.similarity_repository, "async_get_reference_track_details_by_uuid", new_callable=AsyncMock) as mock_ref:
+        
         mock_call.return_value = {"status": "success", "results": []}
+        mock_uuids.return_value = {}
+        mock_ref.return_value = {"id": track_uuid, "title": "Test Track"}
         
         with patch("app.services.similarity_service.get_duration_from_bytes_sync", return_value=120.0):
             await service.calculate_similarity_for_upload(

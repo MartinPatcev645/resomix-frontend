@@ -134,7 +134,7 @@ class Cache:
     # --- get-or-create helpers ----------------------------------------------
 
     async def _get_or_create(
-        self, db: AsyncSession, table: str, cache: Dict[str, int], name: str
+        self, db: AsyncSession, table: str, cache: Dict[str, int], name: str, partner_id: Optional[int] = None
     ) -> int:
         # Sanitize the name for database insertion based on table type
         original_name = name
@@ -169,17 +169,23 @@ class Cache:
                 
             # Only contributors and labels tables use party_id
             if table in ["contributors", "labels"]:
-                insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}, party_id) VALUES (:name, :party_id)")
-                await db.execute(insert_sql, {"name": sanitized_name, "party_id": self.party_id})
+                # Use partner_id if provided, otherwise default to 1
+                pid = partner_id if partner_id is not None else 1
+                insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}, party_id, partner_id) VALUES (:name, :party_id, :partner_id)")
+                await db.execute(insert_sql, {"name": sanitized_name, "party_id": self.party_id, "partner_id": pid})
             else:
                 insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}) VALUES (:name)")
                 await db.execute(insert_sql, {"name": sanitized_name})
 
             # Get the ID - handle potential duplicates
-            select_result = await db.execute(
-                text(f"SELECT id FROM {table} WHERE {col_name} = :name"),
-                {"name": sanitized_name},
-            )
+            # For contributors and labels, we scope by party_id and partner_id for safety
+            if table in ["contributors", "labels"]:
+                select_sql = text(f"SELECT id FROM {table} WHERE {col_name} = :name AND party_id = :party_id")
+                select_result = await db.execute(select_sql, {"name": sanitized_name, "party_id": self.party_id})
+            else:
+                select_sql = text(f"SELECT id FROM {table} WHERE {col_name} = :name")
+                select_result = await db.execute(select_sql, {"name": sanitized_name})
+                
             row = select_result.first()
             if row is None:
                 raise Exception(
@@ -194,11 +200,11 @@ class Cache:
             logger.error(f"Error in _get_or_create for {table} '{sanitized_name}': {e}")
             raise
 
-    async def artist(self, db: AsyncSession, name: str) -> int:
-        return await self._get_or_create(db, "contributors", self.artists, name)
+    async def artist(self, db: AsyncSession, name: str, partner_id: Optional[int] = None) -> int:
+        return await self._get_or_create(db, "contributors", self.artists, name, partner_id=partner_id)
 
-    async def label(self, db: AsyncSession, name: str) -> int:
-        return await self._get_or_create(db, "labels", self.labels, name)
+    async def label(self, db: AsyncSession, name: str, partner_id: Optional[int] = None) -> int:
+        return await self._get_or_create(db, "labels", self.labels, name, partner_id=partner_id)
 
     async def genre(self, db: AsyncSession, name: str) -> int:
         return await self._get_or_create(db, "genres", self.genres, name)
@@ -233,15 +239,15 @@ class Cache:
                 }
             )
 
-            # Get the ID
+            # Get the ID - scoped by partner_id
             select_result = await db.execute(
-                text("SELECT id FROM releases WHERE title = :title"),
-                {"title": sanitized_title},
+                text("SELECT id FROM releases WHERE title = :title AND partner_id = :partner_id"),
+                {"title": sanitized_title, "partner_id": partner_id},
             )
             row = select_result.first()
             if row is None:
                 raise Exception(
-                    f"Failed to insert or find album record for: '{sanitized_title}' (original: '{original_title}')"
+                    f"Failed to insert or find album record for: '{sanitized_title}' (original: '{original_title}') with partner_id {partner_id}"
                 )
 
             id_ = row[0]
@@ -435,14 +441,14 @@ class TrackUploadService:
             # Get or create artists
             artist_ids = []
             for name in artist_names:
-                artist_id = await self.cache.artist(db, name)
+                artist_id = await self.cache.artist(db, name, partner_id=partner_id)
                 artist_ids.append(artist_id)
             primary_artist_id = artist_ids[0]
 
             # Get or create label (optional)
             label_id = None
             if label_name:
-                label_id = await self.cache.label(db, label_name)
+                label_id = await self.cache.label(db, label_name, partner_id=partner_id)
 
             # Get or create genre
             genre_id = await self.cache.genre(db, genre_name)
@@ -490,6 +496,32 @@ class TrackUploadService:
                 raise Exception("Failed to insert track or retrieve track ID")
 
             track_id = track_row[0]
+
+            # NEW: Insert into audio_files table for path tracking
+            from app.models.audio_file import AudioFile
+            
+            # Use current partner_id from context if partner_id argument is not sufficient
+            # or just use the passed partner_id
+            
+            # Fetch a default ingest_log_id (since it's NOT NULL)
+            # In a real production scenario, we'd create a proper log entry
+            res_log = await db.execute(text("SELECT id FROM ingest_logs LIMIT 1"))
+            log_row = res_log.first()
+            ingest_log_id = log_row[0] if log_row else 1 # Fallback to 1 if no logs exist
+            
+            audio_file_insert = insert(AudioFile).values(
+                track_id=track_id,
+                party_id=self.cache.party_id,
+                partner_id=partner_id,
+                ingest_log_id=ingest_log_id,
+                asset_class='Master',
+                original_filename=file.filename or secure_filename,
+                stored_path=full_path if full_path else secure_filename,
+                file_size_bytes=file_size,
+                duration_seconds=int(duration_sec) if duration_sec else None,
+                mime_type=file.content_type
+            )
+            await db.execute(audio_file_insert)
 
             # Insert track-artist relationships using ORM
             for artist_id in artist_ids:

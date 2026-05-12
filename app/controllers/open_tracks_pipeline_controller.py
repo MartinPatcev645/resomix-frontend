@@ -19,6 +19,7 @@ from typing import Optional
 from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 import time
 from app.core.config import settings
 from app.models.constants import TrackType
@@ -158,50 +159,59 @@ class OpenTracksPipelineController:
         
         # STEP 0: Check if this path already exists in database (duplicate check)
         try:
-            from database.connection import engine
-            from sqlalchemy import text
+            # Check if a track with this path already exists in audio_files
+            query_str = "SELECT COUNT(*) FROM audio_files WHERE stored_path = :path"
+            query_params = {"path": path}
             
-            with engine.begin() as conn:
-                check_result = conn.execute(
-                    text("SELECT COUNT(*) FROM tracks WHERE file_path = :path AND partner_id = :partner_id"),
-                    {"path": path, "partner_id": partner_id}
-                )
-                count = check_result.scalar()
+            # Enforce partner isolation if partner_id is provided
+            if partner_id is not None:
+                query_str += " AND partner_id = :pid"
+                query_params["pid"] = partner_id
+            else:
+                # If no partner_id provided, check context
+                from app.core.context import get_current_partner_id
+                pid = get_current_partner_id()
+                if pid is not None:
+                    query_str += " AND partner_id = :pid"
+                    query_params["pid"] = pid
                 
-                if count > 0:
-                    duration_ms = (time.time() - start_time) * 1000
-                    response_data = format_response(
-                        success=True,
-                        data={
-                            "message": "Track already exists in database with this path",
-                            "path": path,
-                            "skipped_processing": True
-                        }
-                    )
-                    self.logging_service.log(
-                        async_db=db,
-                        level="INFO",
-                        category="UPLOAD",
-                        action="open_pipeline_duplicate_detected",
-                        message=f"Open pipeline processing skipped: Track already exists with path {path}",
-                        correlation_id=correlation_id,
-                        request=request,
-                        status_code=200,
-                        duration_ms=duration_ms,
-                        filename=file.filename,
-                        file_size=file.size,
-                        operation="open_pipeline_processing",
-                        transfer_status="skipped",
-                        metadata={
-                            "path": path,
-                            "existing_tracks_count": count,
-                            "processing_step": "duplicate_check",
-                            "skipped_processing": True,
-                            "response": response_data,
-                            "operation": "open_pipeline_processing"
-                        }
-                    )
-                    return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            check_result = await db.execute(text(query_str), query_params)
+            count = check_result.scalar()
+            
+            if count and count > 0:
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=True,
+                    data={
+                        "message": "Track already exists in database with this path",
+                        "path": path,
+                        "skipped_processing": True
+                    }
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="UPLOAD",
+                    action="open_pipeline_duplicate_detected",
+                    message=f"Open pipeline processing skipped: Track already exists with path {path}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    filename=file.filename,
+                    file_size=file.size,
+                    operation="open_pipeline_processing",
+                    transfer_status="skipped",
+                    metadata={
+                        "path": path,
+                        "existing_tracks_count": count,
+                        "processing_step": "duplicate_check",
+                        "skipped_processing": True,
+                        "response": response_data,
+                        "operation": "open_pipeline_processing"
+                    }
+                )
+                return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
                     
         except Exception as e:
             # Log warning but continue

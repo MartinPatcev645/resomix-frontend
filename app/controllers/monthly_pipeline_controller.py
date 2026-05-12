@@ -18,6 +18,7 @@ Email: usman.naeem2212@gmail.com
 from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 import time
 from app.core.config import settings
 from app.models.constants import TrackType
@@ -28,6 +29,7 @@ from app.utils.response_utils import format_response
 from app.utils.file_utils import sanitize_filename
 from app.services.logging_service import LoggingService
 from app.utils.mix_filter import validate_track_for_mixes
+from app.core.context import get_current_partner_id
 
 
 class MonthlyPipelineController:
@@ -165,56 +167,59 @@ class MonthlyPipelineController:
         
         # STEP 0: Check if this path already exists in database (duplicate check)
         try:
-            from database.connection import engine
-            from sqlalchemy import text
+            # Check if a track with this path already exists in audio_files
+            # Enforce partner isolation if partner_id is available
+            pid = get_current_partner_id()
             
-            with engine.begin() as conn:
-                # Check if a track with this path already exists
-                check_result = conn.execute(
-                    text("SELECT COUNT(*) FROM tracks WHERE file_path = :path"),
-                    {"path": path}
-                )
-                count = check_result.scalar()
+            query_str = "SELECT COUNT(*) FROM audio_files WHERE stored_path = :path"
+            query_params = {"path": path}
+            
+            if pid is not None:
+                query_str += " AND partner_id = :pid"
+                query_params["pid"] = pid
                 
-                if count > 0:
-                    # Log duplicate track detection
-                    duration_ms = (time.time() - start_time) * 1000
-                    response_data = format_response(
-                        success=True,
-                        data={
-                            "message": "Track already exists in database with this path",
-                            "path": path,
-                            "skipped_processing": True
-                        }
-                    )
-                    self.logging_service.log(
-                        async_db=db,
-                        level="INFO",
-                        category="UPLOAD",
-                        action="monthly_pipeline_duplicate_detected",
-                        message=f"Monthly pipeline processing skipped: Track already exists with path {path}",
-                        correlation_id=correlation_id,
-                        request=request,
-                        status_code=200,
-                        duration_ms=duration_ms,
-                        filename=file.filename,
-                        file_size=file.size,
-                        operation="monthly_pipeline_processing",
-                        transfer_status="skipped",
-                        metadata={
-                            "path": path,
-                            "existing_tracks_count": count,
-                            "processing_step": "duplicate_check",
-                            "skipped_processing": True,
-                            "response": response_data,
-                            "operation": "monthly_pipeline_processing"
-                        }
-                    )
-                    
-                    return JSONResponse(
-                        status_code=status.HTTP_200_OK,
-                        content=response_data
-                    )
+            check_result = await db.execute(text(query_str), query_params)
+            count = check_result.scalar()
+            
+            if count and count > 0:
+                # Log duplicate track detection
+                duration_ms = (time.time() - start_time) * 1000
+                response_data = format_response(
+                    success=True,
+                    data={
+                        "message": "Track already exists in database with this path",
+                        "path": path,
+                        "skipped_processing": True
+                    }
+                )
+                self.logging_service.log(
+                    async_db=db,
+                    level="INFO",
+                    category="UPLOAD",
+                    action="monthly_pipeline_duplicate_detected",
+                    message=f"Monthly pipeline processing skipped: Track already exists with path {path}",
+                    correlation_id=correlation_id,
+                    request=request,
+                    status_code=200,
+                    duration_ms=duration_ms,
+                    filename=file.filename,
+                    file_size=file.size,
+                    operation="monthly_pipeline_processing",
+                    transfer_status="skipped",
+                    metadata={
+                        "path": path,
+                        "existing_tracks_count": count,
+                        "processing_step": "duplicate_check",
+                        "skipped_processing": True,
+                        "response": response_data,
+                        "operation": "monthly_pipeline_processing"
+                    }
+                )
+                
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=response_data
+                )
                     
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000

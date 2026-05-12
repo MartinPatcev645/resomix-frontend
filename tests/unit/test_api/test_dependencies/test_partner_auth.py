@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import HTTPException, status
 from app.api.dependencies.partner import get_current_partner
 from app.models.partner import Partner, PartnerApiKey
@@ -19,17 +19,27 @@ async def test_get_current_partner_success():
     
     mock_service = MagicMock()
     mock_service.validate_api_key = AsyncMock(return_value=(mock_partner, mock_api_key))
-    mock_service.api_key_repo = MagicMock()
-    mock_service.api_key_repo.async_touch_last_used = AsyncMock()
     
     # Run dependency
-    result = await get_current_partner(mock_request, mock_auth, mock_db, mock_service)
+    mock_bg = MagicMock()
+    with patch("app.api.dependencies.partner.rate_limit_service.check_rate_limits") as mock_rl:
+        mock_rl.return_value = (True, "", None)
+        result = await get_current_partner(
+            request=mock_request,
+            background_tasks=mock_bg,
+            auth=mock_auth,
+            api_key_token=None,
+            db=mock_db,
+            partner_service=mock_service
+        )
     
     # Assertions
     assert result == mock_partner
     assert mock_request.state.partner_id == 1
     assert mock_request.state.api_key_id == 10
-    mock_service.api_key_repo.async_touch_last_used.assert_called_once_with(mock_db, 10, "127.0.0.1")
+    
+    # Verify usage update was queued in background
+    mock_bg.add_task.assert_called_with(mock_service.update_api_key_usage, 10, "127.0.0.1")
 
 @pytest.mark.asyncio
 async def test_get_current_partner_missing_auth():
@@ -39,10 +49,17 @@ async def test_get_current_partner_missing_auth():
     mock_service = MagicMock()
     
     with pytest.raises(HTTPException) as excinfo:
-        await get_current_partner(mock_request, mock_auth, mock_db, mock_service)
+        await get_current_partner(
+            request=mock_request,
+            background_tasks=MagicMock(),
+            auth=mock_auth,
+            api_key_token=None,
+            db=mock_db,
+            partner_service=mock_service
+        )
     
     assert excinfo.value.status_code == status.HTTP_401_UNAUTHORIZED
-    assert "Missing API Key" in excinfo.value.detail
+    assert "Authentication required" in excinfo.value.detail
 
 @pytest.mark.asyncio
 async def test_get_current_partner_invalid_format():
@@ -53,10 +70,17 @@ async def test_get_current_partner_invalid_format():
     mock_service = MagicMock()
     
     with pytest.raises(HTTPException) as excinfo:
-        await get_current_partner(mock_request, mock_auth, mock_db, mock_service)
+        await get_current_partner(
+            request=mock_request,
+            background_tasks=MagicMock(),
+            auth=mock_auth,
+            api_key_token=None,
+            db=mock_db,
+            partner_service=mock_service
+        )
     
     assert excinfo.value.status_code == status.HTTP_401_UNAUTHORIZED
-    assert "Invalid API Key format" in excinfo.value.detail
+    assert "Could not validate credentials" in excinfo.value.detail
 
 @pytest.mark.asyncio
 async def test_get_current_partner_service_error():
@@ -69,7 +93,14 @@ async def test_get_current_partner_service_error():
     mock_service.validate_api_key = AsyncMock(side_effect=ValueError("API key has been revoked"))
     
     with pytest.raises(HTTPException) as excinfo:
-        await get_current_partner(mock_request, mock_auth, mock_db, mock_service)
+        await get_current_partner(
+            request=mock_request,
+            background_tasks=MagicMock(),
+            auth=mock_auth,
+            api_key_token=None,
+            db=mock_db,
+            partner_service=mock_service
+        )
     
     assert excinfo.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "API key has been revoked" in excinfo.value.detail
