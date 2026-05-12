@@ -48,6 +48,7 @@ from database.connection import async_engine
 from app.db.redis import init_redis_pool, close_redis_pool
 from app.services.cleanup_worker import start_session_cleanup_worker
 from app.services.telemetry_worker import start_telemetry_flush_worker
+from app.services.quota_worker import start_quota_sync_worker
 import asyncio
 
 # Import FFmpeg check utility
@@ -192,6 +193,12 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
         start_telemetry_flush_worker()
     )
 
+    # Start the Quota Sync background worker task
+    print("Application startup: Starting Quota Sync Worker...")
+    app_instance.state.quota_sync_worker_task = asyncio.create_task(
+        start_quota_sync_worker()
+    )
+
     print("Application startup: External services initialization complete (lifespan).")
 
     yield
@@ -219,6 +226,15 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
         except asyncio.CancelledError:
             pass
         print("Telemetry Flush Worker stopped.")
+
+    # Stop Quota Sync Worker
+    if hasattr(app_instance.state, "quota_sync_worker_task"):
+        app_instance.state.quota_sync_worker_task.cancel()
+        try:
+            await app_instance.state.quota_sync_worker_task
+        except asyncio.CancelledError:
+            pass
+        print("Quota Sync Worker stopped.")
 
     # Close Redis connection pool
     await close_redis_pool()
@@ -271,7 +287,7 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 
-# Add security headers middleware
+# Standard standard-response middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """

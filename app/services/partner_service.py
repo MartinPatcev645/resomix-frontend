@@ -270,3 +270,110 @@ class PartnerService:
             raise ValueError("Partner account is inactive or disabled")
             
         return partner, api_key
+    
+    async def update_api_key_usage(self, api_key_id: int, ip_address: str) -> None:
+        """
+        Update the last_used_at and last_used_ip for an API key.
+        This is intended to be run in a background task.
+        """
+        from database.connection import AsyncSessionLocal
+        from sqlalchemy import update
+        from datetime import datetime
+        
+        try:
+            async with AsyncSessionLocal() as db:
+                stmt = update(PartnerApiKey).where(PartnerApiKey.id == api_key_id).values(
+                    last_used_at=datetime.utcnow(),
+                    last_used_ip=ip_address
+                )
+                await db.execute(stmt)
+                await db.commit()
+        except Exception as e:
+            logger.error(f"Failed to update API key usage metadata: {e}")
+
+    async def sync_quotas_from_redis(self, db: AsyncSession) -> Dict[str, int]:
+        """
+        Synchronize monthly quota counters from Redis to MariaDB.
+        Scans all keys matching 'ratelimit:quota:*' and updates the partner_quotas table.
+        """
+        import calendar
+        from datetime import date
+        import redis.asyncio as aioredis
+        from app.db import redis as redis_module
+        from sqlalchemy import text
+        
+        stats = {"total_keys": 0, "updated": 0, "errors": 0}
+        
+        pool = redis_module._redis_pool
+        if not pool:
+            logger.warning("Quota Sync: Redis pool not available")
+            return stats
+
+        try:
+            client = aioredis.Redis(connection_pool=pool)
+            # Use SCAN to avoid blocking Redis on large datasets
+            async for key in client.scan_iter("ratelimit:quota:*"):
+                stats["total_keys"] += 1
+                try:
+                    # Key format: ratelimit:quota:{partner_id}:{api_key_id}:{year_month}
+                    parts = key.split(":")
+                    if len(parts) != 5:
+                        continue
+                        
+                    pid = int(parts[2])
+                    akid = int(parts[3])
+                    year_month = parts[4] # e.g. "2026-05"
+                    
+                    # Parse dates
+                    year, month = map(int, year_month.split("-"))
+                    last_day = calendar.monthrange(year, month)[1]
+                    period_start = date(year, month, 1)
+                    period_end = date(year, month, last_day)
+                    
+                    # Get usage from Redis
+                    requests_made = int(await client.get(key) or 0)
+                    
+                    # Get quota limit from the API key record
+                    # We look it up to ensure it's accurate if the plan changed
+                    api_key = await self.api_key_repo.async_get_by_id(db, akid)
+                    if not api_key:
+                        continue
+                    
+                    quota_limit = api_key.rate_limit_monthly
+                    
+                    # Upsert into MariaDB
+                    stmt = text("""
+                        INSERT INTO partner_quotas (
+                            partner_id, api_key_id, period_start, period_end, 
+                            requests_made, quota_limit, last_synced_at
+                        )
+                        VALUES (:pid, :akid, :start, :end, :made, :limit, NOW())
+                        ON DUPLICATE KEY UPDATE 
+                            requests_made = VALUES(requests_made),
+                            quota_limit = VALUES(quota_limit),
+                            last_synced_at = VALUES(last_synced_at),
+                            is_overage = (VALUES(requests_made) > VALUES(quota_limit))
+                    """)
+                    
+                    await db.execute(stmt, {
+                        "pid": pid,
+                        "akid": akid,
+                        "start": period_start,
+                        "end": period_end,
+                        "made": requests_made,
+                        "limit": quota_limit
+                    })
+                    
+                    stats["updated"] += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error syncing quota for key {key}: {e}")
+                    stats["errors"] += 1
+            
+            await db.commit()
+            
+        except Exception as e:
+            logger.error(f"Quota Sync Worker Error: {e}")
+            stats["errors"] += 1
+            
+        return stats

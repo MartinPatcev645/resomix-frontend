@@ -17,6 +17,8 @@ from .waitlist import router as admin_waitlist_router
 from .operation_limits import router as admin_operation_limits_router
 from .spotify_apps import router as admin_spotify_apps_router
 from .partners import router as admin_partners_router
+from .similarity import router as admin_similarity_router
+from .promo import router as admin_promo_router
 
 __all__ = [
     "admin_feedback_router",
@@ -26,4 +28,6 @@ __all__ = [
     "admin_operation_limits_router",
     "admin_spotify_apps_router",
     "admin_partners_router",
+    "admin_similarity_router",
+    "admin_promo_router",
 ]

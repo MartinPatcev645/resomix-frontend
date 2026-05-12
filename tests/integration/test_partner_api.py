@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock
 from app.main import app
@@ -9,6 +10,7 @@ client = TestClient(app)
 
 @pytest.mark.asyncio
 async def test_partner_me_endpoint_success():
+    app.dependency_overrides.clear()
     # Mock data
     mock_partner = Partner(
         id=1, 
@@ -17,7 +19,8 @@ async def test_partner_me_endpoint_success():
         legal_name="Test Legal Name",
         contact_email="test@partner.com",
         tier="growth",
-        is_active=True
+        is_active=True,
+        onboarded_at=datetime.utcnow()
     )
     mock_api_key = PartnerApiKey(id=10, partner_id=1, is_active=True)
     
@@ -38,8 +41,8 @@ async def test_partner_me_endpoint_success():
         
         assert response.status_code == 200
         data = response.json()
-        assert data["display_name"] == "Test Partner"
-        assert data["partner_uuid"] == "test-uuid-123"
+        assert data["data"]["display_name"] == "Test Partner"
+        assert data["data"]["partner_uuid"] == "test-uuid-123"
     finally:
         app.dependency_overrides.clear()
 
@@ -48,4 +51,5 @@ async def test_partner_me_endpoint_unauthorized():
     # No header
     response = client.get("/partner/me")
     assert response.status_code == 401
-    assert "Missing API Key" in response.json()["detail"]
+    # Check for "Authentication required" in the error field (standardized format)
+    assert "Authentication required" in response.json().get("error", "")

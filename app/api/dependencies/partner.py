@@ -10,7 +10,7 @@ Date: May 09, 2026
 """
 
 from typing import Optional
-from fastapi import Depends, HTTPException, Security, Request, status
+from fastapi import Depends, HTTPException, Security, Request, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,8 +41,10 @@ async def _get_partner_core(
     auth: Optional[HTTPAuthorizationCredentials],
     db: AsyncSession,
     partner_service: PartnerService,
+    background_tasks: BackgroundTasks,
     api_key_token: Optional[str] = None,
-    required_scope: Optional[str] = None
+    required_scope: Optional[str] = None,
+    allow_anonymous: bool = False
 ) -> Partner:
     """Internal core logic for partner resolution."""
     # Extract token from Bearer auth or query param
@@ -53,11 +55,21 @@ async def _get_partner_core(
         try:
             partner, api_key = await partner_service.validate_api_key(db, token, required_scope=required_scope)
             
+            # Capture metadata in request state
+            request.state.partner_id = partner.id
+            request.state.api_key_id = api_key.id
+            
+            # Update last used metadata in background
+            client_ip = request.client.host if request.client else "unknown"
+            background_tasks.add_task(partner_service.update_api_key_usage, api_key.id, client_ip)
+            
             # Layer 1 & 2 Rate Limiting (W1-7, W1-8)
             allowed, error_code, retry_after = await rate_limit_service.check_rate_limits(
+                db=db,
                 api_key_id=api_key.id,
-                rps_limit=api_key.rate_limit_rps,
-                monthly_limit=api_key.rate_limit_monthly
+                partner_id=partner.id,
+                rps_limit=api_key.rate_limit_rps or 10,
+                monthly_limit=api_key.rate_limit_monthly or 100000
             )
             
             if not allowed:
@@ -72,15 +84,14 @@ async def _get_partner_core(
                     headers=headers
                 )
 
+            # Set the partner_id in the request context for global failsafe
+            set_current_partner_id(partner.id)
             request.state.partner_id = partner.id
             request.state.api_key_id = api_key.id
             
-            # Update last used info
+            # Update last used metadata in background (W1-8)
             client_ip = request.client.host if request.client else "unknown"
-            await partner_service.api_key_repo.async_touch_last_used(db, api_key.id, client_ip)
-            
-            # Set the partner_id in the request context for global failsafe
-            set_current_partner_id(partner.id)
+            background_tasks.add_task(partner_service.update_api_key_usage, api_key.id, client_ip)
             
             return partner
         except ValueError as e:
@@ -98,9 +109,16 @@ async def _get_partner_core(
         set_admin_context(True)
         request.state.partner_id = SYSTEM_PARTNER_ID
     else:
-        user = await get_current_user_optional(token, db)
-        if user:
-            # Default Platform Tenant for all B2C / Internal traffic
+        # Check for User JWT or Anonymous fallback
+        if token:
+            user = await get_current_user_optional(token, db)
+            if user:
+                # Default Platform Tenant for all B2C / Internal traffic
+                partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
+                request.state.partner_id = SYSTEM_PARTNER_ID
+        elif allow_anonymous and not required_scope:
+            # 3. Anonymous Public Access (Default to Partner 1)
+            # This allows the frontend search and public endpoints to function without a key.
             partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
             request.state.partner_id = SYSTEM_PARTNER_ID
 
@@ -113,6 +131,7 @@ async def _get_partner_core(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 4. Finalize Context
     # Set the partner_id in the request context for global failsafe
     set_current_partner_id(partner.id)
     request.state.partner_id = partner.id
@@ -121,24 +140,40 @@ async def _get_partner_core(
 
 async def get_current_partner(
     request: Request,
+    background_tasks: BackgroundTasks,
     auth: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
     api_key_token: Optional[str] = Security(api_key_query),
     db: AsyncSession = Depends(get_database_session),
     partner_service: PartnerService = Depends(PartnerService)
 ) -> Partner:
-    """Default dependency for getting current partner (no scope check)."""
-    return await _get_partner_core(request, auth, db, partner_service, api_key_token=api_key_token)
+    """Default dependency for getting current partner (REQUIRES token)."""
+    return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=api_key_token, allow_anonymous=False)
+
+async def get_public_partner(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    auth: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
+    api_key_token: Optional[str] = Security(api_key_query),
+    db: AsyncSession = Depends(get_database_session),
+    partner_service: PartnerService = Depends(PartnerService)
+) -> Partner:
+    """Dependency that allows anonymous fallback to Partner 1 (Public Access)."""
+    return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=api_key_token, allow_anonymous=True)
 
 def get_current_partner_scoped(required_scope: str):
     """Factory for getting partner with a required scope."""
     async def scoped_dependency(
         request: Request,
+        background_tasks: BackgroundTasks,
         auth: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
         api_key_token: Optional[str] = Security(api_key_query),
         db: AsyncSession = Depends(get_database_session),
         partner_service: PartnerService = Depends(PartnerService)
     ) -> Partner:
-        return await _get_partner_core(request, auth, db, partner_service, api_key_token=api_key_token, required_scope=required_scope)
+        return await _get_partner_core(
+            request, auth, db, partner_service, background_tasks, 
+            api_key_token=api_key_token, required_scope=required_scope
+        )
     return scoped_dependency
 
 async def get_tenant_id(

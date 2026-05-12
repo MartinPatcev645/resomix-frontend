@@ -15,6 +15,7 @@ Date: May 12, 2026
 import time
 import logging
 from typing import Tuple, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 from app.db import redis as redis_module
 
@@ -94,7 +95,9 @@ class RateLimitService:
 
     async def check_rate_limits(
         self, 
+        db: AsyncSession,
         api_key_id: int, 
+        partner_id: int,
         rps_limit: int, 
         monthly_limit: int
     ) -> Tuple[bool, str, Optional[float]]:
@@ -147,8 +150,17 @@ class RateLimitService:
                 # 2. Evaluate Layer 2 (Monthly Quota)
                 # Use current year-month for the Redis key
                 month_str = time.strftime("%Y-%m")
-                quota_key = f"ratelimit:quota:{api_key_id}:{month_str}"
+                quota_key = f"ratelimit:quota:{partner_id}:{api_key_id}:{month_str}"
                 
+                # OPTION B: Cache Warming
+                # If the key is missing in Redis (e.g. after a flush), 
+                # warm it up from the database first.
+                if not await client.exists(quota_key):
+                    db_usage = await self._get_db_usage(db, api_key_id, month_str)
+                    # Set the value in Redis only if it still doesn't exist (NX)
+                    # Use 35-day TTL to ensure it survives the month
+                    await client.set(quota_key, db_usage, ex=35*86400, nx=True)
+
                 # Execute Lua script for atomic quota increment
                 # Returns [allowed_int, current_usage]
                 res_quota = await client.eval(
@@ -168,3 +180,22 @@ class RateLimitService:
             logger.error(f"Rate limit service error: {e}", exc_info=True)
             # Fail open to ensure availability if Redis is flapping
             return True, "", None
+
+    async def _get_db_usage(self, db: AsyncSession, api_key_id: int, year_month: str) -> int:
+        """Helper to get current month usage from MariaDB."""
+        from sqlalchemy import text
+        from datetime import date
+        
+        try:
+            year, month = map(int, year_month.split("-"))
+            period_start = date(year, month, 1)
+            
+            stmt = text("""
+                SELECT requests_made FROM partner_quotas 
+                WHERE api_key_id = :akid AND period_start = :start
+            """)
+            result = await db.execute(stmt, {"akid": api_key_id, "start": period_start})
+            return result.scalar() or 0
+        except Exception as e:
+            logger.error(f"Failed to warm quota cache from DB: {e}")
+            return 0
