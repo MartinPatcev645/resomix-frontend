@@ -43,8 +43,8 @@ Because the FAISS embeddings reside on the Hetzner server, this task requires co
 **Objective:** Pass tenant context (`partner_id`) to the similarity server and provide admin tools to manage the remote indexes.
 
 1.  **File to Touch:** `app/services/similarity_service.py`
-    *   **Action:** Modify the methods `calculate_similarity_for_upload` and `get_similarity_by_path` (and their underlying `_call_similarity_server` invocations).
-    *   **Details:** Inject `"partner_id": partner_id` into the JSON payload (or form data) sent to the Hetzner server.
+    *   **Action:** Modify the methods `calculate_similarity_for_upload` and `get_similarity_by_path`.
+    *   **Details:** The `partner_id` is *already* successfully passed down from the FastAPI router via `get_current_partner_scoped` through the `SimilarityController` and into these service methods. The only required change is to inject `"partner_id": partner_id` into the JSON payload (or form data) immediately before making the HTTP call to the Hetzner server.
 
 2.  **File to Touch:** `app/api/routers/admin/similarity.py` *(New File)*
     *   **Action:** Create a new admin router specifically for managing the remote FAISS indexes.
@@ -65,14 +65,11 @@ Because the FAISS embeddings reside on the Hetzner server, this task requires co
 
 ### Task W1-6: Query-Builder Middleware for Tenant Isolation
 
-**Objective:** Prevent cross-tenant data leaks at the ORM level.
+**Objective:** Prevent cross-tenant data leaks at the ORM level by enforcing strict `partner_id` scoping.
 
-1.  **File to Touch:** `app/core/middleware/tenant_isolation.py` *(New File)*
-    *   **Action:** Implement a SQLAlchemy ORM event listener.
-    *   **Details:** Use `sqlalchemy.event.listen(Session, "do_orm_execute", ...)`. In the hook, check if a `partner_id` context variable is set. If the queried model contains a `partner_id` column, dynamically append a `.where(Model.partner_id == current_partner_id)` clause to the statement.
-2.  **File to Touch:** `app/main.py`
-    *   **Action:** Register the middleware.
-    *   **Details:** Add the middleware or dependency configuration early in the application stack to ensure the `partner_id` context variable is set before any database sessions are spawned.
+1.  **File to Touch:** `database/connection.py` *(Existing File)*
+    *   **Action:** Modify the existing `_do_orm_execute` SQLAlchemy event listener.
+    *   **Details:** The codebase already contains a global failsafe using `with_loader_criteria` that automatically injects `.where(partner_id == pid)`. However, it currently fails open (does nothing) if `pid is None`. To meet the roadmap requirement, modify this hook to **raise a strict exception** (e.g., `RuntimeError` or a custom `CrossTenantViolationException`) if the queried model has a `partner_id` column but no `partner_id` context is active. This ensures the application refuses to emit any partner-scoped query anonymously.
 
 ### Task W1-7: Layer 1 Rate Limiting (Token Bucket)
 

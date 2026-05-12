@@ -112,6 +112,9 @@ class SimilarityService:
         request_data = {"top_k": top_k, "track_uuid": track_uuid}
         if engine:
             request_data["engine"] = engine
+        if partner_id is not None:
+            request_data["partner_id"] = partner_id
+            
         similarity_response_task = self._call_similarity_server(
             "/similarity/query-by-upload/", data=request_data, files=files_data
         )
@@ -385,6 +388,9 @@ class SimilarityService:
         payload = {"track_uuid": queried_track_uuid, "top_k": top_k}
         if engine:
             payload["engine"] = engine
+        if partner_id is not None:
+            payload["partner_id"] = partner_id
+            
         similarity_response = await self._call_similarity_server(
             "/similarity/query-by-uuid/", data=payload
         )
@@ -741,3 +747,23 @@ class SimilarityService:
                 "success": False,
                 "error": f"Error processing similarity request: {e}",
             }
+
+    async def rebuild_faiss_indexes(
+        self, partner_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Trigger a rebuild of FAISS indexes on the similarity server.
+
+        Args:
+            partner_id: Optional partner ID to rebuild specifically.
+
+        Returns:
+            Status of the rebuild request
+        """
+        payload = {}
+        if partner_id is not None:
+            payload["partner_id"] = partner_id
+
+        return await self._call_similarity_server(
+            "/admin/similarity/rebuild-index/", data=payload
+        )

@@ -26,6 +26,7 @@ from .admin.operation_limits import router as admin_operation_limits_router
 from .admin.spotify_apps import router as admin_spotify_apps_router
 from .admin.promo import router as admin_promo_router
 from .admin.partners import router as admin_partners_router
+from .admin.similarity import router as admin_similarity_router
 from .partner import router as partner_router
 from .contact import router as contact_router
 from .health import router as health_router
@@ -78,5 +79,6 @@ all_routers = [
     purchases_router,
     webhooks_router,
     admin_partners_router,
+    admin_similarity_router,
     partner_router,
 ]
