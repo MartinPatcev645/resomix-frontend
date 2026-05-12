@@ -264,6 +264,7 @@ class SimilarityService:
                             name=playlist_name,
                             playlist_type=PlaylistType.SIMILARITY,
                             user_id=user_id,
+                            partner_id=partner_id,
                         )
 
                         # Send playlist peaks request (fire and forget)
@@ -492,6 +493,7 @@ class SimilarityService:
                                 name=playlist_name,
                                 playlist_type=PlaylistType.SIMILARITY,
                                 user_id=user_id,
+                                partner_id=partner_id,
                             )
 
                             # Send playlist peaks request (fire and forget) - COMMENTED OUT
