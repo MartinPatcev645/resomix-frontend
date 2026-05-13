@@ -22,7 +22,10 @@ from app.schemas.common import ALLOWED_TOP_SK_VALUES
 
 class SimilarityByIdRequest(BaseModel):
     """Request schema for similarity calculation by track ID."""
-    track_id: str = Field(..., description="UUID of the track to find similar tracks for")
+
+    track_id: str = Field(
+        ..., description="UUID of the track to find similar tracks for"
+    )
     top_sk: Optional[int] = Field(
         None,
         description="Number of similar tracks to return (10, 20, 50, or 100)",
@@ -64,7 +67,9 @@ class SimilarTrackResult(BaseModel):
     score: float = Field(..., description="Similarity score (0.0 to 1.0)")
     id: str = Field(..., description="Track UUID")
     label: Optional[str] = Field(None, description="Record label")
-    duration: Optional[float] = Field(None, description="Track duration in seconds with decimal precision")
+    duration: Optional[float] = Field(
+        None, description="Track duration in seconds with decimal precision"
+    )
     artist: str = Field(..., description="Artist name")
     title: str = Field(..., description="Track title")
     year: Optional[int] = Field(None, description="Release year")
@@ -92,7 +97,9 @@ class QueriedTrackInfo(BaseModel):
     album: Optional[str] = Field(None, description="Album name")
     label: Optional[str] = Field(None, description="Label name")
     genre: Optional[str] = Field(None, description="Genre name")
-    duration: Optional[float] = Field(None, description="Track duration in seconds with decimal precision")
+    duration: Optional[float] = Field(
+        None, description="Track duration in seconds with decimal precision"
+    )
     artist: Optional[str] = Field(None, description="Artist name")
 
     class Config:
@@ -115,13 +122,29 @@ class PlaylistInfo(BaseModel):
     uuid: str = Field(..., description="Playlist UUID (alias for id)")
     name: str = Field(..., description="Playlist name")
     is_public: bool = Field(..., description="Whether the playlist is public")
-    seed_track_title: Optional[str] = Field(None, description="Title of the seed track if available")
-    fork_id: str = Field("", description="UUID of the original playlist if this is a fork, empty string if not a fork")
+    seed_track_title: Optional[str] = Field(
+        None, description="Title of the seed track if available"
+    )
+    fork_id: str = Field(
+        "",
+        description="UUID of the original playlist if this is a fork, empty string if not a fork",
+    )
     num_tracks: int = Field(0, description="Number of tracks in playlist_tracks")
-    play_time: int = Field(0, description="Total play time in seconds (sum of track durations including seed track)")
-    created_at: Optional[str] = Field(None, description="Playlist creation timestamp (ISO format)")
-    is_favorite: bool = Field(False, description="Whether the playlist is in user's favorites (False if user not logged in)")
-    is_following: bool = Field(False, description="Whether the user is following the playlist (False if user not logged in)")
+    play_time: int = Field(
+        0,
+        description="Total play time in seconds (sum of track durations including seed track)",
+    )
+    created_at: Optional[str] = Field(
+        None, description="Playlist creation timestamp (ISO format)"
+    )
+    is_favorite: bool = Field(
+        False,
+        description="Whether the playlist is in user's favorites (False if user not logged in)",
+    )
+    is_following: bool = Field(
+        False,
+        description="Whether the user is following the playlist (False if user not logged in)",
+    )
 
     class Config:
         json_schema_extra = {
@@ -143,9 +166,16 @@ class PlaylistInfo(BaseModel):
 
 class SimilarityUploadResponse(BaseModel):
     """Response schema for similarity calculation by upload."""
-    queried_track: SimilarTrackResult = Field(..., description="Information about the uploaded (queried) track")
-    similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
-    playlist: Optional[PlaylistInfo] = Field(None, description="Created playlist information")
+
+    queried_track: SimilarTrackResult = Field(
+        ..., description="Information about the uploaded (queried) track"
+    )
+    similar_tracks: List[SimilarTrackResult] = Field(
+        ..., description="List of similar tracks"
+    )
+    playlist: Optional[PlaylistInfo] = Field(
+        None, description="Created playlist information"
+    )
 
     class Config:
         json_schema_extra = {
@@ -186,9 +216,16 @@ class SimilarityUploadResponse(BaseModel):
 
 class SimilarityByIdResponse(BaseModel):
     """Response schema for similarity calculation by track ID."""
-    queried_track: SimilarTrackResult = Field(..., description="Information about the queried track")
-    similar_tracks: List[SimilarTrackResult] = Field(..., description="List of similar tracks")
-    playlist: Optional[PlaylistInfo] = Field(None, description="Created playlist information")
+
+    queried_track: SimilarTrackResult = Field(
+        ..., description="Information about the queried track"
+    )
+    similar_tracks: List[SimilarTrackResult] = Field(
+        ..., description="List of similar tracks"
+    )
+    playlist: Optional[PlaylistInfo] = Field(
+        None, description="Created playlist information"
+    )
 
     class Config:
         json_schema_extra = {
@@ -246,7 +283,9 @@ class SimilarityUploadSuccessResponse(BaseModel):
     """Success response wrapper for similarity upload."""
 
     success: bool = Field(True, description="Always true for successful responses")
-    data: SimilarityUploadResponse = Field(..., description="Similarity calculation results")
+    data: SimilarityUploadResponse = Field(
+        ..., description="Similarity calculation results"
+    )
 
     class Config:
         json_schema_extra = {
@@ -335,8 +374,13 @@ class SimilarityByIdSuccessResponse(BaseModel):
 # Internal schemas for service layer
 class SimilarityServerRequest(BaseModel):
     """Internal schema for similarity server requests."""
-    top_k: int = Field(..., description="Number of results to request from similarity server")
-    file_path: Optional[str] = Field(None, description="File path for path-based similarity")
+
+    top_k: int = Field(
+        ..., description="Number of results to request from similarity server"
+    )
+    file_path: Optional[str] = Field(
+        None, description="File path for path-based similarity"
+    )
 
 
 class SimilarityServerResponse(BaseModel):
@@ -356,6 +400,13 @@ class SimilarityConfiguration(BaseModel):
         default=ALLOWED_TOP_SK_VALUES, description="Allowed top_sk values"
     )
     default_top_sk: int = Field(default=20, description="Default top_sk value")
-    duplication_thresholds: List[int] = Field(default=[2, 2, 4, 5], description="Duplication thresholds for each top_sk")
-    similarity_server_url: Optional[str] = Field(None, description="URL of the similarity microservice")
-    path_prefix_to_remove: str = Field(default="/home/usman/data/", description="Path prefix to remove from server responses") 
+    duplication_thresholds: List[int] = Field(
+        default=[2, 2, 4, 5], description="Duplication thresholds for each top_sk"
+    )
+    similarity_server_url: Optional[str] = Field(
+        None, description="URL of the similarity microservice"
+    )
+    path_prefix_to_remove: str = Field(
+        default="/home/usman/data/",
+        description="Path prefix to remove from server responses",
+    )

@@ -26,7 +26,7 @@ from app.schemas.partner import (
     ApiKeyIssueSuccessResponse,
     ApiKeyListResponse,
     ApiKeyRevokeRequest,
-    ApiKeyRotateRequest
+    ApiKeyRotateRequest,
 )
 
 router = APIRouter(
@@ -34,8 +34,8 @@ router = APIRouter(
     tags=["admin-partners"],
     responses={
         401: {"description": "Unauthorized - Admin API key required"},
-        500: {"description": "Internal Server Error"}
-    }
+        500: {"description": "Internal Server Error"},
+    },
 )
 
 # Initialize controller
@@ -47,13 +47,13 @@ partner_controller = PartnerController()
     response_model=PartnerResponse,
     status_code=201,
     summary="Create a new Partner",
-    description="Registers a new B2B partner tenant. Generates a unique partner_uuid."
+    description="Registers a new B2B partner tenant. Generates a unique partner_uuid.",
 )
 async def create_partner(
     request: Request,
     payload: PartnerCreateRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.create_partner(db, request, payload)
 
@@ -62,13 +62,13 @@ async def create_partner(
     "/{partner_id}",
     response_model=PartnerResponse,
     summary="Update Partner",
-    description="Updates existing partner details. Supports partial updates."
+    description="Updates existing partner details. Supports partial updates.",
 )
 async def update_partner(
     partner_id: int,
     payload: PartnerUpdateRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.update_partner(db, partner_id, payload)
 
@@ -76,12 +76,12 @@ async def update_partner(
 @router.delete(
     "/{partner_id}",
     summary="Delete Partner",
-    description="Deletes a partner and revokes all associated API keys."
+    description="Deletes a partner and revokes all associated API keys.",
 )
 async def delete_partner(
     partner_id: int,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.delete_partner(db, partner_id)
 
@@ -90,7 +90,7 @@ async def delete_partner(
     "/",
     response_model=PartnerListResponse,
     summary="List Partners",
-    description="Returns a paginated list of all partners."
+    description="Returns a paginated list of all partners.",
 )
 async def list_partners(
     page: int = Query(1, ge=1),
@@ -98,7 +98,7 @@ async def list_partners(
     tier: Optional[str] = Query(None, regex="^(sandbox|starter|growth|enterprise)$"),
     is_active: Optional[bool] = Query(None),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.list_partners(db, page, page_size, tier, is_active)
 
@@ -108,12 +108,12 @@ async def list_partners(
     response_model=ApiKeyIssueSuccessResponse,
     status_code=201,
     summary="Issue API Key",
-    description="Generates a new SHA-256 hashed API key. Returns the plaintext key ONLY ONCE."
+    description="Generates a new SHA-256 hashed API key. Returns the plaintext key ONLY ONCE.",
 )
 async def issue_api_key(
     payload: ApiKeyIssueRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.issue_api_key(db, payload)
 
@@ -122,12 +122,12 @@ async def issue_api_key(
     "/api-keys/{partner_id}",
     response_model=ApiKeyListResponse,
     summary="List Partner API Keys",
-    description="Lists all API keys (public details only) for a specific partner."
+    description="Lists all API keys (public details only) for a specific partner.",
 )
 async def list_api_keys(
     partner_id: int,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.list_api_keys(db, partner_id)
 
@@ -135,12 +135,12 @@ async def list_api_keys(
 @router.post(
     "/api-keys/revoke",
     summary="Revoke API Key",
-    description="Deactivates an API key and records the reason."
+    description="Deactivates an API key and records the reason.",
 )
 async def revoke_api_key(
     payload: ApiKeyRevokeRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.revoke_api_key(db, payload)
 
@@ -150,11 +150,11 @@ async def revoke_api_key(
     response_model=ApiKeyIssueSuccessResponse,
     status_code=201,
     summary="Rotate API Key",
-    description="Atomic operation: Revokes the old key and issues a new one with same config."
+    description="Atomic operation: Revokes the old key and issues a new one with same config.",
 )
 async def rotate_api_key(
     payload: ApiKeyRotateRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(get_api_key),
 ) -> JSONResponse:
     return await partner_controller.rotate_api_key(db, payload)

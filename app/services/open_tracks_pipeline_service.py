@@ -99,11 +99,23 @@ class OpenTracksPipelineService:
         import tempfile
         import subprocess
 
-        # Step 1: Fetch uuid and file_path for OPEN tracks only, scoped by partner
+        # Step 1: Fetch uuid and stored_path for OPEN tracks only, scoped by partner
         try:
             if partner_id is not None:
-                stmt = text("SELECT uuid, file_path FROM tracks WHERE type = 'open' AND partner_id = :partner_id")
-                result = await db.execute(stmt, {"partner_id": partner_id})
+                from app.models.track import Track
+                from app.models.audio_file import AudioFile
+                from sqlalchemy import select
+                
+                # Use ORM select with join to audio_files to get the correct path, scoped by partner
+                stmt = (
+                    select(Track.uuid, AudioFile.stored_path)
+                    .join(AudioFile, Track.id == AudioFile.track_id)
+                    .where(Track.track_type == 'open')
+                    .where(AudioFile.asset_class == 'Master')
+                    .where(Track.partner_id == partner_id)
+                )
+                
+                result = await db.execute(stmt)
             else:
                 # If no partner_id provided, return nothing for safety in multi-tenant environment
                 logger.warning("[OPEN_PIPELINE] No partner_id provided for bulk embeddings update")

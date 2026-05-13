@@ -8,43 +8,44 @@ from app.services.partner_service import PartnerService
 
 client = TestClient(app)
 
+
 @pytest.mark.asyncio
 async def test_partner_me_endpoint_success():
     app.dependency_overrides.clear()
     # Mock data
     mock_partner = Partner(
-        id=1, 
+        id=1,
         partner_uuid="test-uuid-123",
-        display_name="Test Partner", 
+        display_name="Test Partner",
         legal_name="Test Legal Name",
         contact_email="test@partner.com",
         tier="growth",
         is_active=True,
-        onboarded_at=datetime.utcnow()
+        onboarded_at=datetime.utcnow(),
     )
     mock_api_key = PartnerApiKey(id=10, partner_id=1, is_active=True)
-    
+
     # Mock service
     mock_service = MagicMock()
     mock_service.validate_api_key = AsyncMock(return_value=(mock_partner, mock_api_key))
     mock_service.api_key_repo = MagicMock()
     mock_service.api_key_repo.async_touch_last_used = AsyncMock()
-    
+
     # Override dependency
     app.dependency_overrides[PartnerService] = lambda: mock_service
-    
+
     try:
         response = client.get(
-            "/partner/me",
-            headers={"Authorization": "Bearer rmx_growth_testkey"}
+            "/partner/me", headers={"Authorization": "Bearer rmx_growth_testkey"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["data"]["display_name"] == "Test Partner"
         assert data["data"]["partner_uuid"] == "test-uuid-123"
     finally:
         app.dependency_overrides.clear()
+
 
 @pytest.mark.asyncio
 async def test_partner_me_endpoint_unauthorized():

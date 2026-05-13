@@ -167,18 +167,19 @@ class MonthlyPipelineController:
         
         # STEP 0: Check if this path already exists in database (duplicate check)
         try:
-            # Check if a track with this path already exists in audio_files
-            # Enforce partner isolation if partner_id is available
-            pid = get_current_partner_id()
+            from app.models.audio_file import AudioFile
+            from sqlalchemy import select, func
             
-            query_str = "SELECT COUNT(*) FROM audio_files WHERE stored_path = :path"
-            query_params = {"path": path}
+            partner_id = get_current_partner_id()
             
-            if pid is not None:
-                query_str += " AND partner_id = :pid"
-                query_params["pid"] = pid
+            # Use ORM select which automatically applies partner isolation via listener
+            stmt = select(func.count(AudioFile.id)).where(AudioFile.stored_path == path)
+            
+            # Explicitly scope by partner_id if provided (as a fallback/safety)
+            if partner_id is not None:
+                stmt = stmt.where(AudioFile.partner_id == partner_id)
                 
-            check_result = await db.execute(text(query_str), query_params)
+            check_result = await db.execute(stmt)
             count = check_result.scalar()
             
             if count and count > 0:

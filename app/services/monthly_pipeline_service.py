@@ -96,10 +96,22 @@ class MonthlyPipelineService:
         import subprocess
         import os
 
-        # Step 1: Fetch uuid and file_path for all tracks
+        # Step 1: Fetch uuid and stored_path for all tracks
         try:
-            result = await db.execute(text("SELECT uuid, file_path FROM tracks"))
-            rows = result.fetchall()
+            from app.models.track import Track
+            from app.models.audio_file import AudioFile
+            from sqlalchemy import select
+            
+            # Use ORM select with join to audio_files to get the correct path
+            # We fetch all tracks that have a 'Master' asset class file
+            stmt = (
+                select(Track.uuid, AudioFile.stored_path)
+                .join(AudioFile, Track.id == AudioFile.track_id)
+                .where(AudioFile.asset_class == 'Master')
+            )
+            
+            result = await db.execute(stmt)
+            rows = result.all()
         except Exception as e:
             print(f"Error querying tracks for update_embeddings: {e}")
             return {"success": False, "error": f"Database query failed: {e}"}
