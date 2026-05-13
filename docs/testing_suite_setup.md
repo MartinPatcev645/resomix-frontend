@@ -71,6 +71,16 @@ This document is the authoritative list of all Resomix endpoints and their corre
 | `/telemetry/` | `POST` | Performance tracking | 1. Log frontend latency metrics. | 1. Anonymize user IDs for GDPR. |
 | `/admin/operation_limits/`| `GET`, `PUT` | System-wide caps | 1. Adjust max concurrent uploads. | 1. High-priority admin override. |
 
+## 11. Database Verification & Troubleshooting
+
+To manually verify data in the test database (e.g., check if users were created or tracks exist), use the following command:
+
+```bash
+docker exec -i resomix-test-db mariadb -uroot -ptest resomix_db -e "SELECT * FROM users;"
+```
+
+You can also check tracks or other tables by replacing `users` with the desired table name.
+
 ---
 
 ## Testing Environment Summary

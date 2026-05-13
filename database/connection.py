@@ -40,7 +40,7 @@ class DatabaseConfig:
         
         # Use the existing environment variable names from the user's .env file
         self.host = os.getenv("MARIA_DB_HOST", "127.0.0.1")
-        self.port = int(os.getenv("MARIA_DB_PORT", "3307"))
+        self.port = int(os.getenv("MARIA_DB_PORT", "3306"))
         self.username = os.getenv("MARIA_DB_USER", "resomix")
         self.password = os.getenv("MARIA_DB_PASS", "secret")
         self.database = os.getenv("MARIA_DB_NAME", "resomix_db")
@@ -198,7 +198,7 @@ def _do_orm_execute(execute_state):
         else:
             # STRICT CHECK: If pid is None, verify no partner-scoped models are targeted
             # EXCEPT for models used in tenant discovery (authentication)
-            EXEMPT_MODELS = {"PartnerApiKey", "Partner"}
+            EXEMPT_MODELS = {"PartnerApiKey", "Partner", "User", "UserToken", "UserSession"}
             
             for mapper in execute_state.all_mappers:
                 model_name = mapper.class_.__name__

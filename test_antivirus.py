@@ -3,6 +3,9 @@
 Test script to verify antivirus service functionality
 """
 
+import os
+import sys
+import pytest
 from app.services.antivirus_service import AntivirusService
 
 # EICAR test virus string
@@ -25,7 +28,11 @@ def test_antivirus_service():
     print("\n1. Checking ClamAV availability...")
     print("-" * 70)
     
-    clamd_available = av_service.is_clamd_available()
+    try:
+        clamd_available = av_service.is_clamd_available()
+    except Exception as e:
+        print(f"ClamAV not available: {e}")
+        pytest.skip("ClamAV daemon not running or reachable")
     print(f"   clamd daemon:      {'✓ Available' if clamd_available else '✗ Not available'}")
     
     clamscan_available = av_service.is_clamscan_available()

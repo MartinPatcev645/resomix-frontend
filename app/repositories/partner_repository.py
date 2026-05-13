@@ -117,3 +117,6 @@ class PartnerApiKeyRepository(BaseRepository[PartnerApiKey]):
             key.last_used_at = func.now()
             key.last_used_ip = client_ip
             await db.commit()
+
+
+

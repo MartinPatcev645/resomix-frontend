@@ -100,8 +100,9 @@ class AuthController:
                 },
             )
 
+            from fastapi.encoders import jsonable_encoder
             return JSONResponse(
-                status_code=status.HTTP_201_CREATED, content=response_data
+                status_code=status.HTTP_201_CREATED, content=jsonable_encoder(response_data)
             )
 
         except HTTPException as e:
@@ -122,6 +123,38 @@ class AuthController:
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
+
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            
+            # DEBUG: Write error to a file
+            import traceback
+            from datetime import datetime
+            with open("register_error.log", "a") as f:
+                f.write(f"\n--- ERROR at {datetime.now()} ---\n")
+                f.write(traceback.format_exc())
+                f.write("\n")
+                
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="AUTH",
+                action="register_failed",
+                message=f"Registration failed with unexpected error: {str(e)}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=500,
+                duration_ms=duration_ms,
+                error=e,
+            )
+            
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(
+                    success=False,
+                    error="An internal server error occurred. Please try again later.",
+                ),
+            )
 
     async def login(
         self, db: AsyncSession, request: Request, login_data: Dict[str, Any]
@@ -230,7 +263,7 @@ class AuthController:
                 httponly=True,
                 secure=settings.cookie_secure,
                 samesite=settings.cookie_samesite,
-                domain=settings.cookie_domain,
+                domain=settings.safe_cookie_domain,
                 path="/",
             )
 
@@ -317,7 +350,7 @@ class AuthController:
                 httponly=True,
                 secure=settings.cookie_secure,
                 samesite=settings.cookie_samesite,
-                domain=settings.cookie_domain,
+                domain=settings.safe_cookie_domain,
                 path="/",
             )
 
@@ -678,7 +711,7 @@ class AuthController:
                 httponly=True,
                 secure=settings.cookie_secure,
                 samesite=settings.cookie_samesite,
-                domain=settings.cookie_domain,
+                domain=settings.safe_cookie_domain,
                 path="/",
             )
 
@@ -693,18 +726,11 @@ class AuthController:
 
             # If token reuse detected, clear the refresh token cookie
             if "Refresh token reuse detected" in e.detail:
-                # Fix cookie domain for localhost - must be None, not "localhost"
-                cookie_domain = (
-                    None
-                    if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""]
-                    else settings.cookie_domain
-                )
-
                 # Clear the refresh token cookie
                 response.delete_cookie(
                     key="refresh_token",
                     path="/",
-                    domain=cookie_domain,
+                    domain=settings.safe_cookie_domain,
                     samesite=settings.cookie_samesite,
                     secure=settings.cookie_secure,
                 )
@@ -766,17 +792,10 @@ class AuthController:
                 status_code=status.HTTP_200_OK, content=response_data
             )
 
-            # Fix cookie domain for localhost - must be None, not "localhost"
-            cookie_domain = (
-                None
-                if settings.cookie_domain.lower() in ["localhost", "127.0.0.1", ""]
-                else settings.cookie_domain
-            )
-
             response.delete_cookie(
                 key="refresh_token",
                 path="/",
-                domain=cookie_domain,
+                domain=settings.safe_cookie_domain,
                 samesite=settings.cookie_samesite,
                 secure=settings.cookie_secure,
             )
@@ -807,7 +826,7 @@ class AuthController:
                 status_code=status.HTTP_200_OK, content=response_data
             )
             response.delete_cookie(
-                key="refresh_token", domain=settings.cookie_domain, path="/"
+                key="refresh_token", domain=settings.safe_cookie_domain, path="/"
             )
 
             return response

@@ -554,13 +554,18 @@ class Settings(BaseModel):
             # Partner API
             "PARTNER_API_KEY_SIGNING_SECRET": "partner_api_key_signing_secret",
             "PARTNER_API_KEY_HASH_ALGORITHM": "partner_api_key_hash_algorithm",
+            # Rate Limiting
+            "RATE_LIMIT_ENABLED": "rate_limit_enabled",
+            "LOGIN_RATE_LIMIT": "login_rate_limit",
+            "REGISTER_RATE_LIMIT": "register_rate_limit",
+            "PASSWORD_RESET_RATE_LIMIT": "password_reset_rate_limit",
         }
 
         for env_key, config_key in direct_env_vars.items():
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",
@@ -627,6 +632,17 @@ class Settings(BaseModel):
             if self.use_development_cors
             else self.allowed_origins_production
         )
+
+    @property
+    def safe_cookie_domain(self) -> Optional[str]:
+        """Get safe cookie domain for set_cookie/delete_cookie.
+        Returns None for localhost/127.0.0.1 to allow browser default behavior (no Domain attribute).
+        This is necessary because Domain=localhost is often rejected by clients.
+        """
+        domain = self.cookie_domain.strip().lower()
+        if domain in ["localhost", "127.0.0.1", ""]:
+            return None
+        return self.cookie_domain
 
     @property
     def hmac_secret(self) -> str:

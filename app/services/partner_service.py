@@ -330,6 +330,7 @@ class PartnerService:
         except Exception as e:
             logger.error(f"Failed to update API key usage metadata: {e}")
 
+
     async def sync_quotas_from_redis(self, db: AsyncSession) -> Dict[str, int]:
         """
         Synchronize monthly quota counters from Redis to MariaDB.

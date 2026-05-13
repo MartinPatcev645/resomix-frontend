@@ -11,6 +11,7 @@ Date: October 23, 2025
 """
 
 from typing import Dict, Any
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi import status, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,7 +76,7 @@ class UserController:
                 },
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except Exception as exc:
             duration_ms = (time.time() - start_time) * 1000
@@ -98,7 +99,7 @@ class UserController:
             )
 
             return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=jsonable_encoder(response_data)
             )
 
     async def get_profile(
@@ -159,7 +160,7 @@ class UserController:
                 metadata={"user_uuid": user_uuid},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -178,7 +179,7 @@ class UserController:
                 metadata={"user_uuid": user_uuid, "error": e.detail},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def update_profile(
         self,
@@ -240,7 +241,7 @@ class UserController:
                 metadata={"user_uuid": user.uuid, "updates": profile_data},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -259,7 +260,7 @@ class UserController:
                 metadata={"user_id": user_id, "error": e.detail},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def change_password(
         self,
@@ -312,7 +313,7 @@ class UserController:
                 metadata={"user_id": user_id},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -331,7 +332,7 @@ class UserController:
                 metadata={"user_id": user_id, "error": e.detail},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def get_sessions(
         self, db: AsyncSession, request: Request, user_id: int
@@ -369,7 +370,7 @@ class UserController:
                 metadata={"user_id": user_id, "session_count": len(sessions)},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -393,7 +394,7 @@ class UserController:
             )
 
             return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=jsonable_encoder(response_data)
             )
 
     async def revoke_session(
@@ -437,7 +438,7 @@ class UserController:
                 metadata={"user_id": user_id, "session_id": session_id},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -460,7 +461,7 @@ class UserController:
                 },
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def enable_2fa(
         self, db: AsyncSession, request: Request, user_id: int, method: str = "email"
@@ -506,7 +507,7 @@ class UserController:
                 metadata={"user_id": user_id, "method": method},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -525,7 +526,7 @@ class UserController:
                 metadata={"user_id": user_id, "error": e.detail},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def disable_2fa(
         self, db: AsyncSession, request: Request, user_id: int, password: str
@@ -572,7 +573,7 @@ class UserController:
                 metadata={"user_id": user_id},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -591,7 +592,7 @@ class UserController:
                 metadata={"user_id": user_id, "error": e.detail},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def delete_account(
         self, db: AsyncSession, request: Request, user_id: int, password: str
@@ -612,6 +613,12 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
+            # Bypass multi-tenancy failsafe for account deletion
+            # This allows cascade deletion of partner-scoped records (like tracks) 
+            # associated with the user without requiring a partner_id in the request context.
+            from app.core.context import set_admin_context
+            set_admin_context(True)
+            
             await self.user_service.delete_account(
                 db=db, user_id=user_id, password=password
             )
@@ -635,23 +642,29 @@ class UserController:
                 metadata={"user_id": user_id},
             )
 
-            return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
 
         except HTTPException as e:
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(success=False, error=e.detail)
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
+
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error=str(e))
 
             self.logging_service.log(
                 async_db=db,
-                level="WARNING",
+                level="ERROR",
                 category="USER_ACTION",
                 action="delete_account_failed",
-                message=f"Account deletion failed: {e.detail}",
+                message=f"Account deletion failed: {str(e)}",
                 correlation_id=correlation_id,
                 request=request,
-                status_code=e.status_code,
+                status_code=500,
                 duration_ms=duration_ms,
-                metadata={"user_id": user_id, "error": e.detail},
+                error=e,
+                metadata={"user_id": user_id, "error": str(e)},
             )
 
-            return JSONResponse(status_code=e.status_code, content=response_data)
+            return JSONResponse(status_code=500, content=jsonable_encoder(response_data))
