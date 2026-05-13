@@ -135,7 +135,7 @@ class DatabaseConfig:
             'max_overflow': self.max_overflow,
             'pool_timeout': self.pool_timeout,
             'pool_recycle': self.pool_recycle,
-            'pool_pre_ping': True,  # Validate connections before use (matches existing config)
+            'pool_pre_ping': False,  # DISABLED: Causes MissingGreenlet in aiomysql 2.0+
             'future': True,  # SQLAlchemy 2.x style (matches existing config)
             'echo': os.getenv("DB_ECHO", "false").lower() == "true",
             'echo_pool': os.getenv("DB_ECHO_POOL", "false").lower() == "true",
@@ -182,7 +182,6 @@ def _do_orm_execute(execute_state):
 
         # ADMIN BYPASS: If this is an administrative request, do not enforce strict partner filtering
         if is_admin:
-            logger.debug("SQL Failsafe: Admin context active - bypassing tenant isolation")
             return
 
         if pid is not None:
@@ -190,7 +189,7 @@ def _do_orm_execute(execute_state):
             execute_state.statement = execute_state.statement.options(
                 with_loader_criteria(
                     Base,
-                    lambda cls: getattr(cls, "partner_id", None) == pid,
+                    lambda cls: getattr(cls, "partner_id", pid) == pid,
                     include_aliases=True
                 )
             )

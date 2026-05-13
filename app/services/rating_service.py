@@ -286,7 +286,7 @@ class RatingService:
         
         Args:
             db: Database session
-            playlist_id: Playlist ID
+            playlist_id: Playlist UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -318,7 +318,7 @@ class RatingService:
     async def delete_playlist_rating(
         self, 
         db: AsyncSession, 
-        playlist_id: int, 
+        playlist_id: str, 
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -326,7 +326,7 @@ class RatingService:
         
         Args:
             db: Database session
-            playlist_id: Playlist ID
+            playlist_id: Playlist UUID
             user_id: User ID (optional for anonymous ratings)
             
         Returns:
@@ -355,13 +355,13 @@ class RatingService:
                 "error": "An error occurred while deleting the rating"
             }
     
-    async def get_playlist_rating_stats(self, db: AsyncSession, playlist_id: int) -> Dict[str, Any]:
+    async def get_playlist_rating_stats(self, db: AsyncSession, playlist_id: str) -> Dict[str, Any]:
         """
         Get rating statistics for a specific playlist.
         
         Args:
             db: Database session
-            playlist_id: Playlist ID
+            playlist_id: Playlist UUID
             
         Returns:
             Dictionary with success status and rating statistics

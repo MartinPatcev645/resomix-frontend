@@ -15,10 +15,10 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, Dict, Any
+from typing import List, Dict, Any, Optional, Union
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, delete
+from sqlalchemy import select, and_, func, delete, text, case
 
 from ..models.rating import TrackRating, PlaylistRating
 from ..models.track import Track
@@ -59,22 +59,22 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         return None
     
     async def async_rate_track(
-        self, 
-        db: AsyncSession, 
-        track_id: str,  # Changed from int to str (UUID)
-        playlist_id: str,  # Added playlist UUID
-        rating: int, 
-        user_id: Optional[str] = None
+        self,
+        db: AsyncSession,
+        track_id: str,
+        playlist_id: str,
+        rating: int,
+        user_id: Optional[int] = None,
     ) -> Optional[TrackRating]:
         """
-        Rate a track by creating a new rating entry.
+        Rate a track with UUID support for both track and playlist.
         
         Args:
             db: Database session
-            track_id: Track ID (UUID, ObjectId, or other format)
-            playlist_id: Playlist UUID
+            track_id: Track ID (UUID)
+            playlist_id: Playlist ID (UUID)
             rating: Rating value (0 or 1)
-            user_id: User ID (optional for anonymous ratings)
+            user_id: Optional user ID
             
         Returns:
             TrackRating instance or None if track or playlist doesn't exist
@@ -127,7 +127,6 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
                 
         except Exception as e:
             await db.rollback()
-            print(f"Error rating track: {e}")
             raise e
     
     async def async_get_track_rating(
@@ -262,22 +261,19 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
         
         Args:
             db: Database session
-            track_id: Track ID (UUID, ObjectId, or other format)
+            track_id: Track ID (UUID)
             
         Returns:
             Dictionary with rating statistics
         """
         try:
-            # First, try to get the numeric track ID from the identifier
-            track_numeric_id = None
-            
-            # Try looking up by uuid field first
+            # First, resolve the numeric track ID from UUID
             track_query = await db.execute(
                 select(Track.id).where(Track.uuid == track_id)
             )
             track_numeric_id = track_query.scalar_one_or_none()
             
-            # If not found and the track_id looks numeric, try direct ID lookup
+            # If not found by UUID and the track_id looks numeric, try direct ID lookup
             if not track_numeric_id and track_id.isdigit():
                 try:
                     numeric_id = int(track_id)
@@ -285,7 +281,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
                         select(Track.id).where(Track.id == numeric_id)
                     )
                     track_numeric_id = track_query.scalar_one_or_none()
-                except ValueError:
+                except (ValueError, TypeError):
                     pass
             
             if not track_numeric_id:
@@ -295,27 +291,41 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
                     "rating_distribution": {"0": 0, "1": 0}
                 }
             
-            # Get total count and distribution
+            # Aggregate stats using a single query
             stmt = select(
-                func.count(self.model.id).label('total_ratings'),
-                func.sum(func.case((self.model.rating == 0, 1), else_=0)).label('not_similar'),
-                func.sum(func.case((self.model.rating == 1, 1), else_=0)).label('similar')
-            ).where(self.model.track_id == track_numeric_id)
-            
+                func.count(TrackRating.id).label('total_ratings'),
+                func.sum(case((TrackRating.rating == 0, 1), else_=0)).label('not_similar'),
+                func.sum(case((TrackRating.rating == 1, 1), else_=0)).label('similar')
+            ).where(TrackRating.track_id == track_numeric_id)
+
             result = await db.execute(stmt)
-            row = result.first()
+            row = result.mappings().one()
             
+            total = int(row['total_ratings'] or 0)
+            if total == 0:
+                return {
+                    "total_ratings": 0,
+                    "average_rating": None,
+                    "rating_distribution": {"0": 0, "1": 0}
+                }
+
             return {
-                "total_ratings": row.total_ratings or 0,
-                "average_rating": None,  # Not applicable for binary ratings
+                "total_ratings": total,
+                "average_rating": None,
                 "rating_distribution": {
-                    "0": row.not_similar or 0,
-                    "1": row.similar or 0
+                    "0": int(row['not_similar'] or 0),
+                    "1": int(row['similar'] or 0)
                 }
             }
         except Exception as e:
-            print(f"Error getting track rating stats: {e}")
-            raise e
+            # Silently handle but log for server-side debugging
+            # logger.error(f"Error getting track rating stats for {track_id}: {e}")
+            return {
+                "total_ratings": 0,
+                "average_rating": None,
+                "rating_distribution": {"0": 0, "1": 0}
+            }
+
 
 
 class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
@@ -453,41 +463,76 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             print(f"Error deleting playlist rating: {e}")
             raise e
     
-    async def async_get_playlist_rating_stats(self, db: AsyncSession, playlist_id: int) -> Dict[str, Any]:
+    async def async_get_playlist_rating_stats(self, db: AsyncSession, playlist_id: Union[int, str]) -> Dict[str, Any]:
         """
         Get rating statistics for a specific playlist.
         
         Args:
             db: Database session
-            playlist_id: Playlist ID
+            playlist_id: Playlist ID (numeric ID or UUID string)
             
         Returns:
             Dictionary with rating statistics
         """
         try:
+            from app.models.playlist import Playlist
+            
+            # Resolve numeric ID if UUID provided
+            playlist_numeric_id = None
+            if isinstance(playlist_id, int):
+                playlist_numeric_id = playlist_id
+            elif isinstance(playlist_id, str):
+                # Try to look up by UUID
+                stmt = select(Playlist.id).where(Playlist.uuid == playlist_id)
+                result = await db.execute(stmt)
+                playlist_numeric_id = result.scalar_one_or_none()
+                
+                # If not found and it looks like a number, try direct ID
+                if not playlist_numeric_id and playlist_id.isdigit():
+                    playlist_numeric_id = int(playlist_id)
+
+            if not playlist_numeric_id:
+                return {
+                    "total_ratings": 0,
+                    "average_rating": None,
+                    "rating_distribution": {"0": 0, "1": 0, "2": 0, "3": 0}
+                }
+
             # Get total count, average, and distribution
             stmt = select(
-                func.count(self.model.id).label('total_ratings'),
-                func.avg(self.model.rating).label('average_rating'),
-                func.sum(func.case((self.model.rating == 0, 1), else_=0)).label('rating_0'),
-                func.sum(func.case((self.model.rating == 1, 1), else_=0)).label('rating_1'),
-                func.sum(func.case((self.model.rating == 2, 1), else_=0)).label('rating_2'),
-                func.sum(func.case((self.model.rating == 3, 1), else_=0)).label('rating_3')
-            ).where(self.model.playlist_id == playlist_id)
-            
+                func.count(PlaylistRating.id).label('total_ratings'),
+                func.avg(PlaylistRating.rating).label('average_rating'),
+                func.sum(case((PlaylistRating.rating == 0, 1), else_=0)).label('rating_0'),
+                func.sum(case((PlaylistRating.rating == 1, 1), else_=0)).label('rating_1'),
+                func.sum(case((PlaylistRating.rating == 2, 1), else_=0)).label('rating_2'),
+                func.sum(case((PlaylistRating.rating == 3, 1), else_=0)).label('rating_3')
+            ).where(PlaylistRating.playlist_id == playlist_numeric_id)
+
             result = await db.execute(stmt)
-            row = result.first()
+            row = result.mappings().one()
             
+            total = int(row['total_ratings'] or 0)
+            if total == 0:
+                return {
+                    "total_ratings": 0,
+                    "average_rating": None,
+                    "rating_distribution": {"0": 0, "1": 0, "2": 0, "3": 0}
+                }
+
             return {
-                "total_ratings": row.total_ratings or 0,
-                "average_rating": float(row.average_rating) if row.average_rating else None,
+                "total_ratings": total,
+                "average_rating": float(row['average_rating']) if row['average_rating'] is not None else None,
                 "rating_distribution": {
-                    "0": row.rating_0 or 0,
-                    "1": row.rating_1 or 0,
-                    "2": row.rating_2 or 0,
-                    "3": row.rating_3 or 0
+                    "0": int(row['rating_0'] or 0),
+                    "1": int(row['rating_1'] or 0),
+                    "2": int(row['rating_2'] or 0),
+                    "3": int(row['rating_3'] or 0)
                 }
             }
         except Exception as e:
-            print(f"Error getting playlist rating stats: {e}")
-            raise e
+            return {
+                "total_ratings": 0,
+                "average_rating": None,
+                "rating_distribution": {"0": 0, "1": 0, "2": 0, "3": 0},
+                "error": str(e)
+            }

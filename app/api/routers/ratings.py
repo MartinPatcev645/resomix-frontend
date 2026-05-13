@@ -237,7 +237,7 @@ async def rate_playlist_endpoint(
 )
 async def get_playlist_rating_endpoint(
     request: Request,
-    playlist_id: int,
+    playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
     current_user: User = Depends(get_current_user),
@@ -271,7 +271,7 @@ async def get_playlist_rating_endpoint(
 )
 async def delete_playlist_rating_endpoint(
     request: Request,
-    playlist_id: int,
+    playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
     current_user: User = Depends(get_current_user),
@@ -304,7 +304,7 @@ async def delete_playlist_rating_endpoint(
 )
 async def get_playlist_rating_stats_endpoint(
     request: Request,
-    playlist_id: int,
+    playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
 ) -> JSONResponse:

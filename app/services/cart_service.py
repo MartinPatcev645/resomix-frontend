@@ -11,7 +11,7 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 import logging
-from sqlalchemy import text, delete
+from sqlalchemy import text, delete, select
 
 from app.repositories.cart_repository import CartRepository
 from app.repositories.playlist_repository import PlaylistRepository
@@ -117,7 +117,6 @@ class CartService:
             source_playlist_id_uuid = item.get("source_playlist_id")
             
             from app.models.track import Track
-            from sqlalchemy import select
             
             # Resolve UUIDs to internal IDs using ORM (enables auto-scoping)
             track_res = await db.execute(select(Track.id).where(Track.uuid == track_id_uuid))
@@ -181,7 +180,6 @@ class CartService:
     async def add_playlist(self, db: AsyncSession, user_id: int, playlist_uuid: str) -> Dict[str, Any]:
         """Add an entire playlist to the cart."""
         from app.models.playlist import Playlist
-        from sqlalchemy import select
         
         plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == playlist_uuid))
         plist_row = plist_res.first()

@@ -770,7 +770,7 @@ class RatingController:
         self,
         db: AsyncSession,
         request: Request,
-        playlist_id: int,
+        playlist_id: str,
         user_id: str = None,
         current_user: Optional[User] = None,
     ) -> JSONResponse:
@@ -949,7 +949,7 @@ class RatingController:
         self,
         db: AsyncSession,
         request: Request,
-        playlist_id: int,
+        playlist_id: str,
         user_id: str = None,
         current_user: Optional[User] = None,
     ) -> JSONResponse:
@@ -1125,7 +1125,7 @@ class RatingController:
             )
 
     async def get_playlist_rating_stats(
-        self, db: AsyncSession, request: Request, playlist_id: int
+        self, db: AsyncSession, request: Request, playlist_id: str
     ) -> JSONResponse:
         """
         Get rating statistics for a specific playlist.
@@ -1140,11 +1140,11 @@ class RatingController:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
-            # Validate playlist_id
-            if playlist_id <= 0:
+            # Validate playlist_id (now string, should be UUID format or at least non-empty)
+            if not playlist_id:
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
-                    success=False, error="playlist_id must be a positive integer"
+                    success=False, error="playlist_id is required"
                 )
                 self.logging_service.log(
                     async_db=db,

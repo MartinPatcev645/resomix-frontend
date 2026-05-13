@@ -15,6 +15,7 @@ from app.api.dependencies.database import get_database_session
 from app.api.dependencies.auth import get_current_user
 from app.controllers.cart_controller import CartController
 from app.models.user import User
+from app.core.context import set_current_partner_id
 
 router = APIRouter(tags=["ecommerce"])
 cart_controller = CartController()
@@ -37,6 +38,7 @@ async def get_cart(
     current_user: User = Depends(get_current_user)
 ):
     """Hydrate the active cart for the user."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.get_cart(db, request, current_user.id)
 
 
@@ -48,6 +50,7 @@ async def add_to_cart(
     current_user: User = Depends(get_current_user)
 ):
     """Add items (Option A) or a playlist (Option B) to the cart."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.add_to_cart(db, request, current_user.id, payload.dict())
 
 
@@ -59,6 +62,7 @@ async def remove_from_cart(
     current_user: User = Depends(get_current_user)
 ):
     """Remove a specific track from the cart."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.remove_from_cart(db, request, current_user.id, track_id)
 
 
@@ -70,6 +74,7 @@ async def remove_playlist_from_cart(
     current_user: User = Depends(get_current_user)
 ):
     """Remove all tracks belonging to a playlist from the cart."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.remove_playlist(db, request, current_user.id, playlist_id)
 
 
@@ -80,6 +85,7 @@ async def clear_cart(
     current_user: User = Depends(get_current_user)
 ):
     """Clear all items from the cart."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.clear_cart(db, request, current_user.id)
 
 
@@ -91,6 +97,7 @@ async def apply_promo(
     current_user: User = Depends(get_current_user)
 ):
     """Apply a promo code to the cart."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.apply_promo(db, request, current_user.id, payload.code)
 
 
@@ -105,6 +112,7 @@ async def initiate_checkout(
     Phase 2: The Pre-Flight Checkout
     Initializes a pending order and creates a Stripe Checkout Session.
     """
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.initiate_checkout(db, request, current_user.id, payload.dict())
 
 
@@ -115,5 +123,6 @@ async def create_checkout_session(
     current_user: User = Depends(get_current_user)
 ):
     """Create a Stripe checkout session."""
+    set_current_partner_id(current_user.partner_id)
     return await cart_controller.initiate_checkout(db, request, current_user.id, {})
 

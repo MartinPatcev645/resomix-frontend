@@ -52,14 +52,23 @@ class TelemetryRepository:
             return {}
 
         try:
-            stmt = select(
-                Track.uuid,
-                Track.id,
-                Track.isrc,
-                Track.label_id,
-            ).where(Track.uuid.in_(list(track_uuids)))
+            from app.models.release_track import ReleaseTrack
+            from app.models.release import Release
+
+            stmt = (
+                select(
+                    Track.uuid,
+                    Track.id,
+                    Track.isrc,
+                    Release.label_id,
+                )
+                .join(ReleaseTrack, Track.id == ReleaseTrack.track_id)
+                .join(Release, ReleaseTrack.release_id == Release.id)
+                .where(Track.uuid.in_(list(track_uuids)))
+            )
 
             result = await db.execute(stmt)
+
             rows = result.all()
 
             mapping = {}

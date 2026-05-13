@@ -31,47 +31,50 @@ This document is the authoritative list of all Resomix endpoints and their corre
 | `/monthly_pipeline/` | `POST` | Ingestion & Sync worker | 1. Batch process new audio files.<br>2. Update track embeddings. | 1. `403` for standard users.<br>2. Handle malformed metadata in batch. |
 | `/open_tracks_pipeline/`| `POST` | Open marketplace ingestion | 1. Auto-tagging and peak generation. | 1. Antivirus check on every file. |
 
-## 5. Playlists & Engagement
+## 5. Playlists, Engagement & Ratings
 | Endpoint | Methods | Purpose | Success Scenarios | Security/Error Scenarios |
 | :--- | :--- | :--- | :--- | :--- |
-| `/playlists/` | `GET`, `POST`, `PUT` | Playlist CRUD | 1. Create private/public playlists.<br>2. Reorder tracks in list. | 1. `403` if modifying a locked playlist.<br>2. Prevent circular forks. |
-| `/playlist_engagement/`| `POST` | Tracking plays/saves | 1. Increment play counts.<br>2. Record "Added to Library". | 1. Prevent bot-spamming play counts. |
+| `/playlists/` | `GET`, `PUT` | Playlist Management | 1. Rename/Toggle visibility of owned lists.<br>2. List all user playlists with filters. | 1. `403` if modifying non-owned playlist.<br>2. Prevent forking private lists. |
+| `/playlists/fork/{id}` | `POST` | Public Playlist Copy | 1. Create personal copy of public list. | 1. `403` for private playlists. |
+| `/playlist/` | `POST` | Engagement (Favs/Follows) | 1. Add/Remove from favorites.<br>2. Follow/Unfollow public playlists. | 1. Prevent duplicate follows.<br>2. `404` for non-existent playlists. |
+| `/ratings/tracks/` | `POST`, `GET` | Track Similarity Feedback | 1. Rate track 0 (not similar) or 1 (similar).<br>2. Retrieve aggregate stats for a track. | 1. `422` for invalid values.<br>2. Scoped to playlist context. |
+| `/ratings/playlists/`| `POST`, `GET` | Playlist Quality Feedback | 1. Rate playlist 0-3 stars.<br>2. Get average rating and distribution. | 1. Validate star range (0-3). |
 | `/admin/playlist/` | `GET`, `DELETE` | Moderator oversight | 1. Batch visibility toggle (hide spam). | 1. Audit trail of moderator actions. |
 
-## 6. External Streaming Transfers
+## 6. E-commerce, Cart & Checkout
 | Endpoint | Methods | Purpose | Success Scenarios | Security/Error Scenarios |
 | :--- | :--- | :--- | :--- | :--- |
-| `/spotify_transfer/` | `GET`, `POST` | Sync with Spotify | 1. Map Spotify tracks to Resomix IDs. | 1. Expired OAuth token handling.<br>2. Rate limit from Spotify API. |
-| `/tidal_transfer/` | `POST` | Sync with Tidal | 1. Import Tidal playlists. | 1. Missing metadata mapping. |
-| `/apple_music_transfer/`| `GET`, `POST` | Sync with Apple Music | 1. Verify library access. | 1. `401` on Apple Dev Token failure. |
+| `/cart` | `GET` | Hydrate active cart | 1. Return all items in user's cart. | 1. `401` Authentication required. |
+| `/cart/add` | `POST` | Add track or playlist | 1. Add individual track to cart.<br>2. Add entire playlist to cart. | 1. Prevent duplicate items.<br>2. `404` for invalid track/playlist. |
+| `/cart/remove/{id}` | `DELETE` | Remove individual track | 1. Delete specific track from cart. | 1. Handle non-existent cart item. |
+| `/cart/remove-playlist/`| `DELETE` | Bulk remove playlist | 1. Remove all tracks from a specific list. | 1. Scoped to current user's cart. |
+| `/cart/clear` | `DELETE` | Reset shopping cart | 1. Remove all items from cart. | 1. Atomic clear operation. |
+| `/cart/promo` | `POST` | Apply discount code | 1. Recalculate totals with valid code. | 1. `422` for expired/invalid codes. |
+| `/checkout/init` | `POST` | Pre-flight checkout | 1. Create pending order.<br>2. Initialize Stripe session. | 1. Verify price consistency.<br>2. Handle stock/license locks. |
 
-## 7. E-commerce, Cart & Promo
+## 7. Feedback, Support & CRM
 | Endpoint | Methods | Purpose | Success Scenarios | Security/Error Scenarios |
 | :--- | :--- | :--- | :--- | :--- |
-| `/purchases/cart` | `GET`, `POST`, `DELETE` | Shopping cart logic | 1. Persistent cart across sessions.<br>2. Apply promo code (Growth/Enterprise). | 1. Prevent adding out-of-stock licenses.<br>2. Double-discount prevention. |
-| `/purchases/checkout/`| `POST` | Stripe session creation | 1. Redirect to secure payment. | 1. Verify webhook signatures.<br>2. Handle abandoned checkouts. |
-
-## 8. Feedback, Support & CRM
-| Endpoint | Methods | Purpose | Success Scenarios | Security/Error Scenarios |
-| :--- | :--- | :--- | :--- | :--- |
-| `/contact/` | `POST`, `GET` | Public inquiry form | 1. Save submission to admin queue. | 1. `422` for invalid fields.<br>2. CAPTCHA verification check. |
+| `/contact/` | `POST`, `GET` | Public inquiry form | 1. Save submission to admin queue. | 1. `422` for invalid fields. |
 | `/feedback/` | `POST`, `PATCH` | User UX surveys | 1. Submit NPS or feature request. | 1. Limit submissions per user. |
 | `/admin/contact/` | `GET`, `DELETE` | Support ticket management | 1. Resolve/Close tickets. | 1. Only Support-role admins allowed. |
 
-## 9. Waitlist & Promo Campaigns
+## 8. Waitlist & Promo Campaigns
 | Endpoint | Methods | Purpose | Success Scenarios | Security/Error Scenarios |
 | :--- | :--- | :--- | :--- | :--- |
 | `/waitlist/` | `POST` | Early access registration | 1. Record email and tier interest. | 1. Prevent duplicate email entries. |
 | `/admin/promo/create` | `POST` | Campaign generation | 1. Generate unique 100% off codes. | 1. Limit code usage (count/date). |
 
-## 10. System, Ops & Telemetry
+## 9. System, Ops & Telemetry
 | Endpoint | Methods | Purpose | Success Scenarios | Security/Error Scenarios |
 | :--- | :--- | :--- | :--- | :--- |
 | `/health/` | `GET` | Service heartbeat | 1. Check MariaDB, Redis, and S3 status. | 1. Detail error if one component fails. |
-| `/telemetry/` | `POST` | Performance tracking | 1. Log frontend latency metrics. | 1. Anonymize user IDs for GDPR. |
+| `/telemetry/sync` | `POST` | Stream Telemetry Batch | 1. Ingest playback events (start/skip/end).<br>2. Enqueue to Redis for async logging. | 1. Handle high-volume batch ingestion.<br>2. Validate event schema integrity. |
 | `/admin/operation_limits/`| `GET`, `PUT` | System-wide caps | 1. Adjust max concurrent uploads. | 1. High-priority admin override. |
 
-## 11. Database Verification & Troubleshooting
+---
+
+## Database Verification & Troubleshooting
 
 To manually verify data in the test database (e.g., check if users were created or tracks exist), use the following command:
 
