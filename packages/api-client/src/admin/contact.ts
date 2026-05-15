@@ -1,5 +1,7 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -95,13 +97,13 @@ export const getContactList = async (params: ContactListParams = {}) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch contact list.",
+      error: (data as ApiResponse).error || "Failed to fetch contact list.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -130,10 +132,10 @@ export const deleteContact = async (contactId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete contact.",
+      error: (data as ApiResponse).error || "Failed to delete contact.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -153,11 +155,11 @@ export const batchDeleteContact = async (contactIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete contact entries.",
+      error: (data as ApiResponse).error || "Failed to delete contact entries.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -178,10 +180,10 @@ export const markContactStatus = async (contactId: number, status: 'open' | 'res
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update contact status.",
+      error: (data as ApiResponse).error || "Failed to update contact status.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -216,14 +218,14 @@ export const exportContact = async (
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export contact.",
+      error: (data as ApiResponse).error || "Failed to export contact.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",

@@ -1,5 +1,7 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -158,13 +160,13 @@ export const getPlaylistList = async (params: PlaylistListParams = {}) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch playlists.",
+      error: (data as ApiResponse).error || "Failed to fetch playlists.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -193,10 +195,10 @@ export const deletePlaylist = async (playlistId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete playlist.",
+      error: (data as ApiResponse).error || "Failed to delete playlist.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -216,11 +218,11 @@ export const batchDeletePlaylist = async (playlistIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete playlists.",
+      error: (data as ApiResponse).error || "Failed to delete playlists.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -260,14 +262,14 @@ export const exportPlaylist = async (
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export playlists.",
+      error: (data as ApiResponse).error || "Failed to export playlists.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",
@@ -289,10 +291,10 @@ export const getPlaylistDetails = async (playlistUuid: string) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch playlist details.",
+      error: (data as ApiResponse).error || "Failed to fetch playlist details.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -318,10 +320,10 @@ export const adminChangePlaylistVisibility = async (playlistId: number, isPublic
     
     return {
       success: false,
-      error: (data as any).error || "Failed to change playlist visibility.",
+      error: (data as ApiResponse).error || "Failed to change playlist visibility.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -350,11 +352,11 @@ export const adminBatchChangePlaylistVisibility = async (playlistIds: number[], 
     return {
       success: false,
       updated_count: 0,
-      error: (data as any).error || "Failed to change playlist visibility.",
+      error: (data as ApiResponse).error || "Failed to change playlist visibility.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       updated_count: 0,
     };
   }

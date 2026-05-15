@@ -1,20 +1,20 @@
 import React from 'react'
 import { Input, Select, DatePicker, Button, Space, Tag } from 'antd'
 import { RefreshCw, Search, Download, Trash2, FilterX } from 'lucide-react'
-import type { WaitlistItem } from '@/hooks/useWaitlist.ts'
+import type { WaitlistSearchColumn } from '@/hooks/useWaitlist.ts'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
 interface WaitlistTableControlsProps {
   searchText: string
-  searchColumn: keyof WaitlistItem
+  searchColumn: WaitlistSearchColumn
   dateRange: [string, string] | null
   selectedCount: number
   totalCount: number
   exportLoading: boolean
-  onSearch: (value: string, column: keyof WaitlistItem) => void
-  onSearchColumnChange: (column: keyof WaitlistItem) => void
+  onSearch: (value: string, column: WaitlistSearchColumn) => void
+  onSearchColumnChange: (column: WaitlistSearchColumn) => void
   onDateRangeChange: (dates: [string, string] | null) => void
   onStatusFilter: (status: 'all' | 'pending' | 'approved' | 'rejected') => void
   onRefresh: () => void
@@ -85,7 +85,7 @@ function WaitlistTableControls({
               id="search-column-select"
               aria-label="Search column"
               value={searchColumn}
-              onChange={(value) => onSearchColumnChange(value as keyof WaitlistItem)}
+              onChange={(value) => onSearchColumnChange(value as WaitlistSearchColumn)}
               options={searchColumns}
               style={{ width: 120 }}
             />

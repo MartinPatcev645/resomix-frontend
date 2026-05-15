@@ -6,6 +6,23 @@ export interface ApiConfig {
   MAX_FILE_SIZE: number;
   ALLOWED_AUDIO_TYPES: string[];
   ENDPOINTS: {
+    // Auth & User endpoints
+    AUTH_LOGIN: string;
+    AUTH_LOGOUT: string;
+    AUTH_LOGOUT_ALL: string;
+    AUTH_REGISTER: string;
+    AUTH_REFRESH: string;
+    AUTH_VERIFY_2FA: string;
+    AUTH_VERIFY_EMAIL: string;
+    AUTH_RESEND_VERIFICATION: string;
+    AUTH_PASSWORD_RESET: string;
+    AUTH_PASSWORD_RESET_CONFIRM: string;
+    USER_ME: string;
+    USER_CHANGE_PASSWORD: string;
+    USER_SESSIONS: string;
+    USER_ENABLE_2FA: string;
+    USER_DISABLE_2FA: string;
+
     // beta endpoints
     SIMILARITY: string;
     SELECTION_SIMILARITY: string;
@@ -21,8 +38,10 @@ export interface ApiConfig {
     PLAYLIST_SIMILARITY_HLS: string;
     PLAYLIST_FORK: string;
     PLAYLIST_PLAY_SESSION: string;
+    PLAYLISTS_GET_ALL: string;
     WAITLIST: string;
-    // SEGMENT_STATUS: string; // Commented out - segmentation polling no longer needed
+    SEGMENT_STATUS: string;
+    
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: string;
     ADMIN_FEEDBACK_DELETE: string;
@@ -60,8 +79,10 @@ export interface ApiConfig {
     ADMIN_PARTNER_API_KEY_LIST: string;
     ADMIN_PARTNER_API_KEY_REVOKE: string;
     ADMIN_PARTNER_API_KEY_ROTATE: string;
+    
     // Telemetry
     TELEMETRY_SYNC: string;
+    
     // Cart & Checkout
     CART_GET: string;
     CART_ADD: string;
@@ -70,11 +91,12 @@ export interface ApiConfig {
     CART_PROMO: string;
     CART_CLEAR: string;
     CHECKOUT_CREATE_SESSION: string;
-    // unused beta endpoints
-    // SPOTIFY_TRANSFER: string;
-    // TIDAL_AUTH_TOKEN: string;
-    // TIDAL_TRANSFER: string;
-    // APPLE_TRANSFER: string;
+    
+    // Ingestion Pipelines
+    INGEST_MONTHLY_TRACK: string;
+    INGEST_MONTHLY_EMBEDDINGS: string;
+    INGEST_OPEN_TRACK: string;
+    INGEST_OPEN_EMBEDDINGS: string;
   };
 }
 
@@ -114,71 +136,93 @@ export const API_CONFIG: ApiConfig = {
     "audio/x-aiff",
   ],
   ENDPOINTS: {
+    // Auth & User endpoints
+    AUTH_LOGIN: "/api/v1/auth/login",
+    AUTH_LOGOUT: "/api/v1/auth/logout",
+    AUTH_LOGOUT_ALL: "/api/v1/auth/logout-all",
+    AUTH_REGISTER: "/api/v1/auth/register",
+    AUTH_REFRESH: "/api/v1/auth/refresh",
+    AUTH_VERIFY_2FA: "/api/v1/auth/verify-2fa",
+    AUTH_VERIFY_EMAIL: "/api/v1/auth/verify-email",
+    AUTH_RESEND_VERIFICATION: "/api/v1/auth/resend-verification",
+    AUTH_PASSWORD_RESET: "/api/v1/auth/password-reset",
+    AUTH_PASSWORD_RESET_CONFIRM: "/api/v1/auth/password-reset-confirm",
+    USER_ME: "/api/v1/users/me",
+    USER_CHANGE_PASSWORD: "/api/v1/users/me/change-password",
+    USER_SESSIONS: "/api/v1/users/me/sessions",
+    USER_ENABLE_2FA: "/api/v1/users/me/enable-2fa",
+    USER_DISABLE_2FA: "/api/v1/users/me/disable-2fa",
     // beta endpoints
-    SIMILARITY: "/get_similarity/",
-    SELECTION_SIMILARITY: "/get_selection_similarity/",
-    SEARCH: "/search_tracks/",
-    FEEDBACK: "/feedback/",
-    CONTACT: "/contact/",
-    AUDIO_PREVIEW: "/preview/get_preview/",
-    PLAYLIST_RENAME: "/playlists/rename/",
-    PLAYLIST_VISIBILITY: "/playlists/visibility/",
-    PLAYLIST_SIMILARITY: "/playlists/similarity/",
-    TRACK_RATING: "/ratings/tracks/",
-    PLAYLIST_RATING: "/ratings/playlists/",
-    PLAYLIST_SIMILARITY_HLS: "/playlists/similarity-hls/",
-    PLAYLIST_FORK: "/playlists/fork/",
-    PLAYLIST_PLAY_SESSION: "/playlists/{id}/play-session",
-    WAITLIST: "/waitlist/",
+    SIMILARITY: "/api/v1/similarity/upload",
+    SELECTION_SIMILARITY: "/api/v1/similarity/search",
+    SEARCH: "/api/v1/search_tracks/",
+    FEEDBACK: "/api/v1/feedback/",
+    CONTACT: "/api/v1/contact/",
+    AUDIO_PREVIEW: "/api/v1/preview/get_preview/",
+    PLAYLIST_RENAME: "/api/v1/playlists/rename/",
+    PLAYLIST_VISIBILITY: "/api/v1/playlists/visibility/",
+    PLAYLIST_SIMILARITY: "/api/v1/playlists/similarity/",
+    TRACK_RATING: "/api/v1/ratings/tracks/",
+    PLAYLIST_RATING: "/api/v1/ratings/playlists/",
+    PLAYLIST_SIMILARITY_HLS: "/api/v1/playlists/similarity-hls/",
+    PLAYLIST_FORK: "/api/v1/playlists/fork/",
+    PLAYLIST_PLAY_SESSION: "/api/v1/playlists/{id}/play-session",
+    PLAYLISTS_GET_ALL: "/api/v1/playlists/get-all-playlists/",
+    WAITLIST: "/api/v1/waitlist/",
     // Telemetry
-    TELEMETRY_SYNC: "/telemetry/sync",
+    TELEMETRY_SYNC: "/api/v1/telemetry/sync",
     // Cart & Checkout
-    CART_GET: "/cart",
-    CART_ADD: "/cart/add",
-    CART_REMOVE: "/cart/remove/",
-    CART_REMOVE_PLAYLIST: "/cart/remove-playlist/",
-    CART_PROMO: "/cart/promo",
-    CART_CLEAR: "/cart/clear",
-    CHECKOUT_CREATE_SESSION: "/checkout/create-session",
-    // SEGMENT_STATUS: "/segment_status/", // Commented out - segmentation polling no longer needed
+    CART_GET: "/api/v1/cart",
+    CART_ADD: "/api/v1/cart/add",
+    CART_REMOVE: "/api/v1/cart/remove/",
+    CART_REMOVE_PLAYLIST: "/api/v1/cart/remove-playlist/",
+    CART_PROMO: "/api/v1/cart/promo",
+    CART_CLEAR: "/api/v1/cart/clear",
+    CHECKOUT_CREATE_SESSION: "/api/v1/checkout/create-session",
+    SEGMENT_STATUS: "/api/v1/similarity/segment-status/", 
     // Admin endpoints
-    ADMIN_FEEDBACK_LIST: "/admin/feedback/",
-    ADMIN_FEEDBACK_DELETE: "/admin/feedback/delete/",
-    ADMIN_FEEDBACK_BATCH_DELETE: "/admin/feedback/batch-delete",
-    ADMIN_FEEDBACK_UPDATE: "/admin/feedback/update/",
-    ADMIN_FEEDBACK_MARK_STATUS: "/admin/feedback/mark-status/",
-    ADMIN_FEEDBACK_EXPORT: "/admin/feedback/export",
-    ADMIN_CONTACT_LIST: "/admin/contact/",
-    ADMIN_CONTACT_DELETE: "/admin/contact/delete/",
-    ADMIN_CONTACT_BATCH_DELETE: "/admin/contact/batch-delete",
-    ADMIN_CONTACT_UPDATE: "/admin/contact/update/",
-    ADMIN_CONTACT_MARK_STATUS: "/admin/contact/mark-status/",
-    ADMIN_CONTACT_EXPORT: "/admin/contact/export",
-    ADMIN_WAITLIST_LIST: "/admin/waitlist/",
-    ADMIN_WAITLIST_DELETE: "/admin/waitlist/delete/",
-    ADMIN_WAITLIST_BATCH_DELETE: "/admin/waitlist/batch-delete",
-    ADMIN_WAITLIST_UPDATE_STATUS: "/admin/waitlist/update-status/",
-    ADMIN_WAITLIST_EXPORT: "/admin/waitlist/export",
-    ADMIN_PLAYLIST_LIST: "/admin/playlist/",
-    ADMIN_PLAYLIST_DELETE: "/admin/playlist/delete/",
-    ADMIN_PLAYLIST_BATCH_DELETE: "/admin/playlist/batch-delete",
-    ADMIN_PLAYLIST_EXPORT: "/admin/playlist/export",
-    ADMIN_PLAYLIST_DETAILS: "/admin/playlist/",
-    ADMIN_PLAYLIST_VISIBILITY: "/admin/playlist/visibility/",
-    ADMIN_PLAYLIST_BATCH_VISIBILITY: "/admin/playlist/batch-visibility",
-    ADMIN_OPERATION_TYPES: "/admin/operation-limits/operation-types",
-    ADMIN_OPERATION_LIMITS: "/admin/operation-limits/",
-    ADMIN_OPERATION_LIMIT_DETAIL: "/admin/operation-limits/",
-    ADMIN_SPOTIFY_APPS: "/admin/spotify-apps/",
-    ADMIN_SPOTIFY_APP_USERS: "/admin/spotify-apps/users",
-    ADMIN_USER_SEARCH: "/users/search",
+    ADMIN_FEEDBACK_LIST: "/api/v1/admin/feedback/",
+    ADMIN_FEEDBACK_DELETE: "/api/v1/admin/feedback/delete/",
+    ADMIN_FEEDBACK_BATCH_DELETE: "/api/v1/admin/feedback/batch-delete",
+    ADMIN_FEEDBACK_UPDATE: "/api/v1/admin/feedback/update/",
+    ADMIN_FEEDBACK_MARK_STATUS: "/api/v1/admin/feedback/mark-status/",
+    ADMIN_FEEDBACK_EXPORT: "/api/v1/admin/feedback/export",
+    ADMIN_CONTACT_LIST: "/api/v1/admin/contact/",
+    ADMIN_CONTACT_DELETE: "/api/v1/admin/contact/delete/",
+    ADMIN_CONTACT_BATCH_DELETE: "/api/v1/admin/contact/batch-delete",
+    ADMIN_CONTACT_UPDATE: "/api/v1/admin/contact/update/",
+    ADMIN_CONTACT_MARK_STATUS: "/api/v1/admin/contact/mark-status/",
+    ADMIN_CONTACT_EXPORT: "/api/v1/admin/contact/export",
+    ADMIN_WAITLIST_LIST: "/api/v1/admin/waitlist/",
+    ADMIN_WAITLIST_DELETE: "/api/v1/admin/waitlist/delete/",
+    ADMIN_WAITLIST_BATCH_DELETE: "/api/v1/admin/waitlist/batch-delete",
+    ADMIN_WAITLIST_UPDATE_STATUS: "/api/v1/admin/waitlist/update-status/",
+    ADMIN_WAITLIST_EXPORT: "/api/v1/admin/waitlist/export",
+    ADMIN_PLAYLIST_LIST: "/api/v1/admin/playlist/",
+    ADMIN_PLAYLIST_DELETE: "/api/v1/admin/playlist/delete/",
+    ADMIN_PLAYLIST_BATCH_DELETE: "/api/v1/admin/playlist/batch-delete",
+    ADMIN_PLAYLIST_EXPORT: "/api/v1/admin/playlist/export",
+    ADMIN_PLAYLIST_DETAILS: "/api/v1/admin/playlist/",
+    ADMIN_PLAYLIST_VISIBILITY: "/api/v1/admin/playlist/visibility/",
+    ADMIN_PLAYLIST_BATCH_VISIBILITY: "/api/v1/admin/playlist/batch-visibility",
+    ADMIN_OPERATION_TYPES: "/api/v1/admin/operation-limits/operation-types",
+    ADMIN_OPERATION_LIMITS: "/api/v1/admin/operation-limits/",
+    ADMIN_OPERATION_LIMIT_DETAIL: "/api/v1/admin/operation-limits/",
+    ADMIN_SPOTIFY_APPS: "/api/v1/admin/spotify-apps/",
+    ADMIN_SPOTIFY_APP_USERS: "/api/v1/admin/spotify-apps/users",
+    ADMIN_USER_SEARCH: "/api/v1/users/search",
     // Partner Management
-    ADMIN_PARTNER_LIST: "/admin/partners/",
-    ADMIN_PARTNER_CREATE: "/admin/partners/",
-    ADMIN_PARTNER_API_KEY_ISSUE: "/admin/partners/api-keys/issue",
-    ADMIN_PARTNER_API_KEY_LIST: "/admin/partners/api-keys/",
-    ADMIN_PARTNER_API_KEY_REVOKE: "/admin/partners/api-keys/revoke",
-    ADMIN_PARTNER_API_KEY_ROTATE: "/admin/partners/api-keys/rotate",
+    ADMIN_PARTNER_LIST: "/api/v1/admin/partners/",
+    ADMIN_PARTNER_CREATE: "/api/v1/admin/partners/",
+    ADMIN_PARTNER_API_KEY_ISSUE: "/api/v1/admin/partners/api-keys/issue",
+    ADMIN_PARTNER_API_KEY_LIST: "/api/v1/admin/partners/api-keys/",
+    ADMIN_PARTNER_API_KEY_REVOKE: "/api/v1/admin/partners/api-keys/revoke",
+    ADMIN_PARTNER_API_KEY_ROTATE: "/api/v1/admin/partners/api-keys/rotate",
+    // Ingestion Pipelines
+    INGEST_MONTHLY_TRACK: "/api/v1/ingest/monthly/track",
+    INGEST_MONTHLY_EMBEDDINGS: "/api/v1/ingest/monthly/update_embeddings",
+    INGEST_OPEN_TRACK: "/api/v1/ingest/open/track",
+    INGEST_OPEN_EMBEDDINGS: "/api/v1/ingest/open/update_embeddings",
     // Unused beta endpoints
     // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
     // TIDAL_AUTH_TOKEN: "/tidal/auth/token",
@@ -191,8 +235,8 @@ export const APPLE_CONFIG = {
   MUSIC_KIT_SRC: 'https://js-cdn.music.apple.com/musickit/v1/musickit.js',
   GUARD_PREFIX: 'apple_auth_guard_',
   REDIRECT_URI: `${getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com")}/apple-redirect`,
-  APPLE_AUTH_TOKEN: '/apple/auth/token',
-  APPLE_TRANSFER: "/apple/transfer-playlist/",
+  APPLE_AUTH_TOKEN: '/api/v1/apple-music/developer-token/',
+  APPLE_TRANSFER: "/api/v1/apple-music/transfer-playlist/",
   APP_NAME:  "ResomiX",
   APP_BUILD: "1.0.0",
 };
@@ -207,7 +251,7 @@ export const SPOTIFY_CONFIG = {
   SCOPES: 'playlist-modify-public playlist-modify-private',
   AUTH_URL: 'https://accounts.spotify.com/authorize',
   TOKEN_URL: 'https://accounts.spotify.com/api/token',
-  SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
+  SPOTIFY_TRANSFER: "/api/v1/spotify/transfer-playlist/",
 };
 
 /*
@@ -227,6 +271,6 @@ export const TIDAL_CONFIG = {
   REDIRECT_URI: `${getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com")}/tidal-redirect`,
   SCOPE: 'user.read playlists.read playlists.write',
   AUTH_URL: 'https://login.tidal.com/authorize',
-  TIDAL_AUTH_TOKEN: '/tidal/auth/token',
-  TIDAL_TRANSFER: "/tidal/transfer-playlist/",
+  TIDAL_AUTH_TOKEN: '/api/v1/tidal/auth/token',
+  TIDAL_TRANSFER: "/api/v1/tidal/transfer-playlist/",
 };

@@ -1,20 +1,20 @@
 import React from 'react'
 import { Input, Select, DatePicker, Button, Space, Tag } from 'antd'
 import { RefreshCw, Search, Download, Trash2, FilterX } from 'lucide-react'
-import type { FeedbackItem } from '@/hooks/useFeedback.ts'
+import type { FeedbackSearchColumn } from '@/hooks/useFeedback.ts'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
 interface FeedbackTableControlsProps {
   searchText: string
-  searchColumn: keyof FeedbackItem
+  searchColumn: FeedbackSearchColumn
   dateRange: [string, string] | null
   selectedCount: number
   totalCount: number
   exportLoading: boolean
-  onSearch: (value: string, column: keyof FeedbackItem) => void
-  onSearchColumnChange: (column: keyof FeedbackItem) => void
+  onSearch: (value: string, column: FeedbackSearchColumn) => void
+  onSearchColumnChange: (column: FeedbackSearchColumn) => void
   onDateRangeChange: (dates: [string, string] | null) => void
   onStatusFilter: (status: 'all' | 'open' | 'resolved') => void
   onRefresh: () => void
@@ -85,7 +85,7 @@ function FeedbackTableControls({
               id="search-column-select"
               aria-label="Search column"
               value={searchColumn}
-              onChange={(value) => onSearchColumnChange(value as keyof FeedbackItem)}
+              onChange={(value) => onSearchColumnChange(value as FeedbackSearchColumn)}
               options={searchColumns}
               style={{ width: 120 }}
             />

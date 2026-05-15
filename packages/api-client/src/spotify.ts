@@ -40,7 +40,7 @@ export const postSpotifyTransfer = async (body: {
     );
     return data;
   } catch (error: any) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

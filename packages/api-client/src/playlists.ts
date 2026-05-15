@@ -1,11 +1,13 @@
 import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
+import type { ApiResponse } from "./types/api";
+
 
 export const renamePlaylist = async (playlistId: string, newName: string) => {
   try {
     const payload = { playlist_id: playlistId, new_name: newName };
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.put(API_CONFIG.ENDPOINTS.PLAYLIST_RENAME, payload),
     );
 
@@ -16,14 +18,14 @@ export const renamePlaylist = async (playlistId: string, newName: string) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
 export const changePlaylistVisibility = async (playlistId: string, isPublic = true) => {
   try {
     const payload = { playlist_id: playlistId, is_public: isPublic };
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.put(API_CONFIG.ENDPOINTS.PLAYLIST_VISIBILITY, payload),
     );
 
@@ -34,13 +36,13 @@ export const changePlaylistVisibility = async (playlistId: string, isPublic = tr
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
 export const getPlaylistSimilarity = async (playlistId: string) => {
   try {
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.get(`${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY}${playlistId}`),
     );
 
@@ -51,7 +53,7 @@ export const getPlaylistSimilarity = async (playlistId: string) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -66,7 +68,7 @@ export const rateTrack = async (
       payload.playlist_id = playlistId;
     }
 
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.post(API_CONFIG.ENDPOINTS.TRACK_RATING, payload),
     );
 
@@ -77,7 +79,7 @@ export const rateTrack = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -92,7 +94,7 @@ export const ratePlaylist = async (
       payload.message = message.trim();
     }
 
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.post(API_CONFIG.ENDPOINTS.PLAYLIST_RATING, payload),
     );
 
@@ -103,13 +105,13 @@ export const ratePlaylist = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
 export const forkPlaylist = async (playlistId: string) => {
   try {
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_FORK}${playlistId}`),
     );
 
@@ -120,6 +122,6 @@ export const forkPlaylist = async (playlistId: string) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };

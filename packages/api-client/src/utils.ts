@@ -1,5 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./config";
+import type { ApiResponse } from "./types/api";
+
 
 // Create a shared Axios instance
 const axiosInstance: AxiosInstance = axios.create({
@@ -24,6 +26,20 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+// Interceptor to log correlation ID for debugging
+axiosInstance.interceptors.response.use((response) => {
+  const correlationId = response.headers['x-correlation-id'];
+  if (correlationId) {
+    // console.log(`[API] Correlation-ID: ${correlationId} for ${response.config.url}`);
+  }
+  return response;
+}, (error) => {
+  if (error.response?.headers['x-correlation-id']) {
+    console.error(`[API Error] Correlation-ID: ${error.response.headers['x-correlation-id']} for ${error.config?.url}`);
+  }
+  return Promise.reject(error);
+});
+
 // Generic Axios wrapper to unwrap `data` property
 export const axiosWrapper = async <T>(apiCall: Promise<AxiosResponse<T>>): Promise<T> =>
   apiCall.then((res) => res.data);
@@ -42,7 +58,7 @@ export const handleApiError = (error: AxiosError | Error): {
     const { status, data } = (error as AxiosError).response!;
 
     // Attempt to respect standardized error format
-    if (data && typeof data === "object" && (data as any).success === false) {
+    if (data && typeof data === "object" && (data as ApiResponse).success === false) {
       const apiError = data as { error?: string; details?: unknown[] };
       let errorMessage = apiError.error || "An error occurred.";
       if (Array.isArray(apiError.details) && apiError.details.length > 0) {
@@ -52,7 +68,7 @@ export const handleApiError = (error: AxiosError | Error): {
       return {
         success: false,
         error: errorMessage,
-        details: (data as any).details ?? null,
+        details: (data as ApiResponse).details ?? null,
         status,
       };
     }
@@ -78,7 +94,7 @@ export const handleApiError = (error: AxiosError | Error): {
   // Fallback for generic Error / network issues
   return {
     success: false,
-    error: (error as any).message || "Network error. Please check your connection.",
+    error: (error as Error).message || "Network error. Please check your connection.",
   };
 };
 

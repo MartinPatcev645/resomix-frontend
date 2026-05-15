@@ -51,7 +51,7 @@ export const searchAdminUsers = async (
       error: response.error || "Failed to search users.",
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],

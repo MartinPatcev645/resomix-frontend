@@ -1,6 +1,8 @@
 import axiosInstance, { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
+import type { ApiResponse } from "./types/api";
+
 
 
 
@@ -37,7 +39,7 @@ export const getSimilarTracks = async (
     const params = { top_sk: TOPSK };
 
     // Use authClient to include Authorization header if user is logged in
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.post(API_CONFIG.ENDPOINTS.SIMILARITY, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         params,
@@ -58,7 +60,7 @@ export const getSimilarTracks = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -78,7 +80,7 @@ export const getSimilarityForSelectedTrack = async (
     };
 
     // Use authClient instead of axiosInstance to include credentials and Authorization header
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload),
     );
 
@@ -89,7 +91,7 @@ export const getSimilarityForSelectedTrack = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

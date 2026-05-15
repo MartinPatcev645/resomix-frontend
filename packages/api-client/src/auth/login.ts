@@ -1,3 +1,4 @@
+import { API_CONFIG } from '../config';
 import authClient from '../authClient';
 import { axiosWrapper, handleApiError } from '../utils';
 import type { LoginRequest, LoginResponse, TwoFactorRequiredResponse } from '../types/auth';
@@ -5,11 +6,11 @@ import type { LoginRequest, LoginResponse, TwoFactorRequiredResponse } from '../
 export const login = async (data: LoginRequest) => {
   try {
     const response = await axiosWrapper<LoginResponse | TwoFactorRequiredResponse>(
-      authClient.post('/auth/login', data)
+      authClient.post(API_CONFIG.ENDPOINTS.AUTH_LOGIN, data)
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

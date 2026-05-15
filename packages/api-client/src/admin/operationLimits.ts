@@ -112,7 +112,7 @@ export const getOperationTypes = async (): Promise<AdminOperationTypesResponse> 
       total: 0,
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -155,7 +155,7 @@ export const getUserOperationLimits = async (
       pagination: defaultPagination(queryParams.page, queryParams.page_size),
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -182,7 +182,7 @@ export const getUserOperationLimit = async (
       error: response.error || "Failed to fetch user operation limit.",
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
     };
@@ -219,7 +219,7 @@ export const upsertUserOperationLimit = async (
         };
       }
     }
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -241,7 +241,7 @@ export const deleteUserOperationLimit = async (
       error: response.error || "Failed to delete user operation limit.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

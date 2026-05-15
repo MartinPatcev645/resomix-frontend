@@ -170,7 +170,7 @@ export const getSpotifyApps = async (
       pagination: defaultPagination(queryParams.page, queryParams.page_size),
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -201,7 +201,7 @@ export const getSpotifyApp = async (
       error: response.error || "Failed to fetch Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -222,7 +222,7 @@ export const createSpotifyApp = async (
       error: response.error || "Failed to create Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -244,7 +244,7 @@ export const updateSpotifyApp = async (
       error: response.error || "Failed to update Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -273,7 +273,7 @@ export const deleteSpotifyApp = async (
       error: response.error || "Failed to delete Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -311,7 +311,7 @@ export const getSpotifyAppUsers = async (
       pagination: defaultPagination(queryParams.page, queryParams.page_size),
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -337,7 +337,7 @@ export const getSpotifyAppUser = async (
       error: response.error || "Failed to fetch Spotify app user.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -358,7 +358,7 @@ export const upsertSpotifyAppUser = async (
       error: response.error || "Failed to save Spotify app user association.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -379,7 +379,7 @@ export const deleteSpotifyAppUser = async (
       error: response.error || "Failed to delete Spotify app user association.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

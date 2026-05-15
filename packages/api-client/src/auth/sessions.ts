@@ -1,3 +1,4 @@
+import { API_CONFIG } from '../config';
 import authClient from '../authClient';
 import { axiosWrapper, handleApiError } from '../utils';
 import type { SessionsResponse, SuccessResponse } from '../types/auth';
@@ -6,11 +7,11 @@ import type { SessionsResponse, SuccessResponse } from '../types/auth';
 export const getMySessions = async () => {
   try {
     const response = await axiosWrapper<SessionsResponse>(
-      authClient.get('/users/me/sessions')
+      authClient.get(API_CONFIG.ENDPOINTS.USER_SESSIONS)
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -18,11 +19,11 @@ export const getMySessions = async () => {
 export const revokeSession = async (sessionId: string) => {
   try {
     const response = await axiosWrapper<SuccessResponse>(
-      authClient.delete(`/users/me/sessions/${sessionId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.USER_SESSIONS}/${sessionId}`)
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

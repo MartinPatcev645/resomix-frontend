@@ -19,6 +19,8 @@ export interface WaitlistItem {
   updated_at: string
 }
 
+export type WaitlistSearchColumn = WaitlistListParams['search_column']
+
 // Convert API response to frontend format
 const convertApiWaitlist = (apiData: ApiWaitlistItem): WaitlistItem => ({
   id: String(apiData.id),
@@ -37,7 +39,7 @@ export function useWaitlist(options?: UseWaitlistOptions) {
   const { onError, onSuccess } = options || {}
   const [data, setData] = useState<WaitlistItem[]>([])
   const [searchText, setSearchText] = useState('')
-  const [searchColumn, setSearchColumn] = useState<keyof WaitlistItem>('email')
+  const [searchColumn, setSearchColumn] = useState<WaitlistListParams['search_column']>('email')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -63,7 +65,7 @@ export function useWaitlist(options?: UseWaitlistOptions) {
       // Add search filter if present
       if (searchText.trim()) {
         params.search = searchText.trim()
-        params.search_column = searchColumn as any
+        params.search_column = searchColumn
       }
 
       // Add date range filter if present
@@ -141,15 +143,15 @@ export function useWaitlist(options?: UseWaitlistOptions) {
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
-  const handleSearch = (value: string, column: keyof WaitlistItem) => {
+  const handleSearch = (value: string, column: WaitlistListParams['search_column']) => {
     setSearchColumn(column)
     setSearchText(value)
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
-  const handleSearchColumnChange = (column: keyof WaitlistItem) => {
+  const handleSearchColumnChange = (column: WaitlistListParams['search_column']) => {
     setSearchColumn(column)
-  }
+}
 
   const handleDateRangeChange = (dates: [string, string] | null) => {
     setDateRange(dates)
@@ -266,7 +268,7 @@ export function useWaitlist(options?: UseWaitlistOptions) {
 
       const result = await exportWaitlist(format, {
         search: searchText.trim() || undefined,
-        search_column: searchColumn as any,
+        search_column: searchColumn,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         date_from: dateRange?.[0],
         date_to: dateRange?.[1],

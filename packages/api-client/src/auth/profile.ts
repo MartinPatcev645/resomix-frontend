@@ -1,3 +1,4 @@
+import { API_CONFIG } from '../config';
 import authClient from '../authClient';
 import { axiosWrapper, handleApiError } from '../utils';
 import type {
@@ -12,11 +13,11 @@ import type {
 export const getMyProfile = async () => {
   try {
     const response = await axiosWrapper<ProfileResponse>(
-      authClient.get('/users/me')
+      authClient.get(API_CONFIG.ENDPOINTS.USER_ME)
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -24,11 +25,11 @@ export const getMyProfile = async () => {
 export const updateProfile = async (updates: ProfileUpdateRequest) => {
   try {
     const response = await axiosWrapper<ProfileResponse>(
-      authClient.patch('/users/me', updates)
+      authClient.patch(API_CONFIG.ENDPOINTS.USER_ME, updates)
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -36,11 +37,11 @@ export const updateProfile = async (updates: ProfileUpdateRequest) => {
 export const changePassword = async (data: ChangePasswordRequest) => {
   try {
     const response = await axiosWrapper<SuccessResponse>(
-      authClient.post('/users/me/change-password', data)
+      authClient.post(API_CONFIG.ENDPOINTS.USER_CHANGE_PASSWORD, data)
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -48,13 +49,13 @@ export const changePassword = async (data: ChangePasswordRequest) => {
 export const deleteAccount = async (password: string) => {
   try {
     const response = await axiosWrapper<SuccessResponse>(
-      authClient.delete('/users/me', {
+      authClient.delete(API_CONFIG.ENDPOINTS.USER_ME, {
         data: { password } as DeleteAccountRequest,
       })
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

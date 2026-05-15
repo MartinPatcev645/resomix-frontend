@@ -1,6 +1,7 @@
 import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
+import type { ApiResponse } from "./types/api";
 import type {
   CartResponse,
   AddToCartPayload,
@@ -35,11 +36,11 @@ export const getCart = async (): Promise<CartResponse | ReturnType<typeof handle
     if (data.success === true) return data.data;
     return {
       success: false,
-      error: (data as any).error || "Failed to load cart.",
-      details: (data as any).details ?? null,
+      error: (data as ApiResponse).error || "Failed to load cart.",
+      details: (data as ApiResponse).details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -64,7 +65,7 @@ export const addToCart = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -87,7 +88,7 @@ export const removeFromCart = async (
       error: data.error || "Failed to remove item from cart.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -110,7 +111,7 @@ export const removePlaylistFromCart = async (
       error: data.error || "Failed to remove playlist from cart.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -129,11 +130,11 @@ export const applyPromoCode = async (
     if (data.success === true) return data.data;
     return {
       success: false,
-      error: (data as any).error || "Invalid promo code.",
-      details: (data as any).details ?? null,
+      error: (data as ApiResponse).error || "Invalid promo code.",
+      details: (data as ApiResponse).details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -153,7 +154,7 @@ export const clearCart = async (): Promise<{ success: boolean } | ReturnType<typ
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -173,10 +174,10 @@ export const createCheckoutSession = async (): Promise<
     if (data.success === true) return data.data;
     return {
       success: false,
-      error: (data as any).error || "Failed to create checkout session.",
-      details: (data as any).details ?? null,
+      error: (data as ApiResponse).error || "Failed to create checkout session.",
+      details: (data as ApiResponse).details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };

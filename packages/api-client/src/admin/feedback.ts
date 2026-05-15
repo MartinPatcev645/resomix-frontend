@@ -1,5 +1,7 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -91,13 +93,13 @@ export const getFeedbackList = async (params: FeedbackListParams = {}) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch feedback list.",
+      error: (data as ApiResponse).error || "Failed to fetch feedback list.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -126,10 +128,10 @@ export const deleteFeedback = async (feedbackId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete feedback.",
+      error: (data as ApiResponse).error || "Failed to delete feedback.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -149,11 +151,11 @@ export const batchDeleteFeedback = async (feedbackIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete feedback entries.",
+      error: (data as ApiResponse).error || "Failed to delete feedback entries.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -172,10 +174,10 @@ export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpd
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update feedback.",
+      error: (data as ApiResponse).error || "Failed to update feedback.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -192,12 +194,12 @@ export const getFeedbackById = async (feedbackId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch feedback details.",
+      error: (data as ApiResponse).error || "Failed to fetch feedback details.",
       data: null,
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: null,
     };
   }
@@ -242,14 +244,14 @@ export const exportFeedback = async (
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export feedback.",
+      error: (data as ApiResponse).error || "Failed to export feedback.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",
@@ -272,10 +274,10 @@ export const markFeedbackStatus = async (feedbackId: number, status: 'open' | 'r
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update feedback status.",
+      error: (data as ApiResponse).error || "Failed to update feedback status.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -302,12 +304,12 @@ export const getFeedbackStats = async () => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch feedback statistics.",
+      error: (data as ApiResponse).error || "Failed to fetch feedback statistics.",
       stats: null,
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       stats: null,
     };
   }

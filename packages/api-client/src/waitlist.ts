@@ -27,14 +27,14 @@ export const joinWaitlist = async (email: string) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
 export const checkWaitlistStatus = async (email: string) => {
   try {
     const data = await axiosWrapper<any>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.WAITLIST}/status`, { 
+      axiosInstance.post(`${API_CONFIG.ENDPOINTS.WAITLIST}status`, { 
         email 
       }),
     );
@@ -46,6 +46,6 @@ export const checkWaitlistStatus = async (email: string) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };

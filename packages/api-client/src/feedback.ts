@@ -24,7 +24,7 @@ export const submitFeedback = async (feedbackData: FeedbackData) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -50,6 +50,6 @@ export const submitContactForm = async (contactData: ContactData) => {
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };

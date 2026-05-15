@@ -18,6 +18,7 @@ export * from "./admin/spotifyApps";
 export * from "./admin/users";
 export * from "./admin/partners";
 export * from "./types/partner";
+export * from "./types/api";
 export { default as apiAxiosInstance } from "./utils";
 
 // Auth exports

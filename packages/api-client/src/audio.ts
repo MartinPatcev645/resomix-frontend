@@ -8,7 +8,7 @@ export const getAudioUrl = async (trackId: string) => {
     );
     return data;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -29,7 +29,7 @@ export const getSimilarityPlaylistHls = async (playlistUuid: string) => {
     );
     return data;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

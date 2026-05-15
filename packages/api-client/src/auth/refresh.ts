@@ -8,14 +8,14 @@ export const refreshAccessToken = async () => {
     // Empty body - server reads refresh token from HttpOnly cookie
     // Explicitly ensure withCredentials is true to include cookies
     const response = await axiosWrapper<TokenRefreshResponse>(
-      authClient.post('/auth/refresh', {}, {
+      authClient.post(API_CONFIG.ENDPOINTS.AUTH_REFRESH, {}, {
         withCredentials: true, // Ensure cookies are included
         params: { api_key: API_CONFIG.API_KEY } // Include api_key for auth endpoints
       })
     );
     return response;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

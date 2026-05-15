@@ -1,5 +1,7 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -91,13 +93,13 @@ export const getWaitlistList = async (params: WaitlistListParams = {}) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch waitlist.",
+      error: (data as ApiResponse).error || "Failed to fetch waitlist.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -126,10 +128,10 @@ export const deleteWaitlist = async (waitlistId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete waitlist entry.",
+      error: (data as ApiResponse).error || "Failed to delete waitlist entry.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -149,11 +151,11 @@ export const batchDeleteWaitlist = async (waitlistIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete waitlist entries.",
+      error: (data as ApiResponse).error || "Failed to delete waitlist entries.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -177,10 +179,10 @@ export const updateWaitlistStatus = async (
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update waitlist status.",
+      error: (data as ApiResponse).error || "Failed to update waitlist status.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -215,14 +217,14 @@ export const exportWaitlist = async (
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export waitlist.",
+      error: (data as ApiResponse).error || "Failed to export waitlist.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",
