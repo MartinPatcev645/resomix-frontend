@@ -30,7 +30,6 @@ from app.schemas.monthly_pipeline import (
 )
 
 router = APIRouter(
-    prefix="/monthly_pipeline",
     tags=["monthly_pipeline"],
     responses={
         415: {"model": MonthlyPipelineTrackErrorResponse},
@@ -49,7 +48,7 @@ monthly_pipeline_controller = MonthlyPipelineController()
 
 
 @router.post(
-    "/update_embeddings/",
+    "/ingest/monthly/update_embeddings",
     response_model=MonthlyPipelineUpdateEmbeddingsSuccessResponse,
     summary="Bulk Update Embeddings",
     description="Generate UUID→path mapping for all tracks and trigger bulk embedding generation on the similarity server.",
@@ -59,6 +58,7 @@ monthly_pipeline_controller = MonthlyPipelineController()
         503: {"model": MonthlyPipelineUpdateEmbeddingsErrorResponse, "description": "Similarity service unavailable"},
     },
 )
+@router.post("/monthly_pipeline/update_embeddings/", include_in_schema=False) # Legacy
 async def monthly_pipeline_update_embeddings_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
@@ -69,7 +69,7 @@ async def monthly_pipeline_update_embeddings_endpoint(
 
 
 @router.post(
-    "/track/",
+    "/ingest/monthly/track",
     response_model=MonthlyPipelineTrackSuccessResponse,
     summary="Monthly Pipeline Track Processing",
     description="Process audio file for monthly pipeline: extract metadata, generate embedding preview, and store in database.",
@@ -96,6 +96,7 @@ async def monthly_pipeline_update_embeddings_endpoint(
         }
     }
 )
+@router.post("/monthly_pipeline/track/", include_in_schema=False) # Legacy
 async def monthly_pipeline_track_endpoint(
     request: Request,
     file: UploadFile = File(..., description="Audio file to process for monthly pipeline"),

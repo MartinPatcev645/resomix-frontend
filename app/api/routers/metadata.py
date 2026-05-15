@@ -43,7 +43,7 @@ metadata_controller = MetadataController()
 
 
 @router.post(
-    "/metadata/",
+    "/metadata/track",
     response_model=MetadataSuccessResponse,
     summary="Extract Audio Metadata",
     description="Extract metadata from uploaded audio files including artist, album, genre, and technical information.",
@@ -66,6 +66,7 @@ metadata_controller = MetadataController()
         }
     }
 )
+@router.post("/metadata/", include_in_schema=False) # Legacy
 async def get_metadata_endpoint(
     request: Request,
     file: UploadFile = File(..., description="Audio file to extract metadata from"),

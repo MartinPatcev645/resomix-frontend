@@ -13,7 +13,7 @@ async def test_tenant_isolation_flow():
     """
     async with httpx.AsyncClient(app=app, base_url="http://testserver") as client:
         # 1. Verify Public/Frontend Access (Partner ID 1)
-        response = await client.get("/search_tracks/?query=Sleep")
+        response = await client.get("/api/v1/search_tracks/?query=Sleep")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -22,7 +22,7 @@ async def test_tenant_isolation_flow():
         # 2. Verify Partner 2 Access (Scoped Isolation)
         api_key = "rmx_test_V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
         
-        response = await client.get("/search_tracks/?query=Sleep", headers={"Authorization": f"Bearer {api_key}"})
+        response = await client.get("/api/v1/search_tracks/?query=Sleep", headers={"Authorization": f"Bearer {api_key}"})
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]["tracks"]) == 0
@@ -50,14 +50,14 @@ async def test_tenant_isolation_flow():
             set_admin_context(False)
         
         # 4. Search again with Partner 2 key
-        response = await client.get(f"/search_tracks/?query={unique_title}", headers={"Authorization": f"Bearer {api_key}"})
+        response = await client.get(f"/api/v1/search_tracks/?query={unique_title}", headers={"Authorization": f"Bearer {api_key}"})
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]["tracks"]) >= 1
         assert any(t["title"] == unique_title for t in data["data"]["tracks"])
 
         # 5. Verify Public Context CANNOT see Partner 2 track
-        response = await client.get("/search_tracks/?query=Secret")
+        response = await client.get("/api/v1/search_tracks/?query=Secret")
         data = response.json()
         assert len(data["data"]["tracks"]) == 0
 
@@ -72,14 +72,14 @@ async def test_tenant_isolation_flow():
         finally:
             set_admin_context(False)
 
-        response = await client.post("/get_selection_similarity/", 
+        response = await client.post("/api/v1/similarity/search", 
                                 json={"track_id": p2_tuuid, "top_sk": 10},
                                 headers={"Authorization": f"Bearer {api_key}"})
         # Note: If similarity server is not running, it might return 503 or 404 depending on implementation, 
         # but it shouldn't return 422 if the UUID is valid.
         assert response.status_code != 422
 
-        response = await client.post("/get_selection_similarity/", 
+        response = await client.post("/api/v1/similarity/search", 
                                 json={"track_id": p1_tuuid, "top_sk": 10},
                                 headers={"Authorization": f"Bearer {api_key}"})
         # If tenant isolation works, the repository should not find the track for Partner 2 key

@@ -56,7 +56,7 @@ def track_uuid():
 @pytest.mark.asyncio
 async def test_health_endpoint(client):
     """GET /health should return service status."""
-    response = await client.get("/health", headers=API_KEY_HEADER)
+    response = await client.get("/api/v1/health", headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
@@ -75,7 +75,7 @@ async def test_root_endpoint(client):
 @pytest.mark.asyncio
 async def test_health_without_api_key(client):
     """GET /health without API key — depends on config."""
-    response = await client.get("/health")
+    response = await client.get("/api/v1/health")
     # Health may or may not require API key depending on implementation
     assert response.status_code in (200, 401, 403)
 
@@ -111,7 +111,7 @@ async def test_telemetry_sync_valid_batch(client, track_uuid):
             },
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -135,7 +135,7 @@ async def test_telemetry_sync_single_event(client, track_uuid):
             }
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -159,7 +159,7 @@ async def test_telemetry_sync_download_event(client, track_uuid):
             }
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -169,7 +169,7 @@ async def test_telemetry_sync_download_event(client, track_uuid):
 async def test_telemetry_sync_empty_events(client):
     """POST /telemetry/sync with an empty events array should return 422."""
     payload = {"events": []}
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 422
 
 
@@ -190,7 +190,7 @@ async def test_telemetry_sync_invalid_event_type(client, track_uuid):
             }
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 422
 
 
@@ -210,7 +210,7 @@ async def test_telemetry_sync_missing_required_field(client):
             }
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 422
 
 
@@ -231,7 +231,7 @@ async def test_telemetry_sync_stream_start_nonzero_duration(client, track_uuid):
             }
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 422
 
 
@@ -252,7 +252,7 @@ async def test_telemetry_requires_api_key(client, track_uuid):
             }
         ]
     }
-    response = await client.post("/telemetry/sync", json=payload)
+    response = await client.post("/api/v1/telemetry/sync", json=payload)
     assert response.status_code in (401, 403)
 
 
@@ -264,7 +264,7 @@ async def test_telemetry_requires_api_key(client, track_uuid):
 async def test_list_operation_types(client):
     """GET /admin/operation-limits/operation-types should return available types."""
     response = await client.get(
-        "/admin/operation-limits/operation-types", headers=API_KEY_HEADER
+        "/api/v1/admin/operation-limits/operation-types", headers=API_KEY_HEADER
     )
     assert response.status_code == 200
     data = response.json()
@@ -275,7 +275,7 @@ async def test_list_operation_types(client):
 @pytest.mark.asyncio
 async def test_list_user_operation_limits(client):
     """GET /admin/operation-limits/ should return paginated limits."""
-    response = await client.get("/admin/operation-limits/", headers=API_KEY_HEADER)
+    response = await client.get("/api/v1/admin/operation-limits/", headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -284,5 +284,5 @@ async def test_list_user_operation_limits(client):
 @pytest.mark.asyncio
 async def test_operation_limits_requires_api_key(client):
     """GET /admin/operation-limits/ without API key should be rejected."""
-    response = await client.get("/admin/operation-limits/")
+    response = await client.get("/api/v1/admin/operation-limits/")
     assert response.status_code in (401, 403)

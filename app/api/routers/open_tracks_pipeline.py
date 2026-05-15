@@ -30,7 +30,6 @@ from app.schemas.monthly_pipeline import (
 )
 
 router = APIRouter(
-    prefix="/open_tracks_pipeline",
     tags=["open_tracks_pipeline"],
     responses={
         415: {"model": MonthlyPipelineTrackErrorResponse},
@@ -49,7 +48,7 @@ open_tracks_controller = OpenTracksPipelineController()
 
 
 @router.post(
-    "/update_embeddings/",
+    "/ingest/open/update_embeddings",
     response_model=MonthlyPipelineUpdateEmbeddingsSuccessResponse,
     summary="Bulk Update Embeddings (Open Tracks)",
     description="Generate UUID→path mapping for all OPEN tracks and trigger bulk embedding generation on the similarity server.",
@@ -59,6 +58,7 @@ open_tracks_controller = OpenTracksPipelineController()
         503: {"model": MonthlyPipelineUpdateEmbeddingsErrorResponse, "description": "Similarity service unavailable"},
     },
 )
+@router.post("/open_tracks_pipeline/update_embeddings/", include_in_schema=False) # Legacy
 async def open_tracks_pipeline_update_embeddings_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
@@ -69,7 +69,7 @@ async def open_tracks_pipeline_update_embeddings_endpoint(
 
 
 @router.post(
-    "/track/",
+    "/ingest/open/track",
     response_model=MonthlyPipelineTrackSuccessResponse,
     summary="Open Tracks Pipeline Track Processing",
     description="Process audio file for open tracks pipeline: extract metadata, generate embedding preview, and store in database as OPEN type.",
@@ -96,6 +96,7 @@ async def open_tracks_pipeline_update_embeddings_endpoint(
         }
     }
 )
+@router.post("/open_tracks_pipeline/track/", include_in_schema=False) # Legacy
 async def open_tracks_pipeline_track_endpoint(
     request: Request,
     file: UploadFile = File(..., description="Audio file to process for open tracks pipeline"),

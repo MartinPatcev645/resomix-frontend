@@ -132,7 +132,7 @@ def test_data():
 @pytest.mark.asyncio
 async def test_get_user_playlists(client, auth_headers, test_data):
     """Verify listing all user playlists."""
-    response = await client.get("/playlists/get-all-playlists/", headers=auth_headers)
+    response = await client.get("/api/v1/playlists/get-all-playlists/", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -146,13 +146,13 @@ async def test_playlist_rename_and_visibility(client, auth_headers, test_data):
     # 1. Rename
     new_name = "Renamed Playlist"
     payload = {"playlist_id": test_data["playlist_uuid"], "new_name": new_name}
-    response = await client.put("/playlists/rename/", json=payload, headers=auth_headers)
+    response = await client.put("/api/v1/playlists/rename/", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
     
     # 2. Toggle Visibility
     payload = {"playlist_id": test_data["playlist_uuid"], "is_public": True}
-    response = await client.put("/playlists/visibility/", json=payload, headers=auth_headers)
+    response = await client.put("/api/v1/playlists/visibility/", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
 
@@ -188,12 +188,12 @@ async def test_ratings_flow(client, auth_headers, test_data):
         "playlist_id": test_data["playlist_uuid"],
         "rating": 1
     }
-    response = await client.post("/ratings/tracks/", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/ratings/tracks/", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
     
     # 2. Get Track Stats
-    response = await client.get(f"/ratings/tracks/{test_data['track_uuid']}/stats", headers=auth_headers)
+    response = await client.get(f"/api/v1/ratings/tracks/{test_data['track_uuid']}/stats", headers=auth_headers)
     assert response.status_code == 200
     
     assert response.json().get("success") is True
@@ -206,12 +206,12 @@ async def test_ratings_flow(client, auth_headers, test_data):
         "rating": 3,
         "message": "Excellent flow!"
     }
-    response = await client.post("/ratings/playlists/", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/ratings/playlists/", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
     
     # 4. Get Playlist Stats (using UUID)
-    response = await client.get(f"/ratings/playlists/{test_data['playlist_uuid']}/stats", headers=auth_headers)
+    response = await client.get(f"/api/v1/ratings/playlists/{test_data['playlist_uuid']}/stats", headers=auth_headers)
     assert response.status_code == 200
     res_json = response.json()
     assert res_json["success"] is True
@@ -248,7 +248,7 @@ async def test_telemetry_sync(client, auth_headers, test_data):
     }
     # Telemetry uses API key, not JWT necessarily, but we can send both
     headers = {"X-API-KEY": "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"}
-    response = await client.post("/telemetry/sync", json=payload, headers=headers)
+    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
     assert response.json()["data"]["accepted"] == 2

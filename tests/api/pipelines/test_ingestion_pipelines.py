@@ -72,7 +72,7 @@ async def test_monthly_pipeline_success(client, mock_pipeline_services):
     with open("prelisten.mp3", "rb") as f:
         files = {"file": ("test.mp3", f, "audio/mpeg")}
         data = {"path": test_path}
-        response = await client.post("/monthly_pipeline/track/", files=files, data=data, headers=headers)
+        response = await client.post("/api/v1/ingest/monthly/track", files=files, data=data, headers=headers)
     assert response.status_code == 200
     resp_data = response.json()
     assert resp_data["success"] is True
@@ -92,7 +92,7 @@ async def test_monthly_pipeline_success(client, mock_pipeline_services):
 async def test_monthly_pipeline_forbidden_for_partner(client):
     """Verify Monthly Pipeline rejects Partner API Key (403)."""
     headers = {"Authorization": f"Bearer {PARTNER_2_API_KEY}"}
-    response = await client.post("/monthly_pipeline/track/", files={"file": ("test.mp3", b"dummy content", "audio/mpeg")}, data={"path": "/some/path.mp3"}, headers=headers)
+    response = await client.post("/api/v1/ingest/monthly/track", files={"file": ("test.mp3", b"dummy content", "audio/mpeg")}, data={"path": "/some/path.mp3"}, headers=headers)
     assert response.status_code == 403
 
 @pytest.mark.asyncio
@@ -105,7 +105,7 @@ async def test_open_tracks_pipeline_success(client, mock_pipeline_services):
     with open("prelisten.mp3", "rb") as f:
         files = {"file": ("test_open.mp3", f, "audio/mpeg")}
         data = {"path": test_path}
-        response = await client.post("/open_tracks_pipeline/track/", files=files, data=data, headers=headers)
+        response = await client.post("/api/v1/ingest/open/track", files=files, data=data, headers=headers)
     assert response.status_code == 200
     resp_data = response.json()
     assert resp_data["success"] is True
@@ -124,7 +124,7 @@ async def test_open_tracks_pipeline_success(client, mock_pipeline_services):
 @pytest.mark.asyncio
 async def test_open_tracks_pipeline_unauthorized(client):
     """Verify Open Tracks Pipeline requires authentication."""
-    response = await client.post("/open_tracks_pipeline/track/", files={"file": ("test.mp3", b"dummy content", "audio/mpeg")}, data={"path": "/some/path.mp3"})
+    response = await client.post("/api/v1/ingest/open/track", files={"file": ("test.mp3", b"dummy content", "audio/mpeg")}, data={"path": "/some/path.mp3"})
     assert response.status_code == 401
 
 @pytest.mark.asyncio
@@ -133,15 +133,15 @@ async def test_open_tracks_pipeline_av_check_missing(client, mock_pipeline_servi
     headers = {"Authorization": f"Bearer {PARTNER_2_API_KEY}"}
     files = {"file": ("virus.mp3", EICAR_STRING.encode(), "audio/mpeg")}
     data = {"path": "/test_pipeline/virus.mp3"}
-    response = await client.post("/open_tracks_pipeline/track/", files=files, data=data, headers=headers)
+    response = await client.post("/api/v1/ingest/open/track", files=files, data=data, headers=headers)
     assert response.status_code != 200
 
 @pytest.mark.asyncio
 async def test_bulk_embedding_updates(client, mock_pipeline_services):
     """Verify trigger for bulk embedding updates."""
     headers_admin = {"X-API-KEY": ADMIN_API_KEY}
-    response = await client.post("/monthly_pipeline/update_embeddings/", headers=headers_admin)
+    response = await client.post("/api/v1/ingest/monthly/update_embeddings", headers=headers_admin)
     assert response.status_code == 200
     headers_partner = {"Authorization": f"Bearer {PARTNER_2_API_KEY}"}
-    response = await client.post("/open_tracks_pipeline/update_embeddings/", headers=headers_partner)
+    response = await client.post("/api/v1/ingest/open/update_embeddings", headers=headers_partner)
     assert response.status_code == 200

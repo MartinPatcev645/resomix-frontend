@@ -103,7 +103,7 @@ def test_similarity_valid_files():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_similarity/",
+            f"{BASE_URL}/api/v1/similarity/upload",
             headers=HEADERS,
             files=files,
             params=params,
@@ -150,7 +150,7 @@ def test_similarity_missing_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_similarity/",
+            f"{BASE_URL}/api/v1/similarity/upload",
             headers=HEADERS,
             params=params,
             timeout=30
@@ -202,7 +202,7 @@ def test_similarity_invalid_files():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_similarity/",
+            f"{BASE_URL}/api/v1/similarity/upload",
             headers=HEADERS,
             files=files,
             params=params,
@@ -252,7 +252,7 @@ def test_similarity_empty_files():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_similarity/",
+            f"{BASE_URL}/api/v1/similarity/upload",
             headers=HEADERS,
             files=files,
             params=params,
@@ -304,7 +304,7 @@ def test_selection_similarity_valid():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_selection_similarity/",
+            f"{BASE_URL}/api/v1/similarity/search",
             headers=HEADERS,
             json=selection_data,
             params=params,
@@ -356,7 +356,7 @@ def test_selection_similarity_missing_data():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_selection_similarity/",
+            f"{BASE_URL}/api/v1/similarity/search",
             headers=HEADERS,
             json=selection_data,
             params=params,
@@ -408,7 +408,7 @@ def test_selection_similarity_invalid_data():
         }
         
         response = requests.post(
-            f"{BASE_URL}/get_selection_similarity/",
+            f"{BASE_URL}/api/v1/similarity/search",
             headers=HEADERS,
             json=selection_data,
             params=params,
@@ -457,7 +457,7 @@ def test_similarity_unauthorized():
         
         # Request without API key
         response = requests.post(
-            f"{BASE_URL}/get_similarity/",
+            f"{BASE_URL}/api/v1/similarity/upload",
             files=files,
             timeout=30
         )

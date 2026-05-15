@@ -5,10 +5,7 @@ API Router Module
 This module aggregates all API routers and exposes them for the main FastAPI app.
 It provides a centralized way to manage all API endpoints and their routing.
 
-Manages authentication, database dependencies, and route organization
-for the Resomix audio similarity API system.
-
-Version: 3.0.1
+Version: 3.2.0 (Full API Versioning)
 Init Date: June 11, 2025
 Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
@@ -47,38 +44,49 @@ from .telemetry import router as telemetry_router
 from .purchases import router as purchases_router
 from .webhooks import router as webhooks_router
 
-# List of all routers for easy inclusion
-all_routers = [
-    auth_router,
-    users_router,
-    similarity_router,
-    metadata_router,
-    search_router,
-    feedback_router,
-    admin_feedback_router,
-    admin_contact_router,
-    admin_waitlist_router,
-    admin_playlist_router,
-    admin_operation_limits_router,
-    admin_spotify_apps_router,
-    admin_promo_router,
-    contact_router,
-    health_router,
-    preview_router,
-    playlists_router,
-    monthly_pipeline_router,
-    ratings_router,
-    spotify_transfer_router,
-    tidal_transfer_router,
-    apple_music_transfer_router,
-    waitlist_router,
-    dummy_router,
-    playlist_engagement_router,
-    open_tracks_pipeline_router,
-    telemetry_router,
-    purchases_router,
-    webhooks_router,
-    admin_partners_router,
-    admin_similarity_router,
-    partner_router,
+V1_PREFIX = "/api/v1"
+
+# All routers are now versioned under /api/v1
+# Note: webhooks_router already has /api/v1 in its internal prefix, 
+# so we handle it specially in main.py or keep it here without prefix duplication.
+v1_routers = [
+    (similarity_router, V1_PREFIX),
+    (metadata_router, V1_PREFIX),
+    (search_router, V1_PREFIX),
+    (feedback_router, V1_PREFIX),
+    (contact_router, V1_PREFIX),
+    (waitlist_router, V1_PREFIX),
+    (ratings_router, V1_PREFIX),
+    (preview_router, V1_PREFIX),
+    (telemetry_router, V1_PREFIX),
+    (purchases_router, V1_PREFIX),
+    (playlists_router, V1_PREFIX),
+    (playlist_engagement_router, V1_PREFIX),
+    (auth_router, V1_PREFIX),
+    (users_router, V1_PREFIX),
+    (spotify_transfer_router, V1_PREFIX),
+    (tidal_transfer_router, V1_PREFIX),
+    (apple_music_transfer_router, V1_PREFIX),
+    (partner_router, V1_PREFIX),
+    (monthly_pipeline_router, V1_PREFIX),
+    (open_tracks_pipeline_router, V1_PREFIX),
+    (admin_partners_router, V1_PREFIX),
+    (admin_operation_limits_router, V1_PREFIX),
+    (admin_similarity_router, V1_PREFIX),
+    (admin_feedback_router, V1_PREFIX),
+    (admin_contact_router, V1_PREFIX),
+    (admin_waitlist_router, V1_PREFIX),
+    (admin_playlist_router, V1_PREFIX),
+    (admin_promo_router, V1_PREFIX),
+    (admin_spotify_apps_router, V1_PREFIX),
+    (health_router, V1_PREFIX),
+    (dummy_router, V1_PREFIX),
+    # Special case: webhooks_router has internal /api/v1 prefix
+    (webhooks_router, ""), 
 ]
+
+# Legacy support: Unversioned registration at root
+legacy_root_routers = [r for r, p in v1_routers if p == V1_PREFIX] + [webhooks_router]
+
+# Kept for backward compatibility if any script uses it
+all_routers = [r for r, _ in v1_routers]

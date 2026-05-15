@@ -96,9 +96,9 @@ def cleanup_waitlist():
 
 @pytest.mark.asyncio
 async def test_waitlist_join(client):
-    """POST /waitlist/ should register a new email."""
+    """POST /api/v1/waitlist/ should register a new email."""
     payload = {"email": WAITLIST_EMAIL}
-    response = await client.post("/waitlist/", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/waitlist/", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -108,9 +108,9 @@ async def test_waitlist_join(client):
 
 @pytest.mark.asyncio
 async def test_waitlist_duplicate_email(client):
-    """POST /waitlist/ with the same email should be rejected."""
+    """POST /api/v1/waitlist/ with the same email should be rejected."""
     payload = {"email": WAITLIST_EMAIL}
-    response = await client.post("/waitlist/", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/waitlist/", json=payload, headers=API_KEY_HEADER)
     # Should fail — duplicate
     assert response.status_code in (200, 422)
     data = response.json()
@@ -119,24 +119,24 @@ async def test_waitlist_duplicate_email(client):
 
 @pytest.mark.asyncio
 async def test_waitlist_invalid_email(client):
-    """POST /waitlist/ with an invalid email should return 422."""
+    """POST /api/v1/waitlist/ with an invalid email should return 422."""
     payload = {"email": "not-an-email"}
-    response = await client.post("/waitlist/", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/waitlist/", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_waitlist_missing_email(client):
-    """POST /waitlist/ without an email field should return 422."""
-    response = await client.post("/waitlist/", json={}, headers=API_KEY_HEADER)
+    """POST /api/v1/waitlist/ without an email field should return 422."""
+    response = await client.post("/api/v1/waitlist/", json={}, headers=API_KEY_HEADER)
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_waitlist_status_check(client):
-    """POST /waitlist/status should return the entry status for a registered email."""
+    """POST /api/v1/waitlist/status should return the entry status for a registered email."""
     payload = {"email": WAITLIST_EMAIL}
-    response = await client.post("/waitlist/status", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/waitlist/status", json=payload, headers=API_KEY_HEADER)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -145,9 +145,9 @@ async def test_waitlist_status_check(client):
 
 @pytest.mark.asyncio
 async def test_waitlist_status_not_found(client):
-    """POST /waitlist/status for a non-registered email should return 404."""
+    """POST /api/v1/waitlist/status for a non-registered email should return 404."""
     payload = {"email": "nonexistent_999@resomix.com"}
-    response = await client.post("/waitlist/status", json=payload, headers=API_KEY_HEADER)
+    response = await client.post("/api/v1/waitlist/status", json=payload, headers=API_KEY_HEADER)
     assert response.status_code in (200, 404)
     data = response.json()
     if response.status_code == 200:
@@ -156,9 +156,9 @@ async def test_waitlist_status_not_found(client):
 
 @pytest.mark.asyncio
 async def test_waitlist_requires_api_key(client):
-    """POST /waitlist/ without an API key should be rejected."""
+    """POST /api/v1/waitlist/ without an API key should be rejected."""
     payload = {"email": "nokey@test.com"}
-    response = await client.post("/waitlist/", json=payload)
+    response = await client.post("/api/v1/waitlist/", json=payload)
     assert response.status_code in (401, 403)
 
 
@@ -168,9 +168,9 @@ async def test_waitlist_requires_api_key(client):
 
 @pytest.mark.asyncio
 async def test_promo_create_missing_fields(client, auth_headers):
-    """POST /admin/promo/create with missing fields should return 400."""
+    """POST /api/v1/admin/promo/create with missing fields should return 400."""
     payload = {"code": "", "discount_type": "percentage", "discount_value": 0}
-    response = await client.post("/admin/promo/create", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/admin/promo/create", json=payload, headers=auth_headers)
     # Missing code or zero discount_value should be rejected
     data = response.json()
     assert data["success"] is False
@@ -178,11 +178,11 @@ async def test_promo_create_missing_fields(client, auth_headers):
 
 @pytest.mark.asyncio
 async def test_promo_create_requires_auth(client):
-    """POST /admin/promo/create without auth should return 401/403."""
+    """POST /api/v1/admin/promo/create without auth should return 401/403."""
     payload = {
         "code": "FREETEST",
         "discount_type": "percentage",
         "discount_value": 100,
     }
-    response = await client.post("/admin/promo/create", json=payload)
+    response = await client.post("/api/v1/admin/promo/create", json=payload)
     assert response.status_code in (401, 403)

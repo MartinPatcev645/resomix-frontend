@@ -53,7 +53,7 @@ playlist_repository = PlaylistRepository()
 
 
 @router.post(
-    "/get_similarity/",
+    "/similarity/upload",
     response_model=SimilarityUploadSuccessResponse,
     summary="Upload Track and Calculate Similarity",
     description="Upload an audio file, store it in the database, and get similar tracks.",
@@ -80,6 +80,7 @@ playlist_repository = PlaylistRepository()
         }
     }
 )
+@router.post("/get_similarity/", include_in_schema=False) # Legacy
 async def get_similarity_upload_endpoint(
     request: Request,
     file: UploadFile = File(..., description="Audio file to analyze for similarity (max 100MB)"), 
@@ -118,7 +119,7 @@ async def get_similarity_upload_endpoint(
 
 
 @router.post(
-    "/get_selection_similarity/",
+    "/similarity/search",
     response_model=SimilarityByIdSuccessResponse,
     summary="Calculate Similarity by Track ID",
     description="Get similar tracks for a track identified by its database ID.",
@@ -141,6 +142,7 @@ async def get_similarity_upload_endpoint(
         }
     }
 )
+@router.post("/get_selection_similarity/", include_in_schema=False) # Legacy
 async def get_similarity_by_id_endpoint(
     request: Request,
     request_data: SimilarityByIdRequest,
@@ -173,11 +175,12 @@ async def get_similarity_by_id_endpoint(
 # New endpoint to poll segment status
 
 @router.get(
-    "/segment_status/{playlist_uuid}",
+    "/similarity/segment-status/{playlist_uuid}",
     summary="Check if segment preview processing completed for a playlist",
     description="Returns segmentation_completed true/false based on playlist type. Enforces partner scoping.",
     response_model=dict,
 )
+@router.get("/segment_status/{playlist_uuid}", include_in_schema=False) # Legacy
 async def segment_status_endpoint(
     playlist_uuid: str,
     db: AsyncSession = Depends(get_database_session),

@@ -118,7 +118,7 @@ async def test_search_tracks_scoping(test_tracks):
     """Verify that search results are correctly scoped to the partner."""
     async with httpx.AsyncClient(base_url=BASE_URL, follow_redirects=True) as client:
         # 1. Search as Partner 1 (Public/Default)
-        response = await client.get("/search_tracks/?query=Partner 1")
+        response = await client.get("/api/v1/search_tracks/?query=Partner 1")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -129,7 +129,7 @@ async def test_search_tracks_scoping(test_tracks):
 
         # 2. Search as Partner 2 (using API Key)
         headers = {"Authorization": f"Bearer {PARTNER_2_API_KEY}"}
-        response = await client.get("/search_tracks/?query=Partner 2", headers=headers)
+        response = await client.get("/api/v1/search_tracks/?query=Partner 2", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -143,7 +143,7 @@ async def test_search_tracks_query_validation():
     """Verify query parameter validation (min_length)."""
     async with httpx.AsyncClient(base_url=BASE_URL, follow_redirects=True) as client:
         # Empty query
-        response = await client.get("/search_tracks/?query=")
+        response = await client.get("/api/v1/search_tracks/?query=")
         assert response.status_code == 422
 
 @pytest.mark.asyncio

@@ -23,6 +23,7 @@ import logging
 from app.models.consumption_event import ConsumptionEvent
 from app.models.track import Track
 from app.models.user import User
+from app.core.context import set_admin_context
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +68,13 @@ class TelemetryRepository:
                 .where(Track.uuid.in_(list(track_uuids)))
             )
 
-            result = await db.execute(stmt)
-
-            rows = result.all()
+            # Enable admin context to resolve across all partners
+            set_admin_context(True)
+            try:
+                result = await db.execute(stmt)
+                rows = result.all()
+            finally:
+                set_admin_context(False)
 
             mapping = {}
             for row in rows:
@@ -105,8 +110,13 @@ class TelemetryRepository:
             stmt = select(User.uuid, User.id).where(
                 User.uuid.in_(list(user_uuids))
             )
-            result = await db.execute(stmt)
-            rows = result.all()
+            # Enable admin context to resolve across all partners
+            set_admin_context(True)
+            try:
+                result = await db.execute(stmt)
+                rows = result.all()
+            finally:
+                set_admin_context(False)
             return {row.uuid: row.id for row in rows}
 
         except Exception as e:

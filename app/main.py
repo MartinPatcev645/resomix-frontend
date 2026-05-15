@@ -334,7 +334,15 @@ except Exception as e:
     print(f"WARNING: Failed to mount /exports static files: {e}")
 
 # Include all routers
-for router in all_routers:
+from app.api.routers import v1_routers, legacy_root_routers
+
+# Primary Versioned Registration (/api/v1/...)
+for router, prefix in v1_routers:
+    app.include_router(router, prefix=prefix)
+
+# Legacy Unversioned Registration (Root level)
+# This maintains backward compatibility for existing frontend/partners
+for router in legacy_root_routers:
     app.include_router(router)
 
 

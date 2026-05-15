@@ -67,7 +67,7 @@ async def test_partner_audit_middleware_logs_request():
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             response = await ac.get(
-                "/partner/me", 
+                "/api/v1/partner/me", 
                 headers={"Authorization": "Bearer rmx_audit_fullkey"}
             )
 
@@ -90,7 +90,7 @@ async def test_partner_audit_middleware_logs_request():
                 assert log_entry is not None
                 assert log_entry.partner_id == partner.id
                 assert log_entry.api_key_id == api_key.id
-                assert log_entry.endpoint == "/partner/me"
+                assert log_entry.endpoint == "/api/v1/partner/me"
                 assert log_entry.method == "GET"
                 assert log_entry.status_code == 200
                 assert log_entry.latency_ms > 0
@@ -204,7 +204,7 @@ async def test_partner_audit_middleware_logs_post_ingestion():
             data = {"path": "/path/to/test.mp3"}
             
             response = await ac.post(
-                "/open_tracks_pipeline/track/", 
+                "/api/v1/ingest/open/track", 
                 headers={"Authorization": "Bearer rmx_audit_fullkey"},
                 files=files,
                 data=data
@@ -225,7 +225,7 @@ async def test_partner_audit_middleware_logs_post_ingestion():
                 log_entry = result.scalar_one_or_none()
                 
                 assert log_entry is not None
-                assert log_entry.endpoint == "/open_tracks_pipeline/track/"
+                assert log_entry.endpoint == "/api/v1/ingest/open/track"
                 assert log_entry.method == "POST"
                 assert log_entry.status_code == 200
 

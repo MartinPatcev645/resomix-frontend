@@ -146,14 +146,14 @@ async def test_data(auth_headers):
 @pytest.mark.asyncio
 async def test_cart_requires_auth(client):
     """GET /cart without auth should return 401/403."""
-    response = await client.get("/cart")
+    response = await client.get("/api/v1/cart")
     assert response.status_code in (401, 403)
 
 
 @pytest.mark.asyncio
 async def test_get_empty_cart(client, auth_headers, test_data):
     """GET /cart should return a valid (possibly empty) cart."""
-    response = await client.get("/cart", headers=auth_headers)
+    response = await client.get("/api/v1/cart", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -167,7 +167,7 @@ async def test_add_track_to_cart(client, auth_headers, test_data):
             {"track_id": test_data["track_uuid"], "source_playlist_id": test_data["playlist_uuid"]}
         ]
     }
-    response = await client.post("/cart/add", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/cart/add", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
 
@@ -175,7 +175,7 @@ async def test_add_track_to_cart(client, auth_headers, test_data):
 @pytest.mark.asyncio
 async def test_get_cart_with_items(client, auth_headers, test_data):
     """After adding items, GET /cart should reflect them."""
-    response = await client.get("/cart", headers=auth_headers)
+    response = await client.get("/api/v1/cart", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -184,12 +184,12 @@ async def test_get_cart_with_items(client, auth_headers, test_data):
 @pytest.mark.asyncio
 async def test_clear_cart(client, auth_headers, test_data):
     """DELETE /cart/clear should remove all items."""
-    response = await client.delete("/cart/clear", headers=auth_headers)
+    response = await client.delete("/api/v1/cart/clear", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
 
     # Verify cart is empty
-    response = await client.get("/cart", headers=auth_headers)
+    response = await client.get("/api/v1/cart", headers=auth_headers)
     assert response.status_code == 200
 
 
@@ -197,7 +197,7 @@ async def test_clear_cart(client, auth_headers, test_data):
 async def test_add_playlist_to_cart(client, auth_headers, test_data):
     """POST /cart/add with playlist_id should add all playlist tracks."""
     payload = {"playlist_id": test_data["playlist_uuid"]}
-    response = await client.post("/cart/add", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/cart/add", json=payload, headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
 
@@ -206,7 +206,7 @@ async def test_add_playlist_to_cart(client, auth_headers, test_data):
 async def test_remove_playlist_from_cart(client, auth_headers, test_data):
     """DELETE /cart/remove-playlist/{playlist_id} should bulk-remove."""
     response = await client.delete(
-        f"/cart/remove-playlist/{test_data['playlist_uuid']}",
+        f"/api/v1/cart/remove-playlist/{test_data['playlist_uuid']}",
         headers=auth_headers,
     )
     assert response.status_code == 200
@@ -217,7 +217,7 @@ async def test_remove_playlist_from_cart(client, auth_headers, test_data):
 async def test_apply_invalid_promo(client, auth_headers, test_data):
     """POST /cart/promo with a nonexistent code should fail gracefully."""
     payload = {"code": "FAKECODE999"}
-    response = await client.post("/cart/promo", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/cart/promo", json=payload, headers=auth_headers)
     # Should be 200 with success=False, or 400/500 depending on implementation
     assert response.status_code >= 200
 
@@ -226,9 +226,9 @@ async def test_apply_invalid_promo(client, auth_headers, test_data):
 async def test_checkout_empty_cart(client, auth_headers, test_data):
     """POST /checkout/init on an empty cart should return an error."""
     # Clear first
-    await client.delete("/cart/clear", headers=auth_headers)
+    await client.delete("/api/v1/cart/clear", headers=auth_headers)
 
-    response = await client.post("/checkout/init", json={}, headers=auth_headers)
+    response = await client.post("/api/v1/checkout/init", json={}, headers=auth_headers)
     # Empty cart should be rejected
     assert response.status_code in (200, 400)
     data = response.json()
@@ -239,5 +239,5 @@ async def test_checkout_empty_cart(client, auth_headers, test_data):
 @pytest.mark.asyncio
 async def test_checkout_requires_auth(client):
     """POST /checkout/init without auth should return 401/403."""
-    response = await client.post("/checkout/init", json={})
+    response = await client.post("/api/v1/checkout/init", json={})
     assert response.status_code in (401, 403)

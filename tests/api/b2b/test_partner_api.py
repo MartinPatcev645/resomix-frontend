@@ -36,7 +36,7 @@ async def test_partner_me_endpoint_success():
 
     try:
         response = client.get(
-            "/partner/me", headers={"Authorization": "Bearer rmx_growth_testkey"}
+            "/api/v1/partner/me", headers={"Authorization": "Bearer rmx_growth_testkey"}
         )
 
         assert response.status_code == 200
@@ -50,7 +50,7 @@ async def test_partner_me_endpoint_success():
 @pytest.mark.asyncio
 async def test_partner_me_endpoint_unauthorized():
     # No header
-    response = client.get("/partner/me")
+    response = client.get("/api/v1/partner/me")
     assert response.status_code == 401
     # Check for "Authentication required" in the error field (standardized format)
     assert "Authentication required" in response.json().get("error", "")
