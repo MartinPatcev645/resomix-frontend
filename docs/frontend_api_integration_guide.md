@@ -32,6 +32,10 @@ The API supports two main forms of authentication:
 **Note on Cookies**: The refresh token is managed automatically via an `HttpOnly` cookie set by the server upon login/registration. You do not need to manage it manually in JavaScript.
 
 **Note on Traceability**: All partner-authenticated responses now include an `X-Correlation-ID` header. Please include this ID when reporting issues to support.
+**Note on Idempotency**: For all `POST`, `PUT`, and `PATCH` requests, you should include an `Idempotency-Key` header. This ensures that if a request is retried due to network issues, it will not be processed multiple times on the server.
+   - **Header**: `Idempotency-Key: <unique-uuid>`
+   - **TTL**: Cached responses are stored for 24 hours.
+   - **Behavior**: Replayed requests will return the cached response with an `X-Idempotency-Hit: true` header.
 
 ---
 
@@ -208,6 +212,8 @@ The API supports two main forms of authentication:
   - `file`: Audio file (max 100MB)
 - **Query Params**:
   - `top_sk`: 10, 20, 50, or 100 (default: 20)
+- **Headers**:
+  - `Idempotency-Key`: UUID (Recommended)
 - **Returns**: Information about the uploaded track and a list of similar tracks.
 
 ### 4.2 Get Similarity by Track ID

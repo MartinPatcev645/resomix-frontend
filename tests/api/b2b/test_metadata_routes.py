@@ -93,7 +93,7 @@ def test_metadata_valid_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/metadata/",
+            f"{BASE_URL}/api/v1/metadata/track",
             headers=HEADERS,
             files=files,
             timeout=30
@@ -140,7 +140,7 @@ def test_metadata_invalid_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/metadata/",
+            f"{BASE_URL}/api/v1/metadata/track",
             headers=HEADERS,
             files=files,
             timeout=30
@@ -181,7 +181,7 @@ def test_metadata_missing_file():
     
     try:
         response = requests.post(
-            f"{BASE_URL}/metadata/",
+            f"{BASE_URL}/api/v1/metadata/track",
             headers=HEADERS,
             timeout=30
         )
@@ -218,7 +218,7 @@ def test_metadata_empty_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/metadata/",
+            f"{BASE_URL}/api/v1/metadata/track",
             headers=HEADERS,
             files=files,
             timeout=30
@@ -265,7 +265,7 @@ def test_metadata_large_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/metadata/",
+            f"{BASE_URL}/api/v1/metadata/track",
             headers=HEADERS,
             files=files,
             timeout=30
@@ -304,7 +304,7 @@ def test_metadata_wrong_content_type():
         }
         
         response = requests.post(
-            f"{BASE_URL}/metadata/",
+            f"{BASE_URL}/api/v1/metadata/track",
             headers=HEADERS,
             files=files,
             timeout=30

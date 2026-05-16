@@ -35,6 +35,7 @@ from app.core.config import settings
 # Import middleware setup
 from app.api.middlewares.cors import setup_cors
 from app.api.middlewares.partner_audit import PartnerAuditMiddleware
+from app.api.middlewares.idempotency import IdempotencyMiddleware
 from app.observability import TimingMiddleware
 from app.api.middlewares.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -316,6 +317,8 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Setup CORS middleware
 setup_cors(app)
+# Add idempotency middleware before audit so it's inside the audit context
+app.add_middleware(IdempotencyMiddleware)
 # Add audit middleware before timing
 app.add_middleware(PartnerAuditMiddleware)
 # Add timing middleware *after* CORS so we measure downstream handlers too

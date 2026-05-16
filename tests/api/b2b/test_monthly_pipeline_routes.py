@@ -107,7 +107,7 @@ def test_monthly_pipeline_valid_upload():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -163,7 +163,7 @@ def test_monthly_pipeline_missing_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             data=data,
             params=params,
@@ -216,7 +216,7 @@ def test_monthly_pipeline_missing_path():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             params=params,
@@ -273,7 +273,7 @@ def test_monthly_pipeline_empty_path():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -331,7 +331,7 @@ def test_monthly_pipeline_invalid_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -389,7 +389,7 @@ def test_monthly_pipeline_empty_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -448,7 +448,7 @@ def test_monthly_pipeline_large_file():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -506,7 +506,7 @@ def test_monthly_pipeline_large_mp3_mix_filter():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -563,7 +563,7 @@ def test_monthly_pipeline_unauthorized():
         
         # No API key in params
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -623,7 +623,7 @@ def test_monthly_pipeline_very_long_path():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
@@ -681,7 +681,7 @@ def test_monthly_pipeline_special_characters_path():
         }
         
         response = requests.post(
-            f"{BASE_URL}/monthly_pipeline/track/",
+            f"{BASE_URL}/api/v1/ingest/monthly/track/",
             headers=HEADERS,
             files=files,
             data=data,
