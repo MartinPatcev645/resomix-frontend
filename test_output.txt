@@ -1,0 +1,69 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-9.0.3, pluggy-1.6.0 -- /Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix
+configfile: pytest.ini
+plugins: anyio-4.11.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=session, asyncio_default_test_loop_scope=session
+collecting ... collected 4 items
+
+tests/api/admin/test_user_role_management.py::test_list_users_admin PASSED [ 25%]
+tests/api/admin/test_user_role_management.py::test_create_user_admin PASSED [ 50%]
+tests/api/admin/test_user_role_management.py::test_assign_and_remove_role PASSED [ 75%]
+tests/api/admin/test_user_role_management.py::test_list_roles_and_permissions PASSED [100%]Exception terminating connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ec2d4c0>>
+Traceback (most recent call last):
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/mysql/aiomysql.py", line 218, in do_terminate
+    dbapi_connection.terminate()
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/connectors/asyncio.py", line 415, in terminate
+    self._terminate_force_close()
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/mysql/aiomysql.py", line 115, in _terminate_force_close
+    self._connection.close()
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/aiomysql/connection.py", line 339, in close
+    self._writer.transport.close()
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/selector_events.py", line 1210, in close
+    super().close()
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/selector_events.py", line 875, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/base_events.py", line 795, in call_soon
+    self._check_closed()
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/base_events.py", line 541, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ec2d4c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py:33: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ec2d4c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  gc.collect()
+Exception terminating connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ecb22a0>>
+Traceback (most recent call last):
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/mysql/aiomysql.py", line 218, in do_terminate
+    dbapi_connection.terminate()
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/connectors/asyncio.py", line 415, in terminate
+    self._terminate_force_close()
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/mysql/aiomysql.py", line 115, in _terminate_force_close
+    self._connection.close()
+  File "/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/aiomysql/connection.py", line 339, in close
+    self._writer.transport.close()
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/selector_events.py", line 1210, in close
+    super().close()
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/selector_events.py", line 875, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/base_events.py", line 795, in call_soon
+    self._check_closed()
+  File "/Users/muhammadusmannaeem/.pyenv/versions/3.12.7/lib/python3.12/asyncio/base_events.py", line 541, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ecb22a0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py:33: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ecb22a0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  gc.collect()
+
+
+=============================== warnings summary ===============================
+tests/api/admin/test_user_role_management.py::test_assign_and_remove_role
+  /Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/.venv/lib/python3.12/site-packages/starlette/routing.py:70: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <aiomysql.connection.Connection object at 0x10ecd8b30>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========================= 4 passed, 1 warning in 2.74s =========================

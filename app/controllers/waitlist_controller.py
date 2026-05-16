@@ -388,6 +388,7 @@ class WaitlistController:
                         after_state=None,
                         ip_address=request.client.host if request and request.client else None
                     )
+                    await db.commit()
 
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
@@ -402,7 +403,8 @@ class WaitlistController:
                         success=False, error="Waitlist entry not found"
                     ),
                 )
-        except Exception:
+        except Exception as e:
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -435,6 +437,7 @@ class WaitlistController:
                     after_state={"deleted_count": result.get("deleted_count")},
                     ip_address=request.client.host if request and request.client else None
                 )
+                await db.commit()
 
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
@@ -449,6 +452,7 @@ class WaitlistController:
                 },
             )
         except Exception:
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -492,6 +496,7 @@ class WaitlistController:
                         after_state={"status": status_value},
                         ip_address=request.client.host if request and request.client else None
                     )
+                    await db.commit()
 
                 waitlist_data = {
                     "id": waitlist.id,
@@ -567,6 +572,7 @@ class WaitlistController:
                     ),
                 )
         except Exception:
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(

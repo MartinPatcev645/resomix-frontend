@@ -191,6 +191,79 @@ class UserRepository(BaseRepository[User]):
             await db.refresh(user)
         return user
 
+    # === RBAC Operations ===
+
+    async def async_list_users_admin(
+        self,
+        db: AsyncSession,
+        page: int = 1,
+        page_size: int = 50,
+        search: Optional[str] = None,
+        role_id: Optional[int] = None,
+        is_active: Optional[bool] = None,
+    ) -> (List[User], int):
+        """List users with filters and roles."""
+        from sqlalchemy.orm import selectinload
+        from app.models.user import UserRole
+        
+        stmt = select(User).options(selectinload(User.roles).selectinload(UserRole.role))
+        
+        if is_active is not None:
+            stmt = stmt.where(User.is_active == is_active)
+            
+        if search:
+            like_pattern = f"%{search}%"
+            stmt = stmt.where(
+                or_(
+                    User.email.like(like_pattern),
+                    User.username.like(like_pattern),
+                    User.name.like(like_pattern)
+                )
+            )
+            
+        if role_id:
+            stmt = stmt.where(User.roles.any(Role.id == role_id))
+            
+        # Get total count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await db.execute(count_stmt)
+        total_count = total.scalar_one()
+        
+        # Paginate
+        stmt = stmt.order_by(User.id.desc()).offset((page - 1) * page_size).limit(page_size)
+        result = await db.execute(stmt)
+        return result.scalars().all(), total_count
+
+    async def async_assign_role(self, db: AsyncSession, user_id: int, role_id: int) -> bool:
+        """Assign role to user if not already assigned."""
+        from sqlalchemy.orm import selectinload
+        user = await db.get(User, user_id, options=[selectinload(User.roles)])
+        role = await db.get(Role, role_id)
+        
+        if not user or not role:
+            return False
+            
+        if role not in user.roles:
+            user.roles.append(role)
+            await db.flush()
+            return True
+        return False
+
+    async def async_remove_role(self, db: AsyncSession, user_id: int, role_id: int) -> bool:
+        """Remove role from user."""
+        from sqlalchemy.orm import selectinload
+        user = await db.get(User, user_id, options=[selectinload(User.roles)])
+        role = await db.get(Role, role_id)
+        
+        if not user or not role:
+            return False
+            
+        if role in user.roles:
+            user.roles.remove(role)
+            await db.flush()
+            return True
+        return False
+
 
 class UserTokenRepository:
     """Repository for consolidated user tokens (email verification, password reset, 2fa)"""
@@ -370,74 +443,3 @@ class UserSessionRepository:
         await db.commit()
         return result.rowcount
 
-    # === RBAC Operations ===
-
-    async def async_list_users_admin(
-        self,
-        db: AsyncSession,
-        page: int = 1,
-        page_size: int = 50,
-        search: Optional[str] = None,
-        role_id: Optional[int] = None,
-        is_active: Optional[bool] = None,
-    ) -> (List[User], int):
-        """List users with filters and roles."""
-        from sqlalchemy.orm import selectinload
-        
-        stmt = select(User).options(selectinload(User.roles))
-        
-        if is_active is not None:
-            stmt = stmt.where(User.is_active == is_active)
-            
-        if search:
-            like_pattern = f"%{search}%"
-            stmt = stmt.where(
-                or_(
-                    User.email.like(like_pattern),
-                    User.username.like(like_pattern),
-                    User.name.like(like_pattern)
-                )
-            )
-            
-        if role_id:
-            stmt = stmt.where(User.roles.any(Role.id == role_id))
-            
-        # Get total count
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total = await db.execute(count_stmt)
-        total_count = total.scalar_one()
-        
-        # Paginate
-        stmt = stmt.order_by(User.id.desc()).offset((page - 1) * page_size).limit(page_size)
-        result = await db.execute(stmt)
-        return result.scalars().all(), total_count
-
-    async def async_assign_role(self, db: AsyncSession, user_id: int, role_id: int) -> bool:
-        """Assign role to user if not already assigned."""
-        from sqlalchemy.orm import selectinload
-        user = await db.get(User, user_id, options=[selectinload(User.roles)])
-        role = await db.get(Role, role_id)
-        
-        if not user or not role:
-            return False
-            
-        if role not in user.roles:
-            user.roles.append(role)
-            await db.commit()
-            return True
-        return False
-
-    async def async_remove_role(self, db: AsyncSession, user_id: int, role_id: int) -> bool:
-        """Remove role from user."""
-        from sqlalchemy.orm import selectinload
-        user = await db.get(User, user_id, options=[selectinload(User.roles)])
-        role = await db.get(Role, role_id)
-        
-        if not user or not role:
-            return False
-            
-        if role in user.roles:
-            user.roles.remove(role)
-            await db.commit()
-            return True
-        return False

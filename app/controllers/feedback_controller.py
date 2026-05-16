@@ -585,6 +585,7 @@ class FeedbackController:
                         after_state=None,
                         ip_address=request.client.host if request and request.client else None
                     )
+                    await db.commit()
 
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
@@ -698,6 +699,7 @@ class FeedbackController:
                     after_state={"deleted_count": result.get("deleted_count")},
                     ip_address=request.client.host if request and request.client else None
                 )
+                await db.commit()
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = {

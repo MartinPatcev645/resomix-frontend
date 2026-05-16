@@ -480,6 +480,7 @@ class ContactController:
                         after_state=None,
                         ip_address=request.client.host if request and request.client else None
                     )
+                    await db.commit()
 
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
@@ -518,6 +519,7 @@ class ContactController:
                     after_state={"deleted_count": result.get("deleted_count")},
                     ip_address=request.client.host if request and request.client else None
                 )
+                await db.commit()
 
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
@@ -525,6 +527,7 @@ class ContactController:
                         "message": result.get("message", result.get("error", ""))}
             )
         except Exception:
+            await db.rollback()
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -560,6 +563,7 @@ class ContactController:
                         after_state={"status": status_value},
                         ip_address=request.client.host if request and request.client else None
                     )
+                    await db.commit()
 
                 contact = result.get("data")
                 contact_data = {"id": contact.id, "user_id": contact.user_id, "name": contact.name,
@@ -596,6 +600,7 @@ class ContactController:
                     after_state={"download_url": result.get("download_url")},
                     ip_address=request.client.host if request and request.client else None
                 )
+                await db.commit()
             if result.get("success"):
                 return JSONResponse(status_code=status.HTTP_200_OK, content={
                     "success": True, "download_url": result.get("download_url"),
@@ -605,5 +610,6 @@ class ContactController:
                 return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error=result.get("error", "Failed to export contact")))
         except Exception:
+            await db.rollback()
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))

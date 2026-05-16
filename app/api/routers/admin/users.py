@@ -1,147 +1,127 @@
 """
-Admin User Management API Router
-================================
+Admin Users Router
+==================
 
-This module defines the FastAPI router for admin user and RBAC management.
+API endpoints for administrative user management.
+Guarded by robust RBAC and DB-backed admin verification.
 
 Version: 1.0.0
 Date: May 16, 2026
+Author: Muhammad Usman Naeem
 """
 
-from typing import Optional
-from fastapi import APIRouter, Depends, Path, Query, Request
-from fastapi.responses import JSONResponse
+from typing import Optional, List
+from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.connection import get_async_db
 from app.api.dependencies.auth import require_admin, require_permission
-from app.api.dependencies.database import get_database_session
-from app.models.user import User
-from app.controllers.user_controller import UserController
-from app.schemas.user import (
+from app.controllers.admin_user_controller import AdminUserController
+from app.schemas.admin_user import (
     AdminUserListResponse,
-    UserRoleAssignmentRequest,
-    UserStatusUpdateRequest,
-    UserSearchResultsResponse
+    AdminUserCreateRequest,
+    AdminUserUpdateRequest,
+    AdminRoleAssignRequest
 )
-from app.schemas.common import ErrorResponse
+from app.models.user import User
 
 router = APIRouter(
     prefix="/admin/users",
-    tags=["admin-users"],
-    responses={
-        400: {"model": ErrorResponse},
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
-    },
+    tags=["Admin User Management"],
+    dependencies=[Depends(require_admin), Depends(require_permission("user:read"))]
 )
 
-controller = UserController()
+user_controller = AdminUserController()
 
 
-@router.get(
-    "/",
-    response_model=AdminUserListResponse,
-    summary="List Users",
-    description="Get paginated list of users with RBAC details.",
-)
+@router.get("", response_model=AdminUserListResponse)
 async def list_users(
-    request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     search: Optional[str] = Query(None, description="Search by email, username, or name"),
     role_id: Optional[int] = Query(None, description="Filter by role ID"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    db: AsyncSession = Depends(get_database_session),
-    current_admin: User = Depends(require_admin),
-) -> JSONResponse:
-    return await controller.list_users_admin(
-        db=db,
-        request=request,
-        page=page,
-        page_size=page_size,
-        search=search,
-        role_id=role_id,
-        is_active=is_active,
-        current_admin=current_admin
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None
+):
+    """List all users with pagination and filters."""
+    return await user_controller.get_users_list(
+        db, request, page, page_size, search, role_id, is_active
     )
 
 
-@router.get(
-    "/search",
-    response_model=UserSearchResultsResponse,
-    summary="Search Users (Legacy/Lightweight)",
-)
-async def search_users(
-    request: Request,
-    query: str = Query(..., min_length=1),
-    limit: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_database_session),
-    current_admin: User = Depends(require_admin),
-) -> JSONResponse:
-    return await controller.search_users(db=db, request=request, query=query, limit=limit)
+@router.get("/{user_uuid}")
+async def get_user(
+    user_uuid: str,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Get detailed information for a single user."""
+    return await user_controller.get_user_detail(db, user_uuid)
 
 
-@router.post(
-    "/{user_id}/roles",
-    summary="Assign Role to User",
-)
+@router.post("", dependencies=[Depends(require_permission("user:create"))])
+async def create_user(
+    user_data: AdminUserCreateRequest,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin)
+):
+    """Manually create a new user account."""
+    return await user_controller.create_user(
+        db, request, user_data.model_dump(), current_admin
+    )
+
+
+@router.patch("/{user_uuid}", dependencies=[Depends(require_permission("user:update"))])
+async def update_user(
+    user_uuid: str,
+    update_data: AdminUserUpdateRequest,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin)
+):
+    """Update user profile or metadata."""
+    return await user_controller.update_user(
+        db, request, user_uuid, update_data.model_dump(exclude_unset=True), current_admin
+    )
+
+
+@router.post("/{user_uuid}/roles", dependencies=[Depends(require_permission("user:role:assign"))])
 async def assign_role(
-    request: Request,
-    payload: UserRoleAssignmentRequest,
-    user_id: int = Path(..., ge=1),
-    db: AsyncSession = Depends(get_database_session),
-    current_admin: User = Depends(require_admin),
-    _: User = Depends(require_permission("roles:manage"))
-) -> JSONResponse:
-    return await controller.assign_role_admin(
-        db=db,
-        request=request,
-        user_id=user_id,
-        role_id=payload.role_id,
-        current_admin=current_admin
+    user_uuid: str,
+    role_data: AdminRoleAssignRequest,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin)
+):
+    """Assign an RBAC role to a user."""
+    return await user_controller.assign_role(
+        db, request, user_uuid, role_data.role_name, current_admin
     )
 
 
-@router.delete(
-    "/{user_id}/roles/{role_id}",
-    summary="Remove Role from User",
-)
+@router.delete("/{user_uuid}/roles/{role_name}", dependencies=[Depends(require_permission("user:role:assign"))])
 async def remove_role(
-    request: Request,
-    user_id: int = Path(..., ge=1),
-    role_id: int = Path(..., ge=1),
-    db: AsyncSession = Depends(get_database_session),
-    current_admin: User = Depends(require_admin),
-    _: User = Depends(require_permission("roles:manage"))
-) -> JSONResponse:
-    return await controller.remove_role_admin(
-        db=db,
-        request=request,
-        user_id=user_id,
-        role_id=role_id,
-        current_admin=current_admin
+    user_uuid: str,
+    role_name: str,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin)
+):
+    """Remove an RBAC role from a user."""
+    return await user_controller.remove_role(
+        db, request, user_uuid, role_name, current_admin
     )
 
 
-@router.patch(
-    "/{user_id}/status",
-    summary="Update User Status",
-    description="Activate or deactivate a user account.",
-)
-async def update_user_status(
-    request: Request,
-    payload: UserStatusUpdateRequest,
-    user_id: int = Path(..., ge=1),
-    db: AsyncSession = Depends(get_database_session),
-    current_admin: User = Depends(require_admin),
-    _: User = Depends(require_permission("users:manage"))
-) -> JSONResponse:
-    return await controller.update_user_status_admin(
-        db=db,
-        request=request,
-        user_id=user_id,
-        is_active=payload.is_active,
-        current_admin=current_admin
+@router.post("/{user_uuid}/toggle-status", dependencies=[Depends(require_permission("user:update"))])
+async def toggle_status(
+    user_uuid: str,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin)
+):
+    """Toggle user active status."""
+    return await user_controller.toggle_user_status(
+        db, request, user_uuid, current_admin
     )
