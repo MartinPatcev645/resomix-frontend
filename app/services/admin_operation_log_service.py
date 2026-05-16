@@ -5,7 +5,7 @@ Admin Operation Log Service
 Service layer for capturing and persisting administrative operation logs.
 Handles the creation of audit records with context enrichment.
 
-Version: 1.0.0
+Version: 1.1.0
 Date: May 16, 2026
 """
 
@@ -36,7 +36,8 @@ class AdminOperationLogService:
         correlation_id: Optional[str] = None,
     ) -> AdminOperationLog:
         """
-        Creates and persists an admin operation log entry.
+        Creates and flushes an admin operation log entry.
+        Does not commit; caller manages the transaction.
         """
         try:
             log_entry = AdminOperationLog(
@@ -51,12 +52,13 @@ class AdminOperationLogService:
                 correlation_id=correlation_id,
             )
             db.add(log_entry)
-            await db.commit()
-            await db.refresh(log_entry)
+            
+            # Use flush instead of commit - Part 2 Roadmap requirement
+            # The caller must commit the transaction.
+            await db.flush()
+            
             return log_entry
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to create admin operation log: {str(e)}")
-            # We don't raise here to prevent the main operation from failing due to logging issues,
-            # but in a strict compliance environment, you might want to.
+            # We don't raise here to prevent the main operation from failing due to logging issues.
             return None
