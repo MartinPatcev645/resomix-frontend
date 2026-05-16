@@ -1,6 +1,7 @@
 import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
+import { RequestOptions } from "./types/api";
 
 interface FeedbackData {
   satisfaction: number;
@@ -10,11 +11,18 @@ interface FeedbackData {
   user_id?: string;
 }
 
-export const submitFeedback = async (feedbackData: FeedbackData) => {
+export const submitFeedback = async (
+  feedbackData: FeedbackData,
+  options?: RequestOptions,
+) => {
   try {
     const dataWithCategory = { ...feedbackData, category: feedbackData.category || "general" };
     const data = await axiosWrapper<any>(
-      authClient.post(API_CONFIG.ENDPOINTS.FEEDBACK, dataWithCategory),
+      authClient.post(API_CONFIG.ENDPOINTS.FEEDBACK, dataWithCategory, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data;
@@ -37,10 +45,17 @@ interface ContactData {
   user_id?: string;
 }
 
-export const submitContactForm = async (contactData: ContactData) => {
+export const submitContactForm = async (
+  contactData: ContactData,
+  options?: RequestOptions,
+) => {
   try {
     const data = await axiosWrapper<any>(
-      authClient.post(API_CONFIG.ENDPOINTS.CONTACT, contactData),
+      authClient.post(API_CONFIG.ENDPOINTS.CONTACT, contactData, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data;

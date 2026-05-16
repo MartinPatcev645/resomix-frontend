@@ -80,6 +80,12 @@ authClient.interceptors.request.use(
       console.warn(`[authClient] Auth store not available for ${config.url} - global store: ${!!(globalThis as Record<string, unknown>).__RESOMIX_AUTH_STORE__}`);
     }
 
+    // Support for Idempotency-Key
+    const customConfig = config as any;
+    if (customConfig.idempotencyKey) {
+      config.headers['Idempotency-Key'] = customConfig.idempotencyKey;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

@@ -1,7 +1,7 @@
 import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
-import type { ApiResponse } from "./types/api";
+import type { ApiResponse, RequestOptions } from "./types/api";
 import type {
   CartResponse,
   AddToCartPayload,
@@ -49,13 +49,19 @@ export const getCart = async (): Promise<CartResponse | ReturnType<typeof handle
  * Supports single tracks, bulk track arrays, or entire playlists by ID.
  *
  * @param payload - AddCartRequest containing items array OR playlist_id
+ * @param options - Optional request options including idempotency key
  */
 export const addToCart = async (
   payload: AddCartRequest,
+  options?: RequestOptions,
 ): Promise<{ success: boolean } | ReturnType<typeof handleApiError>> => {
   try {
     const data = await axiosWrapper<any>(
-      authClient.post(API_CONFIG.ENDPOINTS.CART_ADD, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.CART_ADD, payload, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data;
@@ -162,13 +168,21 @@ export const clearCart = async (): Promise<{ success: boolean } | ReturnType<typ
  * Initialize a Stripe Checkout session.
  * Returns a URL to redirect the user to Stripe's hosted payment page.
  * Currently returns a mocked URL until the production Stripe account is linked.
+ * 
+ * @param options - Optional request options including idempotency key
  */
-export const createCheckoutSession = async (): Promise<
+export const createCheckoutSession = async (
+  options?: RequestOptions,
+): Promise<
   CheckoutSessionResponse | ReturnType<typeof handleApiError>
 > => {
   try {
     const data = await axiosWrapper<{ success: boolean; data: CheckoutSessionResponse }>(
-      authClient.post(API_CONFIG.ENDPOINTS.CHECKOUT_CREATE_SESSION),
+      authClient.post(API_CONFIG.ENDPOINTS.CHECKOUT_CREATE_SESSION, {}, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data.data;

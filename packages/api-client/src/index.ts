@@ -19,7 +19,7 @@ export * from "./admin/users";
 export * from "./admin/partners";
 export * from "./types/partner";
 export * from "./types/api";
-export { default as apiAxiosInstance } from "./utils";
+export { default as apiAxiosInstance, generateIdempotencyKey } from "./utils";
 
 // Auth exports
 export { default as authClient } from "./authClient";

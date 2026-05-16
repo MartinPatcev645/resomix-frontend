@@ -6,6 +6,10 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
+export interface RequestOptions {
+  idempotencyKey?: string;
+}
+
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: {
     total: number;

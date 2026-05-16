@@ -1,5 +1,6 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
+import { RequestOptions } from "./types/api";
 
 interface WaitlistData {
   id: number;
@@ -13,11 +14,15 @@ interface JoinWaitlistRequest {
   email: string;
 }
 
-export const joinWaitlist = async (email: string) => {
+export const joinWaitlist = async (email: string, options?: RequestOptions) => {
   try {
     const requestData: JoinWaitlistRequest = { email };
     const data = await axiosWrapper<any>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.WAITLIST, requestData),
+      axiosInstance.post(API_CONFIG.ENDPOINTS.WAITLIST, requestData, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data;

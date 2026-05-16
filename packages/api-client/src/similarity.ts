@@ -1,7 +1,7 @@
 import axiosInstance, { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
-import type { ApiResponse } from "./types/api";
+import type { ApiResponse, RequestOptions } from "./types/api";
 
 
 
@@ -11,11 +11,13 @@ import type { ApiResponse } from "./types/api";
  * @param file Audio file
  * @param TOPSK Number of similar tracks to return (default 20)
  * @param progressCallback Optional callback for upload progress (0-100)
+ * @param options Optional request options including idempotency key
  */
 export const getSimilarTracks = async (
   file: File,
   TOPSK = 20,
   progressCallback?: (progress: number) => void,
+  options?: RequestOptions,
 ) => {
   try {
     const validation = validateAudioFile(file);
@@ -50,6 +52,9 @@ export const getSimilarTracks = async (
           }
         },
         timeout: 900_000, // 15 minutes, matches legacy
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
       }),
     );
 
@@ -68,10 +73,12 @@ export const getSimilarTracks = async (
  * Get track similarity for a selected track ID
  * @param trackId The track ID to find similar tracks for
  * @param TOPSK Number of similar tracks to return (default 20)
+ * @param options Optional request options including idempotency key
  */
 export const getSimilarityForSelectedTrack = async (
   trackId: string,
   TOPSK = 20,
+  options?: RequestOptions,
 ) => {
   try {
     const payload = {
@@ -81,7 +88,11 @@ export const getSimilarityForSelectedTrack = async (
 
     // Use authClient instead of axiosInstance to include credentials and Authorization header
     const data = await axiosWrapper<ApiResponse>(
-      authClient.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data;

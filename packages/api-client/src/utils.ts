@@ -23,6 +23,12 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Also include in headers for better security and backend compatibility
   config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
   
+  // Support for Idempotency-Key
+  const customConfig = config as any;
+  if (customConfig.idempotencyKey) {
+    config.headers['Idempotency-Key'] = customConfig.idempotencyKey;
+  }
+  
   return config;
 });
 
@@ -123,6 +129,23 @@ export const validateAudioFile = (file: File): { valid: boolean; error?: string 
     return { valid: false, error: "Invalid file type. Please upload an audio file." };
   }
   return { valid: true };
+};
+
+/**
+ * Generate a UUID v4 for use as an idempotency key.
+ * Uses crypto.randomUUID() where available, otherwise falls back to a manual generator.
+ */
+export const generateIdempotencyKey = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 };
 
 export default axiosInstance; 
