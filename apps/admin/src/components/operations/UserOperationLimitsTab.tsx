@@ -21,7 +21,7 @@ import type {
   AdminUserOperationLimit,
   AdminUserSearchItem,
 } from '@resomix/api-client'
-import { searchAdminUsers } from '@resomix/api-client'
+import { listAdminUsers } from '@resomix/api-client'
 
 const { Text } = Typography
 
@@ -366,11 +366,11 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
     const requestQuery = trimmed
     userSearchTimeout.current = setTimeout(async () => {
       try {
-        const response = await searchAdminUsers(requestQuery, 10)
+        const response = await listAdminUsers({ q: requestQuery, limit: 10 })
         if (!isMountedRef.current || currentUserSearchQuery.current !== requestQuery) return
 
         if (response.success && response.data) {
-          const validUsers = response.data.filter((user) => Boolean(user.email))
+          const validUsers = response.data.filter((user: AdminUserSearchItem) => Boolean(user.email))
           if (validUsers.length === 0) {
             setUserOptions([])
             setUserSearchError('No users found')

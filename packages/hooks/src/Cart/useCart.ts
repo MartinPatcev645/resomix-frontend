@@ -104,11 +104,11 @@ export function useCart() {
 
   // ── Remove from Cart ──────────────────────────────────────────────────────
   const removeItem = useCallback(
-    async (trackFormatId: number) => {
+    async (trackId: string) => {
       store.setLoading(true);
       store.setError(null);
       try {
-        const result = await removeFromCart(trackFormatId);
+        const result = await removeFromCart(trackId);
         if ("success" in result && result.success) {
           await hydrateCart();
           return true;
@@ -134,8 +134,8 @@ export function useCart() {
   const toggleItem = useCallback(
     async (trackId: string, sourcePlaylistId?: string) => {
       const existing = getCartItem(trackId);
-      if (existing && existing.track_format_id) {
-        return removeItem(existing.track_format_id);
+      if (existing) {
+        return removeItem(trackId);
       } else if (!existing) {
         return addItem({
           items: [{ track_id: trackId, source_playlist_id: sourcePlaylistId }],

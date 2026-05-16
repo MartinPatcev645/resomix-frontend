@@ -17,7 +17,7 @@ import { Plus, RefreshCw, Trash2, Pencil } from 'lucide-react'
 import { useConfirmDialog } from '@resomix/hooks'
 import { useSpotifyAppUsers } from '@/hooks/useSpotifyAppUsers.ts'
 import { useSpotifyApps } from '@/hooks/useSpotifyApps.ts'
-import { searchAdminUsers, type AdminUserSearchItem } from '@resomix/api-client'
+import { listAdminUsers, type AdminUserSearchItem } from '@resomix/api-client'
 import type {
   AdminSpotifyAppUser,
   AdminSpotifyAppUserUpsertRequest,
@@ -149,11 +149,11 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
     setUserOptions([])
 
     try {
-      const response = await searchAdminUsers(trimmed, 10)
+      const response = await listAdminUsers({ q: trimmed, limit: 10 })
       if (!isMountedRef.current || currentUserSearchQuery.current !== trimmed) return
 
       if (response.success && response.data) {
-        const validUsers = response.data.filter((user) => Boolean(user.email))
+        const validUsers = response.data.filter((user: AdminUserSearchItem) => Boolean(user.email))
         if (validUsers.length === 0) {
           setUserOptions([])
           setUserSearchError('No users found')

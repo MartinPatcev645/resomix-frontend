@@ -43,3 +43,4 @@ export * from './Cart';
 
 // Admin
 export * from './Admin/usePartners';
+export * from './Admin/useAdminUsers';
