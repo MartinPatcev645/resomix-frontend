@@ -17,45 +17,87 @@ export interface AdminUserSearchResponse {
   error?: string;
 }
 
-export const searchAdminUsers = async (
-  query: string,
-  limit = 10,
-): Promise<AdminUserSearchResponse> => {
-  const trimmedQuery = query.trim();
-
-  if (!trimmedQuery) {
-    return {
-      success: false,
-      data: [],
-      error: "Query parameter cannot be empty",
-    };
-  }
-
+/**
+ * List/Search all users (Admin)
+ */
+export const listAdminUsers = async (params: { q?: string; limit?: number; page?: number; page_size?: number } = {}) => {
   try {
     const response = await axiosWrapper<AdminUserSearchResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_USER_SEARCH, {
-        params: {
-          q: trimmedQuery,
-          limit,
-        },
-      }),
+      axiosInstance.get("/api/v1/admin/users", { params })
     );
-
-    if (response.success && response.data) {
-      return response;
-    }
-
-    return {
-      success: false,
-      data: [],
-      error: response.error || "Failed to search users.",
-    };
+    return response;
   } catch (error) {
-    const apiError = handleApiError(error as Error);
-    return {
-      ...apiError,
-      data: [],
-    };
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Assign a role to a user
+ */
+export const assignRole = async (userUuid: string, roleName: string) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.post(`/api/v1/admin/users/${userUuid}/roles`, { role_name: roleName })
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Remove a role from a user
+ */
+export const removeRole = async (userUuid: string, roleName: string) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.delete(`/api/v1/admin/users/${userUuid}/roles/${roleName}`)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * List all system roles
+ */
+export const listSystemRoles = async () => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.get("/api/v1/admin/roles")
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * List all system permissions
+ */
+export const listSystemPermissions = async () => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.get("/api/v1/admin/roles/permissions")
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Create a new user (Admin)
+ */
+export const createAdminUser = async (userData: any) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.post("/api/v1/admin/users", userData)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
   }
 };
 

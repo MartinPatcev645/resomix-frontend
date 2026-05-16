@@ -1,4 +1,4 @@
-import { SPOTIFY_CONFIG } from "./config";
+import { API_CONFIG, SPOTIFY_CONFIG } from "./config";
 import { axiosWrapper, handleApiError } from "./utils";
 import authClient from "./authClient";
 
@@ -9,6 +9,19 @@ export type TransferResponse<T = any> = {
   data?: T;
   details?: unknown;
   status?: number;
+};
+
+/**
+ * Get the Spotify Client ID from the backend (pre-flight).
+ */
+export const getSpotifyClientId = async () => {
+  try {
+    return await axiosWrapper<{ success: boolean; client_id: string; app_name: string }>(
+      authClient.get(API_CONFIG.ENDPOINTS.SPOTIFY_CLIENT_ID)
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
 };
 
 // Performs the raw token exchange request to Spotify (PKCE flow)

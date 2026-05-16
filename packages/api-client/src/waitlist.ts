@@ -39,7 +39,7 @@ export const joinWaitlist = async (email: string, options?: RequestOptions) => {
 export const checkWaitlistStatus = async (email: string) => {
   try {
     const data = await axiosWrapper<any>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.WAITLIST}status`, { 
+      axiosInstance.post(API_CONFIG.ENDPOINTS.WAITLIST_STATUS, { 
         email 
       }),
     );

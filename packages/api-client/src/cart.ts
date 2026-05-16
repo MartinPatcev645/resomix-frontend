@@ -76,16 +76,16 @@ export const addToCart = async (
 };
 
 /**
- * Remove a specific track variant from the cart.
+ * Remove a specific track from the cart.
  *
- * @param trackFormatId - The unique ID of the track-format combination
+ * @param trackId - The unique ID of the track
  */
 export const removeFromCart = async (
-  trackFormatId: number,
+  trackId: string,
 ): Promise<{ success: boolean } | ReturnType<typeof handleApiError>> => {
   try {
     const data = await axiosWrapper<any>(
-      authClient.delete(`${API_CONFIG.ENDPOINTS.CART_REMOVE}${trackFormatId}`),
+      authClient.delete(`${API_CONFIG.ENDPOINTS.CART_REMOVE}${trackId}`),
     );
 
     if (data.success === true) return data;
@@ -165,9 +165,26 @@ export const clearCart = async (): Promise<{ success: boolean } | ReturnType<typ
 };
 
 /**
+ * Initialize checkout process (Phase 2 pre-flight).
+ * 
+ * @param cartId - The ID of the cart to checkout
+ */
+export const initCheckout = async (
+  cartId: number,
+): Promise<{ success: boolean } | ReturnType<typeof handleApiError>> => {
+  try {
+    const data = await axiosWrapper<any>(
+      authClient.post(API_CONFIG.ENDPOINTS.CHECKOUT_INIT, { cart_id: cartId }),
+    );
+    return data;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
  * Initialize a Stripe Checkout session.
  * Returns a URL to redirect the user to Stripe's hosted payment page.
- * Currently returns a mocked URL until the production Stripe account is linked.
  * 
  * @param options - Optional request options including idempotency key
  */

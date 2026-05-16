@@ -22,8 +22,9 @@ export interface ApiConfig {
     USER_SESSIONS: string;
     USER_ENABLE_2FA: string;
     USER_DISABLE_2FA: string;
+    USER_DELETE: string;
 
-    // beta endpoints
+    // Beta endpoints
     SIMILARITY: string;
     SELECTION_SIMILARITY: string;
     SEARCH: string;
@@ -40,7 +41,20 @@ export interface ApiConfig {
     PLAYLIST_PLAY_SESSION: string;
     PLAYLISTS_GET_ALL: string;
     WAITLIST: string;
+    WAITLIST_STATUS: string;
     SEGMENT_STATUS: string;
+
+    // Playlist Engagement
+    PLAYLIST_FAVORITE_ADD: string;
+    PLAYLIST_FAVORITE_REMOVE: string;
+    PLAYLIST_FOLLOW: string;
+    PLAYLIST_UNFOLLOW: string;
+
+    // Ratings
+    RATING_TRACKS_DETAIL: string;
+    RATING_PLAYLISTS_DETAIL: string;
+    RATING_PLAYLIST_STATS: string;
+    RATING_TRACK_STATS: string;
     
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: string;
@@ -79,6 +93,10 @@ export interface ApiConfig {
     ADMIN_PARTNER_API_KEY_LIST: string;
     ADMIN_PARTNER_API_KEY_REVOKE: string;
     ADMIN_PARTNER_API_KEY_ROTATE: string;
+    ADMIN_AUTH_LOGIN: string;
+    ADMIN_PROMO_CREATE: string;
+    ADMIN_SIMILARITY_REBUILD: string;
+    PARTNER_ME: string;
     
     // Telemetry
     TELEMETRY_SYNC: string;
@@ -90,6 +108,7 @@ export interface ApiConfig {
     CART_REMOVE_PLAYLIST: string;
     CART_PROMO: string;
     CART_CLEAR: string;
+    CHECKOUT_INIT: string;
     CHECKOUT_CREATE_SESSION: string;
     
     // Ingestion Pipelines
@@ -97,6 +116,16 @@ export interface ApiConfig {
     INGEST_MONTHLY_EMBEDDINGS: string;
     INGEST_OPEN_TRACK: string;
     INGEST_OPEN_EMBEDDINGS: string;
+
+    // Metadata
+    METADATA_EXTRACT: string;
+
+    // System
+    HEALTH: string;
+    ROOT: string;
+
+    // Spotify Pre-flight
+    SPOTIFY_CLIENT_ID: string;
   };
 }
 
@@ -152,7 +181,8 @@ export const API_CONFIG: ApiConfig = {
     USER_SESSIONS: "/api/v1/users/me/sessions",
     USER_ENABLE_2FA: "/api/v1/users/me/enable-2fa",
     USER_DISABLE_2FA: "/api/v1/users/me/disable-2fa",
-    // beta endpoints
+    USER_DELETE: "/api/v1/users/me",
+    // Beta endpoints
     SIMILARITY: "/api/v1/similarity/upload",
     SELECTION_SIMILARITY: "/api/v1/similarity/search",
     SEARCH: "/api/v1/search_tracks/",
@@ -169,6 +199,18 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_PLAY_SESSION: "/api/v1/playlists/{id}/play-session",
     PLAYLISTS_GET_ALL: "/api/v1/playlists/get-all-playlists/",
     WAITLIST: "/api/v1/waitlist/",
+    WAITLIST_STATUS: "/api/v1/waitlist/status",
+    SEGMENT_STATUS: "/api/v1/similarity/segment-status/",
+    // Playlist Engagement
+    PLAYLIST_FAVORITE_ADD: "/api/v1/playlist/add-favorite/",
+    PLAYLIST_FAVORITE_REMOVE: "/api/v1/playlist/remove-favorite/",
+    PLAYLIST_FOLLOW: "/api/v1/playlist/follow/",
+    PLAYLIST_UNFOLLOW: "/api/v1/playlist/unfollow/",
+    // Ratings Detail
+    RATING_TRACKS_DETAIL: "/api/v1/ratings/tracks/",
+    RATING_PLAYLISTS_DETAIL: "/api/v1/ratings/playlists/",
+    RATING_PLAYLIST_STATS: "/api/v1/ratings/playlists/",
+    RATING_TRACK_STATS: "/api/v1/ratings/tracks/",
     // Telemetry
     TELEMETRY_SYNC: "/api/v1/telemetry/sync",
     // Cart & Checkout
@@ -178,8 +220,9 @@ export const API_CONFIG: ApiConfig = {
     CART_REMOVE_PLAYLIST: "/api/v1/cart/remove-playlist/",
     CART_PROMO: "/api/v1/cart/promo",
     CART_CLEAR: "/api/v1/cart/clear",
+    CHECKOUT_INIT: "/api/v1/checkout/init",
     CHECKOUT_CREATE_SESSION: "/api/v1/checkout/create-session",
-    SEGMENT_STATUS: "/api/v1/similarity/segment-status/", 
+ 
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: "/api/v1/admin/feedback/",
     ADMIN_FEEDBACK_DELETE: "/api/v1/admin/feedback/delete/",
@@ -218,11 +261,22 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PARTNER_API_KEY_LIST: "/api/v1/admin/partners/api-keys/",
     ADMIN_PARTNER_API_KEY_REVOKE: "/api/v1/admin/partners/api-keys/revoke",
     ADMIN_PARTNER_API_KEY_ROTATE: "/api/v1/admin/partners/api-keys/rotate",
+    ADMIN_AUTH_LOGIN: "/api/v1/admin/auth/login",
+    ADMIN_PROMO_CREATE: "/api/v1/admin/promo/create",
+    ADMIN_SIMILARITY_REBUILD: "/api/v1/admin/similarity/rebuild-index",
+    PARTNER_ME: "/api/v1/partner/me",
     // Ingestion Pipelines
     INGEST_MONTHLY_TRACK: "/api/v1/ingest/monthly/track",
     INGEST_MONTHLY_EMBEDDINGS: "/api/v1/ingest/monthly/update_embeddings",
     INGEST_OPEN_TRACK: "/api/v1/ingest/open/track",
     INGEST_OPEN_EMBEDDINGS: "/api/v1/ingest/open/update_embeddings",
+    // Metadata
+    METADATA_EXTRACT: "/api/v1/metadata/track",
+    // System
+    HEALTH: "/health",
+    ROOT: "/",
+    // Spotify Pre-flight
+    SPOTIFY_CLIENT_ID: "/api/v1/spotify/app-client-id",
     // Unused beta endpoints
     // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
     // TIDAL_AUTH_TOKEN: "/tidal/auth/token",

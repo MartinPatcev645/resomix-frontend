@@ -50,60 +50,18 @@ export const getPlaylistSimilarity = async (playlistId: string) => {
     return {
       success: false,
       error: data.error || "Failed to get playlist similarity data.",
-      details: data.details ?? null,
     };
   } catch (error) {
     return handleApiError(error as Error);
   }
 };
 
-export const rateTrack = async (
-  trackId: string,
-  rating: number,
-  playlistId: string | null = null,
-) => {
+export const getPlaylistSimilarityHls = async (playlistId: string) => {
   try {
-    const payload: Record<string, unknown> = { track_id: trackId, rating };
-    if (playlistId !== null && playlistId !== undefined) {
-      payload.playlist_id = playlistId;
-    }
-
-    const data = await axiosWrapper<ApiResponse>(
-      authClient.post(API_CONFIG.ENDPOINTS.TRACK_RATING, payload),
+    const data = await axiosWrapper<string>(
+      authClient.get(`${API_CONFIG.ENDPOINTS.PLAYLIST_SIMILARITY_HLS}${playlistId}.m3u8`),
     );
-
-    if (data.success === true) return data;
-    return {
-      success: false,
-      error: data.error || "Failed to rate track.",
-      details: data.details ?? null,
-    };
-  } catch (error) {
-    return handleApiError(error as Error);
-  }
-};
-
-export const ratePlaylist = async (
-  playlistId: string,
-  rating: number,
-  message: string | null = null,
-) => {
-  try {
-    const payload: Record<string, unknown> = { playlist_id: playlistId, rating };
-    if (message && message.trim()) {
-      payload.message = message.trim();
-    }
-
-    const data = await axiosWrapper<ApiResponse>(
-      authClient.post(API_CONFIG.ENDPOINTS.PLAYLIST_RATING, payload),
-    );
-
-    if (data.success === true) return data;
-    return {
-      success: false,
-      error: data.error || "Failed to rate playlist.",
-      details: data.details ?? null,
-    };
+    return data;
   } catch (error) {
     return handleApiError(error as Error);
   }
@@ -119,9 +77,87 @@ export const forkPlaylist = async (playlistId: string) => {
     return {
       success: false,
       error: data.error || "Failed to fork playlist.",
-      details: data.details ?? null,
     };
   } catch (error) {
     return handleApiError(error as Error);
   }
 };
+
+export interface UserPlaylistListParams {
+  page?: number;
+  page_size?: number;
+  play_time?: number;
+  num_tracks?: number;
+  start_date?: string;
+  end_date?: string;
+  is_public?: boolean;
+  own_favorites?: boolean;
+  all_favorites?: boolean;
+}
+
+export const getAllPlaylists = async (params: UserPlaylistListParams = {}) => {
+  try {
+    const data = await axiosWrapper<ApiResponse>(
+      authClient.get(API_CONFIG.ENDPOINTS.PLAYLISTS_GET_ALL, { params }),
+    );
+    return data;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+export const getPlaybackSession = async (playlistId: string) => {
+  try {
+    const url = API_CONFIG.ENDPOINTS.PLAYLIST_PLAY_SESSION.replace("{id}", playlistId);
+    const data = await axiosWrapper<{ success: boolean; playback_url?: string; error?: string }>(
+      authClient.post(url),
+    );
+    return data;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+// Engagement Methods
+export const addFavorite = async (playlistId: string) => {
+  try {
+    return await axiosWrapper<ApiResponse>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_FAVORITE_ADD}${playlistId}`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+export const removeFavorite = async (playlistId: string) => {
+  try {
+    return await axiosWrapper<ApiResponse>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_FAVORITE_REMOVE}${playlistId}`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+export const followPlaylist = async (playlistId: string) => {
+  try {
+    return await axiosWrapper<ApiResponse>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_FOLLOW}${playlistId}`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+export const unfollowPlaylist = async (playlistId: string) => {
+  try {
+    return await axiosWrapper<ApiResponse>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.PLAYLIST_UNFOLLOW}${playlistId}`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+// Rating Methods (moved to ratings.ts)
+export { rateTrack, ratePlaylist } from "./ratings";

@@ -106,3 +106,16 @@ export const rotateApiKey = async (payload: ApiKeyRotateRequest): Promise<{ succ
     return handleApiError(error) as any;
   }
 };
+
+/**
+ * Get current partner information (API Key Required)
+ */
+export const getPartnerMe = async () => {
+  try {
+    return await axiosWrapper<any>(
+      axiosInstance.get(API_CONFIG.ENDPOINTS.PARTNER_ME)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
