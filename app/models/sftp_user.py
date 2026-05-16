@@ -43,6 +43,14 @@ class SftpUser(Base):
     home_directory: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     
+    # User ID: Link to platform user (RBAC Part 1)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    
     # Partner ID: Multi-tenant isolation (W1-4)
     partner_id: Mapped[int] = mapped_column(
         mysql.INTEGER(unsigned=True),
@@ -59,6 +67,7 @@ class SftpUser(Base):
     # Relationships
     partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
     label: Mapped["Label"] = relationship("Label", back_populates="sftp_users")
+    user: Mapped[Optional["User"]] = relationship("User", back_populates="sftp_user")
 
     def __repr__(self) -> str:
         return f"<SftpUser(id={self.id}, username='{self.username}', label_id={self.label_id})>"

@@ -115,6 +115,27 @@ CREATE TABLE IF NOT EXISTS partner_usage_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- 55a. ADMIN OPERATION LOGS
+-- Comprehensive audit trail for all administrative operations (RBAC Part 1).
+CREATE TABLE IF NOT EXISTS admin_operation_logs (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id   INT UNSIGNED NOT NULL,
+    action          VARCHAR(100) NOT NULL           COMMENT 'e.g. feedback.resolve, user.role.assign, partner.api_key.revoke',
+    target_type     VARCHAR(50)  NOT NULL           COMMENT 'e.g. user, partner, feedback, role',
+    target_id       VARCHAR(100) NOT NULL           COMMENT 'UUID or internal ID of target resource',
+    before_state    JSON         DEFAULT NULL       COMMENT 'Snapshot before mutation',
+    after_state     JSON         DEFAULT NULL       COMMENT 'Snapshot after mutation',
+    ip_address      VARCHAR(45)  DEFAULT NULL,
+    user_agent      VARCHAR(500) DEFAULT NULL,
+    correlation_id  CHAR(36)     DEFAULT NULL,
+    created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+    INDEX idx_admin_op_admin (admin_user_id),
+    INDEX idx_admin_op_time  (created_at),
+    INDEX idx_admin_op_target (target_type, target_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- 56. PARTNER WEBHOOKS
 -- Webhook subscription configuration per partner.
 CREATE TABLE IF NOT EXISTS partner_webhooks (
@@ -172,7 +193,8 @@ CREATE TABLE IF NOT EXISTS users (
     profile_picture        VARCHAR(255),
     language               VARCHAR(10),
     timezone               VARCHAR(50),
-    is_email_verified      TINYINT(1) DEFAULT 0,
+    is_active              TINYINT(1)   NOT NULL DEFAULT 1,
+    is_email_verified      TINYINT(1)   DEFAULT 0,
     is_two_factor_enabled  TINYINT(1) DEFAULT 0,
     two_factor_method      ENUM('email','app') DEFAULT 'email',
     stripe_customer_id     VARCHAR(255) UNIQUE COMMENT 'External Stripe billing mapping',
@@ -336,9 +358,12 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 CREATE TABLE IF NOT EXISTS user_roles (
     user_id INT UNSIGNED NOT NULL,
     role_id INT UNSIGNED NOT NULL,
+    granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    granted_by INT UNSIGNED DEFAULT NULL,
     PRIMARY KEY (user_id, role_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles(id)  ON DELETE CASCADE
+    FOREIGN KEY (role_id) REFERENCES roles(id)  ON DELETE CASCADE,
+    FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -1268,11 +1293,14 @@ CREATE TABLE IF NOT EXISTS sftp_users (
     password_hash VARCHAR(255) NOT NULL,
     home_directory VARCHAR(500) NOT NULL,
     is_active TINYINT(1) DEFAULT 1,
+    user_id INT UNSIGNED DEFAULT NULL COMMENT 'Link to platform user (RBAC Part 1)',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE RESTRICT,
     FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE RESTRICT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_sftp_partner (partner_id),
-    INDEX idx_sftp_user_active (username, is_active)
+    INDEX idx_sftp_user_active (username, is_active),
+    INDEX idx_sftp_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

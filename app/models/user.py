@@ -33,6 +33,7 @@ from . import Base
 from sqlalchemy.sql import func
 from typing import List, Optional
 import uuid as uuid_lib
+from datetime import datetime
 
 
 class Role(Base):
@@ -170,12 +171,21 @@ class UserRole(Base):
         mysql.INTEGER(unsigned=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
     )
 
+    # Audit columns (RBAC Part 1)
+    granted_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+    granted_by: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
     # Relationships
     role: Mapped["Role"] = relationship("Role", back_populates="user_roles")
-    user: Mapped["User"] = relationship("User", back_populates="roles")
+    user: Mapped["User"] = relationship("User", back_populates="roles", foreign_keys=[user_id])
+    granter: Mapped[Optional["User"]] = relationship("User", foreign_keys=[granted_by])
 
     def __repr__(self):
-        return f"<UserRole(user_id={self.user_id}, role_id={self.role_id})>"
+        return f"<UserRole(user_id={self.user_id}, role_id={self.role_id}, granted_by={self.granted_by})>"
 
 
 # =========================================================================
@@ -207,6 +217,7 @@ class User(Base):
     timezone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="UTC")
 
     # Security flags
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_two_factor_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     two_factor_method: Mapped[str] = mapped_column(
@@ -241,7 +252,10 @@ class User(Base):
         "UserSession", back_populates="user", cascade="all, delete-orphan"
     )
     roles: Mapped[List["UserRole"]] = relationship(
-        "UserRole", back_populates="user", cascade="all, delete-orphan"
+        "UserRole",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="UserRole.user_id"
     )
     operation_limits: Mapped[List["UserOperationLimit"]] = relationship(
         "UserOperationLimit",
@@ -267,6 +281,11 @@ class User(Base):
         "UserToken", back_populates="user", cascade="all, delete-orphan"
     )
     partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])
+    
+    # SFTP User Association
+    sftp_user: Mapped[Optional["SftpUser"]] = relationship(
+        "SftpUser", back_populates="user", uselist=False
+    )
 
     def __init__(self, **kwargs):
         if "uuid" not in kwargs:

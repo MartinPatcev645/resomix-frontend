@@ -46,6 +46,7 @@ from .operation_limit import OperationType, UserOperationLimit
 from .spotify_app import SpotifyApp, UserSpotifyApp
 from .consumption_event import ConsumptionEvent
 from .sftp_user import SftpUser
+from .admin_operation_log import AdminOperationLog
 from .b2b import IngestLog, IngestionError, Deal, ReleaseDeal, DealTerritory, DealUseType, RoyaltyRate
 from .copyright import ManualTakedown, ACRInfringementLog
 from .report import GeneratedReport, LabelPayout
@@ -106,6 +107,7 @@ __all__ = [
     "UserSpotifyApp",
     "ConsumptionEvent",
     "SftpUser",
+    "AdminOperationLog",
     "IngestLog",
     "IngestionError",
     "Deal",
