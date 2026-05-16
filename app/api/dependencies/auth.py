@@ -53,15 +53,16 @@ async def get_api_key(
 ):
     """
     Validate API key for endpoints.
-    Only checks X-API-KEY header (query parameter removed for security).
+    Checks X-API-KEY header and falls back to 'api_key' query parameter
+    to support HLS manifests and heartbeat beacons.
 
     Allows CORS preflight (OPTIONS) to pass through without credentials.
     """
     if request.method == "OPTIONS":
         return api_key_header
 
-    # Extract key from header
-    key = api_key_header
+    # Extract key from header or query parameter
+    key = api_key_header or request.query_params.get("api_key")
 
     if key == settings.api_key:
         # Flag this request as administrative to allow multi-tenant bypass

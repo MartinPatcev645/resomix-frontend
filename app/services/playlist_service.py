@@ -736,7 +736,7 @@ class PlaylistService:
             # The Similarity server handles the stitched HLS playlists
             base_url = settings.public_alwyzon_url.rstrip("/")
             playback_url = (
-                f"{base_url}/playlists/similarity-hls/{playlist_id}.m3u8?token={token}"
+                f"{base_url}/api/v1/playlists/similarity-hls/{playlist_id}.m3u8?token={token}"
             )
 
             return {"success": True, "playback_url": playback_url}

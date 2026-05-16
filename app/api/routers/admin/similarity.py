@@ -16,7 +16,7 @@ from app.services.similarity_service import SimilarityService
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.models.user import User
 
-router = APIRouter(prefix="/similarity", tags=["admin-similarity"])
+router = APIRouter(prefix="/admin/similarity", tags=["admin-similarity"])
 similarity_service = SimilarityService()
 admin_log_service = AdminOperationLogService()
 

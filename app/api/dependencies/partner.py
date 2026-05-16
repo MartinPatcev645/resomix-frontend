@@ -47,8 +47,8 @@ async def _get_partner_core(
     allow_anonymous: bool = False
 ) -> Partner:
     """Internal core logic for partner resolution."""
-    # Extract token from Bearer auth or header
-    token = auth.credentials if auth else api_key_token
+    # Extract token from Bearer auth, header, or query parameter
+    token = auth.credentials if auth else (api_key_token or request.query_params.get("api_key"))
     
     # 1. Try Partner API Key (rmx_...)
     if token and token.startswith("rmx_"):

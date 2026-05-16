@@ -21,13 +21,18 @@ As of May 2026, the Resomix API has transitioned to **URL-based versioning** for
 
 ## Authentication & Headers
 
-The API supports two main forms of authentication:
+The API supports three main tiers of authentication based on the actor:
 
-1. **Public API Key**: Used for anonymous/public endpoints (like search, waitlist, and telemetry).
-   - **Header**: `X-API-KEY: <your-api-key>`
-   - **Query Parameter**: `?api_key=<your-api-key>` (Supported for frontend flexibility)
-2. **JWT Bearer Token**: Used for user-specific actions (like profile management, favorites, ratings, checkout).
+1. **Public/Anonymous Access**: Used for public endpoints (like search, waitlist, and telemetry) or legacy frontend components.
+   - **Header**: `X-API-KEY: <your-public-api-key>`
+2. **End-User Access (JWT)**: Used for consumer user-specific actions (like profile management, favorites, ratings, checkout).
    - **Header**: `Authorization: Bearer <your-access-token>`
+3. **B2B Partner Access**: Used by B2B clients to hit similarity, ingest, or analytics endpoints.
+   - **Header**: `Authorization: Bearer rmx_<partner_api_key>` (Recommended)
+   - **Header Fallback**: `X-API-KEY: rmx_<partner_api_key>`
+4. **Administrative Access (RBAC)**: Used by the internal admin dashboard.
+   - **Header**: `Authorization: Bearer <admin-jwt-access-token>` (Requires `role: admin` claim issued by `/api/v1/admin/auth/login`)
+   - **Header Fallback**: `X-API-KEY: <global_system_key>` (Supported for legacy system-to-system integrations)
 
 **Note on Cookies**: The refresh token is managed automatically via an `HttpOnly` cookie set by the server upon login/registration. You do not need to manage it manually in JavaScript.
 
@@ -511,9 +516,14 @@ The API supports two main forms of authentication:
 
 ## 17. Admin & B2B Operations (`/api/v1/admin`, `/api/v1/ingest`)
 
-These endpoints are used by the internal admin dashboard or B2B integrations and **must** include the `/api/v1/` prefix for all new integrations. They require API key authentication (`X-API-KEY`).
+These endpoints are used by the internal admin dashboard or B2B integrations and **must** include the `/api/v1/` prefix. **Administrative endpoints now strictly require an Admin JWT Bearer Token** (or the global System API Key for legacy services).
 
-### 17.1 Partner Management (`/api/v1/admin/partners`)
+### 17.1 Admin Authentication (`/api/v1/admin/auth`)
+
+- **Admin Login**: `POST /api/v1/admin/auth/login` (Body: `{"email": "...", "password": "..."}`)
+  - Returns JWT token with the `role: admin` claim required for all `/api/v1/admin/*` endpoints.
+
+### 17.2 Partner Management (`/api/v1/admin/partners`)
 
 - **Get Current Partner Info**: `GET /api/v1/partner/me` (API Key Required)
   - Returns: `{"id": 1, "name": "...", "tier": "...", "is_active": true}`
@@ -526,13 +536,17 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
 - **Revoke API Key**: `POST /api/v1/admin/partners/api-keys/revoke`
 - **Rotate API Key**: `POST /api/v1/admin/partners/api-keys/rotate`
 
-### 17.2 User Management (Admin)
+### 17.3 User & Role Management (Admin) (`/api/v1/admin/users`, `/api/v1/admin/roles`)
 
-- **Search Users**: `GET /api/v1/users/search` (Requires API Key)
-  - Query Params: `q` (email/username/UUID), `limit` (default 20)
-  - Returns: List of matching user profiles.
+- **List/Search Users**: `GET /api/v1/admin/users` (Requires Admin Auth)
+- **Create User**: `POST /api/v1/admin/users`
+- **Assign Role**: `POST /api/v1/admin/users/{user_uuid}/roles` `{"role_name": "admin"}`
+- **Remove Role**: `DELETE /api/v1/admin/users/{user_uuid}/roles/{role_name}`
+- **List System Roles**: `GET /api/v1/admin/roles`
+- **List System Permissions**: `GET /api/v1/admin/roles/permissions`
+- **Legacy User Search**: `GET /api/v1/users/search` (Deprecated)
 
-### 17.3 Operation Limits (`/api/v1/admin/operation-limits`)
+### 17.4 Operation Limits (`/api/v1/admin/operation-limits`)
 
 - **List Types**: `GET /api/v1/admin/operation-limits/operation-types`
 - **List User Limits**: `GET /api/v1/admin/operation-limits/`
@@ -540,54 +554,68 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
 - **Upsert Limit**: `PUT /api/v1/admin/operation-limits/`
 - **Delete Limit**: `DELETE /api/v1/admin/operation-limits/{user_identifier}/{operation_code}`
 
-### 17.3 Admin Playlist Management (`/api/v1/admin/playlist`)
+### 17.5 Admin Playlist Management (`/api/v1/admin/playlist`)
 
 - **List Playlists**: `GET /api/v1/admin/playlist/`
 - **Get Detail**: `GET /api/v1/admin/playlist/{uuid}`
 - **Delete Single**: `DELETE /api/v1/admin/playlist/delete/{playlist_id}`
 - **Batch Delete**: `POST /api/v1/admin/playlist/batch-delete`
 - **Export CSV**: `POST /api/v1/admin/playlist/export`
-- **Visibility**: `POST /api/v1/admin/playlist/visibility/{id}`
+- **Visibility**: `PATCH /api/v1/admin/playlist/visibility/{id}`
 - **Batch Visibility**: `POST /api/v1/admin/playlist/batch-visibility`
 
-### 17.4 Admin Waitlist Management (`/api/v1/admin/waitlist`)
+### 17.6 Admin Waitlist Management (`/api/v1/admin/waitlist`)
 
 - **List**: `GET /api/v1/admin/waitlist/`
+- **Delete Single**: `DELETE /api/v1/admin/waitlist/{waitlist_id}`
 - **Update Status**: `POST /api/v1/admin/waitlist/update-status/{waitlist_id}`
 - **Batch Delete**: `POST /api/v1/admin/waitlist/batch-delete`
 - **Export CSV**: `POST /api/v1/admin/waitlist/export`
 
-### 17.5 Admin Contact & Feedback (`/api/v1/admin/contact`, `/api/v1/admin/feedback`)
+### 17.7 Admin Contact & Feedback (`/api/v1/admin/contact`, `/api/v1/admin/feedback`)
 
 - **List Contacts**: `GET /api/v1/admin/contact/`
+- **Get Contact**: `GET /api/v1/admin/contact/{contact_id}`
+- **Delete Contact**: `DELETE /api/v1/admin/contact/{contact_id}`
 - **Mark Contact Status**: `POST /api/v1/admin/contact/mark-status/{contact_id}`
-- **List Feedback**: `GET /api/v1/admin/feedback/`
-- **Feedback Stats**: `GET /api/v1/admin/feedback/stats`
-- **Mark Feedback Status**: `POST /api/v1/admin/feedback/mark-status/{feedback_id}`
+- **Batch Delete Contacts**: `POST /api/v1/admin/contact/batch-delete`
+- **Export Contacts**: `POST /api/v1/admin/contact/export`
 
-### 17.6 Spotify Apps (Admin) (`/api/v1/admin/spotify-apps`)
+- **List Feedback**: `GET /api/v1/admin/feedback/`
+- **Get Feedback**: `GET /api/v1/admin/feedback/{feedback_id}`
+- **Feedback Stats**: `GET /api/v1/admin/feedback/stats`
+- **Update Feedback**: `PATCH /api/v1/admin/feedback/{feedback_id}`
+- **Delete Feedback**: `DELETE /api/v1/admin/feedback/{feedback_id}`
+- **Mark Feedback Status**: `POST /api/v1/admin/feedback/mark-status/{feedback_id}`
+- **Batch Delete Feedback**: `POST /api/v1/admin/feedback/batch-delete`
+
+### 17.8 Spotify Apps (Admin) (`/api/v1/admin/spotify-apps`)
 
 - **List Apps**: `GET /api/v1/admin/spotify-apps/`
+- **Get App**: `GET /api/v1/admin/spotify-apps/{app_id}`
 - **Create App**: `POST /api/v1/admin/spotify-apps/`
+- **Update App**: `PUT /api/v1/admin/spotify-apps/{app_id}`
+- **Delete App**: `DELETE /api/v1/admin/spotify-apps/{app_id}`
 - **List User Associations**: `GET /api/v1/admin/spotify-apps/users`
 - **Upsert Association**: `PUT /api/v1/admin/spotify-apps/users`
+- **Delete Association**: `DELETE /api/v1/admin/spotify-apps/users`
 
-### 17.7 Admin Similarity (`/api/v1/admin/similarity`)
+### 17.9 Admin Similarity (`/api/v1/admin/similarity`)
 
 - **Rebuild Index**: `POST /api/v1/admin/similarity/rebuild-index`
 
-### 17.8 Promo Codes (Admin) (`/api/v1/admin/promo`)
+### 17.10 Promo Codes (Admin) (`/api/v1/admin/promo`)
 
 - **Create Promo**: `POST /api/v1/admin/promo/create`
 
-### 17.9 Ingestion Pipelines (`/api/v1/ingest`)
+### 17.11 Ingestion Pipelines (`/api/v1/ingest`)
 
 - **Monthly Track**: `POST /api/v1/ingest/monthly/track`
 - **Monthly Update Embeddings**: `POST /api/v1/ingest/monthly/update_embeddings`
 - **Open Tracks Track**: `POST /api/v1/ingest/open/track`
 - **Open Tracks Update Embeddings**: `POST /api/v1/ingest/open/update_embeddings`
 
-### 17.10 Dummy / Testing Endpoints (`/dummy`)
+### 17.12 Dummy / Testing Endpoints (`/dummy`)
 
 - **Dummy HLS**: `GET /dummy/dummy-hls/{playlist_id}.m3u8`
   - Returns a static HLS M3U8 file regardless of ID.
