@@ -72,8 +72,9 @@ async def _get_partner_core(
             
             if not allowed:
                 headers = {}
-                if retry_after:
-                    headers["Retry-After"] = str(int(retry_after))
+                if retry_after is not None:
+                    # Round up to ensure at least 1 second wait for clients
+                    headers["Retry-After"] = str(max(1, int(retry_after + 0.99)))
                 
                 detail = "Rate limit exceeded" if error_code == "RATE_LIMIT_EXCEEDED" else "Monthly quota exceeded"
                 raise HTTPException(
