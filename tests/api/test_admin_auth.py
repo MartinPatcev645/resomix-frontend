@@ -59,6 +59,7 @@ async def test_admin_login_success():
             await db.commit()
 
         await RBACRepository.assign_role_to_user(db, user.id, admin_role.id)
+        await db.commit()
 
     # 3. Perform login
     transport = ASGITransport(app=app)

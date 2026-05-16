@@ -112,7 +112,7 @@ class TestPartnerService:
         success = await partner_service.revoke_api_key(mock_db, api_key_id, "Security breach")
         
         assert success is True
-        partner_service.api_key_repo.async_revoke_key.assert_called_once_with(mock_db, api_key_id, "Security breach")
+        partner_service.api_key_repo.async_revoke_key.assert_called_once_with(mock_db, api_key_id, "Security breach", commit=False)
 
     async def test_rotate_api_key(self, partner_service, mock_db):
         """Test key rotation (atomic revoke + issue)."""
