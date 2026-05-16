@@ -1,0 +1,61 @@
+"""
+RBAC Constants and Definitions
+==============================
+
+Defines all permissions and roles used in the system.
+"""
+
+# Define all available permissions in the system
+PERMISSIONS = {
+    # User-Facing
+    "track:read": "View and search tracks",
+    "playlist:read": "View playlists",
+    "playlist:create": "Create a new playlist",
+    "playlist:update": "Edit own playlists",
+    "playlist:delete": "Delete own playlists",
+    "playlist:fork": "Fork a public playlist",
+    "similarity:search": "Run a similarity search by track ID",
+    "similarity:upload": "Upload audio for similarity search",
+    "spotify:transfer": "Transfer a playlist to Spotify",
+    "profile:read": "Read own profile",
+    "profile:update": "Update own profile",
+    
+    # Admin-Only
+    "admin:access": "Can log in to and use the admin interface",
+    "user:read": "List and view user details",
+    "user:create": "Register a new user manually",
+    "user:update": "Edit any user's profile or status",
+    "user:delete": "Deactivate or delete a user",
+    "user:role:assign": "Assign or revoke roles on any user",
+    "partner:read": "View partner records",
+    "partner:create": "Create a new partner tenant",
+    "partner:update": "Update partner details",
+    "partner:delete": "Delete a partner",
+    "partner:api_key:manage": "Issue, revoke, or rotate API keys for partners",
+    "role:read": "View roles and their permissions",
+    "role:manage": "Create, update, or delete roles and their permission assignments",
+    "operation_limit:manage": "Set or adjust per-user operation limits",
+    "waitlist:manage": "Approve, reject, or delete waitlist entries",
+    "feedback:manage": "View and resolve feedback entries",
+    "contact:manage": "View and resolve contact inquiries",
+    "content:takedown": "Issue a manual content takedown",
+    "reports:view": "View generated reports and analytics",
+}
+
+# Define roles and their descriptions
+ROLES = {
+    "admin": "Super administrator with full access to all resources and management functions.",
+    "partner_admin": "Administrative user for a specific partner tenant. Can manage partner's own keys and users.",
+    "user": "Standard consumer user. Restricted to their own data and public resources.",
+}
+
+# Role to Permission mapping
+ROLE_PERMISSIONS = {
+    "admin": list(PERMISSIONS.keys()),
+    "partner_admin": ["partner:read", "partner:api_key:manage", "user:read"],
+    "user": [
+        "track:read", "playlist:read", "playlist:create", "playlist:update",
+        "playlist:delete", "playlist:fork", "similarity:search", "similarity:upload",
+        "spotify:transfer", "profile:read", "profile:update"
+    ],
+}

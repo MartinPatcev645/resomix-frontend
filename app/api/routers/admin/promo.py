@@ -3,6 +3,7 @@ Admin Promo Router
 ==================
 
 Administrative endpoints for managing promo codes.
+Hardened with RBAC and audit logging.
 """
 
 from fastapi import APIRouter, Depends, Request
@@ -12,7 +13,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 from app.api.dependencies.database import get_database_session
-from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.auth import require_admin, require_permission
 from app.controllers.admin_controller import AdminController
 from app.models.user import User
 
@@ -28,13 +29,14 @@ class PromoCreateRequest(BaseModel):
 
 @router.post("/create")
 async def create_promo(
+    request: Request,
     payload: PromoCreateRequest,
     db: AsyncSession = Depends(get_database_session),
-    current_user: User = Depends(get_current_user)
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("promo:manage"))
 ):
     """
     Create a new promo code synced with Stripe.
-    Only accessible by administrators (RBAC check should be here).
+    Only accessible by administrators with manage permission.
     """
-    # TODO: Add explicit admin RBAC check
-    return await admin_controller.create_promo_code(db, payload.dict())
+    return await admin_controller.create_promo_code(db, request, payload.dict(), current_admin=current_admin)

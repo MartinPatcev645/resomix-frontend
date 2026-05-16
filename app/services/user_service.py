@@ -343,3 +343,58 @@ class UserService:
             )
 
         return await self.user_repo.async_disable_2fa(db, user_id)
+
+    # ------------------------------------------------------------------
+    # RBAC Management Methods
+    # ------------------------------------------------------------------
+
+    async def list_users_admin(
+        self,
+        db: AsyncSession,
+        page: int = 1,
+        page_size: int = 50,
+        search: Optional[str] = None,
+        role_id: Optional[int] = None,
+        is_active: Optional[bool] = None,
+    ) -> (List[User], int):
+        """List users with filters and RBAC details."""
+        return await self.user_repo.async_list_users_admin(
+            db, page, page_size, search, role_id, is_active
+        )
+
+    async def assign_role(self, db: AsyncSession, user_id: int, role_id: int) -> Dict[str, Any]:
+        """Assign a role to a user."""
+        try:
+            success = await self.user_repo.async_assign_role(db, user_id, role_id)
+            if success:
+                return {"success": True, "data": {"message": "Role assigned successfully"}}
+            return {"success": False, "error": "Failed to assign role or role already assigned"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def remove_role(self, db: AsyncSession, user_id: int, role_id: int) -> Dict[str, Any]:
+        """Remove a role from a user."""
+        try:
+            success = await self.user_repo.async_remove_role(db, user_id, role_id)
+            if success:
+                return {"success": True, "data": {"message": "Role removed successfully"}}
+            return {"success": False, "error": "Failed to remove role or role not assigned"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def update_user_status(self, db: AsyncSession, user_id: int, is_active: bool) -> Dict[str, Any]:
+        """Update user active status."""
+        try:
+            user = await self.user_repo.async_get_by_id(db, user_id)
+            if not user:
+                return {"success": False, "error": "User not found"}
+            
+            user.is_active = is_active
+            await db.commit()
+            return {"success": True, "data": {"is_active": is_active}}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def get_user_by_id(self, db: AsyncSession, user_id: int) -> Optional[User]:
+        """Get user by internal ID."""
+        return await self.user_repo.async_get_by_id(db, user_id)

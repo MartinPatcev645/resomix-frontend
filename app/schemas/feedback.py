@@ -268,11 +268,12 @@ class AdminFeedbackStats(BaseModel):
     total: int = Field(..., description="Total feedback count")
     open: int = Field(..., description="Open feedback count")
     resolved: int = Field(..., description="Resolved feedback count")
-    avg_satisfaction: float = Field(..., description="Average satisfaction rating")
-    avg_recommendation: float = Field(..., description="Average recommendation rating")
+    avg_satisfaction: float = Field(..., description="Average satisfaction rating", alias="average_satisfaction")
+    avg_recommendation: float = Field(..., description="Average recommendation rating", alias="average_recommendation")
     by_category: Dict[str, int] = Field(..., description="Feedback count by category")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "total": 1000,

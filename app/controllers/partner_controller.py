@@ -10,6 +10,7 @@ Date: May 09, 2026
 """
 
 import logging
+from typing import Optional
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -18,6 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.services.partner_service import PartnerService
+from app.services.admin_operation_log_service import AdminOperationLogService
+from app.models.user import User
 from app.schemas.partner import (
     PartnerCreateRequest,
     PartnerUpdateRequest,
@@ -38,13 +41,25 @@ class PartnerController:
 
     def __init__(self):
         self.partner_service = PartnerService()
+        self.admin_log_service = AdminOperationLogService()
 
     async def create_partner(
-        self, db: AsyncSession, request: Request, payload: PartnerCreateRequest
+        self, db: AsyncSession, request: Request, payload: PartnerCreateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Create a new partner."""
         try:
             partner = await self.partner_service.create_partner(db, payload)
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.create",
+                    target_type="partner",
+                    target_id=str(partner.id),
+                    before_state=None,
+                    after_state=payload.model_dump(),
+                    ip_address=request.client.host if request and request.client else None
+                )
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(
@@ -69,7 +84,7 @@ class PartnerController:
             )
 
     async def update_partner(
-        self, db: AsyncSession, partner_id: int, payload: PartnerUpdateRequest
+        self, db: AsyncSession, request: Request, partner_id: int, payload: PartnerUpdateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Update an existing partner."""
         try:
@@ -78,6 +93,17 @@ class PartnerController:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=jsonable_encoder(format_response(success=False, error="Partner not found")),
+                )
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.update",
+                    target_type="partner",
+                    target_id=str(partner_id),
+                    before_state=None,
+                    after_state=payload.model_dump(exclude_unset=True),
+                    ip_address=request.client.host if request and request.client else None
                 )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
@@ -93,11 +119,22 @@ class PartnerController:
                 content=jsonable_encoder(format_response(success=False, error="Failed to update partner")),
             )
 
-    async def delete_partner(self, db: AsyncSession, partner_id: int) -> JSONResponse:
+    async def delete_partner(self, db: AsyncSession, request: Request, partner_id: int, current_admin: Optional[User] = None) -> JSONResponse:
         """Delete a partner."""
         try:
             success = await self.partner_service.delete_partner(db, partner_id)
             if success:
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="partner.delete",
+                        target_type="partner",
+                        target_id=str(partner_id),
+                        before_state=None,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=jsonable_encoder(format_response(
@@ -122,6 +159,7 @@ class PartnerController:
         page_size: int = 50,
         tier: str = None,
         is_active: bool = None,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """List partners."""
         try:
@@ -158,11 +196,22 @@ class PartnerController:
             )
 
     async def issue_api_key(
-        self, db: AsyncSession, payload: ApiKeyIssueRequest
+        self, db: AsyncSession, request: Request, payload: ApiKeyIssueRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Issue a new API key."""
         try:
             api_key, plaintext = await self.partner_service.issue_api_key(db, payload)
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.issue_api_key",
+                    target_type="api_key",
+                    target_id=api_key.key_prefix,
+                    before_state=None,
+                    after_state={"partner_id": payload.partner_id, "label": payload.label},
+                    ip_address=request.client.host if request and request.client else None
+                )
 
             # Use specific response schema that includes plaintext
             response_data = ApiKeyIssueResponse(
@@ -209,7 +258,7 @@ class PartnerController:
             )
 
     async def revoke_api_key(
-        self, db: AsyncSession, payload: ApiKeyRevokeRequest
+        self, db: AsyncSession, request: Request, payload: ApiKeyRevokeRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Revoke an API key."""
         # This one doesn't return data, so it's fine
@@ -218,6 +267,17 @@ class PartnerController:
                 db, payload.api_key_id, payload.reason
             )
             if success:
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="partner.revoke_api_key",
+                        target_type="api_key",
+                        target_id=str(payload.api_key_id),
+                        before_state=None,
+                        after_state={"reason": payload.reason},
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=jsonable_encoder(format_response(
@@ -238,11 +298,22 @@ class PartnerController:
             )
 
     async def rotate_api_key(
-        self, db: AsyncSession, payload: ApiKeyRotateRequest
+        self, db: AsyncSession, request: Request, payload: ApiKeyRotateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Rotate an API key."""
         try:
             api_key, plaintext = await self.partner_service.rotate_api_key(db, payload)
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.rotate_api_key",
+                    target_type="api_key",
+                    target_id=api_key.key_prefix,
+                    before_state=None,
+                    after_state={"api_key_id": payload.api_key_id},
+                    ip_address=request.client.host if request and request.client else None
+                )
 
             response_data = ApiKeyIssueResponse(
                 key_prefix=api_key.key_prefix,

@@ -3,26 +3,21 @@ Admin Playlist API Router
 ==========================
 
 This module defines the FastAPI router for admin playlist management endpoints.
-It handles HTTP requests for playlist list, filtering, deletion, and export
-with authentication for administrative operations.
+It handles playlist CRUD, visibility, and export with RBAC.
 
-Provides comprehensive admin panel endpoints for managing playlists
-in the Resomix application.
-
-Version: 1.0.0
-Init Date: October 2, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
+Version: 1.1.0
+Date: May 16, 2026
 """
 
-from fastapi import APIRouter, Security, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import require_admin, require_permission
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.playlist import (
     AdminPlaylistListResponse,
     AdminBatchDeleteRequest,
@@ -45,6 +40,7 @@ router = APIRouter(
     responses={
         400: {"model": PlaylistErrorResponse},
         401: {"model": PlaylistErrorResponse},
+        403: {"model": PlaylistErrorResponse},
         404: {"model": PlaylistErrorResponse},
         500: {"model": PlaylistErrorResponse},
     },
@@ -66,66 +62,35 @@ async def get_playlist_list(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(30, ge=1, le=100, description="Items per page"),
     search: Optional[str] = Query(None, description="Search term"),
-    search_column: Optional[str] = Query(
-        None, description="Column to search in: id, uuid, name"
-    ),
-    is_public: Optional[str] = Query(
-        None, description="Filter by visibility: 0 (private), 1 (public)"
-    ),
-    type: Optional[str] = Query(
-        None, description="Filter by type: custom, similarity, waiting_segments"
-    ),
-    date_from: Optional[str] = Query(
-        None, description="Start date filter (YYYY-MM-DD)"
-    ),
+    search_column: Optional[str] = Query(None, description="Column to search in: id, uuid, name"),
+    is_public: Optional[str] = Query(None, description="Filter by visibility: 0 (private), 1 (public)"),
+    type: Optional[str] = Query(None, description="Filter by type: custom, similarity, waiting_segments"),
+    date_from: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
     sort_by: str = Query("id", description="Column to sort by: id, created_at"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
     """Get paginated playlist list with filters."""
     # Validate search_column
     ALLOWED_SEARCH_COLUMNS = ["id", "uuid", "name"]
     if search_column and search_column not in ALLOWED_SEARCH_COLUMNS:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}",
-            },
-        )
-
-    # Validate sort_by
-    ALLOWED_SORT_COLUMNS = ["id", "created_at"]
-    if sort_by and sort_by not in ALLOWED_SORT_COLUMNS:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": f"Invalid sort_by. Allowed values: {', '.join(ALLOWED_SORT_COLUMNS)}",
-            },
-        )
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
+        })
 
     # Validate is_public
     if is_public and is_public not in ["0", "1"]:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "Invalid is_public value. Must be '0' or '1'.",
-            },
-        )
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid is_public value. Must be '0' or '1'."
+        })
 
     # Validate type
     if type and type not in ["custom", "similarity", "waiting_segments"]:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "Invalid type. Must be 'custom', 'similarity', or 'waiting_segments'.",
-            },
-        )
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid type. Must be 'custom', 'similarity', or 'waiting_segments'."
+        })
 
     filters = {
         "page": page,
@@ -139,7 +104,7 @@ async def get_playlist_list(
         "sort_by": sort_by,
         "sort_order": sort_order,
     }
-    return await playlist_controller.get_playlist_list_admin(db, request, filters)
+    return await playlist_controller.get_playlist_list_admin(db, request, filters, current_admin=current_admin)
 
 
 @router.get(
@@ -147,54 +112,32 @@ async def get_playlist_list(
     response_model=AdminPlaylistDetailResponse,
     status_code=200,
     summary="Get Playlist Details by UUID",
-    description="Get detailed playlist information including all tracks and metadata by UUID.",
-    responses={
-        400: {"model": PlaylistErrorResponse, "description": "Invalid UUID format"},
-        404: {"model": PlaylistErrorResponse, "description": "Playlist not found"},
-    },
 )
 async def get_playlist_detail(
     request: Request,
-    uuid: str = Path(
-        ...,
-        description="Playlist UUID",
-        regex="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-    ),
+    uuid: str = Path(..., description="Playlist UUID", regex="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
-    """
-    Get detailed playlist information by UUID.
-
-    This endpoint retrieves complete playlist details including:
-    - Playlist basic information (name, type, visibility, etc.)
-    - Track count
-    - Seed track details (if similarity playlist)
-    - All tracks with complete metadata (artists, genre, label, album, etc.)
-    - Track positions and similarity scores
-
-    Returns detailed playlist data with all associated tracks ordered by position.
-    """
-    return await playlist_controller.get_playlist_detail_by_uuid_admin(
-        db, request, uuid
-    )
+    """Get detailed playlist information by UUID."""
+    return await playlist_controller.get_playlist_detail_by_uuid_admin(db, request, uuid, current_admin=current_admin)
 
 
 @router.delete(
-    "/delete/{playlist_id}",
+    "/{playlist_id}",
     response_model=AdminDeleteResponse,
     status_code=200,
     summary="Delete Single Playlist",
-    description="Delete a single playlist by ID.",
 )
 async def delete_playlist(
     request: Request,
     playlist_id: int = Path(..., description="The ID of the playlist to delete", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("playlist:manage"))
 ) -> JSONResponse:
     """Delete a single playlist entry."""
-    return await playlist_controller.delete_playlist_admin(db, request, playlist_id)
+    return await playlist_controller.delete_playlist_admin(db, request, playlist_id, current_admin=current_admin)
 
 
 @router.post(
@@ -202,18 +145,16 @@ async def delete_playlist(
     response_model=AdminBatchDeleteResponse,
     status_code=200,
     summary="Batch Delete Playlists",
-    description="Delete multiple playlists in a single request.",
 )
 async def batch_delete_playlist(
     request: Request,
     delete_request: AdminBatchDeleteRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("playlist:manage"))
 ) -> JSONResponse:
     """Delete multiple playlist entries."""
-    return await playlist_controller.batch_delete_playlist_admin(
-        db, request, delete_request.ids
-    )
+    return await playlist_controller.batch_delete_playlist_admin(db, request, delete_request.ids, current_admin=current_admin)
 
 
 @router.post(
@@ -221,91 +162,39 @@ async def batch_delete_playlist(
     response_model=AdminPlaylistExportResponse,
     status_code=200,
     summary="Export Playlists to CSV",
-    description="Export playlist data to CSV file with current filters and return download URL.",
 )
 async def export_playlist(
     request: Request,
     export_request: AdminPlaylistExportRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("reports:view"))
 ) -> JSONResponse:
     """Export playlists to CSV."""
-    # Validate format
     if export_request.format != "csv":
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "Invalid format. Only 'csv' is supported.",
-            },
-        )
-
-    # Validate search_column
-    ALLOWED_SEARCH_COLUMNS = ["id", "uuid", "name"]
-    if (
-        export_request.search_column
-        and export_request.search_column not in ALLOWED_SEARCH_COLUMNS
-    ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}",
-            },
-        )
-
-    # Validate is_public
-    if export_request.is_public and export_request.is_public not in ["0", "1"]:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "Invalid is_public value. Must be '0' or '1'.",
-            },
-        )
-
-    # Validate type
-    if export_request.type and export_request.type not in [
-        "custom",
-        "similarity",
-        "waiting_segments",
-    ]:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "Invalid type. Must be 'custom', 'similarity', or 'waiting_segments'.",
-            },
-        )
-
-    filters = export_request.dict()
-    return await playlist_controller.export_playlist_csv_admin(db, request, filters)
+        return JSONResponse(status_code=400, content={"success": False, "error": "Invalid format. Only 'csv' is supported."})
+    
+    filters = export_request.dict(exclude_none=True)
+    return await playlist_controller.export_playlist_csv_admin(db, request, filters, current_admin=current_admin)
 
 
-@router.post(
-    "/visibility/{id}",
+@router.patch(
+    "/{playlist_id}/visibility",
     response_model=AdminPlaylistVisibilityResponse,
     status_code=200,
     summary="Change Single Playlist Visibility",
-    description="Change the visibility (public/private) of a single playlist by ID.",
-    responses={
-        400: {
-            "model": PlaylistErrorResponse,
-            "description": "Invalid is_public value or request format",
-        },
-        404: {"model": PlaylistErrorResponse, "description": "Playlist not found"},
-    },
 )
 async def change_playlist_visibility(
     request: Request,
     visibility_request: AdminPlaylistVisibilityRequest,
-    id: int = Path(..., description="Playlist ID", ge=1),
+    playlist_id: int = Path(..., description="Playlist ID", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("playlist:manage"))
 ) -> JSONResponse:
     """Change playlist visibility by ID."""
     return await playlist_controller.change_playlist_visibility_admin(
-        db, request, id, visibility_request.is_public
+        db, request, playlist_id, visibility_request.is_public, current_admin=current_admin
     )
 
 
@@ -314,18 +203,15 @@ async def change_playlist_visibility(
     response_model=AdminBatchVisibilityResponse,
     status_code=200,
     summary="Batch Change Playlist Visibility",
-    description="Change the visibility (public/private) of multiple playlists in a single operation.",
-    responses={
-        400: {"model": PlaylistErrorResponse, "description": "Invalid request format"}
-    },
 )
 async def batch_change_playlist_visibility(
     request: Request,
     visibility_request: AdminBatchVisibilityRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("playlist:manage"))
 ) -> JSONResponse:
     """Change visibility for multiple playlists."""
     return await playlist_controller.batch_change_playlist_visibility_admin(
-        db, request, visibility_request.ids, visibility_request.is_public
+        db, request, visibility_request.ids, visibility_request.is_public, current_admin=current_admin
     )

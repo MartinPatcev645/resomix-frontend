@@ -15,7 +15,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.database import get_database_session
-from app.api.dependencies.auth import get_current_user_optional, api_key_query, api_key_header
+from app.api.dependencies.auth import get_current_user_optional, api_key_header
 from app.services.partner_service import PartnerService
 from app.services.rate_limit_service import RateLimitService
 from app.models.partner import Partner, PartnerApiKey
@@ -47,7 +47,7 @@ async def _get_partner_core(
     allow_anonymous: bool = False
 ) -> Partner:
     """Internal core logic for partner resolution."""
-    # Extract token from Bearer auth or query param
+    # Extract token from Bearer auth or header
     token = auth.credentials if auth else api_key_token
     
     # 1. Try Partner API Key (rmx_...)
@@ -56,7 +56,6 @@ async def _get_partner_core(
             partner, api_key = await partner_service.validate_api_key(db, token, required_scope=required_scope)
             
             # Set the partner_id in the request context for global failsafe (W1-6)
-            # This MUST happen before check_rate_limits because it may query partner-scoped tables
             set_current_partner_id(partner.id)
             request.state.partner_id = partner.id
             request.state.api_key_id = api_key.id
@@ -73,7 +72,6 @@ async def _get_partner_core(
             if not allowed:
                 headers = {}
                 if retry_after is not None:
-                    # Round up to ensure at least 1 second wait for clients
                     headers["Retry-After"] = str(max(1, int(retry_after + 0.99)))
                 
                 detail = "Rate limit exceeded" if error_code == "RATE_LIMIT_EXCEEDED" else "Monthly quota exceeded"
@@ -92,7 +90,6 @@ async def _get_partner_core(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     # 2. Standard Platform Access (Legacy JWT or Admin Key)
-    # If it matches the system API key or is a valid User JWT, bucket into System Partner context
     partner = None
     
     # Check for Admin/Frontend System Key
@@ -107,17 +104,12 @@ async def _get_partner_core(
         if token:
             user = await get_current_user_optional(token, db)
             if user:
-                # Default Platform Tenant for all B2C / Internal traffic
                 partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
                 request.state.partner_id = SYSTEM_PARTNER_ID
         elif allow_anonymous and not required_scope:
-            # 3. Anonymous Public Access (Default to Partner 1)
-            # This allows the frontend search and public endpoints to function without a key.
             partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
             request.state.partner_id = SYSTEM_PARTNER_ID
 
-    # 3. Deny Anonymous Public Traffic
-    # Unauthenticated requests to scoped endpoints MUST fail with 401.
     if not partner:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -125,8 +117,6 @@ async def _get_partner_core(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 4. Finalize Context
-    # Set the partner_id in the request context for global failsafe
     set_current_partner_id(partner.id)
     request.state.partner_id = partner.id
     
@@ -136,26 +126,24 @@ async def get_current_partner(
     request: Request,
     background_tasks: BackgroundTasks,
     auth: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
-    api_key_token: Optional[str] = Security(api_key_query),
     api_key_header: Optional[str] = Security(api_key_header),
     db: AsyncSession = Depends(get_database_session),
     partner_service: PartnerService = Depends(PartnerService)
 ) -> Partner:
     """Default dependency for getting current partner (REQUIRES token)."""
-    token = auth.credentials if auth else (api_key_token or api_key_header)
+    token = auth.credentials if auth else api_key_header
     return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=token, allow_anonymous=False)
 
 async def get_public_partner(
     request: Request,
     background_tasks: BackgroundTasks,
     auth: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
-    api_key_token: Optional[str] = Security(api_key_query),
     api_key_header: Optional[str] = Security(api_key_header),
     db: AsyncSession = Depends(get_database_session),
     partner_service: PartnerService = Depends(PartnerService)
 ) -> Partner:
     """Dependency that allows anonymous fallback to Partner 1 (Public Access)."""
-    token = auth.credentials if auth else (api_key_token or api_key_header)
+    token = auth.credentials if auth else api_key_header
     return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=token, allow_anonymous=True)
 
 def get_current_partner_scoped(required_scope: str):
@@ -164,12 +152,11 @@ def get_current_partner_scoped(required_scope: str):
         request: Request,
         background_tasks: BackgroundTasks,
         auth: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
-        api_key_token: Optional[str] = Security(api_key_query),
         api_key_header: Optional[str] = Security(api_key_header),
         db: AsyncSession = Depends(get_database_session),
         partner_service: PartnerService = Depends(PartnerService)
     ) -> Partner:
-        token = auth.credentials if auth else (api_key_token or api_key_header)
+        token = auth.credentials if auth else api_key_header
         return await _get_partner_core(
             request, auth, db, partner_service, background_tasks, 
             api_key_token=token, required_scope=required_scope

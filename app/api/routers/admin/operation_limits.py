@@ -2,24 +2,24 @@
 Admin Operation Limit API Router
 ================================
 
-FastAPI router exposing admin endpoints for managing operation types and user limits.
+This module defines the FastAPI router for admin operation limit management endpoints.
+It handles operation types and user limit management with RBAC.
 
-Version: 3.0.1
-Init Date: November 08, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
+Version: 1.1.0
+Date: May 16, 2026
 """
 
 from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Path, Query, Request, Security
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import require_admin, require_permission
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.controllers.operation_limit_controller import OperationLimitController
 from app.schemas.operation_limit import (
     AdminOperationTypeListResponse,
@@ -37,6 +37,7 @@ router = APIRouter(
     responses={
         400: {"model": ErrorResponse},
         401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
         500: {"model": ErrorResponse},
     },
@@ -55,9 +56,9 @@ controller = OperationLimitController()
 async def list_operation_types(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
-    return await controller.list_operation_types(db=db, request=request)
+    return await controller.list_operation_types(db=db, request=request, current_admin=current_admin)
 
 
 @router.get(
@@ -74,15 +75,15 @@ async def list_user_operation_limits(
     search: Optional[str] = Query(None, description="Search by email, username, UUID, or user id"),
     operation_code: Optional[str] = Query(None, description="Filter by operation code"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
-    filters = UserOperationLimitListFilters(
-        page=page,
-        page_size=page_size,
-        search=search,
-        operation_code=operation_code,
-    ).model_dump()
-    return await controller.list_user_operation_limits(db=db, request=request, filters=filters)
+    filters = {
+        "page": page,
+        "page_size": page_size,
+        "search": search,
+        "operation_code": operation_code,
+    }
+    return await controller.list_user_operation_limits(db=db, request=request, filters=filters, current_admin=current_admin)
 
 
 @router.get(
@@ -90,14 +91,13 @@ async def list_user_operation_limits(
     response_model=UserOperationLimitDetailResponse,
     status_code=200,
     summary="Get user operation limit",
-    description="Retrieve a specific user's limit for an operation via email, UUID, username, or numeric ID.",
 )
 async def get_user_operation_limit(
     request: Request,
     user_identifier: str = Path(..., description="Email, UUID, username, or numeric ID for the user"),
     operation_code: str = Path(..., description="Operation code (e.g., playlist_create)"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
     return await controller.get_user_operation_limit(
         db=db,
@@ -111,15 +111,15 @@ async def get_user_operation_limit(
     "/",
     response_model=UserOperationLimitDetailResponse,
     status_code=200,
-    summary="Create or update user operation limit",
-    description="Set or update the limit for a user-identified operation.",
+    summary="Create or update user limit",
 )
 async def upsert_user_operation_limit(
     request: Request,
     payload: UserOperationLimitUpsertRequest,
+    force: bool = Query(False, description="Force overwrite even if limit exists"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
-    force: bool = Query(False, description="Force update if limit already exists"),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("operation_limits:manage"))
 ) -> JSONResponse:
     return await controller.upsert_user_operation_limit(
         db=db,
@@ -128,8 +128,9 @@ async def upsert_user_operation_limit(
         operation_code=payload.operation_code,
         limit_value=payload.limit_value,
         window_seconds=payload.window_seconds,
-        created_by=None,
+        created_by=current_admin.id,
         force=force,
+        current_admin=current_admin
     )
 
 
@@ -137,20 +138,20 @@ async def upsert_user_operation_limit(
     "/{user_identifier}/{operation_code}",
     response_model=UserOperationLimitDeleteResponse,
     status_code=200,
-    summary="Delete user operation limit",
-    description="Remove a user's limit for a specific operation.",
+    summary="Delete user limit",
 )
 async def delete_user_operation_limit(
     request: Request,
     user_identifier: str = Path(..., description="Email, UUID, username, or numeric ID for the user"),
-    operation_code: str = Path(..., description="Operation code (e.g., playlist_create)"),
+    operation_code: str = Path(..., description="Operation code"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("operation_limits:manage"))
 ) -> JSONResponse:
     return await controller.delete_user_operation_limit(
         db=db,
         request=request,
         user_identifier=user_identifier,
         operation_code=operation_code,
+        current_admin=current_admin
     )
-

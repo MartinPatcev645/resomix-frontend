@@ -22,33 +22,7 @@ from app.api.dependencies.database import get_database_session
 from app.models.user import Role, Permission, RolePermission, User, UserRole
 from app.core.config import settings
 
-# Define roles and their descriptions
-ROLES = {
-    "admin": "Super administrator with full access to all resources and management functions.",
-    "partner_admin": "Administrative user for a specific partner tenant. Can manage partner's own keys and users.",
-    "user": "Standard consumer user. Restricted to their own data and public resources.",
-}
-
-# Define permissions
-PERMISSIONS = {
-    "admin:read": "View administrative dashboards and configurations.",
-    "admin:write": "Modify administrative configurations.",
-    "partners:read": "View partner details and listings.",
-    "partners:write": "Create or modify partner information.",
-    "api_keys:manage": "Issue, rotate, or revoke partner API keys.",
-    "users:read": "View user profiles and activity.",
-    "users:write": "Modify user status or details.",
-    "support:read": "View contact inquiries and feedback.",
-    "support:write": "Respond to or resolve contact inquiries.",
-    "audit:read": "View administrative operation logs.",
-}
-
-# Role to Permission mapping
-ROLE_PERMISSIONS = {
-    "admin": list(PERMISSIONS.keys()),
-    "partner_admin": ["partners:read", "api_keys:manage", "users:read"],
-    "user": [],
-}
+from app.core.rbac import ROLES, PERMISSIONS, ROLE_PERMISSIONS
 
 
 async def seed_rbac(admin_email: str = None):

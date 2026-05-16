@@ -16,7 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.logging_service import LoggingService
 from app.services.spotify_app_service import SpotifyAppService
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.utils.response_utils import format_response
+from app.models.user import User
 
 
 class SpotifyAppController:
@@ -25,6 +27,7 @@ class SpotifyAppController:
     def __init__(self) -> None:
         self.spotify_app_service = SpotifyAppService()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
 
     # ------------------------------------------------------------------
     # Spotify App CRUD Operations
@@ -39,6 +42,7 @@ class SpotifyAppController:
         page_size: int = 100,
         is_active: Optional[bool] = None,
         search: Optional[str] = None,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """List Spotify apps with optional filters."""
         start_time = time.time()
@@ -211,7 +215,7 @@ class SpotifyAppController:
         description: Optional[str],
         client_id: str,
         client_secret: str,
-        is_active: bool = True,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Create a new Spotify app."""
         start_time = time.time()
@@ -220,8 +224,6 @@ class SpotifyAppController:
             "name": name,
             "description": description,
             "client_id": client_id,
-            "client_secret": "[REDACTED]",  # Never log actual secret
-            "is_active": is_active,
         }
         try:
             result = await self.spotify_app_service.create_spotify_app(
@@ -230,12 +232,24 @@ class SpotifyAppController:
                 description=description,
                 client_id=client_id,
                 client_secret=client_secret,
-                is_active=is_active,
             )
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
-                response = format_response(success=True, data=result.get("data"))
+                app_data = result.get("data")
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="spotify_app.create",
+                        target_type="spotify_app",
+                        target_id=str(app_data["id"]) if app_data else None,
+                        before_state=None,
+                        after_state=metadata,
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
+                response = format_response(success=True, data=app_data)
                 self.logging_service.log(
                     async_db=db,
                     level="INFO",
@@ -308,6 +322,7 @@ class SpotifyAppController:
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         is_active: Optional[bool] = None,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Update a Spotify app."""
         start_time = time.time()
@@ -333,6 +348,17 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="spotify_app.update",
+                        target_type="spotify_app",
+                        target_id=str(app_id),
+                        before_state=None, # In a real scenario we might fetch before state
+                        after_state=metadata,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 response = format_response(success=True, data=result.get("data"))
                 self.logging_service.log(
                     async_db=db,
@@ -402,6 +428,7 @@ class SpotifyAppController:
         *,
         app_id: int,
         cascade: bool = False,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Delete a Spotify app."""
         start_time = time.time()
@@ -414,6 +441,17 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="spotify_app.delete",
+                        target_type="spotify_app",
+                        target_id=str(app_id),
+                        before_state=None,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 response = {
                     "success": True,
                     "message": result.get("message", "Spotify app deleted successfully"),
@@ -492,6 +530,7 @@ class SpotifyAppController:
         page_size: int = 30,
         search: Optional[str] = None,
         spotify_app_id: Optional[int] = None,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """List user-Spotify app associations with filters."""
         start_time = time.time()
@@ -659,6 +698,7 @@ class SpotifyAppController:
         user_identifier: str,
         spotify_app_id: int,
         created_by: Optional[int] = None,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Create or update user-Spotify app association."""
         start_time = time.time()
@@ -678,6 +718,17 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="spotify_app.upsert_user",
+                        target_type="user_spotify_app",
+                        target_id=user_identifier,
+                        before_state=None,
+                        after_state=metadata,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 response = format_response(success=True, data=result.get("data"))
                 self.logging_service.log(
                     async_db=db,
@@ -746,6 +797,7 @@ class SpotifyAppController:
         request: Request,
         *,
         user_identifier: str,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Delete user-Spotify app association."""
         start_time = time.time()
@@ -758,6 +810,17 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="spotify_app.delete_user",
+                        target_type="user_spotify_app",
+                        target_id=user_identifier,
+                        before_state=None,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 response = {
                     "success": True,
                     "message": result.get("message", "User association deleted successfully"),

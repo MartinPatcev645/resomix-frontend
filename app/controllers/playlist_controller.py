@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from fastapi import status, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import time
 from app.services.playlist_service import PlaylistService
 from app.repositories.operation_limit_repository import OperationLimitRepository
@@ -27,6 +27,7 @@ from app.services.logging_service import LoggingService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.response_utils import format_response
 from app.models.user import User
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.core.config import settings
 
 
@@ -39,6 +40,7 @@ class PlaylistController:
         self.logging_service = LoggingService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.operation_limit_repository = OperationLimitRepository()
+        self.admin_log_service = AdminOperationLogService()
 
     async def rename_playlist(
         self,
@@ -979,7 +981,11 @@ class PlaylistController:
     # ============================================================================
 
     async def get_playlist_list_admin(
-        self, db: AsyncSession, request: Request, filters: dict
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """
         Get paginated playlist list for admin.
@@ -1085,57 +1091,51 @@ class PlaylistController:
             )
 
     async def delete_playlist_admin(
-        self, db: AsyncSession, request: Request, playlist_id: int
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        playlist_id: int,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
-        """
-        Delete a single playlist.
-
-        Args:
-            db: Database session
-            request: FastAPI Request object
-            playlist_id: Playlist ID to delete
-
-        Returns:
-            JSON response with deletion result
-        """
+        """Delete a single playlist entry."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-
         try:
-            result = await self.playlist_service.delete_playlist_admin(db, playlist_id)
-            duration_ms = (time.time() - start_time) * 1000
-
-            if result.get("success"):
-                response_content = {
-                    "success": True,
-                    "data": {
-                        "message": result.get(
-                            "message", "Playlist deleted successfully"
-                        )
-                    },
+            # Audit: Get before state
+            entry_res = await self.playlist_service.get_playlist_by_id_admin(db, playlist_id)
+            before_state = None
+            if entry_res.get("success") and entry_res.get("data"):
+                entry = entry_res.get("data")
+                before_state = {
+                    "id": entry.id,
+                    "uuid": entry.uuid,
+                    "name": entry.name
                 }
 
-                self.logging_service.log(
-                    async_db=db,
-                    level="INFO",
-                    category="ADMIN",
-                    action="delete_playlist_admin",
-                    message=f"Admin deleted playlist ID {playlist_id}",
-                    correlation_id=correlation_id,
-                    request=request,
-                    status_code=200,
-                    duration_ms=duration_ms,
-                    context="admin playlist delete",
-                    playlist_id=playlist_id,
-                    metadata={"playlist_id": playlist_id},
-                )
+            result = await self.playlist_service.delete_playlist_admin(db, playlist_id)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="playlist.delete",
+                        target_type="playlist",
+                        target_id=str(playlist_id),
+                        before_state=before_state,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
 
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK, content=response_content
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(
+                        success=True, data={"message": result.get("message")}
+                    ),
                 )
             else:
                 # Playlist not found
-                duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=False, error=result.get("error", "Playlist not found")
                 )
@@ -1191,27 +1191,32 @@ class PlaylistController:
             )
 
     async def batch_delete_playlist_admin(
-        self, db: AsyncSession, request: Request, playlist_ids: list
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        playlist_ids: List[int],
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
-        """
-        Delete multiple playlists.
-
-        Args:
-            db: Database session
-            request: FastAPI Request object
-            playlist_ids: List of playlist IDs to delete
-
-        Returns:
-            JSON response with batch deletion result
-        """
+        """Delete multiple playlist entries."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-
         try:
-            result = await self.playlist_service.batch_delete_playlists_admin(
+            result = await self.playlist_service.batch_delete_playlist_admin(
                 db, playlist_ids
             )
             duration_ms = (time.time() - start_time) * 1000
+            
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="playlist.batch_delete",
+                    target_type="playlist",
+                    target_id="batch",
+                    before_state={"ids": playlist_ids},
+                    after_state={"deleted_count": result.get("deleted_count")},
+                    ip_address=request.client.host if request and request.client else None
+                )
 
             if result.get("success"):
                 response_content = {
@@ -1241,7 +1246,6 @@ class PlaylistController:
                     status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
-                duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=False, error=result.get("error")
                 )
@@ -1301,30 +1305,42 @@ class PlaylistController:
             )
 
     async def change_playlist_visibility_admin(
-        self, db: AsyncSession, request: Request, playlist_id: int, is_public: bool
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        playlist_id: int, 
+        is_public: int,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
-        """
-        Change playlist visibility (admin).
-
-        Args:
-            db: Database session
-            request: FastAPI Request object
-            playlist_id: Playlist ID
-            is_public: Whether to make the playlist public
-
-        Returns:
-            JSON response with visibility change result
-        """
+        """Change playlist visibility for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-
         try:
+            # Audit: Get before state
+            entry_res = await self.playlist_service.get_playlist_by_id_admin(db, playlist_id)
+            before_state = None
+            if entry_res.get("success") and entry_res.get("data"):
+                entry = entry_res.get("data")
+                before_state = {"is_public": entry.is_public}
+
             result = await self.playlist_service.change_playlist_visibility_admin(
                 db, playlist_id, is_public
             )
             duration_ms = (time.time() - start_time) * 1000
-
+            
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="playlist.change_visibility",
+                        target_type="playlist",
+                        target_id=str(playlist_id),
+                        before_state=before_state,
+                        after_state={"is_public": is_public},
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
                 response_content = {
                     "success": True,
                     "message": result.get(
@@ -1352,7 +1368,6 @@ class PlaylistController:
                 )
             else:
                 # Playlist not found
-                duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=False, error=result.get("error", "Playlist not found")
                 )
@@ -1409,24 +1424,14 @@ class PlaylistController:
             )
 
     async def batch_change_playlist_visibility_admin(
-        self,
-        db: AsyncSession,
-        request: Request,
-        playlist_ids: List[int],
-        is_public: bool,
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        playlist_ids: List[int], 
+        is_public: int,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
-        """
-        Change visibility for multiple playlists (admin).
-
-        Args:
-            db: Database session
-            request: FastAPI Request object
-            playlist_ids: List of playlist IDs to update
-            is_public: Whether to make the playlists public
-
-        Returns:
-            JSON response with batch visibility change result
-        """
+        """Change visibility for multiple playlists."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
 
@@ -1434,6 +1439,19 @@ class PlaylistController:
             result = await self.playlist_service.batch_change_playlist_visibility_admin(
                 db, playlist_ids, is_public
             )
+            
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="playlist.batch_visibility",
+                    target_type="playlist",
+                    target_id="batch",
+                    before_state={"ids": playlist_ids},
+                    after_state={"is_public": is_public},
+                    ip_address=request.client.host if request and request.client else None
+                )
+
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
@@ -1465,7 +1483,6 @@ class PlaylistController:
                     status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
-                duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=False, error=result.get("error")
                 )
@@ -1527,24 +1544,31 @@ class PlaylistController:
             )
 
     async def export_playlist_csv_admin(
-        self, db: AsyncSession, request: Request, filters: dict
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
-        """
-        Export playlists to CSV.
-
-        Args:
-            db: Database session
-            request: FastAPI Request object
-            filters: Dictionary containing filter parameters
-
-        Returns:
-            JSON response with download URL
-        """
+        """Export playlist list to CSV and return download URL."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
             result = await self.playlist_service.export_playlists_csv_admin(db, filters)
+            
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="playlist.export",
+                    target_type="playlist",
+                    target_id="csv",
+                    before_state=filters,
+                    after_state={"download_url": result.get("download_url")},
+                    ip_address=request.client.host if request and request.client else None
+                )
+            
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
@@ -1573,7 +1597,6 @@ class PlaylistController:
                     status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
-                duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=False, error=result.get("error")
                 )
@@ -1630,7 +1653,11 @@ class PlaylistController:
             )
 
     async def get_playlist_detail_by_uuid_admin(
-        self, db: AsyncSession, request: Request, playlist_uuid: str
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        uuid: str,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """
         Get detailed playlist information by UUID.

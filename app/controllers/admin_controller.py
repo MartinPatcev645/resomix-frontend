@@ -15,15 +15,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.repositories.cart_repository import CartRepository
 from app.utils.response_utils import format_response
+from app.services.admin_operation_log_service import AdminOperationLogService
+from app.models.user import User
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 class AdminController:
     def __init__(self):
         self.cart_repo = CartRepository()
+        self.admin_log_service = AdminOperationLogService()
         stripe.api_key = settings.stripe_secret_key
 
-    async def create_promo_code(self, db: AsyncSession, payload: Dict[str, Any]) -> JSONResponse:
+    async def create_promo_code(
+        self, db: AsyncSession, request: Request, payload: Dict[str, Any], current_admin: Optional[User] = None
+    ) -> JSONResponse:
         """
         Phase 6: Promo Code Sync
         Creates a discount code natively in Stripe and saves it to the local DB.
@@ -76,6 +82,18 @@ class AdminController:
             
             promo = await self.cart_repo.async_create_promo_code(db, promo_data)
             await db.commit()
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="promo.create",
+                    target_type="promo",
+                    target_id=str(promo.id),
+                    before_state=None,
+                    after_state=payload,
+                    ip_address=request.client.host if request and request.client else None
+                )
 
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,

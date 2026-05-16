@@ -6,23 +6,19 @@ This module defines the FastAPI router for admin contact management endpoints.
 It handles HTTP requests for contact list, filtering, deletion, status updates,
 and export with authentication for administrative operations.
 
-Provides comprehensive admin panel endpoints for managing user contact inquiries
-in the Resomix application.
-
-Version: 1.0.0
-Init Date: October 2, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
+Version: 1.1.0
+Date: May 16, 2026
 """
 
-from fastapi import APIRouter, Security, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.contact_controller import ContactController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import require_admin, require_permission
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.contact import (
     AdminContactListResponse,
     AdminBatchDeleteRequest,
@@ -42,6 +38,7 @@ router = APIRouter(
     responses={
         400: {"model": ContactErrorResponse},
         401: {"model": ContactErrorResponse},
+        403: {"model": ContactErrorResponse},
         404: {"model": ContactErrorResponse},
         500: {"model": ContactErrorResponse}
     }
@@ -70,7 +67,7 @@ async def get_contact_list(
     sort_by: str = Query("id", description="Column to sort by"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    current_admin: User = Depends(require_admin)
 ) -> JSONResponse:
     """Get paginated contact list with filters."""
     # Validate search_column
@@ -80,97 +77,115 @@ async def get_contact_list(
             "success": False, "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
         })
     
+    # Validate status
+    if status and status not in ['open', 'resolved']:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid status. Must be 'open' or 'resolved'."
+        })
+    
     filters = {
         "page": page, "page_size": page_size, "search": search,
         "search_column": search_column, "status": status,
         "date_from": date_from, "date_to": date_to,
         "sort_by": sort_by, "sort_order": sort_order
     }
-    return await contact_controller.get_contact_list_admin(db, request, filters)
+    return await contact_controller.get_contact_list_admin(db, request, filters, current_admin=current_admin)
+
+
+@router.get(
+    "/{contact_id}",
+    response_model=AdminContactDetailResponse,
+    summary="Get Contact Detail",
+    description="Get full detail for a single contact entry."
+)
+async def get_contact_detail(
+    request: Request,
+    contact_id: int = Path(..., ge=1, description="Contact ID"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin)
+) -> JSONResponse:
+    """Get contact detail."""
+    return await contact_controller.get_contact_by_id(db, request, contact_id)
 
 
 @router.delete(
-    "/delete/{contact_id}",
+    "/{contact_id}",
     response_model=AdminDeleteResponse,
-    status_code=200,
-    summary="Delete Single Contact",
-    description="Delete a single contact entry by ID."
+    summary="Delete Contact",
+    description="Permanently delete a contact entry."
 )
 async def delete_contact(
     request: Request,
-    contact_id: int = Path(..., description="The ID of the contact to delete", ge=1),
+    contact_id: int = Path(..., ge=1, description="Contact ID"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("contact:manage"))
 ) -> JSONResponse:
-    """Delete a single contact entry."""
-    return await contact_controller.delete_contact_admin(db, request, contact_id)
+    """Delete contact entry."""
+    return await contact_controller.delete_contact_admin(db, request, contact_id, current_admin=current_admin)
 
 
 @router.post(
     "/batch-delete",
     response_model=AdminBatchDeleteResponse,
-    status_code=200,
-    summary="Batch Delete Contact",
-    description="Delete multiple contact entries in a single request."
+    summary="Batch Delete Contacts",
+    description="Delete multiple contact entries at once."
 )
-async def batch_delete_contact(
+async def batch_delete_contacts(
     request: Request,
-    delete_request: AdminBatchDeleteRequest,
+    request_data: AdminBatchDeleteRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("contact:manage"))
 ) -> JSONResponse:
-    """Delete multiple contact entries."""
-    return await contact_controller.batch_delete_contact_admin(db, request, delete_request.ids)
+    """Batch delete contact entries."""
+    return await contact_controller.batch_delete_contact_admin(
+        db, request, request_data.ids, current_admin=current_admin
+    )
 
 
 @router.post(
     "/mark-status/{contact_id}",
     response_model=AdminContactDetailResponse,
-    status_code=200,
-    summary="Mark Contact Status",
-    description="Update the status of a contact entry (open/resolved)."
+    summary="Update Contact Status",
+    description="Mark contact as open or resolved."
 )
-async def mark_contact_status(
+async def update_contact_status(
     request: Request,
-    status_request: ContactUpdateRequest,
-    contact_id: int = Path(..., description="The ID of the contact to update", ge=1),
+    status_data: ContactUpdateRequest,
+    contact_id: int = Path(..., ge=1, description="Contact ID"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("contact:manage"))
 ) -> JSONResponse:
-    """Mark contact status as open or resolved."""
-    if not status_request.status:
+    """Update contact status."""
+    if status_data.status not in ['open', 'resolved']:
         return JSONResponse(status_code=400, content={
-            "success": False, "error": "Status is required"
+            "success": False, "error": "Invalid status. Must be 'open' or 'resolved'."
         })
-    return await contact_controller.mark_contact_status_admin(db, request, contact_id, status_request.status)
+    return await contact_controller.mark_contact_status_admin(
+        db, request, contact_id, status_data.status, current_admin=current_admin
+    )
 
 
 @router.post(
     "/export",
     response_model=AdminContactExportResponse,
-    status_code=200,
-    summary="Export Contact to CSV",
-    description="Export contact data to CSV file with current filters and return download URL."
+    summary="Export Contact CSV",
+    description="Generate a CSV export of contact data."
 )
 async def export_contact(
     request: Request,
-    export_request: AdminContactExportRequest,
+    export_data: AdminContactExportRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("reports:view"))
 ) -> JSONResponse:
     """Export contact to CSV."""
-    # Validate format
-    if export_request.format != "csv":
+    if export_data.format != "csv":
         return JSONResponse(status_code=400, content={
             "success": False, "error": "Invalid format. Only 'csv' is supported."
         })
     
-    # Validate search_column
-    ALLOWED_SEARCH_COLUMNS = ['id', 'user_id', 'name', 'email', 'message']
-    if export_request.search_column and export_request.search_column not in ALLOWED_SEARCH_COLUMNS:
-        return JSONResponse(status_code=400, content={
-            "success": False, "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
-        })
-    
-    filters = export_request.dict()
-    return await contact_controller.export_contact_csv_admin(db, request, filters)
+    filters = export_data.dict(exclude_none=True)
+    return await contact_controller.export_contact_csv_admin(db, request, filters, current_admin=current_admin)

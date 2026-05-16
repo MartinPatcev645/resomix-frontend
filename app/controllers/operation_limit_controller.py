@@ -8,7 +8,7 @@ Handles admin HTTP orchestration for managing operation types and user limits.
 from __future__ import annotations
 
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
@@ -16,7 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.logging_service import LoggingService
 from app.services.operation_limit_service import OperationLimitService
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.utils.response_utils import format_response
+from app.models.user import User
 
 
 class OperationLimitController:
@@ -25,11 +27,13 @@ class OperationLimitController:
     def __init__(self) -> None:
         self.operation_limit_service = OperationLimitService()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
 
     async def list_operation_types(
         self,
         db: AsyncSession,
         request: Request,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -99,8 +103,9 @@ class OperationLimitController:
     async def list_user_operation_limits(
         self,
         db: AsyncSession,
-        request: Request,
-        filters: Dict[str, object],
+        request: Request, 
+        filters: Dict,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -268,6 +273,7 @@ class OperationLimitController:
         window_seconds: Optional[int],
         created_by: Optional[int],
         force: bool = False,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -291,6 +297,17 @@ class OperationLimitController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="operation_limit.upsert",
+                        target_type="user_operation_limit",
+                        target_id=f"{user_identifier}:{operation_code}",
+                        before_state=None,
+                        after_state=metadata,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 response = format_response(success=True, data=result.get("data"))
                 self.logging_service.log(
                     async_db=db,
@@ -361,6 +378,7 @@ class OperationLimitController:
         *,
         user_identifier: str,
         operation_code: str,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -377,6 +395,17 @@ class OperationLimitController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="operation_limit.delete",
+                        target_type="user_operation_limit",
+                        target_id=f"{user_identifier}:{operation_code}",
+                        before_state=None,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
                 response = {
                     "success": True,
                     "message": result.get("message", "User operation limit deleted successfully"),

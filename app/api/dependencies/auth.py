@@ -15,19 +15,22 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
+import uuid
 from typing import Optional
 from fastapi import HTTPException, Security, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
+from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import decode_token
 from app.models.user import User
-from app.repositories.user_repository import UserRepository, UserSessionRepository
 from app.api.dependencies.database import get_database_session
+from app.repositories.rbac_repository import RBACRepository
+from app.repositories.user_repository import UserRepository
 from app.utils.edge_auth import verify_edge_token
+from app.core.context import set_admin_context
 
 # Redis for session tracking
 import redis.asyncio as aioredis
@@ -38,8 +41,7 @@ from app.db.redis import _redis_pool
 # API Key Authentication (Existing - for backward compatibility)
 # ============================================================================
 
-# Set up API key security - using both query parameter and header for flexibility
-api_key_query = APIKeyQuery(name="api_key", auto_error=False)
+# Set up API key security - using header for flexibility (query param removed for security)
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 
@@ -47,20 +49,19 @@ from app.core.context import set_admin_context
 
 async def get_api_key(
     request: Request,
-    api_key_query: Optional[str] = Security(api_key_query),
     api_key_header: Optional[str] = Security(api_key_header),
 ):
     """
-    Validate API key for admin endpoints.
-    Checks both query parameter and X-API-KEY header.
+    Validate API key for endpoints.
+    Only checks X-API-KEY header (query parameter removed for security).
 
     Allows CORS preflight (OPTIONS) to pass through without credentials.
     """
     if request.method == "OPTIONS":
-        return api_key_query or api_key_header
+        return api_key_header
 
-    # Extract key from either source
-    key = api_key_query or api_key_header
+    # Extract key from header
+    key = api_key_header
 
     if key == settings.api_key:
         # Flag this request as administrative to allow multi-tenant bypass
@@ -105,6 +106,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 async def get_current_user(
+    request: Request,
     token: Optional[str] = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_database_session),
 ) -> User:
@@ -132,6 +134,7 @@ async def get_current_user(
     # Decode token
     try:
         payload = decode_token(token)
+        request.state.token_payload = payload
     except HTTPException:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
@@ -249,6 +252,146 @@ async def get_current_user_optional(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+# ============================================================================
+# RBAC & Permission Enforcement (New - Part 1)
+# ============================================================================
+
+def require_permission(permission_name: str):
+    """
+    Dependency factory to enforce a specific RBAC permission.
+    Loads permissions from DB and caches them in request.state.
+    Supports both JWT and static API key (for legacy/ZTS/testing).
+    """
+    async def _require_permission(
+        request: Request,
+        db: AsyncSession = Depends(get_database_session),
+    ) -> User:
+        # 1. Try Static API Key first (Legacy / ZTS / Tests) - Header only
+        api_key = request.headers.get("X-API-KEY")
+        if api_key and api_key == settings.api_key:
+            # Resolve a system admin user for audit logging
+            from app.models.user import UserRole, Role
+            from sqlalchemy import select
+            
+            stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role).where(Role.name == "admin").limit(1)
+            result = await db.execute(stmt)
+            admin = result.scalar_one_or_none()
+            
+            if not admin:
+                # Fallback for tests or fresh installs
+                admin = User(
+                    id=0, 
+                    email="system@resomix.local", 
+                    username="system_admin",
+                    uuid=str(uuid.uuid4())
+                )
+            
+            set_admin_context(True)
+            # Cache all permissions for static key access (it's a super-key)
+            if not hasattr(request.state, "permissions"):
+                from app.core.rbac import PERMISSIONS
+                request.state.permissions = list(PERMISSIONS.keys())
+            
+            return admin
+
+        # 2. Check Authorization header for Bearer token
+        auth_header = request.headers.get("Authorization")
+        token = None
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+        
+        # 3. Allow Static API Key in Bearer token (for some tests/legacy clients)
+        if token and token == settings.api_key:
+            from app.models.user import UserRole, Role
+            from sqlalchemy import select
+            
+            stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role).where(Role.name == "admin").limit(1)
+            result = await db.execute(stmt)
+            admin = result.scalar_one_or_none()
+            
+            if not admin:
+                admin = User(
+                    id=0, 
+                    email="system@resomix.local", 
+                    username="system_admin",
+                    uuid=str(uuid.uuid4())
+                )
+            
+            set_admin_context(True)
+            if not hasattr(request.state, "permissions"):
+                from app.core.rbac import PERMISSIONS
+                request.state.permissions = list(PERMISSIONS.keys())
+            
+            return admin
+        
+        if not token:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="Authentication required. Please provide a valid API key or JWT token.",
+            )
+
+        current_user = await get_current_user(request, token, db)
+
+        # Check if the user is active
+        if hasattr(current_user, 'is_active') and not current_user.is_active:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="User account is deactivated"
+            )
+
+        # Resolve and cache permissions for the lifecycle of this request
+        if not hasattr(request.state, "permissions"):
+            permissions = await RBACRepository.get_user_permissions(db, current_user.id)
+            request.state.permissions = permissions
+        
+        if permission_name not in request.state.permissions:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. Required: {permission_name}"
+            )
+        
+        return current_user
+    
+    return _require_permission
+
+
+async def require_admin(
+    request: Request,
+    current_user: User = Depends(require_permission("admin:access")),
+) -> User:
+    """
+    Convenience dependency for admin-only routes.
+    Enforces 'admin:access' permission and verifies admin JWT claim.
+    """
+    # Defense in depth: Verify admin claim in JWT if token was used
+    payload = getattr(request.state, "token_payload", {})
+    if payload:
+        if payload.get("role") != "admin":
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="Admin JWT claim missing. Please login via the admin portal."
+            )
+        
+        # Strictly verify admin status in database (Don't trust payload alone)
+        # This fulfills the request to rely on user authentication + role verification
+        from app.repositories.rbac_repository import RBACRepository
+        # We reuse the cached permissions if possible, but a role check is more explicit
+        if not hasattr(request.state, "is_verified_admin"):
+            from app.api.dependencies.database import AsyncSessionLocal
+            async with AsyncSessionLocal() as db:
+                roles = await RBACRepository.get_user_roles(db, current_user.id)
+                if not any(r.name == "admin" for r in roles):
+                    raise HTTPException(
+                        status_code=HTTP_403_FORBIDDEN,
+                        detail="Administrative privileges required (Verified)."
+                    )
+                request.state.is_verified_admin = True
+
+    # Enable multi-tenant bypass for this admin request
+    set_admin_context(True)
+    return current_user
 
 
 async def get_current_active_user(

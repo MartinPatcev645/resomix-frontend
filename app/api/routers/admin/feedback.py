@@ -6,24 +6,19 @@ This module defines the FastAPI router for admin feedback management endpoints.
 It handles HTTP requests for feedback list, filtering, deletion, status updates,
 and statistics with authentication for administrative operations.
 
-Provides comprehensive admin panel endpoints for managing user feedback
-and support requests in the Resomix application.
-
-Version: 1.0.0
-Init Date: October 1, 2025
-Author: Muhammad Usman Naeem
-Email: usman.naeem2212@gmail.com
+Version: 1.1.0
+Date: May 16, 2026
 """
 
-from fastapi import APIRouter, Security, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.feedback_controller import FeedbackController
-from app.api.dependencies.partner import get_current_partner
-from app.models.partner import Partner
+from app.api.dependencies.auth import require_admin, require_permission
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.feedback import (
     AdminFeedbackListResponse,
     AdminBatchDeleteRequest,
@@ -44,6 +39,7 @@ router = APIRouter(
     responses={
         400: {"model": FeedbackErrorResponse},
         401: {"model": FeedbackErrorResponse},
+        403: {"model": FeedbackErrorResponse},
         404: {"model": FeedbackErrorResponse},
         500: {"model": FeedbackErrorResponse}
     }
@@ -58,8 +54,7 @@ feedback_controller = FeedbackController()
     response_model=AdminFeedbackListResponse,
     status_code=200,
     summary="Get Paginated Feedback List",
-    description="Get paginated feedback list with advanced filtering, searching, and sorting capabilities.",
-    response_description="Paginated feedback list with metadata"
+    description="Get paginated feedback list with advanced filtering, searching, and sorting capabilities."
 )
 async def get_feedback_list(
     request: Request,
@@ -73,263 +68,131 @@ async def get_feedback_list(
     sort_by: str = Query("submitted_at", description="Column to sort by"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
+    current_admin: User = Depends(require_admin)
 ) -> JSONResponse:
-    """
-    Get paginated feedback list with filters.
-    
-    This endpoint retrieves feedback entries with comprehensive filtering options:
-    - **page**: Page number (default: 1)
-    - **page_size**: Items per page (default: 30, max: 100)
-    - **search**: Search term to filter results
-    - **search_column**: Specific column to search in (message or id only)
-    - **status**: Filter by status (open, resolved, all)
-    - **date_from**: Start date for filtering (YYYY-MM-DD)
-    - **date_to**: End date for filtering (YYYY-MM-DD)
-    - **sort_by**: Column to sort by (id, submitted_at, satisfaction, recommendation)
-    - **sort_order**: Sort order (asc, desc)
-    
-    Returns paginated feedback list with pagination metadata.
-    """
+    """Get paginated feedback list with filters."""
     # Validate search_column
     ALLOWED_SEARCH_COLUMNS = ['message', 'id']
     if search_column and search_column not in ALLOWED_SEARCH_COLUMNS:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
-            }
-        )
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
+        })
+    
+    # Validate status
+    if status and status not in ['open', 'resolved', 'all']:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid status. Must be 'open', 'resolved', or 'all'."
+        })
     
     filters = {
-        "page": page,
-        "page_size": page_size,
-        "search": search,
-        "search_column": search_column,
-        "status": status,
-        "date_from": date_from,
-        "date_to": date_to,
-        "sort_by": sort_by,
-        "sort_order": sort_order,
-        "partner_id": partner.id
+        "page": page, "page_size": page_size, "search": search,
+        "search_column": search_column, "status": status,
+        "date_from": date_from, "date_to": date_to,
+        "sort_by": sort_by, "sort_order": sort_order
     }
-    
-    return await feedback_controller.get_feedback_list_admin(db, request, filters)
-
-
-@router.delete(
-    "/delete/{feedback_id}",
-    response_model=AdminDeleteResponse,
-    status_code=200,
-    summary="Delete Single Feedback",
-    description="Delete a single feedback entry by ID.",
-    responses={
-        404: {
-            "model": FeedbackErrorResponse,
-            "description": "Feedback not found"
-        }
-    }
-)
-async def delete_feedback(
-    request: Request,
-    feedback_id: int = Path(..., description="The ID of the feedback to delete", ge=1),
-    db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
-) -> JSONResponse:
-    """
-    Delete a single feedback entry.
-    
-    This endpoint permanently deletes a feedback entry by its ID.
-    Useful for removing spam, test entries, or inappropriate content.
-    """
-    return await feedback_controller.delete_feedback_admin(db, request, feedback_id, partner_id=partner.id)
-
-
-@router.post(
-    "/batch-delete",
-    response_model=AdminBatchDeleteResponse,
-    status_code=200,
-    summary="Batch Delete Feedback",
-    description="Delete multiple feedback entries in a single request.",
-    response_description="Batch delete result with count"
-)
-async def batch_delete_feedback(
-    request: Request,
-    delete_request: AdminBatchDeleteRequest,
-    db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
-) -> JSONResponse:
-    """
-    Delete multiple feedback entries.
-    
-    This endpoint accepts a list of feedback IDs and deletes them all in a single operation.
-    Useful for bulk cleanup operations.
-    
-    - **ids**: List of feedback IDs to delete (required)
-    
-    Returns the count of successfully deleted entries.
-    """
-    return await feedback_controller.batch_delete_feedback_admin(db, request, delete_request.ids, partner_id=partner.id)
-
-
-@router.post(
-    "/mark-status/{feedback_id}",
-    response_model=AdminFeedbackDetailResponse,
-    status_code=200,
-    summary="Mark Feedback Status",
-    description="Update the status of a feedback entry (open/resolved).",
-    responses={
-        404: {
-            "model": FeedbackErrorResponse,
-            "description": "Feedback not found"
-        }
-    }
-)
-async def mark_feedback_status(
-    request: Request,
-    status_request: AdminFeedbackUpdateRequest,
-    feedback_id: int = Path(..., description="The ID of the feedback to update", ge=1),
-    db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
-) -> JSONResponse:
-    """
-    Mark feedback status as open or resolved.
-    
-    This endpoint updates the status of a feedback entry and returns the updated feedback data.
-    
-    - **status**: New status value (required) - "open" or "resolved"
-    
-    Returns the updated feedback entry with all fields.
-    """
-    if not status_request.status:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "Status is required"
-            }
-        )
-    
-    return await feedback_controller.mark_feedback_status_admin(
-        db, request, feedback_id, status_request.status, partner_id=partner.id
-    )
-
-
-@router.patch(
-    "/update/{feedback_id}",
-    response_model=AdminFeedbackDetailResponse,
-    status_code=200,
-    summary="Update Feedback",
-    description="Update feedback fields (status, category, etc.).",
-    responses={
-        404: {
-            "model": FeedbackErrorResponse,
-            "description": "Feedback not found"
-        }
-    }
-)
-async def update_feedback(
-    request: Request,
-    update_request: AdminFeedbackUpdateRequest,
-    feedback_id: int = Path(..., description="The ID of the feedback to update", ge=1),
-    db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
-) -> JSONResponse:
-    """
-    Update feedback entry.
-    
-    This endpoint allows updating multiple fields of a feedback entry:
-    - **status**: Feedback status (optional)
-    - **category**: Feedback category (optional)
-    
-    Returns the updated feedback entry with all fields.
-    """
-    update_data = update_request.dict(exclude_none=True)
-    
-    if not update_data:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": "At least one field must be provided for update"
-            }
-        )
-    
-    return await feedback_controller.update_feedback_admin(db, request, feedback_id, update_data, partner_id=partner.id)
+    return await feedback_controller.get_feedback_list_admin(db, request, filters, current_admin=current_admin)
 
 
 @router.get(
     "/stats",
     response_model=AdminFeedbackStatsResponse,
-    status_code=200,
     summary="Get Feedback Statistics",
-    description="Get comprehensive feedback statistics for admin dashboard.",
-    response_description="Feedback statistics including counts and averages"
+    description="Get overview statistics for user feedback (total, open, resolved, category breakdown)."
 )
-async def get_feedback_statistics(
+async def get_feedback_stats(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
+    current_admin: User = Depends(require_admin)
 ) -> JSONResponse:
-    """
-    Get feedback statistics.
-    
-    This endpoint retrieves comprehensive statistics about feedback:
-    - **total**: Total number of feedback entries
-    - **open**: Number of open feedback entries
-    - **resolved**: Number of resolved feedback entries
-    - **avg_satisfaction**: Average satisfaction rating
-    - **avg_recommendation**: Average recommendation rating
-    - **by_category**: Feedback count grouped by category
-    
-    Useful for admin dashboard and reporting.
-    """
-    return await feedback_controller.get_feedback_statistics_admin(db, request, partner_id=partner.id)
+    """Get feedback statistics."""
+    return await feedback_controller.get_feedback_statistics_admin(db, request, current_admin=current_admin)
+
+
+@router.get(
+    "/{feedback_id}",
+    response_model=AdminFeedbackDetailResponse,
+    summary="Get Feedback Detail",
+    description="Get full detail for a single feedback entry."
+)
+async def get_feedback_detail(
+    request: Request,
+    feedback_id: int = Path(..., ge=1, description="Feedback ID"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin)
+) -> JSONResponse:
+    """Get feedback detail."""
+    return await feedback_controller.get_feedback_by_id(db, request, feedback_id)
+
+
+@router.patch(
+    "/{feedback_id}/status",
+    response_model=AdminFeedbackDetailResponse,
+    summary="Update Feedback Status",
+    description="Mark feedback as open or resolved."
+)
+async def update_feedback_status(
+    request: Request,
+    status_data: AdminFeedbackUpdateRequest,
+    feedback_id: int = Path(..., ge=1, description="Feedback ID"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("feedback:manage"))
+) -> JSONResponse:
+    """Update feedback status."""
+    return await feedback_controller.mark_feedback_status_admin(
+        db, request, feedback_id, status_data.status, current_admin=current_admin
+    )
+
+
+@router.delete(
+    "/{feedback_id}",
+    response_model=AdminDeleteResponse,
+    summary="Delete Feedback",
+    description="Permanently delete a feedback entry."
+)
+async def delete_feedback(
+    request: Request,
+    feedback_id: int = Path(..., ge=1, description="Feedback ID"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("feedback:manage"))
+) -> JSONResponse:
+    """Delete feedback entry."""
+    return await feedback_controller.delete_feedback_admin(db, request, feedback_id, current_admin=current_admin)
+
+
+@router.post(
+    "/batch-delete",
+    response_model=AdminBatchDeleteResponse,
+    summary="Batch Delete Feedback",
+    description="Delete multiple feedback entries at once."
+)
+async def batch_delete_feedback(
+    request: Request,
+    request_data: AdminBatchDeleteRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("feedback:manage"))
+) -> JSONResponse:
+    """Batch delete feedback entries."""
+    return await feedback_controller.batch_delete_feedback_admin(
+        db, request, request_data.ids, current_admin=current_admin
+    )
 
 
 @router.post(
     "/export",
     response_model=AdminFeedbackExportResponse,
-    status_code=200,
-    summary="Export Feedback to CSV",
-    description="Export feedback data to CSV file with current filters and return download URL.",
-    response_description="Download URL for exported CSV file"
+    summary="Export Feedback CSV",
+    description="Generate a CSV export of feedback data."
 )
 async def export_feedback(
     request: Request,
-    export_request: AdminFeedbackExportRequest,
+    export_data: AdminFeedbackExportRequest,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner)
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("reports:view"))
 ) -> JSONResponse:
-    """
-    Export feedback to CSV.
-    
-    This endpoint generates a CSV file containing all feedback matching the provided filters:
-    - **page**: Page number (for reference, export includes all matching records)
-    - **page_size**: Page size (for reference, export includes all matching records)
-    - **search**: Search term to filter results
-    - **search_column**: Specific column to search in (message or id)
-    - **status**: Filter by status (open, resolved, all)
-    - **date_from**: Start date for filtering (YYYY-MM-DD)
-    - **date_to**: End date for filtering (YYYY-MM-DD)
-    - **sort_by**: Column to sort by
-    - **sort_order**: Sort order (asc, desc)
-    
-    Returns a download URL that expires in 24 hours.
-    The CSV file includes: ID, User ID, Category, Satisfaction, Recommendation, Message, Status, Submitted At
-    """
-    # Validate search_column
-    ALLOWED_SEARCH_COLUMNS = ['message', 'id']
-    if export_request.search_column and export_request.search_column not in ALLOWED_SEARCH_COLUMNS:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
-            }
-        )
-    
-    filters = export_request.dict()
-    filters["partner_id"] = partner.id
-    return await feedback_controller.export_feedback_csv_admin(db, request, filters)
+    """Export feedback to CSV."""
+    filters = export_data.dict(exclude_none=True)
+    return await feedback_controller.export_feedback_csv_admin(db, request, filters, current_admin=current_admin)

@@ -24,6 +24,7 @@ import logging
 from app.services.feedback_service import FeedbackService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class FeedbackController:
     def __init__(self):
         self.feedback_service = FeedbackService()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
     
     async def submit_feedback(self, db: AsyncSession, request: Request, feedback_data: Dict[str, Any], current_user: Optional[User] = None, partner_id: Optional[int] = None) -> JSONResponse:
         """
@@ -431,7 +433,8 @@ class FeedbackController:
         db: AsyncSession,
         request: Request,
         filters: Dict[str, Any],
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Get paginated feedback list with filters for admin."""
         start_time = time.time()
@@ -549,16 +552,40 @@ class FeedbackController:
         db: AsyncSession,
         request: Request,
         feedback_id: int,
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Delete a single feedback entry."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
+            # Audit: Get before state
+            entry = await self.feedback_service.get_feedback_by_id(db, feedback_id, partner_id=partner_id)
+            before_state = None
+            if entry:
+                before_state = {
+                    "id": entry.id,
+                    "status": entry.status,
+                    "category": entry.category,
+                    "message": entry.message
+                }
+
             result = await self.feedback_service.delete_feedback_admin(db, feedback_id, partner_id=partner_id)
             
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="feedback.delete",
+                        target_type="feedback",
+                        target_id=str(feedback_id),
+                        before_state=before_state,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -650,7 +677,8 @@ class FeedbackController:
         db: AsyncSession,
         request: Request,
         feedback_ids: List[int],
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Delete multiple feedback entries."""
         start_time = time.time()
@@ -659,6 +687,18 @@ class FeedbackController:
         try:
             result = await self.feedback_service.batch_delete_feedback_admin(db, feedback_ids, partner_id=partner_id)
             
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="feedback.batch_delete",
+                    target_type="feedback",
+                    target_id="batch",
+                    before_state={"ids": feedback_ids},
+                    after_state={"deleted_count": result.get("deleted_count")},
+                    ip_address=request.client.host if request and request.client else None
+                )
+
             duration_ms = (time.time() - start_time) * 1000
             response_data = {
                 "success": result.get("success"),
@@ -748,16 +788,35 @@ class FeedbackController:
         request: Request,
         feedback_id: int,
         status_value: str,
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Mark feedback status for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
+            # Audit: Get before state
+            entry = await self.feedback_service.get_feedback_by_id(db, feedback_id, partner_id=partner_id)
+            before_state = None
+            if entry:
+                before_state = {"status": entry.status}
+
             result = await self.feedback_service.mark_feedback_status_admin(db, feedback_id, status_value, partner_id=partner_id)
             
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="feedback.mark_status",
+                        target_type="feedback",
+                        target_id=str(feedback_id),
+                        before_state=before_state,
+                        after_state={"status": status_value},
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
                 feedback = result.get("data")
                 feedback_data = {
                     "id": feedback.id,

@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,8 @@ import time
 from app.services.waitlist_service import WaitlistService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.services.admin_operation_log_service import AdminOperationLogService
+from app.models.user import User
 
 
 class WaitlistController:
@@ -31,6 +33,7 @@ class WaitlistController:
     def __init__(self):
         self.waitlist_service = WaitlistService()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
 
     async def add_to_waitlist(
         self, db: AsyncSession, request: Request, waitlist_data: Dict[str, Any]
@@ -303,7 +306,11 @@ class WaitlistController:
     # ============================================================================
 
     async def get_waitlist_list_admin(
-        self, db: AsyncSession, request: Request, filters: Dict[str, Any]
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Get paginated waitlist list with filters for admin."""
         try:
@@ -348,12 +355,40 @@ class WaitlistController:
             )
 
     async def delete_waitlist_admin(
-        self, db: AsyncSession, request: Request, waitlist_id: int
+        self, 
+        db: AsyncSession, 
+        request: Optional[Request], 
+        waitlist_id: int,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Delete a single waitlist entry."""
         try:
+            # 1. Get before state for audit log
+            entry_res = await self.waitlist_service.get_waitlist_entry_by_id(db, waitlist_id)
+            before_state = None
+            if entry_res.get("success") and entry_res.get("data"):
+                entry = entry_res.get("data")
+                before_state = {
+                    "id": entry.id,
+                    "email": entry.email,
+                    "status": entry.status
+                }
+
             result = await self.waitlist_service.delete_waitlist_admin(db, waitlist_id)
             if result.get("success"):
+                # 2. Log administrative operation
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="waitlist.delete",
+                        target_type="waitlist",
+                        target_id=str(waitlist_id),
+                        before_state=before_state,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -377,13 +412,30 @@ class WaitlistController:
             )
 
     async def batch_delete_waitlist_admin(
-        self, db: AsyncSession, request: Request, waitlist_ids: List[int]
+        self, 
+        db: AsyncSession, 
+        request: Optional[Request], 
+        waitlist_ids: List[int],
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Delete multiple waitlist entries."""
         try:
             result = await self.waitlist_service.batch_delete_waitlist_admin(
                 db, waitlist_ids
             )
+            
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="waitlist.batch_delete",
+                    target_type="waitlist",
+                    target_id="batch",
+                    before_state={"ids": waitlist_ids},
+                    after_state={"deleted_count": result.get("deleted_count")},
+                    ip_address=request.client.host if request and request.client else None
+                )
+
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={
@@ -406,15 +458,41 @@ class WaitlistController:
             )
 
     async def update_waitlist_status_admin(
-        self, db: AsyncSession, request: Request, waitlist_id: int, status_value: str
+        self, 
+        db: AsyncSession, 
+        request: Optional[Request], 
+        waitlist_id: int, 
+        status_value: str,
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Update waitlist status for admin."""
         try:
+            # 1. Get before state
+            entry_res = await self.waitlist_service.get_waitlist_entry_by_id(db, waitlist_id)
+            before_state = None
+            if entry_res.get("success") and entry_res.get("data"):
+                entry = entry_res.get("data")
+                before_state = {"status": entry.status}
+
             result = await self.waitlist_service.update_waitlist_status_admin(
                 db, waitlist_id, status_value
             )
             if result.get("success"):
                 waitlist = result.get("data")
+                
+                # 2. Log administrative operation
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="waitlist.update_status",
+                        target_type="waitlist",
+                        target_id=str(waitlist_id),
+                        before_state=before_state,
+                        after_state={"status": status_value},
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
                 waitlist_data = {
                     "id": waitlist.id,
                     "email": waitlist.email,
@@ -451,11 +529,26 @@ class WaitlistController:
             )
 
     async def export_waitlist_csv_admin(
-        self, db: AsyncSession, request: Request, filters: Dict[str, Any]
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Export waitlist to CSV and return download URL."""
         try:
             result = await self.waitlist_service.export_waitlist_csv_admin(db, filters)
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="waitlist.export",
+                    target_type="waitlist",
+                    target_id="csv",
+                    before_state=filters,
+                    after_state={"download_url": result.get("download_url")},
+                    ip_address=request.client.host if request and request.client else None
+                )
             if result.get("success"):
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,

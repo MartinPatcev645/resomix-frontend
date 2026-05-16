@@ -61,18 +61,26 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # JWT Token Management
 # ============================================================================
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    data: Dict[str, Any], 
+    expires_delta: Optional[timedelta] = None,
+    extra_claims: Optional[Dict[str, Any]] = None
+) -> str:
     """
     Create JWT access token.
     
     Args:
         data: Payload data to encode (should include 'sub' for user identifier)
         expires_delta: Optional custom expiration time
+        extra_claims: Optional dictionary of additional claims (e.g. role: admin)
         
     Returns:
         Encoded JWT token string
     """
     to_encode = data.copy()
+    
+    if extra_claims:
+        to_encode.update(extra_claims)
     
     if expires_delta:
         expire = datetime.utcnow() + expires_delta

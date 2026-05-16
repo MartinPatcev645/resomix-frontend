@@ -19,6 +19,9 @@ from .spotify_apps import router as admin_spotify_apps_router
 from .partners import router as admin_partners_router
 from .similarity import router as admin_similarity_router
 from .promo import router as admin_promo_router
+from .auth import router as admin_auth_router
+from .users import router as admin_users_router
+from .roles import router as admin_roles_router
 
 __all__ = [
     "admin_feedback_router",
@@ -30,4 +33,7 @@ __all__ = [
     "admin_partners_router",
     "admin_similarity_router",
     "admin_promo_router",
+    "admin_auth_router",
+    "admin_users_router",
+    "admin_roles_router",
 ]

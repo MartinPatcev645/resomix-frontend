@@ -10,7 +10,7 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi import status, Request, HTTPException
@@ -20,6 +20,8 @@ import time
 from app.services.user_service import UserService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.services.admin_operation_log_service import AdminOperationLogService
+from app.models.user import User
 
 
 class UserController:
@@ -28,6 +30,7 @@ class UserController:
     def __init__(self):
         self.user_service = UserService()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
 
     async def search_users(
         self,
@@ -668,3 +671,176 @@ class UserController:
             )
 
             return JSONResponse(status_code=500, content=jsonable_encoder(response_data))
+
+    # ------------------------------------------------------------------
+    # RBAC Management Methods
+    # ------------------------------------------------------------------
+
+    async def list_users_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        page: int = 1,
+        page_size: int = 50,
+        search: Optional[str] = None,
+        role_id: Optional[int] = None,
+        is_active: Optional[bool] = None,
+        current_admin: Optional[User] = None,
+    ) -> JSONResponse:
+        """List users for admin with filters."""
+        start_time = time.time()
+        try:
+            users, total = await self.user_service.list_users_admin(
+                db, page, page_size, search, role_id, is_active
+            )
+            total_pages = (total + page_size - 1) // page_size
+
+            data = [
+                {
+                    "id": u.id,
+                    "uuid": u.uuid,
+                    "email": u.email,
+                    "username": u.username,
+                    "name": u.name,
+                    "is_active": u.is_active,
+                    "roles": [
+                        {"id": r.id, "name": r.name, "description": r.description}
+                        for r in u.roles
+                    ],
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                }
+                for u in users
+            ]
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(
+                    success=True,
+                    data=data,
+                    pagination={
+                        "total": total,
+                        "pages": total_pages,
+                        "page": page,
+                        "size": page_size,
+                    }
+                )
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error=str(e)),
+            )
+
+    async def assign_role_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_id: int,
+        role_id: int,
+        current_admin: Optional[User] = None,
+    ) -> JSONResponse:
+        """Assign a role to a user."""
+        try:
+            result = await self.user_service.assign_role(db, user_id, role_id)
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="user.assign_role",
+                    target_type="user",
+                    target_id=str(user_id),
+                    before_state=None,
+                    after_state={"role_id": role_id},
+                    ip_address=request.client.host if request and request.client else None
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST,
+                content=format_response(
+                    success=result.get("success"),
+                    data=result.get("data"),
+                    error=result.get("error")
+                )
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error=str(e)),
+            )
+
+    async def remove_role_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_id: int,
+        role_id: int,
+        current_admin: Optional[User] = None,
+    ) -> JSONResponse:
+        """Remove a role from a user."""
+        try:
+            result = await self.user_service.remove_role(db, user_id, role_id)
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="user.remove_role",
+                    target_type="user",
+                    target_id=str(user_id),
+                    before_state=None,
+                    after_state={"role_id": role_id},
+                    ip_address=request.client.host if request and request.client else None
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST,
+                content=format_response(
+                    success=result.get("success"),
+                    data=result.get("data"),
+                    error=result.get("error")
+                )
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error=str(e)),
+            )
+
+    async def update_user_status_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_id: int,
+        is_active: bool,
+        current_admin: Optional[User] = None,
+    ) -> JSONResponse:
+        """Enable or disable a user account."""
+        try:
+            # Audit: Get before state
+            user_res = await self.user_service.get_user_by_id(db, user_id)
+            before_state = None
+            if user_res:
+                 before_state = {"is_active": user_res.is_active}
+
+            result = await self.user_service.update_user_status(db, user_id, is_active)
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="user.update_status",
+                    target_type="user",
+                    target_id=str(user_id),
+                    before_state=before_state,
+                    after_state={"is_active": is_active},
+                    ip_address=request.client.host if request and request.client else None
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST,
+                content=format_response(
+                    success=result.get("success"),
+                    data=result.get("data"),
+                    error=result.get("error")
+                )
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error=str(e)),
+            )

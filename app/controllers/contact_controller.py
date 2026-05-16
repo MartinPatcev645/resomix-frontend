@@ -24,6 +24,8 @@ import logging
 from app.services.contact_service import ContactService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.services.admin_operation_log_service import AdminOperationLogService
+from app.models.user import User
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ class ContactController:
     def __init__(self):
         self.contact_service = ContactService()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
     
     async def submit_contact(self, db: AsyncSession, request: Request, contact_data: Dict[str, Any], current_user: Optional[User] = None) -> JSONResponse:
         """
@@ -413,7 +416,13 @@ class ContactController:
     # Admin Methods
     # ============================================================================
     
-    async def get_contact_list_admin(self, db: AsyncSession, request: Request, filters: Dict[str, Any]) -> JSONResponse:
+    async def get_contact_list_admin(
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None
+    ) -> JSONResponse:
         """Get paginated contact list with filters for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
@@ -438,13 +447,46 @@ class ContactController:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
-    async def delete_contact_admin(self, db: AsyncSession, request: Request, contact_id: int) -> JSONResponse:
+    async def delete_contact_admin(
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        contact_id: int,
+        current_admin: Optional[User] = None
+    ) -> JSONResponse:
         """Delete a single contact entry."""
         try:
+            # Audit: Get before state
+            entry_res = await self.contact_service.get_contact_by_id(db, contact_id)
+            before_state = None
+            if entry_res.get("success") and entry_res.get("data"):
+                entry = entry_res.get("data")
+                before_state = {
+                    "id": entry.id,
+                    "email": entry.email,
+                    "status": entry.status
+                }
+
             result = await self.contact_service.delete_contact_admin(db, contact_id)
             if result.get("success"):
-                return JSONResponse(status_code=status.HTTP_200_OK,
-                    content=format_response(success=True, data={"message": result.get("message")}))
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="contact.delete",
+                        target_type="contact",
+                        target_id=str(contact_id),
+                        before_state=before_state,
+                        after_state=None,
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(
+                        success=True, data={"message": result.get("message")}
+                    ),
+                )
             else:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
@@ -452,22 +494,73 @@ class ContactController:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
-    async def batch_delete_contact_admin(self, db: AsyncSession, request: Request, contact_ids: List[int]) -> JSONResponse:
+    async def batch_delete_contact_admin(
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        contact_ids: List[int],
+        current_admin: Optional[User] = None
+    ) -> JSONResponse:
         """Delete multiple contact entries."""
         try:
-            result = await self.contact_service.batch_delete_contact_admin(db, contact_ids)
-            return JSONResponse(status_code=status.HTTP_200_OK,
+            result = await self.contact_service.batch_delete_contact_admin(
+                db, contact_ids
+            )
+            
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="contact.batch_delete",
+                    target_type="contact",
+                    target_id="batch",
+                    before_state={"ids": contact_ids},
+                    after_state={"deleted_count": result.get("deleted_count")},
+                    ip_address=request.client.host if request and request.client else None
+                )
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
                 content={"success": result.get("success"), "deleted_count": result.get("deleted_count", 0),
-                        "message": result.get("message", result.get("error", ""))})
+                        "message": result.get("message", result.get("error", ""))}
+            )
         except Exception:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
-    async def mark_contact_status_admin(self, db: AsyncSession, request: Request, contact_id: int, status_value: str) -> JSONResponse:
-        """Mark contact status for admin."""
+    async def update_contact_status_admin(
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        contact_id: int, 
+        status_value: str,
+        current_admin: Optional[User] = None
+    ) -> JSONResponse:
+        """Update contact status for admin."""
         try:
-            result = await self.contact_service.mark_contact_status_admin(db, contact_id, status_value)
+            # Audit: Get before state
+            entry_res = await self.contact_service.get_contact_by_id(db, contact_id)
+            before_state = None
+            if entry_res.get("success") and entry_res.get("data"):
+                entry = entry_res.get("data")
+                before_state = {"status": entry.status}
+
+            result = await self.contact_service.update_contact_status_admin(
+                db, contact_id, status_value
+            )
             if result.get("success"):
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="contact.update_status",
+                        target_type="contact",
+                        target_id=str(contact_id),
+                        before_state=before_state,
+                        after_state={"status": status_value},
+                        ip_address=request.client.host if request and request.client else None
+                    )
+
                 contact = result.get("data")
                 contact_data = {"id": contact.id, "user_id": contact.user_id, "name": contact.name,
                               "email": contact.email, "subject": contact.subject, "phone": contact.phone,
@@ -482,10 +575,27 @@ class ContactController:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
-    async def export_contact_csv_admin(self, db: AsyncSession, request: Request, filters: Dict[str, Any]) -> JSONResponse:
-        """Export contact to CSV and return download URL."""
+    async def export_contact_csv_admin(
+        self, 
+        db: AsyncSession, 
+        request: Request, 
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None
+    ) -> JSONResponse:
+        """Export contact list to CSV and return download URL."""
         try:
             result = await self.contact_service.export_contact_csv_admin(db, filters)
+            if result.get("success") and current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="contact.export",
+                    target_type="contact",
+                    target_id="csv",
+                    before_state=filters,
+                    after_state={"download_url": result.get("download_url")},
+                    ip_address=request.client.host if request and request.client else None
+                )
             if result.get("success"):
                 return JSONResponse(status_code=status.HTTP_200_OK, content={
                     "success": True, "download_url": result.get("download_url"),

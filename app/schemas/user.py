@@ -16,7 +16,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -56,3 +56,49 @@ class UserSearchResultsResponse(APIResponse):
     data: List[UserSearchItem] = Field(
         default_factory=list, description="Matching users"
     )
+
+
+class RoleInfo(BaseModel):
+    """Basic role information."""
+    id: int
+    name: str
+    description: Optional[str] = None
+
+
+class AdminUserItem(BaseModel):
+    """Detailed user representation for admin panel."""
+    id: int
+    uuid: str
+    email: str
+    username: str
+    name: Optional[str] = None
+    is_active: bool
+    roles: List[RoleInfo] = []
+    created_at: Optional[datetime] = None
+
+
+class AdminUserListResponse(APIResponse):
+    """Paginated user list for admin."""
+    data: List[AdminUserItem]
+    pagination: Dict[str, Any]
+
+
+class UserRoleAssignmentRequest(BaseModel):
+    """Request to assign or remove a role."""
+    role_id: int
+
+
+class UserStatusUpdateRequest(BaseModel):
+    """Request to update user active status."""
+    is_active: bool
+
+
+class RoleCreateRequest(BaseModel):
+    """Request to create a new role."""
+    name: str
+    description: Optional[str] = None
+
+
+class RolePermissionsUpdateRequest(BaseModel):
+    """Request to update role permissions."""
+    permission_ids: List[int]
