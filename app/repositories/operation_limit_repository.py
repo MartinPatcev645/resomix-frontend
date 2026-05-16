@@ -109,12 +109,8 @@ class OperationLimitRepository(BaseRepository[UserOperationLimit]):
             existing.window_seconds = window_seconds
             existing.created_by = created_by
             db.add(existing)
-            try:
-                await db.commit()
-                await db.refresh(existing)
-            except IntegrityError:
-                await db.rollback()
-                raise
+            await db.flush()
+            await db.refresh(existing)
             return existing
 
         new_limit = UserOperationLimit(
@@ -125,13 +121,9 @@ class OperationLimitRepository(BaseRepository[UserOperationLimit]):
             created_by=created_by,
         )
         db.add(new_limit)
-        try:
-            await db.commit()
-            await db.refresh(new_limit)
-            return new_limit
-        except IntegrityError:
-            await db.rollback()
-            raise
+        await db.flush()
+        await db.refresh(new_limit)
+        return new_limit
 
     async def async_delete_limit(
         self, db: AsyncSession, user_id: int, operation_id: int
@@ -141,7 +133,7 @@ class OperationLimitRepository(BaseRepository[UserOperationLimit]):
             return False
 
         await db.delete(limit)
-        await db.commit()
+        await db.flush()
         return True
 
     async def async_list_user_limits(
@@ -251,8 +243,7 @@ class OperationLimitRepository(BaseRepository[UserOperationLimit]):
         )
         result = await db.execute(stmt)
         if result.rowcount and result.rowcount > 0:
-            await db.commit()
+            await db.flush()
             return True
-        await db.rollback()
         return False
 

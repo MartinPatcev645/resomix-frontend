@@ -52,6 +52,7 @@ async def rebuild_similarity_index(
                 after_state={"partner_id": partner_id},
                 ip_address=request.client.host if request and request.client else None
             )
+            await db.commit()
             return result
             
         raise HTTPException(

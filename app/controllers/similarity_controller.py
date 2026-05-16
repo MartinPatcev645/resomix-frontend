@@ -574,11 +574,13 @@ class SimilarityController:
                     except Exception as inc_err:
                         logger.error(f"SIMILARITY UPLOAD: Failed to increment usage: {str(inc_err)}")
 
+                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK, content=response_content
                 )
 
             except Exception as e:
+                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 import traceback
 
@@ -901,11 +903,13 @@ class SimilarityController:
                     except Exception as inc_err:
                         logger.error(f"SIMILARITY UPLOAD (Fallback): Failed to increment usage: {str(inc_err)}")
 
+                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK, content=response_content
                 )
 
             except Exception as e:
+                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 import traceback
 
@@ -1226,10 +1230,12 @@ class SimilarityController:
                 except Exception as inc_err:
                     logger.error(f"SIMILARITY BY ID: Failed to increment usage: {str(inc_err)}")
 
+            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content=response_content
             )
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             # Extract track_id from database lookup if available
             if track_int_id is None:

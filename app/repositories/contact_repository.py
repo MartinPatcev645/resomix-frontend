@@ -84,7 +84,7 @@ class ContactRepository(BaseRepository[Contact]):
         )
         
         db.add(contact)
-        await db.commit()
+        await db.flush()
         await db.refresh(contact)
         
         return contact
@@ -169,7 +169,7 @@ class ContactRepository(BaseRepository[Contact]):
         contact = await self.async_get_by_id(db, contact_id)
         if contact:
             contact.status = status
-            await db.commit()
+            await db.flush()
             await db.refresh(contact)
         
         return contact
@@ -271,7 +271,7 @@ class ContactRepository(BaseRepository[Contact]):
         contact = await self.async_get_by_id(db, contact_id)
         if contact:
             await db.delete(contact)
-            await db.commit()
+            await db.flush()
             return True
         return False
     
@@ -279,7 +279,7 @@ class ContactRepository(BaseRepository[Contact]):
         """Delete multiple contact entries."""
         stmt = delete(Contact).where(Contact.id.in_(contact_ids))
         result = await db.execute(stmt)
-        await db.commit()
+        await db.flush()
         return result.rowcount
     
     async def get_contact_for_export(

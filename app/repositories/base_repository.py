@@ -223,19 +223,23 @@ class BaseRepository(ABC, Generic[ModelType]):
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    async def async_create(self, db: AsyncSession, **kwargs) -> ModelType:
+    async def async_create(self, db: AsyncSession, commit: bool = True, **kwargs) -> ModelType:
         """Async version of create."""
         db_obj = self.model(**kwargs)
         db.add(db_obj)
         try:
-            await db.commit()
-            await db.refresh(db_obj)
+            if commit:
+                await db.commit()
+                await db.refresh(db_obj)
+            else:
+                await db.flush()
             return db_obj
         except IntegrityError:
-            await db.rollback()
+            if commit:
+                await db.rollback()
             raise
 
-    async def async_update(self, db: AsyncSession, id: int, **kwargs) -> Optional[ModelType]:
+    async def async_update(self, db: AsyncSession, id: int, commit: bool = True, **kwargs) -> Optional[ModelType]:
         """Async version of update."""
         db_obj = await self.async_get_by_id(db, id)
         if db_obj:
@@ -243,24 +247,31 @@ class BaseRepository(ABC, Generic[ModelType]):
                 if hasattr(db_obj, field):
                     setattr(db_obj, field, value)
             try:
-                await db.commit()
-                await db.refresh(db_obj)
+                if commit:
+                    await db.commit()
+                    await db.refresh(db_obj)
+                else:
+                    await db.flush()
                 return db_obj
             except IntegrityError:
-                await db.rollback()
+                if commit:
+                    await db.rollback()
                 raise
         return None
 
-    async def async_delete(self, db: AsyncSession, id: int) -> bool:
+    async def async_delete(self, db: AsyncSession, id: int, commit: bool = True) -> bool:
         """Async version of delete."""
         db_obj = await self.async_get_by_id(db, id)
         if db_obj:
             await db.delete(db_obj)
-            await db.commit()
+            if commit:
+                await db.commit()
+            else:
+                await db.flush()
             return True
         return False
 
-    async def async_get_or_create(self, db: AsyncSession, **kwargs) -> tuple[ModelType, bool]:
+    async def async_get_or_create(self, db: AsyncSession, commit: bool = True, **kwargs) -> tuple[ModelType, bool]:
         """Async version of get_or_create."""
         # First try to find existing record
         existing = await self._async_find_existing(db, **kwargs)
@@ -271,12 +282,16 @@ class BaseRepository(ABC, Generic[ModelType]):
         try:
             db_obj = self.model(**kwargs)
             db.add(db_obj)
-            await db.commit()
-            await db.refresh(db_obj)
+            if commit:
+                await db.commit()
+                await db.refresh(db_obj)
+            else:
+                await db.flush()
             return db_obj, True
         except IntegrityError:
             # Handle race condition
-            await db.rollback()
+            if commit:
+                await db.rollback()
             existing = await self._async_find_existing(db, **kwargs)
             if existing:
                 return existing, False

@@ -375,12 +375,11 @@ class SpotifyAppService:
             if existing_association:
                 association = (
                     await self.user_spotify_app_repository.async_update_association(
-                        db, user_id=user.id, spotify_app_id=spotify_app_id, commit=False
+                        db, user_id=user.id, spotify_app_id=spotify_app_id
                     )
                 )
                 # Safety check: if update returned None, association was deleted concurrently
                 if not association:
-                    await db.rollback()
                     return {
                         "success": False,
                         "error": "Association was deleted concurrently. Please try again.",
@@ -392,7 +391,6 @@ class SpotifyAppService:
                         user_id=user.id,
                         spotify_app_id=spotify_app_id,
                         created_by=created_by,
-                        commit=False,
                     )
                 )
 
@@ -400,20 +398,17 @@ class SpotifyAppService:
             if old_app_id and old_app_id != spotify_app_id:
                 # Decrement old app
                 await self.spotify_app_repository.async_decrement_user_count(
-                    db, old_app_id, commit=False
+                    db, old_app_id
                 )
                 # Increment new app
                 await self.spotify_app_repository.async_increment_user_count(
-                    db, spotify_app_id, commit=False
+                    db, spotify_app_id
                 )
             elif not existing_association:
                 # New association, increment new app
                 await self.spotify_app_repository.async_increment_user_count(
-                    db, spotify_app_id, commit=False
+                    db, spotify_app_id
                 )
-
-            # Commit all changes atomically
-            await db.commit()
 
             # Refresh app to get updated user_count
             app = await self.spotify_app_repository.async_get_by_id(db, spotify_app_id)
@@ -421,13 +416,11 @@ class SpotifyAppService:
             return {"success": True, "data": data}
 
         except IntegrityError as e:
-            await db.rollback()
             return {
                 "success": False,
                 "error": f"Failed to create/update association: {str(e)}",
             }
         except Exception as e:
-            await db.rollback()
             return {
                 "success": False,
                 "error": f"Failed to create/update association: {str(e)}",
@@ -461,10 +454,9 @@ class SpotifyAppService:
         try:
             # Delete association (without committing)
             deleted = await self.user_spotify_app_repository.async_delete_association(
-                db, user.id, commit=False
+                db, user.id
             )
             if not deleted:
-                await db.rollback()
                 return {
                     "success": False,
                     "error": "Failed to delete user association",
@@ -472,11 +464,8 @@ class SpotifyAppService:
 
             # Decrement user_count (without committing)
             await self.spotify_app_repository.async_decrement_user_count(
-                db, app_id, commit=False
+                db, app_id
             )
-
-            # Commit all changes atomically
-            await db.commit()
 
             return {
                 "success": True,
@@ -484,7 +473,6 @@ class SpotifyAppService:
             }
 
         except Exception as e:
-            await db.rollback()
             return {
                 "success": False,
                 "error": f"Failed to delete association: {str(e)}",

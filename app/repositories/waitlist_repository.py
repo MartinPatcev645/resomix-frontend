@@ -266,7 +266,7 @@ class WaitlistRepository(BaseRepository[Waitlist]):
         waitlist = await self.async_get_by_id(db, waitlist_id)
         if waitlist:
             await db.delete(waitlist)
-            await db.commit()
+            await db.flush()
             return True
         return False
     
@@ -274,7 +274,7 @@ class WaitlistRepository(BaseRepository[Waitlist]):
         """Delete multiple waitlist entries."""
         stmt = delete(Waitlist).where(Waitlist.id.in_(waitlist_ids))
         result = await db.execute(stmt)
-        await db.commit()
+        await db.flush()
         return result.rowcount
     
     async def update_waitlist_status(
@@ -287,7 +287,7 @@ class WaitlistRepository(BaseRepository[Waitlist]):
         waitlist = await self.async_get_by_id(db, waitlist_id)
         if waitlist:
             waitlist.status = status
-            await db.commit()
+            await db.flush()
             await db.refresh(waitlist)
         return waitlist
     

@@ -81,8 +81,6 @@ class AdminController:
             }
             
             promo = await self.cart_repo.async_create_promo_code(db, promo_data)
-            await db.commit()
-
             if current_admin:
                 await self.admin_log_service.log_operation(
                     db=db,
@@ -94,6 +92,8 @@ class AdminController:
                     after_state=payload,
                     ip_address=request.client.host if request and request.client else None
                 )
+            
+            await db.commit()
 
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,

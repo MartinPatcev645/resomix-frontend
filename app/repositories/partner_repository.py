@@ -98,11 +98,12 @@ class PartnerApiKeyRepository(BaseRepository[PartnerApiKey]):
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    async def async_revoke_key(self, db: AsyncSession, api_key_id: int, reason: str) -> Optional[PartnerApiKey]:
+    async def async_revoke_key(self, db: AsyncSession, api_key_id: int, reason: str, commit: bool = True) -> Optional[PartnerApiKey]:
         """Revoke an API key."""
         return await self.async_update(
             db, 
             api_key_id, 
+            commit=commit,
             is_active=False, 
             revoked_at=func.now(), 
             revoked_reason=reason

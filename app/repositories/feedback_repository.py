@@ -83,7 +83,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         )
         
         db.add(feedback)
-        await db.commit()
+        await db.flush()
         await db.refresh(feedback)
         
         return feedback
@@ -239,7 +239,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         feedback = await self.async_get_by_id(db, feedback_id, partner_id=partner_id)
         if feedback:
             feedback.status = status
-            await db.commit()
+            await db.flush()
             await db.refresh(feedback)
         
         return feedback
@@ -381,7 +381,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
         feedback = await self.async_get_by_id(db, feedback_id, partner_id=partner_id)
         if feedback:
             await db.delete(feedback)
-            await db.commit()
+            await db.flush()
             return True
         return False
     
@@ -403,7 +403,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
             
         stmt = delete(Feedback).where(and_(*filters))
         result = await db.execute(stmt)
-        await db.commit()
+        await db.flush()
         return result.rowcount
     
     async def update_feedback(
@@ -429,7 +429,7 @@ class FeedbackRepository(BaseRepository[Feedback]):
             for key, value in update_data.items():
                 if hasattr(feedback, key) and value is not None:
                     setattr(feedback, key, value)
-            await db.commit()
+            await db.flush()
             await db.refresh(feedback)
         
         return feedback

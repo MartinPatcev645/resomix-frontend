@@ -125,7 +125,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 playlist_tracks.append(playlist_track)
 
             db.add_all(playlist_tracks)
-            await db.commit()
+            await db.flush()
 
             # Only show fork_id if the user owns this forked playlist
             fork_id_value = ""
@@ -143,7 +143,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
             }
 
         except Exception as e:
-            await db.rollback()
             print(f"Error creating similarity playlist: {e}")
             raise e
 
@@ -259,8 +258,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
             # 7. Increment Original Playlist Fork Count
             original_playlist.fork_count += 1
 
-            # 8. Commit Transaction
-            await db.commit()
+            # 8. Flush Transaction
+            await db.flush()
 
             # 9. Return Success Data
             return await self.async_get_playlist_similarity_data(
@@ -268,7 +267,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
             )
 
         except Exception as e:
-            await db.rollback()
             print(f"Error forking playlist: {e}")
             return None
 
@@ -389,7 +387,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 playlist_tracks.append(playlist_track)
 
             db.add_all(playlist_tracks)
-            db.commit()
+            db.flush()
 
             # Sync method - no user context, so fork_id is always empty (privacy)
             # Also, this method creates new playlists, not forks, so fork_id will be None anyway
@@ -403,7 +401,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
             }
 
         except Exception as e:
-            db.rollback()
             print(f"Error creating similarity playlist: {e}")
             raise e
 
@@ -524,11 +521,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
             old_name = playlist.name
             playlist.name = new_name
-            await db.commit()
+            await db.flush()
             return {"success": True, "old_name": old_name}
 
         except Exception as e:
-            await db.rollback()
             print(f"Error renaming playlist: {e}")
             raise e
 
@@ -552,11 +548,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 return False
 
             playlist.is_public = is_public
-            await db.commit()
+            await db.flush()
             return True
 
         except Exception as e:
-            await db.rollback()
             print(f"Error updating playlist visibility: {e}")
             raise e
 
@@ -784,11 +779,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 return False
 
             playlist.type = new_type
-            await db.commit()
+            await db.flush()
             return True
 
         except Exception as e:
-            await db.rollback()
             print(f"Error updating playlist type: {e}")
             raise e
 

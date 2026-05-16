@@ -115,13 +115,9 @@ class SpotifyAppRepository(BaseRepository[SpotifyApp]):
         """Create a new Spotify app."""
         app = SpotifyApp(**kwargs)
         db.add(app)
-        try:
-            await db.commit()
-            await db.refresh(app)
-            return app
-        except IntegrityError:
-            await db.rollback()
-            raise
+        await db.flush()
+        await db.refresh(app)
+        return app
 
     async def async_update(
         self, db: AsyncSession, app_id: int, **kwargs
@@ -135,13 +131,9 @@ class SpotifyAppRepository(BaseRepository[SpotifyApp]):
             if hasattr(app, field) and value is not None:
                 setattr(app, field, value)
 
-        try:
-            await db.commit()
-            await db.refresh(app)
-            return app
-        except IntegrityError:
-            await db.rollback()
-            raise
+        await db.flush()
+        await db.refresh(app)
+        return app
 
     async def async_delete(self, db: AsyncSession, app_id: int) -> bool:
         """Delete a Spotify app."""
@@ -150,7 +142,7 @@ class SpotifyAppRepository(BaseRepository[SpotifyApp]):
             return False
 
         await db.delete(app)
-        await db.commit()
+        await db.flush()
         return True
 
     # ------------------------------------------------------------------
@@ -158,7 +150,7 @@ class SpotifyAppRepository(BaseRepository[SpotifyApp]):
     # ------------------------------------------------------------------
 
     async def async_increment_user_count(
-        self, db: AsyncSession, app_id: int, commit: bool = True
+        self, db: AsyncSession, app_id: int
     ) -> bool:
         """Atomically increment user_count for a Spotify app."""
         stmt = (
@@ -167,12 +159,11 @@ class SpotifyAppRepository(BaseRepository[SpotifyApp]):
             .values(user_count=SpotifyApp.user_count + 1)
         )
         result = await db.execute(stmt)
-        if commit:
-            await db.commit()
+        await db.flush()
         return result.rowcount > 0
 
     async def async_decrement_user_count(
-        self, db: AsyncSession, app_id: int, commit: bool = True
+        self, db: AsyncSession, app_id: int
     ) -> bool:
         """Atomically decrement user_count for a Spotify app."""
         stmt = (
@@ -186,8 +177,7 @@ class SpotifyAppRepository(BaseRepository[SpotifyApp]):
             .values(user_count=SpotifyApp.user_count - 1)
         )
         result = await db.execute(stmt)
-        if commit:
-            await db.commit()
+        await db.flush()
         return result.rowcount > 0
 
     async def async_count_by_app_id(
@@ -323,7 +313,6 @@ class UserSpotifyAppRepository(BaseRepository[UserSpotifyApp]):
         user_id: int,
         spotify_app_id: int,
         created_by: Optional[int] = None,
-        commit: bool = True,
     ) -> UserSpotifyApp:
         """Create a new user-Spotify app association."""
         association = UserSpotifyApp(
@@ -332,20 +321,9 @@ class UserSpotifyAppRepository(BaseRepository[UserSpotifyApp]):
             created_by=created_by,
         )
         db.add(association)
-        try:
-            if commit:
-                await db.commit()
-                await db.refresh(association)
-            else:
-                await db.flush()
-                await db.refresh(association)
-            return association
-        except IntegrityError:
-            # Only rollback if we're managing the commit
-            # Otherwise, let the caller (service layer) handle rollback
-            if commit:
-                await db.rollback()
-            raise
+        await db.flush()
+        await db.refresh(association)
+        return association
 
     async def async_update_association(
         self,
@@ -353,7 +331,6 @@ class UserSpotifyAppRepository(BaseRepository[UserSpotifyApp]):
         *,
         user_id: int,
         spotify_app_id: int,
-        commit: bool = True,
     ) -> Optional[UserSpotifyApp]:
         """Update user association (change user's app)."""
         association = await self.async_get_by_user_id(db, user_id)
@@ -361,23 +338,12 @@ class UserSpotifyAppRepository(BaseRepository[UserSpotifyApp]):
             return None
 
         association.spotify_app_id = spotify_app_id
-        try:
-            if commit:
-                await db.commit()
-                await db.refresh(association)
-            else:
-                await db.flush()
-                await db.refresh(association)
-            return association
-        except IntegrityError:
-            # Only rollback if we're managing the commit
-            # Otherwise, let the caller (service layer) handle rollback
-            if commit:
-                await db.rollback()
-            raise
+        await db.flush()
+        await db.refresh(association)
+        return association
 
     async def async_delete_association(
-        self, db: AsyncSession, user_id: int, commit: bool = True
+        self, db: AsyncSession, user_id: int
     ) -> bool:
         """Delete user association by user_id."""
         association = await self.async_get_by_user_id(db, user_id)
@@ -385,8 +351,7 @@ class UserSpotifyAppRepository(BaseRepository[UserSpotifyApp]):
             return False
 
         await db.delete(association)
-        if commit:
-            await db.commit()
+        await db.flush()
         return True
 
     async def async_count_by_app_id(

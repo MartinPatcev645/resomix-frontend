@@ -164,8 +164,10 @@ class PlaylistController:
                     },
                 )
 
+                await db.commit()
                 return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
+                await db.rollback()
                 # Log playlist not found - use integer ID for foreign key (may be None)
                 self.logging_service.log(
                     async_db=db,
@@ -231,6 +233,7 @@ class PlaylistController:
                 },
             )
 
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
@@ -321,8 +324,10 @@ class PlaylistController:
                         "operation": "playlist_visibility_change",
                     },
                 )
+                await db.commit()
                 return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
+                await db.rollback()
                 self.logging_service.log(
                     async_db=db,
                     level="WARNING",
@@ -373,6 +378,7 @@ class PlaylistController:
                     "operation": "playlist_visibility_change",
                 },
             )
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
@@ -595,8 +601,10 @@ class PlaylistController:
             # Use getlist and index 0 to strictly take the first token if multiple are provided
             all_tokens = request.query_params.getlist("token")
             token = all_tokens[0] if all_tokens else None
-            
-            result = await self.playlist_service.get_playlist_hls_data(db, playlist_id, token, partner_id=partner_id)
+
+            result = await self.playlist_service.get_playlist_hls_data(
+                db, playlist_id, token, partner_id=partner_id
+            )
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
                 # Extract playlist integer ID if available
@@ -840,9 +848,11 @@ class PlaylistController:
                     )
                 except Exception:
                     pass
+                await db.commit()
                 return JSONResponse(status_code=status.HTTP_201_CREATED, content=result)
 
             # Handle error responses
+            await db.rollback()
             error_message = result.get("error", "")
 
             if "not found" in error_message.lower():
@@ -946,6 +956,7 @@ class PlaylistController:
                 )
 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -981,11 +992,11 @@ class PlaylistController:
     # ============================================================================
 
     async def get_playlist_list_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
+        self,
+        db: AsyncSession,
+        request: Request,
         filters: Dict[str, Any],
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """
         Get paginated playlist list for admin.
@@ -1091,30 +1102,28 @@ class PlaylistController:
             )
 
     async def delete_playlist_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
+        self,
+        db: AsyncSession,
+        request: Request,
         playlist_id: int,
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Delete a single playlist entry."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             # Audit: Get before state
-            entry_res = await self.playlist_service.get_playlist_by_id_admin(db, playlist_id)
+            entry_res = await self.playlist_service.get_playlist_by_id_admin(
+                db, playlist_id
+            )
             before_state = None
             if entry_res.get("success") and entry_res.get("data"):
                 entry = entry_res.get("data")
-                before_state = {
-                    "id": entry.id,
-                    "uuid": entry.uuid,
-                    "name": entry.name
-                }
+                before_state = {"id": entry.id, "uuid": entry.uuid, "name": entry.name}
 
             result = await self.playlist_service.delete_playlist_admin(db, playlist_id)
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 if current_admin:
                     await self.admin_log_service.log_operation(
@@ -1125,9 +1134,12 @@ class PlaylistController:
                         target_id=str(playlist_id),
                         before_state=before_state,
                         after_state=None,
-                        ip_address=request.client.host if request and request.client else None
+                        ip_address=(
+                            request.client.host if request and request.client else None
+                        ),
                     )
 
+                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -1159,6 +1171,7 @@ class PlaylistController:
                 )
 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             import traceback
 
@@ -1191,11 +1204,11 @@ class PlaylistController:
             )
 
     async def batch_delete_playlist_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
+        self,
+        db: AsyncSession,
+        request: Request,
         playlist_ids: List[int],
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Delete multiple playlist entries."""
         start_time = time.time()
@@ -1205,7 +1218,7 @@ class PlaylistController:
                 db, playlist_ids
             )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success") and current_admin:
                 await self.admin_log_service.log_operation(
                     db=db,
@@ -1215,10 +1228,13 @@ class PlaylistController:
                     target_id="batch",
                     before_state={"ids": playlist_ids},
                     after_state={"deleted_count": result.get("deleted_count")},
-                    ip_address=request.client.host if request and request.client else None
+                    ip_address=(
+                        request.client.host if request and request.client else None
+                    ),
                 )
 
             if result.get("success"):
+                await db.commit()
                 response_content = {
                     "success": True,
                     "deleted_count": result.get("deleted_count", 0),
@@ -1273,6 +1289,7 @@ class PlaylistController:
                 )
 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             import traceback
 
@@ -1305,19 +1322,21 @@ class PlaylistController:
             )
 
     async def change_playlist_visibility_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
-        playlist_id: int, 
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: int,
         is_public: int,
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Change playlist visibility for admin."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
             # Audit: Get before state
-            entry_res = await self.playlist_service.get_playlist_by_id_admin(db, playlist_id)
+            entry_res = await self.playlist_service.get_playlist_by_id_admin(
+                db, playlist_id
+            )
             before_state = None
             if entry_res.get("success") and entry_res.get("data"):
                 entry = entry_res.get("data")
@@ -1327,7 +1346,7 @@ class PlaylistController:
                 db, playlist_id, is_public
             )
             duration_ms = (time.time() - start_time) * 1000
-            
+
             if result.get("success"):
                 if current_admin:
                     await self.admin_log_service.log_operation(
@@ -1338,9 +1357,12 @@ class PlaylistController:
                         target_id=str(playlist_id),
                         before_state=before_state,
                         after_state={"is_public": is_public},
-                        ip_address=request.client.host if request and request.client else None
+                        ip_address=(
+                            request.client.host if request and request.client else None
+                        ),
                     )
 
+                await db.commit()
                 response_content = {
                     "success": True,
                     "message": result.get(
@@ -1386,11 +1408,13 @@ class PlaylistController:
                     metadata={"playlist_id": playlist_id, "is_public": is_public},
                 )
 
+                await db.rollback()
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND, content=response_content
                 )
 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             import traceback
 
@@ -1424,12 +1448,12 @@ class PlaylistController:
             )
 
     async def batch_change_playlist_visibility_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
-        playlist_ids: List[int], 
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_ids: List[int],
         is_public: int,
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Change visibility for multiple playlists."""
         start_time = time.time()
@@ -1439,7 +1463,7 @@ class PlaylistController:
             result = await self.playlist_service.batch_change_playlist_visibility_admin(
                 db, playlist_ids, is_public
             )
-            
+
             if result.get("success") and current_admin:
                 await self.admin_log_service.log_operation(
                     db=db,
@@ -1449,12 +1473,15 @@ class PlaylistController:
                     target_id="batch",
                     before_state={"ids": playlist_ids},
                     after_state={"is_public": is_public},
-                    ip_address=request.client.host if request and request.client else None
+                    ip_address=(
+                        request.client.host if request and request.client else None
+                    ),
                 )
 
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 response_content = {
                     "success": True,
                     "updated_count": result.get("updated_count", 0),
@@ -1504,13 +1531,14 @@ class PlaylistController:
                         "error": result.get("error"),
                     },
                 )
-
+                await db.rollback()
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=response_content,
                 )
 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             import traceback
 
@@ -1544,11 +1572,11 @@ class PlaylistController:
             )
 
     async def export_playlist_csv_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
+        self,
+        db: AsyncSession,
+        request: Request,
         filters: Dict[str, Any],
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Export playlist list to CSV and return download URL."""
         start_time = time.time()
@@ -1556,7 +1584,7 @@ class PlaylistController:
 
         try:
             result = await self.playlist_service.export_playlists_csv_admin(db, filters)
-            
+
             if result.get("success") and current_admin:
                 await self.admin_log_service.log_operation(
                     db=db,
@@ -1566,9 +1594,11 @@ class PlaylistController:
                     target_id="csv",
                     before_state=filters,
                     after_state={"download_url": result.get("download_url")},
-                    ip_address=request.client.host if request and request.client else None
+                    ip_address=(
+                        request.client.host if request and request.client else None
+                    ),
                 )
-            
+
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
@@ -1653,11 +1683,11 @@ class PlaylistController:
             )
 
     async def get_playlist_detail_by_uuid_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
+        self,
+        db: AsyncSession,
+        request: Request,
         uuid: str,
-        current_admin: Optional[User] = None
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """
         Get detailed playlist information by UUID.
@@ -1870,23 +1900,25 @@ class PlaylistController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
 
-    async def get_playlist_playback_session(
-        self, request: Request, playlist_id: str
-    ):
+    async def get_playlist_playback_session(self, request: Request, playlist_id: str):
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
         for playing a server-stitched playlist.
         """
         client_ip = request.client.host if request.client else "unknown"
-        result = await self.playlist_service.get_playlist_playback_session(playlist_id, client_ip)
-        
+        result = await self.playlist_service.get_playlist_playback_session(
+            playlist_id, client_ip
+        )
+
         if result.get("success"):
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"playback_url": result["playback_url"]}
+                content={"playback_url": result["playback_url"]},
             )
         else:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content={"detail": result.get("error", "Failed to generate playback session")}
+                content={
+                    "detail": result.get("error", "Failed to generate playback session")
+                },
             )

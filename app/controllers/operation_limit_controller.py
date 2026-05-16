@@ -297,6 +297,7 @@ class OperationLimitController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 if current_admin:
                     await self.admin_log_service.log_operation(
                         db=db,
@@ -325,6 +326,7 @@ class OperationLimitController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "Failed to save user operation limit")
+            await db.rollback()
             lowered_error = error_message.lower()
             if "already has a limit" in lowered_error:
                 status_code = status.HTTP_409_CONFLICT
@@ -350,6 +352,7 @@ class OperationLimitController:
             )
             return JSONResponse(status_code=status_code, content=response_content)
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -395,6 +398,7 @@ class OperationLimitController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 if current_admin:
                     await self.admin_log_service.log_operation(
                         db=db,
@@ -426,6 +430,7 @@ class OperationLimitController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "User operation limit not found")
+            await db.rollback()
             status_code = (
                 status.HTTP_404_NOT_FOUND
                 if "not found" in error_message.lower()
@@ -448,6 +453,7 @@ class OperationLimitController:
                 content=format_response(success=False, error=error_message),
             )
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",

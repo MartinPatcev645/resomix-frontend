@@ -69,7 +69,7 @@ class PartnerService:
         partner_data = request.model_dump()
         partner_data["partner_uuid"] = str(uuid.uuid4())
 
-        partner = await self.partner_repo.async_create(db, **partner_data)
+        partner = await self.partner_repo.async_create(db, commit=False, **partner_data)
 
         self.logging_service.log(
             async_db=db,
@@ -103,7 +103,7 @@ class PartnerService:
         if not update_data:
             return await self.partner_repo.async_get_by_id(db, partner_id)
 
-        partner = await self.partner_repo.async_update(db, partner_id, **update_data)
+        partner = await self.partner_repo.async_update(db, partner_id, commit=False, **update_data)
         if partner:
             self.logging_service.log(
                 async_db=db,
@@ -130,9 +130,9 @@ class PartnerService:
         keys = await self.api_key_repo.async_list_keys_for_partner(db, partner_id)
         for key in keys:
             if key.is_active:
-                await self.api_key_repo.async_revoke_key(db, key.id, "Partner deleted")
+                await self.api_key_repo.async_revoke_key(db, key.id, "Partner deleted", commit=False)
 
-        success = await self.partner_repo.async_delete(db, partner_id)
+        success = await self.partner_repo.async_delete(db, partner_id, commit=False)
         if success:
             self.logging_service.log(
                 async_db=db,
@@ -165,7 +165,7 @@ class PartnerService:
             "is_active": True,
         }
 
-        api_key = await self.api_key_repo.async_create(db, **key_data)
+        api_key = await self.api_key_repo.async_create(db, commit=False, **key_data)
 
         self.logging_service.log(
             async_db=db,
@@ -219,7 +219,7 @@ class PartnerService:
         self, db: AsyncSession, api_key_id: int, reason: str
     ) -> bool:
         """Revoke an API key."""
-        api_key = await self.api_key_repo.async_revoke_key(db, api_key_id, reason)
+        api_key = await self.api_key_repo.async_revoke_key(db, api_key_id, reason, commit=False)
         if api_key:
             self.logging_service.log(
                 async_db=db,
@@ -252,7 +252,7 @@ class PartnerService:
             )
 
         # 1. Revoke old key
-        await self.api_key_repo.async_revoke_key(db, old_key.id, "Rotated by admin")
+        await self.api_key_repo.async_revoke_key(db, old_key.id, "Rotated by admin", commit=False)
 
         # 2. Issue new key with same parameters
         issue_request = ApiKeyIssueRequest(

@@ -60,6 +60,7 @@ class PartnerController:
                     after_state=payload.model_dump(),
                     ip_address=request.client.host if request and request.client else None
                 )
+            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(
@@ -68,6 +69,7 @@ class PartnerController:
                 )),
             )
         except IntegrityError:
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=jsonable_encoder(format_response(
@@ -75,6 +77,7 @@ class PartnerController:
                 )),
             )
         except Exception as e:
+            await db.rollback()
             logger.error(f"Failed to create partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -105,6 +108,7 @@ class PartnerController:
                     after_state=payload.model_dump(exclude_unset=True),
                     ip_address=request.client.host if request and request.client else None
                 )
+            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=jsonable_encoder(format_response(
@@ -113,6 +117,7 @@ class PartnerController:
                 )),
             )
         except Exception as e:
+            await db.rollback()
             logger.error(f"Failed to update partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -135,6 +140,7 @@ class PartnerController:
                         after_state=None,
                         ip_address=request.client.host if request and request.client else None
                     )
+                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=jsonable_encoder(format_response(
@@ -146,6 +152,7 @@ class PartnerController:
                 content=jsonable_encoder(format_response(success=False, error="Partner not found")),
             )
         except Exception as e:
+            await db.rollback()
             logger.error(f"Failed to delete partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -213,6 +220,7 @@ class PartnerController:
                     ip_address=request.client.host if request and request.client else None
                 )
 
+            await db.commit()
             # Use specific response schema that includes plaintext
             response_data = ApiKeyIssueResponse(
                 key_prefix=api_key.key_prefix,
@@ -227,11 +235,13 @@ class PartnerController:
                 content=jsonable_encoder(format_response(success=True, data=response_data.model_dump())),
             )
         except ValueError as e:
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content=jsonable_encoder(format_response(success=False, error=str(e))),
             )
         except Exception as e:
+            await db.rollback()
             logger.error(f"Failed to issue API key: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -278,6 +288,7 @@ class PartnerController:
                         after_state={"reason": payload.reason},
                         ip_address=request.client.host if request and request.client else None
                     )
+                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=jsonable_encoder(format_response(
@@ -289,6 +300,7 @@ class PartnerController:
                 content=jsonable_encoder(format_response(success=False, error="API key not found")),
             )
         except Exception as e:
+            await db.rollback()
             logger.error(f"Failed to revoke API key: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -323,6 +335,7 @@ class PartnerController:
                 expires_at=api_key.expires_at
             )
 
+            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(
@@ -332,11 +345,13 @@ class PartnerController:
                 )),
             )
         except ValueError as e:
+            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content=jsonable_encoder(format_response(success=False, error=str(e))),
             )
         except Exception as e:
+            await db.rollback()
             logger.error(f"Failed to rotate API key: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

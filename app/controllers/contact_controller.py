@@ -69,6 +69,7 @@ class ContactController:
             result = await self.contact_service.process_contact_submission(db, contact_data)
             
             if result.get("success"):
+                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -99,6 +100,7 @@ class ContactController:
                     content=response_data
                 )
             else:
+                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=False,
@@ -130,6 +132,7 @@ class ContactController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -324,6 +327,7 @@ class ContactController:
             result = await self.contact_service.update_contact_status(db, contact_id, new_status)
             
             if result.get("success"):
+                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -352,6 +356,7 @@ class ContactController:
                     content=response_data
                 )
             else:
+                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=False,
@@ -381,6 +386,7 @@ class ContactController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -444,6 +450,7 @@ class ContactController:
                 return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error=result.get("error", "Failed to retrieve contact list")))
         except Exception:
+            await db.rollback()
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -492,6 +499,7 @@ class ContactController:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
         except Exception:
+            await db.rollback()
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -576,6 +584,7 @@ class ContactController:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
         except Exception:
+            await db.rollback()
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     

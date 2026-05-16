@@ -74,6 +74,7 @@ class FeedbackController:
             print(feedback_data)
             
             if result.get("success"):
+                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -106,6 +107,7 @@ class FeedbackController:
                     content=response_data
                 )
             else:
+                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=False,
@@ -138,6 +140,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -336,6 +339,7 @@ class FeedbackController:
             result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status, partner_id=partner_id)
             
             if result.get("success"):
+                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -364,6 +368,7 @@ class FeedbackController:
                     content=response_data
                 )
             else:
+                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=False,
@@ -393,6 +398,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -585,7 +591,7 @@ class FeedbackController:
                         after_state=None,
                         ip_address=request.client.host if request and request.client else None
                     )
-                    await db.commit()
+                await db.commit()
 
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
@@ -643,6 +649,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -699,6 +706,7 @@ class FeedbackController:
                     after_state={"deleted_count": result.get("deleted_count")},
                     ip_address=request.client.host if request and request.client else None
                 )
+            if result.get("success"):
                 await db.commit()
 
             duration_ms = (time.time() - start_time) * 1000
@@ -754,6 +762,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -890,6 +899,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -936,6 +946,7 @@ class FeedbackController:
             result = await self.feedback_service.update_feedback_admin(db, feedback_id, update_data, partner_id=partner_id)
             
             if result.get("success"):
+                await db.commit()
                 feedback = result.get("data")
                 feedback_data = {
                     "id": feedback.id,
@@ -1007,6 +1018,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -1146,6 +1158,7 @@ class FeedbackController:
             duration_ms = (time.time() - start_time) * 1000
             
             if result.get("success"):
+                await db.commit()
                 response_data = {
                     "success": True,
                     "download_url": result.get("download_url"),
@@ -1203,6 +1216,7 @@ class FeedbackController:
                 )
                 
         except Exception as e:
+            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,

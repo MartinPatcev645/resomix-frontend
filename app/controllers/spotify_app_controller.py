@@ -236,6 +236,7 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 app_data = result.get("data")
                 if current_admin:
                     await self.admin_log_service.log_operation(
@@ -268,6 +269,7 @@ class SpotifyAppController:
                 )
 
             error_message = result.get("error", "Failed to create Spotify app")
+            await db.rollback()
             lowered_error = error_message.lower()
             if "already exists" in lowered_error:
                 status_code = status.HTTP_409_CONFLICT
@@ -290,6 +292,7 @@ class SpotifyAppController:
                 content=format_response(success=False, error=error_message),
             )
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -348,6 +351,7 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 if current_admin:
                     await self.admin_log_service.log_operation(
                         db=db,
@@ -376,6 +380,7 @@ class SpotifyAppController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "Failed to update Spotify app")
+            await db.rollback()
             lowered_error = error_message.lower()
             if "not found" in lowered_error:
                 status_code = status.HTTP_404_NOT_FOUND
@@ -400,6 +405,7 @@ class SpotifyAppController:
                 content=format_response(success=False, error=error_message),
             )
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -441,6 +447,7 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 if current_admin:
                     await self.admin_log_service.log_operation(
                         db=db,
@@ -472,6 +479,7 @@ class SpotifyAppController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "Failed to delete Spotify app")
+            await db.rollback()
             lowered_error = error_message.lower()
             if "not found" in lowered_error:
                 status_code = status.HTTP_404_NOT_FOUND
@@ -496,6 +504,7 @@ class SpotifyAppController:
                 content=format_response(success=False, error=error_message),
             )
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -718,6 +727,7 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 if current_admin:
                     await self.admin_log_service.log_operation(
                         db=db,
@@ -746,6 +756,7 @@ class SpotifyAppController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "Failed to save user association")
+            await db.rollback()
             lowered_error = error_message.lower()
             if "not found" in lowered_error:
                 status_code = status.HTTP_404_NOT_FOUND
@@ -770,6 +781,7 @@ class SpotifyAppController:
                 content=format_response(success=False, error=error_message),
             )
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
@@ -810,6 +822,7 @@ class SpotifyAppController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
+                await db.commit()
                 if current_admin:
                     await self.admin_log_service.log_operation(
                         db=db,
@@ -841,6 +854,7 @@ class SpotifyAppController:
                 return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
             error_message = result.get("error", "User association not found")
+            await db.rollback()
             status_code = (
                 status.HTTP_404_NOT_FOUND
                 if "not found" in error_message.lower()
@@ -864,6 +878,7 @@ class SpotifyAppController:
                 content=format_response(success=False, error=error_message),
             )
         except Exception as exc:
+            await db.rollback()
             self.logging_service.log(
                 async_db=db,
                 level="ERROR",
