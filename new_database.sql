@@ -1312,6 +1312,7 @@ CREATE TABLE IF NOT EXISTS ingestion_errors (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ingest_log_id BIGINT UNSIGNED NOT NULL,
     partner_id    INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
+    error_code    VARCHAR(50) NOT NULL,
     error_severity ENUM('warning', 'critical') DEFAULT 'critical',
     reference_node VARCHAR(255) COMMENT 'E.g., <ReleaseId> or specific ISRC string',
     error_message TEXT,

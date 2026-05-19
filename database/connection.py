@@ -197,7 +197,7 @@ def _do_orm_execute(execute_state):
         else:
             # STRICT CHECK: If pid is None, verify no partner-scoped models are targeted
             # EXCEPT for models used in tenant discovery (authentication)
-            EXEMPT_MODELS = {"PartnerApiKey", "Partner", "User", "UserToken", "UserSession"}
+            EXEMPT_MODELS = {"PartnerApiKey", "Partner", "User", "UserToken", "UserSession", "SftpUser"}
             
             for mapper in execute_state.all_mappers:
                 model_name = mapper.class_.__name__

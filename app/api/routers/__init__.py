@@ -46,6 +46,7 @@ from .open_tracks_pipeline import router as open_tracks_pipeline_router
 from .telemetry import router as telemetry_router
 from .purchases import router as purchases_router
 from .webhooks import router as webhooks_router
+from .internal.sftp import router as sftp_internal_router
 
 V1_PREFIX = "/api/v1"
 
@@ -89,10 +90,12 @@ v1_routers = [
     (dummy_router, V1_PREFIX),
     # Special case: webhooks_router has internal /api/v1 prefix
     (webhooks_router, ""), 
+    # Internal routes
+    (sftp_internal_router, ""),
 ]
 
 # Legacy support: Unversioned registration at root
-legacy_root_routers = [r for r, p in v1_routers if p == V1_PREFIX] + [webhooks_router]
+legacy_root_routers = [r for r, p in v1_routers if p == V1_PREFIX] + [webhooks_router, sftp_internal_router]
 
 # Kept for backward compatibility if any script uses it
 all_routers = [r for r, _ in v1_routers]
