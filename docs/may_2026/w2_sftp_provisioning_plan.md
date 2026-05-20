@@ -810,3 +810,51 @@ Phase 1 (DB)
 
 Phases 1 and 2 can be developed and tested locally without any Hetzner connectivity (the `hetzner_sftp_provision_url = None` dev mode from Phase 2). Phase 3 requires a live Hetzner connection for the end-to-end test. Phase 4 can be tested entirely locally using fixture files in a temporary directory.
 
+---
+
+## Appendix: Hetzner Sysadmin/Developer Handoff Guide
+
+If you are the engineer configuring the Hetzner server (SX65), you only need to focus on this section. 
+
+Alwyzon (the main application server) needs a way to remotely provision SFTPGo users and directories on your server. To achieve this, you need to deploy a small, internal HTTP API (written in Python/FastAPI) that Alwyzon will call over the private network.
+
+### 1. What You Need to Build
+
+You will expose a REST API on an internal IP (e.g., `10.0.0.x:8091` or `127.0.0.1:8091` if using an SSH tunnel) that Alwyzon can call.
+The API must be secured by a `Bearer` token (the `HETZNER_INTERNAL_API_KEY`).
+
+### 2. Required Endpoints
+
+**1. `POST /internal/provision-sftp-user`**
+
+- **Purpose**: Creates the partner's folder structure and registers the virtual user in SFTPGo.
+- **Request Body**:
+  ```json
+  {
+    "partner_id": 42,
+    "username": "acme_records",
+    "password_hash": "$2b$12$...",
+    "home_dir": "/srv/sftp/partners/42",
+    "quota_bytes": 10737418240,
+    "use_public_key": false,
+    "public_key": null
+  }
+  ```
+- **Actions your script must take**:
+  1. Authenticate the `Authorization: Bearer <token>` header against the `HETZNER_INTERNAL_API_KEY`.
+  2. Create directories: `incoming`, `processed`, `error`, and `test` inside the `home_dir`.
+  3. `chown` the directories to the SFTPGo user (usually `uid=1000, gid=1000`) and set permissions (`chmod 750`).
+  4. Call the local SFTPGo Admin REST API (`POST http://127.0.0.1:8090/api/v2/users`) to create the user, passing the `username`, `password` (which is already hashed), `home_dir`, `quota_size`, and `public_keys` if provided.
+  5. If the user already exists (SFTPGo returns HTTP 409), fallback to `PUT /api/v2/users/{username}` to update them.
+- **Response**: Return HTTP 200 with `{"status": "ok", "home_dir": "...", "sftpgo_user_created": true}`.
+
+**2. `DELETE /internal/provision-sftp-user/{username}`**
+
+- **Purpose**: Disables or removes the SFTPGo user when a partner is decommissioned.
+- **Actions**: Call SFTPGo Admin API to delete the user. Rename their directory to `/srv/sftp/partners/{partner_id}__decommissioned_{timestamp}`.
+
+### 3. Setup and Security
+
+- **Do not expose this API to the public internet**. Bind it to your private VLAN IP or localhost.
+- Configure UFW/firewall to only allow Alwyzon's IP on port `8091`.
+- You can find a complete, ready-to-run Python script (`main.py`) in **Phase 3** above (under the `hetzner_provisioning/` section). Just install `fastapi`, `uvicorn`, and `httpx`, and set it up as a `systemd` service.

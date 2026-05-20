@@ -36,12 +36,20 @@ def temp_sftp_dir():
     with tempfile.TemporaryDirectory() as temp_dir:
         old_val = os.environ.get("SFTP_BASE_PATH")
         os.environ["SFTP_BASE_PATH"] = temp_dir
+        
+        from app.core.config import settings
+        old_setting = settings.sftp_base_path
+        settings.sftp_base_path = temp_dir
+        
         yield temp_dir
+        
         # Teardown
         if old_val is not None:
             os.environ["SFTP_BASE_PATH"] = old_val
         elif "SFTP_BASE_PATH" in os.environ:
             del os.environ["SFTP_BASE_PATH"]
+            
+        settings.sftp_base_path = old_setting
 
 @pytest.fixture
 async def setup_two_partners():

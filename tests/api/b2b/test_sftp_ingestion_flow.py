@@ -20,13 +20,19 @@ from database.connection import AsyncSessionLocal
 
 @pytest.fixture(scope="module")
 def temp_sftp_dir():
-    """Create a temporary directory for SFTP testing and inject it into the environment."""
     with tempfile.TemporaryDirectory() as temp_dir:
         os.environ["SFTP_BASE_PATH"] = temp_dir
+        
+        # Also patch the global settings object used by the app
+        from app.core.config import settings
+        original_base_path = settings.sftp_base_path
+        settings.sftp_base_path = temp_dir
+        
         yield temp_dir
-        # Teardown
+        
         if "SFTP_BASE_PATH" in os.environ:
             del os.environ["SFTP_BASE_PATH"]
+        settings.sftp_base_path = original_base_path
 
 @pytest.fixture
 async def setup_sftp_partner():
@@ -207,6 +213,8 @@ async def test_sftp_ingestion_flow(setup_sftp_partner, temp_sftp_dir):
         ingest_log = log_res.scalar_one_or_none()
         
         assert ingest_log is not None
+        print(f"DEBUG: ingest_log.status={ingest_log.status}")
+        print(f"DEBUG: ingest_log.error_message={ingest_log.error_message}")
         assert ingest_log.status == "FAILED" # Because row 2 had an error
         assert ingest_log.track_count == 1 # 1 successful row
         

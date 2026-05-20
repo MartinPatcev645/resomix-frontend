@@ -33,8 +33,19 @@ def test_tracks():
         try:
             res = session.execute(text("SELECT party_id FROM parties LIMIT 1")).fetchone()
             if res: party_id = res[0]
+            else:
+                session.execute(text("INSERT IGNORE INTO parties (party_id, party_name) VALUES ('ARGO_01', 'Test Party')"))
+                session.commit()
+                
             res = session.execute(text("SELECT id FROM ingest_logs LIMIT 1")).fetchone()
             if res: ingest_log_id = res[0]
+            else:
+                session.execute(text(
+                    "INSERT IGNORE INTO ingest_logs (id, partner_id, party_id, status) "
+                    "VALUES (1, :pid, :party, 'COMPLETED')"
+                ), {"pid": PARTNER_1_ID, "party": party_id})
+                session.commit()
+                ingest_log_id = 1
         except Exception:
             pass
 
