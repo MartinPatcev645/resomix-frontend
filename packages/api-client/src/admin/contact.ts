@@ -231,4 +231,28 @@ export const exportContact = async (
       expires_at: "",
     };
   }
-}; 
+};
+
+/**
+ * Get a single contact submission by ID (Admin)
+ */
+export const getContactById = async (contactId: number) => {
+  try {
+    const data = await axiosWrapper<{ success: boolean; data: ContactItem }>(
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DETAIL}${contactId}`)
+    );
+
+    if (data.success) return data;
+
+    return {
+      success: false,
+      error: (data as ApiResponse).error || "Failed to fetch contact details.",
+      data: null,
+    };
+  } catch (error) {
+    return {
+      ...handleApiError(error as Error),
+      data: null,
+    };
+  }
+};

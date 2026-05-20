@@ -89,14 +89,26 @@ export interface ApiConfig {
     ADMIN_USER_SEARCH: string;
     ADMIN_PARTNER_LIST: string;
     ADMIN_PARTNER_CREATE: string;
+    ADMIN_PARTNER_DETAIL: string;
     ADMIN_PARTNER_API_KEY_ISSUE: string;
     ADMIN_PARTNER_API_KEY_LIST: string;
     ADMIN_PARTNER_API_KEY_REVOKE: string;
     ADMIN_PARTNER_API_KEY_ROTATE: string;
+    ADMIN_PARTNER_SFTP_PROVISION: string;
     ADMIN_AUTH_LOGIN: string;
     ADMIN_PROMO_CREATE: string;
     ADMIN_SIMILARITY_REBUILD: string;
     PARTNER_ME: string;
+    // User management
+    ADMIN_USER_DETAIL: string;
+    // Role management
+    ADMIN_ROLE_DETAIL: string;
+    ADMIN_ROLE_PERMISSIONS_UPDATE: string;
+    // Feedback detail
+    ADMIN_FEEDBACK_DETAIL: string;
+    ADMIN_FEEDBACK_STATS: string;
+    // Contact detail
+    ADMIN_CONTACT_DETAIL: string;
     
     // Telemetry
     TELEMETRY_SYNC: string;
@@ -225,28 +237,31 @@ export const API_CONFIG: ApiConfig = {
  
     // Admin endpoints
     ADMIN_FEEDBACK_LIST: "/api/v1/admin/feedback/",
-    ADMIN_FEEDBACK_DELETE: "/api/v1/admin/feedback/delete/",
+    ADMIN_FEEDBACK_DETAIL: "/api/v1/admin/feedback/",        // GET|PATCH|DELETE /{id}
+    ADMIN_FEEDBACK_STATS: "/api/v1/admin/feedback/stats",
+    ADMIN_FEEDBACK_DELETE: "/api/v1/admin/feedback/",        // DELETE /{id}
     ADMIN_FEEDBACK_BATCH_DELETE: "/api/v1/admin/feedback/batch-delete",
-    ADMIN_FEEDBACK_UPDATE: "/api/v1/admin/feedback/update/",
-    ADMIN_FEEDBACK_MARK_STATUS: "/api/v1/admin/feedback/mark-status/",
+    ADMIN_FEEDBACK_UPDATE: "/api/v1/admin/feedback/",        // PATCH /{id}
+    ADMIN_FEEDBACK_MARK_STATUS: "/api/v1/admin/feedback/",   // PATCH /{id}/status
     ADMIN_FEEDBACK_EXPORT: "/api/v1/admin/feedback/export",
     ADMIN_CONTACT_LIST: "/api/v1/admin/contact/",
-    ADMIN_CONTACT_DELETE: "/api/v1/admin/contact/delete/",
+    ADMIN_CONTACT_DETAIL: "/api/v1/admin/contact/",          // GET|DELETE /{id}
+    ADMIN_CONTACT_DELETE: "/api/v1/admin/contact/",          // DELETE /{id}
     ADMIN_CONTACT_BATCH_DELETE: "/api/v1/admin/contact/batch-delete",
-    ADMIN_CONTACT_UPDATE: "/api/v1/admin/contact/update/",
+    ADMIN_CONTACT_UPDATE: "/api/v1/admin/contact/",          // (reserved for future PATCH)
     ADMIN_CONTACT_MARK_STATUS: "/api/v1/admin/contact/mark-status/",
     ADMIN_CONTACT_EXPORT: "/api/v1/admin/contact/export",
     ADMIN_WAITLIST_LIST: "/api/v1/admin/waitlist/",
-    ADMIN_WAITLIST_DELETE: "/api/v1/admin/waitlist/delete/",
+    ADMIN_WAITLIST_DELETE: "/api/v1/admin/waitlist/",        // DELETE /{id}
     ADMIN_WAITLIST_BATCH_DELETE: "/api/v1/admin/waitlist/batch-delete",
     ADMIN_WAITLIST_UPDATE_STATUS: "/api/v1/admin/waitlist/update-status/",
     ADMIN_WAITLIST_EXPORT: "/api/v1/admin/waitlist/export",
     ADMIN_PLAYLIST_LIST: "/api/v1/admin/playlist/",
-    ADMIN_PLAYLIST_DELETE: "/api/v1/admin/playlist/delete/",
+    ADMIN_PLAYLIST_DELETE: "/api/v1/admin/playlist/",        // DELETE /{id}
     ADMIN_PLAYLIST_BATCH_DELETE: "/api/v1/admin/playlist/batch-delete",
     ADMIN_PLAYLIST_EXPORT: "/api/v1/admin/playlist/export",
     ADMIN_PLAYLIST_DETAILS: "/api/v1/admin/playlist/",
-    ADMIN_PLAYLIST_VISIBILITY: "/api/v1/admin/playlist/visibility/",
+    ADMIN_PLAYLIST_VISIBILITY: "/api/v1/admin/playlist/",    // PATCH /{id}/visibility
     ADMIN_PLAYLIST_BATCH_VISIBILITY: "/api/v1/admin/playlist/batch-visibility",
     ADMIN_OPERATION_TYPES: "/api/v1/admin/operation-limits/operation-types",
     ADMIN_OPERATION_LIMITS: "/api/v1/admin/operation-limits/",
@@ -254,13 +269,20 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_SPOTIFY_APPS: "/api/v1/admin/spotify-apps/",
     ADMIN_SPOTIFY_APP_USERS: "/api/v1/admin/spotify-apps/users",
     ADMIN_USER_SEARCH: "/api/v1/users/search",
+    // User management
+    ADMIN_USER_DETAIL: "/api/v1/admin/users/",              // GET|PATCH|POST /{uuid}/*
+    // Role management
+    ADMIN_ROLE_DETAIL: "/api/v1/admin/roles/",              // GET /{role_name}
+    ADMIN_ROLE_PERMISSIONS_UPDATE: "/api/v1/admin/roles/",  // PUT /{role_name}/permissions
     // Partner Management
     ADMIN_PARTNER_LIST: "/api/v1/admin/partners/",
     ADMIN_PARTNER_CREATE: "/api/v1/admin/partners/",
+    ADMIN_PARTNER_DETAIL: "/api/v1/admin/partners/",         // GET|PATCH|DELETE /{id}
     ADMIN_PARTNER_API_KEY_ISSUE: "/api/v1/admin/partners/api-keys/issue",
     ADMIN_PARTNER_API_KEY_LIST: "/api/v1/admin/partners/api-keys/",
     ADMIN_PARTNER_API_KEY_REVOKE: "/api/v1/admin/partners/api-keys/revoke",
     ADMIN_PARTNER_API_KEY_ROTATE: "/api/v1/admin/partners/api-keys/rotate",
+    ADMIN_PARTNER_SFTP_PROVISION: "/api/v1/admin/partners/sftp/provision",
     ADMIN_AUTH_LOGIN: "/api/v1/admin/auth/login",
     ADMIN_PROMO_CREATE: "/api/v1/admin/promo/create",
     ADMIN_SIMILARITY_REBUILD: "/api/v1/admin/similarity/rebuild-index",

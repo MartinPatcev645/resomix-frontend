@@ -101,4 +101,75 @@ export const createAdminUser = async (userData: any) => {
   }
 };
 
+/**
+ * Get a single user's details by UUID (Admin)
+ */
+export const getAdminUser = async (userUuid: string) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}`)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
 
+/**
+ * Update a user's profile by UUID (Admin)
+ */
+export const updateAdminUser = async (userUuid: string, userData: Record<string, any>) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}`, userData)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Toggle a user's active/inactive status (Admin)
+ */
+export const toggleUserStatus = async (userUuid: string) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}/toggle-status`)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Get details of a specific system role by name (Admin)
+ */
+export const getRoleDetails = async (roleName: string) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_ROLE_DETAIL}${encodeURIComponent(roleName)}`)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Update the permissions assigned to a system role (Admin)
+ */
+export const updateRolePermissions = async (roleName: string, permissions: string[]) => {
+  try {
+    const response = await axiosWrapper<any>(
+      axiosInstance.put(
+        `${API_CONFIG.ENDPOINTS.ADMIN_ROLE_PERMISSIONS_UPDATE}${encodeURIComponent(roleName)}/permissions`,
+        { permissions }
+      )
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};

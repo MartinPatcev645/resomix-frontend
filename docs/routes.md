@@ -101,6 +101,10 @@ The API supports three main tiers of authentication based on the actor:
   ```
 - **Returns**: Same as Login response.
 
+### 1.3.1 Email Verification
+- **Verify Email**: `GET /api/v1/auth/verify-email?token=...`
+- **Resend Verification**: `POST /api/v1/auth/resend-verification` `{"email": "..."}`
+
 ### 1.4 Refresh Token
 
 - **URL**: `POST /api/v1/auth/refresh`
@@ -529,6 +533,7 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
   - Returns: `{"id": 1, "name": "...", "tier": "...", "is_active": true}`
 - **Create Partner**: `POST /api/v1/admin/partners/`
 - **List Partners**: `GET /api/v1/admin/partners/` (supports `page`, `page_size`, `tier`, `is_active`)
+- **Get Partner Detail**: `GET /api/v1/admin/partners/{partner_id}`
 - **Update Partner**: `PATCH /api/v1/admin/partners/{partner_id}`
 - **Delete Partner**: `DELETE /api/v1/admin/partners/{partner_id}`
 - **Issue API Key**: `POST /api/v1/admin/partners/api-keys/issue`
@@ -536,14 +541,25 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
 - **Revoke API Key**: `POST /api/v1/admin/partners/api-keys/revoke`
 - **Rotate API Key**: `POST /api/v1/admin/partners/api-keys/rotate`
 
+#### SFTP Provisioning (Admin)
+- **Provision SFTP Partner**: `POST /api/v1/admin/partners/sftp/provision`
+  - Body: `{"partner_id": 42, "username": "...", "password": "...", "use_public_key": false, "public_key": null}`
+- **Get SFTP Status**: `GET /api/v1/admin/partners/{partner_id}/sftp`
+- **Retry SFTP Provisioning**: `POST /api/v1/admin/partners/{partner_id}/sftp/retry`
+
 ### 17.3 User & Role Management (Admin) (`/api/v1/admin/users`, `/api/v1/admin/roles`)
 
 - **List/Search Users**: `GET /api/v1/admin/users` (Requires Admin Auth)
+- **Get User Details**: `GET /api/v1/admin/users/{user_uuid}`
 - **Create User**: `POST /api/v1/admin/users`
+- **Update User**: `PATCH /api/v1/admin/users/{user_uuid}`
+- **Toggle User Status**: `POST /api/v1/admin/users/{user_uuid}/toggle-status`
 - **Assign Role**: `POST /api/v1/admin/users/{user_uuid}/roles` `{"role_name": "admin"}`
 - **Remove Role**: `DELETE /api/v1/admin/users/{user_uuid}/roles/{role_name}`
 - **List System Roles**: `GET /api/v1/admin/roles`
+- **Get Role Details**: `GET /api/v1/admin/roles/{role_name}`
 - **List System Permissions**: `GET /api/v1/admin/roles/permissions`
+- **Update Role Permissions**: `PUT /api/v1/admin/roles/{role_name}/permissions` `{"permissions": ["...", "..."]}`
 - **Legacy User Search**: `GET /api/v1/users/search` (Deprecated)
 
 ### 17.4 Operation Limits (`/api/v1/admin/operation-limits`)
@@ -558,10 +574,10 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
 
 - **List Playlists**: `GET /api/v1/admin/playlist/`
 - **Get Detail**: `GET /api/v1/admin/playlist/{uuid}`
-- **Delete Single**: `DELETE /api/v1/admin/playlist/delete/{playlist_id}`
+- **Delete Single**: `DELETE /api/v1/admin/playlist/{playlist_id}`
 - **Batch Delete**: `POST /api/v1/admin/playlist/batch-delete`
 - **Export CSV**: `POST /api/v1/admin/playlist/export`
-- **Visibility**: `PATCH /api/v1/admin/playlist/visibility/{id}`
+- **Visibility**: `PATCH /api/v1/admin/playlist/{playlist_id}/visibility`
 - **Batch Visibility**: `POST /api/v1/admin/playlist/batch-visibility`
 
 ### 17.6 Admin Waitlist Management (`/api/v1/admin/waitlist`)
@@ -584,10 +600,11 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
 - **List Feedback**: `GET /api/v1/admin/feedback/`
 - **Get Feedback**: `GET /api/v1/admin/feedback/{feedback_id}`
 - **Feedback Stats**: `GET /api/v1/admin/feedback/stats`
-- **Update Feedback**: `PATCH /api/v1/admin/feedback/{feedback_id}`
+- **Update Feedback Content**: `PATCH /api/v1/admin/feedback/{feedback_id}`
 - **Delete Feedback**: `DELETE /api/v1/admin/feedback/{feedback_id}`
-- **Mark Feedback Status**: `POST /api/v1/admin/feedback/mark-status/{feedback_id}`
+- **Update Feedback Status**: `PATCH /api/v1/admin/feedback/{feedback_id}/status`
 - **Batch Delete Feedback**: `POST /api/v1/admin/feedback/batch-delete`
+- **Export Feedback**: `POST /api/v1/admin/feedback/export`
 
 ### 17.8 Spotify Apps (Admin) (`/api/v1/admin/spotify-apps`)
 
@@ -598,7 +615,7 @@ These endpoints are used by the internal admin dashboard or B2B integrations and
 - **Delete App**: `DELETE /api/v1/admin/spotify-apps/{app_id}`
 - **List User Associations**: `GET /api/v1/admin/spotify-apps/users`
 - **Upsert Association**: `PUT /api/v1/admin/spotify-apps/users`
-- **Delete Association**: `DELETE /api/v1/admin/spotify-apps/users`
+- **Delete Association**: `DELETE /api/v1/admin/spotify-apps/users/{user_identifier}`
 
 ### 17.9 Admin Similarity (`/api/v1/admin/similarity`)
 
@@ -642,3 +659,4 @@ Errors are typically returned as:
   "error": "Error description message"
 }
 ```
+

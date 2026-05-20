@@ -306,7 +306,7 @@ export const getPlaylistDetails = async (playlistUuid: string) => {
 export const adminChangePlaylistVisibility = async (playlistId: number, isPublic: boolean) => {
   try {
     const data = await axiosWrapper<PlaylistVisibilityResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}`, {
+      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}/visibility`, {
         is_public: isPublic,
       })
     );

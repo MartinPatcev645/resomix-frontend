@@ -187,7 +187,7 @@ export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpd
 export const getFeedbackById = async (feedbackId: number) => {
   try {
     const data = await axiosWrapper<{ success: boolean; data: FeedbackItem }>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST}${feedbackId}`)
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DETAIL}${feedbackId}`)
     );
 
     if (data.success) return data;
@@ -260,12 +260,12 @@ export const exportFeedback = async (
 };
 
 /**
- * Mark feedback as open or resolved
+ * Mark feedback status as open or resolved (Admin)
  */
 export const markFeedbackStatus = async (feedbackId: number, status: 'open' | 'resolved') => {
   try {
     const data = await axiosWrapper<FeedbackUpdateResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_MARK_STATUS}${feedbackId}`, {
+      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_MARK_STATUS}${feedbackId}/status`, {
         status,
       })
     );
@@ -282,7 +282,7 @@ export const markFeedbackStatus = async (feedbackId: number, status: 'open' | 'r
 };
 
 /**
- * Get feedback statistics/summary
+ * Get feedback statistics/summary (Admin)
  */
 export const getFeedbackStats = async () => {
   try {
@@ -297,7 +297,7 @@ export const getFeedbackStats = async () => {
         by_category: Record<string, number>;
       };
     }>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST}stats`)
+      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_STATS)
     );
 
     if (data.success) return data;

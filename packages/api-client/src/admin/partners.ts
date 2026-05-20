@@ -119,3 +119,90 @@ export const getPartnerMe = async () => {
     return handleApiError(error) as any;
   }
 };
+
+/**
+ * Get a single partner's details by ID (Admin)
+ */
+export const getPartnerDetail = async (partnerId: number): Promise<{ success: boolean; data?: Partner; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+// ─── SFTP Provisioning Types ───────────────────────────────
+
+export interface SftpProvisionRequest {
+  partner_id: number;
+  username: string;
+  password: string;
+  use_public_key?: boolean;
+  public_key?: string | null;
+}
+
+export interface SftpProvisionResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    host: string;
+    port: number;
+    username: string;
+  };
+  error?: string;
+}
+
+export interface SftpStatusResponse {
+  success: boolean;
+  data?: {
+    provisioned: boolean;
+    host: string | null;
+    port: number | null;
+    username: string | null;
+    last_provisioned_at: string | null;
+  };
+  error?: string;
+}
+
+// ─── SFTP API Calls ────────────────────────────────────────
+
+/**
+ * Provision SFTP access for a partner (Admin)
+ */
+export const provisionSftpPartner = async (payload: SftpProvisionRequest): Promise<SftpProvisionResponse> => {
+  try {
+    return await axiosWrapper(
+      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_SFTP_PROVISION, payload)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Get SFTP provisioning status for a partner (Admin)
+ */
+export const getSftpStatus = async (partnerId: number): Promise<SftpStatusResponse> => {
+  try {
+    return await axiosWrapper(
+      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Retry SFTP provisioning for a partner (Admin)
+ */
+export const retrySftpProvisioning = async (partnerId: number): Promise<SftpProvisionResponse> => {
+  try {
+    return await axiosWrapper(
+      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/retry`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
