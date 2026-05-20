@@ -12,7 +12,7 @@ Date: May 09, 2026
 
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, model_validator
 from enum import Enum
 
 from app.schemas.common import APIResponse, PaginationResponse, PaginatedResponse
@@ -140,3 +140,44 @@ class ApiKeyRotateRequest(BaseModel):
     """Request to rotate an API key (revokes old, issues new)."""
     api_key_id: int
     label: Optional[str] = None
+
+
+# --- SFTP Provisioning Schemas ---
+
+class SftpProvisionRequest(BaseModel):
+    """Request payload to provision SFTP access for a partner."""
+    partner_id: int
+    username: str = Field(..., min_length=3, max_length=64, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(..., min_length=12)
+    use_public_key: bool = False
+    public_key: Optional[str] = None
+    allowed_ip: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_public_key(self):
+        if self.use_public_key and not self.public_key:
+            raise ValueError("public_key is required when use_public_key is True")
+        return self
+
+
+class SftpProvisionResponse(BaseModel):
+    """Response returned upon successful SFTP provisioning."""
+    sftp_user_id: int
+    partner_id: int
+    username: str
+    home_dir: str
+    use_public_key: bool
+    sftp_host: str
+    sftp_port: int
+    provisioned_at: datetime
+
+
+class SftpStatusResponse(BaseModel):
+    """Lightweight read-only view of a partner's SFTP status."""
+    sftp_user_id: int
+    username: str
+    is_active: bool
+    use_public_key: bool
+    has_allowed_ip: bool
+    sftp_provisioned_at: Optional[datetime]
+    home_dir: Optional[str]

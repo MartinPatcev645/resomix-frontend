@@ -28,6 +28,9 @@ from app.schemas.partner import (
     ApiKeyListResponse,
     ApiKeyRevokeRequest,
     ApiKeyRotateRequest,
+    SftpProvisionRequest,
+    SftpProvisionResponse,
+    SftpStatusResponse,
 )
 
 router = APIRouter(
@@ -164,3 +167,47 @@ async def rotate_api_key(
     _: User = Depends(require_permission("partners:manage"))
 ) -> JSONResponse:
     return await partner_controller.rotate_api_key(db, request, payload, current_admin=current_admin)
+
+
+@router.post(
+    "/sftp/provision",
+    response_model=SftpProvisionResponse,
+    status_code=201,
+    summary="Provision SFTP Access",
+)
+async def provision_sftp(
+    request: Request,
+    payload: SftpProvisionRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("partners:manage"))
+) -> JSONResponse:
+    return await partner_controller.provision_partner_sftp(db, request, payload, current_admin=current_admin)
+
+
+@router.get(
+    "/{partner_id}/sftp",
+    response_model=SftpStatusResponse,
+    summary="Get SFTP Status",
+)
+async def get_sftp_status(
+    partner_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+) -> JSONResponse:
+    return await partner_controller.get_partner_sftp_status(db, partner_id)
+
+
+@router.post(
+    "/{partner_id}/sftp/retry",
+    response_model=SftpStatusResponse,
+    summary="Retry SFTP Provisioning",
+)
+async def retry_sftp_provisioning(
+    request: Request,
+    partner_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("partners:manage"))
+) -> JSONResponse:
+    return await partner_controller.retry_partner_sftp(db, request, partner_id, current_admin=current_admin)

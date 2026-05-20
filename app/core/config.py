@@ -69,6 +69,22 @@ class Settings(BaseModel):
         default=None,
         description="Internal API key for securely deleting tracks on the Hetzner Audio Processing Server",
     )
+    hetzner_sftp_provision_url: Optional[str] = Field(
+        default=None,
+        description="URL of the internal provisioning script on Hetzner",
+    )
+    sftp_server_host: str = Field(
+        default="sftp.resomix.com",
+        description="Public-facing SFTP hostname for partners",
+    )
+    sftp_server_port: int = Field(
+        default=2222,
+        description="SFTPGo listening port",
+    )
+    sftp_base_path: str = Field(
+        default="/srv/sftp",
+        description="Base path for SFTP partner directories",
+    )
     resomix_server_url: str = Field(
         default="http://localhost:8001", description="URL of the Resomix server"
     )
@@ -483,6 +499,10 @@ class Settings(BaseModel):
             "MONGODB_URI": "mongodb_uri",
             "SIMILARITY_SERVER_URL": "similarity_server_url",
             "HETZNER_INTERNAL_API_KEY": "hetzner_internal_api_key",
+            "HETZNER_SFTP_PROVISION_URL": "hetzner_sftp_provision_url",
+            "SFTP_SERVER_HOST": "sftp_server_host",
+            "SFTP_SERVER_PORT": "sftp_server_port",
+            "SFTP_BASE_PATH": "sftp_base_path",
             "REDIS_URL": "redis_url",
             "RESOMIX_SERVER_URL": "resomix_server_url",
             "PUBLIC_ALWYZON_URL": "public_alwyzon_url",

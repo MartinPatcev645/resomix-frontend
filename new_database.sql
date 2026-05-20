@@ -1284,23 +1284,34 @@ CREATE TABLE IF NOT EXISTS contacts (
 
 
 -- 45. SFTP USERS
--- Virtual users for labels to upload content via SFTP.
+-- Virtual users for B2B partners to upload content via SFTP.
+-- Extended W2-4: provisioning columns for automated SFTPGo user creation.
 CREATE TABLE IF NOT EXISTS sftp_users (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    label_id INT UNSIGNED NOT NULL,
-    partner_id INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    home_directory VARCHAR(500) NOT NULL,
-    is_active TINYINT(1) DEFAULT 1,
-    user_id INT UNSIGNED DEFAULT NULL COMMENT 'Link to platform user (RBAC Part 1)',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE RESTRICT,
-    FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE RESTRICT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_sftp_partner (partner_id),
-    INDEX idx_sftp_user_active (username, is_active),
-    INDEX idx_sftp_user_id (user_id)
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    -- Legacy label FK — nullable for direct B2B partner accounts (W2-4)
+    label_id        INT UNSIGNED          DEFAULT NULL COMMENT 'Legacy label FK; NULL for B2B partner SFTP accounts',
+    partner_id      INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
+    username        VARCHAR(255) NOT NULL UNIQUE,
+    -- bcrypt hash; NULL when use_public_key=TRUE and no password is configured
+    password_hash   VARCHAR(255)          DEFAULT NULL COMMENT 'bcrypt hash; nullable for public-key-only accounts',
+    home_directory  VARCHAR(500) NOT NULL COMMENT 'Legacy home dir; prefer sftp_home_dir for provisioned accounts',
+    is_active       TINYINT(1)   NOT NULL DEFAULT 1,
+    user_id         INT UNSIGNED          DEFAULT NULL COMMENT 'Link to platform user (RBAC Part 1)',
+    -- W2-4 Provisioning fields ------------------------------------------------
+    public_key      TEXT                  DEFAULT NULL COMMENT 'OpenSSH public key for key-based SFTP auth',
+    use_public_key  TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'Return public key list to SFTPGo auth hook when 1',
+    allowed_ip      VARCHAR(255)          DEFAULT NULL COMMENT 'Comma-separated IP/CIDR whitelist for SFTPGo filters',
+    sftp_home_dir   VARCHAR(500)          DEFAULT NULL COMMENT 'SFTPGo chroot path, e.g. /srv/sftp/partners/42',
+    sftp_provisioned_at DATETIME          DEFAULT NULL COMMENT 'When Hetzner SFTPGo provisioning succeeded; NULL = pending',
+    -- -------------------------------------------------------------------------
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (label_id)   REFERENCES labels(id)    ON DELETE RESTRICT,
+    FOREIGN KEY (partner_id) REFERENCES partners(id)  ON DELETE RESTRICT,
+    FOREIGN KEY (user_id)    REFERENCES users(id)     ON DELETE SET NULL,
+    -- Compound index for provisioning service queries (get_by_partner_id, get_unprovisioned)
+    INDEX idx_sftp_partner_active (partner_id, is_active),
+    INDEX idx_sftp_user_active    (username, is_active),
+    INDEX idx_sftp_user_id        (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

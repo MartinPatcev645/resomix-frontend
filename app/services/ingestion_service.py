@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
+from typing import Optional
 from app.models.b2b import IngestLog, IngestionError, Deal
 from app.models.track import Track
 from app.core.context import set_current_partner_id
@@ -23,13 +24,22 @@ from database.connection import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
-async def process_ingestion_batch(partner_id: int, batch_path: str):
+async def process_ingestion_batch(
+    partner_id: int, 
+    batch_path: str, 
+    csv_path: Optional[str] = None, 
+    checksum_verified: bool = False, 
+    validation_error: Optional[str] = None
+):
     """
     Background task to process a partner's uploaded CSV manifest.
     
     Args:
         partner_id: The tenant ID.
         batch_path: The absolute path to the partner's incoming SFTP directory.
+        csv_path: Absolute path to the CSV file if already discovered.
+        checksum_verified: Whether the CSV was already verified via checksum.
+        validation_error: Early validation error string, if any.
     """
     logger.info(f"[IngestionService] Starting batch process for partner {partner_id} at {batch_path}")
     
@@ -57,15 +67,27 @@ async def process_ingestion_batch(partner_id: int, batch_path: str):
         await db.commit()
         await db.refresh(log_entry)
 
+        if validation_error:
+            # We already failed pre-flight validation
+            log_entry.status = "FAILED"
+            log_entry.error_message = validation_error
+            log_entry.completed_at = datetime.utcnow()
+            await db.commit()
+            return
+
         try:
             # 1. Locate the manifest CSV file
-            folder = Path(batch_path)
-            csv_files = list(folder.glob("*.csv"))
-            
-            if not csv_files:
-                raise FileNotFoundError("No CSV manifest found in the incoming directory.")
-            
-            manifest_path = csv_files[0]
+            if csv_path:
+                manifest_path = Path(csv_path)
+            else:
+                folder = Path(batch_path)
+                csv_files = list(folder.glob("*.csv"))
+                
+                if not csv_files:
+                    raise FileNotFoundError("No CSV manifest found in the incoming directory.")
+                
+                manifest_path = csv_files[0]
+                
             logger.info(f"[IngestionService] Found manifest: {manifest_path}")
             
             # Update log with filename
