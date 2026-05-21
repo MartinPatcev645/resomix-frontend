@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS partners (
     legal_name      VARCHAR(255) NOT NULL,
     display_name    VARCHAR(255) NOT NULL,
     contact_email   VARCHAR(255) NOT NULL UNIQUE,
-    vat_number      VARCHAR(64)  DEFAULT NULL            COMMENT 'EU VAT number; validated via VIES (W4-4)',
+    vat_number      VARCHAR(64)  DEFAULT NULL            COMMENT 'EU VAT number, validated via VIES (W4-4)',
     country_code    CHAR(2)      DEFAULT NULL            COMMENT 'ISO 3166-1 alpha-2',
     tier            ENUM('sandbox','starter','growth','enterprise')
                     NOT NULL DEFAULT 'sandbox'           COMMENT 'Drives quota limits and feature flags',
@@ -114,26 +114,6 @@ CREATE TABLE IF NOT EXISTS partner_usage_logs (
     INDEX idx_usage_endpoint     (endpoint, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
--- 55a. ADMIN OPERATION LOGS
--- Comprehensive audit trail for all administrative operations (RBAC Part 1).
-CREATE TABLE IF NOT EXISTS admin_operation_logs (
-    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    admin_user_id   INT UNSIGNED NOT NULL,
-    action          VARCHAR(100) NOT NULL           COMMENT 'e.g. feedback.resolve, user.role.assign, partner.api_key.revoke',
-    target_type     VARCHAR(50)  NOT NULL           COMMENT 'e.g. user, partner, feedback, role',
-    target_id       VARCHAR(100) NOT NULL           COMMENT 'UUID or internal ID of target resource',
-    before_state    JSON         DEFAULT NULL       COMMENT 'Snapshot before mutation',
-    after_state     JSON         DEFAULT NULL       COMMENT 'Snapshot after mutation',
-    ip_address      VARCHAR(45)  DEFAULT NULL,
-    user_agent      VARCHAR(500) DEFAULT NULL,
-    correlation_id  CHAR(36)     DEFAULT NULL,
-    created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-    INDEX idx_admin_op_admin (admin_user_id),
-    INDEX idx_admin_op_time  (created_at),
-    INDEX idx_admin_op_target (target_type, target_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- 56. PARTNER WEBHOOKS
@@ -367,6 +347,28 @@ CREATE TABLE IF NOT EXISTS user_roles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- 55a. ADMIN OPERATION LOGS
+-- Comprehensive audit trail for all administrative operations (RBAC Part 1).
+CREATE TABLE IF NOT EXISTS admin_operation_logs (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id   INT UNSIGNED DEFAULT NULL,
+    action          VARCHAR(100) NOT NULL           COMMENT 'e.g. feedback.resolve, user.role.assign, partner.api_key.revoke',
+    target_type     VARCHAR(50)  NOT NULL           COMMENT 'e.g. user, partner, feedback, role',
+    target_id       VARCHAR(100) NOT NULL           COMMENT 'UUID or internal ID of target resource',
+    before_state    JSON         DEFAULT NULL       COMMENT 'Snapshot before mutation',
+    after_state     JSON         DEFAULT NULL       COMMENT 'Snapshot after mutation',
+    ip_address      VARCHAR(45)  DEFAULT NULL,
+    user_agent      VARCHAR(500) DEFAULT NULL,
+    correlation_id  CHAR(36)     DEFAULT NULL,
+    created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+    INDEX idx_admin_op_admin (admin_user_id),
+    INDEX idx_admin_op_time  (created_at),
+    INDEX idx_admin_op_target (target_type, target_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
 -- 13. ROLE PERMISSIONS
 -- Junction mapping roles to their permitted actions.
 CREATE TABLE IF NOT EXISTS role_permissions (
@@ -533,8 +535,8 @@ CREATE TABLE tracks (
     key_signature       VARCHAR(10),
     audio_language      CHAR(2) DEFAULT 'xx',          -- DDEX LanguageCode
     language_of_lyrics  VARCHAR(10),
-    genre               VARCHAR(255),
-    sub_genre           VARCHAR(255),
+    genre_id            INT UNSIGNED,                  -- FK → genres.id (top-level genre)
+    sub_genre_id        INT UNSIGNED,                  -- FK → genres.id (sub-genre leaf)
     price_cents         INT UNSIGNED DEFAULT 99,       -- Default 99 cents
     mix_name            VARCHAR(150) DEFAULT 'Original Mix',
     type                VARCHAR(50) DEFAULT 'electrobuzz',
@@ -555,17 +557,21 @@ CREATE TABLE tracks (
     updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
 
-    KEY idx_track_title  (title),
-    KEY idx_track_bpm    (bpm),
-    KEY idx_track_key    (musical_key),
-    KEY idx_track_active (is_active),
-    KEY idx_track_source (ingestion_source),
-    KEY idx_isrc         (isrc),
-    KEY idx_party        (party_id),
+    KEY idx_track_title     (title),
+    KEY idx_track_bpm       (bpm),
+    KEY idx_track_key       (musical_key),
+    KEY idx_track_active    (is_active),
+    KEY idx_track_source    (ingestion_source),
+    KEY idx_isrc            (isrc),
+    KEY idx_party           (party_id),
+    KEY idx_track_genre     (genre_id),
+    KEY idx_track_sub_genre (sub_genre_id),
 
-    FOREIGN KEY (user_id)    REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (party_id)   REFERENCES parties(party_id),
-    FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE RESTRICT
+    FOREIGN KEY (user_id)      REFERENCES users(id)   ON DELETE SET NULL,
+    FOREIGN KEY (party_id)     REFERENCES parties(party_id),
+    FOREIGN KEY (partner_id)   REFERENCES partners(id) ON DELETE RESTRICT,
+    FOREIGN KEY (genre_id)     REFERENCES genres(id)  ON DELETE SET NULL,
+    FOREIGN KEY (sub_genre_id) REFERENCES genres(id)  ON DELETE SET NULL
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
@@ -600,8 +606,8 @@ CREATE TABLE releases (
     c_line_text             VARCHAR(512),
     p_line                  VARCHAR(255),
     c_line                  VARCHAR(255),
-    genre                   VARCHAR(255),
-    sub_genre               VARCHAR(255),
+    genre_id                INT UNSIGNED,              -- FK → genres.id (top-level genre)
+    sub_genre_id            INT UNSIGNED,              -- FK → genres.id (sub-genre leaf)
     parental_warning        ENUM('NoAdviceAvailable','NotExplicit','Explicit','ExplicitContentEdited')
                             DEFAULT 'NotExplicit',
     is_compilation          TINYINT(1) DEFAULT 0,
@@ -612,25 +618,33 @@ CREATE TABLE releases (
     updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
 
-    KEY idx_release_label    (label_id),
-    KEY idx_release_catalog  (catalog_number),
-    KEY idx_release_active   (is_active),
-    KEY idx_icpn             (icpn),
-    KEY idx_party            (party_id),
-    KEY idx_message          (message_id),
+    KEY idx_release_label       (label_id),
+    KEY idx_release_catalog     (catalog_number),
+    KEY idx_release_active      (is_active),
+    KEY idx_icpn                (icpn),
+    KEY idx_party               (party_id),
+    KEY idx_message             (message_id),
+    KEY idx_release_genre       (genre_id),
+    KEY idx_release_sub_genre   (sub_genre_id),
 
 
     CONSTRAINT fk_release_label 
-        FOREIGN KEY (label_id)  REFERENCES labels(id) ON DELETE SET NULL,
+        FOREIGN KEY (label_id)      REFERENCES labels(id)   ON DELETE SET NULL,
 
     CONSTRAINT fk_release_party 
-        FOREIGN KEY (party_id)  REFERENCES parties(party_id),
+        FOREIGN KEY (party_id)      REFERENCES parties(party_id),
 
     CONSTRAINT fk_release_message 
-        FOREIGN KEY (message_id) REFERENCES messages(message_id),
+        FOREIGN KEY (message_id)    REFERENCES messages(message_id),
 
     CONSTRAINT fk_release_partner
-        FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE RESTRICT
+        FOREIGN KEY (partner_id)    REFERENCES partners(id) ON DELETE RESTRICT,
+
+    CONSTRAINT fk_release_genre
+        FOREIGN KEY (genre_id)      REFERENCES genres(id)   ON DELETE SET NULL,
+
+    CONSTRAINT fk_release_sub_genre
+        FOREIGN KEY (sub_genre_id)  REFERENCES genres(id)   ON DELETE SET NULL
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
@@ -967,6 +981,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     uuid          VARCHAR(36) NOT NULL UNIQUE,
     user_id INT UNSIGNED,
+    partner_id    INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation',
     name          VARCHAR(150) NOT NULL,
     is_public     TINYINT(1) DEFAULT 0,
     type          ENUM('custom','similarity','waiting_segments') DEFAULT 'custom',
@@ -980,7 +995,9 @@ CREATE TABLE IF NOT EXISTS playlists (
     FOREIGN KEY (seed_track_id) REFERENCES tracks(id) ON DELETE SET NULL,
     FOREIGN KEY (user_id)      REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (fork_id)      REFERENCES playlists(uuid) ON DELETE SET NULL,
+    FOREIGN KEY (partner_id)   REFERENCES partners(id) ON DELETE RESTRICT,
     KEY idx_playlist_user (user_id),
+    KEY idx_playlist_partner (partner_id),
     KEY idx_playlist_uuid (uuid),
     KEY idx_playlist_fork (fork_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1289,12 +1306,12 @@ CREATE TABLE IF NOT EXISTS contacts (
 CREATE TABLE IF NOT EXISTS sftp_users (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Legacy label FK — nullable for direct B2B partner accounts (W2-4)
-    label_id        INT UNSIGNED          DEFAULT NULL COMMENT 'Legacy label FK; NULL for B2B partner SFTP accounts',
+    label_id        INT UNSIGNED          DEFAULT NULL COMMENT 'Legacy label FK - NULL for B2B partner SFTP accounts',
     partner_id      INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Multi-tenant isolation (W1-4)',
     username        VARCHAR(255) NOT NULL UNIQUE,
     -- bcrypt hash; NULL when use_public_key=TRUE and no password is configured
-    password_hash   VARCHAR(255)          DEFAULT NULL COMMENT 'bcrypt hash; nullable for public-key-only accounts',
-    home_directory  VARCHAR(500) NOT NULL COMMENT 'Legacy home dir; prefer sftp_home_dir for provisioned accounts',
+    password_hash   VARCHAR(255)          DEFAULT NULL COMMENT 'bcrypt hash - nullable for public-key-only accounts',
+    home_directory  VARCHAR(500) NOT NULL COMMENT 'Legacy home dir - prefer sftp_home_dir for provisioned accounts',
     is_active       TINYINT(1)   NOT NULL DEFAULT 1,
     user_id         INT UNSIGNED          DEFAULT NULL COMMENT 'Link to platform user (RBAC Part 1)',
     -- W2-4 Provisioning fields ------------------------------------------------
@@ -1302,7 +1319,7 @@ CREATE TABLE IF NOT EXISTS sftp_users (
     use_public_key  TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'Return public key list to SFTPGo auth hook when 1',
     allowed_ip      VARCHAR(255)          DEFAULT NULL COMMENT 'Comma-separated IP/CIDR whitelist for SFTPGo filters',
     sftp_home_dir   VARCHAR(500)          DEFAULT NULL COMMENT 'SFTPGo chroot path, e.g. /srv/sftp/partners/42',
-    sftp_provisioned_at DATETIME          DEFAULT NULL COMMENT 'When Hetzner SFTPGo provisioning succeeded; NULL = pending',
+    sftp_provisioned_at DATETIME          DEFAULT NULL COMMENT 'When Hetzner SFTPGo provisioning succeeded - NULL = pending',
     -- -------------------------------------------------------------------------
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (label_id)   REFERENCES labels(id)    ON DELETE RESTRICT,

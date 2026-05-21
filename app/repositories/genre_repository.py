@@ -112,21 +112,21 @@ class GenreRepository(BaseRepository[Genre]):
     
     def get_popular_genres(self, db: Session, limit: int = 20) -> list[Genre]:
         """Get most popular genres based on track count.
-        
-        Genre is now a string field on Track. We match Track.genre to Genre.name.
-        
+
+        Joins via the genre_id foreign key on Track for accurate counts.
+
         Args:
             db: Database session
             limit: Maximum number of genres to return
-            
+
         Returns:
             List of genres ordered by track count (descending)
         """
         from app.models.track import Track
-        
+
         return (
             db.query(self.model)
-            .join(Track, Track.genre == self.model.name)
+            .join(Track, Track.genre_id == self.model.id)
             .group_by(self.model.id)
             .order_by(db.func.count(Track.id).desc())
             .limit(limit)
@@ -140,10 +140,10 @@ class GenreRepository(BaseRepository[Genre]):
         
         stmt = (
             select(self.model)
-            .join(Track, Track.genre == self.model.name)
+            .join(Track, Track.genre_id == self.model.id)
             .group_by(self.model.id)
             .order_by(func.count(Track.id).desc())
             .limit(limit)
         )
         result = await db.execute(stmt)
-        return result.scalars().all() 
+        return result.scalars().all()

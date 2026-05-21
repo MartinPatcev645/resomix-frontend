@@ -40,10 +40,10 @@ class AdminOperationLog(Base):
     id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
     
     # Who performed the operation
-    admin_user_id: Mapped[int] = mapped_column(
+    admin_user_id: Mapped[Optional[int]] = mapped_column(
         mysql.INTEGER(unsigned=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True
     )
     
@@ -71,7 +71,7 @@ class AdminOperationLog(Base):
     )
 
     # Relationships
-    admin_user: Mapped["User"] = relationship("User", foreign_keys=[admin_user_id])
+    admin_user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[admin_user_id])
 
     def __repr__(self) -> str:
         return f"<AdminOperationLog(id={self.id}, action='{self.action}', admin_id={self.admin_user_id})>"

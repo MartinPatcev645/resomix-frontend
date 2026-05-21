@@ -25,15 +25,27 @@ def upgrade() -> None:
         
     with open(sql_file_path, 'r') as f:
         sql_content = f.read()
-        
-    # Split by semicolon to execute individual statements
-    # Split by semicolon and execute non-empty statements
-    # We strip block comments to avoid skipping statements that start with them
+    
     import re
-    
-    # Remove block comments: /* ... */
+
+    # 1. Remove block comments: /* ... */
     sql_clean = re.sub(r'/\*.*?\*/', '', sql_content, flags=re.DOTALL)
-    
+
+    # 2. Remove line comments: -- ...  (but only outside string literals).
+    #    A simple line-by-line strip is safe here because the schema uses
+    #    single-line -- comments exclusively (no -- inside string values).
+    lines = []
+    for line in sql_clean.splitlines():
+        # Strip -- comment suffix while preserving any preceding SQL on the line.
+        # We must not strip '--' that appears inside a quoted string, but the
+        # schema does not have such cases, so a simple find is sufficient.
+        comment_pos = line.find('--')
+        if comment_pos != -1:
+            line = line[:comment_pos]
+        lines.append(line)
+    sql_clean = '\n'.join(lines)
+
+    # 3. Split on ';' and execute each non-empty statement.
     statements = sql_clean.split(';')
     for statement in statements:
         stripped = statement.strip()

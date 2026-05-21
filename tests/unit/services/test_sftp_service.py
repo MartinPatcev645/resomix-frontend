@@ -35,7 +35,7 @@ def sftp_service():
 @pytest.mark.asyncio
 class TestSftpService:
     
-    def test_get_quota_bytes(self, sftp_service):
+    async def test_get_quota_bytes(self, sftp_service):
         assert sftp_service.get_quota_bytes("sandbox") == 1073741824
         assert sftp_service.get_quota_bytes("enterprise") == 0
         assert sftp_service.get_quota_bytes("unknown") == 1073741824 # fallback

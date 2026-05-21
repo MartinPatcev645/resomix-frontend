@@ -1,0 +1,13 @@
+isrc,audio_filename,title,version_title,display_artist,duration_ms,bpm,musical_key,genre,sub_genre,mix_name,parental_warning,is_explicit,is_instrumental,audio_language,language_of_lyrics,p_line_year,p_line_text,upc_ean,album_title,label_name,release_date
+USUM71701234,usum71701234_starlight.wav,Starlight,Radio Edit,The Electrobeats,215000,128,4A,Electronic,Synthwave,Original Mix,NotExplicit,0,0,en,en,2026,Reform Studios,190296987654,Starlight Hits EP,Reform Studios,2026-05-15
+,missing_isrc.wav,Missing ISRC Track,Edit,Vocal Haze,185000,95,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+INVALID12345,malformed_isrc.wav,Malformed ISRC Track,Edit,Vocal Haze,185000,95,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+GBBGD1987654,gbbgd1987654_neon_nights.wav,,Extended Mix,DJ Solarflare,380000,124,8B,Dance,Deep House,Extended,NotExplicit,0,0,xx,xx,2025,Solar Records,190296987655,Neon Nights Album,Solar Records,2025-11-20
+USAT22300099,,Missing Filename Track,Original,Vocal Haze,185000,95,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+DEZ022411122,invalid_extension.exe,Invalid Extension Track,Original,Ambient Voyager,310000,80,1A,Ambient,Drone,Original Mix,NotExplicit,0,1,xx,xx,2026,Echo Ambient,190296987657,Ethereal Landscapes,Echo Ambient,2026-04-01
+FRZ032422233,valid_filename.wav,Invalid BPM Track,Original,Vocal Haze,185000,999,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+ESZ042433344,valid_filename2.wav,Invalid Duration Track,Original,Vocal Haze,-25000,95,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+ITZ052444455,valid_filename3.wav,Invalid Parental Warning,Original,Vocal Haze,185000,95,11A,Hip Hop,Trap,,SuperExplicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+JPZ062455566,valid_filename4.wav,Invalid Release Date,Original,Vocal Haze,185000,95,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026/02/10
+KRZ072466677,valid_filename5.wav,Invalid Language Code,Original,Vocal Haze,185000,95,11A,Hip Hop,Trap,,Explicit,1,0,english,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+USUM71701234,usum71701234_starlight.wav,Duplicate ISRC Track,Radio Edit,The Electrobeats,215000,128,4A,Electronic,Synthwave,Original Mix,NotExplicit,0,0,en,en,2026,Reform Studios,190296987654,Starlight Hits EP,Reform Studios,2026-05-15

@@ -119,18 +119,17 @@ class PartnerService:
 
     async def delete_partner(self, db: AsyncSession, partner_id: int) -> bool:
         """
-        Delete a partner. Performs a hard delete in this implementation.
-        Revokes all associated API keys as well.
+        Delete a partner. Performs a hard delete.
+        Hard-deletes all associated API keys first to satisfy FK constraints,
+        then removes the partner record itself.
         """
         partner = await self.partner_repo.async_get_by_id(db, partner_id)
         if not partner:
             return False
 
-        # Revoke all keys first (audit trail)
-        keys = await self.api_key_repo.async_list_keys_for_partner(db, partner_id)
-        for key in keys:
-            if key.is_active:
-                await self.api_key_repo.async_revoke_key(db, key.id, "Partner deleted", commit=False)
+        # Hard-delete all API keys — soft revoke alone leaves rows that violate
+        # the ON DELETE RESTRICT FK on partner_api_keys.partner_id.
+        await self.api_key_repo.async_delete_keys_for_partner(db, partner_id)
 
         success = await self.partner_repo.async_delete(db, partner_id, commit=False)
         if success:

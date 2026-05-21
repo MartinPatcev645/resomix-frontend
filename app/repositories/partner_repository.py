@@ -10,7 +10,7 @@ Date: May 09, 2026
 """
 
 from typing import List, Optional, Any, Dict, Tuple
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -108,6 +108,11 @@ class PartnerApiKeyRepository(BaseRepository[PartnerApiKey]):
             revoked_at=func.now(), 
             revoked_reason=reason
         )
+
+    async def async_delete_keys_for_partner(self, db: AsyncSession, partner_id: int) -> None:
+        """Hard-delete ALL API keys for a partner (required before partner deletion to satisfy FK constraint)."""
+        stmt = delete(PartnerApiKey).where(PartnerApiKey.partner_id == partner_id)
+        await db.execute(stmt)
 
     async def async_touch_last_used(self, db: AsyncSession, api_key_id: int, client_ip: str):
         """Update last used timestamp and IP (non-blocking)."""

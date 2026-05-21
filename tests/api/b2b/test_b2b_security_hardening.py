@@ -264,12 +264,26 @@ async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_di
     
     csv_file = incoming_path / "metadata.csv"
     with open(csv_file, "w", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["isrc", "title"])
+        writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist"])
         writer.writeheader()
         # Row 2 contains SQL injection attempt
-        writer.writerow({"isrc": "USSQL2600001", "title": "'; DROP TABLE tracks; --"})
+        writer.writerow({
+            "isrc": "USSQL2600001",
+            "title": "'; DROP TABLE tracks; --",
+            "audio_filename": "track1.wav",
+            "display_artist": "Artist 1"
+        })
         # Row 3 contains Path Traversal attempt
-        writer.writerow({"isrc": "USPAT2600002", "title": "../../../../etc/passwd"})
+        writer.writerow({
+            "isrc": "USPAT2600002",
+            "title": "../../../../etc/passwd",
+            "audio_filename": "track2.wav",
+            "display_artist": "Artist 2"
+        })
+
+    # Write dummy physical files to pass validation
+    (incoming_path / "track1.wav").write_text("dummy")
+    (incoming_path / "track2.wav").write_text("dummy")
     
     # Trigger Event Hook directly (simulates SFTPGo finishing the upload)
     transport = ASGITransport(app=app)

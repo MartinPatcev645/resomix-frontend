@@ -71,9 +71,19 @@ class Track(Base):
     audio_language: Mapped[Optional[str]] = mapped_column(String(2), default="xx")
     language_of_lyrics: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     
-    # Metadata
-    genre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    sub_genre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # Genre — FK → genres.id
+    genre_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("genres.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    sub_genre_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True),
+        ForeignKey("genres.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     price_cents: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), default=99)
     mix_name: Mapped[Optional[str]] = mapped_column(String(150), default="Original Mix")
     track_type: Mapped[Optional[str]] = mapped_column("type", String(50), default="electrobuzz")
@@ -105,6 +115,14 @@ class Track(Base):
     )
 
 
+
+    # Genre relationships
+    genre: Mapped[Optional["Genre"]] = relationship(
+        "Genre", foreign_keys=[genre_id], lazy="joined"
+    )
+    sub_genre: Mapped[Optional["Genre"]] = relationship(
+        "Genre", foreign_keys=[sub_genre_id], lazy="joined"
+    )
 
     # Audio files associated with this track
     audio_files: Mapped[List["AudioFile"]] = relationship(
@@ -138,6 +156,16 @@ class Track(Base):
     partner: Mapped["Partner"] = relationship(
         "Partner", foreign_keys=[partner_id]
     )
+
+    @property
+    def genre_name(self) -> Optional[str]:
+        """Convenience accessor — returns the genre name string (or None)."""
+        return self.genre.name if self.genre else None
+
+    @property
+    def sub_genre_name(self) -> Optional[str]:
+        """Convenience accessor — returns the sub-genre name string (or None)."""
+        return self.sub_genre.name if self.sub_genre else None
 
     @property
     def duration(self) -> Optional[float]:

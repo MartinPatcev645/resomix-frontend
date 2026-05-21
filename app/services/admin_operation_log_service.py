@@ -25,7 +25,7 @@ class AdminOperationLogService:
     @staticmethod
     async def log_operation(
         db: AsyncSession,
-        admin_user_id: int,
+        admin_user_id: Optional[int],
         action: str,
         target_type: str,
         target_id: str,
@@ -40,8 +40,11 @@ class AdminOperationLogService:
         Does not commit; caller manages the transaction.
         """
         try:
+            # Map 0 (system/test bypass context user ID) or None to None to avoid FK constraint issues
+            mapped_user_id = None if admin_user_id == 0 or admin_user_id is None else admin_user_id
+
             log_entry = AdminOperationLog(
-                admin_user_id=admin_user_id,
+                admin_user_id=mapped_user_id,
                 action=action,
                 target_type=target_type,
                 target_id=target_id,

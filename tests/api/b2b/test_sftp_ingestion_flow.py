@@ -151,8 +151,8 @@ async def test_sftp_auth_hook_invalid_password(setup_sftp_partner, temp_sftp_dir
     assert data["username"] == ""
 
 @pytest.mark.asyncio
-async def test_sftp_ingestion_flow(setup_sftp_partner, temp_sftp_dir):
-    """Test the full event hook and CSV ingestion process."""
+async def test_sftp_ingestion_flow_failed(setup_sftp_partner, temp_sftp_dir):
+    """Test that a single row failure rejects and rolls back the entire batch."""
     creds = setup_sftp_partner
     partner_id = creds["partner_id"]
     
@@ -160,16 +160,19 @@ async def test_sftp_ingestion_flow(setup_sftp_partner, temp_sftp_dir):
     from app.core.context import set_current_partner_id
     set_current_partner_id(partner_id)
     
-    # Setup dummy CSV file in the expected path
     incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "incoming"
     incoming_path.mkdir(parents=True, exist_ok=True)
     
+    # Write physical audio files
+    (incoming_path / "track1.wav").write_text("audio data")
+    (incoming_path / "track2.wav").write_text("audio data")
+    
     csv_file = incoming_path / "metadata.csv"
     with open(csv_file, "w", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["isrc", "title"])
+        writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist"])
         writer.writeheader()
-        writer.writerow({"isrc": "USXXX2600001", "title": "Test Track 1"})
-        writer.writerow({"isrc": "", "title": "Test Track 2"}) # Invalid: missing ISRC
+        writer.writerow({"isrc": "USXXX2600001", "title": "Test Track 1", "audio_filename": "track1.wav", "display_artist": "Artist One"})
+        writer.writerow({"isrc": "", "title": "Test Track 2", "audio_filename": "track2.wav", "display_artist": "Artist Two"}) # Invalid: missing ISRC
     
     # 1. Trigger the event hook
     async with AsyncClient(app=app, base_url="http://test") as ac:
@@ -187,7 +190,6 @@ async def test_sftp_ingestion_flow(setup_sftp_partner, temp_sftp_dir):
     assert response.json()["status"] == "ok"
     
     # 2. Wait for BackgroundTask to complete in the background loop
-    # Wait up to 5 seconds for the DB writes to complete
     max_wait = 5.0
     wait_interval = 0.5
     elapsed = 0.0
@@ -204,28 +206,22 @@ async def test_sftp_ingestion_flow(setup_sftp_partner, temp_sftp_dir):
             await asyncio.sleep(wait_interval)
             elapsed += wait_interval
     
-    # 3. Verify Database state
+    # 3. Verify Database state - Atomic Rollback
     async with AsyncSessionLocal() as db:
-        # Check IngestLog again (refreshed)
         from sqlalchemy import select
         log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
         log_res = await db.execute(log_stmt)
         ingest_log = log_res.scalar_one_or_none()
         
         assert ingest_log is not None
-        print(f"DEBUG: ingest_log.status={ingest_log.status}")
-        print(f"DEBUG: ingest_log.error_message={ingest_log.error_message}")
         assert ingest_log.status == "FAILED" # Because row 2 had an error
-        assert ingest_log.track_count == 1 # 1 successful row
+        assert ingest_log.track_count == 0 # 0 ingested tracks because of rollback!
         
-        # Check Track
+        # Check Track table is empty for this partner
         track_stmt = select(Track).where(Track.partner_id == partner_id)
         track_res = await db.execute(track_stmt)
         tracks = track_res.scalars().all()
-        
-        assert len(tracks) == 1
-        assert tracks[0].isrc == "USXXX2600001"
-        assert tracks[0].title == "Test Track 1"
+        assert len(tracks) == 0
         
         # Check IngestionError
         err_stmt = select(IngestionError).where(IngestionError.ingest_log_id == ingest_log.id)
@@ -234,3 +230,92 @@ async def test_sftp_ingestion_flow(setup_sftp_partner, temp_sftp_dir):
         
         assert len(errors) == 1
         assert "Missing required field 'isrc'" in errors[0].error_message
+
+
+@pytest.mark.asyncio
+async def test_sftp_ingestion_flow_success(setup_sftp_partner, temp_sftp_dir):
+    """Test successful ingestion when all rows are valid and physical files exist."""
+    creds = setup_sftp_partner
+    partner_id = creds["partner_id"]
+    
+    from app.core.context import set_current_partner_id
+    set_current_partner_id(partner_id)
+    
+    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "incoming"
+    incoming_path.mkdir(parents=True, exist_ok=True)
+    
+    # Write physical files
+    (incoming_path / "track1.wav").write_text("audio data 1")
+    (incoming_path / "track2.wav").write_text("audio data 2")
+    
+    csv_file = incoming_path / "metadata.csv"
+    with open(csv_file, "w", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist", "bpm"])
+        writer.writeheader()
+        writer.writerow({"isrc": "USXXX2600001", "title": "Test Track 1", "audio_filename": "track1.wav", "display_artist": "Artist One", "bpm": "128"})
+        writer.writerow({"isrc": "GBBGD1987654", "title": "Test Track 2", "audio_filename": "track2.wav", "display_artist": "Artist Two", "bpm": "120"})
+        
+    # Trigger the event hook
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/event",
+            json={
+                "action": "upload",
+                "name": ".done",
+                "username": creds["username"],
+                "virtual_target_path": "/incoming/.done"
+            }
+        )
+    
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    
+    max_wait = 5.0
+    wait_interval = 0.5
+    elapsed = 0.0
+    
+    ingest_log = None
+    async with AsyncSessionLocal() as db:
+        while elapsed < max_wait:
+            from sqlalchemy import select
+            log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
+            log_res = await db.execute(log_stmt)
+            ingest_log = log_res.scalar_one_or_none()
+            if ingest_log and ingest_log.status in ["COMPLETED", "FAILED"]:
+                break
+            await asyncio.sleep(wait_interval)
+            elapsed += wait_interval
+            
+    # Verify Database state - Successful Commit
+    async with AsyncSessionLocal() as db:
+        from sqlalchemy import select
+        log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
+        log_res = await db.execute(log_stmt)
+        ingest_log = log_res.scalar_one_or_none()
+        
+        assert ingest_log is not None
+        assert ingest_log.status == "COMPLETED"
+        assert ingest_log.track_count == 2
+        
+        # Check Tracks exist
+        track_stmt = select(Track).where(Track.partner_id == partner_id).order_by(Track.id)
+        track_res = await db.execute(track_stmt)
+        tracks = track_res.scalars().all()
+        
+        assert len(tracks) == 2
+        assert tracks[0].isrc == "USXXX2600001"
+        assert tracks[0].bpm == 128
+        assert tracks[1].isrc == "GBBGD1987654"
+        assert tracks[1].bpm == 120
+        
+        # Check Audio files exist and are associated
+        from app.models.audio_file import AudioFile
+        audio_stmt = select(AudioFile).where(AudioFile.partner_id == partner_id).order_by(AudioFile.id)
+        audio_res = await db.execute(audio_stmt)
+        audios = audio_res.scalars().all()
+        
+        assert len(audios) == 2
+        assert audios[0].track_id == tracks[0].id
+        assert audios[0].original_filename == "track1.wav"
+        assert audios[1].track_id == tracks[1].id
+        assert audios[1].original_filename == "track2.wav"

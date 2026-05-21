@@ -1367,12 +1367,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         Track.bpm,
                         Track.musical_key,
                         Track.p_line_year.label("year"),
-                        Track.genre.label("genre_name"),
+                        Genre.name.label("genre_name"),
                         Label.label_name,
                     )
                     .outerjoin(ReleaseTrack, Track.id == ReleaseTrack.track_id)
                     .outerjoin(Release, ReleaseTrack.release_id == Release.id)
                     .outerjoin(Label, Release.label_id == Label.id)
+                    .outerjoin(Genre, Track.genre_id == Genre.id)
                     .where(Track.id == playlist.seed_track_id)
                     .limit(1)
                 )
@@ -1422,7 +1423,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     Track.musical_key,
                     AudioFile.stored_path.label("file_path"),
                     Track.created_at,
-                    Track.genre.label("genre_name"),
+                    Genre.name.label("genre_name"),
                     Label.label_name,
                     Release.title.label("release_title"),
                 )
@@ -1431,6 +1432,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 .outerjoin(ReleaseTrack, Track.id == ReleaseTrack.track_id)
                 .outerjoin(Release, ReleaseTrack.release_id == Release.id)
                 .outerjoin(Label, Release.label_id == Label.id)
+                .outerjoin(Genre, Track.genre_id == Genre.id)
                 .where(PlaylistTrack.playlist_id == playlist.id)
                 .order_by(PlaylistTrack.position.asc())
             )

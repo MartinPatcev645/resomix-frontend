@@ -81,35 +81,49 @@ class SeedDataManager:
             return False
 
     def seed_rbac(self) -> bool:
-        """Seed roles and permissions."""
-        logger.info("🔐 Seeding RBAC...")
+        """Seed roles and permissions from the authoritative app.core.rbac definitions."""
+        logger.info("🔐 Seeding RBAC (modern permissions)...")
         try:
+            from app.core.rbac import ROLES, PERMISSIONS, ROLE_PERMISSIONS
+
             with self.engine.begin() as conn:
-                # 1. Roles
-                roles = [
-                    ('admin', 'System administrator with full access'),
+                # 1. Insert all permissions
+                for perm_name, perm_desc in PERMISSIONS.items():
+                    conn.execute(
+                        text("INSERT IGNORE INTO permissions (name, description) VALUES (:name, :desc)"),
+                        {'name': perm_name, 'desc': perm_desc}
+                    )
+
+                # 2. Insert all roles
+                for role_name, role_desc in ROLES.items():
+                    conn.execute(
+                        text("INSERT IGNORE INTO roles (name, description) VALUES (:name, :desc)"),
+                        {'name': role_name, 'desc': role_desc}
+                    )
+
+                # 3. Also insert legacy role names used by seed_users() (listener, creator, distributor)
+                legacy_roles = [
                     ('listener', 'Standard user with basic playback and playlist features'),
                     ('creator', 'User who can upload and manage content'),
-                    ('distributor', 'B2B partner with access to reports and ingestion')
+                    ('distributor', 'B2B partner with access to reports and ingestion'),
                 ]
-                for name, desc in roles:
-                    conn.execute(text("INSERT IGNORE INTO roles (name, description) VALUES (:name, :desc)"), {'name': name, 'desc': desc})
+                for role_name, role_desc in legacy_roles:
+                    conn.execute(
+                        text("INSERT IGNORE INTO roles (name, description) VALUES (:name, :desc)"),
+                        {'name': role_name, 'desc': role_desc}
+                    )
 
-                # 2. Permissions
-                perms = [
-                    ('track.view', 'View tracks'),
-                    ('track.stream', 'Stream audio'),
-                    ('track.download', 'Download tracks'),
-                    ('admin.all', 'Root access')
-                ]
-                for name, desc in perms:
-                    conn.execute(text("INSERT IGNORE INTO permissions (name, description) VALUES (:name, :desc)"), {'name': name, 'desc': desc})
+                # 4. Assign permissions to roles
+                for role_name, perm_names in ROLE_PERMISSIONS.items():
+                    for perm_name in perm_names:
+                        conn.execute(text("""
+                            INSERT IGNORE INTO role_permissions (role_id, permission_id)
+                            SELECT r.id, p.id
+                            FROM roles r
+                            JOIN permissions p ON p.name = :perm
+                            WHERE r.name = :role
+                        """), {'role': role_name, 'perm': perm_name})
 
-                # 3. Role-Permission mappings
-                conn.execute(text("""
-                    INSERT IGNORE INTO role_permissions (role_id, permission_id)
-                    SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'admin'
-                """))
                 return True
         except Exception as e:
             logger.error(f"Failed to seed RBAC: {e}")
@@ -276,22 +290,32 @@ class SeedDataManager:
                         seen_releases[album_title] = rid
                     rid = seen_releases[album_title]
 
-                    # 3. Insert Track
+                    # 3. Insert Track — resolve genre name → genre_id FK
                     duration_ms = int(float(track_info.get('duration_sec') or 0) * 1000)
                     tuid = track_info.get('uuid')
-                    
+                    genre_name = track_info.get('genre_name')
+
+                    # Resolve genre string to genres.id (genres are already seeded at this point)
+                    genre_id_val = None
+                    if genre_name:
+                        row = conn.execute(
+                            text("SELECT id FROM genres WHERE name = :name LIMIT 1"),
+                            {'name': genre_name}
+                        ).fetchone()
+                        genre_id_val = row[0] if row else None
+
                     conn.execute(text("""
-                        INSERT INTO tracks (uuid, party_id, isrc, title, duration_ms, bpm, musical_key, genre, p_line_year, ingestion_source, partner_id)
-                        VALUES (:uuid, 'ARGO_01', :isrc, :title, :dur, :bpm, :mkey, :genre, :year, 'csv', 1)
+                        INSERT INTO tracks (uuid, party_id, isrc, title, duration_ms, bpm, musical_key, genre_id, p_line_year, ingestion_source, partner_id)
+                        VALUES (:uuid, 'ARGO_01', :isrc, :title, :dur, :bpm, :mkey, :genre_id, :year, 'csv', 1)
                         ON DUPLICATE KEY UPDATE title=:title
                     """), {
                         'uuid': tuid,
-                        'isrc': f"SEED-{tuid[:10]}", # Placeholder ISRC (max 15 chars)
+                        'isrc': f"SEED-{tuid[:10]}",  # Placeholder ISRC (max 15 chars)
                         'title': track_info.get('title'),
                         'dur': duration_ms,
                         'bpm': track_info.get('bpm'),
                         'mkey': track_info.get('musical_key'),
-                        'genre': track_info.get('genre_name'),
+                        'genre_id': genre_id_val,
                         'year': track_info.get('year')
                     })
                     tid = conn.execute(text("SELECT id FROM tracks WHERE uuid = :uuid"), {'uuid': tuid}).scalar()

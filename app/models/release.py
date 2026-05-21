@@ -7,7 +7,7 @@ It maps to the releases table which replaces the old albums table for DDEX compl
 """
 
 from typing import List, Optional
-from sqlalchemy import String, Date, ForeignKey, DateTime, Enum, Boolean
+from sqlalchemy import String, Date, ForeignKey, DateTime, Enum, Boolean, Integer
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
@@ -75,8 +75,8 @@ class Release(Base):
     p_line: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     c_line: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
-    genre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    sub_genre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    genre_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True)
+    sub_genre_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("genres.id", ondelete="SET NULL"), nullable=True, index=True)
     
     parental_warning: Mapped[Optional[str]] = mapped_column(
         Enum('NoAdviceAvailable','NotExplicit','Explicit','ExplicitContentEdited'),

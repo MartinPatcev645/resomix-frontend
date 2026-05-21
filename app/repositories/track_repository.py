@@ -325,8 +325,6 @@ class TrackRepository(BaseRepository[Track]):
     def search_by_genre(self, db: Session, genre_name: str, limit: int = 100, partner_id: Optional[int] = None) -> List[Track]:
         """Search tracks by genre name with optional partner scoping.
         
-        Genre is now a string field on Track, not a FK relationship.
-        
         Args:
             db: Database session
             genre_name: Genre name to search for
@@ -336,7 +334,11 @@ class TrackRepository(BaseRepository[Track]):
         Returns:
             List of Track instances
         """
-        query = db.query(self.model).filter(self.model.genre.ilike(f"%{genre_name}%"))
+        query = (
+            db.query(self.model)
+            .join(Genre, self.model.genre_id == Genre.id)
+            .filter(Genre.name.ilike(f"%{genre_name}%"))
+        )
         if partner_id is not None:
             query = query.filter(self.model.partner_id == partner_id)
             

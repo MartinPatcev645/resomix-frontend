@@ -463,7 +463,7 @@ class TrackUploadService:
                 "uuid": track_uuid,
                 "user_id": user_id,
                 "isrc": isrc,
-                "genre": genre_name[:255],
+                "genre_id": genre_id,
                 "title": title[:255],  # Ensure it fits in the column
                 "year": year,
                 "duration_ms": int(duration_sec * 1000) if duration_sec else None,
@@ -482,7 +482,7 @@ class TrackUploadService:
                 p_line_year=track_data["year"],
                 duration_ms=track_data["duration_ms"],
                 track_type=track_data["track_type"],
-                genre=track_data["genre"],
+                genre_id=track_data["genre_id"],
                 partner_id=track_data["partner_id"]
             )
             await db.execute(track_insert)

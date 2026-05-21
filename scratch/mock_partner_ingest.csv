@@ -1,0 +1,5 @@
+isrc,audio_filename,title,version_title,display_artist,duration_ms,bpm,musical_key,genre,sub_genre,mix_name,parental_warning,is_explicit,is_instrumental,audio_language,language_of_lyrics,p_line_year,p_line_text,upc_ean,album_title,label_name,release_date
+USUM71701234,usum71701234_starlight.wav,Starlight,Radio Edit,The Electrobeats,215000,128,4A,Electronic,Synthwave,Original Mix,NotExplicit,0,0,en,en,2026,Reform Studios,190296987654,Starlight Hits EP,Reform Studios,2026-05-15
+GBBGD1987654,gbbgd1987654_neon_nights.wav,Neon Nights,Extended Mix,DJ Solarflare,380000,124,8B,Dance,Deep House,Extended,NotExplicit,0,0,xx,xx,2025,Solar Records,190296987655,Neon Nights Album,Solar Records,2025-11-20
+USAT22300099,usat22300099_explicit_dreams.wav,Explicit Dreams,,Vocal Haze,185000,95,11A,Hip Hop,Trap,,Explicit,1,0,en,en,2026,Haze Music Ltd,190296987656,Vocal Dreams,Haze Music Ltd,2026-02-10
+DEZ022411122,dez022411122_silent_echoes.wav,Silent Echoes,,Ambient Voyager,310000,80,1A,Ambient,Drone,Original Mix,NotExplicit,0,1,xx,xx,2026,Echo Ambient,190296987657,Ethereal Landscapes,Echo Ambient,2026-04-01
