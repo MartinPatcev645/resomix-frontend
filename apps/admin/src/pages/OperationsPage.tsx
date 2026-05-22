@@ -58,7 +58,7 @@ function OperationsPage() {
         <Tabs
           defaultActiveKey="user-operation-limits"
           items={tabItems}
-          destroyInactiveTabPane={false}
+          destroyOnHidden={false}
         />
       </div>
 

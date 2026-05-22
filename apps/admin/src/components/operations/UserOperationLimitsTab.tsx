@@ -595,7 +595,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
         okButtonProps={{
           disabled: !isUserSelected || userSearchLoading || formLoading,
         }}
-        destroyOnClose
+        destroyOnHidden
       >
         {formLoading ? (
           <div className="flex items-center justify-center py-12">

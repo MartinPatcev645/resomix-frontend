@@ -449,7 +449,7 @@ function UsersPage() {
         onCancel={() => { setCreateModalVisible(false); createForm.resetFields(); }}
         onOk={() => createForm.submit()}
         okText="Create User"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={createForm} layout="vertical" onFinish={handleCreateUser} className="mt-4">
           <Form.Item name="email" label="Email Address" rules={[{ required: true, type: 'email' }]}>
@@ -479,7 +479,7 @@ function UsersPage() {
         onCancel={() => { setEditModalVisible(false); setEditingUser(null); editForm.resetFields(); }}
         onOk={() => editForm.submit()}
         okText="Save Changes"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editForm} layout="vertical" onFinish={handleUpdateUser} className="mt-4">
           <Form.Item name="email" label="Email Address" rules={[{ required: true, type: 'email' }]}>

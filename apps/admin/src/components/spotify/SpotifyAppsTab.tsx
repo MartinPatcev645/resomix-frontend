@@ -395,7 +395,7 @@ function SpotifyAppsTab({ onError, onSuccess }: SpotifyAppsTabProps) {
         onOk={handleSubmit}
         okText={isEditing ? 'Save Changes' : 'Create App'}
         confirmLoading={submitLoading}
-        destroyOnClose
+        destroyOnHidden
         width={600}
       >
         {formLoading ? (

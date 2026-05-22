@@ -513,7 +513,7 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
         onOk={handleSubmit}
         okText={isEditing ? 'Save Changes' : 'Create Association'}
         confirmLoading={submitLoading}
-        destroyOnClose
+        destroyOnHidden
       >
         {formLoading ? (
           <div className="flex items-center justify-center py-12">
