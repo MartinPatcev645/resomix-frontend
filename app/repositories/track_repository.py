@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, func
 from sqlalchemy.exc import IntegrityError
 
 from app.models.track import Track
@@ -96,6 +96,28 @@ class TrackRepository(BaseRepository[Track]):
             stmt = stmt.where(self.model.partner_id == partner_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def async_get_id_by_uuid(self, db: AsyncSession, uuid: str) -> Optional[int]:
+        """Resolve a track UUID to its internal integer database ID."""
+        stmt = select(self.model.id).where(self.model.uuid == uuid)
+        result = await db.execute(stmt)
+        return result.scalar()
+
+    async def async_get_uuid_by_id(self, db: AsyncSession, track_id: int) -> Optional[str]:
+        """Resolve an internal integer database ID to its public UUID."""
+        stmt = select(self.model.uuid).where(self.model.id == track_id)
+        result = await db.execute(stmt)
+        return result.scalar()
+
+    async def async_get_audio_file_count_by_path(
+        self, db: AsyncSession, path: str, partner_id: Optional[int] = None
+    ) -> int:
+        """Count how many AudioFiles match a specific stored path, optionally scoped by partner ID."""
+        stmt = select(func.count(AudioFile.id)).where(AudioFile.stored_path == path)
+        if partner_id is not None:
+            stmt = stmt.where(AudioFile.partner_id == partner_id)
+        result = await db.execute(stmt)
+        return result.scalar() or 0
     
     def get_track_path_by_uuid(self, db: Session, uuid: str, partner_id: Optional[int] = None) -> Optional[str]:
         """Get the absolute master audio file path for a track by its UUID.

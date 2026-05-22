@@ -28,9 +28,12 @@ from app.core.security import decode_token
 from app.models.user import User
 from app.api.dependencies.database import get_database_session
 from app.repositories.rbac_repository import RBACRepository
-from app.repositories.user_repository import UserRepository
+from app.repositories.user_repository import UserRepository, UserSessionRepository
+from app.core.rbac import PERMISSIONS
+from database.connection import AsyncSessionLocal
 from app.utils.edge_auth import verify_edge_token
 from app.core.context import set_admin_context
+import logging
 
 # Redis for session tracking
 import redis.asyncio as aioredis
@@ -85,12 +88,8 @@ async def _refresh_redis_session_ttl(user_id: int):
     This triggers a TTL refresh. If the session expires
     natively in Redis, it triggers cleanup tasks via Keyspace events.
     """
-    import logging
-
     logger = logging.getLogger(__name__)
     try:
-        from app.db.redis import _redis_pool
-
         if _redis_pool:
             client = aioredis.Redis(connection_pool=_redis_pool)
             session_key = f"session:user:{user_id}"
@@ -273,12 +272,7 @@ def require_permission(permission_name: str):
         api_key = request.headers.get("X-API-KEY")
         if api_key and api_key == settings.api_key:
             # Resolve a system admin user for audit logging
-            from app.models.user import UserRole, Role
-            from sqlalchemy import select
-            
-            stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role).where(Role.name == "admin").limit(1)
-            result = await db.execute(stmt)
-            admin = result.scalar_one_or_none()
+            admin = await UserRepository().async_get_first_admin(db)
             
             if not admin:
                 # Fallback for tests or fresh installs
@@ -292,7 +286,6 @@ def require_permission(permission_name: str):
             set_admin_context(True)
             # Cache all permissions for static key access (it's a super-key)
             if not hasattr(request.state, "permissions"):
-                from app.core.rbac import PERMISSIONS
                 request.state.permissions = list(PERMISSIONS.keys())
             
             return admin
@@ -305,12 +298,7 @@ def require_permission(permission_name: str):
         
         # 3. Allow Static API Key in Bearer token (for some tests/legacy clients)
         if token and token == settings.api_key:
-            from app.models.user import UserRole, Role
-            from sqlalchemy import select
-            
-            stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role).where(Role.name == "admin").limit(1)
-            result = await db.execute(stmt)
-            admin = result.scalar_one_or_none()
+            admin = await UserRepository().async_get_first_admin(db)
             
             if not admin:
                 admin = User(
@@ -322,7 +310,6 @@ def require_permission(permission_name: str):
             
             set_admin_context(True)
             if not hasattr(request.state, "permissions"):
-                from app.core.rbac import PERMISSIONS
                 request.state.permissions = list(PERMISSIONS.keys())
             
             return admin
@@ -377,10 +364,8 @@ async def require_admin(
         
         # Strictly verify admin status in database (Don't trust payload alone)
         # This fulfills the request to rely on user authentication + role verification
-        from app.repositories.rbac_repository import RBACRepository
         # We reuse the cached permissions if possible, but a role check is more explicit
         if not hasattr(request.state, "is_verified_admin"):
-            from app.api.dependencies.database import AsyncSessionLocal
             async with AsyncSessionLocal() as db:
                 roles = await RBACRepository.get_user_roles(db, current_user.id)
                 if not any(r.name == "admin" for r in roles):

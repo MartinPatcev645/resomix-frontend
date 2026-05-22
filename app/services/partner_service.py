@@ -1,27 +1,20 @@
-"""
-Partner Service
-===============
-
-Business logic for partner management and API key lifecycle.
-Handles partner creation, API key generation (hashing), rotation, and revocation.
-
-Version: 1.0.0
-Date: May 09, 2026
-"""
-
 import secrets
 import hashlib
 import uuid
 import logging
+import calendar
 from typing import List, Optional, Tuple, Dict, Any
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+import redis.asyncio as aioredis
+from app.db import redis as redis_module
+from database.connection import AsyncSessionLocal
 
 from app.repositories.partner_repository import (
     PartnerRepository,
     PartnerApiKeyRepository,
 )
+from app.repositories.partner_quota_repository import PartnerQuotaRepository
 from app.models.partner import Partner, PartnerApiKey
 from app.schemas.partner import (
     PartnerCreateRequest,
@@ -40,6 +33,7 @@ class PartnerService:
     def __init__(self):
         self.partner_repo = PartnerRepository()
         self.api_key_repo = PartnerApiKeyRepository()
+        self.partner_quota_repo = PartnerQuotaRepository()
         self.logging_service = LoggingService()
 
     def generate_api_key(self, tier: str = "sandbox") -> Tuple[str, str, str]:
@@ -69,7 +63,7 @@ class PartnerService:
         partner_data = request.model_dump()
         partner_data["partner_uuid"] = str(uuid.uuid4())
 
-        partner = await self.partner_repo.async_create(db, commit=False, **partner_data)
+        partner = await self.partner_repo.async_create(db, commit=True, **partner_data)
 
         self.logging_service.log(
             async_db=db,
@@ -103,7 +97,7 @@ class PartnerService:
         if not update_data:
             return await self.partner_repo.async_get_by_id(db, partner_id)
 
-        partner = await self.partner_repo.async_update(db, partner_id, commit=False, **update_data)
+        partner = await self.partner_repo.async_update(db, partner_id, commit=True, **update_data)
         if partner:
             self.logging_service.log(
                 async_db=db,
@@ -131,7 +125,7 @@ class PartnerService:
         # the ON DELETE RESTRICT FK on partner_api_keys.partner_id.
         await self.api_key_repo.async_delete_keys_for_partner(db, partner_id)
 
-        success = await self.partner_repo.async_delete(db, partner_id, commit=False)
+        success = await self.partner_repo.async_delete(db, partner_id, commit=True)
         if success:
             self.logging_service.log(
                 async_db=db,
@@ -164,7 +158,7 @@ class PartnerService:
             "is_active": True,
         }
 
-        api_key = await self.api_key_repo.async_create(db, commit=False, **key_data)
+        api_key = await self.api_key_repo.async_create(db, commit=True, **key_data)
 
         self.logging_service.log(
             async_db=db,
@@ -194,25 +188,10 @@ class PartnerService:
 
     async def get_api_key_usage_count(self, db: AsyncSession, api_key_id: int) -> int:
         """Get the number of requests made with an API key in the current calendar month."""
-        from sqlalchemy import text
-        from datetime import datetime
-
-        # Start of current month
         start_of_month = datetime.utcnow().replace(
             day=1, hour=0, minute=0, second=0, microsecond=0
         )
-
-        from app.models.partner import PartnerUsageLog
-        from sqlalchemy import select, func
-
-        # Use ORM for automatic tenant isolation and cleaner syntax
-        stmt = select(func.count(PartnerUsageLog.id)).where(
-            PartnerUsageLog.api_key_id == api_key_id,
-            PartnerUsageLog.created_at >= start_of_month,
-        )
-
-        result = await db.execute(stmt)
-        return result.scalar() or 0
+        return await self.partner_quota_repo.async_get_monthly_usage(db, api_key_id, start_of_month)
 
     async def revoke_api_key(
         self, db: AsyncSession, api_key_id: int, reason: str
@@ -231,6 +210,7 @@ class PartnerService:
                     "reason": reason,
                 },
             )
+            await db.commit()
             return True
         return False
 
@@ -313,34 +293,17 @@ class PartnerService:
         Update the last_used_at and last_used_ip for an API key.
         This is intended to be run in a background task.
         """
-        from database.connection import AsyncSessionLocal
-        from sqlalchemy import update
-        from datetime import datetime
-
         try:
             async with AsyncSessionLocal() as db:
-                stmt = (
-                    update(PartnerApiKey)
-                    .where(PartnerApiKey.id == api_key_id)
-                    .values(last_used_at=datetime.utcnow(), last_used_ip=ip_address)
-                )
-                await db.execute(stmt)
-                await db.commit()
+                await self.api_key_repo.async_touch_last_used(db, api_key_id, ip_address)
         except Exception as e:
             logger.error(f"Failed to update API key usage metadata: {e}")
-
 
     async def sync_quotas_from_redis(self, db: AsyncSession) -> Dict[str, int]:
         """
         Synchronize monthly quota counters from Redis to MariaDB.
         Scans all keys matching 'ratelimit:quota:*' and updates the partner_quotas table.
         """
-        import calendar
-        from datetime import date
-        import redis.asyncio as aioredis
-        from app.db import redis as redis_module
-        from sqlalchemy import text
-
         stats = {"total_keys": 0, "updated": 0, "errors": 0}
 
         pool = redis_module._redis_pool
@@ -381,31 +344,15 @@ class PartnerService:
                     quota_limit = api_key.rate_limit_monthly
 
                     # Upsert into MariaDB
-                    stmt = text(
-                        """
-                        INSERT INTO partner_quotas (
-                            partner_id, api_key_id, period_start, period_end, 
-                            requests_made, quota_limit, last_synced_at
-                        )
-                        VALUES (:pid, :akid, :start, :end, :made, :limit, NOW())
-                        ON DUPLICATE KEY UPDATE 
-                            requests_made = VALUES(requests_made),
-                            quota_limit = VALUES(quota_limit),
-                            last_synced_at = VALUES(last_synced_at),
-                            is_overage = (VALUES(requests_made) > VALUES(quota_limit))
-                    """
-                    )
-
-                    await db.execute(
-                        stmt,
-                        {
-                            "pid": pid,
-                            "akid": akid,
-                            "start": period_start,
-                            "end": period_end,
-                            "made": requests_made,
-                            "limit": quota_limit,
-                        },
+                    await self.partner_quota_repo.async_upsert_partner_quota(
+                        db=db,
+                        pid=pid,
+                        akid=akid,
+                        start=period_start,
+                        end=period_end,
+                        made=requests_made,
+                        limit=quota_limit,
+                        commit=True
                     )
 
                     stats["updated"] += 1
@@ -413,8 +360,6 @@ class PartnerService:
                 except Exception as e:
                     logger.error(f"Error syncing quota for key {key}: {e}")
                     stats["errors"] += 1
-
-            await db.commit()
 
         except Exception as e:
             logger.error(f"Quota Sync Worker Error: {e}")
