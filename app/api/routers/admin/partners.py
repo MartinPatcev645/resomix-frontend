@@ -64,6 +64,19 @@ async def create_partner(
     return await partner_controller.create_partner(db, request, payload, current_admin=current_admin)
 
 
+@router.get(
+    "/{partner_id}",
+    response_model=PartnerResponse,
+    summary="Get Partner Details",
+)
+async def get_partner(
+    partner_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+) -> JSONResponse:
+    return await partner_controller.get_partner(db, partner_id, current_admin=current_admin)
+
+
 @router.patch(
     "/{partner_id}",
     response_model=PartnerResponse,

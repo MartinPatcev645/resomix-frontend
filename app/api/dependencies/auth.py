@@ -365,16 +365,23 @@ async def require_admin(
     """
     Convenience dependency for admin-only routes.
     Enforces 'admin:access' permission and verifies admin JWT claim.
+    Administrative routes strictly require a valid JWT with 'role' set to 'admin'.
     """
-    # Defense in depth: Verify admin claim in JWT if token was used
-    payload = getattr(request.state, "token_payload", {})
-    if payload:
-        if payload.get("role") != "admin":
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="Admin JWT claim missing. Please login via the admin portal."
-            )
+    # Force JWT-based authentication for administrative routes
+    payload = getattr(request.state, "token_payload", None)
+    if not payload:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Administrative routes strictly require a valid JWT token authentication."
+        )
+
+    if payload.get("role") != "admin":
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Admin JWT claim missing. Please login via the admin portal."
+        )
         
+<<<<<<< Updated upstream
         # Strictly verify admin status in database (Don't trust payload alone)
         # This fulfills the request to rely on user authentication + role verification
         from app.repositories.rbac_repository import RBACRepository
@@ -389,6 +396,19 @@ async def require_admin(
                         detail="Administrative privileges required (Verified)."
                     )
                 request.state.is_verified_admin = True
+=======
+    # Strictly verify admin status in database (Don't trust payload alone)
+    # This fulfills the request to rely on user authentication + role verification
+    if not hasattr(request.state, "is_verified_admin"):
+        async with AsyncSessionLocal() as db:
+            roles = await RBACRepository.get_user_roles(db, current_user.id)
+            if not any(r.name == "admin" for r in roles):
+                raise HTTPException(
+                    status_code=HTTP_403_FORBIDDEN,
+                    detail="Administrative privileges required (Verified)."
+                )
+            request.state.is_verified_admin = True
+>>>>>>> Stashed changes
 
     # Enable multi-tenant bypass for this admin request
     set_admin_context(True)
