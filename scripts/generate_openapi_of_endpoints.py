@@ -54,7 +54,7 @@ openapi_schema["tags"] = [
         "description": "Endpoints to extract and validate standard audio properties."
     },
     {
-        "name": "partner",
+        "name": "B2B Partner",
         "description": "Partner-specific endpoints to monitor quotas and account health."
     },
     {
