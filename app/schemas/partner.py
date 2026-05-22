@@ -172,12 +172,16 @@ class SftpProvisionResponse(BaseModel):
     provisioned_at: datetime
 
 
-class SftpStatusResponse(BaseModel):
-    """Lightweight read-only view of a partner's SFTP status."""
-    sftp_user_id: int
-    username: str
-    is_active: bool
-    use_public_key: bool
-    has_allowed_ip: bool
-    sftp_provisioned_at: Optional[datetime]
-    home_dir: Optional[str]
+class SftpStatusDetail(BaseModel):
+    """SFTP status details matching frontend expectations."""
+    provisioned: bool
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    last_provisioned_at: Optional[datetime] = None
+
+
+class SftpStatusResponse(APIResponse):
+    """Response returned for B2B Partner's SFTP status."""
+    data: Optional[SftpStatusDetail] = None
+
