@@ -23,7 +23,7 @@ function formatDuration(seconds?: number): string {
 
 interface CartItemRowProps {
   item: CartItem;
-  onRemove: (id: number) => void;
+  onRemove: (trackId: string) => void;
   isLoading: boolean;
 }
 
@@ -74,7 +74,7 @@ function CartItemRow({ item, onRemove, isLoading }: CartItemRowProps) {
 
         {/* Remove button */}
         <button
-          onClick={() => onRemove(item.id)}
+          onClick={() => onRemove(item.track_id)}
           disabled={isLoading}
           className="ml-[var(--px-8)] text-[var(--px-18)] leading-none transition-colors"
           style={{

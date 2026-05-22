@@ -13,6 +13,7 @@ import LogsPage from '@/pages/LogsPage.tsx'
 import OperationsPage from '@/pages/OperationsPage.tsx'
 import SpotifyAppsPage from '@/pages/SpotifyAppsPage.tsx'
 import PartnersPage from '@/pages/PartnersPage.tsx'
+import PartnerDetailsPage from '@/pages/PartnerDetailsPage.tsx'
 import UsersPage from '@/pages/UsersPage.tsx'
 import { useTheme } from '@/hooks/useTheme.ts'
 import { lightTheme, darkTheme } from '@/lib/antdTheme.ts'
@@ -39,6 +40,7 @@ function App() {
               <Route path="operations" element={<OperationsPage />} />
               <Route path="spotify-apps" element={<SpotifyAppsPage />} />
               <Route path="partners" element={<PartnersPage />} />
+              <Route path="partners/:id" element={<PartnerDetailsPage />} />
               <Route path="users" element={<UsersPage />} />
             </Route>
           </Routes>

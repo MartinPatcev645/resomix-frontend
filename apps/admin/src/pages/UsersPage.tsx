@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { 
-  Table, 
-  Button, 
-  Space, 
-  Typography, 
+import {
+  Table,
+  Button,
+  Space,
+  Typography,
   Card,
   Input,
   Select,
@@ -13,12 +13,15 @@ import {
   Form,
   Tooltip,
   Dropdown,
-  message
+  Drawer,
+  Descriptions,
+  Spin,
+  Divider,
 } from 'antd';
 import type { MenuProps } from 'antd';
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   RefreshCw,
   User,
   Shield,
@@ -27,7 +30,9 @@ import {
   UserCheck,
   UserX,
   Trash2,
-  Lock
+  Lock,
+  Eye,
+  Edit,
 } from 'lucide-react';
 import { useAdminUsers, useStatusModals } from '@resomix/hooks';
 import { StatusModal } from '@resomix/ui';
@@ -38,6 +43,7 @@ const { Option } = Select;
 
 function UsersPage() {
   const [modal, modalContextHolder] = Modal.useModal();
+
   const {
     errorModalVisible,
     errorDetails,
@@ -60,20 +66,36 @@ function UsersPage() {
     statusFilter,
     setStatusFilter,
     systemRoles,
+    systemPermissions,
     fetchUsers,
     createUser,
     assignRole,
+    removeRole,
+    toggleStatus,
+    updateUser,
+    getUserDetail,
     handlePageChange,
   } = useAdminUsers({
     onError: showErrorModal,
-    onSuccess: showSuccessModal
+    onSuccess: showSuccessModal,
   });
 
-  // Modal Visibility
+  // ── Modal & Drawer Visibility ──────────────────────────────
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
+
+  // ── Selected / Loading State ───────────────────────────────
   const [selectedUser, setSelectedUser] = useState<AdminUserSearchItem | null>(null);
+  const [editingUser, setEditingUser] = useState<AdminUserSearchItem | null>(null);
+  const [detailUser, setDetailUser] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
   const [createForm] = Form.useForm();
+  const [editForm] = Form.useForm();
+
+  // ── Handlers ───────────────────────────────────────────────
 
   const handleCreateUser = async (values: any) => {
     const success = await createUser(values);
@@ -83,21 +105,68 @@ function UsersPage() {
     }
   };
 
+  const handleEditUser = (user: AdminUserSearchItem) => {
+    setEditingUser(user);
+    editForm.setFieldsValue({
+      email: user.email,
+      username: user.username,
+      name: user.name,
+    });
+    setEditModalVisible(true);
+  };
+
+  const handleUpdateUser = async (values: any) => {
+    if (!editingUser?.uuid) return;
+    const success = await updateUser(editingUser.uuid, values);
+    if (success) {
+      setEditModalVisible(false);
+      setEditingUser(null);
+      editForm.resetFields();
+    }
+  };
+
+  const handleViewDetail = async (user: AdminUserSearchItem) => {
+    setDetailUser(user); // pre-fill with list data while loading
+    setDetailDrawerVisible(true);
+    if (!user.uuid) return;
+    setDetailLoading(true);
+    const result = await getUserDetail(user.uuid);
+    if (result?.success && result.data) {
+      setDetailUser(result.data);
+    }
+    setDetailLoading(false);
+  };
+
   const handleOpenRoleModal = (user: AdminUserSearchItem) => {
     setSelectedUser(user);
     setRoleModalVisible(true);
   };
 
   const handleToggleStatus = (user: AdminUserSearchItem) => {
-    const action = user.is_email_verified ? 'Deactivate' : 'Activate';
+    if (!user.uuid) return;
+    const isActive = user.is_email_verified; // using email_verified as proxy for active
+    const action = isActive ? 'Deactivate' : 'Activate';
     modal.confirm({
       title: `${action} User`,
-      content: `Are you sure you want to ${action.toLowerCase()} user ${user.username}?`,
-      onOk: () => {
-        message.info(`${action} logic will be implemented in next step`);
-      }
+      content: `Are you sure you want to ${action.toLowerCase()} ${user.username ?? 'this user'}?`,
+      okText: action,
+      okType: isActive ? 'danger' : 'primary',
+      onOk: () => toggleStatus(user.uuid!, user.username ?? 'user'),
     });
   };
+
+  const handleRemoveRole = (roleName: string) => {
+    if (!selectedUser?.uuid) return;
+    modal.confirm({
+      title: 'Remove Role',
+      content: `Remove the "${roleName}" role from ${selectedUser.username}?`,
+      okText: 'Remove',
+      okType: 'danger',
+      onOk: () => removeRole(selectedUser.uuid!, roleName),
+    });
+  };
+
+  // ── Table Columns ──────────────────────────────────────────
 
   const columns = [
     {
@@ -107,7 +176,12 @@ function UsersPage() {
         <Space size={12}>
           <Avatar icon={<User size={16} />} className="bg-primary/10 text-primary" />
           <div className="flex flex-col">
-            <Text strong className="text-primary">{record.name || record.username || 'N/A'}</Text>
+            <button
+              className="text-left font-semibold text-primary hover:underline focus:outline-none"
+              onClick={() => handleViewDetail(record)}
+            >
+              {record.name || record.username || 'N/A'}
+            </button>
             <Text className="text-secondary text-xs">{record.email}</Text>
           </div>
         </Space>
@@ -120,22 +194,12 @@ function UsersPage() {
       render: (text: string) => <Text className="font-mono text-xs">{text}</Text>,
     },
     {
-      title: 'Roles',
-      key: 'roles',
-      render: () => (
-        <Space wrap size={4}>
-          <Tag color="blue" className="rounded-full">Customer</Tag>
-          {/* Map actual roles here once backend supports it */}
-        </Space>
-      ),
-    },
-    {
       title: 'Status',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      render: (active: boolean = true) => (
-        <Tag color={active ? 'success' : 'error'} className="rounded-full px-3">
-          {active ? 'Active' : 'Inactive'}
+      dataIndex: 'is_email_verified',
+      key: 'is_email_verified',
+      render: (verified: boolean) => (
+        <Tag color={verified ? 'success' : 'warning'} className="rounded-full px-3">
+          {verified ? 'Verified' : 'Unverified'}
         </Tag>
       ),
     },
@@ -143,7 +207,11 @@ function UsersPage() {
       title: 'Joined',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => <Text className="text-secondary text-xs">{date ? new Date(date).toLocaleDateString() : 'N/A'}</Text>,
+      render: (date: string) => (
+        <Text className="text-secondary text-xs">
+          {date ? new Date(date).toLocaleDateString() : 'N/A'}
+        </Text>
+      ),
     },
     {
       title: 'Actions',
@@ -152,34 +220,51 @@ function UsersPage() {
       render: (_: any, record: AdminUserSearchItem) => {
         const items: MenuProps['items'] = [
           {
+            key: 'edit',
+            label: 'Edit User',
+            icon: <Edit size={14} />,
+            onClick: () => handleEditUser(record),
+          },
+          {
             key: 'status',
             label: record.is_email_verified ? 'Deactivate User' : 'Activate User',
             icon: record.is_email_verified ? <UserX size={14} /> : <UserCheck size={14} />,
-            onClick: () => handleToggleStatus(record)
+            onClick: () => handleToggleStatus(record),
           },
-          {
-            key: 'reset',
-            label: 'Reset Password',
-            icon: <Lock size={14} />,
-          },
-          {
-            type: 'divider',
-          },
+          { type: 'divider' },
           {
             key: 'delete',
             label: 'Delete User',
             icon: <Trash2 size={14} />,
             danger: true,
+            onClick: () =>
+              modal.confirm({
+                title: 'Delete User',
+                content: `This will permanently delete ${record.username ?? 'this user'}. This action cannot be undone.`,
+                okText: 'Delete',
+                okType: 'danger',
+                onOk: () => {
+                  // deleteAdminUser not yet in API — show graceful message
+                  showErrorModal('Not Available', 'Delete user endpoint is not yet available on the server.');
+                },
+              }),
           },
         ];
 
         return (
           <Space>
+            <Tooltip title="View Details">
+              <Button
+                type="text"
+                icon={<Eye size={16} />}
+                onClick={() => handleViewDetail(record)}
+              />
+            </Tooltip>
             <Tooltip title="Manage Roles">
-              <Button 
-                type="text" 
-                icon={<Shield size={16} />} 
-                onClick={() => handleOpenRoleModal(record)} 
+              <Button
+                type="text"
+                icon={<Shield size={16} />}
+                onClick={() => handleOpenRoleModal(record)}
               />
             </Tooltip>
             <Dropdown menu={{ items }} trigger={['click']}>
@@ -191,18 +276,22 @@ function UsersPage() {
     },
   ];
 
+  // ── Render ─────────────────────────────────────────────────
+
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
       {modalContextHolder}
+
+      {/* ── Page Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
           <Title level={2} className="!mb-1 !text-primary">User Management</Title>
           <Text className="text-secondary text-base">Oversee platform users, roles, and security permissions.</Text>
         </div>
-        <Button 
-          type="primary" 
+        <Button
+          type="primary"
           size="large"
-          icon={<Plus size={18} />} 
+          icon={<Plus size={18} />}
           onClick={() => setCreateModalVisible(true)}
           className="h-12 px-6 rounded-lg shadow-sm"
         >
@@ -210,12 +299,13 @@ function UsersPage() {
         </Button>
       </div>
 
+      {/* ── Filters ── */}
       <Card className="mb-8 bg-surface border-default shadow-sm rounded-xl overflow-hidden">
         <Space wrap size={24} className="w-full">
           <div className="flex flex-col gap-1.5">
             <Text className="text-secondary text-xs font-medium uppercase tracking-wider">Search</Text>
-            <Input 
-              placeholder="Email or username..." 
+            <Input
+              placeholder="Email or username..."
               prefix={<Search size={14} className="text-secondary" />}
               className="h-10 w-64 rounded-lg"
               value={searchQuery}
@@ -224,27 +314,24 @@ function UsersPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Text className="text-secondary text-xs font-medium uppercase tracking-wider">Role</Text>
-            <Select 
-              placeholder="All Roles" 
-              allowClear 
+            <Select
+              placeholder="All Roles"
+              allowClear
               style={{ width: 180 }}
               className="h-10"
               value={roleFilter}
               onChange={setRoleFilter}
             >
-              {systemRoles.map(role => (
+              {systemRoles.map((role) => (
                 <Option key={role.name} value={role.name}>{role.name}</Option>
               ))}
-              <Option value="admin">Admin</Option>
-              <Option value="partner">Partner</Option>
-              <Option value="customer">Customer</Option>
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
             <Text className="text-secondary text-xs font-medium uppercase tracking-wider">Status</Text>
-            <Select 
-              placeholder="All Status" 
-              allowClear 
+            <Select
+              placeholder="All Status"
+              allowClear
               style={{ width: 140 }}
               className="h-10"
               value={statusFilter}
@@ -255,8 +342,8 @@ function UsersPage() {
             </Select>
           </div>
           <div className="flex items-end h-full pt-6">
-            <Button 
-              icon={<RefreshCw size={16} />} 
+            <Button
+              icon={<RefreshCw size={16} />}
               onClick={() => void fetchUsers()}
               className="h-10 border-default hover:border-primary flex items-center gap-2 rounded-lg"
             >
@@ -266,10 +353,11 @@ function UsersPage() {
         </Space>
       </Card>
 
+      {/* ── Table ── */}
       <div className="bg-surface rounded-xl shadow-md border border-default overflow-hidden">
-        <Table 
-          columns={columns} 
-          dataSource={users} 
+        <Table
+          columns={columns}
+          dataSource={users}
           rowKey="id"
           loading={loading}
           pagination={{
@@ -283,52 +371,130 @@ function UsersPage() {
         />
       </div>
 
-      {/* Create User Modal */}
+      {/* ── User Detail Drawer ── */}
+      <Drawer
+        title={
+          <div className="flex items-center gap-2">
+            <Avatar icon={<User size={16} />} className="bg-primary/10 text-primary" />
+            <span className="font-semibold text-primary">
+              {detailUser?.name || detailUser?.username || 'User Details'}
+            </span>
+          </div>
+        }
+        width={480}
+        open={detailDrawerVisible}
+        onClose={() => { setDetailDrawerVisible(false); setDetailUser(null); }}
+        extra={
+          detailUser && (
+            <Button
+              icon={<Edit size={16} />}
+              onClick={() => {
+                setDetailDrawerVisible(false);
+                handleEditUser(detailUser as AdminUserSearchItem);
+              }}
+            >
+              Edit
+            </Button>
+          )
+        }
+      >
+        {detailLoading ? (
+          <div className="flex justify-center py-16">
+            <Spin size="large" />
+          </div>
+        ) : detailUser ? (
+          <>
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="UUID">
+                <span className="font-mono text-xs break-all">{detailUser.uuid ?? '—'}</span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Name">{detailUser.name ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label="Username">
+                <span className="font-mono">{detailUser.username ?? '—'}</span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">{detailUser.email ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label="Email Verified">
+                <Tag color={detailUser.is_email_verified ? 'success' : 'warning'}>
+                  {detailUser.is_email_verified ? 'Yes' : 'No'}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Joined">
+                {detailUser.created_at ? new Date(detailUser.created_at).toLocaleString() : '—'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {detailUser.roles && detailUser.roles.length > 0 && (
+              <>
+                <Divider />
+                <Title level={5} className="!mb-3">Assigned Roles</Title>
+                <Space wrap>
+                  {detailUser.roles.map((r: any) => (
+                    <Tag key={r.name ?? r} color="blue" className="rounded-full px-3">
+                      {r.name ?? r}
+                    </Tag>
+                  ))}
+                </Space>
+              </>
+            )}
+          </>
+        ) : (
+          <Text className="text-secondary">No data available.</Text>
+        )}
+      </Drawer>
+
+      {/* ── Create User Modal ── */}
       <Modal
         title="Create New User"
         open={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
+        onCancel={() => { setCreateModalVisible(false); createForm.resetFields(); }}
         onOk={() => createForm.submit()}
         okText="Create User"
         destroyOnClose
       >
-        <Form
-          form={createForm}
-          layout="vertical"
-          onFinish={handleCreateUser}
-          className="mt-4"
-        >
-          <Form.Item
-            name="email"
-            label="Email Address"
-            rules={[{ required: true, type: 'email' }]}
-          >
+        <Form form={createForm} layout="vertical" onFinish={handleCreateUser} className="mt-4">
+          <Form.Item name="email" label="Email Address" rules={[{ required: true, type: 'email' }]}>
             <Input prefix={<Mail size={14} className="text-secondary" />} placeholder="user@example.com" />
           </Form.Item>
-          <Form.Item
-            name="username"
-            label="Username"
-            rules={[{ required: true }]}
-          >
+          <Form.Item name="username" label="Username" rules={[{ required: true }]}>
             <Input prefix={<User size={14} className="text-secondary" />} placeholder="username" />
           </Form.Item>
-          <Form.Item
-            name="name"
-            label="Full Name"
-          >
+          <Form.Item name="name" label="Full Name">
             <Input placeholder="John Doe" />
           </Form.Item>
-          <Form.Item
-            name="password"
-            label="Initial Password"
-            rules={[{ required: true, min: 8 }]}
-          >
+          <Form.Item name="password" label="Initial Password" rules={[{ required: true, min: 8 }]}>
             <Input.Password placeholder="••••••••" />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* Role Management Modal */}
+      {/* ── Edit User Modal ── */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <Edit size={18} className="text-primary" />
+            <span>Edit User: {editingUser?.username}</span>
+          </div>
+        }
+        open={editModalVisible}
+        onCancel={() => { setEditModalVisible(false); setEditingUser(null); editForm.resetFields(); }}
+        onOk={() => editForm.submit()}
+        okText="Save Changes"
+        destroyOnClose
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleUpdateUser} className="mt-4">
+          <Form.Item name="email" label="Email Address" rules={[{ required: true, type: 'email' }]}>
+            <Input prefix={<Mail size={14} className="text-secondary" />} />
+          </Form.Item>
+          <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+            <Input prefix={<User size={14} className="text-secondary" />} />
+          </Form.Item>
+          <Form.Item name="name" label="Full Name">
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* ── Role Management Modal ── */}
       <Modal
         title={
           <div className="flex items-center gap-2">
@@ -339,52 +505,80 @@ function UsersPage() {
         open={roleModalVisible}
         onCancel={() => setRoleModalVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setRoleModalVisible(false)}>Close</Button>
+          <Button key="close" onClick={() => setRoleModalVisible(false)}>Close</Button>,
         ]}
-        width={600}
+        width={620}
       >
         <div className="py-4">
-          <Text className="text-secondary mb-4 block">Assign or remove roles for this user. Permissions are aggregated across all assigned roles.</Text>
-          
-          <div className="mb-6">
-            <Title level={5} className="!mb-3">Active Roles</Title>
-            <Space wrap>
-              <Tag 
-                color="blue" 
-                closable 
-                onClose={() => message.info('Role removal logic will be implemented')}
-                className="px-3 py-1 rounded-full text-sm flex items-center gap-1"
-              >
-                Customer
-              </Tag>
-            </Space>
-          </div>
+          <Text className="text-secondary mb-4 block">
+            Assign or remove roles for this user. Permissions are aggregated across all assigned roles.
+          </Text>
 
+          {/* Assign a new role */}
           <div className="mb-6">
             <Title level={5} className="!mb-3">Add Role</Title>
-            <Select 
-              placeholder="Select a role to add" 
+            <Select
+              placeholder="Select a role to assign"
               className="w-full h-11"
-              onSelect={(value: string) => assignRole(selectedUser!.uuid!, value)}
+              onSelect={(value: string) => {
+                if (selectedUser?.uuid) assignRole(selectedUser.uuid, value);
+              }}
             >
-              {systemRoles.map(role => (
+              {systemRoles.map((role) => (
                 <Option key={role.name} value={role.name}>{role.name}</Option>
               ))}
             </Select>
           </div>
 
-          <div className="bg-background-secondary p-4 rounded-xl border border-default">
-            <Title level={5} className="!mb-3 flex items-center gap-2">
-              <Lock size={16} />
-              <span>Permission Preview</span>
-            </Title>
-            <div className="grid grid-cols-2 gap-2">
-              <Text className="text-xs text-secondary italic">List of aggregated permissions will appear here...</Text>
+          {/* System permissions reference */}
+          {systemPermissions && systemPermissions.length > 0 && (
+            <div className="bg-background-secondary p-4 rounded-xl border border-default">
+              <Title level={5} className="!mb-3 flex items-center gap-2">
+                <Lock size={16} />
+                <span>Available Permissions</span>
+              </Title>
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                {systemPermissions.map((perm: any) => (
+                  <Tag
+                    key={perm.name ?? perm}
+                    className="text-xs rounded bg-primary/5 border-primary/10 text-primary"
+                  >
+                    {perm.name ?? perm}
+                  </Tag>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Remove role — only shown when we have detail data */}
+          {selectedUser && (
+            <div className="mt-6">
+              <Title level={5} className="!mb-3">Remove Role</Title>
+              <Text className="text-secondary text-xs block mb-3">
+                Click a role tag below to remove it from this user.
+              </Text>
+              <Space wrap>
+                {systemRoles.map((role) => (
+                  <Tag
+                    key={role.name}
+                    closable
+                    onClose={(e) => { e.preventDefault(); handleRemoveRole(role.name); }}
+                    className="px-3 py-1 rounded-full text-sm cursor-pointer"
+                    color="blue"
+                  >
+                    {role.name}
+                  </Tag>
+                ))}
+              </Space>
+              <Text className="text-secondary text-xs mt-2 block italic">
+                Note: Only removes the role if currently assigned to this user.
+              </Text>
+            </div>
+          )}
         </div>
       </Modal>
 
+      {/* ── Status Modals ── */}
       <StatusModal
         type="error"
         visible={errorModalVisible}
@@ -392,7 +586,6 @@ function UsersPage() {
         message={errorDetails?.message || ''}
         onClose={closeErrorModal}
       />
-      
       <StatusModal
         type="success"
         visible={successModalVisible}

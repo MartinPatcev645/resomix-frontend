@@ -6,6 +6,9 @@ import {
   removeRole as apiRemoveRole,
   listSystemRoles as apiListSystemRoles,
   listSystemPermissions as apiListSystemPermissions,
+  toggleUserStatus as apiToggleUserStatus,
+  updateAdminUser as apiUpdateAdminUser,
+  getAdminUser as apiGetAdminUser,
   type AdminUserSearchItem,
   type AdminUserSearchResponse
 } from '@resomix/api-client';
@@ -169,6 +172,56 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
     }
   };
 
+  const toggleStatus = async (userUuid: string, username: string) => {
+    try {
+      const result = await apiToggleUserStatus(userUuid);
+      if (result.success) {
+        if (optionsRef.current?.onSuccess) optionsRef.current.onSuccess('Status Updated', `User ${username} status has been toggled.`);
+        else message.success('User status updated');
+        fetchUsers();
+        return true;
+      } else {
+        const errorMsg = result.error || 'Failed to toggle user status';
+        if (optionsRef.current?.onError) optionsRef.current.onError('Update Failed', errorMsg);
+        else message.error(errorMsg);
+        return false;
+      }
+    } catch {
+      message.error('Error updating user status');
+      return false;
+    }
+  };
+
+  const updateUser = async (userUuid: string, data: Record<string, any>) => {
+    try {
+      const result = await apiUpdateAdminUser(userUuid, data);
+      if (result.success) {
+        if (optionsRef.current?.onSuccess) optionsRef.current.onSuccess('User Updated', 'User information has been updated.');
+        else message.success('User updated successfully');
+        fetchUsers();
+        return true;
+      } else {
+        const errorMsg = result.error || 'Failed to update user';
+        if (optionsRef.current?.onError) optionsRef.current.onError('Update Failed', errorMsg);
+        else message.error(errorMsg);
+        return false;
+      }
+    } catch {
+      message.error('Error updating user');
+      return false;
+    }
+  };
+
+  const getUserDetail = async (userUuid: string) => {
+    try {
+      const result = await apiGetAdminUser(userUuid);
+      return result;
+    } catch {
+      message.error('Error fetching user details');
+      return null;
+    }
+  };
+
   const handlePageChange = (page: number, pageSize: number) => {
     setPagination(prev => ({ ...prev, current: page, pageSize }));
   };
@@ -190,6 +243,9 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
     createUser,
     assignRole,
     removeRole,
+    toggleStatus,
+    updateUser,
+    getUserDetail,
     handlePageChange,
   };
 }

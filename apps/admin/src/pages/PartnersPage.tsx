@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Table, 
   Button, 
@@ -66,11 +67,9 @@ function PartnersPage() {
     setTierFilter,
     setActiveFilter,
     selectedPartner,
-    setSelectedPartner,
     apiKeys,
     keysLoading,
     fetchPartners,
-    fetchApiKeys,
     createPartner,
     issueApiKey,
     revokeKey,
@@ -130,12 +129,6 @@ function PartnersPage() {
         await deletePartner(partner.id);
       }
     });
-  };
-
-  const handleOpenKeys = (partner: Partner) => {
-    setSelectedPartner(partner);
-    setKeysModalVisible(true);
-    void fetchApiKeys(partner.id);
   };
 
   const handleIssueKey = async (values: Omit<ApiKeyIssueRequest, 'partner_id'>) => {
@@ -213,7 +206,9 @@ function PartnersPage() {
       key: 'display_name',
       render: (text: string, record: Partner) => (
         <Space direction="vertical" size={2}>
-          <Text strong className="text-primary text-base">{text}</Text>
+          <Link to={`/partners/${record.id}`}>
+            <Text strong className="text-primary text-base hover:underline cursor-pointer">{text}</Text>
+          </Link>
           <Text className="text-secondary text-xs">{record.legal_name}</Text>
         </Space>
       ),
@@ -275,14 +270,15 @@ function PartnersPage() {
               onClick={() => handleDeletePartner(record)}
             />
           </Tooltip>
-          <Button 
-            type="default" 
-            icon={<Key size={16} />}
-            onClick={() => handleOpenKeys(record)}
-            className="flex items-center gap-2 border-default hover:border-primary hover:text-primary"
-          >
-            Manage Keys
-          </Button>
+          <Link to={`/partners/${record.id}`}>
+            <Button 
+              type="default" 
+              icon={<Shield size={16} />}
+              className="flex items-center gap-2 border-default hover:border-primary hover:text-primary"
+            >
+              View Details
+            </Button>
+          </Link>
         </Space>
       ),
     },

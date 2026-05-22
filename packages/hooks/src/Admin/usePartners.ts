@@ -8,11 +8,18 @@ import {
   rotateApiKey as apiRotateApiKey,
   updatePartner as apiUpdatePartner,
   deletePartner as apiDeletePartner,
+  getPartnerDetail as apiGetPartnerDetail,
+  provisionSftpPartner as apiProvisionSftp,
+  getSftpStatus as apiGetSftpStatus,
+  retrySftpProvisioning as apiRetrySftp,
   type Partner,
   type PartnerApiKey,
   type PartnerCreateRequest,
   type ApiKeyIssueRequest,
-  type PartnerListParams
+  type PartnerListParams,
+  type SftpProvisionRequest,
+  type SftpProvisionResponse,
+  type SftpStatusResponse
 } from '@resomix/api-client';
 import { message } from 'antd';
 
@@ -215,6 +222,64 @@ export function usePartners(options?: UsePartnersOptions) {
     setPagination(prev => ({ ...prev, current: page, pageSize }));
   };
 
+  const getPartnerDetail = async (partnerId: number) => {
+    try {
+      const result = await apiGetPartnerDetail(partnerId);
+      return result;
+    } catch {
+      message.error('Error fetching partner details');
+      return null;
+    }
+  };
+
+  const provisionSftp = async (payload: SftpProvisionRequest): Promise<SftpProvisionResponse | null> => {
+    try {
+      const result = await apiProvisionSftp(payload);
+      if (result.success) {
+        if (optionsRef.current?.onSuccess) optionsRef.current.onSuccess('SFTP Provisioned', 'SFTP access has been provisioned for the partner.');
+        else message.success('SFTP provisioned successfully');
+        return result;
+      } else {
+        const errorMsg = result.error || 'Failed to provision SFTP';
+        if (optionsRef.current?.onError) optionsRef.current.onError('Provisioning Failed', errorMsg);
+        else message.error(errorMsg);
+        return null;
+      }
+    } catch {
+      message.error('Error provisioning SFTP');
+      return null;
+    }
+  };
+
+  const getSftpStatus = async (partnerId: number): Promise<SftpStatusResponse | null> => {
+    try {
+      const result = await apiGetSftpStatus(partnerId);
+      return result;
+    } catch {
+      message.error('Error fetching SFTP status');
+      return null;
+    }
+  };
+
+  const retrySftp = async (partnerId: number): Promise<SftpProvisionResponse | null> => {
+    try {
+      const result = await apiRetrySftp(partnerId);
+      if (result.success) {
+        if (optionsRef.current?.onSuccess) optionsRef.current.onSuccess('SFTP Retry Queued', 'SFTP provisioning retry has been initiated.');
+        else message.success('SFTP retry initiated');
+        return result;
+      } else {
+        const errorMsg = result.error || 'Failed to retry SFTP provisioning';
+        if (optionsRef.current?.onError) optionsRef.current.onError('Retry Failed', errorMsg);
+        else message.error(errorMsg);
+        return null;
+      }
+    } catch {
+      message.error('Error retrying SFTP provisioning');
+      return null;
+    }
+  };
+
   return {
     partners,
     loading,
@@ -235,6 +300,10 @@ export function usePartners(options?: UsePartnersOptions) {
     rotateKey,
     updatePartner,
     deletePartner,
+    getPartnerDetail,
+    provisionSftp,
+    getSftpStatus,
+    retrySftp,
     handlePageChange,
   };
 }
