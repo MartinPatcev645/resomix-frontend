@@ -417,7 +417,6 @@ class PartnerService:
         Raises:
             ValueError: If key is invalid, revoked, expired, or partner is inactive, or missing required scope.
         """
-        # 1. Hash the key for lookup
         key_hash = hashlib.sha256(api_key_string.encode()).hexdigest()
 
         # 2. Lookup key

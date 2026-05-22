@@ -7,13 +7,18 @@ It synchronizes state between MariaDB (source of truth) and Redis (fast read cac
 """
 
 import json
+import stripe
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 import logging
+
 from app.repositories.cart_repository import CartRepository
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
+from app.repositories.user_repository import UserRepository
+from app.services.order_service import OrderService
+from app.core.config import settings
 from app.db.redis import _redis_pool
 
 logger = logging.getLogger(__name__)
@@ -202,3 +207,125 @@ class CartService:
         )
             
         return await self.hydrate_cart(db, user_id)
+
+    async def initiate_checkout(self, db: AsyncSession, user_id: int, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Securely transition user to Stripe hosted checkout.
+        Manages all database transaction boundaries internally.
+        """
+        # Ensure Stripe API key is set
+        stripe.api_key = settings.stripe_secret_key
+        
+        try:
+            # 1. Get User and active cart
+            user_repo = UserRepository()
+            user = await user_repo.async_get_by_id(db, user_id)
+            if not user:
+                raise ValueError("User not found")
+
+            # Map cart_id from payload if provided, else get active cart
+            cart_id = payload.get("cart_id")
+            if cart_id:
+                # Security: Ensure this cart belongs to the user
+                cart = await self.cart_repository.async_get_active_cart(db, user_id)
+                if not cart or cart.id != cart_id:
+                    raise PermissionError("Invalid cart access")
+            else:
+                cart = await self.cart_repository.async_get_active_cart(db, user_id)
+
+            if not cart or not cart.items:
+                raise ValueError("Cart is empty")
+
+            # 2. Calculate Totals Securely (Do not trust frontend prices)
+            subtotal_cents = 0
+            line_items = []
+            
+            for item in cart.items:
+                # Each item.track is already loaded via selectinload in repository
+                price = item.price_cents
+                subtotal_cents += price
+                
+                line_items.append({
+                    "price_data": {
+                        "currency": "usd",
+                        "product_data": {
+                            "name": f"{item.track.title} (AIFF)",
+                            "description": f"Artist: {item.track.display_artist or 'Various'}",
+                            "metadata": {
+                                "track_uuid": item.track.uuid,
+                                "track_id": item.track.id
+                            }
+                        },
+                        "unit_amount": price,
+                    },
+                    "quantity": 1,
+                })
+
+            # Handle Promo Codes
+            total_cents = subtotal_cents
+            discount_cents = 0
+            promo_code_id = None
+            
+            if cart.promo_code:
+                promo_code_id = cart.promo_code.id
+                # Calculate discount based on type
+                if cart.promo_code.discount_type == "percentage":
+                    discount_cents = int(subtotal_cents * (cart.promo_code.discount_value / 100))
+                else: # fixed_amount
+                    discount_cents = cart.promo_code.discount_value
+                
+                total_cents = max(0, subtotal_cents - discount_cents)
+
+            # 3. Create Pending Order
+            order_service = OrderService()
+            order = await order_service.create_pending_order(
+                db, 
+                user_id=user.id,
+                subtotal_cents=subtotal_cents,
+                total_cents=total_cents,
+                promo_code_id=promo_code_id,
+                discount_cents=discount_cents
+            )
+
+            # 4. Create Stripe Session
+            # Ensure stripe_customer_id exists
+            if not user.stripe_customer_id:
+                try:
+                    customer = stripe.Customer.create(
+                        email=user.email,
+                        name=user.name or user.username,
+                        metadata={"user_id": user.id, "user_uuid": user.uuid}
+                    )
+                    user.stripe_customer_id = customer.id
+                except Exception as e:
+                    logger.error(f"Stripe Customer creation failed: {e}")
+
+            checkout_session = stripe.checkout.Session.create(
+                customer=user.stripe_customer_id,
+                payment_method_types=["card"],
+                line_items=line_items,
+                mode="payment",
+                success_url=f"{settings.frontend_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{settings.frontend_url}/cart",
+                metadata={
+                    "internal_order_id": order.id,
+                    "user_id": user.id,
+                    "cart_id": cart.id
+                },
+                allow_promotion_codes=True
+            )
+
+            # Update order with session ID (for tracking)
+            order.stripe_session_id = checkout_session.id
+            await db.commit()
+
+            return {
+                "stripe_url": checkout_session.url,
+                "session_id": checkout_session.id,
+                "order_id": order.id
+            }
+            
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Checkout initialization failed: {str(e)}")
+            raise e
