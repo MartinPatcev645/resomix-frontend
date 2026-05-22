@@ -6,6 +6,7 @@ import calendar
 from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime, date
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 import redis.asyncio as aioredis
 from app.db import redis as redis_module
 from database.connection import AsyncSessionLocal
@@ -16,6 +17,8 @@ from app.repositories.partner_repository import (
 )
 from app.repositories.partner_quota_repository import PartnerQuotaRepository
 from app.models.partner import Partner, PartnerApiKey
+from app.models.user import User
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.schemas.partner import (
     PartnerCreateRequest,
     PartnerUpdateRequest,
@@ -35,6 +38,7 @@ class PartnerService:
         self.api_key_repo = PartnerApiKeyRepository()
         self.partner_quota_repo = PartnerQuotaRepository()
         self.logging_service = LoggingService()
+        self.admin_log_service = AdminOperationLogService()
 
     def generate_api_key(self, tier: str = "sandbox") -> Tuple[str, str, str]:
         """
@@ -57,23 +61,47 @@ class PartnerService:
         return plaintext_key, key_hash, key_prefix
 
     async def create_partner(
-        self, db: AsyncSession, request: PartnerCreateRequest
+        self,
+        db: AsyncSession,
+        request: PartnerCreateRequest,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Partner:
         """Create a new partner tenant."""
-        partner_data = request.model_dump()
-        partner_data["partner_uuid"] = str(uuid.uuid4())
+        try:
+            partner_data = request.model_dump()
+            partner_data["partner_uuid"] = str(uuid.uuid4())
 
-        partner = await self.partner_repo.async_create(db, commit=True, **partner_data)
+            partner = await self.partner_repo.async_create(db, commit=False, **partner_data)
+            await db.flush()
 
-        self.logging_service.log(
-            async_db=db,
-            category="PARTNER",
-            action="CREATE",
-            message=f"Partner created: {partner.display_name} ({partner.partner_uuid})",
-            metadata={"partner_id": partner.id, "tier": partner.tier},
-        )
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.create",
+                    target_type="partner",
+                    target_id=str(partner.id),
+                    before_state=None,
+                    after_state=request.model_dump(),
+                    ip_address=ip_address
+                )
 
-        return partner
+            self.logging_service.log(
+                async_db=db,
+                category="PARTNER",
+                action="CREATE",
+                message=f"Partner created: {partner.display_name} ({partner.partner_uuid})",
+                metadata={"partner_id": partner.id, "tier": partner.tier},
+            )
+
+            await db.commit()
+            return partner
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error creating partner: {e}")
+            raise
 
     async def list_partners(
         self,
@@ -90,15 +118,37 @@ class PartnerService:
         )
 
     async def update_partner(
-        self, db: AsyncSession, partner_id: int, request: PartnerUpdateRequest
+        self,
+        db: AsyncSession,
+        partner_id: int,
+        request: PartnerUpdateRequest,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Optional[Partner]:
         """Update an existing partner's details."""
-        update_data = request.model_dump(exclude_unset=True)
-        if not update_data:
-            return await self.partner_repo.async_get_by_id(db, partner_id)
+        try:
+            update_data = request.model_dump(exclude_unset=True)
+            if not update_data:
+                partner = await self.partner_repo.async_get_by_id(db, partner_id)
+                return partner
 
-        partner = await self.partner_repo.async_update(db, partner_id, commit=True, **update_data)
-        if partner:
+            partner = await self.partner_repo.async_update(db, partner_id, commit=False, **update_data)
+            if not partner:
+                await db.rollback()
+                return None
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.update",
+                    target_type="partner",
+                    target_id=str(partner_id),
+                    before_state=None,
+                    after_state=update_data,
+                    ip_address=ip_address
+                )
+
             self.logging_service.log(
                 async_db=db,
                 category="PARTNER",
@@ -109,24 +159,50 @@ class PartnerService:
                     "updates": list(update_data.keys()),
                 },
             )
-        return partner
+            await db.commit()
+            return partner
 
-    async def delete_partner(self, db: AsyncSession, partner_id: int) -> bool:
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error updating partner: {e}")
+            raise
+
+    async def delete_partner(
+        self,
+        db: AsyncSession,
+        partner_id: int,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
+    ) -> bool:
         """
         Delete a partner. Performs a hard delete.
         Hard-deletes all associated API keys first to satisfy FK constraints,
         then removes the partner record itself.
         """
-        partner = await self.partner_repo.async_get_by_id(db, partner_id)
-        if not partner:
-            return False
+        try:
+            partner = await self.partner_repo.async_get_by_id(db, partner_id)
+            if not partner:
+                return False
 
-        # Hard-delete all API keys — soft revoke alone leaves rows that violate
-        # the ON DELETE RESTRICT FK on partner_api_keys.partner_id.
-        await self.api_key_repo.async_delete_keys_for_partner(db, partner_id)
+            await self.api_key_repo.async_delete_keys_for_partner(db, partner_id)
 
-        success = await self.partner_repo.async_delete(db, partner_id, commit=True)
-        if success:
+            success = await self.partner_repo.async_delete(db, partner_id, commit=False)
+            if not success:
+                await db.rollback()
+                return False
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.delete",
+                    target_type="partner",
+                    target_id=str(partner_id),
+                    before_state=None,
+                    after_state=None,
+                    ip_address=ip_address
+                )
+
             self.logging_service.log(
                 async_db=db,
                 category="PARTNER",
@@ -134,45 +210,75 @@ class PartnerService:
                 message=f"Partner deleted: {partner.display_name} ({partner.partner_uuid})",
                 metadata={"partner_id": partner_id},
             )
-        return success
+            await db.commit()
+            return True
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error deleting partner: {e}")
+            raise
 
     async def issue_api_key(
-        self, db: AsyncSession, request: ApiKeyIssueRequest
+        self,
+        db: AsyncSession,
+        request: ApiKeyIssueRequest,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Tuple[PartnerApiKey, str]:
         """Issue a new API key for a partner."""
-        partner = await self.partner_repo.async_get_by_id(db, request.partner_id)
-        if not partner:
-            raise ValueError(f"Partner with ID {request.partner_id} not found")
+        try:
+            partner = await self.partner_repo.async_get_by_id(db, request.partner_id)
+            if not partner:
+                raise ValueError(f"Partner with ID {request.partner_id} not found")
 
-        plaintext, key_hash, prefix = self.generate_api_key(partner.tier)
+            plaintext, key_hash, prefix = self.generate_api_key(partner.tier)
 
-        key_data = {
-            "partner_id": partner.id,
-            "key_prefix": prefix,
-            "key_hash": key_hash,
-            "label": request.label,
-            "scopes": request.scopes,
-            "rate_limit_rps": request.rate_limit_rps,
-            "rate_limit_monthly": request.rate_limit_monthly,
-            "expires_at": request.expires_at,
-            "is_active": True,
-        }
-
-        api_key = await self.api_key_repo.async_create(db, commit=True, **key_data)
-
-        self.logging_service.log(
-            async_db=db,
-            category="PARTNER",
-            action="API_KEY_ISSUE",
-            message=f"API key issued for partner {partner.id}: {prefix}...",
-            metadata={
+            key_data = {
                 "partner_id": partner.id,
-                "api_key_id": api_key.id,
+                "key_prefix": prefix,
+                "key_hash": key_hash,
                 "label": request.label,
-            },
-        )
+                "scopes": request.scopes,
+                "rate_limit_rps": request.rate_limit_rps,
+                "rate_limit_monthly": request.rate_limit_monthly,
+                "expires_at": request.expires_at,
+                "is_active": True,
+            }
 
-        return api_key, plaintext
+            api_key = await self.api_key_repo.async_create(db, commit=False, **key_data)
+            await db.flush()
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.issue_api_key",
+                    target_type="api_key",
+                    target_id=api_key.key_prefix,
+                    before_state=None,
+                    after_state={"partner_id": request.partner_id, "label": request.label},
+                    ip_address=ip_address
+                )
+
+            self.logging_service.log(
+                async_db=db,
+                category="PARTNER",
+                action="API_KEY_ISSUE",
+                message=f"API key issued for partner {partner.id}: {prefix}...",
+                metadata={
+                    "partner_id": partner.id,
+                    "api_key_id": api_key.id,
+                    "label": request.label,
+                },
+            )
+
+            await db.commit()
+            return api_key, plaintext
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error issuing API key: {e}")
+            raise
 
     async def list_api_keys(
         self, db: AsyncSession, partner_id: int
@@ -194,11 +300,32 @@ class PartnerService:
         return await self.partner_quota_repo.async_get_monthly_usage(db, api_key_id, start_of_month)
 
     async def revoke_api_key(
-        self, db: AsyncSession, api_key_id: int, reason: str
+        self,
+        db: AsyncSession,
+        api_key_id: int,
+        reason: str,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> bool:
         """Revoke an API key."""
-        api_key = await self.api_key_repo.async_revoke_key(db, api_key_id, reason, commit=False)
-        if api_key:
+        try:
+            api_key = await self.api_key_repo.async_revoke_key(db, api_key_id, reason, commit=False)
+            if not api_key:
+                await db.rollback()
+                return False
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.revoke_api_key",
+                    target_type="api_key",
+                    target_id=str(api_key_id),
+                    before_state=None,
+                    after_state={"reason": reason},
+                    ip_address=ip_address
+                )
+
             self.logging_service.log(
                 async_db=db,
                 category="PARTNER",
@@ -212,38 +339,68 @@ class PartnerService:
             )
             await db.commit()
             return True
-        return False
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error revoking API key: {e}")
+            raise
 
     async def rotate_api_key(
-        self, db: AsyncSession, request: ApiKeyRotateRequest
+        self,
+        db: AsyncSession,
+        request: ApiKeyRotateRequest,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Tuple[PartnerApiKey, str]:
         """
         Rotate an API key: Revoke old one and issue a new one with same config.
         Executed in a single transaction.
         """
-        old_key = await self.api_key_repo.async_get_by_id(db, request.api_key_id)
-        if not old_key:
-            raise ValueError(f"API key with ID {request.api_key_id} not found")
+        try:
+            old_key = await self.api_key_repo.async_get_by_id(db, request.api_key_id)
+            if not old_key:
+                raise ValueError(f"API key with ID {request.api_key_id} not found")
 
-        if not old_key.is_active:
-            raise ValueError(
-                f"Cannot rotate an inactive or already revoked API key (ID: {old_key.id})"
+            if not old_key.is_active:
+                raise ValueError(f"Cannot rotate an inactive or already revoked API key (ID: {old_key.id})")
+
+            # 1. Revoke old key (commit=False)
+            await self.api_key_repo.async_revoke_key(db, old_key.id, "Rotated by admin", commit=False)
+
+            # 2. Issue new key with same parameters
+            issue_request = ApiKeyIssueRequest(
+                partner_id=old_key.partner_id,
+                label=request.label or old_key.label,
+                scopes=old_key.scopes,
+                rate_limit_rps=old_key.rate_limit_rps,
+                rate_limit_monthly=old_key.rate_limit_monthly,
+                expires_at=old_key.expires_at,
             )
 
-        # 1. Revoke old key
-        await self.api_key_repo.async_revoke_key(db, old_key.id, "Rotated by admin", commit=False)
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.rotate_api_key",
+                    target_type="api_key",
+                    target_id=str(request.api_key_id),
+                    before_state=None,
+                    after_state=None,
+                    ip_address=ip_address
+                )
 
-        # 2. Issue new key with same parameters
-        issue_request = ApiKeyIssueRequest(
-            partner_id=old_key.partner_id,
-            label=request.label or old_key.label,
-            scopes=old_key.scopes,
-            rate_limit_rps=old_key.rate_limit_rps,
-            rate_limit_monthly=old_key.rate_limit_monthly,
-            expires_at=old_key.expires_at,
-        )
+            # issue_api_key will log partner.issue_api_key and commit the entire transaction.
+            return await self.issue_api_key(
+                db=db,
+                request=issue_request,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
 
-        return await self.issue_api_key(db, issue_request)
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error rotating API key: {e}")
+            raise
 
     async def validate_api_key(
         self,

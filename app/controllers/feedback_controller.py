@@ -74,7 +74,6 @@ class FeedbackController:
             print(feedback_data)
             
             if result.get("success"):
-                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -107,7 +106,6 @@ class FeedbackController:
                     content=response_data
                 )
             else:
-                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=False,
@@ -140,7 +138,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -339,7 +336,6 @@ class FeedbackController:
             result = await self.feedback_service.update_feedback_status(db, feedback_id, new_status, partner_id=partner_id)
             
             if result.get("success"):
-                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -368,7 +364,6 @@ class FeedbackController:
                     content=response_data
                 )
             else:
-                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=False,
@@ -398,7 +393,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -566,33 +560,12 @@ class FeedbackController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            # Audit: Get before state
-            entry = await self.feedback_service.get_feedback_by_id(db, feedback_id, partner_id=partner_id)
-            before_state = None
-            if entry:
-                before_state = {
-                    "id": entry.id,
-                    "status": entry.status,
-                    "category": entry.category,
-                    "message": entry.message
-                }
-
-            result = await self.feedback_service.delete_feedback_admin(db, feedback_id, partner_id=partner_id)
+            ip_address = request.client.host if request and request.client else None
+            result = await self.feedback_service.delete_feedback_admin(
+                db, feedback_id, partner_id=partner_id, current_admin=current_admin, ip_address=ip_address
+            )
             
             if result.get("success"):
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="feedback.delete",
-                        target_type="feedback",
-                        target_id=str(feedback_id),
-                        before_state=before_state,
-                        after_state=None,
-                        ip_address=request.client.host if request and request.client else None
-                    )
-                await db.commit()
-
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(
                     success=True,
@@ -649,7 +622,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -693,22 +665,11 @@ class FeedbackController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            result = await self.feedback_service.batch_delete_feedback_admin(db, feedback_ids, partner_id=partner_id)
+            ip_address = request.client.host if request and request.client else None
+            result = await self.feedback_service.batch_delete_feedback_admin(
+                db, feedback_ids, partner_id=partner_id, current_admin=current_admin, ip_address=ip_address
+            )
             
-            if result.get("success") and current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="feedback.batch_delete",
-                    target_type="feedback",
-                    target_id="batch",
-                    before_state={"ids": feedback_ids},
-                    after_state={"deleted_count": result.get("deleted_count")},
-                    ip_address=request.client.host if request and request.client else None
-                )
-            if result.get("success"):
-                await db.commit()
-
             duration_ms = (time.time() - start_time) * 1000
             response_data = {
                 "success": result.get("success"),
@@ -762,7 +723,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -807,27 +767,12 @@ class FeedbackController:
         correlation_id = self.logging_service.generate_correlation_id()
         
         try:
-            # Audit: Get before state
-            entry = await self.feedback_service.get_feedback_by_id(db, feedback_id, partner_id=partner_id)
-            before_state = None
-            if entry:
-                before_state = {"status": entry.status}
-
-            result = await self.feedback_service.mark_feedback_status_admin(db, feedback_id, status_value, partner_id=partner_id)
+            ip_address = request.client.host if request and request.client else None
+            result = await self.feedback_service.mark_feedback_status_admin(
+                db, feedback_id, status_value, partner_id=partner_id, current_admin=current_admin, ip_address=ip_address
+            )
             
             if result.get("success"):
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="feedback.mark_status",
-                        target_type="feedback",
-                        target_id=str(feedback_id),
-                        before_state=before_state,
-                        after_state={"status": status_value},
-                        ip_address=request.client.host if request and request.client else None
-                    )
-
                 feedback = result.get("data")
                 feedback_data = {
                     "id": feedback.id,
@@ -899,7 +844,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -946,7 +890,6 @@ class FeedbackController:
             result = await self.feedback_service.update_feedback_admin(db, feedback_id, update_data, partner_id=partner_id)
             
             if result.get("success"):
-                await db.commit()
                 feedback = result.get("data")
                 feedback_data = {
                     "id": feedback.id,
@@ -1018,7 +961,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
@@ -1158,7 +1100,6 @@ class FeedbackController:
             duration_ms = (time.time() - start_time) * 1000
             
             if result.get("success"):
-                await db.commit()
                 response_data = {
                     "success": True,
                     "download_url": result.get("download_url"),
@@ -1216,7 +1157,6 @@ class FeedbackController:
                 )
                 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=False,
