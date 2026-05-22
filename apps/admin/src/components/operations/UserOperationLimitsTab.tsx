@@ -11,6 +11,7 @@ import {
   Table,
   Tooltip,
   Typography,
+  App,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Plus, RefreshCw, Trash2, Pencil } from 'lucide-react'
@@ -70,6 +71,7 @@ function UserOperationLimitsTab({
   onError,
   onSuccess,
 }: UserOperationLimitsTabProps) {
+  const { modal } = App.useApp()
   const {
     data,
     loading,
@@ -266,7 +268,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
               ? existing.limit_value
               : 'N/A'
 
-          Modal.warning({
+          modal.warning({
             title: 'Limit Already Exists',
             content: (
               <div className="space-y-2">
@@ -287,7 +289,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
             getContainer: () => document.body,
           })
         } else {
-          Modal.error({
+          modal.error({
             title: 'Unable to Save Limit',
             content: errorMessage,
             centered: true,
