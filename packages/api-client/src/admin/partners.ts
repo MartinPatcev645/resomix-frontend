@@ -1,5 +1,6 @@
 import { API_CONFIG } from "../config";
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import type { 
   Partner, 
   PartnerCreateRequest, 
@@ -31,7 +32,7 @@ export interface PartnerListResponse {
 export const listPartners = async (params: PartnerListParams = {}): Promise<PartnerListResponse> => {
   try {
     return await axiosWrapper(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_LIST, { params })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_LIST, { params })
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -41,7 +42,7 @@ export const listPartners = async (params: PartnerListParams = {}): Promise<Part
 export const createPartner = async (payload: PartnerCreateRequest): Promise<{ success: boolean; data?: Partner; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_CREATE, payload)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_CREATE, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -51,7 +52,7 @@ export const createPartner = async (payload: PartnerCreateRequest): Promise<{ su
 export const listApiKeys = async (partnerId: number): Promise<{ success: boolean; data: PartnerApiKey[]; error?: string }> => {
   try {
     const url = `${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_LIST}${partnerId}`;
-    return await axiosWrapper(axiosInstance.get(url));
+    return await axiosWrapper(authClient.get(url));
   } catch (error: any) {
     return handleApiError(error) as any;
   }
@@ -60,7 +61,7 @@ export const listApiKeys = async (partnerId: number): Promise<{ success: boolean
 export const issueApiKey = async (payload: ApiKeyIssueRequest): Promise<{ success: boolean; data: ApiKeyIssueResponse; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_ISSUE, payload)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_ISSUE, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -70,7 +71,7 @@ export const issueApiKey = async (payload: ApiKeyIssueRequest): Promise<{ succes
 export const revokeApiKey = async (payload: ApiKeyRevokeRequest): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_REVOKE, payload)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_REVOKE, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -80,7 +81,7 @@ export const revokeApiKey = async (payload: ApiKeyRevokeRequest): Promise<{ succ
 export const updatePartner = async (id: number, payload: Partial<PartnerCreateRequest>): Promise<{ success: boolean; data: Partner; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_LIST}${id}`, payload)
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_LIST}${id}`, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -90,7 +91,7 @@ export const updatePartner = async (id: number, payload: Partial<PartnerCreateRe
 export const deletePartner = async (id: number): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_LIST}${id}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_LIST}${id}`)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -100,7 +101,7 @@ export const deletePartner = async (id: number): Promise<{ success: boolean; mes
 export const rotateApiKey = async (payload: ApiKeyRotateRequest): Promise<{ success: boolean; data: ApiKeyIssueResponse; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_ROTATE, payload)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_API_KEY_ROTATE, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -113,7 +114,7 @@ export const rotateApiKey = async (payload: ApiKeyRotateRequest): Promise<{ succ
 export const getPartnerMe = async () => {
   try {
     return await axiosWrapper<any>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.PARTNER_ME)
+      authClient.get(API_CONFIG.ENDPOINTS.PARTNER_ME)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -126,7 +127,7 @@ export const getPartnerMe = async () => {
 export const getPartnerDetail = async (partnerId: number): Promise<{ success: boolean; data?: Partner; error?: string }> => {
   try {
     return await axiosWrapper(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}`)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -174,7 +175,7 @@ export interface SftpStatusResponse {
 export const provisionSftpPartner = async (payload: SftpProvisionRequest): Promise<SftpProvisionResponse> => {
   try {
     return await axiosWrapper(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_SFTP_PROVISION, payload)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_SFTP_PROVISION, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -187,7 +188,7 @@ export const provisionSftpPartner = async (payload: SftpProvisionRequest): Promi
 export const getSftpStatus = async (partnerId: number): Promise<SftpStatusResponse> => {
   try {
     return await axiosWrapper(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp`)
     );
   } catch (error: any) {
     return handleApiError(error) as any;
@@ -200,7 +201,7 @@ export const getSftpStatus = async (partnerId: number): Promise<SftpStatusRespon
 export const retrySftpProvisioning = async (partnerId: number): Promise<SftpProvisionResponse> => {
   try {
     return await axiosWrapper(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/retry`)
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/retry`)
     );
   } catch (error: any) {
     return handleApiError(error) as any;

@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 import type { ApiResponse } from "../types/api";
 
@@ -153,7 +154,7 @@ export const getPlaylistList = async (params: PlaylistListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<PlaylistListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
@@ -183,7 +184,7 @@ export const deletePlaylist = async (playlistId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DELETE}${playlistId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DELETE}${playlistId}`)
     );
 
     if (data.success) {
@@ -208,7 +209,7 @@ export const deletePlaylist = async (playlistId: number) => {
 export const batchDeletePlaylist = async (playlistIds: number[]) => {
   try {
     const data = await axiosWrapper<PlaylistBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_DELETE, {
         ids: playlistIds,
       })
     );
@@ -255,7 +256,7 @@ export const exportPlaylist = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<PlaylistExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_EXPORT, requestBody)
     );
 
     if (data.success) return data;
@@ -284,7 +285,7 @@ export const exportPlaylist = async (
 export const getPlaylistDetails = async (playlistUuid: string) => {
   try {
     const data = await axiosWrapper<PlaylistDetailsResponse>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistUuid}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistUuid}`)
     );
 
     if (data.success && data.data) return data;
@@ -306,7 +307,7 @@ export const getPlaylistDetails = async (playlistUuid: string) => {
 export const adminChangePlaylistVisibility = async (playlistId: number, isPublic: boolean) => {
   try {
     const data = await axiosWrapper<PlaylistVisibilityResponse>(
-      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}/visibility`, {
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}/visibility`, {
         is_public: isPublic,
       })
     );
@@ -335,7 +336,7 @@ export const adminChangePlaylistVisibility = async (playlistId: number, isPublic
 export const adminBatchChangePlaylistVisibility = async (playlistIds: number[], isPublic: boolean) => {
   try {
     const data = await axiosWrapper<PlaylistBatchVisibilityResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_VISIBILITY, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_VISIBILITY, {
         ids: playlistIds,
         is_public: isPublic,
       })

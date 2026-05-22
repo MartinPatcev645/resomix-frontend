@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 import type { ApiResponse } from "../types/api";
 
@@ -9,7 +10,7 @@ import type { ApiResponse } from "../types/api";
 export const rebuildSimilarityIndex = async () => {
   try {
     const response = await axiosWrapper<ApiResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_SIMILARITY_REBUILD)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_SIMILARITY_REBUILD)
     );
     return response;
   } catch (error) {

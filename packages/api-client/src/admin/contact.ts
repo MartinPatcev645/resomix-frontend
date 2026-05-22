@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 import type { ApiResponse } from "../types/api";
 
@@ -90,7 +91,7 @@ export const getContactList = async (params: ContactListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<ContactListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
@@ -120,7 +121,7 @@ export const deleteContact = async (contactId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DELETE}${contactId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DELETE}${contactId}`)
     );
 
     if (data.success) {
@@ -145,7 +146,7 @@ export const deleteContact = async (contactId: number) => {
 export const batchDeleteContact = async (contactIds: number[]) => {
   try {
     const data = await axiosWrapper<ContactBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_BATCH_DELETE, {
         ids: contactIds,
       })
     );
@@ -171,7 +172,7 @@ export const batchDeleteContact = async (contactIds: number[]) => {
 export const markContactStatus = async (contactId: number, status: 'open' | 'resolved') => {
   try {
     const data = await axiosWrapper<ContactUpdateResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_MARK_STATUS}${contactId}`, {
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_MARK_STATUS}${contactId}`, {
         status,
       })
     );
@@ -211,7 +212,7 @@ export const exportContact = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<ContactExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_EXPORT, requestBody)
     );
 
     if (data.success) return data;
@@ -239,7 +240,7 @@ export const exportContact = async (
 export const getContactById = async (contactId: number) => {
   try {
     const data = await axiosWrapper<{ success: boolean; data: ContactItem }>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DETAIL}${contactId}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DETAIL}${contactId}`)
     );
 
     if (data.success) return data;

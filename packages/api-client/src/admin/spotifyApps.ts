@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -154,7 +155,7 @@ export const getSpotifyApps = async (
     }
 
     const response = await axiosWrapper<AdminSpotifyAppListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, {
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, {
         params: queryParams,
       }),
     );
@@ -185,7 +186,7 @@ export const getSpotifyApp = async (
 ): Promise<AdminSpotifyAppResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppResponse>(
-      axiosInstance.get(buildAppPath(appId), {
+      authClient.get(buildAppPath(appId), {
         params: {
           include_secret: includeSecret,
         },
@@ -210,7 +211,7 @@ export const createSpotifyApp = async (
 ): Promise<AdminSpotifyAppResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, payload),
     );
 
     if (response.success) {
@@ -232,7 +233,7 @@ export const updateSpotifyApp = async (
 ): Promise<AdminSpotifyAppResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppResponse>(
-      axiosInstance.put(buildAppPath(appId), payload),
+      authClient.put(buildAppPath(appId), payload),
     );
 
     if (response.success) {
@@ -259,7 +260,7 @@ export const deleteSpotifyApp = async (
     }
 
     const response = await axiosWrapper<AdminSpotifyAppDeleteResponse>(
-      axiosInstance.delete(buildAppPath(appId), {
+      authClient.delete(buildAppPath(appId), {
         params: queryParams,
       }),
     );
@@ -295,7 +296,7 @@ export const getSpotifyAppUsers = async (
     }
 
     const response = await axiosWrapper<AdminSpotifyAppUserListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, {
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, {
         params: queryParams,
       }),
     );
@@ -325,7 +326,7 @@ export const getSpotifyAppUser = async (
 ): Promise<AdminSpotifyAppUserResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppUserResponse>(
-      axiosInstance.get(buildUserPath(userIdentifier)),
+      authClient.get(buildUserPath(userIdentifier)),
     );
 
     if (response.success) {
@@ -346,7 +347,7 @@ export const upsertSpotifyAppUser = async (
 ): Promise<AdminSpotifyAppUserUpsertResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppUserUpsertResponse>(
-      axiosInstance.put(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, payload),
+      authClient.put(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, payload),
     );
 
     if (response.success) {
@@ -367,7 +368,7 @@ export const deleteSpotifyAppUser = async (
 ): Promise<AdminSpotifyAppUserDeleteResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppUserDeleteResponse>(
-      axiosInstance.delete(buildUserPath(userIdentifier)),
+      authClient.delete(buildUserPath(userIdentifier)),
     );
 
     if (response.success) {

@@ -65,16 +65,26 @@ export const handleApiError = (error: AxiosError | Error): {
 
     // Attempt to respect standardized error format
     if (data && typeof data === "object" && (data as ApiResponse).success === false) {
-      const apiError = data as { error?: string; details?: unknown[] };
+      const apiError = data as any;
       let errorMessage = apiError.error || "An error occurred.";
-      if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+      
+      // Try to extract detailed validation errors (for Pydantic exceptions wrapped by standard-response format)
+      if (apiError.data?.details && Array.isArray(apiError.data.details) && apiError.data.details.length > 0) {
+        const first = apiError.data.details[0];
+        if (first?.field && first?.message) {
+          errorMessage = `${first.field}: ${first.message}`;
+        } else if (first?.message) {
+          errorMessage = first.message;
+        }
+      } else if (Array.isArray(apiError.details) && apiError.details.length > 0) {
         const first = apiError.details[0] as { message?: string };
         if (first?.message) errorMessage = first.message;
       }
+
       return {
         success: false,
         error: errorMessage,
-        details: (data as ApiResponse).details ?? null,
+        details: apiError.data?.details || apiError.details || null,
         status,
       };
     }

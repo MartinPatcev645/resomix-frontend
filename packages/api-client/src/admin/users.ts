@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 
 export interface AdminUserSearchItem {
@@ -23,7 +24,7 @@ export interface AdminUserSearchResponse {
 export const listAdminUsers = async (params: { q?: string; limit?: number; page?: number; page_size?: number } = {}) => {
   try {
     const response = await axiosWrapper<AdminUserSearchResponse>(
-      axiosInstance.get("/api/v1/admin/users", { params })
+      authClient.get("/api/v1/admin/users", { params })
     );
     return response;
   } catch (error) {
@@ -37,7 +38,7 @@ export const listAdminUsers = async (params: { q?: string; limit?: number; page?
 export const assignRole = async (userUuid: string, roleName: string) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.post(`/api/v1/admin/users/${userUuid}/roles`, { role_name: roleName })
+      authClient.post(`/api/v1/admin/users/${userUuid}/roles`, { role_name: roleName })
     );
     return response;
   } catch (error) {
@@ -51,7 +52,7 @@ export const assignRole = async (userUuid: string, roleName: string) => {
 export const removeRole = async (userUuid: string, roleName: string) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.delete(`/api/v1/admin/users/${userUuid}/roles/${roleName}`)
+      authClient.delete(`/api/v1/admin/users/${userUuid}/roles/${roleName}`)
     );
     return response;
   } catch (error) {
@@ -65,7 +66,7 @@ export const removeRole = async (userUuid: string, roleName: string) => {
 export const listSystemRoles = async () => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.get("/api/v1/admin/roles")
+      authClient.get("/api/v1/admin/roles")
     );
     return response;
   } catch (error) {
@@ -79,7 +80,7 @@ export const listSystemRoles = async () => {
 export const listSystemPermissions = async () => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.get("/api/v1/admin/roles/permissions")
+      authClient.get("/api/v1/admin/roles/permissions")
     );
     return response;
   } catch (error) {
@@ -93,7 +94,7 @@ export const listSystemPermissions = async () => {
 export const createAdminUser = async (userData: any) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.post("/api/v1/admin/users", userData)
+      authClient.post("/api/v1/admin/users", userData)
     );
     return response;
   } catch (error) {
@@ -107,7 +108,7 @@ export const createAdminUser = async (userData: any) => {
 export const getAdminUser = async (userUuid: string) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}`)
     );
     return response;
   } catch (error) {
@@ -121,7 +122,7 @@ export const getAdminUser = async (userUuid: string) => {
 export const updateAdminUser = async (userUuid: string, userData: Record<string, any>) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}`, userData)
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}`, userData)
     );
     return response;
   } catch (error) {
@@ -135,7 +136,7 @@ export const updateAdminUser = async (userUuid: string, userData: Record<string,
 export const toggleUserStatus = async (userUuid: string) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}/toggle-status`)
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}/toggle-status`)
     );
     return response;
   } catch (error) {
@@ -149,7 +150,7 @@ export const toggleUserStatus = async (userUuid: string) => {
 export const getRoleDetails = async (roleName: string) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_ROLE_DETAIL}${encodeURIComponent(roleName)}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_ROLE_DETAIL}${encodeURIComponent(roleName)}`)
     );
     return response;
   } catch (error) {
@@ -163,7 +164,7 @@ export const getRoleDetails = async (roleName: string) => {
 export const updateRolePermissions = async (roleName: string, permissions: string[]) => {
   try {
     const response = await axiosWrapper<any>(
-      axiosInstance.put(
+      authClient.put(
         `${API_CONFIG.ENDPOINTS.ADMIN_ROLE_PERMISSIONS_UPDATE}${encodeURIComponent(roleName)}/permissions`,
         { permissions }
       )

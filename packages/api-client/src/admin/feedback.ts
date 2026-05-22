@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 import type { ApiResponse } from "../types/api";
 
@@ -86,7 +87,7 @@ export const getFeedbackList = async (params: FeedbackListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<FeedbackListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
@@ -116,7 +117,7 @@ export const deleteFeedback = async (feedbackId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DELETE}${feedbackId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DELETE}${feedbackId}`)
     );
 
     if (data.success) {
@@ -141,7 +142,7 @@ export const deleteFeedback = async (feedbackId: number) => {
 export const batchDeleteFeedback = async (feedbackIds: number[]) => {
   try {
     const data = await axiosWrapper<FeedbackBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_BATCH_DELETE, {
         ids: feedbackIds,
       })
     );
@@ -167,7 +168,7 @@ export const batchDeleteFeedback = async (feedbackIds: number[]) => {
 export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpdateData) => {
   try {
     const data = await axiosWrapper<FeedbackUpdateResponse>(
-      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_UPDATE}${feedbackId}`, updateData)
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_UPDATE}${feedbackId}`, updateData)
     );
 
     if (data.success) return data;
@@ -187,7 +188,7 @@ export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpd
 export const getFeedbackById = async (feedbackId: number) => {
   try {
     const data = await axiosWrapper<{ success: boolean; data: FeedbackItem }>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DETAIL}${feedbackId}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DETAIL}${feedbackId}`)
     );
 
     if (data.success) return data;
@@ -237,7 +238,7 @@ export const exportFeedback = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<FeedbackExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_EXPORT, requestBody)
     );
 
     if (data.success) return data;
@@ -265,7 +266,7 @@ export const exportFeedback = async (
 export const markFeedbackStatus = async (feedbackId: number, status: 'open' | 'resolved') => {
   try {
     const data = await axiosWrapper<FeedbackUpdateResponse>(
-      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_MARK_STATUS}${feedbackId}/status`, {
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_MARK_STATUS}${feedbackId}/status`, {
         status,
       })
     );
@@ -297,7 +298,7 @@ export const getFeedbackStats = async () => {
         by_category: Record<string, number>;
       };
     }>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_STATS)
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_STATS)
     );
 
     if (data.success) return data;
