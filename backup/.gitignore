@@ -178,3 +178,5 @@ temp_audio/
 creds/
 nohup.out
 
+nightly
+storage_box
