@@ -143,7 +143,8 @@ function PartnerDetailsPage() {
       setPageLoading(false);
       setSftpLoading(false);
     }
-  }, [partnerId, editForm, getPartnerDetail, getSftpStatus, fetchApiKeys, setSelectedPartner, showErrorModal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerId]);
 
   useEffect(() => {
     fetchAllData();
