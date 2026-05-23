@@ -148,8 +148,9 @@ def seed_sandbox():
                         conn.execute(text("""
                             INSERT INTO contributors (party_id, full_name, partner_id, isni, ipi, ipn) 
                             VALUES ('ARGO_01', :name, 1, '', '', '')
+                            ON DUPLICATE KEY UPDATE full_name=full_name
                         """), {'name': artist_name})
-                        cid = conn.execute(text("SELECT LAST_INSERT_ID()")).scalar()
+                        cid = conn.execute(text("SELECT id FROM contributors WHERE party_id = 'ARGO_01' AND full_name = :name LIMIT 1"), {'name': artist_name}).scalar()
                         seen_contributors[artist_name] = cid
                     artist_ids.append(seen_contributors[artist_name])
 
@@ -159,8 +160,9 @@ def seed_sandbox():
                     conn.execute(text("""
                         INSERT INTO releases (label_id, party_id, message_id, title, release_type, partner_id)
                         VALUES (1, 'ARGO_01', 'MSG_2026_001', :title, 'Album', 1)
+                        ON DUPLICATE KEY UPDATE title=title
                     """), {'title': album_title})
-                    rid = conn.execute(text("SELECT LAST_INSERT_ID()")).scalar()
+                    rid = conn.execute(text("SELECT id FROM releases WHERE title = :title AND partner_id = 1 LIMIT 1"), {'title': album_title}).scalar()
                     seen_releases[album_title] = rid
                 rid = seen_releases[album_title]
 
@@ -169,8 +171,8 @@ def seed_sandbox():
                 genre_key = genre_name.strip().lower()
                 if genre_key not in genre_map:
                     # Create the genre
-                    conn.execute(text("INSERT INTO genres (name) VALUES (:name)"), {'name': genre_name.strip()})
-                    gid = conn.execute(text("SELECT LAST_INSERT_ID()")).scalar()
+                    conn.execute(text("INSERT INTO genres (name) VALUES (:name) ON DUPLICATE KEY UPDATE name=name"), {'name': genre_name.strip()})
+                    gid = conn.execute(text("SELECT id FROM genres WHERE name = :name LIMIT 1"), {'name': genre_name.strip()}).scalar()
                     genre_map[genre_key] = gid
                 genre_id_val = genre_map[genre_key]
 
@@ -213,6 +215,7 @@ def seed_sandbox():
                 conn.execute(text("""
                     INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, original_filename, stored_path, audio_codec, file_size_bytes, duration_seconds, partner_id)
                     VALUES ('ARGO_01', 1, :tid, 'Master', :orig, :path, :codec, :size, :dur_sec, 1)
+                    ON DUPLICATE KEY UPDATE track_id=:tid
                 """), {
                     'tid': tid,
                     'orig': track_info.get("filename") or f"{tuid}.mp3",
