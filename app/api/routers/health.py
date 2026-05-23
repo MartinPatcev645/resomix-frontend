@@ -15,8 +15,13 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-# Health and status endpoints 
-from fastapi import APIRouter
+import time
+from fastapi import APIRouter, Request
+from database.connection import async_engine
+from sqlalchemy import text
+from app.db.redis import _redis_pool
+import redis.asyncio as aioredis
+from app.core.config import settings
 
 from app.schemas.common import HealthCheckResponse
 
@@ -33,7 +38,7 @@ async def root() -> HealthCheckResponse:
     """Root endpoint that returns API information"""
     return HealthCheckResponse(
         name="Resomix API",
-        version="3.0.1",
+        version=settings.app_version,
         status="running",
         docs_url="/docs"
     )
@@ -44,9 +49,42 @@ async def root() -> HealthCheckResponse:
     summary="Health Check",
     description="Simple health check endpoint to verify service availability."
 )
-async def health_check():
-    """Health check endpoint"""
+async def health_check(request: Request):
+    """Deep health check endpoint checking database, Redis, and system uptime."""
+    # 1. Calculate uptime
+    start_time = getattr(request.app.state, "start_time", None)
+    uptime_seconds = time.time() - start_time if start_time else 0.0
+
+    # 2. Check Database (MariaDB)
+    db_status = "healthy"
+    try:
+        async with async_engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = "unhealthy"
+
+    # 3. Check Redis pool
+    redis_status = "unhealthy"
+    if _redis_pool is not None:
+        try:
+            client = aioredis.Redis(connection_pool=_redis_pool)
+            await client.ping()
+            redis_status = "healthy"
+            await client.close()
+        except Exception:
+            pass
+
+    # 4. Overall status
+    overall_status = "healthy"
+    if db_status == "unhealthy" or redis_status == "unhealthy":
+        overall_status = "unhealthy"
+
     return {
-        "status": "healthy",
-        "service": "Resomix API"
+        "status": overall_status,
+        "version": settings.app_version,
+        "uptime_seconds": round(uptime_seconds, 2),
+        "dependencies": {
+            "database": db_status,
+            "redis": redis_status
+        }
     } 
