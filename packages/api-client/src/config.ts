@@ -95,6 +95,10 @@ export interface ApiConfig {
     ADMIN_PARTNER_API_KEY_REVOKE: string;
     ADMIN_PARTNER_API_KEY_ROTATE: string;
     ADMIN_PARTNER_SFTP_PROVISION: string;
+    ADMIN_PARTNER_WEBHOOKS: string;
+    ADMIN_WEBHOOK_LOGS_FAILED: string;
+    ADMIN_WEBHOOK_LOGS_RETRY: string;
+    ADMIN_PARTNER_STRIPE_CHECKOUT: string;
     ADMIN_AUTH_LOGIN: string;
     ADMIN_PROMO_CREATE: string;
     ADMIN_SIMILARITY_REBUILD: string;
@@ -283,6 +287,10 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PARTNER_API_KEY_REVOKE: "/api/v1/admin/partners/api-keys/revoke",
     ADMIN_PARTNER_API_KEY_ROTATE: "/api/v1/admin/partners/api-keys/rotate",
     ADMIN_PARTNER_SFTP_PROVISION: "/api/v1/admin/partners/sftp/provision",
+    ADMIN_PARTNER_WEBHOOKS: "/api/v1/admin/partners/webhooks",
+    ADMIN_WEBHOOK_LOGS_FAILED: "/api/v1/admin/partners/webhooks/logs/failed",
+    ADMIN_WEBHOOK_LOGS_RETRY: "/api/v1/admin/partners/webhooks/logs/",
+    ADMIN_PARTNER_STRIPE_CHECKOUT: "/api/v1/admin/partners/",
     ADMIN_AUTH_LOGIN: "/api/v1/admin/auth/login",
     ADMIN_PROMO_CREATE: "/api/v1/admin/promo/create",
     ADMIN_SIMILARITY_REBUILD: "/api/v1/admin/similarity/rebuild-index",

@@ -12,6 +12,12 @@ import {
   provisionSftpPartner as apiProvisionSftp,
   getSftpStatus as apiGetSftpStatus,
   retrySftpProvisioning as apiRetrySftp,
+  getPartnerWebhooks,
+  createPartnerWebhook,
+  updatePartnerWebhook,
+  listFailedWebhookLogs,
+  retryWebhookDelivery,
+  createStripeCheckoutSession,
   type Partner,
   type PartnerApiKey,
   type PartnerCreateRequest,
@@ -19,7 +25,9 @@ import {
   type PartnerListParams,
   type SftpProvisionRequest,
   type SftpProvisionResponse,
-  type SftpStatusResponse
+  type SftpStatusResponse,
+  type WebhookConfig,
+  type WebhookDeliveryLog
 } from '@resomix/api-client';
 import { message } from 'antd';
 
@@ -48,6 +56,12 @@ export function usePartners(options?: UsePartnersOptions) {
   const [apiKeys, setApiKeys] = useState<PartnerApiKey[]>([]);
   const [keysLoading, setKeysLoading] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+
+  // Webhooks & Logs State
+  const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
+  const [failedLogs, setFailedLogs] = useState<WebhookDeliveryLog[]>([]);
+  const [webhooksLoading, setWebhooksLoading] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const fetchPartners = useCallback(async () => {
     setLoading(true);
@@ -280,6 +294,99 @@ export function usePartners(options?: UsePartnersOptions) {
     }
   };
 
+  const fetchPartnerWebhooks = async (partnerId: number) => {
+    setWebhooksLoading(true);
+    try {
+      const result = await getPartnerWebhooks(partnerId);
+      if (result.success) {
+        setWebhooks(result.data);
+      } else {
+        message.error(result.error || 'Failed to fetch webhooks');
+      }
+    } catch {
+      message.error('Error fetching webhooks');
+    } finally {
+      setWebhooksLoading(false);
+    }
+  };
+
+  const saveWebhookConfig = async (webhookId: number | null, payload: WebhookConfig) => {
+    setWebhooksLoading(true);
+    try {
+      if (webhookId) {
+        const result = await updatePartnerWebhook(webhookId, payload);
+        if (result.success) {
+          message.success('Webhook configuration updated successfully');
+          fetchPartnerWebhooks(payload.partner_id);
+          return true;
+        }
+      } else {
+        const result = await createPartnerWebhook(payload);
+        if (result.success) {
+          message.success('Webhook configured successfully');
+          fetchPartnerWebhooks(payload.partner_id);
+          return result;
+        }
+      }
+    } catch {
+      message.error('Error saving webhook configuration');
+    } finally {
+      setWebhooksLoading(false);
+    }
+    return false;
+  };
+
+  const fetchFailedWebhookLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const result = await listFailedWebhookLogs();
+      if (result.success) {
+        setFailedLogs(result.data);
+      } else {
+        message.error(result.error || 'Failed to fetch failed webhook logs');
+      }
+    } catch {
+      message.error('Error fetching failed webhook logs');
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const retryWebhook = async (logId: number) => {
+    setLogsLoading(true);
+    try {
+      const result = await retryWebhookDelivery(logId);
+      if (result.success) {
+        message.success(result.message || 'Webhook retry triggered successfully');
+        fetchFailedWebhookLogs();
+        return true;
+      } else {
+        message.error(result.error || 'Failed to retry webhook delivery');
+      }
+    } catch {
+      message.error('Error retrying webhook delivery');
+    } finally {
+      setLogsLoading(false);
+    }
+    return false;
+  };
+
+  const initiateB2bCheckout = async (partnerId: number, values: { tier: string; billing_cycle: string; po_number?: string }) => {
+    try {
+      const result = await createStripeCheckoutSession(partnerId, values);
+      if (result.success && result.checkout_url) {
+        message.success('Stripe B2B Checkout URL generated successfully!');
+        window.open(result.checkout_url, '_blank');
+        return result.checkout_url;
+      } else {
+        message.error(result.error || 'Failed to generate Stripe Checkout URL');
+      }
+    } catch {
+      message.error('Error initiating Stripe Checkout Session');
+    }
+    return null;
+  };
+
   return {
     partners,
     loading,
@@ -292,6 +399,10 @@ export function usePartners(options?: UsePartnersOptions) {
     setSelectedPartner,
     apiKeys,
     keysLoading,
+    webhooks,
+    failedLogs,
+    webhooksLoading,
+    logsLoading,
     fetchPartners,
     fetchApiKeys,
     createPartner,
@@ -304,6 +415,11 @@ export function usePartners(options?: UsePartnersOptions) {
     provisionSftp,
     getSftpStatus,
     retrySftp,
+    fetchPartnerWebhooks,
+    saveWebhookConfig,
+    fetchFailedWebhookLogs,
+    retryWebhook,
+    initiateB2bCheckout,
     handlePageChange,
   };
 }

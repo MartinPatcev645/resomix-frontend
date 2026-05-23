@@ -207,3 +207,113 @@ export const retrySftpProvisioning = async (partnerId: number): Promise<SftpProv
     return handleApiError(error) as any;
   }
 };
+
+// ─── B2B Webhook & Stripe Billing Interfaces ───────────────
+
+export interface WebhookConfig {
+  id?: number;
+  partner_id: number;
+  url: string;
+  secret_hash?: string;
+  signing_secret?: string;
+  events: string[];
+  is_active: boolean;
+  consecutive_failures?: number;
+}
+
+export interface WebhookDeliveryLog {
+  id: number;
+  webhook_id: number;
+  event_type: string;
+  payload: string;
+  request_headers: string;
+  response_status: number;
+  response_body: string;
+  delivered_at: string;
+  consecutive_failures: number;
+  created_at: string;
+}
+
+// ─── B2B Webhook & Stripe Billing API Calls ──────────────────
+
+/**
+ * Get webhooks configured for a partner (Admin)
+ */
+export const getPartnerWebhooks = async (partnerId: number): Promise<{ success: boolean; data: WebhookConfig[]; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_WEBHOOKS}/${partnerId}`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Create a new partner webhook configuration (Admin)
+ */
+export const createPartnerWebhook = async (payload: WebhookConfig): Promise<{ success: boolean; webhook: WebhookConfig; signing_secret: string; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PARTNER_WEBHOOKS, payload)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Update an existing partner webhook configuration (Admin)
+ */
+export const updatePartnerWebhook = async (webhookId: number, payload: Partial<WebhookConfig>): Promise<{ success: boolean; data: WebhookConfig; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_WEBHOOKS}/${webhookId}`, payload)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Get all failed B2B webhook delivery logs (Admin)
+ */
+export const listFailedWebhookLogs = async (): Promise<{ success: boolean; data: WebhookDeliveryLog[]; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_WEBHOOK_LOGS_FAILED)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Manually retry a failed webhook delivery attempt (Admin)
+ */
+export const retryWebhookDelivery = async (logId: number): Promise<{ success: boolean; message?: string; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_WEBHOOK_LOGS_RETRY}${logId}/retry`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Create a Stripe checkout session for a B2B partner subscription (Admin)
+ */
+export const createStripeCheckoutSession = async (
+  partnerId: number,
+  payload: { tier: string; billing_cycle: string; po_number?: string }
+): Promise<{ success: boolean; checkout_url: string; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_STRIPE_CHECKOUT}${partnerId}/stripe/checkout`, payload)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+

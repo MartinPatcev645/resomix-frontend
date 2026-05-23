@@ -37,7 +37,9 @@ import {
   Edit, 
   Activity, 
   Terminal,
-  Plus
+  Plus,
+  CreditCard,
+  Globe
 } from 'lucide-react';
 import { useStatusModals, usePartners } from '@resomix/hooks';
 import { StatusModal } from '@resomix/ui';
@@ -46,7 +48,9 @@ import type {
   PartnerTier, 
   PartnerCreateRequest, 
   ApiKeyIssueRequest,
-  SftpProvisionRequest
+  SftpProvisionRequest,
+  WebhookConfig,
+  WebhookDeliveryLog
 } from '@resomix/api-client';
 
 const { Title, Text, Paragraph } = Typography;
@@ -86,6 +90,15 @@ function PartnerDetailsPage() {
     provisionSftp,
     getSftpStatus,
     retrySftp,
+    webhooks,
+    failedLogs,
+    webhooksLoading,
+    logsLoading,
+    fetchPartnerWebhooks,
+    saveWebhookConfig,
+    fetchFailedWebhookLogs,
+    retryWebhook,
+    initiateB2bCheckout,
   } = usePartners({
     onError: showErrorModal,
     onSuccess: showSuccessModal
@@ -101,6 +114,8 @@ function PartnerDetailsPage() {
   const [editForm] = Form.useForm();
   const [sftpForm] = Form.useForm();
   const [issueKeyForm] = Form.useForm();
+  const [webhookForm] = Form.useForm();
+  const [checkoutForm] = Form.useForm();
 
   // API Key Flow State
   const [issueKeyModalVisible, setIssueKeyModalVisible] = useState(false);
@@ -136,6 +151,10 @@ function PartnerDetailsPage() {
       if (sftpRes && sftpRes.success) {
         setSftpData(sftpRes.data);
       }
+
+      // Fetch B2B webhooks & failed webhook delivery logs
+      await fetchPartnerWebhooks(partnerId);
+      await fetchFailedWebhookLogs();
     } catch (err) {
       console.error(err);
       showErrorModal('Fetch Error', 'An error occurred while loading partner data.');
@@ -266,6 +285,33 @@ function PartnerDetailsPage() {
       }
     });
   };
+
+  const handleSaveWebhook = async (values: any) => {
+    if (isNaN(partnerId)) return;
+    const webhookId = webhooks.length > 0 ? webhooks[0].id : null;
+    const payload: WebhookConfig = {
+      partner_id: partnerId,
+      url: values.url,
+      events: values.events || [],
+      is_active: values.is_active !== undefined ? values.is_active : true,
+    };
+    await saveWebhookConfig(webhookId || null, payload);
+  };
+
+  const handleTriggerCheckout = async (values: any) => {
+    if (isNaN(partnerId)) return;
+    await initiateB2bCheckout(partnerId, values);
+  };
+
+  useEffect(() => {
+    if (webhooks.length > 0) {
+      webhookForm.setFieldsValue({
+        url: webhooks[0].url,
+        events: webhooks[0].events,
+        is_active: webhooks[0].is_active,
+      });
+    }
+  }, [webhooks, webhookForm]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -733,6 +779,177 @@ function PartnerDetailsPage() {
                       );
                     }}
                   />
+                </div>
+              )
+            },
+            {
+              key: '4',
+              label: (
+                <span className="flex items-center gap-2">
+                  <CreditCard size={16} />
+                  <span>Webhooks & Subscription</span>
+                </span>
+              ),
+              children: (
+                <div className="py-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Webhook Configuration Card */}
+                    <Card
+                      title={<span className="flex items-center gap-2 text-primary font-semibold"><Globe size={18} /><span>Webhook Configuration</span></span>}
+                      className="border-default rounded-xl shadow-sm h-full"
+                    >
+                      <Form
+                        form={webhookForm}
+                        layout="vertical"
+                        onFinish={handleSaveWebhook}
+                      >
+                        <Form.Item
+                          name="url"
+                          label={<Text className="font-semibold text-primary">Webhook Endpoint URL</Text>}
+                          rules={[
+                            { required: true, message: 'Please enter webhook endpoint URL' },
+                            { type: 'url', message: 'Enter a valid URL (must start with https://)' }
+                          ]}
+                          extra="Your server must respond with a 2xx status code to acknowledge delivery."
+                        >
+                          <Input className="h-11 rounded-lg" placeholder="https://your-domain.com/webhooks/resomix" />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="events"
+                          label={<Text className="font-semibold text-primary">Event Subscriptions</Text>}
+                          rules={[{ required: true, message: 'Select at least one event type' }]}
+                        >
+                          <Select mode="multiple" className="rounded-lg min-h-11" placeholder="Select event types">
+                            <Option value="ingestion.started">ingestion.started (SFTP Detected)</Option>
+                            <Option value="ingestion.completed">ingestion.completed (CSV Processed)</Option>
+                            <Option value="ingestion.failed">ingestion.failed (Ingestion Failed)</Option>
+                            <Option value="track.indexed">track.indexed (Single Track Indexed)</Option>
+                            <Option value="quota.warning">quota.warning (80% Quota reached)</Option>
+                            <Option value="quota.exceeded">quota.exceeded (100% Quota exceeded)</Option>
+                            <Option value="embedding.deleted">embedding.deleted (TTL Expired)</Option>
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item name="is_active" label={<Text className="font-semibold text-primary">Webhook Status</Text>} valuePropName="checked">
+                          <Switch className="bg-secondary" checkedChildren="Active" unCheckedChildren="Inactive" />
+                        </Form.Item>
+
+                        {webhooks.length > 0 && webhooks[0].signing_secret && (
+                          <div className="mb-6 p-4 rounded-xl border border-default bg-background-secondary">
+                            <Text className="text-secondary text-xs block mb-1">Webhook Signing Secret (HMAC-SHA256)</Text>
+                            <Space className="w-full justify-between">
+                              <code className="font-mono text-xs text-primary bg-surface/50 px-2 py-1 rounded border border-default">
+                                {webhooks[0].signing_secret}
+                              </code>
+                              <Button size="small" type="text" icon={<Copy size={14} />} onClick={() => copyToClipboard(webhooks[0].signing_secret || '')} />
+                            </Space>
+                            <Text className="text-secondary text-[10px] block mt-1">Used to verify payloads in X-Resomix-Signature header.</Text>
+                          </div>
+                        )}
+
+                        <Form.Item className="!mb-0">
+                          <Button type="primary" htmlType="submit" loading={webhooksLoading} className="h-10 rounded-lg font-semibold w-full">
+                            Save Webhook Settings
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </Card>
+
+                    {/* Stripe Billing Configuration Card */}
+                    <Card
+                      title={<span className="flex items-center gap-2 text-primary font-semibold"><CreditCard size={18} /><span>Stripe B2B Subscription</span></span>}
+                      className="border-default rounded-xl shadow-sm h-full"
+                    >
+                      <Form
+                        form={checkoutForm}
+                        layout="vertical"
+                        onFinish={handleTriggerCheckout}
+                        initialValues={{ tier: 'starter', billing_cycle: 'monthly' }}
+                      >
+                        <Alert
+                          type="info"
+                          showIcon
+                          className="py-3 px-4 rounded-xl bg-info/5 border-info/10 mb-6 text-sm"
+                          message="Triggers a secure Stripe Billing onboarding checkout session with automatic EU Tax calculation and VIES B2B registration validation."
+                        />
+
+                        <Form.Item name="tier" label={<Text className="font-semibold text-primary">Subscription Plan</Text>}>
+                          <Select className="h-11 rounded-lg">
+                            <Option value="starter">Starter Monthly (€99/mo)</Option>
+                            <Option value="growth">Growth Monthly (€299/mo)</Option>
+                            <Option value="growth_annual">Growth Annual (€2,990/yr)</Option>
+                            <Option value="enterprise">Enterprise Monthly (€999/mo)</Option>
+                            <Option value="enterprise_annual">Enterprise Annual (€9,990/yr)</Option>
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item name="billing_cycle" label={<Text className="font-semibold text-primary">Billing Cycle</Text>}>
+                          <Select className="h-11 rounded-lg">
+                            <Option value="monthly">Monthly Cycle</Option>
+                            <Option value="annual">Annual Cycle (Save 2 Months)</Option>
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item name="po_number" label={<Text className="font-semibold text-primary">Client Purchase Order (PO Number)</Text>}>
+                          <Input className="h-11 rounded-lg font-mono" placeholder="e.g. PO-887766" />
+                        </Form.Item>
+
+                        <Form.Item className="!mb-0">
+                          <Button type="primary" htmlType="submit" className="h-12 rounded-lg font-semibold w-full flex items-center justify-center gap-2 shadow-sm">
+                            <CreditCard size={18} />
+                            <span>Launch B2B Stripe Onboarding</span>
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </Card>
+                  </div>
+
+                  {/* Webhook Delivery Logs Section */}
+                  <div className="mt-8">
+                    <Title level={4} className="!mb-3 !text-primary flex items-center gap-2"><Activity size={18} /><span>Failed Webhook Deliveries</span></Title>
+                    <Text className="text-secondary text-sm block mb-6">Audit log of B2B webhook delivery failures. Manual retries use exponential-backoff triggers.</Text>
+
+                    <Card className="border-default rounded-xl overflow-hidden" styles={{ body: { padding: 0 } }}>
+                      {logsLoading ? (
+                        <div className="py-12 flex justify-center"><Spin tip="Loading delivery logs..." /></div>
+                      ) : failedLogs.length === 0 ? (
+                        <div className="py-12 text-center text-secondary text-sm">
+                          <CheckCircle2Icon />
+                          <div className="mt-2 font-medium text-secondary">All systems green! No failed webhook deliveries logged.</div>
+                        </div>
+                      ) : (
+                        <List
+                          dataSource={failedLogs}
+                          renderItem={(log: WebhookDeliveryLog) => (
+                            <div className="p-5 border-b border-default last:border-0 hover:bg-background-secondary transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <Tag color="error" className="font-mono text-xs rounded">HTTP {log.response_status}</Tag>
+                                  <Text strong className="text-primary text-sm font-mono">{log.event_type}</Text>
+                                  <Text className="text-secondary text-xs font-mono">Log ID: {log.id}</Text>
+                                </div>
+                                <div className="text-xs text-secondary font-mono mb-2">
+                                  Attempted At: {new Date(log.delivered_at).toLocaleString()}
+                                </div>
+                                <div className="p-3 bg-background-secondary/80 rounded border border-default font-mono text-[11px] text-secondary max-h-24 overflow-y-auto w-full">
+                                  <strong>Response Body:</strong> {log.response_body || '—'}
+                                </div>
+                              </div>
+                              <Button 
+                                type="primary" 
+                                icon={<RotateCw size={14} />} 
+                                onClick={() => retryWebhook(log.id)}
+                                className="h-9 rounded-lg flex items-center gap-1.5 font-medium text-xs shadow-sm"
+                              >
+                                Retry Delivery
+                              </Button>
+                            </div>
+                          )}
+                        />
+                      )}
+                    </Card>
+                  </div>
                 </div>
               )
             }
