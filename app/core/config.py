@@ -130,6 +130,27 @@ class Settings(BaseModel):
     stripe_webhook_secret: str = Field(
         default="whsec_mock", description="Stripe webhook signing secret"
     )
+    redis_url: str = Field(
+        default="redis://localhost:6379/0", description="Redis connection URL"
+    )
+    stripe_price_starter_monthly: str = Field(
+        default="price_mock_starter_m", description="Stripe Price ID for Starter Monthly"
+    )
+    stripe_price_starter_annual: str = Field(
+        default="price_mock_starter_y", description="Stripe Price ID for Starter Annual"
+    )
+    stripe_price_growth_monthly: str = Field(
+        default="price_mock_growth_m", description="Stripe Price ID for Growth Monthly"
+    )
+    stripe_price_growth_annual: str = Field(
+        default="price_mock_growth_y", description="Stripe Price ID for Growth Annual"
+    )
+    stripe_price_enterprise_monthly: str = Field(
+        default="price_mock_enterprise_m", description="Stripe Price ID for Enterprise Monthly"
+    )
+    stripe_price_enterprise_annual: str = Field(
+        default="price_mock_enterprise_y", description="Stripe Price ID for Enterprise Annual"
+    )
 
     # Apple Music Configuration
     apple_team_id: str = Field(
@@ -571,6 +592,12 @@ class Settings(BaseModel):
             "STRIPE_SECRET_KEY": "stripe_secret_key",
             "STRIPE_PUBLISHABLE_KEY": "stripe_publishable_key",
             "STRIPE_WEBHOOK_SECRET": "stripe_webhook_secret",
+            "STRIPE_PRICE_STARTER_MONTHLY": "stripe_price_starter_monthly",
+            "STRIPE_PRICE_STARTER_ANNUAL": "stripe_price_starter_annual",
+            "STRIPE_PRICE_GROWTH_MONTHLY": "stripe_price_growth_monthly",
+            "STRIPE_PRICE_GROWTH_ANNUAL": "stripe_price_growth_annual",
+            "STRIPE_PRICE_ENTERPRISE_MONTHLY": "stripe_price_enterprise_monthly",
+            "STRIPE_PRICE_ENTERPRISE_ANNUAL": "stripe_price_enterprise_annual",
             # Partner API
             "PARTNER_API_KEY_SIGNING_SECRET": "partner_api_key_signing_secret",
             "PARTNER_API_KEY_HASH_ALGORITHM": "partner_api_key_hash_algorithm",
