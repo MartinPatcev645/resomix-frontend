@@ -53,10 +53,10 @@ export default function PartnersPage() {
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
 
   const sandboxKey = "rmx_sandbox_demo_1234567890";
-  const sandboxCurl = `curl -X POST "https://api.resomix.com/v1/similarity/search" \\
+  const sandboxCurl = `curl -X POST "https://api.resomix.com/api/v1/similarity/search" \\
   -H "Authorization: Bearer ${sandboxKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{"track_uuid": "f4c44d99-5100-4437-a8b1-f6a0db46c789", "limit": 5}'`;
+  -d '{"track_id": "f4c44d99-5100-4437-a8b1-f6a0db46c789", "top_sk": 5}'`;
 
   return (
     <div className="bg-black text-white min-h-screen py-16 px-4 md:px-8 select-none font-sans overflow-hidden relative">
