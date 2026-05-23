@@ -9,6 +9,8 @@ import InfoPage from "./InfoPage.tsx";
 import AuthPage from "./AuthPage.tsx";
 import TestPage from "./TestPage.tsx";
 import MenuPage from "./MenuPage.tsx";
+import PartnersPage from "./PartnersPage.tsx";
+import PricingPage from "./PricingPage.tsx";
 
 export {
     HomePage,
@@ -19,4 +21,6 @@ export {
     AuthPage,
     TestPage,
     MenuPage,
+    PartnersPage,
+    PricingPage,
 }

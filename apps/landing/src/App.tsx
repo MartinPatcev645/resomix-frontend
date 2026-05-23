@@ -12,6 +12,8 @@ const AboutPage = lazy(() => import("@/pages/desktop/AboutPage.tsx").then(m => (
 const AboutMobile = lazy(() => import("@/pages/mobile/AboutMobile.tsx").then(m => ({ default: m.AboutMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
+const PartnersPage = lazy(() => import("@/pages/PartnersPage.tsx"));
+const PricingPage = lazy(() => import("@/pages/PricingPage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
@@ -92,6 +94,8 @@ function App() {
             {/* Optional Auth Routes */}
             <Route path="/" element={<UsedHomePage />} />
             <Route path="/about" element={<UsedAboutPage />} />
+            <Route path="/partners" element={<PartnersPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
 
             {/* Info Pages */}
             <Route path="/contact" element={<InfoPage mode="contact" />} />
