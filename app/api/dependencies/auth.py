@@ -28,7 +28,7 @@ from app.core.security import decode_token
 from app.models.user import User
 from app.api.dependencies.database import get_database_session
 from app.repositories.rbac_repository import RBACRepository
-from app.repositories.user_repository import UserRepository
+from app.repositories.user_repository import UserRepository, UserSessionRepository
 from app.utils.edge_auth import verify_edge_token
 from app.core.context import set_admin_context
 
