@@ -19,7 +19,8 @@ Version: 3.0.1
 Init Date: May 2026
 """
 
-from typing import List, Optional
+from __future__ import annotations
+from typing import List, Optional, TYPE_CHECKING
 from sqlalchemy import (
     String,
     Text,
@@ -37,6 +38,10 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 from . import Base
+
+if TYPE_CHECKING:
+    from .track import Track
+    from .release import Release
 
 
 class Partner(Base):
@@ -79,6 +84,12 @@ class Partner(Base):
     )
     country_code: Mapped[Optional[str]] = mapped_column(
         String(2), nullable=True, comment="ISO 3166-1 alpha-2"
+    )
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, unique=True, comment="Stripe Customer identifier"
+    )
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, unique=True, comment="Stripe Subscription identifier"
     )
     tier: Mapped[str] = mapped_column(
         Enum("sandbox", "starter", "growth", "enterprise"),
