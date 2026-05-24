@@ -173,6 +173,11 @@ _Only if you want to drop existing database for testing_
 docker exec -i resomix-test-db mariadb -uroot -ptest -e "DROP DATABASE IF EXISTS resomix_db;"
 ```
 
+_Only if you want to flush redis cache_
+```bash
+docker exec -i resomix-redis redis-cli flushall
+```
+
 ---
 
 ## 5. Run the API (Hot Reload)

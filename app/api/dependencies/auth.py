@@ -31,6 +31,7 @@ from app.repositories.rbac_repository import RBACRepository
 from app.repositories.user_repository import UserRepository, UserSessionRepository
 from app.utils.edge_auth import verify_edge_token
 from app.core.context import set_admin_context
+from app.core.rbac import PERMISSIONS
 import logging
 
 # Redis for session tracking
@@ -359,7 +360,8 @@ async def require_admin(
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
 
-    if (api_key and api_key == settings.api_key) or (token and token == settings.api_key):
+    is_static_api_key = (api_key and api_key == settings.api_key) or (token and token == settings.api_key)
+    if is_static_api_key:
         set_admin_context(True)
         return current_user
 
