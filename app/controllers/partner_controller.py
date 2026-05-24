@@ -85,6 +85,29 @@ class PartnerController:
                 )),
             )
 
+    async def get_partner(self, db: AsyncSession, partner_id: int) -> JSONResponse:
+        """Get a single partner by ID."""
+        try:
+            partner = await self.partner_service.get_partner(db, partner_id)
+            if not partner:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=jsonable_encoder(format_response(success=False, error="Partner not found")),
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder(format_response(
+                    success=True,
+                    data=PartnerBaseResponse.model_validate(partner).model_dump(),
+                )),
+            )
+        except Exception as e:
+            logger.error(f"Failed to get partner: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=jsonable_encoder(format_response(success=False, error="Failed to get partner")),
+            )
+
     async def update_partner(
         self, db: AsyncSession, request: Request, partner_id: int, payload: PartnerUpdateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:

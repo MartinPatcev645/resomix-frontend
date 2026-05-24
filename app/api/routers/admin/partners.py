@@ -95,6 +95,19 @@ async def delete_partner(
 
 
 @router.get(
+    "/{partner_id}",
+    response_model=PartnerResponse,
+    summary="Get Partner Details",
+)
+async def get_partner(
+    partner_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+) -> JSONResponse:
+    return await partner_controller.get_partner(db, partner_id)
+
+
+@router.get(
     "/",
     response_model=PartnerListResponse,
     summary="List Partners",

@@ -148,3 +148,15 @@ class TestPartnerService:
         
         with pytest.raises(ValueError, match="Cannot rotate an inactive or already revoked API key"):
             await partner_service.rotate_api_key(mock_db, ApiKeyRotateRequest(api_key_id=old_key_id))
+
+    async def test_get_partner(self, partner_service, mock_db):
+        """Test getting a partner by ID."""
+        partner_id = 42
+        mock_partner = Partner(id=partner_id, legal_name="Acme Corp", tier="growth")
+        partner_service.partner_repo.async_get_by_id.return_value = mock_partner
+
+        result = await partner_service.get_partner(mock_db, partner_id)
+
+        assert result == mock_partner
+        partner_service.partner_repo.async_get_by_id.assert_called_once_with(mock_db, partner_id)
+
