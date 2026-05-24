@@ -55,20 +55,14 @@ class PartnerController:
         self, db: AsyncSession, request: Request, payload: PartnerCreateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Create a new partner."""
+        ip_address = request.client.host if request and request.client else None
         try:
-            partner = await self.partner_service.create_partner(db, payload)
-            if current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="partner.create",
-                    target_type="partner",
-                    target_id=str(partner.id),
-                    before_state=None,
-                    after_state=payload.model_dump(),
-                    ip_address=request.client.host if request and request.client else None
-                )
-            await db.commit()
+            partner = await self.partner_service.create_partner(
+                db=db,
+                request=payload,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(
@@ -76,8 +70,7 @@ class PartnerController:
                     data=PartnerBaseResponse.model_validate(partner).model_dump(),
                 )),
             )
-        except IntegrityError:
-            await db.rollback()
+        except IntegrityError as e:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=jsonable_encoder(format_response(
@@ -85,7 +78,6 @@ class PartnerController:
                 )),
             )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to create partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -123,25 +115,20 @@ class PartnerController:
         self, db: AsyncSession, request: Request, partner_id: int, payload: PartnerUpdateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Update an existing partner."""
+        ip_address = request.client.host if request and request.client else None
         try:
-            partner = await self.partner_service.update_partner(db, partner_id, payload)
+            partner = await self.partner_service.update_partner(
+                db=db,
+                partner_id=partner_id,
+                request=payload,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
             if not partner:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=jsonable_encoder(format_response(success=False, error="Partner not found")),
                 )
-            if current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="partner.update",
-                    target_type="partner",
-                    target_id=str(partner_id),
-                    before_state=None,
-                    after_state=payload.model_dump(exclude_unset=True),
-                    ip_address=request.client.host if request and request.client else None
-                )
-            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=jsonable_encoder(format_response(
@@ -150,7 +137,6 @@ class PartnerController:
                 )),
             )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to update partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -159,33 +145,26 @@ class PartnerController:
 
     async def delete_partner(self, db: AsyncSession, request: Request, partner_id: int, current_admin: Optional[User] = None) -> JSONResponse:
         """Delete a partner."""
+        ip_address = request.client.host if request and request.client else None
         try:
-            success = await self.partner_service.delete_partner(db, partner_id)
-            if success:
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="partner.delete",
-                        target_type="partner",
-                        target_id=str(partner_id),
-                        before_state=None,
-                        after_state=None,
-                        ip_address=request.client.host if request and request.client else None
-                    )
-                await db.commit()
+            success = await self.partner_service.delete_partner(
+                db=db,
+                partner_id=partner_id,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
+            if not success:
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=jsonable_encoder(format_response(
-                        success=True, message="Partner successfully deleted"
-                    )),
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=jsonable_encoder(format_response(success=False, error="Partner not found")),
                 )
             return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=jsonable_encoder(format_response(success=False, error="Partner not found")),
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder(format_response(
+                    success=True, message="Partner successfully deleted"
+                )),
             )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to delete partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -239,22 +218,14 @@ class PartnerController:
         self, db: AsyncSession, request: Request, payload: ApiKeyIssueRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Issue a new API key."""
+        ip_address = request.client.host if request and request.client else None
         try:
-            api_key, plaintext = await self.partner_service.issue_api_key(db, payload)
-            if current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="partner.issue_api_key",
-                    target_type="api_key",
-                    target_id=api_key.key_prefix,
-                    before_state=None,
-                    after_state={"partner_id": payload.partner_id, "label": payload.label},
-                    ip_address=request.client.host if request and request.client else None
-                )
-
-            await db.commit()
-            # Use specific response schema that includes plaintext
+            api_key, plaintext = await self.partner_service.issue_api_key(
+                db=db,
+                request=payload,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
             response_data = ApiKeyIssueResponse(
                 key_prefix=api_key.key_prefix,
                 plaintext_key=plaintext,
@@ -262,19 +233,16 @@ class PartnerController:
                 scopes=api_key.scopes,
                 expires_at=api_key.expires_at
             )
-
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(success=True, data=response_data.model_dump())),
             )
         except ValueError as e:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content=jsonable_encoder(format_response(success=False, error=str(e))),
             )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to issue API key: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -304,36 +272,27 @@ class PartnerController:
         self, db: AsyncSession, request: Request, payload: ApiKeyRevokeRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Revoke an API key."""
-        # This one doesn't return data, so it's fine
+        ip_address = request.client.host if request and request.client else None
         try:
             success = await self.partner_service.revoke_api_key(
-                db, payload.api_key_id, payload.reason
+                db=db,
+                api_key_id=payload.api_key_id,
+                reason=payload.reason,
+                current_admin=current_admin,
+                ip_address=ip_address
             )
-            if success:
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="partner.revoke_api_key",
-                        target_type="api_key",
-                        target_id=str(payload.api_key_id),
-                        before_state=None,
-                        after_state={"reason": payload.reason},
-                        ip_address=request.client.host if request and request.client else None
-                    )
-                await db.commit()
+            if not success:
                 return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content=jsonable_encoder(format_response(
-                        success=True, message="API key successfully revoked"
-                    )),
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=jsonable_encoder(format_response(success=False, error="API key not found")),
                 )
             return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=jsonable_encoder(format_response(success=False, error="API key not found")),
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder(format_response(
+                    success=True, message="API key successfully revoked"
+                )),
             )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to revoke API key: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -346,20 +305,14 @@ class PartnerController:
         self, db: AsyncSession, request: Request, payload: ApiKeyRotateRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Rotate an API key."""
+        ip_address = request.client.host if request and request.client else None
         try:
-            api_key, plaintext = await self.partner_service.rotate_api_key(db, payload)
-            if current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="partner.rotate_api_key",
-                    target_type="api_key",
-                    target_id=api_key.key_prefix,
-                    before_state=None,
-                    after_state={"api_key_id": payload.api_key_id},
-                    ip_address=request.client.host if request and request.client else None
-                )
-
+            api_key, plaintext = await self.partner_service.rotate_api_key(
+                db=db,
+                request=payload,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
             response_data = ApiKeyIssueResponse(
                 key_prefix=api_key.key_prefix,
                 plaintext_key=plaintext,
@@ -367,8 +320,6 @@ class PartnerController:
                 scopes=api_key.scopes,
                 expires_at=api_key.expires_at
             )
-
-            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(
@@ -378,13 +329,12 @@ class PartnerController:
                 )),
             )
         except ValueError as e:
-            await db.rollback()
+            status_code = status.HTTP_400_BAD_REQUEST if "inactive" in str(e).lower() else status.HTTP_404_NOT_FOUND
             return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=status_code,
                 content=jsonable_encoder(format_response(success=False, error=str(e))),
             )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Failed to rotate API key: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -397,23 +347,14 @@ class PartnerController:
         self, db: AsyncSession, request: Request, payload: SftpProvisionRequest, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Provision SFTP access for a partner."""
+        ip_address = request.client.host if request and request.client else None
         try:
-            sftp_user = await self.sftp_service.provision_partner_sftp(db, payload)
-            
-            if current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="partner.sftp_provision",
-                    target_type="sftp_user",
-                    target_id=str(sftp_user.id),
-                    before_state=None,
-                    after_state={"partner_id": payload.partner_id, "username": payload.username},
-                    ip_address=request.client.host if request and request.client else None
-                )
-            
-            await db.commit()
-            
+            sftp_user = await self.sftp_service.provision_partner_sftp(
+                db=db,
+                request=payload,
+                current_admin=current_admin,
+                ip_address=ip_address
+            )
             response_data = SftpProvisionResponse(
                 sftp_user_id=sftp_user.id,
                 partner_id=sftp_user.partner_id,
@@ -424,32 +365,25 @@ class PartnerController:
                 sftp_port=settings.sftp_server_port,
                 provisioned_at=sftp_user.sftp_provisioned_at
             )
-            
             return JSONResponse(
                 status_code=status.HTTP_201_CREATED,
                 content=jsonable_encoder(format_response(success=True, data=response_data.model_dump())),
             )
-            
         except ValueError as e:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=jsonable_encoder(format_response(success=False, error=str(e))),
             )
         except RuntimeError as e:
-            # Important: We DO NOT rollback here. The MariaDB record is saved intentionally.
-            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 content=jsonable_encoder(format_response(
                     success=False, 
-                    error="Account saved locally, but SFTP is not yet active on Hetzner. Please retry provisioning later.",
-                    details=str(e)
+                    error=str(e)
                 )),
             )
         except Exception as e:
-            await db.rollback()
-            logger.error(f"Failed to provision partner SFTP: {e}")
+            logger.error(f"Failed to provision SFTP access: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=jsonable_encoder(format_response(success=False, error="Failed to provision SFTP access")),
@@ -499,6 +433,7 @@ class PartnerController:
         self, db: AsyncSession, request: Request, partner_id: int, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Retry Hetzner provisioning for a partner."""
+        ip_address = request.client.host if request and request.client else None
         try:
             sftp_user = await self.sftp_service.retry_provisioning(db, partner_id)
             
@@ -529,26 +464,21 @@ class PartnerController:
                 status_code=status.HTTP_200_OK,
                 content=jsonable_encoder(response_data.model_dump()),
             )
-            
         except ValueError as e:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=jsonable_encoder(format_response(success=False, error=str(e))),
             )
         except RuntimeError as e:
-            await db.commit() # Keep the DB state
             return JSONResponse(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 content=jsonable_encoder(format_response(
                     success=False, 
-                    error="SFTP is still not active on Hetzner. Please retry provisioning later.",
-                    details=str(e)
+                    error=str(e)
                 )),
             )
         except Exception as e:
-            await db.rollback()
-            logger.error(f"Failed to retry partner SFTP: {e}")
+            logger.error(f"Failed to retry SFTP provisioning: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=jsonable_encoder(format_response(success=False, error="Failed to retry SFTP provisioning")),

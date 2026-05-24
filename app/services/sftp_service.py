@@ -8,7 +8,7 @@ quota management, and status reporting.
 """
 
 import logging
-from typing import Optional, Dict, NamedTuple
+from typing import Optional, Dict, NamedTuple, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -25,6 +25,8 @@ class BatchValidationResult(NamedTuple):
 from app.repositories.sftp_user_repository import sftp_user_repo
 from app.repositories.partner_repository import PartnerRepository
 from app.models.sftp_user import SftpUser
+from app.models.user import User
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.schemas.partner import SftpProvisionRequest
 from app.core.config import settings
 from app.core.security import hash_password
@@ -45,72 +47,111 @@ class SftpService:
 
     def __init__(self):
         self.partner_repo = PartnerRepository()
+        self.admin_log_service = AdminOperationLogService()
 
     def get_quota_bytes(self, tier: str) -> int:
         """Get the storage quota limit in bytes for a given tier."""
         return self.QUOTA_MAP.get(tier, self.QUOTA_MAP["sandbox"])
 
-    async def provision_partner_sftp(self, db: AsyncSession, request: SftpProvisionRequest) -> SftpUser:
+    async def provision_partner_sftp(
+        self,
+        db: AsyncSession,
+        request: SftpProvisionRequest,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
+    ) -> SftpUser:
         """
         Main provisioning method for a partner's SFTP account.
         """
-        # 1. Verify partner exists
-        partner = await self.partner_repo.async_get_by_id(db, request.partner_id)
-        if not partner:
-            raise ValueError(f"Partner with ID {request.partner_id} not found")
-
-        # 2. Check for existing SFTP user
-        existing_sftp_user = await sftp_user_repo.get_by_partner_id(db, request.partner_id)
-        if existing_sftp_user:
-            raise ValueError("SFTP account already provisioned for this partner")
-
-        # 3. Hash password
-        pwd_hash = hash_password(request.password) if request.password else None
-        if not pwd_hash and not request.use_public_key:
-             raise ValueError("Password is required if public key auth is disabled")
-
-        # 4. Build home dir
-        home_dir = f"{settings.sftp_base_path}/partners/{partner.id}"
-
-        # 5. Create SftpUser row (sftp_provisioned_at=None)
-        sftp_user_data = {
-            "partner_id": partner.id,
-            "username": request.username,
-            "password_hash": pwd_hash,
-            "home_directory": home_dir, # Legacy field, kept for safety
-            "sftp_home_dir": home_dir,
-            "use_public_key": request.use_public_key,
-            "public_key": request.public_key if request.use_public_key else None,
-            "allowed_ip": request.allowed_ip,
-            "is_active": True,
-            "label_id": None
-        }
-
-        sftp_user = await sftp_user_repo.async_create(db, commit=False, **sftp_user_data)
-        
-        # 6. Flush to get DB-assigned ID
-        await db.flush()
-
-        # 7. Call Hetzner provisioning
-        quota_bytes = self.get_quota_bytes(partner.tier)
         try:
-            await self._call_hetzner_provisioning(
-                partner.id, 
-                request.username, 
-                pwd_hash, 
-                home_dir, 
-                quota_bytes,
-                request.use_public_key,
-                request.public_key if request.use_public_key else None
-            )
-        except Exception as e:
-            logger.error(f"Failed to provision SFTP on Hetzner: {e}")
-            raise RuntimeError(f"Hetzner provisioning failed: {e}")
+            # 1. Verify partner exists
+            partner = await self.partner_repo.async_get_by_id(db, request.partner_id)
+            if not partner:
+                raise ValueError(f"Partner with ID {request.partner_id} not found")
 
-        # 8. Mark provisioned
-        sftp_user = await sftp_user_repo.mark_provisioned(db, sftp_user)
-        
-        return sftp_user
+            # 2. Check for existing SFTP user
+            existing_sftp_user = await sftp_user_repo.get_by_partner_id(db, request.partner_id)
+            if existing_sftp_user:
+                raise ValueError("SFTP account already provisioned for this partner")
+
+            # 3. Hash password
+            pwd_hash = hash_password(request.password) if request.password else None
+            if not pwd_hash and not request.use_public_key:
+                 raise ValueError("Password is required if public key auth is disabled")
+
+            # 4. Build home dir
+            home_dir = f"{settings.sftp_base_path}/partners/{partner.id}"
+
+            # 5. Create SftpUser row (sftp_provisioned_at=None)
+            sftp_user_data = {
+                "partner_id": partner.id,
+                "username": request.username,
+                "password_hash": pwd_hash,
+                "home_directory": home_dir,
+                "sftp_home_dir": home_dir,
+                "use_public_key": request.use_public_key,
+                "public_key": request.public_key if request.use_public_key else None,
+                "allowed_ip": request.allowed_ip,
+                "is_active": True,
+                "label_id": None
+            }
+
+            sftp_user = await sftp_user_repo.async_create(db, commit=False, **sftp_user_data)
+            
+            # 6. Flush to get DB-assigned ID
+            await db.flush()
+
+            # 7. Call Hetzner provisioning
+            quota_bytes = self.get_quota_bytes(partner.tier)
+            try:
+                await self._call_hetzner_provisioning(
+                    partner.id, 
+                    request.username, 
+                    pwd_hash, 
+                    home_dir, 
+                    quota_bytes,
+                    request.use_public_key,
+                    request.public_key if request.use_public_key else None
+                )
+            except Exception as e:
+                logger.error(f"Failed to provision SFTP on Hetzner: {e}")
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="partner.sftp_provision",
+                        target_type="sftp_user",
+                        target_id=str(sftp_user.id),
+                        before_state=None,
+                        after_state={"partner_id": request.partner_id, "username": request.username},
+                        ip_address=ip_address
+                    )
+                await db.commit() # Keep the DB record as requested
+                raise RuntimeError(f"Hetzner provisioning failed: {e}")
+
+            # 8. Mark provisioned
+            sftp_user = await sftp_user_repo.mark_provisioned(db, sftp_user)
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.sftp_provision",
+                    target_type="sftp_user",
+                    target_id=str(sftp_user.id),
+                    before_state=None,
+                    after_state={"partner_id": request.partner_id, "username": request.username},
+                    ip_address=ip_address
+                )
+
+            await db.commit()
+            return sftp_user
+
+        except Exception as e:
+            if not isinstance(e, RuntimeError) or "Hetzner provisioning failed" not in str(e):
+                await db.rollback()
+            logger.error(f"Error provisioning SFTP: {e}")
+            raise
         
     async def _call_hetzner_provisioning(
         self, partner_id: int, username: str, password_hash: str, home_dir: str, 
@@ -161,34 +202,73 @@ class SftpService:
         db.add(sftp_user)
         return True
 
-    async def retry_provisioning(self, db: AsyncSession, partner_id: int) -> SftpUser:
+    async def retry_provisioning(
+        self,
+        db: AsyncSession,
+        partner_id: int,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
+    ) -> SftpUser:
         """Retry the Hetzner provisioning call for an unprovisioned SFTP user."""
-        sftp_user = await sftp_user_repo.get_by_partner_id(db, partner_id)
-        if not sftp_user:
-            raise ValueError(f"SFTP user for partner {partner_id} not found")
-            
-        if sftp_user.sftp_provisioned_at is not None:
-            raise ValueError("SFTP account is already fully provisioned")
-            
-        partner = await self.partner_repo.async_get_by_id(db, partner_id)
-        quota_bytes = self.get_quota_bytes(partner.tier)
-        
         try:
-            await self._call_hetzner_provisioning(
-                partner.id, 
-                sftp_user.username, 
-                sftp_user.password_hash, 
-                sftp_user.sftp_home_dir or sftp_user.home_directory, 
-                quota_bytes,
-                sftp_user.use_public_key,
-                sftp_user.public_key
-            )
-        except Exception as e:
-            logger.error(f"Failed to retry SFTP provisioning on Hetzner: {e}")
-            raise RuntimeError(f"Hetzner provisioning retry failed: {e}")
+            sftp_user = await sftp_user_repo.get_by_partner_id(db, partner_id)
+            if not sftp_user:
+                raise ValueError(f"SFTP user for partner {partner_id} not found")
+                
+            if sftp_user.sftp_provisioned_at is not None:
+                raise ValueError("SFTP account is already fully provisioned")
+                
+            partner = await self.partner_repo.async_get_by_id(db, partner_id)
+            quota_bytes = self.get_quota_bytes(partner.tier)
             
-        sftp_user = await sftp_user_repo.mark_provisioned(db, sftp_user)
-        return sftp_user
+            try:
+                await self._call_hetzner_provisioning(
+                    partner.id, 
+                    sftp_user.username, 
+                    sftp_user.password_hash, 
+                    sftp_user.sftp_home_dir or sftp_user.home_directory, 
+                    quota_bytes,
+                    sftp_user.use_public_key,
+                    sftp_user.public_key
+                )
+            except Exception as e:
+                logger.error(f"Failed to retry SFTP provisioning on Hetzner: {e}")
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="partner.sftp_retry",
+                        target_type="sftp_user",
+                        target_id=str(sftp_user.id),
+                        before_state=None,
+                        after_state={"partner_id": partner_id},
+                        ip_address=ip_address
+                    )
+                await db.commit() # Keep the DB state
+                raise RuntimeError(f"Hetzner provisioning retry failed: {e}")
+                
+            sftp_user = await sftp_user_repo.mark_provisioned(db, sftp_user)
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.sftp_retry",
+                    target_type="sftp_user",
+                    target_id=str(sftp_user.id),
+                    before_state=None,
+                    after_state={"partner_id": partner_id},
+                    ip_address=ip_address
+                )
+
+            await db.commit()
+            return sftp_user
+
+        except Exception as e:
+            if not isinstance(e, RuntimeError) or "Hetzner provisioning retry failed" not in str(e):
+                await db.rollback()
+            logger.error(f"Error retrying SFTP provisioning: {e}")
+            raise
 
     async def validate_incoming_batch(self, partner_id: int, batch_path: str) -> BatchValidationResult:
         """

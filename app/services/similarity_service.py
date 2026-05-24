@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.similarity_repository import SimilarityRepository
+from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.similarity_segment import SimilaritySegmentService
 from app.core.config import settings
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
@@ -126,126 +127,116 @@ class SimilarityService:
 
         # Check the status from the similarity server's response
         if similarity_response.get("status") == "success":
-            raw_results = similarity_response.get("results", [])
-            server_duration = similarity_response.get("duration")
-            if server_duration is not None and server_duration > 10000:
-                server_duration = server_duration / 1000.0
-
-            # Extract UUIDs from similarity server response
-            track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
-
-            # Get track details from database using UUIDs
-            db_details_map = (
-                await self.similarity_repository.async_get_track_details_by_uuids(
-                    db, track_uuids
-                )
-            )
-
-            # Enrich similarity results with database details
-            enriched_similar_tracks = []
-            track_ids = []  # For playlist creation
-            track_scores = []  # For playlist scores
-
-            for res_item in raw_results:
-                sim_track_uuid = res_item.get("uuid")
-                if not sim_track_uuid:
-                    continue
-
-                details = db_details_map.get(sim_track_uuid)
-                if details:
-                    enriched_similar_tracks.append(
-                        {
-                            "rank": res_item.get("rank"),
-                            "score": res_item.get("score"),
-                            "id": details.get("id"),
-                            "label": details.get("label"),
-                            "duration": details.get("duration"),
-                            "artist": details.get("artist"),
-                            "title": details.get("title"),
-                            "year": details.get("year"),
-                            "type": details.get("type"),
-                        }
-                    )
-                    # Collect track ID and score for playlist creation
-                    track_ids.append(details.get("track_id"))
-                    track_scores.append(res_item.get("score", 0.0))
-                # else: track details not found in DB for this UUID, so it's omitted from results
-
-            # Deduplicate tracks before returning
-            target_count_after_deduplication = top_k - similarity_duplication_threshold
-            if target_count_after_deduplication < 0:
-                target_count_after_deduplication = 0  # Ensure not negative
-
-            # Apply response-level filtering to existing tracks before deduplication
-            filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
-
-            # NEW: Fetch uploaded track details to use as reference track and update duration
             try:
+                raw_results = similarity_response.get("results", [])
+                server_duration = similarity_response.get("duration")
+                if server_duration is not None and server_duration > 10000:
+                    server_duration = server_duration / 1000.0
+
+                # Extract UUIDs from similarity server response
+                track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
+
+                # Get track details from database using UUIDs
+                db_details_map = (
+                    await self.similarity_repository.async_get_track_details_by_uuids(
+                        db, track_uuids
+                    )
+                )
+
+                # Enrich similarity results with database details
+                enriched_similar_tracks = []
+                track_ids = []  # For playlist creation
+                track_scores = []  # For playlist scores
+
+                for res_item in raw_results:
+                    sim_track_uuid = res_item.get("uuid")
+                    if not sim_track_uuid:
+                        continue
+
+                    details = db_details_map.get(sim_track_uuid)
+                    if details:
+                        enriched_similar_tracks.append(
+                            {
+                                "rank": res_item.get("rank"),
+                                "score": res_item.get("score"),
+                                "id": details.get("id"),
+                                "label": details.get("label"),
+                                "duration": details.get("duration"),
+                                "artist": details.get("artist"),
+                                "title": details.get("title"),
+                                "year": details.get("year"),
+                                "type": details.get("type"),
+                            }
+                        )
+                        # Collect track ID and score for playlist creation
+                        track_ids.append(details.get("track_id"))
+                        track_scores.append(res_item.get("score", 0.0))
+                    # else: track details not found in DB for this UUID, so it's omitted from results
+
+                # Deduplicate tracks before returning
+                target_count_after_deduplication = top_k - similarity_duplication_threshold
+                if target_count_after_deduplication < 0:
+                    target_count_after_deduplication = 0  # Ensure not negative
+
+                # Apply response-level filtering to existing tracks before deduplication
+                filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
+
+                # NEW: Fetch uploaded track details to use as reference track and update duration
                 uploaded_track_details = await self.similarity_repository.async_get_reference_track_details_by_uuid(
                     db, track_uuid, partner_id=partner_id
                 )
-            except Exception as e:
-                print(f"Error fetching uploaded track details: {e}")
-                return {
-                    "success": False,
-                    "error": "Failed to retrieve uploaded track details",
-                }
 
-            if not uploaded_track_details:
-                print(
-                    f"Warning: Could not fetch details for uploaded track {track_uuid}"
-                )
-                return {
-                    "success": False,
-                    "error": "Could not retrieve uploaded track details",
-                }
+                if not uploaded_track_details:
+                    print(
+                        f"Warning: Could not fetch details for uploaded track {track_uuid}"
+                    )
+                    return {
+                        "success": False,
+                        "error": "Could not retrieve uploaded track details",
+                    }
 
-            final_duration = (
-                server_duration
-                if server_duration is not None and server_duration > 0
-                else (
-                    calculated_duration
-                    if calculated_duration is not None and calculated_duration > 0
-                    else None
+                final_duration = (
+                    server_duration
+                    if server_duration is not None and server_duration > 0
+                    else (
+                        calculated_duration
+                        if calculated_duration is not None and calculated_duration > 0
+                        else None
+                    )
                 )
-            )
-            uploaded_track_details["duration"] = final_duration
-            if final_duration is not None and final_duration > 0:
-                try:
+                uploaded_track_details["duration"] = final_duration
+                if final_duration is not None and final_duration > 0:
                     await self.similarity_repository.async_update_track_duration(
                         db, track_uuid, final_duration
                     )
                     print(
                         f"Updated track {track_uuid} duration to {final_duration} seconds"
                     )
-                except Exception as e:
-                    print(f"Warning: Could not update track duration in database: {e}")
 
-            deduplicated_enriched_tracks = deduplicate_tracks(
-                filtered_enriched_tracks,
-                target_count_after_deduplication,
-                reference_track=uploaded_track_details,  # Passing reference track for upload similarity
-                filter_title_func=filter_track_title,
-            )
+                deduplicated_enriched_tracks = deduplicate_tracks(
+                    filtered_enriched_tracks,
+                    target_count_after_deduplication,
+                    reference_track=uploaded_track_details,  # Passing reference track for upload similarity
+                    filter_title_func=filter_track_title,
+                )
 
-            # Get corresponding track IDs and scores for deduplicated tracks
-            deduplicated_track_ids = []
-            deduplicated_track_scores = []
-            for track in deduplicated_enriched_tracks:
-                # Find the track_id and score for this track
-                for i, enriched_track in enumerate(filtered_enriched_tracks):
-                    if enriched_track.get("id") == track.get("id"):
-                        if i < len(track_ids):
-                            deduplicated_track_ids.append(track_ids[i])
-                            deduplicated_track_scores.append(
-                                track_scores[i] if i < len(track_scores) else 0.0
-                            )
-                        break
+                # Get corresponding track IDs and scores for deduplicated tracks
+                deduplicated_track_ids = []
+                deduplicated_track_scores = []
+                for track in deduplicated_enriched_tracks:
+                    # Find the track_id and score for this track
+                    for i, enriched_track in enumerate(filtered_enriched_tracks):
+                        if enriched_track.get("id") == track.get("id"):
+                            if i < len(track_ids):
+                                deduplicated_track_ids.append(track_ids[i])
+                                deduplicated_track_scores.append(
+                                    track_scores[i] if i < len(track_scores) else 0.0
+                                )
+                            break
 
-            # Create similarity playlist if we have tracks
-            playlist_info = None
-            if deduplicated_track_ids:
-                try:
+                # Create similarity playlist if we have tracks
+                playlist_info = None
+                if deduplicated_track_ids:
                     # Get the uploaded track's database ID
                     uploaded_track = await self.track_repository.async_get_by_uuid(
                         db, track_uuid, partner_id=partner_id
@@ -267,62 +258,61 @@ class SimilarityService:
                             partner_id=partner_id,
                         )
 
-                        # Send playlist peaks request (fire and forget)
-                        # if playlist_info:
-                        #     await send_playlist_peaks_request(self.similarity_server_url, track_uuid, deduplicated_enriched_tracks)
-                except Exception as e:
-                    print(f"Error creating playlist for upload similarity: {e}")
+                # Format response like similarity by ID
+                response_data = {
+                    "queried_track": uploaded_track_details,
+                    "similar_tracks": deduplicated_enriched_tracks,
+                }
 
-            # Format response like similarity by ID
-            response_data = {
-                "queried_track": uploaded_track_details,
-                "similar_tracks": deduplicated_enriched_tracks,
-            }
-
-            # Add playlist info if created
-            if playlist_info:
-                # Enrich playlist with engagement data
-                try:
-                    from app.services.playlist_engagement_service import (
-                        PlaylistEngagementService,
-                    )
-
-                    engagement_service = PlaylistEngagementService()
-                    playlist_info = (
-                        await engagement_service.enrich_playlist_with_engagement(
-                            db, playlist_info, user_id
+                # Add playlist info if created
+                if playlist_info:
+                    # Enrich playlist with engagement data
+                    try:
+                        from app.services.playlist_engagement_service import (
+                            PlaylistEngagementService,
                         )
+
+                        engagement_service = PlaylistEngagementService()
+                        playlist_info = (
+                            await engagement_service.enrich_playlist_with_engagement(
+                                db, playlist_info, user_id
+                            )
+                        )
+                    except Exception as e:
+                        # If enrichment fails, ensure defaults are set
+                        playlist_info.setdefault("is_favorite", False)
+                        playlist_info.setdefault("is_following", False)
+                        print(f"Error enriching playlist with engagement: {e}")
+                    response_data["playlist"] = playlist_info
+
+                # Apply filtering to queried track as well
+                if response_data.get("queried_track"):
+                    filtered_queried_tracks = apply_response_filtering(
+                        [response_data["queried_track"]]
                     )
-                except Exception as e:
-                    # If enrichment fails, ensure defaults are set
-                    playlist_info.setdefault("is_favorite", False)
-                    playlist_info.setdefault("is_following", False)
-                    print(f"Error enriching playlist with engagement: {e}")
-                response_data["playlist"] = playlist_info
+                    if filtered_queried_tracks:
+                        response_data["queried_track"] = filtered_queried_tracks[0]
 
-            # Apply filtering to queried track as well
-            if response_data.get("queried_track"):
-                filtered_queried_tracks = apply_response_filtering(
-                    [response_data["queried_track"]]
-                )
-                if filtered_queried_tracks:
-                    response_data["queried_track"] = filtered_queried_tracks[0]
+                # Increment usage counter if user is available
+                if user_id:
+                    try:
+                        await OperationLimitRepository().async_increment_usage(
+                            db, user_id=user_id, operation_code="playlist_create"
+                        )
+                        print(f"SIMILARITY UPLOAD: Incremented usage for user_id={user_id}")
+                    except Exception as inc_err:
+                        print(f"SIMILARITY UPLOAD: Failed to increment usage: {str(inc_err)}")
 
-            # TEMPORARY FEATURE: Handle segment preview workflow (after step 8)
-            # if playlist_info and len(deduplicated_enriched_tracks) > 0:
-            #     # Collect all UUIDs: queried track first, then similar tracks
-            #     all_uuids = [uploaded_track_details.get("id")]  # Reference track first
-            #     all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
-            #     all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
+                await db.commit()
 
-            #     if all_uuids:
-            #         # Launch segment preview in background and return immediately
-            #         asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(response_data)
 
-            if settings.demo_mode:
-                apply_demo_mode_redaction(response_data)
-
-            return response_data
+                return response_data
+            except Exception as e:
+                await db.rollback()
+                print(f"Error in similarity upload database processing: {e}")
+                return {"success": False, "error": f"Database processing error: {e}"}
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
             error_message = similarity_response.get(
@@ -379,100 +369,91 @@ class SimilarityService:
                 print(f"Warning: No UUID found for queried path '{server_track_path}'")
                 return {"success": False, "error": "Track UUID not found"}
 
-        except Exception as e:
-            print(
-                f"Error fetching details for queried path '{server_track_path}' from DB: {e}"
-            )
-            return {"success": False, "error": f"Database error: {e}"}
-
-        # Use new UUID-based endpoint
-        payload = {"track_uuid": queried_track_uuid, "top_k": top_k}
-        if engine:
-            payload["engine"] = engine
-        if partner_id is not None:
-            payload["partner_id"] = partner_id
-            
-        similarity_response = await self._call_similarity_server(
-            "/similarity/query-by-uuid/", data=payload
-        )
-
-        if similarity_response.get("status") == "success":
-            raw_results = similarity_response.get("results", [])
-
-            # Extract UUIDs from similarity server response
-            track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
-
-            # Get track details from database using UUIDs
-            db_details_map = (
-                await self.similarity_repository.async_get_track_details_by_uuids(
-                    db, track_uuids, partner_id=partner_id
-                )
+            # Use new UUID-based endpoint
+            payload = {"track_uuid": queried_track_uuid, "top_k": top_k}
+            if engine:
+                payload["engine"] = engine
+            if partner_id is not None:
+                payload["partner_id"] = partner_id
+                
+            similarity_response = await self._call_similarity_server(
+                "/similarity/query-by-uuid/", data=payload
             )
 
-            # Enrich similarity results with database details
-            enriched_similar_tracks = []
-            track_ids = []  # For playlist creation
-            track_scores = []  # For playlist scores
+            if similarity_response.get("status") == "success":
+                raw_results = similarity_response.get("results", [])
 
-            for res_item in raw_results:
-                track_uuid = res_item.get("uuid")
-                if not track_uuid:
-                    continue
+                # Extract UUIDs from similarity server response
+                track_uuids = [res.get("uuid") for res in raw_results if res.get("uuid")]
 
-                details = db_details_map.get(track_uuid)
-                if details:
-                    enriched_similar_tracks.append(
-                        {
-                            "rank": res_item.get("rank"),
-                            "score": res_item.get("score"),
-                            "id": details.get("id"),
-                            "label": details.get("label"),
-                            "duration": details.get("duration"),
-                            "artist": details.get("artist"),
-                            "title": details.get("title"),
-                            "year": details.get("year"),
-                            "type": details.get("type"),
-                        }
+                # Get track details from database using UUIDs
+                db_details_map = (
+                    await self.similarity_repository.async_get_track_details_by_uuids(
+                        db, track_uuids, partner_id=partner_id
                     )
-                    # Collect track ID and score for playlist creation
-                    track_ids.append(details.get("track_id"))
-                    track_scores.append(res_item.get("score", 0.0))
-                # else: track details not found in DB for this UUID, so it's omitted from results
+                )
 
-            # Deduplicate tracks before returning
-            # The target count should be the original requested amount (top_k - threshold)
-            target_count_after_deduplication = top_k - similarity_duplication_threshold
-            if target_count_after_deduplication < 0:
-                target_count_after_deduplication = 0  # Ensure not negative
+                # Enrich similarity results with database details
+                enriched_similar_tracks = []
+                track_ids = []  # For playlist creation
+                track_scores = []  # For playlist scores
 
-            # Apply response-level filtering to existing tracks before deduplication
-            filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
+                for res_item in raw_results:
+                    track_uuid = res_item.get("uuid")
+                    if not track_uuid:
+                        continue
 
-            deduplicated_enriched_tracks = deduplicate_tracks(
-                filtered_enriched_tracks,
-                target_count_after_deduplication,
-                reference_track=queried_track_data,  # Use queried track for reference in deduplication
-                filter_title_func=filter_track_title,
-            )
+                    details = db_details_map.get(track_uuid)
+                    if details:
+                        enriched_similar_tracks.append(
+                            {
+                                "rank": res_item.get("rank"),
+                                "score": res_item.get("score"),
+                                "id": details.get("id"),
+                                "label": details.get("label"),
+                                "duration": details.get("duration"),
+                                "artist": details.get("artist"),
+                                "title": details.get("title"),
+                                "year": details.get("year"),
+                                "type": details.get("type"),
+                            }
+                        )
+                        # Collect track ID and score for playlist creation
+                        track_ids.append(details.get("track_id"))
+                        track_scores.append(res_item.get("score", 0.0))
 
-            # Get corresponding track IDs and scores for deduplicated tracks
-            deduplicated_track_ids = []
-            deduplicated_track_scores = []
-            for track in deduplicated_enriched_tracks:
-                # Find the track_id and score for this track
-                for i, enriched_track in enumerate(filtered_enriched_tracks):
-                    if enriched_track.get("id") == track.get("id"):
-                        if i < len(track_ids):
-                            deduplicated_track_ids.append(track_ids[i])
-                            deduplicated_track_scores.append(
-                                track_scores[i] if i < len(track_scores) else 0.0
-                            )
-                        break
+                # Deduplicate tracks before returning
+                target_count_after_deduplication = top_k - similarity_duplication_threshold
+                if target_count_after_deduplication < 0:
+                    target_count_after_deduplication = 0  # Ensure not negative
 
-            # Create similarity playlist if we have tracks
-            playlist_info = None
-            if deduplicated_track_ids and queried_track_data:
-                try:
+                # Apply response-level filtering to existing tracks before deduplication
+                filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
+
+                deduplicated_enriched_tracks = deduplicate_tracks(
+                    filtered_enriched_tracks,
+                    target_count_after_deduplication,
+                    reference_track=queried_track_data,  # Use queried track for reference in deduplication
+                    filter_title_func=filter_track_title,
+                )
+
+                # Get corresponding track IDs and scores for deduplicated tracks
+                deduplicated_track_ids = []
+                deduplicated_track_scores = []
+                for track in deduplicated_enriched_tracks:
+                    # Find the track_id and score for this track
+                    for i, enriched_track in enumerate(filtered_enriched_tracks):
+                        if enriched_track.get("id") == track.get("id"):
+                            if i < len(track_ids):
+                                deduplicated_track_ids.append(track_ids[i])
+                                deduplicated_track_scores.append(
+                                    track_scores[i] if i < len(track_scores) else 0.0
+                                )
+                            break
+
+                # Create similarity playlist if we have tracks
+                playlist_info = None
+                if deduplicated_track_ids and queried_track_data:
                     # Get the queried track's database ID from its UUID
                     queried_track_uuid = queried_track_data.get("id")
                     if queried_track_uuid:
@@ -496,80 +477,78 @@ class SimilarityService:
                                 partner_id=partner_id,
                             )
 
-                            # Send playlist peaks request (fire and forget) - COMMENTED OUT
-                            # if playlist_info:
-                            #     await send_playlist_peaks_request(self.similarity_server_url, queried_track_uuid, deduplicated_enriched_tracks)
+                response_data = {
+                    "queried_track": queried_track_data,
+                    "similar_tracks": deduplicated_enriched_tracks,
+                }
 
-                except Exception as e:
-                    print(f"Error creating playlist for path similarity: {e}")
-                    # Don't fail the whole request if playlist creation fails
-
-            response_data = {
-                "queried_track": queried_track_data,
-                "similar_tracks": deduplicated_enriched_tracks,
-            }
-
-            # Add playlist info if created
-            if playlist_info:
-                # Enrich playlist with engagement data
-                try:
-                    from app.services.playlist_engagement_service import (
-                        PlaylistEngagementService,
-                    )
-
-                    engagement_service = PlaylistEngagementService()
-                    playlist_info = (
-                        await engagement_service.enrich_playlist_with_engagement(
-                            db, playlist_info, user_id
+                # Add playlist info if created
+                if playlist_info:
+                    # Enrich playlist with engagement data
+                    try:
+                        from app.services.playlist_engagement_service import (
+                            PlaylistEngagementService,
                         )
+
+                        engagement_service = PlaylistEngagementService()
+                        playlist_info = (
+                            await engagement_service.enrich_playlist_with_engagement(
+                                db, playlist_info, user_id
+                            )
+                        )
+                    except Exception as e:
+                        # If enrichment fails, ensure defaults are set
+                        playlist_info.setdefault("is_favorite", False)
+                        playlist_info.setdefault("is_following", False)
+                        print(f"Error enriching playlist with engagement: {e}")
+                    response_data["playlist"] = playlist_info
+
+                # Apply filtering to queried track as well
+                if response_data.get("queried_track"):
+                    filtered_queried_tracks = apply_response_filtering(
+                        [response_data["queried_track"]]
                     )
-                except Exception as e:
-                    # If enrichment fails, ensure defaults are set
-                    playlist_info.setdefault("is_favorite", False)
-                    playlist_info.setdefault("is_following", False)
-                    print(f"Error enriching playlist with engagement: {e}")
-                response_data["playlist"] = playlist_info
+                    if filtered_queried_tracks:
+                        response_data["queried_track"] = filtered_queried_tracks[0]
 
-            # Apply filtering to queried track as well
-            if response_data.get("queried_track"):
-                filtered_queried_tracks = apply_response_filtering(
-                    [response_data["queried_track"]]
+                # Increment usage counter if user is available
+                if user_id:
+                    try:
+                        await OperationLimitRepository().async_increment_usage(
+                            db, user_id=user_id, operation_code="playlist_create"
+                        )
+                        print(f"SIMILARITY BY PATH: Incremented usage for user_id={user_id}")
+                    except Exception as inc_err:
+                        print(f"SIMILARITY BY PATH: Failed to increment usage: {str(inc_err)}")
+
+                await db.commit()
+
+                if settings.demo_mode:
+                    apply_demo_mode_redaction(response_data)
+
+                return response_data
+            elif similarity_response.get("status") == "not_found":
+                # UUID not found on similarity server, but we might still have its duration from our DB.
+                # Return success=True because the API call to main server was fine, but data reflects the finding.
+                return {
+                    "queried_track": queried_track_data,
+                    "similar_tracks": [],
+                    "message": similarity_response.get(
+                        "message",
+                        f"Track UUID '{queried_track_uuid}' not processed by similarity server.",
+                    ),
+                }
+            else:
+                # Error from similarity server
+                error_message = similarity_response.get(
+                    "message", "Unknown error from similarity server."
                 )
-                if filtered_queried_tracks:
-                    response_data["queried_track"] = filtered_queried_tracks[0]
+                return {"success": False, "error": error_message}
 
-            # TEMPORARY FEATURE: Handle segment preview workflow (after step 8)
-            # if playlist_info and len(deduplicated_enriched_tracks) > 0:
-            #     # Collect all UUIDs: queried track first, then similar tracks
-            #     all_uuids = [queried_track_data.get("id")]  # Reference track first
-            #     all_uuids.extend([track.get("id") for track in deduplicated_enriched_tracks if track.get("id")])
-            #     all_uuids = [uuid for uuid in all_uuids if uuid]  # Remove any None values
-
-            #     if all_uuids:
-            #         # Launch segment workflow in background
-            #         asyncio.create_task(self.similarity_segment_service.handle_segment_preview_workflow(all_uuids, playlist_info.get("id", "unknown"), deduplicated_enriched_tracks))
-
-            if settings.demo_mode:
-                apply_demo_mode_redaction(response_data)
-
-            return response_data
-        elif similarity_response.get("status") == "not_found":
-            # UUID not found on similarity server, but we might still have its duration from our DB.
-            # Return success=True because the API call to main server was fine, but data reflects the finding.
-            return {
-                "queried_track": queried_track_data,
-                "similar_tracks": [],
-                "message": similarity_response.get(
-                    "message",
-                    f"Track UUID '{queried_track_uuid}' not processed by similarity server.",
-                ),
-            }
-        else:
-            # Error from similarity server
-            error_message = similarity_response.get(
-                "message", "Unknown error from similarity server."
-            )
-            return {"success": False, "error": error_message}
+        except Exception as e:
+            await db.rollback()
+            print(f"Error in similarity by path service: {e}")
+            return {"success": False, "error": f"Database error or server error: {str(e)}"}
 
     async def _call_similarity_server(
         self, endpoint: str, data: Optional[Dict] = None, files: Optional[Dict] = None

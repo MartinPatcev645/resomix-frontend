@@ -146,6 +146,16 @@ async def test_admin_partner_management():
         }
     })
     
+    # Matching PartnerResponse for GET /{partner_id}
+    mock_controller.get_partner = AsyncMock(return_value={
+        "success": True,
+        "data": {
+            "id": 100, "partner_uuid": str(uuid.uuid4()), "display_name": "New Partner",
+            "legal_name": "Legal", "contact_email": "p@test.com", "tier": "sandbox",
+            "is_active": True, "onboarded_at": datetime.utcnow().isoformat()
+        }
+    })
+    
     with patch("app.api.routers.admin.partners.partner_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -161,6 +171,14 @@ async def test_admin_partner_management():
             })
             assert res.status_code == 201
             assert "plaintext_key" in res.json()["data"]
+
+            # Test GET /api/v1/admin/partners/{partner_id}
+            res = await ac.get("/api/v1/admin/partners/100", headers=headers)
+            assert res.status_code == 200
+            assert res.json()["success"] is True
+            assert res.json()["data"]["id"] == 100
+            assert res.json()["data"]["display_name"] == "New Partner"
+
 
 @pytest.mark.asyncio
 async def test_admin_contact_management():

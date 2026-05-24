@@ -20,13 +20,15 @@ import csv
 import os
 import uuid
 import math
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 
 from app.repositories.waitlist_repository import WaitlistRepository
 from app.core.config import settings
+from app.services.admin_operation_log_service import AdminOperationLogService
+from app.models.user import User
 
 
 class WaitlistService:
@@ -38,6 +40,7 @@ class WaitlistService:
     def __init__(self):
         """Initialize waitlist service."""
         self.waitlist_repository = WaitlistRepository()
+        self.admin_log_service = AdminOperationLogService()
 
     async def add_to_waitlist(self, db: AsyncSession, email: str) -> Dict[str, Any]:
         """
@@ -74,6 +77,7 @@ class WaitlistService:
             waitlist_entry = await self.waitlist_repository.async_create(
                 db, email=email, status="pending"
             )
+            await db.commit()
 
             return {
                 "success": True,
@@ -90,12 +94,14 @@ class WaitlistService:
             }
 
         except IntegrityError:
+            await db.rollback()
             # Handle unique constraint violation
             return {
                 "success": False,
                 "error": "Email address is already on the waitlist",
             }
         except Exception as e:
+            await db.rollback()
             print(f"Error adding email to waitlist: {e}")
             return {"success": False, "error": "Failed to add email to waitlist"}
 
@@ -189,6 +195,7 @@ class WaitlistService:
             updated_entry = await self.waitlist_repository.async_update(
                 db, waitlist_entry.id, status=status
             )
+            await db.commit()
 
             return {
                 "success": True,
@@ -210,6 +217,7 @@ class WaitlistService:
             }
 
         except Exception as e:
+            await db.rollback()
             print(f"Error updating waitlist status: {e}")
             return {"success": False, "error": "Failed to update waitlist status"}
 
@@ -314,37 +322,98 @@ class WaitlistService:
                 },
             }
 
+    async def get_waitlist_entry_by_id(self, db: AsyncSession, waitlist_id: int) -> Dict[str, Any]:
+        """Get waitlist entry by ID."""
+        try:
+            entry = await self.waitlist_repository.async_get_by_id(db, waitlist_id)
+            if not entry:
+                return {"success": False, "error": "Waitlist entry not found"}
+            return {"success": True, "data": entry}
+        except Exception as e:
+            print(f"Error getting waitlist entry by ID: {e}")
+            return {"success": False, "error": "Internal server error"}
+
     async def delete_waitlist_admin(
-        self, db: AsyncSession, waitlist_id: int
+        self,
+        db: AsyncSession,
+        waitlist_id: int,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """Delete a single waitlist entry."""
         try:
-            deleted = await self.waitlist_repository.delete_waitlist(db, waitlist_id)
-            return (
-                {"success": deleted, "message": "Waitlist entry deleted successfully"}
-                if deleted
-                else {
+            # 1. Get before state for audit log
+            entry = await self.waitlist_repository.async_get_by_id(db, waitlist_id)
+            if not entry:
+                return {
                     "success": False,
                     "error": f"Waitlist entry with ID {waitlist_id} not found",
                 }
-            )
-        except Exception:
+
+            before_state = {
+                "id": entry.id,
+                "email": entry.email,
+                "status": entry.status
+            }
+
+            deleted = await self.waitlist_repository.delete_waitlist(db, waitlist_id)
+            if deleted:
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="waitlist.delete",
+                        target_type="waitlist",
+                        target_id=str(waitlist_id),
+                        before_state=before_state,
+                        after_state=None,
+                        ip_address=ip_address
+                    )
+                await db.commit()
+                return {"success": True, "message": "Waitlist entry deleted successfully"}
+            else:
+                await db.rollback()
+                return {
+                    "success": False,
+                    "error": f"Waitlist entry with ID {waitlist_id} not found",
+                }
+        except Exception as e:
+            await db.rollback()
+            print(f"Error deleting waitlist entry: {e}")
             return {"success": False, "error": "Internal server error during deletion"}
 
     async def batch_delete_waitlist_admin(
-        self, db: AsyncSession, waitlist_ids: List[int]
+        self,
+        db: AsyncSession,
+        waitlist_ids: List[int],
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """Delete multiple waitlist entries."""
         try:
             deleted_count = await self.waitlist_repository.batch_delete_waitlist(
                 db, waitlist_ids
             )
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="waitlist.batch_delete",
+                    target_type="waitlist",
+                    target_id="batch",
+                    before_state={"ids": waitlist_ids},
+                    after_state={"deleted_count": deleted_count},
+                    ip_address=ip_address
+                )
+            await db.commit()
             return {
                 "success": True,
                 "deleted_count": deleted_count,
                 "message": f"{deleted_count} waitlist entries deleted",
             }
-        except Exception:
+        except Exception as e:
+            await db.rollback()
+            print(f"Error batch deleting waitlist entries: {e}")
             return {
                 "success": False,
                 "error": "Internal server error during batch deletion",
@@ -352,30 +421,63 @@ class WaitlistService:
             }
 
     async def update_waitlist_status_admin(
-        self, db: AsyncSession, waitlist_id: int, status: str
+        self,
+        db: AsyncSession,
+        waitlist_id: int,
+        status: str,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """Update waitlist status for admin."""
         try:
+            # Get before state
+            entry = await self.waitlist_repository.async_get_by_id(db, waitlist_id)
+            if not entry:
+                return {
+                    "success": False,
+                    "error": f"Waitlist entry with ID {waitlist_id} not found",
+                }
+
+            before_state = {"status": entry.status}
+
             waitlist = await self.waitlist_repository.update_waitlist_status(
                 db, waitlist_id, status
             )
-            return (
-                {
+            if waitlist:
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="waitlist.update_status",
+                        target_type="waitlist",
+                        target_id=str(waitlist_id),
+                        before_state=before_state,
+                        after_state={"status": status},
+                        ip_address=ip_address
+                    )
+                await db.commit()
+                return {
                     "success": True,
                     "data": waitlist,
                     "message": "Status updated successfully",
                 }
-                if waitlist
-                else {
+            else:
+                await db.rollback()
+                return {
                     "success": False,
                     "error": f"Waitlist entry with ID {waitlist_id} not found",
                 }
-            )
-        except Exception:
+        except Exception as e:
+            await db.rollback()
+            print(f"Error updating waitlist status admin: {e}")
             return {"success": False, "error": "Internal server error during status update"}
 
     async def export_waitlist_csv_admin(
-        self, db: AsyncSession, filters: Dict[str, Any]
+        self,
+        db: AsyncSession,
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """Export waitlist to CSV file and return download URL."""
         try:
@@ -409,11 +511,28 @@ class WaitlistService:
                     )
 
             base_url = settings.resomix_server_url
+            download_url = f"{base_url}/exports/{filename}"
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="waitlist.export",
+                    target_type="waitlist",
+                    target_id="csv",
+                    before_state=filters,
+                    after_state={"download_url": download_url},
+                    ip_address=ip_address
+                )
+            await db.commit()
+
             return {
                 "success": True,
-                "download_url": f"{base_url}/exports/{filename}",
+                "download_url": download_url,
                 "filename": filename,
                 "expires_at": (datetime.now() + timedelta(hours=24)).isoformat(),
             }
-        except Exception:
+        except Exception as e:
+            await db.rollback()
+            print(f"Error exporting waitlist CSV: {e}")
             return {"success": False, "error": "Internal server error during CSV export"}

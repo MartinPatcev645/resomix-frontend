@@ -22,6 +22,7 @@ from fastapi import UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+import traceback
 from app.models.user import User
 from app.services.playlist_service import PlaylistService
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
@@ -563,26 +564,12 @@ class SimilarityController:
                     file_size=file.size,
                     operation="similarity_upload",
                 )
-
-                # Increment usage counter if user is available
-                if user_id:
-                    try:
-                        await self.operation_limit_evaluator._op_repo.async_increment_usage(
-                            db, user_id=user_id, operation_code="playlist_create"
-                        )
-                        logger.info(f"SIMILARITY UPLOAD: Incremented usage for user_id={user_id}")
-                    except Exception as inc_err:
-                        logger.error(f"SIMILARITY UPLOAD: Failed to increment usage: {str(inc_err)}")
-
-                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK, content=response_content
                 )
 
             except Exception as e:
-                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
-                import traceback
 
                 self.logging_service.log(
                     async_db=db,
@@ -892,26 +879,12 @@ class SimilarityController:
                     },
                     operation="similarity_upload",
                 )
-
-                # Increment usage counter if user is available
-                if user_id:
-                    try:
-                        await self.operation_limit_evaluator._op_repo.async_increment_usage(
-                            db, user_id=user_id, operation_code="playlist_create"
-                        )
-                        logger.info(f"SIMILARITY UPLOAD (Fallback): Incremented usage for user_id={user_id}")
-                    except Exception as inc_err:
-                        logger.error(f"SIMILARITY UPLOAD (Fallback): Failed to increment usage: {str(inc_err)}")
-
-                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK, content=response_content
                 )
 
             except Exception as e:
-                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
-                import traceback
 
                 self.logging_service.log(
                     async_db=db,
@@ -1220,22 +1193,10 @@ class SimilarityController:
                 operation="similarity_by_id",
             )
 
-            # Increment usage counter if user is available
-            if user_id:
-                try:
-                    await self.operation_limit_evaluator._op_repo.async_increment_usage(
-                        db, user_id=user_id, operation_code="playlist_create"
-                    )
-                    logger.info(f"SIMILARITY BY ID: Incremented usage for user_id={user_id}")
-                except Exception as inc_err:
-                    logger.error(f"SIMILARITY BY ID: Failed to increment usage: {str(inc_err)}")
-
-            await db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content=response_content
             )
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             # Extract track_id from database lookup if available
             if track_int_id is None:
@@ -1243,8 +1204,6 @@ class SimilarityController:
                     track_int_id = int(track_id) if track_id.isdigit() else None
                 except Exception:
                     track_int_id = None
-
-            import traceback
 
             self.logging_service.log(
                 async_db=db,

@@ -34,6 +34,12 @@ class PlaylistRepository(BaseRepository[Playlist]):
         """Initialize PlaylistRepository with Playlist model."""
         super().__init__(Playlist)
 
+    async def async_get_id_by_uuid(self, db: AsyncSession, uuid: str) -> Optional[int]:
+        """Resolve a playlist UUID to its internal integer database ID."""
+        stmt = select(self.model.id).where(self.model.uuid == uuid)
+        result = await db.execute(stmt)
+        return result.scalar()
+
     async def async_create_similarity_playlist(
         self,
         db: AsyncSession,
