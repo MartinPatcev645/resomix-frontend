@@ -25,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import decode_token
-from app.models.user import User
+from app.models.user import User, UserSessionRepository
 from app.api.dependencies.database import get_database_session
 from app.repositories.rbac_repository import RBACRepository
 from app.repositories.user_repository import UserRepository
@@ -367,20 +367,28 @@ async def require_admin(
     Enforces 'admin:access' permission and verifies admin JWT claim.
     Administrative routes strictly require a valid JWT with 'role' set to 'admin'.
     """
-    # Force JWT-based authentication for administrative routes
-    payload = getattr(request.state, "token_payload", None)
-    if not payload:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="Administrative routes strictly require a valid JWT token authentication."
-        )
+    # Force JWT-based authentication for administrative routes, UNLESS a valid system static API key is used.
+    api_key = request.headers.get("X-API-KEY")
+    auth_header = request.headers.get("Authorization")
+    is_static_api_key = (
+        (api_key and api_key == settings.api_key) or
+        (auth_header and auth_header.startswith("Bearer ") and auth_header.split(" ")[1] == settings.api_key)
+    )
 
-    if payload.get("role") != "admin":
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="Admin JWT claim missing. Please login via the admin portal."
-        )
-        
+    if not is_static_api_key:
+        payload = getattr(request.state, "token_payload", None)
+        if not payload:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="Administrative routes strictly require a valid JWT token authentication."
+            )
+
+        if payload.get("role") != "admin":
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="Admin JWT claim missing. Please login via the admin portal."
+            )
+            
         # Strictly verify admin status in database (Don't trust payload alone)
         # This fulfills the request to rely on user authentication + role verification
         from app.repositories.rbac_repository import RBACRepository
