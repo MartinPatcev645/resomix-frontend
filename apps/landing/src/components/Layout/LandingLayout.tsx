@@ -52,7 +52,7 @@ export function LandingLayout() {
         if (path.startsWith('/auth/')) {
             return path.split('/auth/')[1] || 'auth';
         }
-        if (['/contact', '/waitlist', '/error'].includes(path)) {
+        if (['/contact', '/waitlist', '/error', '/partners', '/pricing'].includes(path)) {
             return path.substring(1);
         }
         return '404';
