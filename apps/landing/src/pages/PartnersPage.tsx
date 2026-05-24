@@ -103,7 +103,7 @@ function PartnersDesktop() {
   const sandboxCurl = `curl -X POST "https://api.resomix.com/api/v1/similarity/search" \\
   -H "Authorization: Bearer ${sandboxKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{"track_id": "f4c44d99-5100-4437-a8b1-f6a0db46c789", "top_sk": 5}'`;
+  -d '{"track_id": "f4c44d99-5100-4437-a8b1-f6a0db46c789", "top_sk": 20}'`;
 
   return (
     <section className="pt-[var(--px-120)] pb-[var(--px-80)] px-[var(--px-40)] tracking-[var(--px-1)] w-full select-none font-helvetica overflow-hidden relative text-[var(--color-primary)]">
@@ -451,7 +451,7 @@ function PartnersMobile() {
   const sandboxCurl = `curl -X POST "https://api.resomix.com/api/v1/similarity/search" \\
   -H "Authorization: Bearer ${sandboxKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{"track_id": "f4c44d99...", "top_sk": 5}'`;
+  -d '{"track_id": "f4c44d99...", "top_sk": 20}'`;
 
   return (
     <section className="pt-[var(--px-80)] pb-[var(--px-60)] px-[var(--px-20)] tracking-[var(--px-1)] w-full select-none font-helvetica overflow-hidden relative text-[var(--color-primary)]">
