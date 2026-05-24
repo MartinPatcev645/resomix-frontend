@@ -522,6 +522,43 @@ class PartnerService:
                     await db.commit()
                     stats["updated"] += 1
 
+                    # Trigger quota alerts using Redis locks to send at most once per month
+                    ratio = requests_made / quota_limit if quota_limit > 0 else 0
+                    if ratio >= 0.8:
+                        from app.tasks.webhooks import dispatch_webhook
+                        
+                        if ratio >= 1.0:
+                            exceeded_key = f"quota:alert:exceeded:{pid}:{year_month}"
+                            if not await client.get(exceeded_key):
+                                dispatch_webhook.delay(
+                                    partner_id=pid,
+                                    event_type="quota.exceeded",
+                                    payload={
+                                        "requests_made": requests_made,
+                                        "quota_limit": quota_limit,
+                                        "period_start": period_start.isoformat() if hasattr(period_start, "isoformat") else str(period_start),
+                                        "period_end": period_end.isoformat() if hasattr(period_end, "isoformat") else str(period_end),
+                                    }
+                                )
+                                # Cache alert state for 30 days
+                                await client.setex(exceeded_key, 2592000, "1")
+                        else:
+                            warning_key = f"quota:alert:warning:{pid}:{year_month}"
+                            if not await client.get(warning_key):
+                                dispatch_webhook.delay(
+                                    partner_id=pid,
+                                    event_type="quota.warning",
+                                    payload={
+                                        "requests_made": requests_made,
+                                        "quota_limit": quota_limit,
+                                        "period_start": period_start.isoformat() if hasattr(period_start, "isoformat") else str(period_start),
+                                        "period_end": period_end.isoformat() if hasattr(period_end, "isoformat") else str(period_end),
+                                        "usage_percentage": round(ratio * 100, 2)
+                                    }
+                                )
+                                # Cache alert state for 30 days
+                                await client.setex(warning_key, 2592000, "1")
+
                 except Exception as e:
                     logger.error(f"Error syncing quota for key {key}: {e}")
                     await db.rollback()

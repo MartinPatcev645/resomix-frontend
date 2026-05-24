@@ -23,6 +23,7 @@ from app.models.audio_file import AudioFile
 from app.core.context import set_current_partner_id
 from database.connection import AsyncSessionLocal
 from sqlalchemy import text
+from app.tasks.webhooks import dispatch_webhook
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,18 @@ async def process_ingestion_batch(
         db.add(log_entry)
         await db.commit()
         await db.refresh(log_entry)
+        
+        # Trigger ingestion.started webhook event
+        dispatch_webhook.delay(
+            partner_id=partner_id,
+            event_type="ingestion.started",
+            payload={
+                "ingest_log_id": log_entry.id,
+                "batch_filename": log_entry.batch_filename or "manifest.csv",
+                "package_folder": batch_path,
+                "started_at": log_entry.started_at.isoformat()
+            }
+        )
 
         if validation_error:
             # We already failed pre-flight validation
@@ -75,6 +88,17 @@ async def process_ingestion_batch(
             log_entry.error_message = validation_error
             log_entry.completed_at = datetime.utcnow()
             await db.commit()
+
+            # Trigger ingestion.failed webhook event
+            dispatch_webhook.delay(
+                partner_id=partner_id,
+                event_type="ingestion.failed",
+                payload={
+                    "ingest_log_id": log_entry.id,
+                    "error_message": validation_error,
+                    "failed_at": log_entry.completed_at.isoformat()
+                }
+            )
             return
 
         try:
@@ -313,6 +337,17 @@ async def process_ingestion_batch(
                 log_entry.error_message = f"Validation failed with {len(validation_errors_list)} errors. Ingestion aborted."
                 await db.commit()
                 logger.warning(f"[IngestionService] Batch failed due to validation errors. Ingestion aborted.")
+                
+                # Trigger ingestion.failed webhook event
+                dispatch_webhook.delay(
+                    partner_id=partner_id,
+                    event_type="ingestion.failed",
+                    payload={
+                        "ingest_log_id": log_entry.id,
+                        "error_message": log_entry.error_message,
+                        "failed_at": datetime.utcnow().isoformat()
+                    }
+                )
             else:
                 # Success: Persist all tracks and link them with audio files
                 for track, audio_fn in tracks_to_insert:
@@ -341,6 +376,31 @@ async def process_ingestion_batch(
                 log_entry.completed_at = datetime.utcnow()
                 await db.commit()
                 logger.info(f"[IngestionService] Batch complete. Successfully ingested {success_count} tracks.")
+                
+                # Trigger ingestion.completed webhook event
+                dispatch_webhook.delay(
+                    partner_id=partner_id,
+                    event_type="ingestion.completed",
+                    payload={
+                        "ingest_log_id": log_entry.id,
+                        "batch_filename": log_entry.batch_filename,
+                        "track_count": success_count,
+                        "completed_at": log_entry.completed_at.isoformat()
+                    }
+                )
+                
+                # Trigger track.indexed webhook events for all successfully inserted tracks
+                for track, _ in tracks_to_insert:
+                    dispatch_webhook.delay(
+                        partner_id=partner_id,
+                        event_type="track.indexed",
+                        payload={
+                            "track_uuid": track.uuid,
+                            "isrc": track.isrc,
+                            "title": track.title,
+                            "display_artist": track.display_artist
+                        }
+                    )
  
         except Exception as e:
             logger.error(f"[IngestionService] Critical failure: {e}")
@@ -349,6 +409,20 @@ async def process_ingestion_batch(
             log_entry.error_message = str(e)
             log_entry.completed_at = datetime.utcnow()
             await db.commit()
+            
+            # Trigger ingestion.failed webhook event
+            try:
+                dispatch_webhook.delay(
+                    partner_id=partner_id,
+                    event_type="ingestion.failed",
+                    payload={
+                        "ingest_log_id": log_entry.id,
+                        "error_message": log_entry.error_message,
+                        "failed_at": log_entry.completed_at.isoformat()
+                    }
+                )
+            except Exception as w_ex:
+                logger.error(f"Failed to trigger failed webhook after exception: {w_ex}")
 
             
             # 4. Move files to processed (Optional cleanup step)
@@ -365,3 +439,17 @@ async def process_ingestion_batch(
             log_entry.error_message = str(e)
             log_entry.completed_at = datetime.utcnow()
             await db.commit()
+            
+            # Trigger ingestion.failed webhook event
+            try:
+                dispatch_webhook.delay(
+                    partner_id=partner_id,
+                    event_type="ingestion.failed",
+                    payload={
+                        "ingest_log_id": log_entry.id,
+                        "error_message": log_entry.error_message,
+                        "failed_at": log_entry.completed_at.isoformat()
+                    }
+                )
+            except Exception as w_ex:
+                logger.error(f"Failed to trigger failed webhook after exception: {w_ex}")

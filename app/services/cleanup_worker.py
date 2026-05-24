@@ -98,6 +98,23 @@ async def start_session_cleanup_worker():
                                     )
                                 )
 
+                                # Trigger embedding.deleted webhook event if partner-scoped
+                                if track.partner_id:
+                                    try:
+                                        from app.tasks.webhooks import dispatch_webhook
+                                        from datetime import datetime
+                                        dispatch_webhook.delay(
+                                            partner_id=track.partner_id,
+                                            event_type="embedding.deleted",
+                                            payload={
+                                                "track_uuid": track.uuid,
+                                                "isrc": track.isrc,
+                                                "purged_at": datetime.utcnow().isoformat()
+                                            }
+                                        )
+                                    except Exception as w_ex:
+                                        logger.error(f"Failed to trigger embedding.deleted webhook for user track: {w_ex}")
+
                                 # Log it securely instead of dropping the local DB row
                                 log_entry_message = f"Automated cleanup: Hetzner deletion {'succeeded' if delete_result.get('success') else 'failed'}."
                                 log_svc.log(
@@ -128,12 +145,36 @@ async def start_session_cleanup_worker():
                     try:
                         # Extract track UUID from the expired TTL key
                         track_uuid = key_name.split(":")[-1]
-                        logger.info(
-                            f"[CLEANUP_WORKER] Anonymous upload {track_uuid} expired. Triggering Hetzner deletion..."
-                        )
+                        # Query the track to get partner_id before deleting it
+                        partner_id = None
+                        isrc = None
+                        async with AsyncSessionLocal() as db_session:
+                            stmt = select(Track).where(Track.uuid == track_uuid)
+                            track_res = await db_session.execute(stmt)
+                            track = track_res.scalar_one_or_none()
+                            if track:
+                                partner_id = track.partner_id
+                                isrc = track.isrc
 
                         # Do the actual deletion Request to Hetzner
                         delete_result = await hetzner_svc.delete_track_on_hetzner(track_uuid)
+
+                        # Trigger embedding.deleted webhook event if partner-scoped
+                        if partner_id:
+                            try:
+                                from app.tasks.webhooks import dispatch_webhook
+                                from datetime import datetime
+                                dispatch_webhook.delay(
+                                    partner_id=partner_id,
+                                    event_type="embedding.deleted",
+                                    payload={
+                                        "track_uuid": track_uuid,
+                                        "isrc": isrc,
+                                        "purged_at": datetime.utcnow().isoformat()
+                                    }
+                                )
+                            except Exception as w_ex:
+                                logger.error(f"Failed to trigger embedding.deleted webhook for anonymous track: {w_ex}")
 
                         # Log the cleanup
                         async with AsyncSessionLocal() as db_session:
