@@ -22,6 +22,8 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
+from app.repositories.operation_limit_repository import OperationLimitRepository
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.services.metadata_service import MetadataService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.core.config import settings
@@ -56,12 +58,14 @@ class PlaylistService:
             )
 
             if result["success"]:
+                await db.commit()
                 return {
                     "success": True,
                     "message": "Playlist renamed successfully",
                     "old_name": result["old_name"],
                 }
             else:
+                await db.rollback()
                 return {
                     "success": False,
                     "error": "Playlist not found",
@@ -69,6 +73,7 @@ class PlaylistService:
                 }
 
         except Exception as e:
+            await db.rollback()
             print(f"Error in playlist service rename: {e}")
             return {
                 "success": False,
@@ -98,14 +103,17 @@ class PlaylistService:
 
             if success:
                 visibility = "public" if is_public else "private"
+                await db.commit()
                 return {
                     "success": True,
                     "message": f"Playlist visibility changed to {visibility} successfully",
                 }
             else:
+                await db.rollback()
                 return {"success": False, "error": "Playlist not found"}
 
         except Exception as e:
+            await db.rollback()
             print(f"Error in playlist service visibility change: {e}")
             return {
                 "success": False,

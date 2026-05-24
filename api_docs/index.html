@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Resomix B2B Partner API</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Inline the OpenAPI spec to avoid CORS and local file loading issues -->
+    <script 
+      id="api-reference" 
+      type="application/json"
+      data-theme="moon">{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Resomix B2B Partner API",
+    "description": "# Resomix B2B Partner API\n\nWelcome to the **Resomix B2B Partner API** documentation!\n\nThis API allows partners to seamlessly integrate audio similarity and metadata extraction capabilities directly into their supply-chain pipelines. \n\n## Authentication\n\nAll endpoints (except `/health`) require authentication using a **B2B Bearer API Key** (`rmx_<tier>_...`). Pass this key in the `Authorization` header of your HTTP requests:\n```\nAuthorization: Bearer rmx_starter_1234567890\n```\n\n## Features\n\n- **Catalog Similarity Search**: Query the sandboxed FAISS index by your internal track ID.\n- **Realtime Similarity**: Upload audio files to check similarity on the fly.\n- **Metadata Extraction**: Parse and validate audio properties before heavy ingestion.\n",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/similarity/upload": {
+      "post": {
+        "tags": [
+          "similarity"
+        ],
+        "summary": "Upload Track and Calculate Similarity",
+        "description": "Upload an audio file, store it in the database, and get similar tracks.",
+        "operationId": "get_similarity_upload_endpoint_api_v1_similarity_upload_post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "top_sk",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of similar tracks to return (10, 20, 50, or 100)",
+              "title": "Top Sk"
+            },
+            "description": "Number of similar tracks to return (10, 20, 50, or 100)"
+          },
+          {
+            "name": "engine",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Similarity engine (E1-E6)",
+              "title": "Engine"
+            },
+            "description": "Similarity engine (E1-E6)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_get_similarity_upload_endpoint_api_v1_similarity_upload_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Track uploaded and similarity calculation completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityUploadSuccessResponse-Input"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "415": {
+            "description": "Unsupported media type or invalid audio file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "File too large, empty, or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database upload or internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Similarity service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/similarity/search": {
+      "post": {
+        "tags": [
+          "similarity"
+        ],
+        "summary": "Calculate Similarity by Track ID",
+        "description": "Get similar tracks for a track identified by its database ID.",
+        "operationId": "get_similarity_by_id_endpoint_api_v1_similarity_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarityByIdRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Similarity calculation completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityByIdSuccessResponse-Input"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid track ID or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Similarity service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Track not found or path missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarityErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/metadata/track": {
+      "post": {
+        "tags": [
+          "metadata"
+        ],
+        "summary": "Extract Audio Metadata",
+        "description": "Extract metadata from uploaded audio files including artist, album, genre, and technical information.",
+        "operationId": "get_metadata_endpoint_api_v1_metadata_track_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_get_metadata_endpoint_api_v1_metadata_track_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata extracted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSuccessResponse-Input"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type or invalid audio file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Empty file or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during metadata extraction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/partner/me": {
+      "get": {
+        "tags": [
+          "B2B Partner"
+        ],
+        "summary": "Get Partner Info",
+        "description": "Get information about the current authenticated partner.\n\nVerifies that the API key is working and request.state is populated.",
+        "operationId": "get_partner_info_api_v1_partner_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health Check",
+        "description": "Simple health check endpoint to verify service availability.",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_get_metadata_endpoint_api_v1_metadata_track_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "Audio file to extract metadata from"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_get_metadata_endpoint_api_v1_metadata_track_post"
+      },
+      "Body_get_similarity_upload_endpoint_api_v1_similarity_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "Audio file to analyze for similarity (max 100MB)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_get_similarity_upload_endpoint_api_v1_similarity_upload_post"
+      },
+      "MetadataErrorResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Always false for error responses",
+            "default": false
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Error message describing what went wrong"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "MetadataErrorResponse",
+        "description": "Error response schema for metadata extraction.",
+        "example": {
+          "error": "Unsupported audio format or corrupted file",
+          "success": false
+        }
+      },
+      "MetadataInfo": {
+        "properties": {
+          "Title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Track title"
+          },
+          "Album": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album",
+            "description": "Album name"
+          },
+          "Artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist",
+            "description": "Artist name"
+          },
+          "Genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre",
+            "description": "Genre"
+          },
+          "Year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year",
+            "description": "Release year"
+          },
+          "Label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Record label"
+          }
+        },
+        "type": "object",
+        "title": "MetadataInfo",
+        "description": "Schema for extracted audio metadata.",
+        "example": {
+          "Album": "Great Album",
+          "Artist": "Fantastic Artist",
+          "Genre": "Electronic",
+          "Label": "Cool Records",
+          "Title": "Amazing Song",
+          "Year": "2023"
+        }
+      },
+      "MetadataResponse": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Sanitized filename of the uploaded file"
+          },
+          "metadata": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetadataInfo"
+              }
+            ],
+            "description": "Extracted metadata information"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "metadata"
+        ],
+        "title": "MetadataResponse",
+        "description": "Response schema for metadata extraction.",
+        "example": {
+          "filename": "amazing_song.mp3",
+          "metadata": {
+            "Album": "Great Album",
+            "Artist": "Fantastic Artist",
+            "Genre": "Electronic",
+            "Label": "Cool Records",
+            "Title": "Amazing Song",
+            "Year": "2023"
+          }
+        }
+      },
+      "MetadataSuccessResponse-Input": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Always true for successful responses",
+            "default": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetadataResponse"
+              }
+            ],
+            "description": "Metadata extraction results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "MetadataSuccessResponse",
+        "description": "Success response wrapper for metadata extraction.",
+        "example": {
+          "data": {
+            "filename": "amazing_song.mp3",
+            "metadata": {
+              "Album": "Great Album",
+              "Artist": "Fantastic Artist",
+              "Genre": "Electronic",
+              "Label": "Cool Records",
+              "Title": "Amazing Song",
+              "Year": "2023"
+            }
+          },
+          "success": true
+        }
+      },
+      "PlaylistInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Playlist UUID (for external use)"
+          },
+          "uuid": {
+            "type": "string",
+            "title": "Uuid",
+            "description": "Playlist UUID (alias for id)"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Playlist name"
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "description": "Whether the playlist is public"
+          },
+          "seed_track_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed Track Title",
+            "description": "Title of the seed track if available"
+          },
+          "fork_id": {
+            "type": "string",
+            "title": "Fork Id",
+            "description": "UUID of the original playlist if this is a fork, empty string if not a fork",
+            "default": ""
+          },
+          "num_tracks": {
+            "type": "integer",
+            "title": "Num Tracks",
+            "description": "Number of tracks in playlist_tracks",
+            "default": 0
+          },
+          "play_time": {
+            "type": "integer",
+            "title": "Play Time",
+            "description": "Total play time in seconds (sum of track durations including seed track)",
+            "default": 0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "Playlist creation timestamp (ISO format)"
+          },
+          "is_favorite": {
+            "type": "boolean",
+            "title": "Is Favorite",
+            "description": "Whether the playlist is in user's favorites (False if user not logged in)",
+            "default": false
+          },
+          "is_following": {
+            "type": "boolean",
+            "title": "Is Following",
+            "description": "Whether the user is following the playlist (False if user not logged in)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "name",
+          "is_public"
+        ],
+        "title": "PlaylistInfo",
+        "description": "Schema for playlist information returned with similarity results.",
+        "example": {
+          "created_at": "2025-01-15T10:30:00",
+          "fork_id": "original-playlist-uuid",
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "is_favorite": false,
+          "is_following": false,
+          "is_public": false,
+          "name": "Playlist",
+          "num_tracks": 10,
+          "play_time": 3600,
+          "seed_track_title": "Whole Life (Original Mix)",
+          "uuid": "550e8400-e29b-41d4-a716-446655440000"
+        }
+      },
+      "SimilarTrackResult": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank",
+            "description": "Similarity rank (1 = most similar)"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Similarity score (0.0 to 1.0)"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Track UUID"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Record label"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "description": "Track duration in seconds with decimal precision"
+          },
+          "artist": {
+            "type": "string",
+            "title": "Artist",
+            "description": "Artist name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Track title"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year",
+            "description": "Release year"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "Track type (upload or internal)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "score",
+          "id",
+          "artist",
+          "title"
+        ],
+        "title": "SimilarTrackResult",
+        "description": "Schema for individual similar track result.",
+        "example": {
+          "artist": "Oxia",
+          "duration": 491,
+          "id": "67addcb39387d00fbdc3acdf",
+          "label": "Global Underground",
+          "rank": 1,
+          "score": 0.9899008274078369,
+          "title": "Whole Life (Original Mix)",
+          "year": 2010
+        }
+      },
+      "SimilarityByIdRequest": {
+        "properties": {
+          "track_id": {
+            "type": "string",
+            "title": "Track Id",
+            "description": "UUID of the track to find similar tracks for"
+          },
+          "top_sk": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Sk",
+            "description": "Number of similar tracks to return (10, 20, 50, or 100)"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine",
+            "description": "Similarity engine (E1-E6)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "track_id"
+        ],
+        "title": "SimilarityByIdRequest",
+        "description": "Request schema for similarity calculation by track ID.",
+        "example": {
+          "engine": "E4",
+          "top_sk": 20,
+          "track_id": "507f1f77bcf86cd799439011"
+        }
+      },
+      "SimilarityByIdResponse": {
+        "properties": {
+          "queried_track": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SimilarTrackResult"
+              }
+            ],
+            "description": "Information about the queried track"
+          },
+          "similar_tracks": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarTrackResult"
+            },
+            "type": "array",
+            "title": "Similar Tracks",
+            "description": "List of similar tracks"
+          },
+          "playlist": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaylistInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Created playlist information"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queried_track",
+          "similar_tracks"
+        ],
+        "title": "SimilarityByIdResponse",
+        "description": "Response schema for similarity calculation by track ID.",
+        "example": {
+          "playlist": {
+            "fork_id": "original-playlist-uuid",
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "is_favorite": false,
+            "is_following": false,
+            "is_public": false,
+            "name": "Playlist"
+          },
+          "queried_track": {
+            "artist": "Oxia",
+            "duration": 491,
+            "id": "67addcb39387d00fbdc3acdf",
+            "label": "Global Underground",
+            "rank": 0,
+            "score": 1.0,
+            "title": "Whole Life (Original Mix)",
+            "year": 2010
+          },
+          "similar_tracks": [
+            {
+              "artist": "Above & Beyond",
+              "duration": 456,
+              "id": "67addcb39387d00fbdc3ace0",
+              "label": "Anjunabeats",
+              "rank": 1,
+              "score": 0.8956789,
+              "title": "Sun & Moon",
+              "year": 2011
+            }
+          ]
+        }
+      },
+      "SimilarityByIdSuccessResponse-Input": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Always true for successful responses",
+            "default": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SimilarityByIdResponse"
+              }
+            ],
+            "description": "Similarity calculation results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SimilarityByIdSuccessResponse",
+        "description": "Success response wrapper for similarity by ID.",
+        "example": {
+          "data": {
+            "playlist": {
+              "fork_id": "original-playlist-uuid",
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "is_public": false,
+              "name": "Playlist"
+            },
+            "queried_track": {
+              "artist": "Oxia",
+              "duration": 491,
+              "id": "67addcb39387d00fbdc3acdf",
+              "label": "Global Underground",
+              "rank": 0,
+              "score": 1.0,
+              "title": "Whole Life (Original Mix)",
+              "year": 2010
+            },
+            "similar_tracks": [
+              {
+                "artist": "Above & Beyond",
+                "duration": 456,
+                "id": "67addcb39387d00fbdc3ace0",
+                "label": "Anjunabeats",
+                "rank": 1,
+                "score": 0.8956789,
+                "title": "Sun & Moon",
+                "year": 2011
+              }
+            ]
+          },
+          "success": true
+        }
+      },
+      "SimilarityErrorResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Always false for error responses",
+            "default": false
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Error message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "SimilarityErrorResponse",
+        "description": "Error response schema for similarity operations.",
+        "example": {
+          "error": "File too large. Maximum size is 100MB.",
+          "success": false
+        }
+      },
+      "SimilarityUploadResponse": {
+        "properties": {
+          "queried_track": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SimilarTrackResult"
+              }
+            ],
+            "description": "Information about the uploaded (queried) track"
+          },
+          "similar_tracks": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarTrackResult"
+            },
+            "type": "array",
+            "title": "Similar Tracks",
+            "description": "List of similar tracks"
+          },
+          "playlist": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaylistInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Created playlist information"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queried_track",
+          "similar_tracks"
+        ],
+        "title": "SimilarityUploadResponse",
+        "description": "Response schema for similarity calculation by upload.",
+        "example": {
+          "playlist": {
+            "fork_id": "original-playlist-uuid",
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "is_favorite": false,
+            "is_following": false,
+            "is_public": false,
+            "name": "Playlist"
+          },
+          "queried_track": {
+            "artist": "Amazing Artist",
+            "duration": 195,
+            "id": "67ad9cec799206f8d64acd08",
+            "label": "User Upload",
+            "rank": 0,
+            "score": 1.0,
+            "title": "Uploaded Track",
+            "year": 2023
+          },
+          "similar_tracks": [
+            {
+              "artist": "Oxia",
+              "duration": 491,
+              "id": "67addcb39387d00fbdc3acdf",
+              "label": "Global Underground",
+              "rank": 1,
+              "score": 0.9899008274078369,
+              "title": "Whole Life (Original Mix)",
+              "year": 2010
+            }
+          ]
+        }
+      },
+      "SimilarityUploadSuccessResponse-Input": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Always true for successful responses",
+            "default": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SimilarityUploadResponse"
+              }
+            ],
+            "description": "Similarity calculation results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SimilarityUploadSuccessResponse",
+        "description": "Success response wrapper for similarity upload.",
+        "example": {
+          "data": {
+            "playlist": {
+              "fork_id": "original-playlist-uuid",
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "is_public": false,
+              "name": "Playlist"
+            },
+            "queried_track": {
+              "artist": "Amazing Artist",
+              "duration": 195,
+              "id": "67ad9cec799206f8d64acd08",
+              "label": "User Upload",
+              "rank": 0,
+              "score": 1.0,
+              "title": "Uploaded Track",
+              "year": 2023
+            },
+            "similar_tracks": [
+              {
+                "artist": "Oxia",
+                "duration": 491,
+                "id": "67addcb39387d00fbdc3acdf",
+                "label": "Global Underground",
+                "rank": 1,
+                "score": 0.9899008274078369,
+                "title": "Whole Life (Original Mix)",
+                "year": 2010
+              }
+            ]
+          },
+          "success": true
+        }
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY"
+      },
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/auth/login"
+          }
+        }
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "B2B Bearer API keys (rmx_<tier>_...)"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8001",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "similarity",
+      "description": "Core engine endpoints to calculate audio similarities using track IDs or real-time audio uploads."
+    },
+    {
+      "name": "metadata",
+      "description": "Endpoints to extract and validate standard audio properties."
+    },
+    {
+      "name": "B2B Partner",
+      "description": "Partner-specific endpoints to monitor quotas and account health."
+    },
+    {
+      "name": "health",
+      "description": "System availability checks."
+    }
+  ]
+}</script>
+    <!-- Include Scalar CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>

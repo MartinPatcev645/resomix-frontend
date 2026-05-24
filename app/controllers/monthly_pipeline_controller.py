@@ -30,6 +30,7 @@ from app.utils.file_utils import sanitize_filename
 from app.services.logging_service import LoggingService
 from app.utils.mix_filter import validate_track_for_mixes
 from app.core.context import get_current_partner_id
+from app.repositories.track_repository import TrackRepository
 
 
 class MonthlyPipelineController:
@@ -167,20 +168,9 @@ class MonthlyPipelineController:
         
         # STEP 0: Check if this path already exists in database (duplicate check)
         try:
-            from app.models.audio_file import AudioFile
-            from sqlalchemy import select, func
-            
             partner_id = get_current_partner_id()
-            
-            # Use ORM select which automatically applies partner isolation via listener
-            stmt = select(func.count(AudioFile.id)).where(AudioFile.stored_path == path)
-            
-            # Explicitly scope by partner_id if provided (as a fallback/safety)
-            if partner_id is not None:
-                stmt = stmt.where(AudioFile.partner_id == partner_id)
-                
-            check_result = await db.execute(stmt)
-            count = check_result.scalar()
+            track_repo = TrackRepository()
+            count = await track_repo.async_get_audio_file_count_by_path(db, path=path, partner_id=partner_id)
             
             if count and count > 0:
                 # Log duplicate track detection

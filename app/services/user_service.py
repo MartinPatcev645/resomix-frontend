@@ -10,7 +10,7 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
@@ -19,7 +19,9 @@ from app.repositories.user_repository import (
     UserRepository,
     UserSessionRepository,
 )
+from app.repositories.rbac_repository import RBACRepository
 from app.core.security import hash_password, verify_password, validate_password_strength
+from app.services.admin_operation_log_service import AdminOperationLogService
 
 
 class UserService:
@@ -28,6 +30,7 @@ class UserService:
     def __init__(self):
         self.user_repo = UserRepository()
         self.session_repo = UserSessionRepository()
+        self.admin_log_service = AdminOperationLogService()
 
     async def get_user_profile(
         self, db: AsyncSession, user_uuid: str
@@ -70,25 +73,23 @@ class UserService:
         Raises:
             HTTPException: If user not found
         """
-        user = await self.user_repo.async_get_by_id(db, user_id)
+        # Update only provided fields
+        update_kwargs = {}
+        if name is not None:
+            update_kwargs["name"] = name
+        if language is not None:
+            update_kwargs["language"] = language
+        if timezone is not None:
+            update_kwargs["timezone"] = timezone
+        if profile_picture is not None:
+            update_kwargs["profile_picture"] = profile_picture
+
+        user = await self.user_repo.async_update(db, id=user_id, commit=True, **update_kwargs)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
-
-        # Update only provided fields
-        if name is not None:
-            user.name = name
-        if language is not None:
-            user.language = language
-        if timezone is not None:
-            user.timezone = timezone
-        if profile_picture is not None:
-            user.profile_picture = profile_picture
-
-        await db.commit()
-        await db.refresh(user)
 
         return user
 
@@ -356,7 +357,7 @@ class UserService:
         search: Optional[str] = None,
         role_id: Optional[int] = None,
         is_active: Optional[bool] = None,
-    ) -> (List[User], int):
+    ) -> Tuple[List[User], int]:
         """List users with filters and RBAC details."""
         return await self.user_repo.async_list_users_admin(
             db, page, page_size, search, role_id, is_active
@@ -398,3 +399,243 @@ class UserService:
     async def get_user_by_id(self, db: AsyncSession, user_id: int) -> Optional[User]:
         """Get user by internal ID."""
         return await self.user_repo.async_get_by_id(db, user_id)
+
+    async def get_user_detail(self, db: AsyncSession, user_uuid: str) -> Optional[User]:
+        """Get detailed user record loading their roles."""
+        return await self.user_repo.async_get_user_with_roles(db, user_uuid)
+
+    async def admin_create_user(
+        self,
+        db: AsyncSession,
+        user_data: Dict[str, Any],
+        current_admin: User,
+        ip_address: Optional[str] = None
+    ) -> User:
+        """Manually create a new user from administrative console."""
+        # Check if email already exists
+        existing_email = await self.user_repo.async_get_by_email(db, user_data["email"])
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already exists"
+            )
+
+        # Check if username already exists
+        existing_username = await self.user_repo.async_get_by_username(db, user_data["username"])
+        if existing_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists"
+            )
+
+        pw_hash = hash_password(user_data["password"])
+        
+        user = await self.user_repo.async_create(
+            db=db,
+            commit=False,
+            email=user_data["email"],
+            username=user_data["username"],
+            password_hash=pw_hash,
+            name=user_data.get("name"),
+            partner_id=user_data.get("partner_id", 1),
+            is_active=user_data.get("is_active", True),
+            is_email_verified=user_data.get("is_email_verified", False)
+        )
+
+        await self.admin_log_service.log_operation(
+            db=db,
+            admin_user_id=current_admin.id,
+            action="user.create",
+            target_type="user",
+            target_id=str(user.uuid),
+            before_state=None,
+            after_state={
+                "email": user.email,
+                "username": user.username,
+                "partner_id": user.partner_id
+            },
+            ip_address=ip_address
+        )
+
+        await db.commit()
+        await db.refresh(user)
+        return user
+
+    async def admin_update_user(
+        self,
+        db: AsyncSession,
+        user_uuid: str,
+        update_data: Dict[str, Any],
+        current_admin: User,
+        ip_address: Optional[str] = None
+    ) -> User:
+        """Update user details manually from admin console."""
+        user = await self.user_repo.async_get_by_uuid(db, user_uuid)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        before_state = {
+            "name": user.name,
+            "is_active": user.is_active,
+            "partner_id": user.partner_id
+        }
+
+        # Build update kwargs
+        kwargs = {}
+        if "name" in update_data:
+            kwargs["name"] = update_data["name"]
+        if "is_active" in update_data:
+            kwargs["is_active"] = update_data["is_active"]
+        if "partner_id" in update_data:
+            kwargs["partner_id"] = update_data["partner_id"]
+        if "password" in update_data:
+            kwargs["password_hash"] = hash_password(update_data["password"])
+
+        updated_user = await self.user_repo.async_update(
+            db=db,
+            id=user.id,
+            commit=False,
+            **kwargs
+        )
+
+        await self.admin_log_service.log_operation(
+            db=db,
+            admin_user_id=current_admin.id,
+            action="user.update",
+            target_type="user",
+            target_id=user_uuid,
+            before_state=before_state,
+            after_state=update_data,
+            ip_address=ip_address
+        )
+
+        await db.commit()
+        await db.refresh(updated_user)
+        return updated_user
+
+    async def admin_assign_role(
+        self,
+        db: AsyncSession,
+        user_uuid: str,
+        role_name: str,
+        current_admin: User,
+        ip_address: Optional[str] = None
+    ) -> bool:
+        """Assign role to user by role name."""
+        user = await self.user_repo.async_get_by_uuid(db, user_uuid)
+        rbac_repo = RBACRepository()
+        role = await rbac_repo.get_role_by_name(db, role_name)
+
+        if not user or not role:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User or Role not found"
+            )
+
+        success = await self.user_repo.async_assign_role(db, user.id, role.id)
+        if success:
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.role.assign",
+                target_type="user",
+                target_id=user_uuid,
+                before_state=None,
+                after_state={"role": role_name},
+                ip_address=ip_address
+            )
+            await db.commit()
+            return True
+        return False
+
+    async def admin_remove_role(
+        self,
+        db: AsyncSession,
+        user_uuid: str,
+        role_name: str,
+        current_admin: User,
+        ip_address: Optional[str] = None
+    ) -> bool:
+        """Remove role from user by role name."""
+        user = await self.user_repo.async_get_by_uuid(db, user_uuid)
+        rbac_repo = RBACRepository()
+        role = await rbac_repo.get_role_by_name(db, role_name)
+
+        if not user or not role:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User or Role not found"
+            )
+
+        # Prevent removing 'admin' role from self to avoid lock-out
+        if user.id == current_admin.id and role_name == "admin":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot remove admin role from yourself"
+            )
+
+        success = await self.user_repo.async_remove_role(db, user.id, role.id)
+        if success:
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.role.remove",
+                target_type="user",
+                target_id=user_uuid,
+                before_state={"role": role_name},
+                after_state=None,
+                ip_address=ip_address
+            )
+            await db.commit()
+            return True
+        return False
+
+    async def admin_toggle_user_status(
+        self,
+        db: AsyncSession,
+        user_uuid: str,
+        current_admin: User,
+        ip_address: Optional[str] = None
+    ) -> User:
+        """Toggle user active/inactive status."""
+        user = await self.user_repo.async_get_by_uuid(db, user_uuid)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Prevent deactivating self
+        if user.id == current_admin.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot deactivate yourself"
+            )
+
+        old_status = user.is_active
+        new_status = not old_status
+
+        updated_user = await self.user_repo.async_update(
+            db=db,
+            id=user.id,
+            commit=False,
+            is_active=new_status
+        )
+
+        await self.admin_log_service.log_operation(
+            db=db,
+            admin_user_id=current_admin.id,
+            action="user.toggle_status",
+            target_type="user",
+            target_id=user_uuid,
+            before_state={"is_active": old_status},
+            after_state={"is_active": new_status},
+            ip_address=ip_address
+        )
+
+        await db.commit()
+        await db.refresh(updated_user)
+        return updated_user

@@ -19,6 +19,8 @@ from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.feedback_repository import FeedbackRepository
 from app.models.feedback import Feedback
+from app.models.user import User
+from app.services.admin_operation_log_service import AdminOperationLogService
 import math
 import csv
 import os
@@ -32,6 +34,7 @@ class FeedbackService:
     
     def __init__(self):
         self.feedback_repository = FeedbackRepository()
+        self.admin_log_service = AdminOperationLogService()
     
     async def process_feedback_submission(
         self,
@@ -81,6 +84,7 @@ class FeedbackService:
                 satisfaction=satisfaction,
                 recommendation=recommendation
             )
+            await db.commit()
             
             return {
                 "success": True,
@@ -89,6 +93,7 @@ class FeedbackService:
             }
             
         except Exception as e:
+            await db.rollback()
             print(f"Error processing feedback submission: {e}")
             return {
                 "success": False,
@@ -200,18 +205,21 @@ class FeedbackService:
             )
             
             if feedback:
+                await db.commit()
                 return {
                     "success": True,
                     "message": f"Feedback status updated to {status}",
                     "feedback_id": feedback.id
                 }
             else:
+                await db.rollback()
                 return {
                     "success": False,
                     "error": f"Feedback with ID {feedback_id} not found"
                 }
                 
         except Exception as e:
+            await db.rollback()
             print(f"Error updating feedback status: {e}")
             return {
                 "success": False,
@@ -315,7 +323,9 @@ class FeedbackService:
         self,
         db: AsyncSession,
         feedback_id: int,
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Delete a single feedback entry.
@@ -335,21 +345,42 @@ class FeedbackService:
                     "success": False,
                     "error": f"Feedback with ID {feedback_id} not found"
                 }
+            
+            before_state = {
+                "id": feedback.id,
+                "status": feedback.status,
+                "category": feedback.category,
+                "message": feedback.message
+            }
                 
             deleted = await self.feedback_repository.delete_feedback(db, feedback_id)
             
             if deleted:
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="feedback.delete",
+                        target_type="feedback",
+                        target_id=str(feedback_id),
+                        before_state=before_state,
+                        after_state=None,
+                        ip_address=ip_address
+                    )
+                await db.commit()
                 return {
                     "success": True,
                     "message": "Feedback deleted successfully"
                 }
             else:
+                await db.rollback()
                 return {
                     "success": False,
                     "error": f"Feedback with ID {feedback_id} not found"
                 }
                 
         except Exception as e:
+            await db.rollback()
             print(f"Error deleting feedback: {e}")
             return {
                 "success": False,
@@ -360,7 +391,9 @@ class FeedbackService:
         self,
         db: AsyncSession,
         feedback_ids: List[int],
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Delete multiple feedback entries.
@@ -378,6 +411,19 @@ class FeedbackService:
             # For now, we'll just commit to the ID list.
             deleted_count = await self.feedback_repository.batch_delete_feedback(db, feedback_ids)
             
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="feedback.batch_delete",
+                    target_type="feedback",
+                    target_id="batch",
+                    before_state={"ids": feedback_ids},
+                    after_state={"deleted_count": deleted_count},
+                    ip_address=ip_address
+                )
+            await db.commit()
+            
             return {
                 "success": True,
                 "deleted_count": deleted_count,
@@ -385,6 +431,7 @@ class FeedbackService:
             }
             
         except Exception as e:
+            await db.rollback()
             print(f"Error batch deleting feedback: {e}")
             return {
                 "success": False,
@@ -397,7 +444,9 @@ class FeedbackService:
         db: AsyncSession,
         feedback_id: int,
         status: str,
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Mark feedback status for admin.
@@ -411,6 +460,12 @@ class FeedbackService:
             Status update result with feedback data
         """
         try:
+            # Audit: Get before state
+            entry = await self.feedback_repository.async_get_by_id(db, feedback_id, partner_id=partner_id)
+            before_state = None
+            if entry:
+                before_state = {"status": entry.status}
+
             feedback = await self.feedback_repository.update_feedback_status(
                 db=db,
                 feedback_id=feedback_id,
@@ -418,18 +473,32 @@ class FeedbackService:
             )
             
             if feedback:
+                if current_admin:
+                    await self.admin_log_service.log_operation(
+                        db=db,
+                        admin_user_id=current_admin.id,
+                        action="feedback.mark_status",
+                        target_type="feedback",
+                        target_id=str(feedback_id),
+                        before_state=before_state,
+                        after_state={"status": status},
+                        ip_address=ip_address
+                    )
+                await db.commit()
                 return {
                     "success": True,
                     "data": feedback,
                     "message": "Status updated successfully"
                 }
             else:
+                await db.rollback()
                 return {
                     "success": False,
                     "error": f"Feedback with ID {feedback_id} not found"
                 }
                 
         except Exception as e:
+            await db.rollback()
             print(f"Error marking feedback status: {e}")
             return {
                 "success": False,
@@ -463,18 +532,21 @@ class FeedbackService:
             )
             
             if feedback:
+                await db.commit()
                 return {
                     "success": True,
                     "data": feedback,
                     "message": "Feedback updated successfully"
                 }
             else:
+                await db.rollback()
                 return {
                     "success": False,
                     "error": f"Feedback with ID {feedback_id} not found"
                 }
                 
         except Exception as e:
+            await db.rollback()
             print(f"Error updating feedback: {e}")
             return {
                 "success": False,
@@ -596,6 +668,8 @@ class FeedbackService:
             # Calculate expiration time (24 hours from now)
             expires_at = datetime.now() + timedelta(hours=24)
             
+            await db.commit()
+            
             return {
                 "success": True,
                 "download_url": download_url,
@@ -604,6 +678,7 @@ class FeedbackService:
             }
             
         except Exception as e:
+            await db.rollback()
             print(f"Error exporting feedback: {e}")
             return {
                 "success": False,

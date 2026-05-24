@@ -59,11 +59,15 @@ class CartRepository(BaseRepository[Cart]):
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def async_create_cart(self, db: AsyncSession, user_id: int) -> Cart:
+    async def async_create_cart(self, db: AsyncSession, user_id: int, commit: bool = True) -> Cart:
         """Create a new active cart for the user."""
         cart = Cart(user_id=user_id, status="active")
         db.add(cart)
-        await db.flush()
+        if commit:
+            await db.commit()
+            await db.refresh(cart)
+        else:
+            await db.flush()
         return cart
 
     async def async_add_item(
@@ -71,7 +75,8 @@ class CartRepository(BaseRepository[Cart]):
         db: AsyncSession, 
         cart_id: int, 
         track_id: int,
-        source_playlist_id: Optional[int] = None
+        source_playlist_id: Optional[int] = None,
+        commit: bool = True
     ) -> Optional[CartItem]:
         """Add an item to the cart if the track exists."""
         # 1. Fetch the track to get price
@@ -101,10 +106,14 @@ class CartRepository(BaseRepository[Cart]):
             price_cents=track.price_cents or 99
         )
         db.add(item)
-        await db.flush()
+        if commit:
+            await db.commit()
+            await db.refresh(item)
+        else:
+            await db.flush()
         return item
 
-    async def async_remove_item(self, db: AsyncSession, cart_id: int, track_id: int) -> bool:
+    async def async_remove_item(self, db: AsyncSession, cart_id: int, track_id: int, commit: bool = True) -> bool:
         """Remove an item from the cart."""
         stmt = delete(CartItem).where(
             and_(
@@ -113,13 +122,38 @@ class CartRepository(BaseRepository[Cart]):
             )
         )
         result = await db.execute(stmt)
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return result.rowcount > 0
 
-    async def async_clear_cart(self, db: AsyncSession, cart_id: int) -> bool:
+    async def async_clear_cart(self, db: AsyncSession, cart_id: int, commit: bool = True) -> bool:
         """Remove all items from the cart."""
         stmt = delete(CartItem).where(CartItem.cart_id == cart_id)
         await db.execute(stmt)
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return True
+
+    async def async_remove_items_by_source_playlist_id(
+        self, db: AsyncSession, cart_id: int, playlist_id: int, commit: bool = True
+    ) -> bool:
+        """Remove all items from the cart that came from a specific source playlist."""
+        stmt = delete(CartItem).where(
+            and_(
+                CartItem.cart_id == cart_id,
+                CartItem.source_playlist_id == playlist_id
+            )
+        )
+        result = await db.execute(stmt)
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
+        return result.rowcount > 0
 
     async def async_get_promo_code(self, db: AsyncSession, code: str) -> Optional[PromoCode]:
         """Fetch a promo code by its code string if it is active and valid."""
@@ -145,7 +179,7 @@ class CartRepository(BaseRepository[Cart]):
             
         return promo
 
-    async def async_apply_promo_code(self, db: AsyncSession, cart_id: int, promo_code_id: Optional[int]) -> bool:
+    async def async_apply_promo_code(self, db: AsyncSession, cart_id: int, promo_code_id: Optional[int], commit: bool = True) -> bool:
         """Apply or remove a promo code from a cart."""
         stmt = select(Cart).where(Cart.id == cart_id)
         result = await db.execute(stmt)
@@ -155,12 +189,21 @@ class CartRepository(BaseRepository[Cart]):
             return False
             
         cart.promo_code_id = promo_code_id
-        await db.flush()
+        if commit:
+            await db.commit()
+            await db.refresh(cart)
+        else:
+            await db.flush()
         return True
 
-    async def async_create_promo_code(self, db: AsyncSession, promo_data: dict) -> PromoCode:
+    async def async_create_promo_code(self, db: AsyncSession, promo_data: dict, commit: bool = True) -> PromoCode:
         """Create a new promo code."""
         promo = PromoCode(**promo_data)
         db.add(promo)
-        await db.flush()
+        if commit:
+            await db.commit()
+            await db.refresh(promo)
+        else:
+            await db.flush()
         return promo
+
