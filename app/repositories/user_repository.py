@@ -10,10 +10,10 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import datetime
 from sqlalchemy import select, and_, or_, delete, update, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import (
@@ -24,7 +24,7 @@ from app.models.user import (
 )
 from app.repositories.base_repository import BaseRepository
 from app.core.security import generate_session_id
-
+from app.models.user import UserRole, Role
 
 class UserRepository(BaseRepository[User]):
     """Repository for User model operations"""
@@ -80,6 +80,28 @@ class UserRepository(BaseRepository[User]):
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def async_get_first_admin(self, db: AsyncSession) -> Optional[User]:
+        """Retrieve the first active administrative user in the system."""
+        stmt = (
+            select(User)
+            .join(UserRole, User.id == UserRole.user_id)
+            .join(Role)
+            .where(Role.name == "admin")
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def async_get_user_with_roles(self, db: AsyncSession, user_uuid: str) -> Optional[User]:
+        """Retrieve a user and pre-load their roles using selectinload."""
+        stmt = (
+            select(User)
+            .where(User.uuid == user_uuid)
+            .options(selectinload(User.roles))
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+    
     async def async_search_users(
         self,
         db: AsyncSession,
@@ -201,11 +223,8 @@ class UserRepository(BaseRepository[User]):
         search: Optional[str] = None,
         role_id: Optional[int] = None,
         is_active: Optional[bool] = None,
-    ) -> (List[User], int):
+    ) -> Tuple[List[User], int]:
         """List users with filters and roles."""
-        from sqlalchemy.orm import selectinload
-        from app.models.user import UserRole
-        
         stmt = select(User).options(selectinload(User.roles).selectinload(UserRole.role))
         
         if is_active is not None:
@@ -236,33 +255,38 @@ class UserRepository(BaseRepository[User]):
 
     async def async_assign_role(self, db: AsyncSession, user_id: int, role_id: int) -> bool:
         """Assign role to user if not already assigned."""
-        from sqlalchemy.orm import selectinload
-        user = await db.get(User, user_id, options=[selectinload(User.roles)])
-        role = await db.get(Role, role_id)
-        
-        if not user or not role:
+        stmt = select(UserRole).where(
+            and_(
+                UserRole.user_id == user_id,
+                UserRole.role_id == role_id
+            )
+        )
+        result = await db.execute(stmt)
+        existing = result.scalar_one_or_none()
+        if existing:
             return False
             
-        if role not in user.roles:
-            user.roles.append(role)
-            await db.flush()
-            return True
-        return False
+        user_role = UserRole(user_id=user_id, role_id=role_id)
+        db.add(user_role)
+        await db.flush()
+        return True
 
     async def async_remove_role(self, db: AsyncSession, user_id: int, role_id: int) -> bool:
         """Remove role from user."""
-        from sqlalchemy.orm import selectinload
-        user = await db.get(User, user_id, options=[selectinload(User.roles)])
-        role = await db.get(Role, role_id)
-        
-        if not user or not role:
+        stmt = select(UserRole).where(
+            and_(
+                UserRole.user_id == user_id,
+                UserRole.role_id == role_id
+            )
+        )
+        result = await db.execute(stmt)
+        existing = result.scalar_one_or_none()
+        if not existing:
             return False
             
-        if role in user.roles:
-            user.roles.remove(role)
-            await db.flush()
-            return True
-        return False
+        await db.delete(existing)
+        await db.flush()
+        return True
 
 
 class UserTokenRepository:

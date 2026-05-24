@@ -10,6 +10,7 @@ from .spotify_app_repository import (
     SpotifyAppRepository,
     UserSpotifyAppRepository,
 )
+from .partner_quota_repository import PartnerQuotaRepository
 
 __all__ = [
     "BaseRepository",
@@ -18,4 +19,6 @@ __all__ = [
     "UserSessionRepository",
     "SpotifyAppRepository",
     "UserSpotifyAppRepository",
+    "PartnerQuotaRepository",
 ]
+

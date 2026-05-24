@@ -531,6 +531,14 @@ class LogRepository(BaseRepository[SystemLog]):
             logger.error(f"Failed to get filtered logs: {e}")
             return [], 0
 
+    async def async_get_log_by_stripe_event_id(self, db: AsyncSession, stripe_event_id: str) -> Optional[SystemLog]:
+        """Check if a Stripe event ID has already been logged (for idempotency checks)."""
+        stmt = select(self.model).where(
+            self.model.log_metadata["stripe_event_id"].as_string() == stripe_event_id
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
     # --- Abstract method implementations ---
     
     def _find_existing(self, db: Session, **kwargs) -> Optional[SystemLog]:

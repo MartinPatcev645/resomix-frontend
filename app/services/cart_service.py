@@ -7,16 +7,19 @@ It synchronizes state between MariaDB (source of truth) and Redis (fast read cac
 """
 
 import json
+import stripe
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 import logging
-from sqlalchemy import text, delete, select
 
 from app.repositories.cart_repository import CartRepository
 from app.repositories.playlist_repository import PlaylistRepository
+from app.repositories.track_repository import TrackRepository
+from app.repositories.user_repository import UserRepository
+from app.services.order_service import OrderService
+from app.core.config import settings
 from app.db.redis import _redis_pool
-from app.models.ecommerce import CartItem
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,7 @@ class CartService:
     def __init__(self, cart_repository: CartRepository):
         self.cart_repository = cart_repository
         self.playlist_repository = PlaylistRepository()
+        self.track_repository = TrackRepository()
 
     async def _get_redis(self) -> Optional[aioredis.Redis]:
         if _redis_pool:
@@ -116,29 +120,22 @@ class CartService:
             track_id_uuid = item.get("track_id")
             source_playlist_id_uuid = item.get("source_playlist_id")
             
-            from app.models.track import Track
-            
-            # Resolve UUIDs to internal IDs using ORM (enables auto-scoping)
-            track_res = await db.execute(select(Track.id).where(Track.uuid == track_id_uuid))
-            track_row = track_res.first()
-            if not track_row: continue
+            track_id_internal = await self.track_repository.async_get_id_by_uuid(db, track_id_uuid)
+            if not track_id_internal:
+                continue
             
             playlist_id_internal = None
             if source_playlist_id_uuid:
-                from app.models.playlist import Playlist
-                plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == source_playlist_id_uuid))
-                plist_row = plist_res.first()
-                if plist_row: playlist_id_internal = plist_row.id
+                playlist_id_internal = await self.playlist_repository.async_get_id_by_uuid(db, source_playlist_id_uuid)
 
             # Add directly to cart using track_id
             await self.cart_repository.async_add_item(
                 db, 
                 cart.id, 
-                track_row.id, 
-                playlist_id_internal
+                track_id_internal, 
+                playlist_id_internal,
+                commit=True
             )
-            
-        await db.commit()
             
         # Hydrate will re-fetch and update cache
         return await self.hydrate_cart(db, user_id)
@@ -147,8 +144,7 @@ class CartService:
         """Remove item from cart."""
         cart = await self.cart_repository.async_get_active_cart(db, user_id)
         if cart:
-            await self.cart_repository.async_remove_item(db, cart.id, track_id)
-            await db.commit()
+            await self.cart_repository.async_remove_item(db, cart.id, track_id, commit=True)
             
         return await self.hydrate_cart(db, user_id)
 
@@ -156,9 +152,8 @@ class CartService:
         """Clear all items from cart."""
         cart = await self.cart_repository.async_get_active_cart(db, user_id)
         if cart:
-            await self.cart_repository.async_clear_cart(db, cart.id)
-            cart.promo_code_id = None # clear promo code too
-            await db.commit()
+            await self.cart_repository.async_clear_cart(db, cart.id, commit=False)
+            await self.cart_repository.async_apply_promo_code(db, cart.id, None, commit=True)
             
         return await self.hydrate_cart(db, user_id)
 
@@ -172,21 +167,15 @@ class CartService:
         if not promo:
             return {"error": "Invalid or expired promo code"}
             
-        await self.cart_repository.async_apply_promo_code(db, cart.id, promo.id)
-        await db.commit()
+        await self.cart_repository.async_apply_promo_code(db, cart.id, promo.id, commit=True)
         
         return await self.hydrate_cart(db, user_id)
 
     async def add_playlist(self, db: AsyncSession, user_id: int, playlist_uuid: str) -> Dict[str, Any]:
         """Add an entire playlist to the cart."""
-        from app.models.playlist import Playlist
-        
-        plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == playlist_uuid))
-        plist_row = plist_res.first()
-        if not plist_row:
+        internal_playlist_id = await self.playlist_repository.async_get_id_by_uuid(db, playlist_uuid)
+        if not internal_playlist_id:
             return await self.hydrate_cart(db, user_id)
-        
-        internal_playlist_id = plist_row.id
         
         # 2. Get tracks in playlist
         tracks = await self.playlist_repository.async_get_tracks_by_playlist_id(db, internal_playlist_id)
@@ -194,12 +183,10 @@ class CartService:
         # 3. Add each track (AIFF format) to cart
         items_to_add = []
         for pt in tracks:
-            from app.models.track import Track
-            t_res = await db.execute(select(Track.uuid).where(Track.id == pt.track_id))
-            t_row = t_res.first()
-            if t_row:
+            track_uuid = await self.track_repository.async_get_uuid_by_id(db, pt.track_id)
+            if track_uuid:
                 items_to_add.append({
-                    "track_id": t_row.uuid,
+                    "track_id": track_uuid,
                     "source_playlist_id": playlist_uuid
                 })
         
@@ -211,17 +198,134 @@ class CartService:
         if not cart:
             return await self.hydrate_cart(db, user_id)
 
-        from app.models.playlist import Playlist
-        plist_res = await db.execute(select(Playlist.id).where(Playlist.uuid == playlist_uuid))
-        plist_row = plist_res.first()
-        if not plist_row:
+        internal_playlist_id = await self.playlist_repository.async_get_id_by_uuid(db, playlist_uuid)
+        if not internal_playlist_id:
             return await self.hydrate_cart(db, user_id)
 
-        stmt = delete(CartItem).where(
-            CartItem.cart_id == cart.id,
-            CartItem.source_playlist_id == plist_row.id
+        await self.cart_repository.async_remove_items_by_source_playlist_id(
+            db, cart.id, internal_playlist_id, commit=True
         )
-        await db.execute(stmt)
-        await db.commit()
             
         return await self.hydrate_cart(db, user_id)
+
+    async def initiate_checkout(self, db: AsyncSession, user_id: int, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Securely transition user to Stripe hosted checkout.
+        Manages all database transaction boundaries internally.
+        """
+        # Ensure Stripe API key is set
+        stripe.api_key = settings.stripe_secret_key
+        
+        try:
+            # 1. Get User and active cart
+            user_repo = UserRepository()
+            user = await user_repo.async_get_by_id(db, user_id)
+            if not user:
+                raise ValueError("User not found")
+
+            # Map cart_id from payload if provided, else get active cart
+            cart_id = payload.get("cart_id")
+            if cart_id:
+                # Security: Ensure this cart belongs to the user
+                cart = await self.cart_repository.async_get_active_cart(db, user_id)
+                if not cart or cart.id != cart_id:
+                    raise PermissionError("Invalid cart access")
+            else:
+                cart = await self.cart_repository.async_get_active_cart(db, user_id)
+
+            if not cart or not cart.items:
+                raise ValueError("Cart is empty")
+
+            # 2. Calculate Totals Securely (Do not trust frontend prices)
+            subtotal_cents = 0
+            line_items = []
+            
+            for item in cart.items:
+                # Each item.track is already loaded via selectinload in repository
+                price = item.price_cents
+                subtotal_cents += price
+                
+                line_items.append({
+                    "price_data": {
+                        "currency": "usd",
+                        "product_data": {
+                            "name": f"{item.track.title} (AIFF)",
+                            "description": f"Artist: {item.track.display_artist or 'Various'}",
+                            "metadata": {
+                                "track_uuid": item.track.uuid,
+                                "track_id": item.track.id
+                            }
+                        },
+                        "unit_amount": price,
+                    },
+                    "quantity": 1,
+                })
+
+            # Handle Promo Codes
+            total_cents = subtotal_cents
+            discount_cents = 0
+            promo_code_id = None
+            
+            if cart.promo_code:
+                promo_code_id = cart.promo_code.id
+                # Calculate discount based on type
+                if cart.promo_code.discount_type == "percentage":
+                    discount_cents = int(subtotal_cents * (cart.promo_code.discount_value / 100))
+                else: # fixed_amount
+                    discount_cents = cart.promo_code.discount_value
+                
+                total_cents = max(0, subtotal_cents - discount_cents)
+
+            # 3. Create Pending Order
+            order_service = OrderService()
+            order = await order_service.create_pending_order(
+                db, 
+                user_id=user.id,
+                subtotal_cents=subtotal_cents,
+                total_cents=total_cents,
+                promo_code_id=promo_code_id,
+                discount_cents=discount_cents
+            )
+
+            # 4. Create Stripe Session
+            # Ensure stripe_customer_id exists
+            if not user.stripe_customer_id:
+                try:
+                    customer = stripe.Customer.create(
+                        email=user.email,
+                        name=user.name or user.username,
+                        metadata={"user_id": user.id, "user_uuid": user.uuid}
+                    )
+                    user.stripe_customer_id = customer.id
+                except Exception as e:
+                    logger.error(f"Stripe Customer creation failed: {e}")
+
+            checkout_session = stripe.checkout.Session.create(
+                customer=user.stripe_customer_id,
+                payment_method_types=["card"],
+                line_items=line_items,
+                mode="payment",
+                success_url=f"{settings.frontend_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{settings.frontend_url}/cart",
+                metadata={
+                    "internal_order_id": order.id,
+                    "user_id": user.id,
+                    "cart_id": cart.id
+                },
+                allow_promotion_codes=True
+            )
+
+            # Update order with session ID (for tracking)
+            order.stripe_session_id = checkout_session.id
+            await db.commit()
+
+            return {
+                "stripe_url": checkout_session.url,
+                "session_id": checkout_session.id,
+                "order_id": order.id
+            }
+            
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Checkout initialization failed: {str(e)}")
+            raise e

@@ -137,134 +137,27 @@ class CartController:
         Goal: Transition user to Stripe hosted checkout securely.
         """
         try:
-            # 1. Get User and active cart
-            user = await self.user_repo.async_get_by_id(db, user_id)
-            if not user:
-                return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=format_response(success=False, error="User not found")
-                )
-
-            # Map cart_id from payload if provided, else get active cart
-            cart_id = payload.get("cart_id")
-            if cart_id:
-                # Security: Ensure this cart belongs to the user
-                cart = await self.cart_repository.async_get_active_cart(db, user_id)
-                if not cart or cart.id != cart_id:
-                    return JSONResponse(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        content=format_response(success=False, error="Invalid cart access")
-                    )
-            else:
-                cart = await self.cart_repository.async_get_active_cart(db, user_id)
-
-            if not cart or not cart.items:
-                return JSONResponse(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    content=format_response(success=False, error="Cart is empty")
-                )
-
-            # 2. Calculate Totals Securely (Do not trust frontend prices)
-            subtotal_cents = 0
-            line_items = []
-            
-            for item in cart.items:
-                # Each item.track is already loaded via selectinload in repository
-                price = item.price_cents
-                subtotal_cents += price
-                
-                line_items.append({
-                    "price_data": {
-                        "currency": "usd",
-                        "product_data": {
-                            "name": f"{item.track.title} (AIFF)",
-                            "description": f"Artist: {item.track.display_artist or 'Various'}",
-                            "metadata": {
-                                "track_uuid": item.track.uuid,
-                                "track_id": item.track.id
-                            }
-                        },
-                        "unit_amount": price,
-                    },
-                    "quantity": 1,
-                })
-
-            # Handle Promo Codes (Phase 6 placeholder)
-            total_cents = subtotal_cents # For now, simple sum
-            discount_cents = 0
-            promo_code_id = None
-            
-            if cart.promo_code:
-                promo_code_id = cart.promo_code.id
-                # Calculate discount based on type
-                if cart.promo_code.discount_type == "percentage":
-                    discount_cents = int(subtotal_cents * (cart.promo_code.discount_value / 100))
-                else: # fixed_amount
-                    discount_cents = cart.promo_code.discount_value
-                
-                total_cents = max(0, subtotal_cents - discount_cents)
-
-            # 3. Create Pending Order
-            order = await self.order_service.create_pending_order(
-                db, 
-                user_id=user.id,
-                subtotal_cents=subtotal_cents,
-                total_cents=total_cents,
-                promo_code_id=promo_code_id,
-                discount_cents=discount_cents
-            )
-
-            # 4. Create Stripe Session
-            # Ensure stripe_customer_id exists
-            if not user.stripe_customer_id:
-                try:
-                    customer = stripe.Customer.create(
-                        email=user.email,
-                        name=user.name or user.username,
-                        metadata={"user_id": user.id, "user_uuid": user.uuid}
-                    )
-                    user.stripe_customer_id = customer.id
-                    # Note: We rely on the caller or a subsequent commit to save this
-                except Exception as e:
-                    logger.error(f"Stripe Customer creation failed: {e}")
-                    # Fallback to creating session without customer ID if needed, 
-                    # but usually better to have it.
-
-            checkout_session = stripe.checkout.Session.create(
-                customer=user.stripe_customer_id,
-                payment_method_types=["card"],
-                line_items=line_items,
-                mode="payment",
-                success_url=f"{settings.frontend_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{settings.frontend_url}/cart",
-                metadata={
-                    "internal_order_id": order.id,
-                    "user_id": user.id,
-                    "cart_id": cart.id
-                },
-                # allow_promotion_codes=True if not promo_code_id else False 
-                # (If we applied a local promo, we might not want them to add another in Stripe)
-                allow_promotion_codes=True
-            )
-
-            # Update order with session ID (for tracking)
-            order.stripe_session_id = checkout_session.id
-            await db.commit()
-
+            checkout_data = await self.cart_service.initiate_checkout(db, user_id, payload)
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=format_response(
                     success=True,
-                    data={
-                        "stripe_url": checkout_session.url,
-                        "session_id": checkout_session.id,
-                        "order_id": order.id
-                    }
+                    data=checkout_data
                 )
             )
-            
+        except ValueError as e:
+            error_str = str(e)
+            status_code = status.HTTP_404_NOT_FOUND if "User not found" in error_str else status.HTTP_400_BAD_REQUEST
+            return JSONResponse(
+                status_code=status_code,
+                content=format_response(success=False, error=error_str)
+            )
+        except PermissionError as e:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content=format_response(success=False, error=str(e))
+            )
         except Exception as e:
-            await db.rollback()
             logger.error(f"Checkout initialization failed: {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

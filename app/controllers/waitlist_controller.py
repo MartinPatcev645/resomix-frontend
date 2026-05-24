@@ -58,7 +58,6 @@ class WaitlistController:
             result = await self.waitlist_service.add_to_waitlist(db, email)
 
             if result.get("success"):
-                await db.commit()
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=True, data=result.get("data")
@@ -93,7 +92,6 @@ class WaitlistController:
                     status_code=status.HTTP_200_OK, content=response_content
                 )
             else:
-                await db.rollback()
                 duration_ms = (time.time() - start_time) * 1000
                 response_content = format_response(
                     success=False, error=result.get("error")
@@ -131,7 +129,6 @@ class WaitlistController:
                 )
 
         except Exception as e:
-            await db.rollback()
             duration_ms = (time.time() - start_time) * 1000
             import traceback
 
@@ -349,7 +346,6 @@ class WaitlistController:
                     ),
                 )
         except Exception:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -367,33 +363,11 @@ class WaitlistController:
     ) -> JSONResponse:
         """Delete a single waitlist entry."""
         try:
-            # 1. Get before state for audit log
-            entry_res = await self.waitlist_service.get_waitlist_entry_by_id(db, waitlist_id)
-            before_state = None
-            if entry_res.get("success") and entry_res.get("data"):
-                entry = entry_res.get("data")
-                before_state = {
-                    "id": entry.id,
-                    "email": entry.email,
-                    "status": entry.status
-                }
-
-            result = await self.waitlist_service.delete_waitlist_admin(db, waitlist_id)
+            ip_address = request.client.host if request and request.client else None
+            result = await self.waitlist_service.delete_waitlist_admin(
+                db, waitlist_id, current_admin=current_admin, ip_address=ip_address
+            )
             if result.get("success"):
-                # 2. Log administrative operation
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="waitlist.delete",
-                        target_type="waitlist",
-                        target_id=str(waitlist_id),
-                        before_state=before_state,
-                        after_state=None,
-                        ip_address=request.client.host if request and request.client else None
-                    )
-                await db.commit()
-
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content=format_response(
@@ -404,11 +378,10 @@ class WaitlistController:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
-                        success=False, error="Waitlist entry not found"
+                        success=False, error=result.get("error")
                     ),
                 )
         except Exception as e:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -426,38 +399,29 @@ class WaitlistController:
     ) -> JSONResponse:
         """Delete multiple waitlist entries."""
         try:
+            ip_address = request.client.host if request and request.client else None
             result = await self.waitlist_service.batch_delete_waitlist_admin(
-                db, waitlist_ids
+                db, waitlist_ids, current_admin=current_admin, ip_address=ip_address
             )
             
-            if result.get("success") and current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="waitlist.batch_delete",
-                    target_type="waitlist",
-                    target_id="batch",
-                    before_state={"ids": waitlist_ids},
-                    after_state={"deleted_count": result.get("deleted_count")},
-                    ip_address=request.client.host if request and request.client else None
-                )
             if result.get("success"):
-                await db.commit()
-
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={
-                    "success": result.get("success"),
-                    "deleted_count": result.get("deleted_count", 0),
-                    "message": (
-                        result.get("message", "Error during batch delete")
-                        if result.get("success")
-                        else "Failed to complete batch delete operation"
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={
+                        "success": True,
+                        "deleted_count": result.get("deleted_count", 0),
+                        "message": result.get("message"),
+                    },
+                )
+            else:
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content=format_response(
+                        success=False,
+                        error=result.get("error", "Failed to complete batch delete operation"),
                     ),
-                },
-            )
+                )
         except Exception:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -476,33 +440,12 @@ class WaitlistController:
     ) -> JSONResponse:
         """Update waitlist status for admin."""
         try:
-            # 1. Get before state
-            entry_res = await self.waitlist_service.get_waitlist_entry_by_id(db, waitlist_id)
-            before_state = None
-            if entry_res.get("success") and entry_res.get("data"):
-                entry = entry_res.get("data")
-                before_state = {"status": entry.status}
-
+            ip_address = request.client.host if request and request.client else None
             result = await self.waitlist_service.update_waitlist_status_admin(
-                db, waitlist_id, status_value
+                db, waitlist_id, status_value, current_admin=current_admin, ip_address=ip_address
             )
             if result.get("success"):
                 waitlist = result.get("data")
-                
-                # 2. Log administrative operation
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="waitlist.update_status",
-                        target_type="waitlist",
-                        target_id=str(waitlist_id),
-                        before_state=before_state,
-                        after_state={"status": status_value},
-                        ip_address=request.client.host if request and request.client else None
-                    )
-                await db.commit()
-
                 waitlist_data = {
                     "id": waitlist.id,
                     "email": waitlist.email,
@@ -526,11 +469,10 @@ class WaitlistController:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(
-                        success=False, error="Waitlist entry not found"
+                        success=False, error=result.get("error")
                     ),
                 )
         except Exception:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(
@@ -548,20 +490,11 @@ class WaitlistController:
     ) -> JSONResponse:
         """Export waitlist to CSV and return download URL."""
         try:
-            result = await self.waitlist_service.export_waitlist_csv_admin(db, filters)
-            if result.get("success") and current_admin:
-                await self.admin_log_service.log_operation(
-                    db=db,
-                    admin_user_id=current_admin.id,
-                    action="waitlist.export",
-                    target_type="waitlist",
-                    target_id="csv",
-                    before_state=filters,
-                    after_state={"download_url": result.get("download_url")},
-                    ip_address=request.client.host if request and request.client else None
-                )
+            ip_address = request.client.host if request and request.client else None
+            result = await self.waitlist_service.export_waitlist_csv_admin(
+                db, filters, current_admin=current_admin, ip_address=ip_address
+            )
             if result.get("success"):
-                await db.commit()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
                     content={
@@ -575,11 +508,10 @@ class WaitlistController:
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(
-                        success=False, error="Failed to export waitlist data"
+                        success=False, error=result.get("error")
                     ),
                 )
         except Exception:
-            await db.rollback()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(

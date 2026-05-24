@@ -159,24 +159,16 @@ class OpenTracksPipelineController:
         
         # STEP 0: Check if this path already exists in database (duplicate check)
         try:
-            from app.models.audio_file import AudioFile
-            from sqlalchemy import select, func
+            from app.repositories.track_repository import TrackRepository
             
-            # Use ORM select which automatically applies partner isolation via listener
-            stmt = select(func.count(AudioFile.id)).where(AudioFile.stored_path == path)
-            
-            # Explicitly scope by partner_id if provided (as a fallback/safety)
-            if partner_id is not None:
-                stmt = stmt.where(AudioFile.partner_id == partner_id)
-            else:
-                # Fallback to context
+            partner_id_resolved = partner_id
+            if partner_id_resolved is None:
                 from app.core.context import get_current_partner_id
-                pid = get_current_partner_id()
-                if pid is not None:
-                    stmt = stmt.where(AudioFile.partner_id == pid)
+                partner_id_resolved = get_current_partner_id()
                 
-            check_result = await db.execute(stmt)
-            count = check_result.scalar()
+            count = await TrackRepository().async_get_audio_file_count_by_path(
+                db, path=path, partner_id=partner_id_resolved
+            )
             
             if count and count > 0:
                 duration_ms = (time.time() - start_time) * 1000

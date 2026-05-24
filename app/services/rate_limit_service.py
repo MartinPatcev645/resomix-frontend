@@ -87,11 +87,16 @@ end
 return {1, new_val}
 """
 
+from app.repositories.partner_quota_repository import PartnerQuotaRepository
+
 class RateLimitService:
     """
     Dual-layer rate limiting service for B2B Partners.
     Evaluates both short-term burst limits and long-term monthly quotas.
     """
+
+    def __init__(self) -> None:
+        self.partner_quota_repo = PartnerQuotaRepository()
 
     async def check_rate_limits(
         self, 
@@ -144,7 +149,7 @@ class RateLimitService:
                 
                 if not burst_allowed:
                     return False, "RATE_LIMIT_EXCEEDED", wait_time
-
+ 
                 # 2. Evaluate Layer 2 (Monthly Quota)
                 # Use current year-month for the Redis key
                 month_str = time.strftime("%Y-%m")
@@ -158,7 +163,7 @@ class RateLimitService:
                     # Set the value in Redis only if it still doesn't exist (NX)
                     # Use 35-day TTL to ensure it survives the month
                     await client.set(quota_key, db_usage, ex=35*86400, nx=True)
-
+ 
                 # Execute Lua script for atomic quota increment
                 # Returns [allowed_int, current_usage]
                 res_quota = await client.eval(
@@ -172,31 +177,22 @@ class RateLimitService:
                 
                 if not bool(allowed_quota_int):
                     return False, "QUOTA_EXCEEDED", None
-
+ 
                 return True, "", None
         except Exception as e:
             logger.error(f"Rate limit service error: {e}", exc_info=True)
             # Fail open to ensure availability if Redis is flapping
             return True, "", None
-
+ 
     async def _get_db_usage(self, db: AsyncSession, api_key_id: int, year_month: str) -> int:
         """Helper to get current month usage from MariaDB."""
-        from sqlalchemy import text
         from datetime import date
         
         try:
             year, month = map(int, year_month.split("-"))
             period_start = date(year, month, 1)
             
-            from app.models.partner import PartnerQuota
-            from sqlalchemy import select
-            
-            stmt = select(PartnerQuota.requests_made).where(
-                PartnerQuota.api_key_id == api_key_id,
-                PartnerQuota.period_start == period_start
-            )
-            result = await db.execute(stmt)
-            return result.scalar() or 0
+            return await self.partner_quota_repo.async_get_quota_usage(db, api_key_id, period_start)
         except Exception as e:
             logger.error(f"Failed to warm quota cache from DB: {e}")
             return 0
