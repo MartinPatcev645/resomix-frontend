@@ -95,6 +95,10 @@ class PartnerService:
             db, skip, page_size, tier, is_active
         )
 
+    async def get_partner(self, db: AsyncSession, partner_id: int) -> Optional[Partner]:
+        """Get a single partner by ID."""
+        return await self.partner_repo.async_get_by_id(db, partner_id)
+
     async def update_partner(
         self, db: AsyncSession, partner_id: int, request: PartnerUpdateRequest
     ) -> Optional[Partner]:
@@ -399,7 +403,7 @@ class PartnerService:
                     await db.execute(
                         stmt,
                         {
-                            "pid": pid,
+                            "pid": api_key.partner_id,  # Use guaranteed valid partner_id from database record
                             "akid": akid,
                             "start": period_start,
                             "end": period_end,
@@ -408,10 +412,12 @@ class PartnerService:
                         },
                     )
 
+                    await db.commit()
                     stats["updated"] += 1
 
                 except Exception as e:
                     logger.error(f"Error syncing quota for key {key}: {e}")
+                    await db.rollback()
                     stats["errors"] += 1
 
             await db.commit()
