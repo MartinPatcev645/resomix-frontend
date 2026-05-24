@@ -39,6 +39,7 @@ from app.api.middlewares.idempotency import IdempotencyMiddleware
 from app.observability import TimingMiddleware
 from app.api.middlewares.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+import time
 
 # Import all routers
 from app.api.routers import all_routers
@@ -152,6 +153,7 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     Lifespan manager for FastAPI application startup and shutdown.
     Initializes external services on startup and cleans up on shutdown.
     """
+    app_instance.state.start_time = time.time()
     print("Application startup: Initializing external services via lifespan...")
 
     # Test MariaDB database connection
