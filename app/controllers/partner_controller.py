@@ -33,6 +33,7 @@ from app.schemas.partner import (
     SftpProvisionRequest,
     SftpProvisionResponse,
     SftpStatusResponse,
+    SftpStatusDetail,
 )
 from app.utils.response_utils import format_response
 from app.services.sftp_service import SftpService
@@ -85,8 +86,10 @@ class PartnerController:
                 )),
             )
 
-    async def get_partner(self, db: AsyncSession, partner_id: int) -> JSONResponse:
-        """Get a single partner by ID."""
+    async def get_partner(
+        self, db: AsyncSession, partner_id: int, current_admin: Optional[User] = None
+    ) -> JSONResponse:
+        """Get partner details by ID."""
         try:
             partner = await self.partner_service.get_partner(db, partner_id)
             if not partner:
@@ -105,7 +108,7 @@ class PartnerController:
             logger.error(f"Failed to get partner: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=jsonable_encoder(format_response(success=False, error="Failed to get partner")),
+                content=jsonable_encoder(format_response(success=False, error="Failed to retrieve partner")),
             )
 
     async def update_partner(
@@ -393,24 +396,31 @@ class PartnerController:
         try:
             sftp_user = await sftp_user_repo.get_by_partner_id(db, partner_id)
             if not sftp_user:
+                detail = SftpStatusDetail(
+                    provisioned=False,
+                    host=None,
+                    port=None,
+                    username=None,
+                    last_provisioned_at=None
+                )
+                response_data = SftpStatusResponse(success=True, data=detail)
                 return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=jsonable_encoder(format_response(success=False, error="SFTP access not provisioned for this partner")),
+                    status_code=status.HTTP_200_OK,
+                    content=jsonable_encoder(response_data.model_dump()),
                 )
                 
-            response_data = SftpStatusResponse(
-                sftp_user_id=sftp_user.id,
+            detail = SftpStatusDetail(
+                provisioned=True,
+                host=settings.sftp_server_host,
+                port=settings.sftp_server_port,
                 username=sftp_user.username,
-                is_active=sftp_user.is_active,
-                use_public_key=sftp_user.use_public_key,
-                has_allowed_ip=bool(sftp_user.allowed_ip),
-                sftp_provisioned_at=sftp_user.sftp_provisioned_at,
-                home_dir=sftp_user.sftp_home_dir
+                last_provisioned_at=sftp_user.sftp_provisioned_at
             )
+            response_data = SftpStatusResponse(success=True, data=detail)
             
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content=jsonable_encoder(format_response(success=True, data=response_data.model_dump())),
+                content=jsonable_encoder(response_data.model_dump()),
             )
         except Exception as e:
             logger.error(f"Failed to get partner SFTP status: {e}")
@@ -425,24 +435,34 @@ class PartnerController:
         """Retry Hetzner provisioning for a partner."""
         ip_address = request.client.host if request and request.client else None
         try:
-            sftp_user = await self.sftp_service.retry_provisioning(
-                db=db,
-                partner_id=partner_id,
-                current_admin=current_admin,
-                ip_address=ip_address
-            )
-            response_data = SftpStatusResponse(
-                sftp_user_id=sftp_user.id,
+            sftp_user = await self.sftp_service.retry_provisioning(db, partner_id)
+            
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.sftp_retry",
+                    target_type="sftp_user",
+                    target_id=str(sftp_user.id),
+                    before_state=None,
+                    after_state={"partner_id": partner_id},
+                    ip_address=request.client.host if request and request.client else None
+                )
+                
+            await db.commit()
+            
+            detail = SftpStatusDetail(
+                provisioned=True,
+                host=settings.sftp_server_host,
+                port=settings.sftp_server_port,
                 username=sftp_user.username,
-                is_active=sftp_user.is_active,
-                use_public_key=sftp_user.use_public_key,
-                has_allowed_ip=bool(sftp_user.allowed_ip),
-                sftp_provisioned_at=sftp_user.sftp_provisioned_at,
-                home_dir=sftp_user.sftp_home_dir
+                last_provisioned_at=sftp_user.sftp_provisioned_at
             )
+            response_data = SftpStatusResponse(success=True, data=detail)
+            
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content=jsonable_encoder(format_response(success=True, data=response_data.model_dump())),
+                content=jsonable_encoder(response_data.model_dump()),
             )
         except ValueError as e:
             return JSONResponse(

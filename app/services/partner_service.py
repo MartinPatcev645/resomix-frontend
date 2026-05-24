@@ -117,8 +117,12 @@ class PartnerService:
             db, skip, page_size, tier, is_active
         )
 
-    async def get_partner(self, db: AsyncSession, partner_id: int) -> Optional[Partner]:
-        """Get a single partner by ID."""
+    async def get_partner(
+        self,
+        db: AsyncSession,
+        partner_id: int,
+    ) -> Optional[Partner]:
+        """Get a single partner's details by ID."""
         return await self.partner_repo.async_get_by_id(db, partner_id)
 
     async def update_partner(

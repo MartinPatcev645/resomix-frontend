@@ -119,7 +119,7 @@ async def upsert_user_operation_limit(
     force: bool = Query(False, description="Force overwrite even if limit exists"),
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
-    _: User = Depends(require_permission("operation_limits:manage"))
+    _: User = Depends(require_permission("operation_limit:manage"))
 ) -> JSONResponse:
     return await controller.upsert_user_operation_limit(
         db=db,
@@ -146,7 +146,7 @@ async def delete_user_operation_limit(
     operation_code: str = Path(..., description="Operation code"),
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
-    _: User = Depends(require_permission("operation_limits:manage"))
+    _: User = Depends(require_permission("operation_limit:manage"))
 ) -> JSONResponse:
     return await controller.delete_user_operation_limit(
         db=db,
