@@ -19,7 +19,7 @@ import time
 from fastapi import APIRouter, Request
 from database.connection import async_engine
 from sqlalchemy import text
-from app.db.redis import _redis_pool
+import app.db.redis as redis_module
 import redis.asyncio as aioredis
 from app.core.config import settings
 
@@ -65,9 +65,15 @@ async def health_check(request: Request):
 
     # 3. Check Redis pool
     redis_status = "unhealthy"
-    if _redis_pool is not None:
+    if redis_module._redis_pool is None:
         try:
-            client = aioredis.Redis(connection_pool=_redis_pool)
+            await redis_module.init_redis_pool()
+        except Exception:
+            pass
+
+    if redis_module._redis_pool is not None:
+        try:
+            client = aioredis.Redis(connection_pool=redis_module._redis_pool)
             await client.ping()
             redis_status = "healthy"
             await client.close()
