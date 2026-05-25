@@ -317,3 +317,177 @@ The B2B Partner API utilizes standard HTTP status codes combined with specific d
 | **`429 Too Many Requests`** | `Rate limit exceeded` | Client exceeded local burst rate per second (Layer 1 limits). | Throttle client calls; respect the `Retry-After` header. |
 | **`429 Too Many Requests`** | `Monthly quota exceeded` | Client reached organizational volume limits (Layer 2 limits). | Upgrade tier or contact partner representative to buy overages. |
 | **`503 Service Unavailable`** | `Similarity service is currently unavailable` | Internal FAISS index engine or indexing worker is offline. | Wait 30 seconds and retry. If persistent, check `status.resomix.com`. |
+
+---
+
+## 5. Integrating with Custom Frontends (Cloudflare Pages, React, Vue)
+
+To deploy these docs with maximum performance (instant load times under Cloudflare Pages) and professional custom branding (white-labeled, removing the "Powered by Scalar" elements), you can utilize either the raw exported `openapi.json` file or render it programmatically via a frontend framework library.
+
+### Exported Specification File
+The generator script generates two outputs inside `api_docs/`:
+1. `index.html` - Self-contained HTML with the interactive OpenAPI documentation.
+2. `openapi.json` - Raw, pre-filtered, optimized OpenAPI 3.1.0 JSON schema.
+
+---
+
+### A. Static HTML / CDN White-Labeled Integration
+If you are hosting static pages on Cloudflare Pages, you can use the CDN approach while using the JavaScript API to completely strip all "Powered by Scalar" branding and configure custom styles.
+
+Create a static `index.html` file in your hosting folder:
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Resomix Developer Center</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Container where the reference renders -->
+    <div id="api-reference"></div>
+
+    <!-- Include Scalar CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script>
+      // Fetch local openapi.json to avoid external API dependencies/lag
+      fetch('./openapi.json')
+        .then(response => response.json())
+        .then(schema => {
+          const apiRef = typeof Scalar !== 'undefined' ? Scalar : scalar;
+          apiRef.createApiReference(document.getElementById('api-reference'), {
+            spec: {
+              data: schema
+            },
+            theme: 'moon',
+            showSidebar: true,
+            customCss: `
+              /* 100% White-labeling: completely hide the attribution footer */
+              .scalar-footer,
+              .powered-by-scalar,
+              .scalar-powered-by,
+              .references-footer {
+                display: none !important;
+              }
+            `
+          });
+        })
+        .catch(err => console.error("Error loading openapi.json: ", err));
+    </script>
+  </body>
+</html>
+```
+
+---
+
+### B. React Framework Integration
+If your dashboard/documentation portal is built with React, you can import `openapi.json` locally and render it with Scalar's React library. This bundles all styling and components inside your production package, achieving **sub-millisecond local loading speeds** on Cloudflare Pages.
+
+1. **Install the package**:
+   ```bash
+   npm install @scalar/api-reference
+   ```
+
+2. **Render the Component**:
+   ```tsx
+   import React from 'react';
+   import { ApiReferenceReact } from '@scalar/api-reference';
+   import '@scalar/api-reference/style.css';
+   import openapiSchema from './openapi.json'; // Direct local import
+
+   export default function ApiDocs() {
+     return (
+       <div className="resomix-docs-container">
+         <ApiReferenceReact
+           configuration={{
+             spec: {
+               data: openapiSchema,
+             },
+             theme: 'moon',
+             showSidebar: true,
+             customCss: `
+               /* White-label styling */
+               .scalar-footer,
+               .powered-by-scalar,
+               .scalar-powered-by,
+               .references-footer {
+                 display: none !important;
+               }
+             `,
+           }}
+         />
+       </div>
+     );
+   }
+   ```
+
+---
+
+### C. Vue 3 Framework Integration
+If you are building your application with Vue 3 (Vite / Nuxt), you can similarly load the reference programmatically to avoid CDN latency and ensure native white-labeled branding.
+
+1. **Install the package**:
+   ```bash
+   npm install @scalar/api-reference
+   ```
+
+2. **Render the Component (`ApiDocs.vue`)**:
+   ```vue
+   <script setup>
+   import { ApiReference } from '@scalar/api-reference'
+   import '@scalar/api-reference/style.css'
+   import openapiSchema from './openapi.json' // Direct local import
+   
+   const configuration = {
+     spec: {
+       data: openapiSchema,
+     },
+     theme: 'moon',
+     showSidebar: true,
+     customCss: `
+       /* White-label styling */
+       .scalar-footer,
+       .powered-by-scalar,
+       .scalar-powered-by,
+       .references-footer {
+         display: none !important;
+       }
+     `
+   }
+   </script>
+   
+   <template>
+     <div class="resomix-docs-wrapper">
+       <ApiReference :configuration="configuration" />
+     </div>
+   </template>
+   
+   <style>
+   .resomix-docs-wrapper {
+     width: 100vw;
+     height: 100vh;
+   }
+   </style>
+   ```
+
+---
+
+### 6. Development & Schema Extraction
+
+Whenever you add or update routes in the FastAPI backend, you can regenerate both the standalone HTML reference and the raw `openapi.json` file by executing the following script from the project root:
+
+```bash
+# Make sure your virtual environment is activated
+source .venv/bin/activate
+
+# Run the generator
+python scripts/generate_openapi_of_endpoints.py
+```
+

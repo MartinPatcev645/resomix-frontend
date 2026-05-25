@@ -117,7 +117,11 @@ for path, path_item in openapi_schema["paths"].items():
 
 os.makedirs("api_docs", exist_ok=True)
 
-# Generate Self-Contained Scalar HTML
+# Generate raw OpenAPI JSON schema for framework & onboarding export
+with open("api_docs/openapi.json", "w") as f:
+    json.dump(openapi_schema, f, indent=2)
+
+# Generate Self-Contained and White-Labeled Scalar HTML
 html_content = f"""<!DOCTYPE html>
 <html>
   <head>
@@ -132,13 +136,31 @@ html_content = f"""<!DOCTYPE html>
     </style>
   </head>
   <body>
-    <!-- Inline the OpenAPI spec to avoid CORS and local file loading issues -->
-    <script 
-      id="api-reference" 
-      type="application/json"
-      data-theme="moon">{json.dumps(openapi_schema, indent=2)}</script>
+    <!-- Container where Scalar API reference will mount -->
+    <div id="api-reference"></div>
+
     <!-- Include Scalar CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script>
+      const spec = {json.dumps(openapi_schema, indent=2)};
+      const apiRef = typeof Scalar !== 'undefined' ? Scalar : scalar;
+      apiRef.createApiReference(document.getElementById('api-reference'), {{
+        spec: {{
+          data: spec
+        }},
+        theme: 'moon',
+        showSidebar: true,
+        customCss: `
+          /* White-labeling: completely hide the "Powered by Scalar" footer and branding elements */
+          .scalar-footer,
+          .powered-by-scalar,
+          .scalar-powered-by,
+          .references-footer {{
+            display: none !important;
+          }}
+        `
+      }});
+    </script>
   </body>
 </html>
 """
@@ -146,8 +168,4 @@ html_content = f"""<!DOCTYPE html>
 with open("api_docs/index.html", "w") as f:
     f.write(html_content)
 
-# Clean up old openapi.json if it exists
-if os.path.exists("api_docs/openapi.json"):
-    os.remove("api_docs/openapi.json")
-
-print("Generated complete api_docs/index.html successfully.")
+print("Generated complete api_docs/index.html and api_docs/openapi.json successfully.")

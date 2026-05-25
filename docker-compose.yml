@@ -64,6 +64,31 @@ services:
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload" ]
     profiles: [ "api" ]
 
+  # Celery webhook dispatcher worker — mirrors the api service but overrides the command.
+  # Local dev: use `make worker` instead (runs outside Docker, same as `make api`).
+  # Docker dev/prod: `docker compose --profile worker up -d celery_worker`
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resomix-celery-worker
+    env_file:
+      - .env
+    environment:
+      MARIA_DB_HOST: mariadb
+      MARIA_DB_PORT: 3306
+      REDIS_URL: redis://redis:6379/0
+      RESOMIX_API_KEY: ${RESOMIX_API_KEY:-dev-key}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info"]
+    profiles: ["worker", "api"]
+
   redis:
     image: redis:7.2-alpine
     container_name: resomix-redis

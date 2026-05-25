@@ -28,6 +28,7 @@
 - `test_models.py` — Standalone script for verifying all SQLAlchemy model imports and table mappings.
 - `test_output.txt` — Saved snapshot of a previous `pytest` run output kept for reference.
 - `transition.md` — Migration notes documenting the move from the MongoDB-based architecture to MariaDB.
+- `DOCS_GENERATION.md` — Guide explaining how the B2B Partner API documentation is generated, updated, and configured.
 - `transition_stripe.md` — Notes documenting the Stripe payment gateway integration and migration plan.
 
 ---
@@ -36,7 +37,15 @@
 
 - `alembic/env.py` — Configures Alembic to connect to the app's SQLAlchemy models and DB URL for migrations.
 - `alembic/versions/b4d71a1d2df0_initial_schema_from_new_database_sql.py` — Initial Alembic migration that executes the canonical SQL file to create all database tables.
+- `alembic/versions/ef7999c3c2ca_add_stripe_columns.py` — Database migration adding Stripe customer and subscription ID columns to the partners table.
 - `alembic/versions/schema.sql` — Full SQL DDL file executed by the initial Alembic migration to build the entire schema.
+
+---
+
+## api_docs/
+
+- `api_docs/README.md` — Markdown file containing the introductory text and integration guides for B2B Partner API documentation.
+- `api_docs/index.html` — The final static API documentation page containing the complete Scalar UI and inlined OpenAPI schema.
 
 ---
 
@@ -138,7 +147,6 @@
 - `app/controllers/preview_controller.py` — Serves HLS audio preview clips by resolving file paths for each track.
 - `app/controllers/purchase_controller.py` — Processes track/release purchases and records order transactions.
 - `app/controllers/rating_controller.py` — Handles track and playlist rating submissions and aggregate retrieval.
-- `app/controllers/role_controller.py` — Fetches all roles and system permissions for display in the admin UI.
 - `app/controllers/search_controller.py` — Routes search queries to DB or vector engine and formats ranked results.
 - `app/controllers/similarity_controller.py` — Dispatches similarity queries to the external microservice and returns ranked results.
 - `app/controllers/spotify_app_controller.py` — Manages per-partner Spotify OAuth app credentials for multi-app support.
@@ -216,6 +224,7 @@
 - `app/repositories/log_repository.py` — Data access methods for system_logs and admin_operation_logs tables.
 - `app/repositories/operation_limit_repository.py` — Data access methods for operation types and per-user limit configuration records.
 - `app/repositories/order_repository.py` — Data access methods for order and purchase records.
+- `app/repositories/partner_quota_repository.py` — Data access methods for managing partner monthly quotas, usage logs, and upsert operations.
 - `app/repositories/partner_repository.py` — Data access methods for partner tenant and API key records, including bulk key deletion.
 - `app/repositories/playlist_engagement_repository.py` — Data access methods for playlist engagement event records.
 - `app/repositories/playlist_repository.py` — Data access methods for playlist CRUD, track management, and fork operations.
@@ -300,19 +309,29 @@
 - `app/services/quota_worker.py` — Background worker that syncs Redis partner quota counters into the `partner_quotas` DB table.
 - `app/services/rate_limit_service.py` — Evaluates and enforces partner API rate limits: RPS token bucket and monthly cap.
 - `app/services/rating_service.py` — Creates, updates, and retrieves track and playlist rating records.
+- `app/services/role_service.py` — Service for administrative RBAC operations including role listings and permission updates.
 - `app/services/search_service.py` — Routes full-text and metadata search queries to MariaDB or Elasticsearch and ranks results.
 - `app/services/sftp_service.py` — Manages SFTP user provisioning on Hetzner and Alwyzon hosting via their APIs.
 - `app/services/similarity_segment.py` — Splits long tracks into time segments for similarity indexing and granular matching.
 - `app/services/similarity_service.py` — Proxies audio similarity search requests to the external similarity microservice.
 - `app/services/spotify_app_service.py` — Manages storage and retrieval of per-partner Spotify OAuth app credentials.
 - `app/services/spotify_transfer_service.py` — Exports user playlists to Spotify using the Spotify Web API with multi-app support.
+- `app/services/stripe_b2b_service.py` — Handles B2B subscription lifecycle, Stripe customer integration, VIES VAT checks, and checkout session generation.
 - `app/services/telemetry_service.py` — Queues playback events into Redis for batch flush to the database by the worker.
 - `app/services/telemetry_worker.py` — Background worker that flushes batched telemetry events from Redis into MariaDB.
 - `app/services/tidal_transfer_service.py` — Exports user playlists to Tidal using the Tidal partner API.
 - `app/services/track_service.py` — Business logic for fetching, filtering, and paginating catalog track records.
 - `app/services/track_upload_service.py` — Handles uploaded audio files: antivirus scan, FFprobe validation, and DB insertion.
 - `app/services/user_service.py` — Business logic for user profile management, password changes, and account deactivation.
+- `app/services/vies_service.py` — Validates European Union VAT numbers using the official European Commission VIES REST API.
 - `app/services/waitlist_service.py` — Processes waitlist signups, checks for duplicates, and supports admin approval.
+- `app/services/webhook_service.py` — Manages external webhooks, signature verification, idempotency logic, and platform events.
+
+### app/tasks/
+
+- `app/tasks/__init__.py` — Package marker for async worker Celery tasks.
+- `app/tasks/celery_app.py` — Configures the Celery application with Redis broker and result backend.
+- `app/tasks/webhooks.py` — Background Celery tasks for delivering HMAC-SHA256 signed partner webhooks with exponential-backoff retries.
 
 ### app/templates/
 
@@ -397,6 +416,7 @@
 - `docs/GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md` — Frontend guide for fetching and displaying all playlists for the authenticated user.
 - `docs/MODEL_ALIGNMENT_PLAN.md` — Plan for aligning all SQLAlchemy ORM models with the canonical database schema.
 - `docs/OPEN_TRACKS_PIPELINE_SETUP.md` — Guide for setting up and running the open/free tracks bulk import pipeline.
+- `docs/PARTNER_DETAILS_API.md` — Integration guide for the GET single partner administrative API endpoint.
 - `docs/PLAYLIST_ENGAGEMENT_IMPLEMENTATION.md` — Implementation notes for the playlist engagement tracking feature.
 - `docs/PLAYLIST_FORK_FRONTEND_GUIDE.md` — Frontend integration guide for the playlist forking (copy) feature.
 - `docs/PLAYLIST_FORK_IMPLEMENTATION_GUIDE.md` — Backend implementation guide for the playlist fork endpoint and service layer.
@@ -433,10 +453,13 @@
 - `docs/may_2026/w1_phase2_implementation_guide.md` — Implementation guide for Week 1 Phase 2 deliverables.
 - `docs/may_2026/w2_implementation_plan.md` — Implementation plan for Week 2 features and deliverables.
 - `docs/may_2026/w2_phase_2_implementation.md` — Detailed implementation guide for Week 2 Phase 2 features.
+- `docs/may_2026/temp_status.md` — Temporary status assessment tracking completed and pending features.
+- `docs/may_2026/temp_status_actual.md` — Comprehensive actual status report verifying code coverage, DB configurations, and server/infrastructure checklist details.
 - `docs/may_2026/w2_sftp_provisioning_plan.md` — Detailed 4-phase plan for implementing automated SFTP provisioning for B2B partners.
 - `docs/may_2026/workflow.md` — Sprint workflow and team collaboration process documentation.
 - `docs/may_2026/workflow_resomix.png` — Visual diagram of the end-to-end Resomix workflow for the May 2026 sprint.
 - `docs/resomix_alwyzon.md` — Documentation for the Alwyzon SFTP hosting service integration.
+- `docs/restore_runbook.md` — Disaster Recovery and database restoration runbook outlining backups, RPO/RTO parameters, and restoration drills.
 - `docs/stress.md` — Notes and results from load and stress testing the API under concurrent traffic.
 - `docs/technical/1.Digital_suuply_chain.md` — Technical notes on the digital music supply chain: DDEX, distributors, and rights flow.
 - `docs/technical/2.Copyright_Liability.md` — Technical notes on copyright liability management and rights clearance.
@@ -458,6 +481,7 @@
 ## scratch/ *(one-off debug and investigation scripts)*
 
 - `scratch/check_db.py` — One-off script for checking database connectivity and basic query execution.
+- `scratch/check_partners.py` — One-off script to query and display partner records and their API key associations in the database.
 - `scratch/debug_login.py` — Debug script for tracing authentication failures during the login flow.
 - `scratch/debug_types.py` — Debug script for inspecting SQLAlchemy column type mappings and model definitions.
 - `scratch/debug_uuid.py` — Debug script for troubleshooting UUID generation and binary/string storage issues.
@@ -469,6 +493,8 @@
 - `scratch/sanity_check.py` — Quick sanity-check script verifying the app starts and core routes respond correctly.
 - `scratch/simulate_load.py` — Script that sends concurrent requests to simulate API load and measure throughput.
 - `scratch/test_imports_phase1.py` — Verifies all Phase 1 module imports (models, services, repos) load cleanly.
+- `scratch/test_partner.py` — Sandbox script to quickly test partner model initialization and database save operations.
+- `scratch/test_sftp_status.py` — One-off script testing SFTP service status queries and API response validation.
 - `scratch/update_db_constraints.py` — One-off script for applying FK constraint updates directly to an existing database.
 - `scratch/verify_ingestion_db.py` — Verifies that ingested tracks, releases, and contributors were written correctly to the DB.
 
@@ -478,11 +504,13 @@
 
 - `scripts/__init__.py` — Package marker for the scripts directory.
 - `scripts/apple_music_backend (1).py` — Draft/prototype script for the Apple Music backend integration (pre-production).
+- `scripts/backup_restore.sh` — Shell script executing database and media asset backups and mounting offsite Storage Boxes.
 - `scripts/cleanup_exports.py` — Deletes stale audio export files older than the configured retention period.
 - `scripts/duration/error.txt` — Error log from a previous run of the track duration backfill script.
 - `scripts/duration/update_all_durations.py` — Backfills missing track duration values in the DB using FFprobe analysis.
 - `scripts/extract_production_data.py` — Extracts a sanitised subset of production data for safe local development use.
 - `scripts/extracted_track_info.json` — JSON file of extracted track metadata used as the primary catalog seed data source.
+- `scripts/generate_openapi_of_endpoints.py` — Generates a self-contained B2B OpenAPI reference static HTML file from the running FastAPI application.
 - `scripts/hls/hls_segment.txt` — Sample HLS segment text used for HLS streaming integration tests.
 - `scripts/hls/response_updated.json` — Recorded API response JSON from an HLS-related endpoint test run.
 - `scripts/hls/update_duration.py` — Script for updating HLS segment duration values stored in the database.
@@ -499,6 +527,8 @@
 - `scripts/playlist/count_and_play_time.py` — Calculates total track count and cumulative play time for each playlist.
 - `scripts/seed_data.py` — Main database seeder: clears all tables and re-populates with consistent development data.
 - `scripts/seed_rbac.py` — Idempotent script to seed RBAC roles and permissions from `app.core.rbac` definitions.
+- `scripts/seed_sandbox_catalog.py` — Main sandbox database seeder: inserts 700 CC BY 4.0 tracks and registers the public sandbox key `rmx_sandbox_demo_1234567890`.
+- `scripts/setup_stripe.py` — Automates the registration of Resomix B2B pricing products and subscription rates inside the Stripe dashboard.
 - `scripts/tracks_seed.json` — Current JSON seed file of sample tracks used for local dev database seeding.
 - `scripts/tracks_seed_backup.json` — Backup of the tracks seed JSON file before its last update.
 
@@ -508,6 +538,7 @@
 
 - `tests/__init__.py` — Package marker for the root tests directory.
 - `tests/conftest.py` — Shared pytest fixtures: async DB sessions, test client, seeded users, and auth headers.
+- `tests/test_weekly_gate.py` — Clean weekly integration regression suite checking all Week 1-5 deliverables.
 
 ### tests/api/
 

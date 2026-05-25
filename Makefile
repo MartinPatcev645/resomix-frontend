@@ -1,7 +1,7 @@
-.PHONY: up down logs db migrate seed clear-db api test fmt lint help
+.PHONY: up down logs db migrate seed clear-db api worker test fmt lint help
 
 up:
-	docker compose up -d mariadb
+	docker compose up -d mariadb redis
 
 down:
 	docker compose down
@@ -24,6 +24,9 @@ clear-db:
 api:
 	uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
+worker:
+	celery -A app.tasks.celery_app worker --loglevel=info
+
 test:
 	pytest -q
 
@@ -35,14 +38,19 @@ lint:
 
 help:
 	@echo "Resomix Development Commands:"
-	@echo "  make up       - Start MariaDB in Docker"
+	@echo "Resomix Development Commands:"
+	@echo "  make up       - Start MariaDB + Redis in Docker"
 	@echo "  make down     - Stop all Docker services"
 	@echo "  make logs     - View Docker logs"
 	@echo "  make db       - Connect to MariaDB CLI"
 	@echo "  make migrate  - Run database migrations"
 	@echo "  make seed     - Run migrations + seed sample data"
 	@echo "  make clear-db - Clear all data from database (WARNING: destructive)"
-	@echo "  make api      - Start API server with hot-reload"
+	@echo "  make api      - Start API server with hot-reload (local, no Docker)"
+	@echo "  make worker   - Start Celery webhook worker (local, no Docker)"
 	@echo "  make test     - Run test suite"
 	@echo "  make fmt      - Format code (black + isort)"
 	@echo "  make lint     - Lint code (ruff)"
+	@echo ""
+	@echo "Docker Celery worker (alternative to 'make worker'):"
+	@echo "  docker compose --profile worker up -d celery_worker"
