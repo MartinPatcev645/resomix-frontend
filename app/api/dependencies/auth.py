@@ -22,6 +22,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 from sqlalchemy.ext.asyncio import AsyncSession
+from database.connection import AsyncSessionLocal
 
 from app.core.config import settings
 from app.core.security import decode_token

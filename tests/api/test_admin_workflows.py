@@ -221,3 +221,14 @@ async def test_admin_security_enforcement():
         assert res.status_code in [401, 403]
         res = await ac.get("/api/v1/admin/waitlist/", headers={"X-API-KEY": "wrong"})
         assert res.status_code == 403
+
+        # Ensure query parameters are blocked for administrative keys (Best Practice)
+        res = await ac.get(f"/api/v1/admin/waitlist/?api_key={settings.api_key}")
+        assert res.status_code == 403
+
+        # Ensure API key issue route blocks static API keys in query parameters
+        res = await ac.post(
+            f"/api/v1/admin/partners/api-keys/issue?api_key={settings.api_key}",
+            json={"partner_id": 100, "label": "Key", "tier": "sandbox", "scopes": []}
+        )
+        assert res.status_code == 403

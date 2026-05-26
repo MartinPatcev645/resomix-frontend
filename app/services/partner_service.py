@@ -505,6 +505,22 @@ class PartnerService:
                     if not api_key:
                         continue
 
+                    # Validate that the API key belongs to this partner_id
+                    if api_key.partner_id != pid:
+                        logger.warning(
+                            f"Quota Sync: API Key ID {akid} belongs to Partner ID {api_key.partner_id}, "
+                            f"but Redis key specified Partner ID {pid}. Skipping."
+                        )
+                        continue
+
+                    # Ensure the partner exists in MariaDB before syncing to prevent foreign key errors
+                    partner = await self.partner_repo.async_get_by_id(db, pid)
+                    if not partner:
+                        logger.warning(
+                            f"Quota Sync: Partner ID {pid} from Redis key does not exist in the database. Skipping."
+                        )
+                        continue
+
                     quota_limit = api_key.rate_limit_monthly
 
                     # Upsert into MariaDB
