@@ -10,18 +10,33 @@ const axiosInstance: AxiosInstance = axios.create({
   withCredentials: true, // Include cookies with all requests
 });
 
-// Interceptor to append `api_key` as query parameter for every request
+// Interceptor to append `api_key` for every request
 axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (!config.params) {
-    config.params = {};
-  }
-  // Preserve existing api_key if provided explicitly
-  if (!config.params.api_key) {
-    (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+  const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
+
+  if (isAdminRoute) {
+    // Administrative endpoints MUST strictly enforce header-only authorization.
+    // Query parameter is deleted to prevent proxy/browser logs leakage.
+    if (config.params) {
+      delete (config.params as Record<string, unknown>).api_key;
+    }
+  } else {
+    // Public/Partner endpoints fallback support for query parameter
+    if (!config.params) {
+      config.params = {};
+    }
+    if (!config.params.api_key) {
+      (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+    }
   }
   
-  // Also include in headers for better security and backend compatibility
-  config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
+  // Enforce secure HTTP headers (Format B and Format A fallback)
+  if (API_CONFIG.API_KEY) {
+    config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
+    if (isAdminRoute && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${API_CONFIG.API_KEY}`;
+    }
+  }
   
   // Support for Idempotency-Key
   const customConfig = config as any;
@@ -118,7 +133,10 @@ export const handleApiError = (error: AxiosError | Error): {
 export const getUrl = (endpoint: string, queryParams: Record<string, unknown> = {}): string => {
   const base = API_CONFIG.BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
   const url = new URL(`${base}${endpoint}`);
-  url.searchParams.append("api_key", API_CONFIG.API_KEY);
+  const isAdminRoute = endpoint.includes('admin') || endpoint.includes('/admin/');
+  if (!isAdminRoute) {
+    url.searchParams.append("api_key", API_CONFIG.API_KEY);
+  }
   Object.entries(queryParams).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {
       url.searchParams.append(k, String(v));

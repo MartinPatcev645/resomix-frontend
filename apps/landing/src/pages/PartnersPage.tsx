@@ -99,11 +99,11 @@ function PartnersDesktop() {
     }
   };
 
-  const sandboxKey = "rmx_sandbox_demo_1234567890";
-  const sandboxCurl = `curl -X POST "https://api.resomix.com/api/v1/similarity/search" \\
-  -H "Authorization: Bearer ${sandboxKey}" \\
+  const sandboxKey = "rmx_sandbox_demo";
+  const sandboxCurl = `curl -X POST "https://sandbox.resomix.com/v1/similarity/query" \\
   -H "Content-Type: application/json" \\
-  -d '{"track_id": "f4c44d99-5100-4437-a8b1-f6a0db46c789", "top_sk": 20}'`;
+  -H "X-Api-Key: ${sandboxKey}" \\
+  -d '{"track_id": "719ea12f-cdc4-40d4-b33a-753b389dfad5", "limit": 20}'`;
 
   return (
     <section className="pt-[var(--px-120)] pb-[var(--px-80)] px-[var(--px-40)] tracking-[var(--px-1)] w-full select-none font-helvetica overflow-hidden relative text-[var(--color-primary)]">
@@ -278,6 +278,16 @@ function PartnersDesktop() {
                 />
               </div>
             </div>
+
+            {/* See Full Documentation Button */}
+            <div className="pt-[var(--px-4)]">
+              <ButtonSleek
+                text="See Full Documentation"
+                onClick={() => { window.open("https://api-docs.resomix.com/", "_blank"); }}
+                transparent={true}
+                customWidth="w-full"
+              />
+            </div>
           </div>
 
           <div className="bg-[var(--color-secondary)] border border-slate-200 border-dotted rounded-[var(--px-10)] p-[var(--px-20)] font-fira text-[length:var(--px-11)] text-[#B9B9B9] space-y-[var(--px-10)] relative select-text overflow-x-auto">
@@ -447,11 +457,11 @@ function PartnersMobile() {
     }
   };
 
-  const sandboxKey = "rmx_sandbox_demo_1234567890";
-  const sandboxCurl = `curl -X POST "https://api.resomix.com/api/v1/similarity/search" \\
-  -H "Authorization: Bearer ${sandboxKey}" \\
+  const sandboxKey = "rmx_sandbox_demo";
+  const sandboxCurl = `curl -X POST "https://sandbox.resomix.com/v1/similarity/query" \\
   -H "Content-Type: application/json" \\
-  -d '{"track_id": "f4c44d99...", "top_sk": 20}'`;
+  -H "X-Api-Key: ${sandboxKey}" \\
+  -d '{"track_id": "719ea12f-cdc4-40d4-b33a-753b389dfad5", "limit": 20}'`;
 
   return (
     <section className="pt-[var(--px-80)] pb-[var(--px-60)] px-[var(--px-20)] tracking-[var(--px-1)] w-full select-none font-helvetica overflow-hidden relative text-[var(--color-primary)]">
@@ -613,6 +623,16 @@ function PartnersMobile() {
                   customWidth="w-full"
                 />
               </div>
+            </div>
+
+            {/* See Full Documentation Button */}
+            <div className="pt-[var(--px-4)]">
+              <ButtonSleek
+                text="See Full Documentation"
+                onClick={() => { window.open("https://api-docs.resomix.com/", "_blank"); }}
+                transparent={true}
+                customWidth="w-full"
+              />
             </div>
           </div>
 

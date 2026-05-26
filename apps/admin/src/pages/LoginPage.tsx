@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Input, Button } from 'antd';
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { User, Lock, ArrowRight, Shield } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth.ts';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,100 +22,85 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 font-sans">
-      {/* Dynamic Glowing Mesh Background */}
-      <div className="absolute top-0 left-0 w-full h-full z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/40 via-slate-950 to-slate-950" />
+    <div className="relative min-h-screen flex items-center justify-center bg-[var(--color-background-secondary)] font-sans px-4">
+      {/* Symmetrical subtle background gradient */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,_var(--color-primary)_0%,_transparent_40%)] opacity-[0.03] dark:opacity-[0.05]" />
       
-      {/* Animated Floating Glow Orbs */}
-      <div className="absolute top-1/4 left-1/3 w-[35rem] h-[35rem] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse z-0" style={{ animationDuration: '8s' }} />
-      <div className="absolute bottom-1/4 right-1/3 w-[30rem] h-[30rem] bg-pink-500/10 rounded-full blur-[100px] animate-pulse z-0" style={{ animationDuration: '12s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[25rem] h-[25rem] bg-violet-600/10 rounded-full blur-[120px] z-0" />
+      {/* Main Administrative Card Container */}
+      <div className="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl p-8 md:p-10 transition-all duration-300">
+        
+        {/* Header - clean and professional */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[var(--opacity-10)] text-[var(--color-primary)] mb-4">
+            <Shield size={24} />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+            RESOMIX ADMIN
+          </h1>
+          <p className="mt-1.5 text-sm text-[var(--color-text-secondary)] font-light">
+            Administrative Control Center
+          </p>
+        </div>
 
-      {/* Main Glassmorphic Card Container */}
-      <div className="relative w-full max-w-md mx-4 p-[1px] rounded-2xl bg-gradient-to-b from-indigo-500/30 via-transparent to-pink-500/30 shadow-2xl z-10 hover:shadow-indigo-500/5 transition-all duration-700">
-        <div className="w-full bg-slate-900/60 backdrop-blur-2xl rounded-2xl p-8 md:p-10 border border-slate-800/80">
-          
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-pink-500 shadow-lg shadow-indigo-500/20 mb-4 animate-bounce" style={{ animationDuration: '3s' }}>
-              <span className="text-white text-2xl font-bold tracking-wider">R</span>
+        {/* Form */}
+        <Form
+          name="admin_login"
+          layout="vertical"
+          onFinish={onFinish}
+          requiredMark={false}
+          size="large"
+          className="space-y-4"
+        >
+          {error && (
+            <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-200 text-sm flex items-start gap-2 mb-4">
+              <span className="font-semibold text-red-500 dark:text-red-400">Error:</span>
+              <span>{error}</span>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">
-              RESOMIX
-            </h1>
-            <p className="mt-2 text-sm text-slate-400 font-medium">
-              Administrative Control Center
-            </p>
-          </div>
-
-          {/* Form */}
-          <Form
-            name="admin_login"
-            layout="vertical"
-            initialValues={{ remember: true }}
-            onFinish={onFinish}
-            requiredMark={false}
-            size="large"
-            className="space-y-4"
+          )}
+          
+          <Form.Item
+            name="email"
+            label={<span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)]">Admin Email</span>}
+            rules={[
+              { required: true, message: 'Please input your Admin Email!' },
+              { type: 'email', message: 'Please enter a valid email address!' }
+            ]}
           >
-            {error && (
-              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-200 text-sm flex items-start gap-2 shadow-[0_0_15px_rgba(239,68,68,0.08)] mb-4">
-                <span className="font-semibold text-red-400">Error:</span>
-                <span>{error}</span>
-              </div>
-            )}
-            <Form.Item
-              name="email"
-              rules={[
-                { required: true, message: 'Please input your Admin Email!' },
-                { type: 'email', message: 'Please enter a valid email address!' }
-              ]}
+            <Input 
+              prefix={<User className="text-[var(--color-text-tertiary)] mr-2" size={16} />} 
+              placeholder="admin@resomix.com" 
+              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            label={<span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)]">Password</span>}
+            rules={[{ required: true, message: 'Please input your Password!' }]}
+          >
+            <Input.Password
+              prefix={<Lock className="text-[var(--color-text-tertiary)] mr-2" size={16} />}
+              placeholder="••••••••"
+              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300"
+            />
+          </Form.Item>
+
+          <Form.Item className="pt-2 !mb-0">
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              className="w-full h-11 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] border-none text-white font-medium rounded-lg shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Input 
-                prefix={<User className="text-indigo-400/80 mr-2" size={18} />} 
-                placeholder="Admin Email" 
-                className="bg-slate-950/50 border-slate-800 text-white rounded-xl placeholder-slate-500 hover:border-indigo-500/50 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300"
-                style={{
-                  background: 'rgba(2, 6, 23, 0.5)',
-                  borderColor: 'rgba(51, 65, 85, 0.5)',
-                  color: '#fff',
-                }}
-              />
-            </Form.Item>
+              <span>Authenticate Session</span>
+              <ArrowRight size={16} />
+            </Button>
+          </Form.Item>
+        </Form>
 
-            <Form.Item
-              name="password"
-              rules={[{ required: true, message: 'Please input your Password!' }]}
-            >
-              <Input.Password
-                prefix={<Lock className="text-indigo-400/80 mr-2" size={18} />}
-                placeholder="Password"
-                className="bg-slate-950/50 border-slate-800 text-white rounded-xl placeholder-slate-500 hover:border-indigo-500/50 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300"
-                style={{
-                  background: 'rgba(2, 6, 23, 0.5)',
-                  borderColor: 'rgba(51, 65, 85, 0.5)',
-                  color: '#fff',
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item className="pt-2">
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                className="w-full h-12 bg-gradient-to-r from-indigo-500 to-pink-500 border-none text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/20 hover:from-indigo-600 hover:to-pink-600 hover:shadow-indigo-500/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Authenticate Session</span>
-                <ArrowRight size={18} />
-              </Button>
-            </Form.Item>
-          </Form>
-
-          {/* Footer details */}
-          <div className="mt-8 text-center text-xs text-slate-500 font-medium">
-            &copy; {new Date().getFullYear()} Resomix Inc. All rights reserved.
-          </div>
+        {/* Footer details */}
+        <div className="mt-8 text-center text-xs text-[var(--color-text-tertiary)] font-light">
+          &copy; {new Date().getFullYear()} Resomix Inc. B2B Management
         </div>
       </div>
     </div>
