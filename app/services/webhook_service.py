@@ -16,6 +16,7 @@ import stripe
 import logging
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from decimal import Decimal
 
 from app.core.config import settings
 from app.models.log import SystemLog
@@ -23,6 +24,17 @@ from app.repositories.log_repository import LogRepository
 from app.services.purchase_service import PurchaseService
 
 logger = logging.getLogger(__name__)
+
+def sanitize_for_json(data: Any) -> Any:
+    """Recursively convert Decimal objects to float/int/str so they are JSON serializable."""
+    if isinstance(data, dict):
+        return {k: sanitize_for_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_for_json(item) for item in data]
+    elif isinstance(data, Decimal):
+        return int(data) if data % 1 == 0 else float(data)
+    return data
+
 
 
 class WebhookService:
@@ -64,7 +76,7 @@ class WebhookService:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
 
         # 2. Idempotency Check
-        stripe_event_id = event.get("id")
+        stripe_event_id = event.id
         existing_log = await self.log_repo.async_get_log_by_stripe_event_id(db, stripe_event_id)
         if existing_log:
             logger.info(f"Stripe event {stripe_event_id} already processed. Skipping.")
@@ -74,12 +86,12 @@ class WebhookService:
         log_entry = SystemLog(
             level="INFO",
             category="WEBHOOK",
-            action=f"stripe_{event.get('type')}",
+            action=f"stripe_{event.type}",
             message=f"Processing Stripe event: {stripe_event_id}",
             log_metadata={
                 "stripe_event_id": stripe_event_id,
-                "event_type": event.get("type"),
-                "raw_payload": event.to_dict()
+                "event_type": event.type,
+                "raw_payload": sanitize_for_json(event.to_dict())
             },
             endpoint=url_path,
             method=method,
@@ -90,12 +102,12 @@ class WebhookService:
 
         # 4. Route and Process Event
         try:
-            if event.get("type") == "checkout.session.completed":
-                session = event.get("data", {}).get("object")
+            if event.type == "checkout.session.completed":
+                session = sanitize_for_json(event.data.object.to_dict())
                 await self.purchase_service.fulfill_order(db, session)
             
-            elif event.get("type") == "charge.dispute.created":
-                dispute = event.get("data", {}).get("object")
+            elif event.type == "charge.dispute.created":
+                dispute = sanitize_for_json(event.data.object.to_dict())
                 await self.purchase_service.handle_dispute(db, dispute)
 
             # Commit the audit log and fulfillment changes atomically
@@ -110,7 +122,7 @@ class WebhookService:
             fail_log = SystemLog(
                 level="ERROR",
                 category="WEBHOOK",
-                action=f"stripe_{event.get('type')}_failed",
+                action=f"stripe_{event.type}_failed",
                 message=f"Failed to process Stripe event {stripe_event_id}: {str(e)}",
                 log_metadata={"stripe_event_id": stripe_event_id},
                 stack_trace=str(e)
