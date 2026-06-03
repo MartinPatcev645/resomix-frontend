@@ -17,7 +17,7 @@ class HetznerService:
         self.hetzner_url = getattr(settings, "similarity_server_url", None)
         self.internal_api_key = getattr(settings, "hetzner_internal_api_key", None)
 
-    async def delete_track_on_hetzner(self, track_uuid: str) -> Dict[str, Any]:
+    async def delete_track_on_hetzner(self, track_uuid: str, partner_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Calls the Hetzner server to securely wipe a track's audio and embedding assets.
 
@@ -40,6 +40,8 @@ class HetznerService:
         # Ensure base URL is clean
         base_url = self.hetzner_url.rstrip("/")
         endpoint = f"{base_url}/delete-track/{track_uuid}"
+        if partner_id is not None:
+            endpoint += f"?partner_id={partner_id}"
 
         headers = {
             "Authorization": f"Bearer {self.internal_api_key}",
@@ -80,4 +82,40 @@ class HetznerService:
             logger.error(
                 f"Hetzner connection error during delete of {track_uuid}: {str(e)}"
             )
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def get_deletion_log(
+        self,
+        partner_id: int,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Fetch ECDSA-signed deletion audit log entries for a partner from the media server."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        params = {}
+        if from_date:
+            params["from_date"] = from_date
+        if to_date:
+            params["to_date"] = to_date
+
+        headers = {
+            "Authorization": f"Bearer {self.internal_api_key}",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.get(
+                    f"{base_url}/internal/audit-log/{partner_id}",
+                    params=params,
+                    headers=headers,
+                )
+                if response.status_code == 200:
+                    return {"success": True, "data": response.json()}
+                else:
+                    logger.error(f"Audit log fetch failed: {response.status_code} {response.text[:200]}")
+                    return {"success": False, "error": f"Media server returned {response.status_code}"}
+        except httpx.RequestError as e:
+            logger.error(f"Connection error fetching audit log for partner {partner_id}: {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}

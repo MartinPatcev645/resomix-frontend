@@ -16,7 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
+import httpx
 from typing import Optional
+from app.core.config import settings
 from app.models.b2b import IngestLog, IngestionError, Deal
 from app.models.track import Track
 from app.models.audio_file import AudioFile
@@ -401,7 +403,39 @@ async def process_ingestion_batch(
                             "display_artist": track.display_artist
                         }
                     )
- 
+
+                # Index each track's vectors in FAISS (fire-and-forget: failures are logged, not fatal)
+                _sim_url = getattr(settings, "similarity_server_url", None)
+                _api_key = getattr(settings, "hetzner_internal_api_key", None)
+                if _sim_url and _api_key:
+                    _base = _sim_url.rstrip("/")
+                    _headers = {
+                        "Authorization": f"Bearer {_api_key}",
+                        "Content-Type": "application/json",
+                    }
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        for track, audio_fn in tracks_to_insert:
+                            for engine in ["maest", "discogs"]:
+                                try:
+                                    resp = await client.post(
+                                        f"{_base}/internal/ingest/add-vector",
+                                        json={
+                                            "partner_id": partner_id,
+                                            "track_uuid": track.uuid,
+                                            "filename": audio_fn,
+                                            "engine": engine,
+                                        },
+                                        headers=_headers,
+                                    )
+                                    if resp.status_code == 200:
+                                        logger.info(f"[IngestionService] Indexed {track.uuid} ({engine}) in FAISS.")
+                                    else:
+                                        logger.warning(f"[IngestionService] add-vector returned {resp.status_code} for {track.uuid} ({engine}): {resp.text[:200]}")
+                                except Exception as vec_err:
+                                    logger.warning(f"[IngestionService] Failed to index {track.uuid} ({engine}) in FAISS: {vec_err}")
+                else:
+                    logger.warning("[IngestionService] SIMILARITY_SERVER_URL or HETZNER_INTERNAL_API_KEY not set; skipping FAISS indexing.")
+
         except Exception as e:
             logger.error(f"[IngestionService] Critical failure: {e}")
             await db.rollback()

@@ -19,6 +19,13 @@ STORAGE_BOX_DIR="backup/storage_box"
 DB_PASS="test"
 DB_NAME="resomix_db"
 
+# Hetzner media server partner data (FAISS indexes, catalog JSONs, .npy vectors)
+# Set HETZNER_PARTNER_DATA_ROOT and HETZNER_STORAGE_BOX_SSH in environment or .env before running.
+# Example: HETZNER_PARTNER_DATA_ROOT=/srv/resomix/partners
+#          HETZNER_STORAGE_BOX_SSH=u123456@u123456.your-storagebox.de
+HETZNER_PARTNER_DATA_ROOT="${HETZNER_PARTNER_DATA_ROOT:-/srv/resomix/partners}"
+HETZNER_STORAGE_BOX_SSH="${HETZNER_STORAGE_BOX_SSH:-}"
+
 echo "=============================================================================="
 echo "          Resomix B2B — Nightly Backup & Automated Restore Drill"
 echo "=============================================================================="
@@ -51,6 +58,18 @@ rsync -avz --quiet .env app/core/config.py ${STORAGE_BOX_DIR}/configs/
 rsync -avz --quiet ${HOST_BACKUP_DIR}/ ${STORAGE_BOX_DIR}/database/
 
 echo "Offsite sync complete. Database backup size: $(du -sh ${HOST_BACKUP_DIR} | cut -f1)"
+
+# Sync Hetzner partner FAISS/catalog/vector data to Storage Box (runs on Hetzner SX65)
+if [ -n "${HETZNER_STORAGE_BOX_SSH}" ]; then
+    echo -e "\n[3b] Syncing partner FAISS/catalog/vector data to Hetzner Storage Box..."
+    rsync -avz --delete \
+        "${HETZNER_PARTNER_DATA_ROOT}/" \
+        "${HETZNER_STORAGE_BOX_SSH}:./resomix_partners_backup/" \
+        --exclude "*.tmp"
+    echo "Partner data sync complete. Size: $(du -sh ${HETZNER_PARTNER_DATA_ROOT} | cut -f1)"
+else
+    echo "[3b] HETZNER_STORAGE_BOX_SSH not set — skipping partner FAISS data backup."
+fi
 
 # 4. Spin up fresh VPS simulation for recovery drill
 echo -e "\n[4/5] Initiating bare-metal recovery drill on fresh container '${DRILL_CONTAINER}'..."
