@@ -1,5 +1,46 @@
 # Partner Processing Pipeline — Admin-Controlled Track Processing
 
+> ### ⚠️ UPDATE (June 2026) — Partner-scoping refactor impact
+>
+> This plan was written **before** the partner-scoped storage refactor landed. Since then,
+> all server-managed assets on Hetzner moved from flat/global directories into a single
+> per-partner tree, resolved exclusively through `app/core/partner_paths.py`:
+>
+> ```
+> {partner_data_root}/{partner_id}/internal/
+>     embeddings/{maest,discogs}/{uuid}.npy
+>     previews/{uuid}.mp3
+>     segments/{uuid}/{uuid}_NNN.ts + hls.m3u8
+>     peaks/{uuid}.json
+>     indexes/faiss_{engine}_{partner_id}.index
+>     catalog/{engine}_catalog_{partner_id}.json
+> ```
+>
+> **What this changes in the sections below (the old absolute paths are now WRONG):**
+> 1. **§B (batch-embeddings) — save paths:** use `partner_paths.embedding_path(partner_id, engine, uuid)`
+>    (→ `internal/embeddings/{engine}/{uuid}.npy`) and `partner_paths.preview_path(partner_id, uuid)`
+>    (→ `internal/previews/{uuid}.mp3`). Do **not** write to the legacy global
+>    `{partner_data_root}/{pid}/embeddings/...` or `upload_tracks_preview_audio_location`.
+> 2. **§B (audio source):** the SFTP layout is `partner_paths.sftp_dir(partner_id, env)` =
+>    `{partner_sftp_root}/{partner_id}/{test|live}` — there is no `incoming/` subfolder.
+>    Pass the `env` ("test"/"live") through the request, default "live".
+> 3. **§C peaks (`POST /playlist_peaks`)** now **requires `partner_id`** in the body.
+> 4. **§C segments (`POST /previews-segment/`)** — the old `source` enum
+>    ("uploads"/"monthly"/"similarity") selector is **gone**; the endpoint now **requires
+>    `partner_id`** and reads previews from `partner_paths.preview_path(partner_id, uuid)`
+>    and writes segments to `partner_paths.segments_dir(partner_id, uuid)`. The §C-segments
+>    "RISK to confirm" note about which dir `source="similarity"` reads is now moot.
+> 5. **§C faiss_index (`POST /internal/ingest/add-vector`)** already passes `partner_id` and
+>    reads `.npy` from `partner_paths.embedding_path(...)`. No change beyond ensuring the
+>    embeddings job wrote to the partner-scoped path (point 1).
+> 6. **Gap-4 (upload vs ingested):** partner *uploads* are stored under the same partner tree
+>    but are **never FAISS-indexed** and are **excluded from similarity results** (DB filter
+>    `track_type != UPLOAD`). This admin pipeline only processes **ingested/catalog** tracks.
+>
+> The DB-table design (§A), job/state machine (§C), and router wiring (§C "register router")
+> are unaffected and remain valid. Update only the path/endpoint-shape details above when
+> implementing.
+
 ## Context
 
 The earlier session added a call to `POST /internal/ingest/add-vector` directly inside `ingestion_service.py` immediately after CSV ingestion. This is **incorrect**: `add-vector` requires `.npy` embedding files to already exist on Hetzner's disk, but at ingestion time only metadata has been saved to MariaDB — no audio processing has happened yet. The call silently returns 404 for every track and wastes HTTP requests.
@@ -157,16 +198,18 @@ class BatchEmbeddingsResponse(BaseModel):
 
 **Endpoint logic**:
 1. For each `(track_uuid, audio_filename)`:
-   a. Resolve audio path: `Path(settings.partner_sftp_root) / str(partner_id) / "incoming" / audio_filename`
-      - **Path-traversal guard**: reject if `audio_filename` contains `/`, `\`, or `..`, or if the resolved path is not under the partner's incoming dir → return that track as `status="failed"` (or 400 for the whole request per the path-traversal test).
+   a. Resolve audio path: `partner_paths.sftp_dir(partner_id, env) / audio_filename` where `env` is
+      "test"/"live" from the request (default "live"). (Was: `{partner_sftp_root}/{pid}/incoming/...`.)
+      - **Path-traversal guard**: reject if `audio_filename` contains `/`, `\`, or `..`, or if the resolved path is not under the partner's SFTP dir → return that track as `status="failed"` (or 400 for the whole request per the path-traversal test).
    b. Read audio bytes from disk in a threadpool (`run_in_threadpool`). Missing file → that track `status="failed"`, continue.
    c. Generate dual embeddings via the instance method `embedding_service.generate_dual_embeddings_from_bytes(audio_bytes, filename=audio_filename)`.
       - ⚠️ CORRECTION: there is no bare `generate_dual_embeddings(file_bytes)`. The module-level fn is `generate_dual_embeddings(audio_bytes, filename, embed_server, embed_endpoint)`; the instance wrapper `generate_dual_embeddings_from_bytes()` on the global `embedding_service` handles initialization + `embed_server`/`embed_endpoint` config. Use the instance wrapper.
       - Returns `(maest (1,768), discogs (1,1280), timings)`.
-   d. Save MAEST vector: `{partner_data_root}/{partner_id}/embeddings/maest/{track_uuid}.npy` (use `save_vector_to_file` from `embedding_preview_service.py`, or `np.save` + `os.makedirs`).
-   e. Save Discogs vector: `{partner_data_root}/{partner_id}/embeddings/discogs/{track_uuid}.npy`
+   d. Save MAEST vector to `partner_paths.embedding_path(partner_id, "maest", track_uuid)`
+      (→ `internal/embeddings/maest/{track_uuid}.npy`). Use `partner_paths.ensure_parent(...)` then `np.save`.
+   e. Save Discogs vector to `partner_paths.embedding_path(partner_id, "discogs", track_uuid)`.
    f. Also generate + save a preview MP3.
-      - ⚠️ CORRECTION: there is no `preview_service.generate_preview_bytes()`. Use `process_audio_to_mp3_bytes(input_audio_bytes=audio_bytes, bitrate="128k", ffmpeg_exe=settings.ffmpeg_exe, timeout_seconds=300)` imported from `app/services/preview_service.py`, then write the returned bytes to `{upload_tracks_preview_audio_location}/{track_uuid}.mp3`. (This mirrors `EmbeddingPreviewService._generate_preview_from_original`.)
+      - ⚠️ CORRECTION: there is no `preview_service.generate_preview_bytes()`. Use `process_audio_to_mp3_bytes(input_audio_bytes=audio_bytes, bitrate="128k", ffmpeg_exe=settings.ffmpeg_exe, timeout_seconds=300)` imported from `app/services/preview_service.py`, then write the returned bytes to `partner_paths.preview_path(partner_id, track_uuid)` (→ `internal/previews/{track_uuid}.mp3`). (Was: `{upload_tracks_preview_audio_location}/{track_uuid}.mp3`.)
    g. Append result to list
 2. Return `BatchEmbeddingsResponse` with per-track results
 
@@ -216,8 +259,8 @@ Start a new processing job. Body:
 
 Service logic for each `job_type` (⚠️ corrected request shapes & timeouts — all verified against the Hetzner routers):
 - **embeddings**: create job → `POST /internal/process/batch-embeddings` (Bearer `hetzner_internal_api_key`) with `{partner_id, tracks:[{track_uuid, audio_filename}]}` → update `track_processing_status.embedding_status` per result → mark job completed/partial. Use a long client timeout (embeddings are CPU/GPU-bound; suggest 300s+, or make this fire-and-forget with the Hetzner endpoint reporting back).
-- **peaks**: create job → `POST /playlist_peaks` with body `{"track_uuids": [...]}` (field name is `track_uuids`, NOT `uuids`). ⚠️ The endpoint validates each UUID is a **24-char hex string** and accepts **1–100** tracks per request → chunk >100 and validate format. It IS fire-and-forget (returns immediately, peaks generated in a background task) → mark `peaks_status=completed` optimistically → job = completed.
-- **segments**: create job → `POST /previews-segment/` with body `{"uuids": [...]}` (field name is `uuids`, max **300** per request). ⚠️ This endpoint is **NOT immediate** — it blocks for up to **90 seconds** (`await asyncio.sleep(90)`) returning partial progress, then continues in the background. The HTTP client timeout for this call MUST be > 90s (use 120s). Also: segments require the preview MP3 to already exist (the batch-embeddings step writes it to `upload_tracks_preview_audio_location`), so segments must run AFTER embeddings. ⚠️ RISK to confirm at implementation: `/previews-segment/` runs `create_segments(..., source="similarity")` — verify the "similarity" source reads previews from `upload_tracks_preview_audio_location` (UPLOADS); if it reads a different dir, partner previews won't be found.
+- **peaks**: create job → `POST /playlist_peaks` with body `{"partner_id": <pid>, "track_uuids": [...]}` (field name is `track_uuids`, NOT `uuids`; **`partner_id` is now required**). ⚠️ The endpoint validates each UUID is a **24-char hex string** and accepts **1–100** tracks per request → chunk >100 and validate format. It IS fire-and-forget (returns immediately, peaks generated in a background task) → mark `peaks_status=completed` optimistically → job = completed.
+- **segments**: create job → `POST /previews-segment/` with body `{"partner_id": <pid>, "uuids": [...]}` (field name is `uuids`, max **300** per request; **`partner_id` is now required**). ⚠️ This endpoint is **NOT immediate** — it blocks for up to **90 seconds** (`await asyncio.sleep(90)`) returning partial progress, then continues in the background. The HTTP client timeout for this call MUST be > 90s (use 120s). Also: segments require the preview MP3 to already exist; the batch-embeddings step writes it to `partner_paths.preview_path(partner_id, uuid)`, and `/previews-segment/` now reads previews from the same partner-scoped path (the old `source` selector is gone), so segments simply must run AFTER embeddings — the dir-mismatch risk no longer applies.
 - **faiss_index**: create job → `POST /internal/ingest/add-vector` (Bearer auth) for each track with `embedding_status=completed`, once per engine (`maest`, `discogs`) → update `faiss_indexed` → job = completed/partial. The `.npy` files now exist (written by the embeddings job), so the previous 404 problem is resolved.
 
 #### 3. `GET /api/v1/admin/partners/{partner_id}/processing/jobs`
@@ -241,8 +284,8 @@ Get a specific job with full `error_details`.
 |---|---|---|---|---|
 | `POST /internal/ingest/add-vector` | B2B (processing job) | Media server | Bearer key | ✅ Called only when embeddings confirmed |
 | `POST /internal/process/batch-embeddings` | B2B (processing job) | Media server | Bearer key | 🆕 New endpoint |
-| `POST /playlist_peaks` | B2B (processing job) | Media server | Origin header | ✅ Existing — body `{track_uuids:[...]}`, 1–100 24-char-hex UUIDs, fire-and-forget |
-| `POST /previews-segment/` | B2B (processing job) | Media server | Origin header | ✅ Existing — body `{uuids:[...]}`, max 300, ⚠️ blocks up to 90s (client timeout >90s) |
+| `POST /playlist_peaks` | B2B (processing job) | Media server | Origin header | ✅ Existing — body `{partner_id, track_uuids:[...]}` (**partner_id now required**), 1–100 24-char-hex UUIDs, fire-and-forget |
+| `POST /previews-segment/` | B2B (processing job) | Media server | Origin header | ✅ Existing — body `{partner_id, uuids:[...]}` (**partner_id now required**), max 300, ⚠️ blocks up to 90s (client timeout >90s) |
 
 ---
 

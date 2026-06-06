@@ -420,4 +420,4 @@ async def get_playlist_playback_session_endpoint(
     cryptographic JWT token that grants the client direct access to the
     Hetzner Edge Node for gapless HLS streaming without hitting the database again.
     """
-    return await playlist_controller.get_playlist_playback_session(request, playlist_id)
+    return await playlist_controller.get_playlist_playback_session(request, playlist_id, partner_id=partner.id)

@@ -1900,14 +1900,14 @@ class PlaylistController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
 
-    async def get_playlist_playback_session(self, request: Request, playlist_id: str):
+    async def get_playlist_playback_session(self, request: Request, playlist_id: str, partner_id: Optional[int] = None):
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
         for playing a server-stitched playlist.
         """
         client_ip = request.client.host if request.client else "unknown"
         result = await self.playlist_service.get_playlist_playback_session(
-            playlist_id, client_ip
+            playlist_id, client_ip, partner_id=partner_id
         )
 
         if result.get("success"):

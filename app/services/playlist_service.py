@@ -724,7 +724,7 @@ class PlaylistService:
             }
 
     async def get_playlist_playback_session(
-        self, playlist_id: str, client_ip: str
+        self, playlist_id: str, client_ip: str, partner_id: Optional[int] = None
     ) -> dict:
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
@@ -739,7 +739,12 @@ class PlaylistService:
         from app.core.config import settings
 
         try:
-            token = generate_edge_token(playlist_id, client_ip)
+            # Embed the owning partner so the Hetzner edge can resolve partner-scoped
+            # assets directly from the verified token claim (defaults to the system
+            # partner / partner 1 for frontend/B2C traffic).
+            token = generate_edge_token(
+                playlist_id, client_ip, partner_id=partner_id, scope="playback"
+            )
 
             # The Similarity server handles the stitched HLS playlists
             base_url = settings.public_alwyzon_url.rstrip("/")
