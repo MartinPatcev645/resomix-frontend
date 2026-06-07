@@ -1,56 +1,45 @@
 # Resomix Frontend API Integration Guide
 
-This guide details the integration points for the Resomix Frontend to communicate with the Backend API. It provides a comprehensive list of endpoints, required headers, request payloads, and expected responses based on the current implementation.
+This guide is the canonical reference for all API endpoints the frontend (admin dashboard, consumer app, B2B partner portal) can call. It is generated from the live route list and should be kept in sync whenever new routes are added.
+
+**Last verified:** 2026-06-07 against live server on `http://localhost:8001`
 
 ## Base URL
 
-The API base URL typically depends on the environment:
-
-- Local Development: `http://localhost:8001`
-- Production: `https://api.resomix.com` (or as configured)
+| Environment | URL |
+|---|---|
+| Local development | `http://localhost:8001` |
+| Production | `https://api.resomix.com` |
 
 ## API Versioning
 
-As of May 2026, the Resomix API has transitioned to **URL-based versioning** for all B2B and Administrative operations.
-
-- **Current Version**: `v1`
-- **Base Path**: `/api/v1/`
-- **Legacy Support**: Unversioned root paths (e.g., `/get_similarity/`) remain supported for existing frontend and partner integrations but are officially deprecated. New integrations **must** use the `/api/v1/` prefix.
+All endpoints are served at both the versioned (`/api/v1/`) and legacy unversioned paths. **New integrations must use `/api/v1/`.** Legacy unversioned paths are frozen and will eventually be removed.
 
 ---
 
 ## Authentication & Headers
 
-The API supports three main tiers of authentication based on the actor:
+Four auth tiers are supported depending on the caller:
 
-1. **Public/Anonymous Access**: Used for public endpoints (like search, waitlist, and telemetry) or legacy frontend components.
-   - **Header**: `X-API-KEY: <your-public-api-key>`
-2. **End-User Access (JWT)**: Used for consumer user-specific actions (like profile management, favorites, ratings, checkout).
-   - **Header**: `Authorization: Bearer <your-access-token>`
-3. **B2B Partner Access**: Used by B2B clients to hit similarity, ingest, or analytics endpoints.
-   - **Header**: `Authorization: Bearer rmx_<partner_api_key>` (Recommended)
-   - **Header Fallback**: `X-API-KEY: rmx_<partner_api_key>`
-4. **Administrative Access (RBAC)**: Used by the internal admin dashboard.
-   - **Header**: `Authorization: Bearer <admin-jwt-access-token>` (Requires `role: admin` claim issued by `/api/v1/admin/auth/login`)
-   - **Header Fallback**: `X-API-KEY: <global_system_key>` (Supported for legacy system-to-system integrations)
+| Tier | Actor | Header |
+|---|---|---|
+| **Public** | Anonymous / consumer frontend | `X-API-KEY: <public-api-key>` |
+| **JWT (user)** | Logged-in consumer user | `Authorization: Bearer <access_token>` |
+| **B2B Partner** | Partner system / integration | `Authorization: Bearer rmx_<partner_api_key>` |
+| **Admin** | Internal admin dashboard | `Authorization: Bearer <admin_jwt>` **or** `X-API-KEY: <global_system_key>` |
 
-**Note on Cookies**: The refresh token is managed automatically via an `HttpOnly` cookie set by the server upon login/registration. You do not need to manage it manually in JavaScript.
-
-**Note on Traceability**: All partner-authenticated responses now include an `X-Correlation-ID` header. Please include this ID when reporting issues to support.
-**Note on Idempotency**: For all `POST`, `PUT`, and `PATCH` requests, you should include an `Idempotency-Key` header. This ensures that if a request is retried due to network issues, it will not be processed multiple times on the server.
-   - **Header**: `Idempotency-Key: <unique-uuid>`
-   - **TTL**: Cached responses are stored for 24 hours.
-   - **Behavior**: Replayed requests will return the cached response with an `X-Idempotency-Hit: true` header.
+**Notes:**
+- Refresh tokens live in an `HttpOnly` cookie — do not manage them in JavaScript.
+- All partner-authenticated responses include `X-Correlation-ID` for support tracing.
+- For `POST`, `PUT`, `PATCH`: include `Idempotency-Key: <uuid>` to prevent duplicate processing. Replayed requests return the cached response with `X-Idempotency-Hit: true` (24-hour TTL).
 
 ---
 
-## 1. Authentication (`/auth`)
+## 1. Authentication (`/api/v1/auth`)
 
 ### 1.1 Register
-
-- **URL**: `POST /api/v1/auth/register`
-- **Auth Required**: No
-- **Body**:
+- **`POST /api/v1/auth/register`** — No auth
+- **Body:**
   ```json
   {
     "email": "user@example.com",
@@ -59,153 +48,87 @@ The API supports three main tiers of authentication based on the actor:
     "name": "Optional Display Name"
   }
   ```
-- **Returns**: `201 Created` with success message. Sends a verification email.
+- **Returns:** `201 Created`. Sends a verification email.
 
 ### 1.2 Login
-
-- **URL**: `POST /api/v1/auth/login`
-- **Auth Required**: No
-- **Body**:
+- **`POST /api/v1/auth/login`** — No auth
+- **Body:**
   ```json
-  {
-    "email_or_username": "user@example.com",
-    "password": "StrongPassword123!"
-  }
+  { "email_or_username": "user@example.com", "password": "StrongPassword123!" }
   ```
-- **Returns**: `200 OK`
+- **Returns:** `200 OK`
   ```json
   {
     "access_token": "eyJ...",
     "token_type": "bearer",
-    "user": {
-      "uuid": "...",
-      "email": "user@example.com",
-      "username": "unique_username",
-      ...
-    }
+    "user": { "uuid": "...", "email": "...", "username": "..." }
   }
   ```
-  _(Also sets `refresh_token` in an HttpOnly cookie)._
-  _If 2FA is enabled, it returns `{"requires_2fa": true, "user_id": "...", "method": "email"}`._
+  _Sets `refresh_token` in an HttpOnly cookie. If 2FA is enabled returns `{"requires_2fa": true, "user_id": "...", "method": "email"}`._
 
 ### 1.3 Verify 2FA
+- **`POST /api/v1/auth/verify-2fa`** — No auth
+- **Body:** `{ "user_id": "uuid-from-login", "code": "123456" }`
+- **Returns:** Same as Login.
 
-- **URL**: `POST /api/v1/auth/verify-2fa`
-- **Auth Required**: No
-- **Body**:
-  ```json
-  {
-    "user_id": "uuid-from-login-response",
-    "code": "123456"
-  }
-  ```
-- **Returns**: Same as Login response.
+### 1.4 Email Verification
+- **Verify email:** `GET /api/v1/auth/verify-email?token=<token>`
+- **Resend verification:** `POST /api/v1/auth/resend-verification` — Body: `{ "email": "..." }`
 
-### 1.3.1 Email Verification
-- **Verify Email**: `GET /api/v1/auth/verify-email?token=...`
-- **Resend Verification**: `POST /api/v1/auth/resend-verification` `{"email": "..."}`
+### 1.5 Refresh Token
+- **`POST /api/v1/auth/refresh`** — Relies on HttpOnly cookie
+- **Returns:** `{ "access_token": "..." }`
 
-### 1.4 Refresh Token
+### 1.6 Logout
+- **`POST /api/v1/auth/logout`** — Relies on HttpOnly cookie. Clears the cookie.
 
-- **URL**: `POST /api/v1/auth/refresh`
-- **Auth Required**: No (relies on HttpOnly cookie)
-- **Returns**: `200 OK` with a new `access_token`.
+### 1.7 Logout All Devices
+- **`POST /api/v1/auth/logout-all`** — Requires JWT Bearer
 
-### 1.5 Logout
-
-- **URL**: `POST /api/v1/auth/logout`
-- **Auth Required**: No (relies on HttpOnly cookie)
-- **Returns**: `200 OK` with success message. Clears the HttpOnly cookie.
-
-### 1.6 Logout All Devices
-
-- **URL**: `POST /api/v1/auth/logout-all`
-- **Auth Required**: Yes (JWT Bearer)
-- **Returns**: `200 OK`
-
-### 1.7 Password Reset
-
-- **Request Link**: `POST /api/v1/auth/password-reset` `{"email": "..."}`
-- **Confirm Reset**: `POST /api/v1/auth/password-reset-confirm` `{"token": "...", "new_password": "..."}`
+### 1.8 Password Reset
+- **Request link:** `POST /api/v1/auth/password-reset` — Body: `{ "email": "..." }`
+- **Confirm reset:** `POST /api/v1/auth/password-reset-confirm` — Body: `{ "token": "...", "new_password": "..." }`
 
 ---
 
-## 2. User Profile (`/users`)
+## 2. User Profile (`/api/v1/users`)
 
 ### 2.1 Get My Profile
-
-- **URL**: `GET /api/v1/users/me`
-- **Auth Required**: Yes (JWT Bearer)
-- **Returns**: Complete user profile data.
+- **`GET /api/v1/users/me`** — Requires JWT
+- **Returns:** Complete user profile.
 
 ### 2.2 Update Profile
-
-- **URL**: `PATCH /api/v1/users/me`
-- **Auth Required**: Yes (JWT Bearer)
-- **Body**: (All optional)
+- **`PATCH /api/v1/users/me`** — Requires JWT
+- **Body (all optional):**
   ```json
-  {
-    "name": "New Name",
-    "language": "en",
-    "timezone": "UTC",
-    "profile_picture": "https://..."
-  }
+  { "name": "New Name", "language": "en", "timezone": "UTC", "profile_picture": "https://..." }
   ```
-- **Returns**: `200 OK` with success message.
 
 ### 2.3 Change Password
-
-- **URL**: `POST /api/v1/users/me/change-password`
-- **Auth Required**: Yes (JWT Bearer)
-- **Body**:
-  ```json
-  {
-    "current_password": "oldPassword123!",
-    "new_password": "newStrongPassword123!"
-  }
-  ```
+- **`POST /api/v1/users/me/change-password`** — Requires JWT
+- **Body:** `{ "current_password": "old", "new_password": "new" }`
 
 ### 2.4 Manage Sessions
-
-- **Get Sessions**: `GET /api/v1/users/me/sessions` (Requires JWT)
-- **Revoke Session**: `DELETE /api/v1/users/me/sessions/{session_id}` (Requires JWT)
+- **`GET /api/v1/users/me/sessions`** — Requires JWT. Returns all active sessions.
+- **`DELETE /api/v1/users/me/sessions/{session_id}`** — Requires JWT. Revokes a session.
 
 ### 2.5 2FA Settings
-
-- **Enable 2FA**: `POST /api/v1/users/me/enable-2fa` `{"method": "email"}` (Requires JWT)
-- **Disable 2FA**: `POST /api/v1/users/me/disable-2fa` `{"password": "current_password"}` (Requires JWT)
+- **Enable:** `POST /api/v1/users/me/enable-2fa` — Body: `{ "method": "email" }`
+- **Disable:** `POST /api/v1/users/me/disable-2fa` — Body: `{ "password": "current_password" }`
 
 ### 2.6 Delete Account
-
-- **URL**: `DELETE /api/v1/users/me`
-- **Auth Required**: Yes (JWT Bearer)
-- **Body**: `{"password": "current_password"}`
+- **`DELETE /api/v1/users/me`** — Requires JWT — Body: `{ "password": "current_password" }`
 
 ---
 
-## 3. Search (`/search_tracks`)
+## 3. Search (`/api/v1/search_tracks`)
 
 ### 3.1 Search Tracks
-
-- **URL**: `GET /api/v1/search_tracks/`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Query Params**:
-  - `query`: string (required)
-  - `mode`: `artist`, `title`, or `auto` (default: auto)
-- **Returns**: `200 OK`
+- **`GET /api/v1/search_tracks/`** — Requires API Key
+- **Query params:** `query` (required), `mode` = `artist | title | auto` (default: `auto`)
+- **Returns:**
   ```json
-  {
-    "success": true,
-    "data": [
-      {
-         "id": 123,
-         "uuid": "...",
-         "title": "...",
-         "artist": "...",
-         ...
-      }
-    ]
-  }
+  { "success": true, "data": [{ "id": 123, "uuid": "...", "title": "...", "artist": "..." }] }
   ```
 
 ---
@@ -213,241 +136,170 @@ The API supports three main tiers of authentication based on the actor:
 ## 4. Similarity (`/api/v1/similarity`)
 
 ### 4.1 Upload & Get Similarity
-
-- **URL**: `POST /api/v1/similarity/upload`
-- **Legacy URL**: `POST /get_similarity/` (Deprecated)
-- **Auth Required**: API Key (JWT optional; if provided, links upload to user)
-- **Form Data**:
-  - `file`: Audio file (max 100MB)
-- **Query Params**:
-  - `top_sk`: 10, 20, 50, or 100 (default: 20)
-- **Headers**:
-  - `Idempotency-Key`: UUID (Recommended)
-- **Returns**: Information about the uploaded track and a list of similar tracks.
+- **`POST /api/v1/similarity/upload`** — Requires API Key (JWT optional; links upload to user if provided)
+- **Legacy:** `POST /api/v1/get_similarity/` _(deprecated)_
+- **Form Data:** `file` (audio file, max 100 MB)
+- **Query params:** `top_sk` = 10 | 20 | 50 | 100 (default: 20)
+- **Returns:** Uploaded track info + list of similar tracks.
 
 ### 4.2 Get Similarity by Track ID
-
-- **URL**: `POST /api/v1/similarity/search`
-- **Legacy URL**: `POST /get_selection_similarity/` (Deprecated)
-- **Auth Required**: API Key (JWT optional)
-- **Body**:
-  ```json
-  {
-    "track_id": 123,
-    "top_sk": 20
-  }
-  ```
+- **`POST /api/v1/similarity/search`** — Requires API Key
+- **Legacy:** `POST /api/v1/get_selection_similarity/` _(deprecated)_
+- **Body:** `{ "track_id": 123, "top_sk": 20 }`
 
 ### 4.3 Segment Status Poll
-
-- **URL**: `GET /api/v1/similarity/segment-status/{playlist_uuid}`
-- **Legacy URL**: `GET /segment_status/{playlist_uuid}` (Deprecated)
-- **Auth Required**: API Key
-- **Returns**: `{"segmentation_completed": true/false}`
-- **Description**: Checks if segment preview processing completed for a playlist.
+- **`GET /api/v1/similarity/segment-status/{playlist_uuid}`** — Requires API Key
+- **Legacy:** `GET /api/v1/segment_status/{playlist_uuid}` _(deprecated)_
+- **Returns:** `{ "segmentation_completed": true | false }`
 
 ---
 
-## 5. Playlists (`/playlists`)
+## 5. Playlists (`/api/v1/playlists`)
 
 ### 5.1 Fork Public Playlist
-
-- **URL**: `POST /api/v1/playlists/fork/{playlist_id}`
-- **Auth Required**: Yes (JWT Bearer)
-- **Description**: Copies a public playlist to the user's account.
+- **`POST /api/v1/playlists/fork/{playlist_id}`** — Requires JWT. Copies a public playlist to user's account.
 
 ### 5.2 Get User Playlists
-
-- **URL**: `GET /api/v1/playlists/get-all-playlists/`
-- **Auth Required**: Yes (JWT Bearer)
-- **Query Params**: `page`, `page_size`, `play_time`, `num_tracks`, `start_date`, `end_date`, `is_public`, `own_favorites`, `all_favorites`
-- **Returns**: Paginated list of user's playlists.
+- **`GET /api/v1/playlists/get-all-playlists/`** — Requires JWT
+- **Query params:** `page`, `page_size`, `play_time`, `num_tracks`, `start_date`, `end_date`, `is_public`, `own_favorites`, `all_favorites`
+- **Returns:** Paginated list of user playlists.
 
 ### 5.3 Rename / Change Visibility
-
-- **Rename**: `PUT /api/v1/playlists/rename/` `{"playlist_id": "...", "new_name": "..."}`
-- **Visibility**: `PUT /api/v1/playlists/visibility/` `{"playlist_id": "...", "is_public": true/false}`
-- **Auth Required**: JWT (Optional but highly recommended to verify ownership)
+- **Rename:** `PUT /api/v1/playlists/rename/` — Body: `{ "playlist_id": "uuid", "new_name": "..." }`
+- **Visibility:** `PUT /api/v1/playlists/visibility/` — Body: `{ "playlist_id": "uuid", "is_public": true }`
 
 ### 5.4 Get Playlist Similarity Data
-
-- **URL**: `GET /api/v1/playlists/similarity/{playlist_id}`
-- **Auth Required**: API Key (JWT optional to view own private playlists)
-- **Returns**: Playlist formatted like similarity endpoint response.
+- **`GET /api/v1/playlists/similarity/{playlist_id}`** — Requires API Key (JWT optional to view own private)
+- **Returns:** Playlist formatted like similarity endpoint response.
 
 ### 5.5 Get HLS M3U8 (Audio Streaming)
-
-- **URL**: `GET /api/v1/playlists/similarity-hls/{playlist_id}.m3u8`
-- **Auth Required**: API Key (JWT optional to view own private playlists)
-- **Returns**: `application/vnd.apple.mpegurl` file content with signed URLs.
+- **`GET /api/v1/playlists/similarity-hls/{playlist_id}.m3u8`** — Requires API Key
+- **Returns:** `application/vnd.apple.mpegurl` with signed segment URLs.
 
 ### 5.6 Get Playback Session (Edge Auth)
-
-- **URL**: `POST /api/v1/playlists/{playlist_id}/play-session`
-- **Auth Required**: API Key
-- **Returns**: `{"playback_url": "..."}` with JWT token appended.
+- **`POST /api/v1/playlists/{playlist_id}/play-session`** — Requires API Key
+- **Returns:** `{ "playback_url": "..." }` with valet JWT appended.
 
 ---
 
-## 6. External Transfers (`/spotify`, `/apple-music`, `/tidal`)
+## 6. Playlist Engagement (`/api/v1/playlist`)
 
-### 6.1 Spotify Transfer
+### 6.1 Favorites
+- **Add:** `POST /api/v1/playlist/add-favorite/{playlist_id}` — Requires JWT
+- **Remove:** `POST /api/v1/playlist/remove-favorite/{playlist_id}` — Requires JWT
 
-- **Get Client ID**: `GET /api/v1/spotify/app-client-id` (Requires JWT)
-  - Returns: `{"client_id": "...", "app_name": "..."}`
-- **Transfer**: `POST /api/v1/spotify/transfer-playlist/` (Requires JWT)
-  - Body: `{"playlist_id": "uuid", "access_token": "spotify-token", "playlist_name": "Optional"}`
-
-### 6.2 Apple Music Transfer
-
-- **Get Dev Token**: `GET /api/v1/apple-music/developer-token/`
-  - Returns: `{"token": "...", "expires_at": 123456789}`
-- **Transfer**: `POST /api/v1/apple-music/transfer-playlist/`
-  - Body: `{"playlist_id": "uuid", "music_user_token": "apple-token", "playlist_name": "Optional"}`
-
-### 6.3 Tidal Transfer
-
-- **Exchange Token**: `POST /api/v1/tidal/auth/token`
-  - Body: `{"code": "auth-code", "code_verifier": "...", "redirect_uri": "..."}`
-- **Transfer**: `POST /api/v1/tidal/transfer-playlist/`
-  - Body: `{"playlist_id": "uuid", "access_token": "tidal-token", "playlist_name": "Optional"}`
+### 6.2 Follows
+- **Follow:** `POST /api/v1/playlist/follow/{playlist_id}` — Requires JWT
+- **Unfollow:** `POST /api/v1/playlist/unfollow/{playlist_id}` — Requires JWT
 
 ---
 
-## 7. Playlist Engagement (`/playlist`)
+## 7. Ratings (`/api/v1/ratings`)
 
-### 7.1 Favorites
+### 7.1 Track Ratings
+- **Rate:** `POST /api/v1/ratings/tracks/`
+  ```json
+  { "track_id": "uuid", "playlist_id": "uuid", "rating": 1 }
+  ```
+  _(1 = similar, 0 = not similar. Requires JWT or API Key + user_id)_
+- **Get:** `GET /api/v1/ratings/tracks/{track_id}/playlist/{playlist_id}`
+- **Delete:** `DELETE /api/v1/ratings/tracks/{track_id}/playlist/{playlist_id}`
+- **Stats:** `GET /api/v1/ratings/tracks/{track_id}/stats`
+  - Returns: `{ "total_ratings": 100, "rating_distribution": { "0": 20, "1": 80 } }`
 
-- **Add**: `POST /api/v1/playlist/add-favorite/{playlist_id}` (Requires JWT)
-- **Remove**: `POST /api/v1/playlist/remove-favorite/{playlist_id}` (Requires JWT)
-
-### 7.2 Follows
-
-- **Follow**: `POST /api/v1/playlist/follow/{playlist_id}` (Requires JWT)
-- **Unfollow**: `POST /api/v1/playlist/unfollow/{playlist_id}` (Requires JWT)
+### 7.2 Playlist Ratings
+- **Rate:** `POST /api/v1/ratings/playlists/`
+  ```json
+  { "playlist_id": "uuid", "rating": 3, "message": "Optional review" }
+  ```
+  _(0–3 stars. Requires JWT or API Key + user_id)_
+- **Get:** `GET /api/v1/ratings/playlists/{playlist_id}`
+- **Delete:** `DELETE /api/v1/ratings/playlists/{playlist_id}`
+- **Stats:** `GET /api/v1/ratings/playlists/{playlist_id}/stats`
+  - Returns: `{ "total_ratings": 50, "average_rating": 2.5, "rating_distribution": { ... } }`
 
 ---
 
-## 8. Ratings (`/ratings`)
+## 8. Cart & Checkout (`/api/v1/cart`, `/api/v1/checkout`)
 
-### 8.1 Track Ratings
+### 8.1 Cart Operations — Requires JWT
 
-- **Rate**: `POST /api/v1/ratings/tracks/`
+- **Get cart:** `GET /api/v1/cart`
+- **Add items:** `POST /api/v1/cart/add`
   ```json
   {
-    "track_id": "uuid",
-    "playlist_id": "uuid",
-    "rating": 1 // 1=similar, 0=not similar
+    "items": [{ "track_id": "uuid", "source_playlist_id": "uuid" }]
   }
   ```
-  _(Requires JWT or API Key + manual user_id)_
-- **Get**: `GET /api/v1/ratings/tracks/{track_id}/playlist/{playlist_id}`
-- **Delete**: `DELETE /api/v1/ratings/tracks/{track_id}/playlist/{playlist_id}`
+  _Or add a whole playlist:_ `{ "playlist_id": "uuid" }`
+- **Remove track:** `DELETE /api/v1/cart/remove/{track_id}`
+- **Remove playlist:** `DELETE /api/v1/cart/remove-playlist/{playlist_id}`
+- **Clear cart:** `DELETE /api/v1/cart/clear`
 
-### 8.2 Playlist Ratings
+### 8.2 Promo Code — Requires JWT
+- **Apply:** `POST /api/v1/cart/promo` — Body: `{ "code": "SUMMER25" }`
 
-- **Rate**: `POST /api/v1/ratings/playlists/`
-  ```json
-  {
-    "playlist_id": "uuid",
-    "rating": 3, // 0-3 stars
-    "message": "Optional review"
-  }
-  ```
-  _(Requires JWT or API Key + manual user_id)_
-- **Get**: `GET /api/v1/ratings/playlists/{playlist_id}`
-- **Delete**: `DELETE /api/v1/ratings/playlists/{playlist_id}`
-- **Stats**: `GET /api/v1/ratings/playlists/{playlist_id}/stats` (API Key only)
-
-### 8.3 Rating Statistics
-
-- **Track Stats**: `GET /api/v1/ratings/tracks/{track_id}/stats`
-  - Returns: `{"total_ratings": 100, "rating_distribution": {"0": 20, "1": 80}}`
-- **Playlist Stats**: `GET /api/v1/ratings/playlists/{playlist_id}/stats`
-  - Returns: `{"total_ratings": 50, "average_rating": 2.5, "rating_distribution": {"0": 5, "1": 10, "2": 15, "3": 20}}`
+### 8.3 Checkout — Requires JWT
+- **Pre-flight:** `POST /api/v1/checkout/init` — Body: `{ "cart_id": 123 }`
+- **Create Stripe session:** `POST /api/v1/checkout/create-session`
 
 ---
 
-## 9. Cart & Checkout (`/cart`, `/checkout`)
+## 9. External Transfers
 
-### 9.1 Cart Operations (Requires JWT)
+### 9.1 Spotify — Requires JWT
+- **Get client ID:** `GET /api/v1/spotify/app-client-id`
+  - Returns: `{ "client_id": "...", "app_name": "..." }`
+- **Transfer playlist:** `POST /api/v1/spotify/transfer-playlist/`
+  - Body: `{ "playlist_id": "uuid", "access_token": "spotify-token", "playlist_name": "Optional" }`
 
-- **Get Cart**: `GET /api/v1/cart`
-- **Add Item/Playlist**: `POST /api/v1/cart/add`
-  ```json
-  {
-    "items": [{ "track_id": "uuid", "source_playlist_id": "uuid" }],
-    // OR
-    "playlist_id": "uuid"
-  }
-  ```
-- **Remove Track**: `DELETE /api/v1/cart/remove/{track_id}`
-- **Remove Playlist**: `DELETE /api/v1/cart/remove-playlist/{playlist_id}`
-- **Clear Cart**: `DELETE /api/v1/cart/clear`
+### 9.2 Apple Music
+- **Get dev token:** `GET /api/v1/apple-music/developer-token/`
+  - Returns: `{ "token": "...", "expires_at": 123456789 }`
+- **Transfer playlist:** `POST /api/v1/apple-music/transfer-playlist/`
+  - Body: `{ "playlist_id": "uuid", "music_user_token": "apple-token", "playlist_name": "Optional" }`
 
-### 9.2 Promo Code (Requires JWT)
-
-- **Apply**: `POST /api/v1/cart/promo` `{"code": "SUMMER25"}`
-
-### 9.3 Checkout (Requires JWT)
-
-- **Init Checkout**: `POST /api/v1/checkout/init` `{"cart_id": 123}` (Phase 2 pre-flight)
-- **Create Stripe Session**: `POST /api/v1/checkout/create-session`
+### 9.3 Tidal
+- **Exchange token:** `POST /api/v1/tidal/auth/token`
+  - Body: `{ "code": "auth-code", "code_verifier": "...", "redirect_uri": "..." }`
+- **Transfer playlist:** `POST /api/v1/tidal/transfer-playlist/`
+  - Body: `{ "playlist_id": "uuid", "access_token": "tidal-token", "playlist_name": "Optional" }`
 
 ---
 
-## 10. Telemetry (`/telemetry`)
+## 10. Telemetry (`/api/v1/telemetry`)
 
-### 10.1 Sync Telemetry
-
-- **URL**: `POST /api/v1/telemetry/sync`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Body**:
+### 10.1 Sync Telemetry Events
+- **`POST /api/v1/telemetry/sync`** — Requires API Key
+- **Body:**
   ```json
-  {
-    "events": [
-      {
-         "event_type": "stream_start",
-         "track_id": 123,
-         ...
-      }
-    ]
-  }
+  { "events": [{ "event_type": "stream_start", "track_id": 123 }] }
   ```
-- **Description**: Accepts batches of playback events (from 30s heartbeat or page unload).
+- _Accepts batches from 30-second heartbeats or page-unload flushes._
 
 ---
 
-## 11. Waitlist (`/waitlist`)
+## 11. Waitlist (`/api/v1/waitlist`)
 
-### 11.1 Join Waitlist
+- **Join:** `POST /api/v1/waitlist/` — Body: `{ "email": "user@example.com" }`
+- **Check status:** `POST /api/v1/waitlist/status` — Body: `{ "email": "user@example.com" }`
 
-- **URL**: `POST /api/v1/waitlist/`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Body**: `{"email": "user@example.com"}`
-
-### 11.2 Check Status
-
-- **URL**: `POST /api/v1/waitlist/status`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Body**: `{"email": "user@example.com"}`
+Both require API Key.
 
 ---
 
 ## 12. Contact & Support (`/api/v1/contact`)
 
 ### 12.1 Submit Contact Form
-
-- **URL**: `POST /api/v1/contact/`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Body**:
+- **`POST /api/v1/contact/`** — Requires API Key
+- **Body:**
   ```json
   {
     "name": "John Doe",
     "email": "john@example.com",
     "message": "I need help with...",
     "subject": "Optional subject",
-    "phone": "Optional phone number"
+    "phone": "Optional phone"
   }
   ```
 
@@ -456,10 +308,8 @@ The API supports three main tiers of authentication based on the actor:
 ## 13. Feedback (`/api/v1/feedback`)
 
 ### 13.1 Submit Feedback
-
-- **URL**: `POST /api/v1/feedback/`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Body**:
+- **`POST /api/v1/feedback/`** — Requires API Key (or JWT)
+- **Body:**
   ```json
   {
     "satisfaction": 8,
@@ -468,25 +318,17 @@ The API supports three main tiers of authentication based on the actor:
     "category": "Optional category"
   }
   ```
-  _(Requires JWT or API Key + manual user_id)_
 
 ---
 
 ## 14. Preview (`/api/v1/preview`)
 
 ### 14.1 Get Preview URL
-
-- **URL**: `GET /api/v1/preview/get_preview/`
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Query Params**: `track_id`
-- **Returns**: `200 OK`
+- **`GET /api/v1/preview/get_preview/`** — Requires API Key
+- **Query params:** `track_id`
+- **Returns:**
   ```json
-  {
-    "success": true,
-    "data": {
-      "download_url": "https://media.resomix.com/..."
-    }
-  }
+  { "success": true, "data": { "download_url": "https://media.resomix.com/..." } }
   ```
 
 ---
@@ -494,169 +336,484 @@ The API supports three main tiers of authentication based on the actor:
 ## 15. Metadata (`/api/v1/metadata`)
 
 ### 15.1 Extract Metadata
-
-- **URL**: `POST /api/v1/metadata/track`
-- **Legacy URL**: `POST /metadata/` (Deprecated)
-- **Auth Required**: API Key (`X-API-KEY`)
-- **Form Data**: `file` (Audio file)
-- **Returns**: Extracted ID3/metadata tags.
+- **`POST /api/v1/metadata/track`** — Requires API Key
+- **Legacy:** `POST /api/v1/metadata/` _(deprecated)_
+- **Form Data:** `file` (audio file)
+- **Returns:** Extracted ID3/metadata tags.
 
 ---
 
-## 16. Health (`/health`)
+## 16. Health & Root
 
-### 16.1 API Status
-
-- **URL**: `GET /health`
-- **Auth Required**: None
-- **Returns**: `{"status": "healthy", "service": "Resomix API"}`
-
-### 16.2 Root Info
-
-- **URL**: `GET /`
-- **Returns**: API version and status.
+- **`GET /api/v1/health`** — No auth — Returns: `{ "status": "healthy", "service": "Resomix API" }`
+- **`GET /api/v1/`** — No auth — Returns API version and status.
 
 ---
 
-## 17. Admin & B2B Operations (`/api/v1/admin`, `/api/v1/ingest`)
+## 17. B2B Partner Endpoints (`/api/v1/partner`)
 
-These endpoints are used by the internal admin dashboard or B2B integrations and **must** include the `/api/v1/` prefix. **Administrative endpoints now strictly require an Admin JWT Bearer Token** (or the global System API Key for legacy services).
+These endpoints are called by a B2B partner using their API key (`Authorization: Bearer rmx_<partner_api_key>`).
 
-### 17.1 Admin Authentication (`/api/v1/admin/auth`)
+### 17.1 Get Partner Info
+- **`GET /api/v1/partner/me`** — Requires Partner API Key
+- **Returns:**
+  ```json
+  { "success": true, "data": { "id": 1, "name": "...", "tier": "growth", "is_active": true } }
+  ```
 
-- **Admin Login**: `POST /api/v1/admin/auth/login` (Body: `{"email": "...", "password": "..."}`)
-  - Returns JWT token with the `role: admin` claim required for all `/api/v1/admin/*` endpoints.
+### 17.2 Mint Playback Token (Valet Auth)
+- **`POST /api/v1/partner/playback-token`** — Requires Partner API Key
+- **Description:** Exchange the partner API key for a short-lived HS256 "valet" JWT. This token can be attached to Hetzner media-serving requests so they resolve partner-scoped assets without a database lookup per request.
+- **Returns:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "token": "eyJ...",
+      "expires_in": 3600,
+      "partner_id": 42,
+      "scope": "playback"
+    }
+  }
+  ```
 
-### 17.2 Partner Management (`/api/v1/admin/partners`)
-
-- **Get Current Partner Info**: `GET /api/v1/partner/me` (API Key Required)
-  - Returns: `{"id": 1, "name": "...", "tier": "...", "is_active": true}`
-- **Create Partner**: `POST /api/v1/admin/partners/`
-- **List Partners**: `GET /api/v1/admin/partners/` (supports `page`, `page_size`, `tier`, `is_active`)
-- **Get Partner Detail**: `GET /api/v1/admin/partners/{partner_id}`
-- **Update Partner**: `PATCH /api/v1/admin/partners/{partner_id}`
-- **Delete Partner**: `DELETE /api/v1/admin/partners/{partner_id}`
-- **Issue API Key**: `POST /api/v1/admin/partners/api-keys/issue`
-- **List API Keys**: `GET /api/v1/admin/partners/api-keys/{partner_id}`
-- **Revoke API Key**: `POST /api/v1/admin/partners/api-keys/revoke`
-- **Rotate API Key**: `POST /api/v1/admin/partners/api-keys/rotate`
-
-#### SFTP Provisioning (Admin)
-- **Provision SFTP Partner**: `POST /api/v1/admin/partners/sftp/provision`
-  - Body: `{"partner_id": 42, "username": "...", "password": "...", "use_public_key": false, "public_key": null}`
-- **Get SFTP Status**: `GET /api/v1/admin/partners/{partner_id}/sftp`
-- **Retry SFTP Provisioning**: `POST /api/v1/admin/partners/{partner_id}/sftp/retry`
-
-### 17.3 User & Role Management (Admin) (`/api/v1/admin/users`, `/api/v1/admin/roles`)
-
-- **List/Search Users**: `GET /api/v1/admin/users` (Requires Admin Auth)
-- **Get User Details**: `GET /api/v1/admin/users/{user_uuid}`
-- **Create User**: `POST /api/v1/admin/users`
-- **Update User**: `PATCH /api/v1/admin/users/{user_uuid}`
-- **Toggle User Status**: `POST /api/v1/admin/users/{user_uuid}/toggle-status`
-- **Assign Role**: `POST /api/v1/admin/users/{user_uuid}/roles` `{"role_name": "admin"}`
-- **Remove Role**: `DELETE /api/v1/admin/users/{user_uuid}/roles/{role_name}`
-- **List System Roles**: `GET /api/v1/admin/roles`
-- **Get Role Details**: `GET /api/v1/admin/roles/{role_name}`
-- **List System Permissions**: `GET /api/v1/admin/roles/permissions`
-- **Update Role Permissions**: `PUT /api/v1/admin/roles/{role_name}/permissions` `{"permissions": ["...", "..."]}`
-- **Legacy User Search**: `GET /api/v1/users/search` (Deprecated)
-
-### 17.4 Operation Limits (`/api/v1/admin/operation-limits`)
-
-- **List Types**: `GET /api/v1/admin/operation-limits/operation-types`
-- **List User Limits**: `GET /api/v1/admin/operation-limits/`
-- **Get User Limit**: `GET /api/v1/admin/operation-limits/{user_identifier}/{operation_code}`
-- **Upsert Limit**: `PUT /api/v1/admin/operation-limits/`
-- **Delete Limit**: `DELETE /api/v1/admin/operation-limits/{user_identifier}/{operation_code}`
-
-### 17.5 Admin Playlist Management (`/api/v1/admin/playlist`)
-
-- **List Playlists**: `GET /api/v1/admin/playlist/`
-- **Get Detail**: `GET /api/v1/admin/playlist/{uuid}`
-- **Delete Single**: `DELETE /api/v1/admin/playlist/{playlist_id}`
-- **Batch Delete**: `POST /api/v1/admin/playlist/batch-delete`
-- **Export CSV**: `POST /api/v1/admin/playlist/export`
-- **Visibility**: `PATCH /api/v1/admin/playlist/{playlist_id}/visibility`
-- **Batch Visibility**: `POST /api/v1/admin/playlist/batch-visibility`
-
-### 17.6 Admin Waitlist Management (`/api/v1/admin/waitlist`)
-
-- **List**: `GET /api/v1/admin/waitlist/`
-- **Delete Single**: `DELETE /api/v1/admin/waitlist/{waitlist_id}`
-- **Update Status**: `POST /api/v1/admin/waitlist/update-status/{waitlist_id}`
-- **Batch Delete**: `POST /api/v1/admin/waitlist/batch-delete`
-- **Export CSV**: `POST /api/v1/admin/waitlist/export`
-
-### 17.7 Admin Contact & Feedback (`/api/v1/admin/contact`, `/api/v1/admin/feedback`)
-
-- **List Contacts**: `GET /api/v1/admin/contact/`
-- **Get Contact**: `GET /api/v1/admin/contact/{contact_id}`
-- **Delete Contact**: `DELETE /api/v1/admin/contact/{contact_id}`
-- **Mark Contact Status**: `POST /api/v1/admin/contact/mark-status/{contact_id}`
-- **Batch Delete Contacts**: `POST /api/v1/admin/contact/batch-delete`
-- **Export Contacts**: `POST /api/v1/admin/contact/export`
-
-- **List Feedback**: `GET /api/v1/admin/feedback/`
-- **Get Feedback**: `GET /api/v1/admin/feedback/{feedback_id}`
-- **Feedback Stats**: `GET /api/v1/admin/feedback/stats`
-- **Update Feedback Content**: `PATCH /api/v1/admin/feedback/{feedback_id}`
-- **Delete Feedback**: `DELETE /api/v1/admin/feedback/{feedback_id}`
-- **Update Feedback Status**: `PATCH /api/v1/admin/feedback/{feedback_id}/status`
-- **Batch Delete Feedback**: `POST /api/v1/admin/feedback/batch-delete`
-- **Export Feedback**: `POST /api/v1/admin/feedback/export`
-
-### 17.8 Spotify Apps (Admin) (`/api/v1/admin/spotify-apps`)
-
-- **List Apps**: `GET /api/v1/admin/spotify-apps/`
-- **Get App**: `GET /api/v1/admin/spotify-apps/{app_id}`
-- **Create App**: `POST /api/v1/admin/spotify-apps/`
-- **Update App**: `PUT /api/v1/admin/spotify-apps/{app_id}`
-- **Delete App**: `DELETE /api/v1/admin/spotify-apps/{app_id}`
-- **List User Associations**: `GET /api/v1/admin/spotify-apps/users`
-- **Upsert Association**: `PUT /api/v1/admin/spotify-apps/users`
-- **Delete Association**: `DELETE /api/v1/admin/spotify-apps/users/{user_identifier}`
-
-### 17.9 Admin Similarity (`/api/v1/admin/similarity`)
-
-- **Rebuild Index**: `POST /api/v1/admin/similarity/rebuild-index`
-
-### 17.10 Promo Codes (Admin) (`/api/v1/admin/promo`)
-
-- **Create Promo**: `POST /api/v1/admin/promo/create`
-
-### 17.11 Ingestion Pipelines (`/api/v1/ingest`)
-
-- **Monthly Track**: `POST /api/v1/ingest/monthly/track`
-- **Monthly Update Embeddings**: `POST /api/v1/ingest/monthly/update_embeddings`
-- **Open Tracks Track**: `POST /api/v1/ingest/open/track`
-- **Open Tracks Update Embeddings**: `POST /api/v1/ingest/open/update_embeddings`
-
-### 17.12 Dummy / Testing Endpoints (`/dummy`)
-
-- **Dummy HLS**: `GET /dummy/dummy-hls/{playlist_id}.m3u8`
-  - Returns a static HLS M3U8 file regardless of ID.
+### 17.3 Track Deletion Audit Log
+- **`GET /api/v1/partner/deletion-log`** — Requires Partner API Key
+- **Description:** Returns an ECDSA-signed log of track deletions for the partner (for compliance / reconciliation).
+- **Query params:** `from_date` (YYYY-MM-DD), `to_date` (YYYY-MM-DD)
+- **Returns:**
+  ```json
+  { "success": true, "data": { "entries": [...], "signature": "..." } }
+  ```
 
 ---
 
-## Standard Response Format
+## 18. Webhooks (`/api/v1/webhooks`)
 
-Almost all successful endpoints return data wrapped in a standard JSON response structure:
+### 18.1 Stripe Webhook Receiver
+- **`POST /api/v1/webhooks/stripe`** — No standard auth (Stripe signature verified internally)
+- **Description:** Stripe sends events here (checkout completed, subscription updated, etc.). Configure in your Stripe dashboard to point to this endpoint.
+- **Note:** Do not call this from the frontend. It is invoked by Stripe directly.
+
+---
+
+## 19. Admin Operations (`/api/v1/admin`)
+
+All admin endpoints require an authenticated admin. Supply either:
+- `Authorization: Bearer <admin_jwt>` (issued by `POST /api/v1/admin/auth/login`), or
+- `X-API-KEY: <global_system_key>` (legacy system-to-system; superadmin scope)
+
+### 19.1 Admin Authentication
+
+- **Admin login:** `POST /api/v1/admin/auth/login`
+  - Body: `{ "email": "...", "password": "..." }`
+  - Returns: JWT with `role: admin` claim required by all `/api/v1/admin/*` routes.
+
+---
+
+### 19.2 Partner Management (`/api/v1/admin/partners`)
+
+#### CRUD
+- **Create:** `POST /api/v1/admin/partners/` — `201`
+  ```json
+  {
+    "legal_name": "Acme Music Ltd",
+    "display_name": "Acme",
+    "contact_email": "billing@acme.com",
+    "tier": "growth",
+    "country_code": "US",
+    "vat_number": "optional"
+  }
+  ```
+- **List:** `GET /api/v1/admin/partners/` — Query: `page`, `page_size`, `tier` (`sandbox|starter|growth|enterprise`), `is_active`
+- **Get detail:** `GET /api/v1/admin/partners/{partner_id}`
+- **Update:** `PATCH /api/v1/admin/partners/{partner_id}` — Body: any subset of create fields
+- **Delete:** `DELETE /api/v1/admin/partners/{partner_id}`
+
+#### API Key Management
+- **Issue key:** `POST /api/v1/admin/partners/api-keys/issue` — `201`
+  ```json
+  { "partner_id": 42, "label": "prod-key" }
+  ```
+  Returns: `{ "api_key": "rmx_...", "key_id": "...", "label": "..." }` — **Store the raw key immediately; it is not stored.**
+- **List keys:** `GET /api/v1/admin/partners/api-keys/{partner_id}`
+- **Revoke key:** `POST /api/v1/admin/partners/api-keys/revoke` — Body: `{ "key_id": "..." }`
+- **Rotate key:** `POST /api/v1/admin/partners/api-keys/rotate` — `201`
+
+#### SFTP Provisioning
+- **Provision:** `POST /api/v1/admin/partners/sftp/provision` — `201`
+  ```json
+  { "partner_id": 42, "username": "acme_sftp", "password": "...", "use_public_key": false, "public_key": null }
+  ```
+- **Get SFTP status:** `GET /api/v1/admin/partners/{partner_id}/sftp`
+- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry`
+
+#### Webhook Subscriptions
+- **Create webhook:** `POST /api/v1/admin/partners/webhooks` — `201`
+  ```json
+  { "partner_id": 42, "url": "https://partner.com/hooks", "events": ["ingestion.completed", "quota.warning"] }
+  ```
+  Returns: `{ "status": "success", "webhook": { "id": 1, ... }, "signing_secret": "whsec_..." }` — **Save the signing secret; it is shown only once.**
+- **List webhooks for partner:** `GET /api/v1/admin/partners/webhooks/{partner_id}`
+- **Update webhook:** `PATCH /api/v1/admin/partners/webhooks/{webhook_id}`
+  ```json
+  { "url": "https://new-url.com/hook", "events": ["track.indexed"], "is_active": true }
+  ```
+- **Delete webhook:** `DELETE /api/v1/admin/partners/webhooks/{webhook_id}`
+- **List failed deliveries:** `GET /api/v1/admin/partners/webhooks/logs/failed`
+- **Retry delivery:** `POST /api/v1/admin/partners/webhooks/logs/{log_id}/retry`
+
+#### Stripe B2B Checkout
+- **Create checkout session:** `POST /api/v1/admin/partners/{partner_id}/stripe/checkout`
+  ```json
+  { "tier": "growth", "billing_cycle": "monthly", "po_number": "PO-123" }
+  ```
+  Returns: `{ "checkout_url": "https://checkout.stripe.com/..." }`
+
+---
+
+### 19.3 User & Role Management
+
+#### Users (`/api/v1/admin/users`)
+- **List/search users:** `GET /api/v1/admin/users` — Query: `search`, `page`, `page_size`
+- **Get user:** `GET /api/v1/admin/users/{user_uuid}`
+- **Create user:** `POST /api/v1/admin/users`
+- **Update user:** `PATCH /api/v1/admin/users/{user_uuid}`
+- **Toggle active status:** `POST /api/v1/admin/users/{user_uuid}/toggle-status`
+- **Assign role:** `POST /api/v1/admin/users/{user_uuid}/roles` — Body: `{ "role_name": "admin" }`
+- **Remove role:** `DELETE /api/v1/admin/users/{user_uuid}/roles/{role_name}`
+
+#### Roles & Permissions (`/api/v1/admin/roles`)
+- **List roles:** `GET /api/v1/admin/roles`
+- **Get role detail:** `GET /api/v1/admin/roles/{role_name}`
+- **List all permissions:** `GET /api/v1/admin/roles/permissions`
+- **Update role permissions:** `PUT /api/v1/admin/roles/{role_name}/permissions` — Body: `{ "permissions": ["partners:manage", "..."] }`
+
+---
+
+### 19.4 Operation Limits (`/api/v1/admin/operation-limits`)
+
+- **List operation types:** `GET /api/v1/admin/operation-limits/operation-types`
+- **List user limits:** `GET /api/v1/admin/operation-limits/`
+- **Get user limit:** `GET /api/v1/admin/operation-limits/{user_identifier}/{operation_code}`
+- **Upsert limit:** `PUT /api/v1/admin/operation-limits/`
+- **Delete limit:** `DELETE /api/v1/admin/operation-limits/{user_identifier}/{operation_code}`
+
+---
+
+### 19.5 Playlist Management (`/api/v1/admin/playlist`)
+
+- **List playlists:** `GET /api/v1/admin/playlist/`
+- **Get detail:** `GET /api/v1/admin/playlist/{uuid}`
+- **Delete single:** `DELETE /api/v1/admin/playlist/{playlist_id}`
+- **Batch delete:** `POST /api/v1/admin/playlist/batch-delete` — Body: `{ "ids": [1, 2, 3] }`
+- **Export CSV:** `POST /api/v1/admin/playlist/export`
+- **Set visibility:** `PATCH /api/v1/admin/playlist/{playlist_id}/visibility`
+- **Batch set visibility:** `POST /api/v1/admin/playlist/batch-visibility`
+
+---
+
+### 19.6 Waitlist Management (`/api/v1/admin/waitlist`)
+
+- **List:** `GET /api/v1/admin/waitlist/`
+- **Update status:** `POST /api/v1/admin/waitlist/update-status/{waitlist_id}`
+- **Delete single:** `DELETE /api/v1/admin/waitlist/{waitlist_id}`
+- **Batch delete:** `POST /api/v1/admin/waitlist/batch-delete`
+- **Export CSV:** `POST /api/v1/admin/waitlist/export`
+
+---
+
+### 19.7 Contact Management (`/api/v1/admin/contact`)
+
+- **List contacts:** `GET /api/v1/admin/contact/`
+- **Get contact:** `GET /api/v1/admin/contact/{contact_id}`
+- **Mark status:** `POST /api/v1/admin/contact/mark-status/{contact_id}`
+- **Delete:** `DELETE /api/v1/admin/contact/{contact_id}`
+- **Batch delete:** `POST /api/v1/admin/contact/batch-delete` — Body: `{ "ids": [1, 2] }`
+- **Export CSV:** `POST /api/v1/admin/contact/export`
+
+---
+
+### 19.8 Feedback Management (`/api/v1/admin/feedback`)
+
+- **List feedback:** `GET /api/v1/admin/feedback/`
+  - Query: `page`, `page_size`, `search`, `search_column` (`message|id`), `status` (`open|resolved|all`), `date_from`, `date_to`, `sort_by`, `sort_order`
+- **Feedback stats:** `GET /api/v1/admin/feedback/stats`
+- **Get detail:** `GET /api/v1/admin/feedback/{feedback_id}`
+- **Update status:** `PATCH /api/v1/admin/feedback/{feedback_id}/status` — Body: `{ "status": "resolved" }`
+- **Delete:** `DELETE /api/v1/admin/feedback/{feedback_id}`
+- **Batch delete:** `POST /api/v1/admin/feedback/batch-delete` — Body: `{ "ids": [1, 2, 3] }`
+- **Export CSV:** `POST /api/v1/admin/feedback/export`
+
+---
+
+### 19.9 Spotify App Management (`/api/v1/admin/spotify-apps`)
+
+- **List apps:** `GET /api/v1/admin/spotify-apps/`
+- **Get app:** `GET /api/v1/admin/spotify-apps/{app_id}`
+- **Create app:** `POST /api/v1/admin/spotify-apps/`
+- **Update app:** `PUT /api/v1/admin/spotify-apps/{app_id}`
+- **Delete app:** `DELETE /api/v1/admin/spotify-apps/{app_id}`
+- **List user associations:** `GET /api/v1/admin/spotify-apps/users`
+- **Upsert association:** `PUT /api/v1/admin/spotify-apps/users`
+- **Delete association:** `DELETE /api/v1/admin/spotify-apps/users/{user_identifier}`
+
+---
+
+### 19.10 Promo Codes (`/api/v1/admin/promo`)
+
+- **Create promo:** `POST /api/v1/admin/promo/create`
+
+---
+
+### 19.11 Similarity Index (`/api/v1/admin/similarity`)
+
+- **Rebuild FAISS index:** `POST /api/v1/admin/similarity/rebuild-index`
+
+---
+
+### 19.12 Processing Jobs (`/api/v1/admin/processing`) — §C
+
+Fire-and-forget batch embedding generation. The POST returns immediately (`202 Accepted`) with a `job_id`; poll the GET endpoint for status.
+
+#### Trigger Embeddings Job
+- **`POST /api/v1/admin/processing/jobs/embeddings`** — `202 Accepted`
+- **Body:**
+  ```json
+  {
+    "partner_id": 42,
+    "env": "live",
+    "ingest_log_id": null,
+    "index_after": true,
+    "only_pending": true
+  }
+  ```
+  | Field | Description |
+  |---|---|
+  | `env` | `"live"` = persist + index into FAISS; `"test"` = dry-run (generate to temp, nothing saved) |
+  | `ingest_log_id` | Restrict to one specific ingest batch. `null` = all pending tracks. |
+  | `index_after` | Whether to insert generated embeddings into the partner FAISS index. |
+  | `only_pending` | Skip tracks that already have embeddings. |
+
+- **Returns:**
+  ```json
+  {
+    "status": "accepted",
+    "message": "Embeddings job started",
+    "job_id": 17,
+    "job_type": "embeddings",
+    "env": "live"
+  }
+  ```
+
+#### Get Job Status
+- **`GET /api/v1/admin/processing/jobs/{job_id}`**
+- **Returns:**
+  ```json
+  {
+    "status": "success",
+    "job": {
+      "id": 17,
+      "partner_id": 42,
+      "ingest_log_id": null,
+      "job_type": "embeddings",
+      "status": "running",
+      "total_tracks": 50,
+      "processed_tracks": 12,
+      "failed_tracks": 0,
+      "error_details": null,
+      "triggered_by": "admin@resomix.com",
+      "created_at": "2026-06-07T10:00:00",
+      "started_at": "2026-06-07T10:00:01",
+      "completed_at": null
+    }
+  }
+  ```
+  _`status` values: `pending` → `running` → `completed` | `partial` | `failed`_
+
+#### List Jobs
+- **`GET /api/v1/admin/processing/jobs`**
+- **Query params:** `partner_id`, `status` (`pending|running|completed|partial|failed`), `page` (default 1), `page_size` (default 50, max 100)
+- **Returns:** `{ "status": "success", "jobs": [ ...job objects... ] }`
+
+---
+
+### 19.13 Ingestion Control (`/api/v1/admin/ingestion`) — §F
+
+Manage the partner SFTP ingestion pipeline without running server commands.
+
+#### List Ingest Logs
+- **`GET /api/v1/admin/ingestion/logs`**
+- **Query params:** `partner_id`, `status` (`PENDING|PROCESSING|COMPLETED|FAILED`), `page`, `page_size`
+- **Returns:**
+  ```json
+  {
+    "status": "success",
+    "logs": [{
+      "id": 5,
+      "partner_id": 42,
+      "party_id": "PARTY_ABC",
+      "package_folder": "/srv/sftp/partners/42/live",
+      "batch_filename": "metadata.csv",
+      "status": "COMPLETED",
+      "track_count": 10,
+      "error_message": null,
+      "started_at": "2026-06-07T09:00:00",
+      "completed_at": "2026-06-07T09:00:05",
+      "created_at": "2026-06-07T09:00:00"
+    }]
+  }
+  ```
+
+#### Get Ingest Log Detail (with row errors)
+- **`GET /api/v1/admin/ingestion/logs/{log_id}`**
+- **Returns:** `{ "status": "success", "log": { ...log object... }, "errors": [ { "id": 1, "error_code": "...", "error_message": "...", "error_severity": "...", "reference_node": "..." } ] }`
+
+#### Manually Trigger Ingestion
+- **`POST /api/v1/admin/ingestion/trigger`** — `202 Accepted`
+- **Body:**
+  ```json
+  { "partner_id": 42, "env": "live" }
+  ```
+  _`env` must be `"test"` (dry-run: validate + report, persist nothing) or `"live"` (full persist)._
+- **Returns:**
+  ```json
+  {
+    "status": "accepted",
+    "message": "Ingestion started",
+    "partner_id": 42,
+    "env": "live",
+    "batch_path": "/srv/sftp/partners/42/live"
+  }
+  ```
+
+#### Retry a Failed Batch
+- **`POST /api/v1/admin/ingestion/logs/{log_id}/retry`** — `202 Accepted`
+- **Returns:**
+  ```json
+  { "status": "accepted", "message": "Ingestion retry started", "ingest_log_id": 5, "partner_id": 42, "env": "live" }
+  ```
+
+---
+
+### 19.14 Track Control (`/api/v1/admin/tracks`) — §G
+
+Control whether individual partner tracks are searchable (active in the FAISS similarity index).
+
+#### List Tracks with Processing Status
+- **`GET /api/v1/admin/tracks`**
+- **Query params:** `partner_id`, `is_active` (bool), `page`, `page_size`
+- **Returns:**
+  ```json
+  {
+    "status": "success",
+    "tracks": [{
+      "id": 101,
+      "uuid": "...",
+      "title": "My Track",
+      "display_artist": "Artist",
+      "isrc": "USXXX2600001",
+      "is_active": false,
+      "partner_id": 42,
+      "processing": {
+        "embedding_status": "pending",
+        "peaks_status": "pending",
+        "segments_status": "pending",
+        "faiss_indexed": false,
+        "sftp_env": "live",
+        "embedding_error": null
+      }
+    }]
+  }
+  ```
+  _`processing` is `null` if no processing-status row exists for the track._
+
+#### Set Track Live (Activate + FAISS Index)
+- **`POST /api/v1/admin/tracks/{track_id}/set-live`**
+- **Description:** Marks the track active (`is_active = true`) and inserts its pre-generated embeddings into the partner's FAISS index for both `maest` and `discogs` engines. Embeddings must already exist on the media server (generated via the embeddings job first).
+- **Returns:**
+  ```json
+  {
+    "status": "success",
+    "track_id": 101,
+    "is_active": true,
+    "faiss_indexed": true,
+    "index_results": {
+      "maest": { "success": true, "data": { "index_size": 71 } },
+      "discogs": { "success": true, "data": { "index_size": 71 } }
+    }
+  }
+  ```
+  _`status` is `"partial"` if one engine failed._
+
+#### Stop Track (Deactivate + Remove from FAISS)
+- **`POST /api/v1/admin/tracks/{track_id}/stop`**
+- **Query params:** `delete_embedding_file` (bool, default `false`) — Also delete the `.npy` embedding files from the media server.
+- **Description:** Marks the track inactive (`is_active = false`) and removes it from both FAISS engines. Idempotent — safe to call on an already-stopped track.
+- **Returns:**
+  ```json
+  {
+    "status": "success",
+    "track_id": 101,
+    "is_active": false,
+    "remove_result": { "success": true, "data": { "removed": 2 } }
+  }
+  ```
+
+---
+
+### 19.15 Legacy Ingestion Pipeline Endpoints _(deprecated)_
+
+The following routes are kept for backward compatibility but replaced by the admin-driven pipeline above. Do not use in new integrations.
+
+- `POST /api/v1/ingest/monthly/track`
+- `POST /api/v1/ingest/monthly/update_embeddings`
+- `POST /api/v1/ingest/open/track`
+- `POST /api/v1/ingest/open/update_embeddings`
+- `POST /api/v1/monthly_pipeline/track/`
+- `POST /api/v1/monthly_pipeline/update_embeddings/`
+- `POST /api/v1/open_tracks_pipeline/track/`
+- `POST /api/v1/open_tracks_pipeline/update_embeddings/`
+
+---
+
+## Standard Response Envelope
+
+All successful responses are wrapped in:
 
 ```json
 {
   "success": true,
-  "data": { ... payload ... },
-  "message": "Optional success message" // for some endpoints
+  "data": { ... },
+  "message": "Optional message"
 }
 ```
 
-Errors are typically returned as:
+Errors return:
 
 ```json
 {
   "success": false,
-  "error": "Error description message"
+  "error": "Human-readable description"
 }
 ```
 
+Async jobs (`202 Accepted`) skip the envelope and return a flat status object with a `job_id` or `ingest_log_id` to poll.
+
+---
+
+## Typical Admin Workflow: Onboard a Partner and Publish Tracks
+
+```
+1. POST /api/v1/admin/partners/              — Create partner record
+2. POST /api/v1/admin/partners/api-keys/issue — Issue API key (save it)
+3. POST /api/v1/admin/partners/sftp/provision  — Set up SFTP folder
+4. Partner uploads CSV + audio files via SFTP  — SFTPGo triggers ingestion automatically
+   — OR —
+   POST /api/v1/admin/ingestion/trigger        — Trigger manually if needed
+5. GET  /api/v1/admin/ingestion/logs           — Monitor ingestion status
+6. POST /api/v1/admin/processing/jobs/embeddings — Generate embeddings (env=live)
+7. GET  /api/v1/admin/processing/jobs/{job_id} — Poll until completed
+8. GET  /api/v1/admin/tracks?partner_id=42     — List tracks with processing status
+9. POST /api/v1/admin/tracks/{id}/set-live     — Set each track live in FAISS
+```

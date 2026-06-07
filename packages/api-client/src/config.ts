@@ -113,10 +113,10 @@ export interface ApiConfig {
     ADMIN_FEEDBACK_STATS: string;
     // Contact detail
     ADMIN_CONTACT_DETAIL: string;
-    
+
     // Telemetry
     TELEMETRY_SYNC: string;
-    
+
     // Cart & Checkout
     CART_GET: string;
     CART_ADD: string;
@@ -126,8 +126,8 @@ export interface ApiConfig {
     CART_CLEAR: string;
     CHECKOUT_INIT: string;
     CHECKOUT_CREATE_SESSION: string;
-    
-    // Ingestion Pipelines
+
+    // Legacy Ingestion Pipelines (deprecated — use admin ingestion endpoints instead)
     INGEST_MONTHLY_TRACK: string;
     INGEST_MONTHLY_EMBEDDINGS: string;
     INGEST_OPEN_TRACK: string;
@@ -142,6 +142,24 @@ export interface ApiConfig {
 
     // Spotify Pre-flight
     SPOTIFY_CLIENT_ID: string;
+
+    // B2B Partner endpoints
+    PARTNER_PLAYBACK_TOKEN: string;
+    PARTNER_DELETION_LOG: string;
+
+    // Admin — Processing Jobs
+    ADMIN_PROCESSING_JOBS_EMBEDDINGS: string;
+    ADMIN_PROCESSING_JOBS: string;
+
+    // Admin — Ingestion Control
+    ADMIN_INGESTION_LOGS: string;
+    ADMIN_INGESTION_TRIGGER: string;
+
+    // Admin — Track Control
+    ADMIN_TRACKS: string;
+
+    // Admin — Webhook delete
+    ADMIN_PARTNER_WEBHOOK_DETAIL: string;
   };
 }
 
@@ -295,22 +313,31 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PROMO_CREATE: "/api/v1/admin/promo/create",
     ADMIN_SIMILARITY_REBUILD: "/api/v1/admin/similarity/rebuild-index",
     PARTNER_ME: "/api/v1/partner/me",
-    // Ingestion Pipelines
+    // Legacy Ingestion Pipelines (deprecated — prefer /api/v1/admin/ingestion/*)
     INGEST_MONTHLY_TRACK: "/api/v1/ingest/monthly/track",
     INGEST_MONTHLY_EMBEDDINGS: "/api/v1/ingest/monthly/update_embeddings",
     INGEST_OPEN_TRACK: "/api/v1/ingest/open/track",
     INGEST_OPEN_EMBEDDINGS: "/api/v1/ingest/open/update_embeddings",
     // Metadata
     METADATA_EXTRACT: "/api/v1/metadata/track",
-    // System
-    HEALTH: "/health",
-    ROOT: "/",
+    // System — versioned paths
+    HEALTH: "/api/v1/health",
+    ROOT: "/api/v1/",
     // Spotify Pre-flight
     SPOTIFY_CLIENT_ID: "/api/v1/spotify/app-client-id",
-    // Unused beta endpoints
-    // SPOTIFY_TRANSFER: "/spotify/transfer-playlist/",
-    // TIDAL_AUTH_TOKEN: "/tidal/auth/token",
-    // TIDAL_TRANSFER: "/tidal/transfer-playlist/",
+    // B2B Partner endpoints
+    PARTNER_PLAYBACK_TOKEN: "/api/v1/partner/playback-token",
+    PARTNER_DELETION_LOG: "/api/v1/partner/deletion-log",
+    // Admin — Processing Jobs
+    ADMIN_PROCESSING_JOBS_EMBEDDINGS: "/api/v1/admin/processing/jobs/embeddings",
+    ADMIN_PROCESSING_JOBS: "/api/v1/admin/processing/jobs",
+    // Admin — Ingestion Control
+    ADMIN_INGESTION_LOGS: "/api/v1/admin/ingestion/logs",
+    ADMIN_INGESTION_TRIGGER: "/api/v1/admin/ingestion/trigger",
+    // Admin — Track Control
+    ADMIN_TRACKS: "/api/v1/admin/tracks",
+    // Admin — Webhook CRUD (detail/delete by ID)
+    ADMIN_PARTNER_WEBHOOK_DETAIL: "/api/v1/admin/partners/webhooks",
   },
 };
 

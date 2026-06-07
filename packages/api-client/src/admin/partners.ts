@@ -268,7 +268,20 @@ export const createPartnerWebhook = async (payload: WebhookConfig): Promise<{ su
 export const updatePartnerWebhook = async (webhookId: number, payload: Partial<WebhookConfig>): Promise<{ success: boolean; data: WebhookConfig; error?: string }> => {
   try {
     return await axiosWrapper(
-      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_WEBHOOKS}/${webhookId}`, payload)
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_WEBHOOK_DETAIL}/${webhookId}`, payload)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Delete a partner webhook configuration by ID (Admin)
+ */
+export const deletePartnerWebhook = async (webhookId: number): Promise<{ success: boolean; message?: string; error?: string }> => {
+  try {
+    return await axiosWrapper(
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_WEBHOOK_DETAIL}/${webhookId}`)
     );
   } catch (error: any) {
     return handleApiError(error) as any;

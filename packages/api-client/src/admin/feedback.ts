@@ -163,23 +163,20 @@ export const batchDeleteFeedback = async (feedbackIds: number[]) => {
 };
 
 /**
- * Update a feedback entry (e.g., change status)
+ * Update a feedback entry's status.
+ *
+ * @deprecated Use `markFeedbackStatus` directly — the backend only exposes
+ * `PATCH /admin/feedback/{id}/status` for status changes. A general content
+ * PATCH endpoint does not exist in the current API spec.
  */
 export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpdateData) => {
-  try {
-    const data = await axiosWrapper<FeedbackUpdateResponse>(
-      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_UPDATE}${feedbackId}`, updateData)
-    );
-
-    if (data.success) return data;
-    
-    return {
-      success: false,
-      error: (data as ApiResponse).error || "Failed to update feedback.",
-    };
-  } catch (error) {
-    return handleApiError(error as Error);
+  if (updateData.status) {
+    return markFeedbackStatus(feedbackId, updateData.status);
   }
+  return {
+    success: false,
+    error: "updateFeedback: only 'status' updates are supported. Use markFeedbackStatus() instead.",
+  } as const;
 };
 
 /**
