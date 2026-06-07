@@ -39,9 +39,20 @@ async def mock_require_admin():
 async def mock_require_permission_dummy():
     return User(id=1, username="admin", email="admin@test.com", uuid="admin-uuid", is_active=True)
 
-# Apply overrides to app
-app.dependency_overrides[require_admin] = mock_require_admin
-app.dependency_overrides[require_permission("partners:manage")] = mock_require_permission_dummy
+# Apply the admin-auth bypass ONLY for this module's tests via an autouse fixture, and
+# tear it down afterwards. Setting these on app.dependency_overrides at import time leaks
+# the bypass into every other test in the session (e.g. routes that assert a 403 without
+# auth would start returning 200).
+@pytest.fixture(autouse=True)
+def _override_admin_auth():
+    perm_dep = require_permission("partners:manage")
+    app.dependency_overrides[require_admin] = mock_require_admin
+    app.dependency_overrides[perm_dep] = mock_require_permission_dummy
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(require_admin, None)
+        app.dependency_overrides.pop(perm_dep, None)
 
 ADMIN_HEADERS = {"X-Api-Key": settings.api_key}
 

@@ -344,9 +344,15 @@ class PlaylistService:
                 tracks[0].get("type", "internal") if tracks else "internal"
             )
 
-            # Call media server to generate segmented M3U8
+            # Call media server to generate segmented M3U8.
+            # partner_id is passed as a query param so the Hetzner edge-auth
+            # middleware (which reads from request.query_params) can resolve
+            # the partner-scoped assets correctly.
+            hls_endpoint = "/signed-audio/hls-m3u8/"
+            if partner_id is not None:
+                hls_endpoint = f"{hls_endpoint}?partner_id={partner_id}"
             m3u8_content = await self._call_media_server(
-                "/signed-audio/hls-m3u8/",
+                hls_endpoint,
                 {"uuids": uuid_list, "reference_track_type": seed_track_type},
             )
 

@@ -236,9 +236,9 @@ class SimilarityService:
                                 )
                             break
 
-                # Create similarity playlist if we have tracks
+                # Create similarity playlist only for authenticated users
                 playlist_info = None
-                if deduplicated_track_ids:
+                if deduplicated_track_ids and user_id:
                     # Get the uploaded track's database ID
                     uploaded_track = await self.track_repository.async_get_by_uuid(
                         db, track_uuid, partner_id=partner_id
@@ -455,9 +455,9 @@ class SimilarityService:
                                 )
                             break
 
-                # Create similarity playlist if we have tracks
+                # Create similarity playlist only for authenticated users
                 playlist_info = None
-                if deduplicated_track_ids and queried_track_data:
+                if deduplicated_track_ids and queried_track_data and user_id:
                     # Get the queried track's database ID from its UUID
                     queried_track_uuid = queried_track_data.get("id")
                     if queried_track_uuid:

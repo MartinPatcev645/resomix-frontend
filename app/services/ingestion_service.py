@@ -16,9 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
-import httpx
 from typing import Optional
-from app.core.config import settings
 from app.models.b2b import IngestLog, IngestionError, Deal
 from app.models.track import Track
 from app.models.audio_file import AudioFile
@@ -30,22 +28,29 @@ from app.tasks.webhooks import dispatch_webhook
 logger = logging.getLogger(__name__)
 
 async def process_ingestion_batch(
-    partner_id: int, 
-    batch_path: str, 
-    csv_path: Optional[str] = None, 
-    checksum_verified: bool = False, 
+    partner_id: int,
+    batch_path: str,
+    env: str = "live",
+    csv_path: Optional[str] = None,
+    checksum_verified: bool = False,
     validation_error: Optional[str] = None
 ):
     """
     Background task to process a partner's uploaded CSV manifest.
-    
+
     Args:
         partner_id: The tenant ID.
-        batch_path: The absolute path to the partner's incoming SFTP directory.
+        batch_path: The absolute path to the partner's SFTP env directory (``.../{test|live}``).
+        env: SFTP env the batch came from. ``"test"`` => dry-run (validate + report only, persist
+            nothing); ``"live"`` => full ingestion (persist tracks + processing-status rows).
         csv_path: Absolute path to the CSV file if already discovered.
         checksum_verified: Whether the CSV was already verified via checksum.
         validation_error: Early validation error string, if any.
     """
+    env = (env or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+    dry_run = env == "test"
     logger.info(f"[IngestionService] Starting batch process for partner {partner_id} at {batch_path}")
     
     # Establish partner context for the background task to satisfy the multi-tenancy failsafe
@@ -350,35 +355,81 @@ async def process_ingestion_batch(
                         "failed_at": datetime.utcnow().isoformat()
                     }
                 )
+            elif dry_run:
+                # --- TEST env: dry-run. Validation already passed; report success and persist
+                # NOTHING (no tracks/audio_files/track_processing_status). The downstream
+                # embedding/segment generation is exercised separately by the admin via the
+                # batch-embeddings endpoint with env="test" (generate-to-temp + delete).
+                await db.rollback()
+                candidate_count = len(tracks_to_insert)
+                log_entry.status = "COMPLETED"
+                log_entry.track_count = candidate_count
+                log_entry.error_message = (
+                    f"DRY-RUN (test env): {candidate_count} track(s) passed validation. "
+                    f"Nothing was persisted."
+                )
+                log_entry.completed_at = datetime.utcnow()
+                await db.commit()
+                logger.info(
+                    f"[IngestionService] DRY-RUN complete for partner {partner_id}: "
+                    f"{candidate_count} track(s) would ingest."
+                )
+                dispatch_webhook.delay(
+                    partner_id=partner_id,
+                    event_type="ingestion.completed",
+                    payload={
+                        "ingest_log_id": log_entry.id,
+                        "batch_filename": log_entry.batch_filename,
+                        "track_count": candidate_count,
+                        "dry_run": True,
+                        "env": env,
+                        "completed_at": log_entry.completed_at.isoformat(),
+                    },
+                )
             else:
-                # Success: Persist all tracks and link them with audio files
+                # --- LIVE env: persist all tracks, link audio files, and create the
+                # per-track processing-status rows that the admin pipeline (§C) drives.
+                from app.models.track_processing_status import TrackProcessingStatus
+
                 for track, audio_fn in tracks_to_insert:
                     db.add(track)
-                    await db.flush() # Flush to populate track.id
-                    
+                    await db.flush()  # Flush to populate track.id
+
                     audio_file_path = manifest_path.parent / audio_fn
                     file_size = audio_file_path.stat().st_size if audio_file_path.exists() else 0
-                    
+
                     new_audio = AudioFile(
                         party_id=party_id,
                         ingest_log_id=log_entry.id,
                         track_id=track.id,
                         partner_id=partner_id,
                         asset_class="Master",
+                        asset_subtype="master",
                         original_filename=audio_fn,
                         stored_path=str(audio_file_path.absolute()),
                         file_size_bytes=file_size,
                         mime_type="audio/wav" if audio_fn.endswith(".wav") else "audio/mpeg" if audio_fn.endswith(".mp3") else "audio/flac"
                     )
                     db.add(new_audio)
+
+                    # Create the processing-status row (all stages pending). This REPLACES the
+                    # old premature add-vector call: embeddings don't exist yet, so FAISS
+                    # indexing is deferred to the admin-triggered processing jobs.
+                    db.add(TrackProcessingStatus(
+                        track_id=track.id,
+                        partner_id=partner_id,
+                        ingest_log_id=log_entry.id,
+                        audio_filename=audio_fn,
+                        sftp_env=env,
+                    ))
                     success_count += 1
-                
+
                 log_entry.status = "COMPLETED"
                 log_entry.track_count = success_count
                 log_entry.completed_at = datetime.utcnow()
                 await db.commit()
                 logger.info(f"[IngestionService] Batch complete. Successfully ingested {success_count} tracks.")
-                
+
                 # Trigger ingestion.completed webhook event
                 dispatch_webhook.delay(
                     partner_id=partner_id,
@@ -387,10 +438,12 @@ async def process_ingestion_batch(
                         "ingest_log_id": log_entry.id,
                         "batch_filename": log_entry.batch_filename,
                         "track_count": success_count,
+                        "dry_run": False,
+                        "env": env,
                         "completed_at": log_entry.completed_at.isoformat()
                     }
                 )
-                
+
                 # Trigger track.indexed webhook events for all successfully inserted tracks
                 for track, _ in tracks_to_insert:
                     dispatch_webhook.delay(
@@ -404,38 +457,6 @@ async def process_ingestion_batch(
                         }
                     )
 
-                # Index each track's vectors in FAISS (fire-and-forget: failures are logged, not fatal)
-                _sim_url = getattr(settings, "similarity_server_url", None)
-                _api_key = getattr(settings, "hetzner_internal_api_key", None)
-                if _sim_url and _api_key:
-                    _base = _sim_url.rstrip("/")
-                    _headers = {
-                        "Authorization": f"Bearer {_api_key}",
-                        "Content-Type": "application/json",
-                    }
-                    async with httpx.AsyncClient(timeout=30.0) as client:
-                        for track, audio_fn in tracks_to_insert:
-                            for engine in ["maest", "discogs"]:
-                                try:
-                                    resp = await client.post(
-                                        f"{_base}/internal/ingest/add-vector",
-                                        json={
-                                            "partner_id": partner_id,
-                                            "track_uuid": track.uuid,
-                                            "filename": audio_fn,
-                                            "engine": engine,
-                                        },
-                                        headers=_headers,
-                                    )
-                                    if resp.status_code == 200:
-                                        logger.info(f"[IngestionService] Indexed {track.uuid} ({engine}) in FAISS.")
-                                    else:
-                                        logger.warning(f"[IngestionService] add-vector returned {resp.status_code} for {track.uuid} ({engine}): {resp.text[:200]}")
-                                except Exception as vec_err:
-                                    logger.warning(f"[IngestionService] Failed to index {track.uuid} ({engine}) in FAISS: {vec_err}")
-                else:
-                    logger.warning("[IngestionService] SIMILARITY_SERVER_URL or HETZNER_INTERNAL_API_KEY not set; skipping FAISS indexing.")
-
         except Exception as e:
             logger.error(f"[IngestionService] Critical failure: {e}")
             await db.rollback()
@@ -443,37 +464,8 @@ async def process_ingestion_batch(
             log_entry.error_message = str(e)
             log_entry.completed_at = datetime.utcnow()
             await db.commit()
-            
-            # Trigger ingestion.failed webhook event
-            try:
-                dispatch_webhook.delay(
-                    partner_id=partner_id,
-                    event_type="ingestion.failed",
-                    payload={
-                        "ingest_log_id": log_entry.id,
-                        "error_message": log_entry.error_message,
-                        "failed_at": log_entry.completed_at.isoformat()
-                    }
-                )
-            except Exception as w_ex:
-                logger.error(f"Failed to trigger failed webhook after exception: {w_ex}")
+            logger.info(f"[IngestionService] Batch ended with failure for partner {partner_id} (env={env}).")
 
-            
-            # 4. Move files to processed (Optional cleanup step)
-            # processed_dir = folder.parent / "processed"
-            # processed_dir.mkdir(exist_ok=True)
-            # os.rename(folder, processed_dir / folder.name)
-            
-            logger.info(f"[IngestionService] Batch complete. Success: {success_count}, Errors: {error_count}")
-
-        except Exception as e:
-            logger.error(f"[IngestionService] Critical failure: {e}")
-            await db.rollback()
-            log_entry.status = "FAILED"
-            log_entry.error_message = str(e)
-            log_entry.completed_at = datetime.utcnow()
-            await db.commit()
-            
             # Trigger ingestion.failed webhook event
             try:
                 dispatch_webhook.delay(
