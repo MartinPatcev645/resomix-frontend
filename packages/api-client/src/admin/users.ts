@@ -9,6 +9,7 @@ export interface AdminUserSearchItem {
   username: string | null;
   name: string | null;
   is_email_verified: boolean | null;
+  is_active?: boolean | null;
   created_at: string | null;
 }
 

@@ -291,10 +291,12 @@ export const deletePartnerWebhook = async (webhookId: number): Promise<{ success
 /**
  * Get all failed B2B webhook delivery logs (Admin)
  */
-export const listFailedWebhookLogs = async (): Promise<{ success: boolean; data: WebhookDeliveryLog[]; error?: string }> => {
+export const listFailedWebhookLogs = async (partnerId?: number): Promise<{ success: boolean; data: WebhookDeliveryLog[]; error?: string }> => {
   try {
     return await axiosWrapper(
-      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_WEBHOOK_LOGS_FAILED)
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_WEBHOOK_LOGS_FAILED, {
+        params: partnerId ? { partner_id: partnerId } : undefined
+      })
     );
   } catch (error: any) {
     return handleApiError(error) as any;

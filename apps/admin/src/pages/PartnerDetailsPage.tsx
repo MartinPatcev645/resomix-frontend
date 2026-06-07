@@ -39,7 +39,8 @@ import {
   Terminal,
   Plus,
   CreditCard,
-  Globe
+  Globe,
+  Trash2
 } from 'lucide-react';
 import { useStatusModals, usePartners } from '@resomix/hooks';
 import { StatusModal } from '@resomix/ui';
@@ -58,8 +59,8 @@ const { Option } = Select;
 
 function PartnerDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const partnerId = id ? parseInt(id, 10) : NaN;
   const navigate = useNavigate();
+  const partnerId = /^\d+$/.test(id || '') ? parseInt(id!, 10) : NaN;
   
   const [modal, modalContextHolder] = Modal.useModal();
   const [activeTab, setActiveTab] = useState('1');
@@ -96,6 +97,7 @@ function PartnerDetailsPage() {
     logsLoading,
     fetchPartnerWebhooks,
     saveWebhookConfig,
+    deleteWebhook,
     fetchFailedWebhookLogs,
     retryWebhook,
     initiateB2bCheckout,
@@ -154,7 +156,7 @@ function PartnerDetailsPage() {
 
       // Fetch B2B webhooks & failed webhook delivery logs
       await fetchPartnerWebhooks(partnerId);
-      await fetchFailedWebhookLogs();
+      await fetchFailedWebhookLogs(partnerId);
     } catch (err) {
       console.error(err);
       showErrorModal('Fetch Error', 'An error occurred while loading partner data.');
@@ -296,6 +298,23 @@ function PartnerDetailsPage() {
       is_active: values.is_active !== undefined ? values.is_active : true,
     };
     await saveWebhookConfig(webhookId || null, payload);
+  };
+
+  const handleDeleteWebhook = () => {
+    if (webhooks.length === 0 || !webhooks[0].id) return;
+    const webhookId = webhooks[0].id;
+    modal.confirm({
+      title: 'Delete Webhook Configuration',
+      content: 'Are you sure you want to delete this webhook configuration? You will stop receiving all event notifications.',
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        const success = await deleteWebhook(webhookId, partnerId);
+        if (success) {
+          webhookForm.resetFields();
+        }
+      }
+    });
   };
 
   const handleTriggerCheckout = async (values: any) => {
@@ -849,9 +868,23 @@ function PartnerDetailsPage() {
                         )}
 
                         <Form.Item className="!mb-0">
-                          <Button type="primary" htmlType="submit" loading={webhooksLoading} className="h-10 rounded-lg font-semibold w-full">
-                            Save Webhook Settings
-                          </Button>
+                          <Space className="w-full flex">
+                            <Button type="primary" htmlType="submit" loading={webhooksLoading} className="h-10 rounded-lg font-semibold flex-1">
+                              Save Webhook Settings
+                            </Button>
+                            {webhooks.length > 0 && (
+                              <Button 
+                                danger 
+                                type="default" 
+                                icon={<Trash2 size={16} />} 
+                                loading={webhooksLoading} 
+                                onClick={handleDeleteWebhook} 
+                                className="h-10 rounded-lg font-semibold flex-initial"
+                              >
+                                Delete
+                              </Button>
+                            )}
+                          </Space>
                         </Form.Item>
                       </Form>
                     </Card>

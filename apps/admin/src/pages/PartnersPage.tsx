@@ -67,9 +67,11 @@ function PartnersPage() {
     setTierFilter,
     setActiveFilter,
     selectedPartner,
+    setSelectedPartner,
     apiKeys,
     keysLoading,
     fetchPartners,
+    fetchApiKeys,
     createPartner,
     issueApiKey,
     revokeKey,
@@ -257,6 +259,16 @@ function PartnersPage() {
       align: 'right' as const,
       render: (_: unknown, record: Partner) => (
         <Space>
+          <Tooltip title="Manage API Keys">
+            <Button 
+              icon={<Key size={16} />} 
+              onClick={() => {
+                setSelectedPartner(record);
+                fetchApiKeys(record.id);
+                setKeysModalVisible(true);
+              }}
+            />
+          </Tooltip>
           <Tooltip title="Edit Partner">
             <Button 
               icon={<Edit size={16} />} 
@@ -417,7 +429,7 @@ function PartnersPage() {
           <Form.Item name="vat_number" label={<Text className="font-medium text-primary">VAT / Tax ID (Optional)</Text>}>
             <Input placeholder="EU123456789" className="h-11 rounded-lg" />
           </Form.Item>
-          <Form.Item name="is_active" label={<Text className="font-medium text-primary">Status</Text>} valuePropName="checked">
+          <Form.Item name="is_active" label={<Text className="font-medium text-primary">Status</Text>}>
             <Select className="h-11 rounded-lg">
               <Option value={true}>Active</Option>
               <Option value={false}>Inactive</Option>

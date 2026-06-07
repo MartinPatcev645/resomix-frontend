@@ -15,6 +15,7 @@ import {
   getPartnerWebhooks,
   createPartnerWebhook,
   updatePartnerWebhook,
+  deletePartnerWebhook,
   listFailedWebhookLogs,
   retryWebhookDelivery,
   createStripeCheckoutSession,
@@ -336,10 +337,10 @@ export function usePartners(options?: UsePartnersOptions) {
     return false;
   };
 
-  const fetchFailedWebhookLogs = async () => {
+  const fetchFailedWebhookLogs = async (partnerId?: number) => {
     setLogsLoading(true);
     try {
-      const result = await listFailedWebhookLogs();
+      const result = await listFailedWebhookLogs(partnerId);
       if (result.success) {
         setFailedLogs(result.data);
       } else {
@@ -349,6 +350,26 @@ export function usePartners(options?: UsePartnersOptions) {
       message.error('Error fetching failed webhook logs');
     } finally {
       setLogsLoading(false);
+    }
+  };
+
+  const deleteWebhook = async (webhookId: number, partnerId: number) => {
+    setWebhooksLoading(true);
+    try {
+      const result = await deletePartnerWebhook(webhookId);
+      if (result.success) {
+        message.success('Webhook deleted successfully');
+        fetchPartnerWebhooks(partnerId);
+        return true;
+      } else {
+        message.error(result.error || 'Failed to delete webhook');
+        return false;
+      }
+    } catch {
+      message.error('Error deleting webhook');
+      return false;
+    } finally {
+      setWebhooksLoading(false);
     }
   };
 
@@ -417,6 +438,7 @@ export function usePartners(options?: UsePartnersOptions) {
     retrySftp,
     fetchPartnerWebhooks,
     saveWebhookConfig,
+    deleteWebhook,
     fetchFailedWebhookLogs,
     retryWebhook,
     initiateB2bCheckout,

@@ -87,10 +87,11 @@ function UsersPage() {
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
 
   // ── Selected / Loading State ───────────────────────────────
-  const [selectedUser, setSelectedUser] = useState<AdminUserSearchItem | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [editingUser, setEditingUser] = useState<AdminUserSearchItem | null>(null);
   const [detailUser, setDetailUser] = useState<any | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [roleModalLoading, setRoleModalLoading] = useState(false);
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
@@ -137,14 +138,21 @@ function UsersPage() {
     setDetailLoading(false);
   };
 
-  const handleOpenRoleModal = (user: AdminUserSearchItem) => {
+  const handleOpenRoleModal = async (user: AdminUserSearchItem) => {
     setSelectedUser(user);
     setRoleModalVisible(true);
+    if (!user.uuid) return;
+    setRoleModalLoading(true);
+    const result = await getUserDetail(user.uuid);
+    if (result?.success && result.data) {
+      setSelectedUser(result.data);
+    }
+    setRoleModalLoading(false);
   };
 
   const handleToggleStatus = (user: AdminUserSearchItem) => {
     if (!user.uuid) return;
-    const isActive = user.is_email_verified; // using email_verified as proxy for active
+    const isActive = user.is_active ?? true;
     const action = isActive ? 'Deactivate' : 'Activate';
     modal.confirm({
       title: `${action} User`,
@@ -155,6 +163,17 @@ function UsersPage() {
     });
   };
 
+  const handleAssignRole = async (roleName: string) => {
+    if (!selectedUser?.uuid) return;
+    const success = await assignRole(selectedUser.uuid, roleName);
+    if (success) {
+      const result = await getUserDetail(selectedUser.uuid);
+      if (result?.success && result.data) {
+        setSelectedUser(result.data);
+      }
+    }
+  };
+
   const handleRemoveRole = (roleName: string) => {
     if (!selectedUser?.uuid) return;
     modal.confirm({
@@ -162,7 +181,15 @@ function UsersPage() {
       content: `Remove the "${roleName}" role from ${selectedUser.username}?`,
       okText: 'Remove',
       okType: 'danger',
-      onOk: () => removeRole(selectedUser.uuid!, roleName),
+      onOk: async () => {
+        const success = await removeRole(selectedUser.uuid!, roleName);
+        if (success) {
+          const result = await getUserDetail(selectedUser.uuid!);
+          if (result?.success && result.data) {
+            setSelectedUser(result.data);
+          }
+        }
+      },
     });
   };
 
@@ -195,12 +222,16 @@ function UsersPage() {
     },
     {
       title: 'Status',
-      dataIndex: 'is_email_verified',
-      key: 'is_email_verified',
-      render: (verified: boolean) => (
-        <Tag color={verified ? 'success' : 'warning'} className="rounded-full px-3">
-          {verified ? 'Verified' : 'Unverified'}
-        </Tag>
+      key: 'status',
+      render: (_: any, record: AdminUserSearchItem) => (
+        <Space size={4}>
+          <Tag color={record.is_active ?? true ? 'success' : 'error'} className="rounded-full px-3">
+            {record.is_active ?? true ? 'Active' : 'Inactive'}
+          </Tag>
+          <Tag color={record.is_email_verified ? 'blue' : 'warning'} className="rounded-full px-3">
+            {record.is_email_verified ? 'Verified' : 'Unverified'}
+          </Tag>
+        </Space>
       ),
     },
     {
@@ -227,8 +258,8 @@ function UsersPage() {
           },
           {
             key: 'status',
-            label: record.is_email_verified ? 'Deactivate User' : 'Activate User',
-            icon: record.is_email_verified ? <UserX size={14} /> : <UserCheck size={14} />,
+            label: (record.is_active ?? true) ? 'Deactivate User' : 'Activate User',
+            icon: (record.is_active ?? true) ? <UserX size={14} /> : <UserCheck size={14} />,
             onClick: () => handleToggleStatus(record),
           },
           { type: 'divider' },
@@ -358,7 +389,7 @@ function UsersPage() {
         <Table
           columns={columns}
           dataSource={users}
-          rowKey="id"
+          rowKey="uuid"
           loading={loading}
           pagination={{
             current: pagination.current,
@@ -413,6 +444,11 @@ function UsersPage() {
                 <span className="font-mono">{detailUser.username ?? '—'}</span>
               </Descriptions.Item>
               <Descriptions.Item label="Email">{detailUser.email ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label="Account Status">
+                <Tag color={(detailUser.is_active ?? true) ? 'success' : 'error'}>
+                  {(detailUser.is_active ?? true) ? 'Active' : 'Inactive'}
+                </Tag>
+              </Descriptions.Item>
               <Descriptions.Item label="Email Verified">
                 <Tag color={detailUser.is_email_verified ? 'success' : 'warning'}>
                   {detailUser.is_email_verified ? 'Yes' : 'No'}
@@ -520,9 +556,8 @@ function UsersPage() {
             <Select
               placeholder="Select a role to assign"
               className="w-full h-11"
-              onSelect={(value: string) => {
-                if (selectedUser?.uuid) assignRole(selectedUser.uuid, value);
-              }}
+              value={undefined as any}
+              onSelect={(value: any) => { handleAssignRole(value); }}
             >
               {systemRoles.map((role) => (
                 <Option key={role.name} value={role.name}>{role.name}</Option>
@@ -554,25 +589,35 @@ function UsersPage() {
           {selectedUser && (
             <div className="mt-6">
               <Title level={5} className="!mb-3">Remove Role</Title>
-              <Text className="text-secondary text-xs block mb-3">
-                Click a role tag below to remove it from this user.
-              </Text>
-              <Space wrap>
-                {systemRoles.map((role) => (
-                  <Tag
-                    key={role.name}
-                    closable
-                    onClose={(e) => { e.preventDefault(); handleRemoveRole(role.name); }}
-                    className="px-3 py-1 rounded-full text-sm cursor-pointer"
-                    color="blue"
-                  >
-                    {role.name}
-                  </Tag>
-                ))}
-              </Space>
-              <Text className="text-secondary text-xs mt-2 block italic">
-                Note: Only removes the role if currently assigned to this user.
-              </Text>
+              {roleModalLoading ? (
+                <div className="py-2"><Spin size="small" /></div>
+              ) : selectedUser.roles && selectedUser.roles.length > 0 ? (
+                <>
+                  <Text className="text-secondary text-xs block mb-3">
+                    Click a role tag below to remove it from this user.
+                  </Text>
+                  <Space wrap>
+                    {selectedUser.roles.map((role: any) => {
+                      const roleName = typeof role === 'string' ? role : role.name;
+                      return (
+                        <Tag
+                          key={roleName}
+                          closable
+                          onClose={(e) => { e.preventDefault(); handleRemoveRole(roleName); }}
+                          className="px-3 py-1 rounded-full text-sm cursor-pointer"
+                          color="blue"
+                        >
+                          {roleName}
+                        </Tag>
+                      );
+                    })}
+                  </Space>
+                </>
+              ) : (
+                <Text className="text-secondary text-xs italic block mb-3">
+                  No roles assigned to this user.
+                </Text>
+              )}
             </div>
           )}
         </div>
