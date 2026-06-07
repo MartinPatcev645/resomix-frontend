@@ -52,7 +52,7 @@ const PlaylistHero: React.FC = () => {
   useEffect(() => {
     // setHasForkedThisPlaylist(false);
     setForkedPlaylistId(null);
-  }, [playlistData?.playlist.id]);
+  }, [playlistData?.playlist?.id]);
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -66,13 +66,13 @@ const PlaylistHero: React.FC = () => {
   const handleDownloadExportClose = () => setShowDownloadExport(false);
 
   const handlePlaylistCartClick = async () => {
-    if (!playlistData?.playlist.id) return;
+    if (!playlistData?.playlist?.id) return;
     await addPlaylist(playlistData.playlist.id);
   };
 
   const handleQueriedTrackCartClick = async () => {
     if (!playlistData?.queried_track.id) return;
-    await toggleItem(playlistData.queried_track.id, playlistData?.playlist.id || undefined);
+    await toggleItem(playlistData.queried_track.id, playlistData?.playlist?.id || undefined);
   };
 
   const handleStatusClose = () => {
@@ -300,7 +300,7 @@ const PlaylistHero: React.FC = () => {
                     id="playlist-hero-rating-button"
                     aria-label="Rate these Results"
                     aria-expanded={showRating}
-                    data-playlist-id={playlistData?.playlist.id}
+                    data-playlist-id={playlistData?.playlist?.id}
                   >
                     <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
                     <span className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate These Results</span>
@@ -321,7 +321,7 @@ const PlaylistHero: React.FC = () => {
                     ) : (
                       <h1 className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
                         <HoverFlow
-                          text={playlistData?.playlist.name || "No playlist data"}
+                          text={playlistData?.playlist?.name || "No playlist data"}
                           maxChars={35}
                           delay={800}
                           speed={80}
@@ -330,7 +330,7 @@ const PlaylistHero: React.FC = () => {
                         />
                       </h1>
                     )}
-                    <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
+                    <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist?.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
                       <HoverFlow
                         text={playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title}
@@ -341,7 +341,7 @@ const PlaylistHero: React.FC = () => {
                         maxWidth="400px"
                       />
                     </div>
-                    <div className={`${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? '' : 'hidden'}`}></div>
+                    <div className={`${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist?.name ? '' : 'hidden'}`}></div>
                     <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
                       <img src={TimeSvg} draggable={false} aria-label="Time" alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
                       <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
@@ -415,9 +415,9 @@ const PlaylistHero: React.FC = () => {
                     <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white mt-[var(--px-6)]" onClick={handleForkClick} />
                   </Tooltip>
                 )} */}
-                <Tooltip message={playlistData?.playlist.is_public ? "Playlist is Public" : "Playlist is Private!"}>
-                  <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
-                    {playlistData?.playlist.is_public ? (
+                <Tooltip message={playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!"}>
+                  <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
+                    {playlistData?.playlist?.is_public ? (
                       <>
                         <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
                         Public

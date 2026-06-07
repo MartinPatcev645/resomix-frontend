@@ -32,6 +32,22 @@ export interface PlaylistResponse {
   data: PlaylistData
 }
 
+// Helper function to synthesize a virtual playlist if missing but queried_track is present
+const ensurePlaylistObject = (data: PlaylistData): PlaylistData => {
+  if (!data) return data;
+  if (!data.playlist && data.queried_track) {
+    return {
+      ...data,
+      playlist: {
+        id: data.queried_track.id,
+        name: `${data.queried_track.artist} - ${data.queried_track.title}`,
+        is_public: true,
+      }
+    };
+  }
+  return data;
+};
+
 // Cache helper functions
 const saveResponseToCache = (response: PlaylistResponse): void => {
   // Check if we're in a browser environment
@@ -40,7 +56,7 @@ const saveResponseToCache = (response: PlaylistResponse): void => {
   }
 
   try {
-    const playlistId = response.data.playlist.id
+    const playlistId = response.data?.playlist?.id || response.data?.queried_track?.id;
     if (!playlistId) {
       console.warn('Cannot cache playlist response: missing playlist ID');
       return;
@@ -62,9 +78,10 @@ const saveResponseToCache = (response: PlaylistResponse): void => {
     }
 
     // Remove existing response with same ID if it exists
-    cachedPlaylists = cachedPlaylists.filter(p =>
-      p?.data?.playlist?.id && p.data.playlist.id !== playlistId
-    )
+    cachedPlaylists = cachedPlaylists.filter(p => {
+      const id = p?.data?.playlist?.id || p?.data?.queried_track?.id;
+      return id && id !== playlistId;
+    })
 
     // Add new response to the end (most recent)
     cachedPlaylists.push(response)
@@ -115,12 +132,13 @@ const loadCachedResponse = (id?: string): PlaylistResponse | null => {
     }
 
     // Find the response with matching ID
-    const foundResponse = cachedPlaylists.find(p =>
-      p?.data?.playlist?.id === targetId
-    )
+    const foundResponse = cachedPlaylists.find(p => {
+      const pId = p?.data?.playlist?.id || p?.data?.queried_track?.id;
+      return pId === targetId;
+    })
 
     // Validate the found response structure
-    if (foundResponse && !foundResponse.data?.playlist?.id) {
+    if (foundResponse && !foundResponse.data?.playlist?.id && !foundResponse.data?.queried_track?.id) {
       console.warn('Invalid cached response structure')
       return null
     }
@@ -187,20 +205,23 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   trackRatings: {},
 
   // Actions
-  setPlaylistData: (data, isUpload) => set({
-    playlistData: {
+  setPlaylistData: (data, isUpload) => {
+    const processedData = ensurePlaylistObject({
       ...data,
       isUpload: isUpload !== undefined ? isUpload : (data.isUpload ?? false)
-    },
-    error: null
-  }),
+    });
+    set({
+      playlistData: processedData,
+      error: null
+    });
+  },
 
   setPlaylistResponse: (response, isUpload) => {
     if (response.success) {
-      const dataWithUpload = {
+      const dataWithUpload = ensurePlaylistObject({
         ...response.data,
         isUpload: isUpload !== undefined ? isUpload : (response.data.isUpload ?? false)
-      };
+      });
       set({ playlistData: dataWithUpload, error: null })
       // Auto-save to cache when response is set
       get().saveResponseToCache({ ...response, data: dataWithUpload })
@@ -246,7 +267,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   // Update is_public flag in both state and localStorage cache
   updatePlaylistPublicStatus: (isPublic: boolean) => {
     const state = get()
-    if (!state.playlistData) return
+    if (!state.playlistData || !state.playlistData.playlist) return
 
     const playlistId = state.playlistData.playlist.id
 

@@ -19,7 +19,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const demoTracksRestricted = DEMO_MODE && tracks.length > 20;
 
     // --- Analysis footer stats ---
-    const playlistId = playlistData?.playlist.id;
+    const playlistId = playlistData?.playlist?.id;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
     const footerTopMatch = analysis?.topMatchScore != null

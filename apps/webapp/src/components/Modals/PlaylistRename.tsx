@@ -24,7 +24,7 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
         if (isOpen) {
             document.body.style.overflow = 'hidden'
             // Set the current playlist name as default value
-            setNewName(playlistData?.playlist.name || '')
+            setNewName(playlistData?.playlist?.name || '')
         } else {
             document.body.style.overflow = 'unset'
         }
@@ -33,7 +33,7 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
         return () => {
             document.body.style.overflow = 'unset'
         }
-    }, [isOpen, playlistData?.playlist.name])
+    }, [isOpen, playlistData?.playlist?.name])
 
     // Close modal on escape key
     useEffect(() => {
@@ -53,7 +53,7 @@ export const PlaylistRename: React.FC<PlaylistRenameProps> = ({
     }, [isOpen, onClose])
 
     const handleRename = async () => {
-        if (!playlistData?.playlist.id) {
+        if (!playlistData?.playlist?.id) {
             onClose();
             return;
         }

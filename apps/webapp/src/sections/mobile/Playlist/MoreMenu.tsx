@@ -35,7 +35,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
         if (!trackId) return;
 
         try {
-            const playlistId = playlistData?.playlist.id || null;
+            const playlistId = playlistData?.playlist?.id || null;
             setTrackRating(trackId, rating);
             saveTrackRating(trackId, rating);
             await rateTrack(trackId, rating, playlistId);

@@ -61,7 +61,7 @@ const PlaylistTable: React.FC = () => {
     const demoTracksRestricted = DEMO_MODE && tracks.length > 20;
 
     // --- Analysis footer stats ---
-    const playlistId = playlistData?.playlist.id;
+    const playlistId = playlistData?.playlist?.id;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
     const footerTopMatch = analysis?.topMatchScore != null
@@ -87,7 +87,7 @@ const PlaylistTable: React.FC = () => {
 
     const handleTrackRating = async (trackId: string, rating: number) => {
         try {
-            const playlistId = playlistData?.playlist.id || null;
+            const playlistId = playlistData?.playlist?.id || null;
             setTrackRating(trackId, rating);
             saveTrackRating(trackId, rating);
             await rateTrack(trackId, rating, playlistId);
@@ -97,7 +97,7 @@ const PlaylistTable: React.FC = () => {
     };
 
     const handleCartIconClick = async (trackId: string) => {
-        const playlistId = playlistData?.playlist.id || undefined;
+        const playlistId = playlistData?.playlist?.id || undefined;
         await toggleItem(trackId, playlistId);
     };
 
