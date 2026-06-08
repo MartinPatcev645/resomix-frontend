@@ -34,7 +34,11 @@ from app.models.track_processing_status import TrackProcessingStatus
 from app.models.partner_processing_job import PartnerProcessingJob
 from app.services import partner_processing_service
 from app.services.hetzner_service import HetznerService
-from app.services.ingestion_service import process_ingestion_batch
+from app.services.ingestion_service import (
+    start_ingestion_job,
+    apply_ingestion_result,
+)
+from app.repositories.sftp_user_repository import sftp_user_repo
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +78,51 @@ def _derive_env_from_path(path: str) -> str:
     return "live"
 
 
+async def _refresh_log_from_hetzner(db: AsyncSession, log: IngestLog) -> IngestLog:
+    """Advance a non-terminal ingest log by polling Hetzner and persisting the result.
+
+    Terminal logs (COMPLETED/FAILED) are returned untouched — no media-server call.
+    Any media-server error is swallowed (best-effort): the log simply stays
+    PROCESSING and the caller still sees the current DB state.
+    """
+    if log.status in ("COMPLETED", "FAILED"):
+        return log
+    try:
+        remote = await hetzner_service.get_ingestion_status(log.partner_id, log.id)
+        if remote.get("success"):
+            log = await apply_ingestion_result(db, log, remote["data"])
+    except Exception as exc:  # never let a refresh break the listing
+        logger.warning(
+            f"[ingestion] refresh of log {log.id} from media server failed: {exc}"
+        )
+    return log
+
+
+async def _refresh_processing_job_from_hetzner(
+    db: AsyncSession, job: PartnerProcessingJob
+) -> PartnerProcessingJob:
+    """Advance a non-terminal embeddings job by polling Hetzner and persisting the result.
+
+    Terminal jobs (completed/failed/partial) are returned untouched — no media-server
+    call. Any media-server error is swallowed (best-effort): the job stays running
+    and the caller still sees the current DB state (incl. live progress counters).
+    """
+    if job.status in partner_processing_service.TERMINAL_JOB_STATES:
+        return job
+    # Only embeddings jobs have a Hetzner-side async runner today.
+    if job.job_type != "embeddings":
+        return job
+    try:
+        remote = await hetzner_service.get_embeddings_status(job.partner_id, job.id)
+        if remote.get("success"):
+            job = await partner_processing_service.apply_embeddings_result(db, job, remote["data"])
+    except Exception as exc:  # never let a refresh break the listing
+        logger.warning(
+            f"[processing] refresh of job {job.id} from media server failed: {exc}"
+        )
+    return job
+
+
 # ===========================================================================
 # §C  PROCESSING JOBS (fire-and-forget)
 # ===========================================================================
@@ -99,8 +148,11 @@ async def trigger_embeddings_job(
         triggered_by=getattr(current_admin, "email", None) or str(getattr(current_admin, "id", "admin")),
     )
 
-    background_tasks.add_task(
-        partner_processing_service.run_embeddings_job,
+    # Fire-and-forget hand-off to Hetzner: collect the work list + POST it, then
+    # return immediately. Hetzner runs the embeddings in its own background task;
+    # the admin poll (list/detail) pulls progress back via _refresh_*.
+    job = await partner_processing_service.start_embeddings_job(
+        db,
         job_id=job.id,
         partner_id=payload.partner_id,
         env=payload.env,
@@ -108,6 +160,18 @@ async def trigger_embeddings_job(
         ingest_log_id=payload.ingest_log_id,
         only_pending=payload.only_pending,
     )
+
+    if job.status == "failed":
+        return JSONResponse(
+            status_code=502,
+            content={
+                "status": "error",
+                "message": "Failed to hand the embeddings job to the media server",
+                "job_id": job.id,
+                "job_type": "embeddings",
+                "detail": (job.error_details or {}).get("error"),
+            },
+        )
 
     return JSONResponse(
         status_code=202,
@@ -134,6 +198,7 @@ async def get_processing_job(
     job = await db.get(PartnerProcessingJob, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Processing job not found")
+    job = await _refresh_processing_job_from_hetzner(db, job)
     return JSONResponse(content={"status": "success", "job": _job_to_dict(job)})
 
 
@@ -157,7 +222,9 @@ async def list_processing_jobs(
         stmt = stmt.where(PartnerProcessingJob.status == status)
     stmt = stmt.order_by(PartnerProcessingJob.id.desc()).limit(page_size).offset((page - 1) * page_size)
     jobs = (await db.execute(stmt)).scalars().all()
-    return JSONResponse(content={"status": "success", "jobs": [_job_to_dict(j) for j in jobs]})
+    # Self-heal: pull live progress / final results for any non-terminal job from Hetzner.
+    refreshed = [await _refresh_processing_job_from_hetzner(db, j) for j in jobs]
+    return JSONResponse(content={"status": "success", "jobs": [_job_to_dict(j) for j in refreshed]})
 
 
 # ===========================================================================
@@ -183,7 +250,11 @@ async def list_ingestion_logs(
         stmt = stmt.where(IngestLog.status == status)
     stmt = stmt.order_by(IngestLog.id.desc()).limit(page_size).offset((page - 1) * page_size)
     logs = (await db.execute(stmt)).scalars().all()
-    return JSONResponse(content={"status": "success", "logs": [_log_to_dict(l) for l in logs]})
+
+    # Self-heal: for any log still in flight, pull the latest state from Hetzner and
+    # persist it before serializing. Terminal logs are skipped (no media-server call).
+    refreshed = [await _refresh_log_from_hetzner(db, l) for l in logs]
+    return JSONResponse(content={"status": "success", "logs": [_log_to_dict(l) for l in refreshed]})
 
 
 @router.get(
@@ -199,6 +270,10 @@ async def get_ingestion_log(
     log = await db.get(IngestLog, log_id)
     if log is None:
         raise HTTPException(status_code=404, detail="Ingest log not found")
+
+    # Self-heal: advance the log from Hetzner if it's still in flight, so the detail
+    # view (and its row-level errors below) reflect the latest state.
+    log = await _refresh_log_from_hetzner(db, log)
 
     errs = (
         await db.execute(
@@ -231,7 +306,6 @@ async def get_ingestion_log(
 )
 async def trigger_ingestion(
     payload: IngestionTriggerRequest,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("partners:manage")),
@@ -241,22 +315,112 @@ async def trigger_ingestion(
     if env not in ("test", "live"):
         raise HTTPException(status_code=400, detail="env must be 'test' or 'live'")
 
-    batch_path = f"{settings.sftp_base_path}/partners/{payload.partner_id}/{env}"
-    background_tasks.add_task(
-        process_ingestion_batch,
+    # Resolve the partner's provisioned SFTP home dir (``partners/<uuid-slug>``).
+    # The files physically live on the Hetzner media server, so we only hand the
+    # container home to it; Hetzner translates it to its own host path. Fall back
+    # to the integer id only if the partner was never SFTP-provisioned.
+    sftp_user = await sftp_user_repo.get_by_partner_id(db, payload.partner_id)
+    home_dir = (
+        sftp_user.sftp_home_dir
+        if sftp_user and sftp_user.sftp_home_dir
+        else f"{settings.sftp_base_path}/partners/{payload.partner_id}"
+    )
+
+    # Insert the ingest_logs row (PROCESSING) and fire-and-forget the validation
+    # to Hetzner. Admin polls /ingestion/logs/{id}/status to advance + persist.
+    log_entry = await start_ingestion_job(
+        db,
         partner_id=payload.partner_id,
-        batch_path=batch_path,
+        home_dir=home_dir,
         env=env,
     )
+
+    if log_entry.status == "FAILED":
+        return JSONResponse(
+            status_code=502,
+            content={
+                "status": "error",
+                "message": log_entry.error_message or "Failed to start ingestion on media server",
+                "ingest_log_id": log_entry.id,
+                "partner_id": payload.partner_id,
+                "env": env,
+            },
+        )
+
     return JSONResponse(
         status_code=202,
         content={
             "status": "accepted",
-            "message": "Ingestion started",
+            "message": "Ingestion handed off to media server",
+            "ingest_log_id": log_entry.id,
             "partner_id": payload.partner_id,
             "env": env,
-            "batch_path": batch_path,
+            "home_dir": home_dir,
         },
+    )
+
+
+@router.get(
+    "/ingestion/logs/{log_id}/status",
+    summary="Poll an ingestion job's status (advances it by pulling from Hetzner)",
+)
+async def get_ingestion_status(
+    log_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("partners:manage")),
+) -> JSONResponse:
+    """Return the current ingestion status.
+
+    If the log is already terminal (COMPLETED/FAILED) the stored DB state is
+    returned directly. Otherwise we poll Hetzner for the job result and, on a
+    terminal remote status, persist it (genres + Track/AudioFile/status for live;
+    dry-run counts for test) before returning the updated state.
+    """
+    set_admin_context(True)
+    log = await db.get(IngestLog, log_id)
+    if log is None:
+        raise HTTPException(status_code=404, detail="Ingest log not found")
+
+    # Already finished — no need to bother the media server.
+    if log.status in ("COMPLETED", "FAILED"):
+        return JSONResponse(
+            content={"status": "success", "remote_status": None, "log": _log_to_dict(log)}
+        )
+
+    remote = await hetzner_service.get_ingestion_status(log.partner_id, log.id)
+    if not remote.get("success"):
+        if remote.get("error") == "not_found":
+            # Job file not written yet (or partner mismatch) — still in flight.
+            return JSONResponse(
+                content={
+                    "status": "success",
+                    "remote_status": "pending",
+                    "message": "Media server has not produced a result yet.",
+                    "log": _log_to_dict(log),
+                }
+            )
+        return JSONResponse(
+            status_code=502,
+            content={
+                "status": "error",
+                "message": f"Could not reach media server: {remote.get('error')}",
+                "detail": remote.get("detail"),
+                "log": _log_to_dict(log),
+            },
+        )
+
+    state = remote["data"]
+    # Persist/advance the DB on terminal remote status; no-op while running.
+    log = await apply_ingestion_result(db, log, state)
+
+    return JSONResponse(
+        content={
+            "status": "success",
+            "remote_status": state.get("status"),
+            "log": _log_to_dict(log),
+            "errors": state.get("errors") or [],
+        }
     )
 
 
@@ -267,7 +431,6 @@ async def trigger_ingestion(
 )
 async def retry_ingestion(
     log_id: int,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("partners:manage")),
@@ -278,18 +441,40 @@ async def retry_ingestion(
         raise HTTPException(status_code=404, detail="Ingest log not found")
 
     env = _derive_env_from_path(log.package_folder)
-    background_tasks.add_task(
-        process_ingestion_batch,
+    # package_folder is ``<home_dir>/<env>`` — strip the trailing env to recover
+    # the home dir we hand to Hetzner. Prefer the live SFTP record if available.
+    sftp_user = await sftp_user_repo.get_by_partner_id(db, log.partner_id)
+    if sftp_user and sftp_user.sftp_home_dir:
+        home_dir = sftp_user.sftp_home_dir
+    else:
+        folder = (log.package_folder or "").rstrip("/")
+        home_dir = folder[: -(len(env) + 1)] if folder.lower().endswith(f"/{env}") else folder
+
+    new_log = await start_ingestion_job(
+        db,
         partner_id=log.partner_id,
-        batch_path=log.package_folder,
+        home_dir=home_dir,
         env=env,
     )
+
+    if new_log.status == "FAILED":
+        return JSONResponse(
+            status_code=502,
+            content={
+                "status": "error",
+                "message": new_log.error_message or "Failed to start ingestion on media server",
+                "ingest_log_id": new_log.id,
+                "partner_id": log.partner_id,
+                "env": env,
+            },
+        )
+
     return JSONResponse(
         status_code=202,
         content={
             "status": "accepted",
-            "message": "Ingestion retry started",
-            "ingest_log_id": log_id,
+            "message": "Ingestion retry handed off to media server",
+            "ingest_log_id": new_log.id,
             "partner_id": log.partner_id,
             "env": env,
         },

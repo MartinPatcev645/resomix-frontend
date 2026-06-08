@@ -25,6 +25,20 @@ class PartnerTier(str, Enum):
     ENTERPRISE = "enterprise"
 
 
+class ServiceMode(str, Enum):
+    """
+    Storage/service plan, orthogonal to ``tier``.
+
+    - ``similarity_only`` (case 1): store the preview MP3 + embeddings only.
+      The preview is kept so peaks/segments can be regenerated if the partner
+      later upgrades to playback.
+    - ``similarity_playback`` (case 2): store embeddings + peaks + segments for
+      full playback.
+    """
+    SIMILARITY_ONLY = "similarity_only"
+    SIMILARITY_PLAYBACK = "similarity_playback"
+
+
 # --- Partner Schemas ---
 
 class PartnerCreateRequest(BaseModel):
@@ -33,6 +47,10 @@ class PartnerCreateRequest(BaseModel):
     display_name: str = Field(..., min_length=2, max_length=255)
     contact_email: EmailStr
     tier: PartnerTier = Field(default=PartnerTier.SANDBOX)
+    service_mode: ServiceMode = Field(
+        default=ServiceMode.SIMILARITY_ONLY,
+        description="similarity_only (preview+embedding) | similarity_playback (embeddings+peaks+segments)",
+    )
     country_code: Optional[str] = Field(None, min_length=2, max_length=2)
     vat_number: Optional[str] = Field(None, max_length=64)
     notes: Optional[str] = None
@@ -46,6 +64,7 @@ class PartnerBaseResponse(BaseModel):
     display_name: str
     contact_email: str
     tier: PartnerTier
+    service_mode: ServiceMode = ServiceMode.SIMILARITY_ONLY
     is_active: bool
     onboarded_at: datetime
     country_code: Optional[str] = None
@@ -60,6 +79,7 @@ class PartnerUpdateRequest(BaseModel):
     display_name: Optional[str] = Field(None, min_length=2, max_length=255)
     contact_email: Optional[EmailStr] = None
     tier: Optional[PartnerTier] = None
+    service_mode: Optional[ServiceMode] = None
     country_code: Optional[str] = Field(None, min_length=2, max_length=2)
     vat_number: Optional[str] = Field(None, max_length=64)
     is_active: Optional[bool] = None
@@ -147,8 +167,10 @@ class ApiKeyRotateRequest(BaseModel):
 class SftpProvisionRequest(BaseModel):
     """Request payload to provision SFTP access for a partner."""
     partner_id: int
-    username: str = Field(..., min_length=3, max_length=64, pattern=r"^[a-zA-Z0-9_]+$")
-    password: str = Field(..., min_length=12)
+    # Username is auto-derived from the partner UUID (``partner_<slug>``) by the
+    # service layer. Admins no longer type it; if provided it is ignored.
+    username: Optional[str] = Field(default=None, max_length=64, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(..., min_length=8)
     use_public_key: bool = False
     public_key: Optional[str] = None
     allowed_ip: Optional[str] = None

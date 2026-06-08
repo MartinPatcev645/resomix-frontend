@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import verify_password
 from app.repositories.sftp_user_repository import sftp_user_repo
 from database.connection import get_async_db
-from app.services.ingestion_service import process_ingestion_batch
+from app.services.ingestion_service import start_ingestion_job
 from app.services.sftp_service import SftpService
 from app.core.config import settings
 
@@ -55,20 +55,57 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
     partner = sftp_user.partner
     quota_size = sftp_service.get_quota_bytes(partner.tier) if partner else 1073741824
     
-    home_dir = sftp_user.sftp_home_dir or f"{settings.sftp_base_path}/partners/{partner_id}"
+    # The home dir is stamped at provision time from the partner UUID slug
+    # (``partners/<slug>``). Always prefer the stored value; only fall back to a
+    # slug-derived path if it is somehow missing.
+    home_dir = sftp_user.sftp_home_dir
+    if not home_dir:
+        slug = partner.partner_uuid.split("-")[-1] if partner else str(partner_id)
+        home_dir = f"{settings.sftp_base_path}/partners/{slug}"
 
-    # Return SFTPGo virtual user spec
+    # Return SFTPGo virtual user spec.
+    #
+    # Lockdown policy (kept in sync with docs/PARTNER_ONBOARDING.md §3b):
+    #   • Per-directory permissions — root is list-only; only the pre-existing
+    #     live/ and test/ folders accept uploads. `create_dirs` is granted
+    #     NOWHERE, so partners cannot create their own folders.
+    #   • file_patterns restrict uploads to the approved audio/manifest types
+    #     (.flac .wav .aiff .mp3 .zip .csv .done) and HIDE (deny_policy=1) any
+    #     internal / processing / dotfolder at the root from the partner.
+    _ALLOWED_UPLOAD_PATTERNS = ["*.flac", "*.wav", "*.aiff", "*.mp3", "*.zip", "*.csv", "*.done", ".done"]
     response = {
         "status": 1,
         "username": username,
         "home_dir": home_dir,
         "uid": 1000,
         "gid": 1000,
-        "permissions": {"/": ["list", "download", "upload", "create_dirs", "delete"]},
+        "permissions": {
+            "/": ["list"],
+            "/live": ["list", "download", "upload", "delete"],
+            "/test": ["list", "download", "upload", "delete"],
+        },
         "quota_size": quota_size,
-        "filters": {}
+        "filters": {
+            "file_patterns": [
+                {
+                    "path": "/",
+                    "denied_patterns": ["internal", ".processing", ".*"],
+                    "deny_policy": 1,
+                },
+                {
+                    "path": "/live",
+                    "allowed_patterns": _ALLOWED_UPLOAD_PATTERNS,
+                    "deny_policy": 1,
+                },
+                {
+                    "path": "/test",
+                    "allowed_patterns": _ALLOWED_UPLOAD_PATTERNS,
+                    "deny_policy": 1,
+                },
+            ]
+        },
     }
-    
+
     if sftp_user.allowed_ip:
         response["filters"]["allowed_ip"] = [ip.strip() for ip in sftp_user.allowed_ip.split(",")]
         
@@ -116,25 +153,27 @@ async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
             sftp_user = await sftp_user_repo.get_by_username(db, username)
             if sftp_user:
                 partner_id = sftp_user.partner_id
-                batch_path = f"{settings.sftp_base_path}/partners/{partner_id}/{env}"
+                # The uploaded files live on the Hetzner media server, not here, so
+                # Alwyzon cannot validate them directly. Instead we hand the job off
+                # to Hetzner (fire-and-forget): it validates + writes a result JSON,
+                # and the admin status poll later persists the tracks. We only pass
+                # the provisioned home dir (``partners/<slug>``); Hetzner translates
+                # it to its own host path.
+                home_dir = sftp_user.sftp_home_dir or f"{settings.sftp_base_path}/partners/{partner_id}"
 
-                async def _validate_and_ingest(p_id: int, b_path: str, b_env: str):
-                    logger.info(f"Validating incoming batch for partner {p_id} (env={b_env}) at {b_path}")
-                    # Run validation
-                    result = await sftp_service.validate_incoming_batch(p_id, b_path)
-
-                    # Then process (test => dry-run report only; live => full persist)
-                    await process_ingestion_batch(
-                        partner_id=p_id,
-                        batch_path=b_path,
-                        env=b_env,
-                        csv_path=str(result.csv_path) if result.csv_path else None,
-                        checksum_verified=result.checksum_verified,
-                        validation_error=result.error
+                async def _handoff_ingestion(p_id: int, h_dir: str, b_env: str):
+                    logger.info(
+                        f"Handing off incoming batch for partner {p_id} (env={b_env}) to media server"
                     )
+                    async with AsyncSessionLocal() as task_db:
+                        await start_ingestion_job(
+                            task_db,
+                            partner_id=p_id,
+                            home_dir=h_dir,
+                            env=b_env,
+                        )
 
-                # Enqueue wrapper task
-                background_tasks.add_task(_validate_and_ingest, partner_id, batch_path, env)
+                background_tasks.add_task(_handoff_ingestion, partner_id, home_dir, env)
 
     return {"status": "ok"}
 

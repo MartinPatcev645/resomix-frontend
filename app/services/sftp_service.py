@@ -79,13 +79,22 @@ class SftpService:
             if not pwd_hash and not request.use_public_key:
                  raise ValueError("Password is required if public key auth is disabled")
 
-            # 4. Build home dir
-            home_dir = f"{settings.sftp_base_path}/partners/{partner.id}"
+            # 4. Derive slug, username and home dir from the partner UUID.
+            #    slug = last segment of the UUID (e.g. ec15...-65c20f1c06df -> 65c20f1c06df).
+            #    This keeps the SFTP username/folder stable and opaque (not the integer PK).
+            slug = partner.partner_uuid.split("-")[-1]
+            username = f"partner_{slug}"
+            home_dir = f"{settings.sftp_base_path}/partners/{slug}"
+
+            # Uniqueness guard — username collisions must never silently overwrite.
+            clashing = await sftp_user_repo.get_by_username(db, username)
+            if clashing:
+                raise ValueError(f"SFTP username '{username}' is already in use")
 
             # 5. Create SftpUser row (sftp_provisioned_at=None)
             sftp_user_data = {
                 "partner_id": partner.id,
-                "username": request.username,
+                "username": username,
                 "password_hash": pwd_hash,
                 "home_directory": home_dir,
                 "sftp_home_dir": home_dir,
@@ -105,12 +114,13 @@ class SftpService:
             quota_bytes = self.get_quota_bytes(partner.tier)
             result = await self._call_hetzner_provisioning(
                 partner.id,
-                request.username,
+                username,
                 pwd_hash,
                 home_dir,
                 quota_bytes,
                 request.use_public_key,
                 request.public_key if request.use_public_key else None,
+                password=request.password,  # PLAINTEXT — what SFTPGo actually hashes/stores
             )
             if result.get("skipped") is not True and result.get("status") != "ok":
                 raise RuntimeError(f"Hetzner SFTP provisioning returned unexpected body: {result}")
@@ -126,7 +136,7 @@ class SftpService:
                     target_type="sftp_user",
                     target_id=str(sftp_user.id),
                     before_state=None,
-                    after_state={"partner_id": request.partner_id, "username": request.username},
+                    after_state={"partner_id": request.partner_id, "username": username},
                     ip_address=ip_address
                 )
 
@@ -139,19 +149,26 @@ class SftpService:
             raise
 
     async def _call_hetzner_provisioning(
-        self, partner_id: int, username: str, password_hash: str, home_dir: str, 
-        quota_bytes: int, use_public_key: bool, public_key: Optional[str]
+        self, partner_id: int, username: str, password_hash: Optional[str], home_dir: str,
+        quota_bytes: int, use_public_key: bool, public_key: Optional[str],
+        password: Optional[str] = None,
     ) -> dict:
-        """Call the internal Hetzner provisioning endpoint."""
+        """Call the internal Hetzner provisioning endpoint.
+
+        ``password`` is the PLAINTEXT password — SFTPGo hashes it itself, so this
+        is what the partner actually logs in with. ``password_hash`` (bcrypt) is
+        sent only for records/back-compat; SFTPGo cannot use it as a login secret.
+        """
         if not settings.hetzner_sftp_provision_url:
             logger.warning("hetzner_sftp_provision_url is not set. Skipping Hetzner provisioning.")
             return {"skipped": True}
-            
+
         import httpx
-        
+
         payload = {
             "partner_id": partner_id,
             "username": username,
+            "password": password,
             "password_hash": password_hash,
             "home_dir": home_dir,
             "quota_bytes": quota_bytes,
@@ -182,10 +199,53 @@ class SftpService:
         sftp_user = await sftp_user_repo.get_by_partner_id(db, partner_id)
         if not sftp_user:
             return False
-            
+
         sftp_user.is_active = False
         db.add(sftp_user)
         return True
+
+    async def _call_hetzner_decommission(self, username: str) -> None:
+        """Best-effort: remove an SFTPGo account via the Hetzner internal endpoint.
+
+        The provision endpoint is ``.../internal/provision-sftp-user``; the matching
+        delete is ``DELETE .../internal/provision-sftp-user/{username}``. Failures are
+        logged and swallowed — they must never block a partner deletion.
+        """
+        base_url = settings.hetzner_sftp_provision_url
+        if not base_url:
+            logger.warning("hetzner_sftp_provision_url not set — skipping SFTPGo decommission for %s", username)
+            return
+
+        import httpx
+
+        url = f"{base_url.rstrip('/')}/{username}"
+        headers = {"Authorization": f"Bearer {settings.hetzner_internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.delete(url, headers=headers)
+                if resp.status_code not in (200, 404):
+                    logger.warning(
+                        "SFTPGo decommission for '%s' returned %s: %s",
+                        username, resp.status_code, resp.text,
+                    )
+        except Exception as exc:
+            logger.warning("SFTPGo decommission request failed for '%s' (non-fatal): %s", username, exc)
+
+    async def decommission_partner_sftp(self, db: AsyncSession, partner_id: int) -> int:
+        """Tear down a partner's SFTP footprint ahead of partner deletion.
+
+        1. Best-effort delete each SFTPGo account (so no orphaned live SFTP login
+           survives a deleted partner).
+        2. Hard-delete the ``sftp_users`` rows (required: the FK to partners is
+           ON DELETE RESTRICT, so these must go before the parent row).
+
+        Returns the number of ``sftp_users`` rows deleted. Does NOT commit — the
+        caller deletes the partner in the same transaction and commits once.
+        """
+        usernames = await sftp_user_repo.list_usernames_for_partner(db, partner_id)
+        for username in usernames:
+            await self._call_hetzner_decommission(username)
+        return await sftp_user_repo.async_delete_for_partner(db, partner_id, commit=False)
 
     async def retry_provisioning(
         self,

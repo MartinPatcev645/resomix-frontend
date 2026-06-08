@@ -93,40 +93,84 @@ The partner uses this key as `Authorization: Bearer rmx_growth_xxx...` or `X-API
 
 SFTP lets the partner drop audio files + a CSV manifest for batch ingestion.
 
-> **This step is done manually** via the SFTPGo admin panel. The API endpoint
-> (`POST /api/v1/admin/partners/sftp/provision`) automates everything below,
-> but requires SFTPGo + Hetzner to both be healthy. For initial setup or
-> troubleshooting, follow the manual steps.
+> ### ⚠️ Pick ONE provisioning path — do not do both
+> There are two ways to provision SFTP. **Use only one** per partner:
+>
+> | Path | What it does | When to use |
+> |---|---|---|
+> | **A — Automated (recommended)** | One frontend action creates the host dirs, the locked-down SFTPGo user (with the password you set), **and** the Alwyzon DB record. | Default for every new partner. Needs the SFTPGo container + Hetzner server (`:8004`) healthy. |
+> | **B — Manual (fallback)** | You create the dirs + SFTPGo user by hand in the SFTPGo panel/REST. | Only when Path A / Hetzner is unavailable. |
+>
+> Doing **both** is redundant and overwrites itself — see **“What if I did both?”** at the end of this step.
 
 ---
 
-### 3a — Create partner home directories on the host
+### Path A (recommended) — Automated provisioning via the admin frontend
+
+This single action does **everything** — no manual `mkdir`, no SFTPGo panel work:
+
+1. In the admin frontend, open the partner and click **Provision SFTP**.
+2. Enter:
+   - **Password** — min 8 chars. This is the **plaintext** the partner logs in with.
+   - You do **not** type a username — it is auto-derived from the partner UUID as
+     `partner_<slug>`, where `<slug>` is the **last segment of the UUID**
+     (e.g. UUID `ec15706e-61cf-4f53-a964-65c20f1c06df` → username `partner_65c20f1c06df`).
+3. Submit. Behind the scenes this calls
+   `POST /api/v1/admin/partners/sftp/provision` → Hetzner (`:8004`) → SFTPGo, which:
+   - creates the host directories `partners/<slug>/{test,live}` (slug = last UUID segment),
+   - creates the SFTPGo user `partner_<slug>` with your **plaintext password** and the
+     full lockdown (root = list-only, no folder creation, only approved file types,
+     internal folders hidden),
+   - records the account in the Alwyzon `sftp_users` table.
+
+> **Requirements:** the `resomix-sftpgo` container must be up, and the Hetzner
+> server on `:8004` must be running the **current** code — it has **no hot-reload**,
+> so restart `python run.py` after any backend change before provisioning.
+
+Then skip straight to **3d — Test the SFTP connection** below. You're done.
+
+---
+
+### Path B (fallback) — Manual provisioning via the SFTPGo panel
+
+> Use this **only** if Path A is unavailable. If you use Path B, do **not** also
+> click “Provision SFTP” in the frontend (see “What if I did both?”).
+
+#### 3a — Create partner home directories on the host
 
 SFTPGo runs in Docker with this volume mount:  
 `./dev_partner_data/sftp` (host) → `/srv/sftp` (container)
 
 Create the partner's upload folders **on the host** inside that volume:
 
+> The folder name is the **UUID slug** — the last segment of the partner's UUID —
+> not the integer id. For UUID `ec15706e-61cf-4f53-a964-65c20f1c06df` the slug is
+> `65c20f1c06df`. This matches what Path A provisions automatically.
+
 ```bash
 # From the resomix-similarity-open project directory
-PARTNER_ID=42
+SLUG=65c20f1c06df   # last segment of the partner UUID
 
-mkdir -p dev_partner_data/sftp/partners/${PARTNER_ID}/test
-mkdir -p dev_partner_data/sftp/partners/${PARTNER_ID}/live
+mkdir -p dev_partner_data/sftp/partners/${SLUG}/test
+mkdir -p dev_partner_data/sftp/partners/${SLUG}/live
 ```
 
 Structure created:
 ```
-dev_partner_data/sftp/partners/42/
+dev_partner_data/sftp/partners/65c20f1c06df/
 ├── test/    ← dry-run uploads (validate + report, no DB changes)
 └── live/    ← production uploads (persisted to DB)
 ```
 
-Inside the container / SFTPGo these appear at `/srv/sftp/partners/42/`.
+Inside the container / SFTPGo these appear at `/srv/sftp/partners/65c20f1c06df/`.
 
 ---
 
-### 3b — Create the SFTPGo virtual user
+#### 3b — Create the SFTPGo virtual user
+
+> Set the partner's password here as **plaintext** — SFTPGo hashes it itself.
+> (Do not paste a bcrypt hash; SFTPGo would treat it as already-hashed and the
+> partner could never log in.)
 
 **Option A — Web Admin Panel** (`http://localhost:8080`)
 
@@ -138,23 +182,47 @@ Inside the container / SFTPGo these appear at `/srv/sftp/partners/42/`.
 
    | Field | Value |
    |---|---|
-   | **Username** | e.g. `beatport_sftp` |
+   | **Username** | `partner_<slug>` (e.g. `partner_65c20f1c06df`) |
    | **Password** | a strong random password |
-   | **Home directory** | `/srv/sftp/partners/42` ← container path |
+   | **Home directory** | `/srv/sftp/partners/<slug>` (e.g. `/srv/sftp/partners/65c20f1c06df`) ← container path |
    | **Status** | Enabled |
 
-4. Under **Permissions** → add entry for path `/` with **All permissions** (`*`)
-5. Under **Filesystem** → leave as **Local** (provider 0)
-6. Under **Quota** → set **Max total size** in bytes (e.g. 10 GB = `10737418240`)
-7. Click **Save**
+4. Under **Filesystem** → leave as **Local** (provider 0)
+5. Under **Quota** → set **Max total size** in bytes (e.g. 10 GB = `10737418240`)
+6. Under **Permissions** → set them **per-directory** (do NOT use `*`):
+
+   | Path | Permissions | Why |
+   |---|---|---|
+   | `/` | `list` | Partner can see `live/` and `test/` but cannot write or create anything at the root. |
+   | `/live` | `list`, `upload`, `download`, `delete` | Production batch uploads. |
+   | `/test` | `list`, `upload`, `download`, `delete` | Dry-run batch uploads. |
+
+   > ⚠️ Do **not** grant `create_dirs` on any path — this is what prevents the
+   > partner from creating their own folders. They can only upload files into the
+   > pre-existing `live/` and `test/` folders.
+
+7. Under **ACLs / Filters → File patterns**, restrict allowed file types and hide
+   internal folders:
+
+   | Path | Allowed patterns | Denied patterns | Policy |
+   |---|---|---|---|
+   | `/live` | `*.flac, *.wav, *.aiff, *.mp3, *.zip, *.csv, *.done, .done` | — | **Hide** (deny + hide) |
+   | `/test` | `*.flac, *.wav, *.aiff, *.mp3, *.zip, *.csv, *.done, .done` | — | **Hide** |
+   | `/` | — | `internal, .processing, .*` | **Hide** |
+
+   This means **only** `.flac .wav .aiff .mp3 .zip .csv .done` files can be uploaded,
+   and any internal/processing folder (or dotfile) at the root is hidden from and
+   inaccessible to the partner.
+
+8. Click **Save**
 
 ---
 
 **Option B — REST API** (from terminal)
 
 ```bash
-PARTNER_ID=42
-USERNAME=beatport_sftp
+SLUG=65c20f1c06df              # last segment of the partner UUID
+USERNAME=partner_${SLUG}
 PASSWORD=SecureRandomPass123!
 QUOTA_BYTES=10737418240  # 10 GB (see tier mapping below)
 
@@ -162,20 +230,58 @@ QUOTA_BYTES=10737418240  # 10 GB (see tier mapping below)
 TOKEN=$(curl -s -u "admin:12345678" \
   http://localhost:8080/api/v2/token | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-# 2. Create virtual user
+# 2. Create the locked-down virtual user
+#    - per-directory permissions (root = list only, no create_dirs anywhere)
+#    - only the 7 allowed file types accepted in live/ and test/
+#    - internal/processing folders hidden at the root
 curl -s -X POST http://localhost:8080/api/v2/users \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
     \"username\": \"${USERNAME}\",
     \"password\": \"${PASSWORD}\",
-    \"home_dir\": \"/srv/sftp/partners/${PARTNER_ID}\",
+    \"home_dir\": \"/srv/sftp/partners/${SLUG}\",
     \"status\": 1,
-    \"permissions\": {\"/\": [\"*\"]},
     \"quota_size\": ${QUOTA_BYTES},
-    \"filesystem\": {\"provider\": 0}
+    \"filesystem\": {\"provider\": 0},
+    \"permissions\": {
+      \"/\": [\"list\"],
+      \"/live\": [\"list\", \"upload\", \"download\", \"delete\"],
+      \"/test\": [\"list\", \"upload\", \"download\", \"delete\"]
+    },
+    \"filters\": {
+      \"file_patterns\": [
+        {
+          \"path\": \"/\",
+          \"denied_patterns\": [\"internal\", \".processing\", \".*\"],
+          \"deny_policy\": 1
+        },
+        {
+          \"path\": \"/live\",
+          \"allowed_patterns\": [\"*.flac\", \"*.wav\", \"*.aiff\", \"*.mp3\", \"*.zip\", \"*.csv\", \"*.done\", \".done\"],
+          \"deny_policy\": 1
+        },
+        {
+          \"path\": \"/test\",
+          \"allowed_patterns\": [\"*.flac\", \"*.wav\", \"*.aiff\", \"*.mp3\", \"*.zip\", \"*.csv\", \"*.done\", \".done\"],
+          \"deny_policy\": 1
+        }
+      ]
+    }
   }"
 ```
+
+> **What this lockdown enforces**
+> - **`live/` and `test/` available** — partner sees and uploads into both.
+> - **No folder creation** — `create_dirs` is granted nowhere, so the partner
+>   cannot create directories anywhere in their home.
+> - **Internal folder hidden** — `deny_policy: 1` (hide) + `denied_patterns`
+>   means any `internal` / `.processing` / dotfolder at the root is invisible
+>   and inaccessible.
+> - **Only approved file types** — `allowed_patterns` restricts uploads to
+>   `.flac .wav .aiff .mp3 .zip .csv .done` (with `deny_policy: 1` hiding/rejecting
+>   anything else). `.done` is listed explicitly so the batch-completion marker
+>   is accepted.
 
 **Quota tier mapping:**
 
@@ -188,49 +294,46 @@ curl -s -X POST http://localhost:8080/api/v2/users \
 
 ---
 
-### 3c — (Optional) Record the SFTP account in Alwyzon DB
+#### What if I did both? (Path A *and* the manual panel)
 
-If you want the account tracked in the admin panel, call the provision endpoint
-**after** completing steps 3a and 3b above:
+You won't get DB duplicates, but the two paths fight each other — which is why
+you pick one:
 
-```http
-POST /api/v1/admin/partners/sftp/provision
-Authorization: Bearer <admin_jwt>
+- **Alwyzon DB (`sftp_users`)** — the provision endpoint refuses a second
+  account for a partner that already has one (`"SFTP account already
+  provisioned"`), so there's never a duplicate row.
+- **SFTPGo** — the provision flow does `POST /users`; if the username already
+  exists (because you created it in the panel) it gets `409` and falls back to
+  `PUT /users/{username}`, **overwriting** your manual settings with the
+  endpoint's (password, permissions, file filters). So the panel work is wasted
+  and, before the plaintext fix, this is also how a working panel password got
+  clobbered by a bcrypt hash.
 
-{
-  "partner_id": 42,
-  "username": "beatport_sftp",
-  "password": "SecureRandomPass123!",
-  "use_public_key": false
-}
-```
-
-> ⚠️ This endpoint will call Hetzner, which in turn calls SFTPGo to register the
-> user. If SFTPGo already has the user from step 3b, the call updates it
-> idempotently (HTTP 409 → PUT). Only use this endpoint once SFTPGo is
-> confirmed healthy.
+**Rule of thumb:** if Path A (frontend provision) works, use it alone. Only fall
+back to the manual panel when Hetzner/`:8004` is down — and then don't click the
+frontend "Provision SFTP" button for that partner.
 
 ---
 
 ### 3d — Test the SFTP connection
 
 ```bash
-sftp -P 2022 beatport_sftp@localhost
-# Enter the password you set in step 3b
-# You land in the chroot root (which is /srv/sftp/partners/42 inside the container)
+sftp -P 2022 partner_65c20f1c06df@localhost
+# Enter the plaintext password you set during provisioning
+# You land in the chroot root (which is /srv/sftp/partners/<slug> inside the container)
 
-ls          # should show: live/  test/
+ls          # should show: live/  test/   (internal/dotfolders are hidden)
 cd live
-put /tmp/test_file.txt
-ls          # should show test_file.txt
+put /path/to/track.flac     # only .flac .wav .aiff .mp3 .zip .csv .done are accepted
+ls          # should show track.flac
 ```
 
 **Connection details to give the partner:**
 ```
 Host:     sftp.resomix.com
 Port:     2022
-Username: beatport_sftp
-Password: <as set in step 3b>
+Username: partner_65c20f1c06df
+Password: <the plaintext password set during provisioning>
 ```
 
 ---

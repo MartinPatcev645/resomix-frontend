@@ -97,6 +97,18 @@ class Partner(Base):
         default="sandbox",
         comment="Drives quota limits and feature flags",
     )
+    service_mode: Mapped[str] = mapped_column(
+        Enum("similarity_only", "similarity_playback"),
+        nullable=False,
+        default="similarity_only",
+        server_default="similarity_only",
+        comment=(
+            "Storage/service plan. 'similarity_only' (case 1): the pipeline keeps "
+            "the preview MP3 + embeddings only (preview is retained so peaks/segments "
+            "can be regenerated on a later upgrade). 'similarity_playback' (case 2): "
+            "keeps embeddings + peaks + segments for full playback."
+        ),
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     onboarded_at: Mapped[Optional[DateTime]] = mapped_column(
         DateTime, nullable=True, server_default=func.current_timestamp()

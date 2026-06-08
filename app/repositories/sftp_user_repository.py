@@ -10,7 +10,7 @@ state for the automated partner provisioning flow (W2-4).
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, selectinload
 
@@ -96,6 +96,33 @@ class SftpUserRepository(BaseRepository[SftpUser]):
         sftp_user.sftp_provisioned_at = datetime.now(timezone.utc)
         db.add(sftp_user)
         return sftp_user
+
+    async def list_usernames_for_partner(self, db: AsyncSession, partner_id: int) -> List[str]:
+        """Return every SFTP username (active or not) belonging to a partner.
+
+        Used during partner deletion so the caller can decommission the matching
+        SFTPGo accounts before the DB rows are removed.
+        """
+        stmt = select(SftpUser.username).where(SftpUser.partner_id == partner_id)
+        result = await db.execute(stmt)
+        return [row[0] for row in result.all()]
+
+    async def async_delete_for_partner(
+        self, db: AsyncSession, partner_id: int, commit: bool = False
+    ) -> int:
+        """Hard-delete all SftpUser rows for a partner.
+
+        Done with an explicit bulk DELETE (not ORM relationship cascade) because
+        async SQLAlchemy cannot safely lazy-load collections during a cascade.
+        The ``sftp_users.partner_id`` FK is ON DELETE RESTRICT, so these rows must
+        be removed before the parent partner can be deleted. Returns the row count.
+        """
+        result = await db.execute(
+            delete(SftpUser).where(SftpUser.partner_id == partner_id)
+        )
+        if commit:
+            await db.commit()
+        return int(result.rowcount or 0)
 
 
 sftp_user_repo = SftpUserRepository()

@@ -132,17 +132,30 @@ async def _register_embedding_artifacts(
         )
 
 
-async def run_embeddings_job(
+# Job states that are final — no further Hetzner polling needed.
+TERMINAL_JOB_STATES = ("completed", "failed", "partial")
+
+
+async def start_embeddings_job(
+    db,
     job_id: int,
     partner_id: int,
     env: str = "live",
     index_after: bool = True,
     ingest_log_id: Optional[int] = None,
     only_pending: bool = True,
-) -> None:
+) -> PartnerProcessingJob:
     """
-    Fire-and-forget worker: generate (and optionally index) embeddings for a
-    partner's tracks via Hetzner, updating job + per-track status as it goes.
+    Hand off a batch-embeddings job to Hetzner (fire-and-forget).
+
+    Alwyzon owns the DB, so it collects the work list here (joining tracks +
+    their processing-status rows), marks the job ``running``, and POSTs the item
+    list to Hetzner's async ``/internal/process/embeddings/run``. Hetzner runs the
+    embeddings in its own background task; the admin poll later calls
+    ``apply_embeddings_result`` to persist per-track status.
+
+    This replaces the old synchronous ``run_embeddings_job`` that blocked a single
+    600 s HTTP call for the whole batch (and died on any Alwyzon restart).
     """
     env = (env or "live").lower()
     if env not in ("test", "live"):
@@ -151,102 +164,160 @@ async def run_embeddings_job(
 
     set_current_partner_id(partner_id)
 
-    async with AsyncSessionLocal() as db:
-        job = await db.get(PartnerProcessingJob, job_id)
-        if job is None:
-            logger.error(f"[ProcessingService] Job {job_id} not found; aborting.")
-            return
+    job = await db.get(PartnerProcessingJob, job_id)
+    if job is None:
+        raise ValueError(f"Processing job {job_id} not found")
 
-        job.status = "running"
-        job.started_at = datetime.utcnow()
+    job.status = "running"
+    job.started_at = datetime.utcnow()
+    await db.commit()
+
+    targets = await _collect_targets(db, partner_id, ingest_log_id, only_pending)
+    job.total_tracks = len(targets)
+    await db.commit()
+
+    if not targets:
+        job.status = "completed"
+        job.completed_at = datetime.utcnow()
         await db.commit()
+        logger.info(f"[ProcessingService] Job {job_id}: no targets to process.")
+        return job
 
-        try:
-            targets = await _collect_targets(db, partner_id, ingest_log_id, only_pending)
-            job.total_tracks = len(targets)
-            await db.commit()
+    items = [{"track_uuid": t["track_uuid"], "filename": t["filename"]} for t in targets]
 
-            if not targets:
-                job.status = "completed"
-                job.completed_at = datetime.utcnow()
-                await db.commit()
-                logger.info(f"[ProcessingService] Job {job_id}: no targets to process.")
-                return
+    result = await hetzner_service.start_embeddings(
+        job_id=job_id,
+        partner_id=partner_id,
+        items=items,
+        env=env,
+        index_after=index_after and not dry_run,
+    )
 
-            items = [{"track_uuid": t["track_uuid"], "filename": t["filename"]} for t in targets]
+    if not result.get("success"):
+        job.status = "failed"
+        job.completed_at = datetime.utcnow()
+        job.error_details = {"error": result.get("error"), "detail": result.get("detail")}
+        await db.commit()
+        logger.error(
+            f"[ProcessingService] Job {job_id} hand-off to media server failed: {result.get('error')}"
+        )
+        return job
 
-            result = await hetzner_service.batch_embeddings(
-                partner_id=partner_id,
-                items=items,
-                env=env,
-                index_after=index_after and not dry_run,
+    logger.info(
+        f"[ProcessingService] Handed embeddings job {job_id} to Hetzner "
+        f"(partner {partner_id}, env={env}, {len(items)} track(s))."
+    )
+    return job
+
+
+async def apply_embeddings_result(
+    db,
+    job: PartnerProcessingJob,
+    state: Dict[str, Any],
+) -> PartnerProcessingJob:
+    """
+    Persist a Hetzner embeddings-job status snapshot into Alwyzon's DB.
+
+    Mirrors ``apply_ingestion_result``:
+      • running/unknown → update live progress counters only (job stays running).
+      • failed          → mark the job failed.
+      • completed       → apply per-track ``track_processing_status`` updates,
+                          register artifacts, and finalize the job
+                          (completed | partial | failed depending on per-track results).
+
+    Re-queries each track by uuid (the work list isn't persisted), so it is safe to
+    call from any poll without the original in-memory target list.
+    """
+    status = (state.get("status") or "unknown").lower()
+    env = (state.get("env") or "live").lower()
+    dry_run = env == "test"
+    partner_id = job.partner_id
+    ingest_log_id = job.ingest_log_id
+
+    # ----- Still running: just surface live progress counters. ---------------
+    if status in ("running", "pending", "unknown"):
+        if state.get("total"):
+            job.total_tracks = state["total"]
+        job.processed_tracks = state.get("succeeded", job.processed_tracks)
+        job.failed_tracks = state.get("failed", job.failed_tracks)
+        await db.commit()
+        return job
+
+    # ----- Terminal (completed | failed): apply whatever per-track results exist.
+    # A mid-run crash on Hetzner reports status="failed" *with* partial results, so
+    # we always persist the per-track outcomes we did get, then let the media-server
+    # status decide the final job state (a crash must never be reported as success).
+    results = state.get("results", []) or []
+    processed = 0
+    failed = 0
+    errors: List[Dict[str, Any]] = []
+    now = datetime.utcnow()
+
+    for r in results:
+        uuid = r.get("track_uuid")
+        ok = r.get("status") == "ok"
+
+        # Re-derive the track + its processing-status row by uuid.
+        row = (
+            await db.execute(
+                select(TrackProcessingStatus, Track)
+                .join(Track, Track.id == TrackProcessingStatus.track_id)
+                .where(Track.uuid == uuid, TrackProcessingStatus.partner_id == partner_id)
+                .limit(1)
             )
+        ).first()
+        tps, track = (row[0], row[1]) if row else (None, None)
 
-            if not result.get("success"):
-                job.status = "failed"
-                job.completed_at = datetime.utcnow()
-                job.error_details = {"error": result.get("error"), "detail": result.get("detail")}
-                await db.commit()
-                logger.error(f"[ProcessingService] Job {job_id} failed: {result.get('error')}")
-                return
+        if ok:
+            processed += 1
+            if not dry_run and tps is not None:
+                tps.embedding_status = "completed"
+                tps.embedding_completed_at = now
+                tps.embedding_error = None
+                if r.get("maest_indexed") or r.get("discogs_indexed"):
+                    tps.faiss_indexed = True
+                    tps.faiss_indexed_at = now
+                # Register embedding artifacts (best-effort).
+                if track is not None:
+                    target = {
+                        "track_uuid": track.uuid,
+                        "track_id": track.id,
+                        "party_id": track.party_id,
+                    }
+                    try:
+                        await _register_embedding_artifacts(db, target, partner_id, ingest_log_id)
+                    except Exception as art_ex:
+                        logger.warning(f"Artifact registration failed for {uuid}: {art_ex}")
+        else:
+            failed += 1
+            msg = r.get("message") or "Unknown embedding error"
+            errors.append({"track_uuid": uuid, "message": msg})
+            if not dry_run and tps is not None:
+                tps.embedding_status = "failed"
+                tps.embedding_error = msg
 
-            data = result.get("data", {}) or {}
-            results_by_uuid = {r.get("track_uuid"): r for r in data.get("results", [])}
-
-            processed = 0
-            failed = 0
-            errors: List[Dict[str, Any]] = []
-            now = datetime.utcnow()
-
-            for target in targets:
-                r = results_by_uuid.get(target["track_uuid"], {})
-                ok = r.get("status") == "ok"
-                tps = await db.get(TrackProcessingStatus, target["tps_id"])
-
-                if ok:
-                    processed += 1
-                    if not dry_run and tps is not None:
-                        tps.embedding_status = "completed"
-                        tps.embedding_completed_at = now
-                        tps.embedding_error = None
-                        if index_after and (r.get("maest_indexed") or r.get("discogs_indexed")):
-                            tps.faiss_indexed = True
-                            tps.faiss_indexed_at = now
-                        # Register embedding artifacts (best-effort).
-                        try:
-                            await _register_embedding_artifacts(db, target, partner_id, ingest_log_id)
-                        except Exception as art_ex:
-                            logger.warning(f"Artifact registration failed for {target['track_uuid']}: {art_ex}")
-                else:
-                    failed += 1
-                    msg = r.get("message") or "Unknown embedding error"
-                    errors.append({"track_uuid": target["track_uuid"], "message": msg})
-                    if not dry_run and tps is not None:
-                        tps.embedding_status = "failed"
-                        tps.embedding_error = msg
-
-            job.processed_tracks = processed
-            job.failed_tracks = failed
-            job.error_details = {"failures": errors} if errors else None
-            if failed == 0:
-                job.status = "completed"
-            elif processed == 0:
-                job.status = "failed"
-            else:
-                job.status = "partial"
-            job.completed_at = datetime.utcnow()
-            await db.commit()
-            logger.info(
-                f"[ProcessingService] Job {job_id} done: env={env} processed={processed} "
-                f"failed={failed} status={job.status}"
-            )
-
-        except Exception as e:
-            logger.error(f"[ProcessingService] Job {job_id} crashed: {e}", exc_info=True)
-            await db.rollback()
-            job = await db.get(PartnerProcessingJob, job_id)
-            if job is not None:
-                job.status = "failed"
-                job.completed_at = datetime.utcnow()
-                job.error_details = {"error": str(e)}
-                await db.commit()
+    job.processed_tracks = processed
+    job.failed_tracks = failed
+    if status == "failed":
+        # Hetzner aborted mid-run — the un-attempted tracks stay pending; the job
+        # is failed regardless of how many of the attempted ones succeeded.
+        job.status = "failed"
+        job.error_details = {
+            "error": state.get("error_message") or "Media server reported failure",
+            **({"failures": errors} if errors else {}),
+        }
+    else:
+        job.error_details = {"failures": errors} if errors else None
+        if failed == 0:
+            job.status = "completed"
+        elif processed == 0:
+            job.status = "failed"
+        else:
+            job.status = "partial"
+    job.completed_at = datetime.utcnow()
+    await db.commit()
+    logger.info(
+        f"[ProcessingService] Job {job.id} finalized from media server: env={env} "
+        f"processed={processed} failed={failed} status={job.status}"
+    )
+    return job

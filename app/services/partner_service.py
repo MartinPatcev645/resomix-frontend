@@ -194,6 +194,13 @@ class PartnerService:
 
             await self.api_key_repo.async_delete_keys_for_partner(db, partner_id)
 
+            # SFTP teardown: decommission the SFTPGo account(s) and hard-delete the
+            # sftp_users rows. The sftp_users.partner_id FK is ON DELETE RESTRICT,
+            # so these rows MUST be removed before the partner row can be deleted.
+            # (Imported lazily to avoid any import-cycle with the SFTP service.)
+            from app.services.sftp_service import SftpService
+            await SftpService().decommission_partner_sftp(db, partner_id)
+
             success = await self.partner_repo.async_delete(db, partner_id, commit=False)
             if not success:
                 await db.rollback()

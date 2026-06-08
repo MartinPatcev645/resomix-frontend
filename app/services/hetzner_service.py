@@ -261,6 +261,196 @@ class HetznerService:
             "engines": results,
         }
 
+    async def start_ingestion(
+        self, job_id: int, partner_id: int, home_dir: str, env: str = "live"
+    ) -> Dict[str, Any]:
+        """
+        Fire-and-forget hand-off of an ingestion job to the Hetzner media server.
+
+        Hetzner validates the partner's uploaded manifest + audio under
+        ``home_dir/{env}`` in a background task and writes a result JSON keyed by
+        ``job_id``. This call returns as soon as Hetzner has accepted the job
+        (HTTP 202); the actual validation runs asynchronously there.
+
+        Args:
+            job_id: Alwyzon ``ingest_logs.id`` — the cross-server job key.
+            partner_id: ID of the partner being ingested.
+            home_dir: Container SFTP home, e.g. ``/srv/sftp/partners/<slug>``.
+            env: SFTP env — ``"test"`` (dry-run) or ``"live"``.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {
+            "Authorization": f"Bearer {self.internal_api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "job_id": job_id,
+            "partner_id": partner_id,
+            "home_dir": home_dir,
+            "env": env,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/ingestion/run", json=payload, headers=headers
+                )
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {
+                    "success": False,
+                    "error": f"Media server returned {resp.status_code}",
+                    "detail": resp.text[:300],
+                }
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner start-ingestion connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def get_ingestion_status(
+        self, partner_id: int, job_id: int
+    ) -> Dict[str, Any]:
+        """
+        Poll the Hetzner media server for the current state of an ingestion job.
+
+        Hetzner reads back the result JSON it wrote for ``job_id`` and returns a
+        snapshot (status running|completed|failed, counts, errors, and — when
+        completed — the validated ``records`` Alwyzon persists).
+
+        Args:
+            partner_id: ID of the partner being ingested.
+            job_id: Alwyzon ``ingest_logs.id`` — the cross-server job key.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(
+                    f"{base_url}/internal/ingestion/status/{partner_id}/{job_id}",
+                    headers=headers,
+                )
+                if resp.status_code == 200:
+                    return {"success": True, "data": resp.json()}
+                if resp.status_code == 404:
+                    return {
+                        "success": False,
+                        "error": "not_found",
+                        "detail": "No ingestion job result found on media server",
+                    }
+                return {
+                    "success": False,
+                    "error": f"Media server returned {resp.status_code}",
+                    "detail": resp.text[:300],
+                }
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner ingestion-status connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def start_embeddings(
+        self,
+        job_id: int,
+        partner_id: int,
+        items: list,
+        env: str = "live",
+        index_after: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Fire-and-forget hand-off of a batch-embeddings job to the Hetzner media server.
+
+        Hetzner generates (and optionally indexes) embeddings for ``items`` in a
+        background task and writes incremental progress to a result JSON keyed by
+        ``job_id``. This call returns as soon as Hetzner has accepted the job
+        (HTTP 202); the actual embedding work runs asynchronously there. Poll
+        ``get_embeddings_status`` for progress + per-track results.
+
+        This is the scalable replacement for ``batch_embeddings`` (which blocked a
+        single 600 s HTTP call for the whole batch — fatal for 10k-track jobs).
+
+        Args:
+            job_id: Alwyzon ``partner_processing_jobs.id`` — the cross-server job key.
+            partner_id: ID of the partner being processed.
+            items: list of {"track_uuid": str, "filename": str}.
+            env: "live" persists artifacts; "test" is a dry-run (generate + discard).
+            index_after: when live, also insert each vector into FAISS + catalog.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {
+            "Authorization": f"Bearer {self.internal_api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "job_id": job_id,
+            "partner_id": partner_id,
+            "env": env,
+            "index_after": index_after,
+            "items": items,
+        }
+        try:
+            # Only the hand-off — the heavy work runs in Hetzner's background task.
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/process/embeddings/run", json=payload, headers=headers
+                )
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {
+                    "success": False,
+                    "error": f"Media server returned {resp.status_code}",
+                    "detail": resp.text[:300],
+                }
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner start-embeddings connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def get_embeddings_status(
+        self, partner_id: int, job_id: int
+    ) -> Dict[str, Any]:
+        """
+        Poll the Hetzner media server for the current state of an embeddings job.
+
+        Hetzner reads back the result JSON it wrote for ``job_id`` and returns a
+        snapshot (status running|completed|failed, counts, and per-track results
+        Alwyzon uses to update ``track_processing_status``).
+
+        Args:
+            partner_id: ID of the partner being processed.
+            job_id: Alwyzon ``partner_processing_jobs.id`` — the cross-server job key.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(
+                    f"{base_url}/internal/process/embeddings/status/{partner_id}/{job_id}",
+                    headers=headers,
+                )
+                if resp.status_code == 200:
+                    return {"success": True, "data": resp.json()}
+                if resp.status_code == 404:
+                    return {
+                        "success": False,
+                        "error": "not_found",
+                        "detail": "No embeddings job result found on media server",
+                    }
+                return {
+                    "success": False,
+                    "error": f"Media server returned {resp.status_code}",
+                    "detail": resp.text[:300],
+                }
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner embeddings-status connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
     async def get_deletion_log(
         self,
         partner_id: int,

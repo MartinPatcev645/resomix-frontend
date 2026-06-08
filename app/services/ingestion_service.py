@@ -27,6 +27,368 @@ from app.tasks.webhooks import dispatch_webhook
 
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Async two-server ingestion (Alwyzon ⇄ Hetzner)
+# ---------------------------------------------------------------------------
+# In production Alwyzon (DB + admin) and Hetzner (partner files + compute) run on
+# different machines, so Alwyzon cannot read the uploaded CSV/audio directly. The
+# flow is therefore:
+#
+#   1. start_ingestion_job  — Alwyzon inserts an ``ingest_logs`` row (PROCESSING),
+#      then fire-and-forgets the validation to Hetzner (job_id = ingest_logs.id).
+#   2. Hetzner validates in a background task and writes a result JSON.
+#   3. apply_ingestion_result — when admin polls, Alwyzon pulls that JSON back and
+#      persists the validated records (genre resolution + Track/AudioFile/status).
+#
+# Hetzner stays DB-less; all persistence happens here.
+
+async def start_ingestion_job(
+    db: AsyncSession,
+    partner_id: int,
+    home_dir: str,
+    env: str = "live",
+):
+    """Create the ingest_logs row and hand the job off to Hetzner (fire-and-forget).
+
+    Args:
+        db: Active session (the calling request's session).
+        partner_id: The tenant ID.
+        home_dir: The partner's SFTP container home (``/srv/sftp/partners/<slug>``).
+            Hetzner translates this to its host path; the basename (slug) is what
+            matters cross-server.
+        env: ``"test"`` (dry-run) or ``"live"``.
+
+    Returns:
+        The created ``IngestLog`` instance (status PROCESSING, or FAILED if the
+        Hetzner hand-off could not be initiated).
+    """
+    from app.services.hetzner_service import HetznerService
+    from app.models.party import Party
+    from app.models.partner import Partner
+
+    env = (env or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+
+    set_current_partner_id(partner_id)
+
+    # Resolve the party id for the log row. ingest_logs.party_id is a NOT NULL FK to
+    # parties.party_id, so a synthetic value that doesn't exist would violate the
+    # constraint. Get-or-create a Party for this partner instead.
+    party_stmt = select(Party).where(Party.partner_id == partner_id).limit(1)
+    party = (await db.execute(party_stmt)).scalar_one_or_none()
+    if party is None:
+        partner = await db.get(Partner, partner_id)
+        party_name = (
+            getattr(partner, "legal_name", None)
+            or getattr(partner, "display_name", None)
+            or f"Partner {partner_id}"
+        )
+        party = Party(
+            party_id=f"PARTNER-{partner_id}",
+            partner_id=partner_id,
+            party_name=party_name,
+        )
+        db.add(party)
+        await db.flush()  # ensure the parties row exists before the FK insert
+    party_id = party.party_id
+
+    log_entry = IngestLog(
+        partner_id=partner_id,
+        party_id=party_id,
+        package_folder=f"{home_dir.rstrip('/')}/{env}",
+        status="PROCESSING",
+        started_at=datetime.utcnow(),
+    )
+    db.add(log_entry)
+    await db.commit()
+    await db.refresh(log_entry)
+
+    # ingest_logs.id is the cross-server job key.
+    result = await HetznerService().start_ingestion(
+        job_id=log_entry.id,
+        partner_id=partner_id,
+        home_dir=home_dir,
+        env=env,
+    )
+
+    if not result.get("success"):
+        log_entry.status = "FAILED"
+        log_entry.error_message = (
+            f"Could not start ingestion on media server: "
+            f"{result.get('error')} {result.get('detail') or ''}".strip()
+        )
+        log_entry.completed_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(log_entry)
+        logger.error(
+            f"[IngestionService] Hetzner start-ingestion failed for partner {partner_id} "
+            f"job {log_entry.id}: {log_entry.error_message}"
+        )
+        return log_entry
+
+    dispatch_webhook.delay(
+        partner_id=partner_id,
+        event_type="ingestion.started",
+        payload={
+            "ingest_log_id": log_entry.id,
+            "package_folder": log_entry.package_folder,
+            "env": env,
+            "started_at": log_entry.started_at.isoformat(),
+        },
+    )
+    logger.info(
+        f"[IngestionService] Handed ingestion job {log_entry.id} to Hetzner "
+        f"(partner {partner_id}, env={env})."
+    )
+    return log_entry
+
+
+async def apply_ingestion_result(
+    db: AsyncSession,
+    log_entry: IngestLog,
+    state: dict,
+):
+    """Consume a Hetzner job-state snapshot and update/persist the DB accordingly.
+
+    Idempotent enough for repeated polling: only acts when the remote job has
+    reached a terminal status (``completed``/``failed``). While ``running`` it
+    leaves the PROCESSING row untouched.
+
+    - failed     → write IngestionError rows + mark FAILED.
+    - completed + test → record dry-run counts, persist nothing, mark COMPLETED.
+    - completed + live → resolve genres, insert Track + AudioFile +
+      TrackProcessingStatus, mark COMPLETED.
+    """
+    partner_id = log_entry.partner_id
+    set_current_partner_id(partner_id)
+
+    remote_status = (state.get("status") or "").lower()
+    env = (state.get("env") or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+
+    # Still running on Hetzner — nothing to persist yet.
+    if remote_status not in ("completed", "failed"):
+        return log_entry
+
+    if state.get("batch_filename"):
+        log_entry.batch_filename = state["batch_filename"]
+
+    # --- FAILED on Hetzner (validation errors or runner exception) ---
+    if remote_status == "failed":
+        errors = state.get("errors") or []
+        for err in errors:
+            code = err.get("code", "VALIDATION_ERROR")
+            r_num = err.get("row", 0)
+            msg = err.get("message", "")
+            ref = err.get("ref") or f"Row {r_num}"
+            severity = "critical" if code in [
+                "MISSING_HEADERS", "MISSING_ISRC", "MISSING_TITLE",
+                "MISSING_AUDIO_FILENAME", "MISSING_AUDIO_FILE",
+                "DUPLICATE_ISRC_IN_BATCH",
+            ] else "warning"
+            db.add(IngestionError(
+                ingest_log_id=log_entry.id,
+                partner_id=partner_id,
+                error_code=code,
+                error_message=f"Row {r_num}: {msg}" if r_num and r_num > 1 else msg,
+                error_severity=severity,
+                reference_node=str(ref),
+            ))
+        log_entry.status = "FAILED"
+        log_entry.track_count = 0
+        log_entry.error_message = state.get("error_message") or (
+            f"Validation failed with {len(errors)} error(s). Ingestion aborted."
+        )
+        log_entry.completed_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(log_entry)
+        dispatch_webhook.delay(
+            partner_id=partner_id,
+            event_type="ingestion.failed",
+            payload={
+                "ingest_log_id": log_entry.id,
+                "error_message": log_entry.error_message,
+                "failed_at": log_entry.completed_at.isoformat(),
+            },
+        )
+        return log_entry
+
+    # --- COMPLETED on Hetzner ---
+    records = state.get("records") or []
+
+    if env == "test":
+        # Dry-run: validation passed, persist nothing.
+        log_entry.status = "COMPLETED"
+        log_entry.track_count = len(records)
+        log_entry.error_message = (
+            f"DRY-RUN (test env): {len(records)} track(s) passed validation. "
+            f"Nothing was persisted."
+        )
+        log_entry.completed_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(log_entry)
+        dispatch_webhook.delay(
+            partner_id=partner_id,
+            event_type="ingestion.completed",
+            payload={
+                "ingest_log_id": log_entry.id,
+                "batch_filename": log_entry.batch_filename,
+                "track_count": len(records),
+                "dry_run": True,
+                "env": env,
+                "completed_at": log_entry.completed_at.isoformat(),
+            },
+        )
+        return log_entry
+
+    # LIVE: persist tracks + audio + processing-status rows.
+    from app.models.track_processing_status import TrackProcessingStatus
+
+    # In-batch genre cache: lowercased name -> genres.id.
+    _genre_id_cache: dict[str, int] = {}
+
+    async def _resolve_genre_id(name):
+        if not name or not str(name).strip():
+            return None
+        key = str(name).strip().lower()
+        if key in _genre_id_cache:
+            return _genre_id_cache[key]
+        clean = str(name).strip()[:80]
+        await db.execute(
+            text("INSERT IGNORE INTO genres (name) VALUES (:name)"),
+            {"name": clean},
+        )
+        row = (await db.execute(
+            text("SELECT id FROM genres WHERE name = :name"),
+            {"name": clean},
+        )).first()
+        genre_id = row[0] if row else None
+        if genre_id:
+            _genre_id_cache[key] = genre_id
+        return genre_id
+
+    inserted = []
+    try:
+        for rec in records:
+            genre_id_val = await _resolve_genre_id(rec.get("genre"))
+            sub_genre_id_val = await _resolve_genre_id(rec.get("sub_genre"))
+            audio_fn = rec.get("audio_filename")
+
+            new_track = Track(
+                # Use the uuid Hetzner assigned during validation — it already keys the
+                # promoted raw-audio file (internal/raw/{uuid}.ext) the processors read.
+                uuid=rec.get("track_uuid") or str(uuid.uuid4()),
+                isrc=(rec.get("isrc") or "").upper(),
+                title=rec.get("title"),
+                version_title=rec.get("version_title"),
+                display_artist=rec.get("display_artist"),
+                partner_id=partner_id,
+                duration_ms=rec.get("duration_ms"),
+                bpm=rec.get("bpm"),
+                musical_key=rec.get("musical_key"),
+                genre_id=genre_id_val,
+                sub_genre_id=sub_genre_id_val,
+                mix_name=rec.get("mix_name") or "Original Mix",
+                parental_warning=rec.get("parental_warning") or "NotExplicit",
+                is_explicit=bool(rec.get("is_explicit")),
+                is_instrumental=bool(rec.get("is_instrumental")),
+                audio_language=rec.get("audio_language") or "xx",
+                language_of_lyrics=rec.get("language_of_lyrics"),
+                p_line_year=rec.get("p_line_year"),
+                p_line_text=rec.get("p_line_text"),
+                ingestion_source="csv",
+                track_type="electrobuzz",
+            )
+            db.add(new_track)
+            await db.flush()  # populate track.id
+
+            mime = (
+                "audio/wav" if str(audio_fn).endswith(".wav")
+                else "audio/mpeg" if str(audio_fn).endswith(".mp3")
+                else "audio/flac"
+            )
+            db.add(AudioFile(
+                party_id=log_entry.party_id,
+                ingest_log_id=log_entry.id,
+                track_id=new_track.id,
+                partner_id=partner_id,
+                asset_class="Master",
+                asset_subtype="master",
+                original_filename=audio_fn,
+                # Files physically live on Hetzner; we record only the relative name.
+                stored_path=audio_fn,
+                file_size_bytes=rec.get("file_size_bytes") or 0,
+                mime_type=mime,
+            ))
+            db.add(TrackProcessingStatus(
+                track_id=new_track.id,
+                partner_id=partner_id,
+                ingest_log_id=log_entry.id,
+                audio_filename=audio_fn,
+                sftp_env=env,
+            ))
+            inserted.append(new_track)
+
+        log_entry.status = "COMPLETED"
+        log_entry.track_count = len(inserted)
+        log_entry.completed_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(log_entry)
+        logger.info(
+            f"[IngestionService] Persisted {len(inserted)} track(s) from Hetzner "
+            f"result for partner {partner_id} job {log_entry.id}."
+        )
+    except Exception as exc:
+        await db.rollback()
+        log_entry.status = "FAILED"
+        log_entry.error_message = f"Failed to persist validated records: {exc}"
+        log_entry.completed_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(log_entry)
+        logger.error(
+            f"[IngestionService] Persist failure for partner {partner_id} "
+            f"job {log_entry.id}: {exc}"
+        )
+        dispatch_webhook.delay(
+            partner_id=partner_id,
+            event_type="ingestion.failed",
+            payload={
+                "ingest_log_id": log_entry.id,
+                "error_message": log_entry.error_message,
+                "failed_at": log_entry.completed_at.isoformat(),
+            },
+        )
+        return log_entry
+
+    dispatch_webhook.delay(
+        partner_id=partner_id,
+        event_type="ingestion.completed",
+        payload={
+            "ingest_log_id": log_entry.id,
+            "batch_filename": log_entry.batch_filename,
+            "track_count": len(inserted),
+            "dry_run": False,
+            "env": env,
+            "completed_at": log_entry.completed_at.isoformat(),
+        },
+    )
+    for track in inserted:
+        dispatch_webhook.delay(
+            partner_id=partner_id,
+            event_type="track.indexed",
+            payload={
+                "track_uuid": track.uuid,
+                "isrc": track.isrc,
+                "title": track.title,
+                "display_artist": track.display_artist,
+            },
+        )
+    return log_entry
+
+
 async def process_ingestion_batch(
     partner_id: int,
     batch_path: str,

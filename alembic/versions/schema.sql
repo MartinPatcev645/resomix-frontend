@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS partners (
     country_code    CHAR(2)      DEFAULT NULL            COMMENT 'ISO 3166-1 alpha-2',
     tier            ENUM('sandbox','starter','growth','enterprise')
                     NOT NULL DEFAULT 'sandbox'           COMMENT 'Drives quota limits and feature flags',
+    service_mode    ENUM('similarity_only','similarity_playback')
+                    NOT NULL DEFAULT 'similarity_only'   COMMENT 'case 1: preview+embedding | case 2: embeddings+peaks+segments',
     is_active       TINYINT(1)   NOT NULL DEFAULT 1,
     onboarded_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
     notes           TEXT         DEFAULT NULL,
