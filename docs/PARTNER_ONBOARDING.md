@@ -93,10 +93,106 @@ The partner uses this key as `Authorization: Bearer rmx_growth_xxx...` or `X-API
 
 SFTP lets the partner drop audio files + a CSV manifest for batch ingestion.
 
-**Via Admin UI:**  
-Admin → Partners → [select partner] → SFTP → Provision
+> **This step is done manually** via the SFTPGo admin panel. The API endpoint
+> (`POST /api/v1/admin/partners/sftp/provision`) automates everything below,
+> but requires SFTPGo + Hetzner to both be healthy. For initial setup or
+> troubleshooting, follow the manual steps.
 
-**Via API:**
+---
+
+### 3a — Create partner home directories on the host
+
+SFTPGo runs in Docker with this volume mount:  
+`./dev_partner_data/sftp` (host) → `/srv/sftp` (container)
+
+Create the partner's upload folders **on the host** inside that volume:
+
+```bash
+# From the resomix-similarity-open project directory
+PARTNER_ID=42
+
+mkdir -p dev_partner_data/sftp/partners/${PARTNER_ID}/test
+mkdir -p dev_partner_data/sftp/partners/${PARTNER_ID}/live
+```
+
+Structure created:
+```
+dev_partner_data/sftp/partners/42/
+├── test/    ← dry-run uploads (validate + report, no DB changes)
+└── live/    ← production uploads (persisted to DB)
+```
+
+Inside the container / SFTPGo these appear at `/srv/sftp/partners/42/`.
+
+---
+
+### 3b — Create the SFTPGo virtual user
+
+**Option A — Web Admin Panel** (`http://localhost:8080`)
+
+1. Open `http://localhost:8080` and log in:  
+   - Username: `admin`  
+   - Password: `12345678`
+2. Navigate to **Users → Add User**
+3. Fill in the form:
+
+   | Field | Value |
+   |---|---|
+   | **Username** | e.g. `beatport_sftp` |
+   | **Password** | a strong random password |
+   | **Home directory** | `/srv/sftp/partners/42` ← container path |
+   | **Status** | Enabled |
+
+4. Under **Permissions** → add entry for path `/` with **All permissions** (`*`)
+5. Under **Filesystem** → leave as **Local** (provider 0)
+6. Under **Quota** → set **Max total size** in bytes (e.g. 10 GB = `10737418240`)
+7. Click **Save**
+
+---
+
+**Option B — REST API** (from terminal)
+
+```bash
+PARTNER_ID=42
+USERNAME=beatport_sftp
+PASSWORD=SecureRandomPass123!
+QUOTA_BYTES=10737418240  # 10 GB (see tier mapping below)
+
+# 1. Get auth token
+TOKEN=$(curl -s -u "admin:12345678" \
+  http://localhost:8080/api/v2/token | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# 2. Create virtual user
+curl -s -X POST http://localhost:8080/api/v2/users \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"username\": \"${USERNAME}\",
+    \"password\": \"${PASSWORD}\",
+    \"home_dir\": \"/srv/sftp/partners/${PARTNER_ID}\",
+    \"status\": 1,
+    \"permissions\": {\"/\": [\"*\"]},
+    \"quota_size\": ${QUOTA_BYTES},
+    \"filesystem\": {\"provider\": 0}
+  }"
+```
+
+**Quota tier mapping:**
+
+| Tier | Bytes | Human |
+|---|---|---|
+| sandbox | `1073741824` | 1 GB |
+| starter | `10737418240` | 10 GB |
+| growth | `53687091200` | 50 GB |
+| enterprise | `0` | Unlimited |
+
+---
+
+### 3c — (Optional) Record the SFTP account in Alwyzon DB
+
+If you want the account tracked in the admin panel, call the provision endpoint
+**after** completing steps 3a and 3b above:
+
 ```http
 POST /api/v1/admin/partners/sftp/provision
 Authorization: Bearer <admin_jwt>
@@ -109,19 +205,32 @@ Authorization: Bearer <admin_jwt>
 }
 ```
 
-This creates a chrooted SFTP account at:
-```
-/srv/sftp/partners/42/
-├── test/    ← dry-run uploads (validate + report, no DB changes)
-└── live/    ← production uploads (persisted to DB)
+> ⚠️ This endpoint will call Hetzner, which in turn calls SFTPGo to register the
+> user. If SFTPGo already has the user from step 3b, the call updates it
+> idempotently (HTTP 409 → PUT). Only use this endpoint once SFTPGo is
+> confirmed healthy.
+
+---
+
+### 3d — Test the SFTP connection
+
+```bash
+sftp -P 2022 beatport_sftp@localhost
+# Enter the password you set in step 3b
+# You land in the chroot root (which is /srv/sftp/partners/42 inside the container)
+
+ls          # should show: live/  test/
+cd live
+put /tmp/test_file.txt
+ls          # should show test_file.txt
 ```
 
 **Connection details to give the partner:**
 ```
-Host: sftp.resomix.com
-Port: 2022
+Host:     sftp.resomix.com
+Port:     2022
 Username: beatport_sftp
-Password: <as set above>
+Password: <as set in step 3b>
 ```
 
 ---
