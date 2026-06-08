@@ -41,10 +41,13 @@ class AudioFile(Base):
     
     # Fields
     asset_class: Mapped[str] = mapped_column(
-        Enum('Master', 'StreamingProfile', 'Ephemeral'), 
-        default='Master', 
+        Enum('Master', 'StreamingProfile', 'Ephemeral'),
+        default='Master',
         nullable=False
     )
+    # Finer-grained category for the admin file browser / analytics:
+    # "master" | "preview" | "hls" (the asset_class enum is left untouched to avoid an enum ALTER).
+    asset_subtype: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
     expires_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True)
     
     # Storage location

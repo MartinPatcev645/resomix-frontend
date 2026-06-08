@@ -22,6 +22,7 @@ from .promo import router as admin_promo_router
 from .auth import router as admin_auth_router
 from .users import router as admin_users_router
 from .roles import router as admin_roles_router
+from .processing import router as admin_processing_router
 
 __all__ = [
     "admin_feedback_router",
@@ -36,4 +37,5 @@ __all__ = [
     "admin_auth_router",
     "admin_users_router",
     "admin_roles_router",
+    "admin_processing_router",
 ]

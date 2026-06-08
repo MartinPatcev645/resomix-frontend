@@ -101,33 +101,19 @@ class SftpService:
             # 6. Flush to get DB-assigned ID
             await db.flush()
 
-            # 7. Call Hetzner provisioning
+            # 7. Call Hetzner provisioning (REQUIRED — failure aborts the transaction)
             quota_bytes = self.get_quota_bytes(partner.tier)
-            try:
-                await self._call_hetzner_provisioning(
-                    partner.id, 
-                    request.username, 
-                    pwd_hash, 
-                    home_dir, 
-                    quota_bytes,
-                    request.use_public_key,
-                    request.public_key if request.use_public_key else None
-                )
-            except Exception as e:
-                logger.error(f"Failed to provision SFTP on Hetzner: {e}")
-                if current_admin:
-                    await self.admin_log_service.log_operation(
-                        db=db,
-                        admin_user_id=current_admin.id,
-                        action="partner.sftp_provision",
-                        target_type="sftp_user",
-                        target_id=str(sftp_user.id),
-                        before_state=None,
-                        after_state={"partner_id": request.partner_id, "username": request.username},
-                        ip_address=ip_address
-                    )
-                await db.commit() # Keep the DB record as requested
-                raise RuntimeError(f"Hetzner provisioning failed: {e}")
+            result = await self._call_hetzner_provisioning(
+                partner.id,
+                request.username,
+                pwd_hash,
+                home_dir,
+                quota_bytes,
+                request.use_public_key,
+                request.public_key if request.use_public_key else None,
+            )
+            if result.get("skipped") is not True and result.get("status") != "ok":
+                raise RuntimeError(f"Hetzner SFTP provisioning returned unexpected body: {result}")
 
             # 8. Mark provisioned
             sftp_user = await sftp_user_repo.mark_provisioned(db, sftp_user)
@@ -148,11 +134,10 @@ class SftpService:
             return sftp_user
 
         except Exception as e:
-            if not isinstance(e, RuntimeError) or "Hetzner provisioning failed" not in str(e):
-                await db.rollback()
+            await db.rollback()
             logger.error(f"Error provisioning SFTP: {e}")
             raise
-        
+
     async def _call_hetzner_provisioning(
         self, partner_id: int, username: str, password_hash: str, home_dir: str, 
         quota_bytes: int, use_public_key: bool, public_key: Optional[str]

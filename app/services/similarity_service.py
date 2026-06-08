@@ -110,6 +110,8 @@ class SimilarityService:
         files_data = {
             "file": (secure_filename, audio_bytes, "application/octet-stream")
         }
+        if partner_id is None:
+            logger.warning("[SimilarityService] calculate_similarity_for_upload called without partner_id — query will fall back to global catalog")
         request_data = {"top_k": top_k, "track_uuid": track_uuid}
         if engine:
             request_data["engine"] = engine
@@ -234,9 +236,9 @@ class SimilarityService:
                                 )
                             break
 
-                # Create similarity playlist if we have tracks
+                # Create similarity playlist for authenticated users (frontend) or any B2B partner
                 playlist_info = None
-                if deduplicated_track_ids:
+                if deduplicated_track_ids and (user_id or (partner_id is not None and partner_id != 1)):
                     # Get the uploaded track's database ID
                     uploaded_track = await self.track_repository.async_get_by_uuid(
                         db, track_uuid, partner_id=partner_id
@@ -370,6 +372,8 @@ class SimilarityService:
                 return {"success": False, "error": "Track UUID not found"}
 
             # Use new UUID-based endpoint
+            if partner_id is None:
+                logger.warning("[SimilarityService] get_similarity_by_path called without partner_id — query will fall back to global catalog")
             payload = {"track_uuid": queried_track_uuid, "top_k": top_k}
             if engine:
                 payload["engine"] = engine
@@ -451,9 +455,9 @@ class SimilarityService:
                                 )
                             break
 
-                # Create similarity playlist if we have tracks
+                # Create similarity playlist for authenticated users (frontend) or any B2B partner
                 playlist_info = None
-                if deduplicated_track_ids and queried_track_data:
+                if deduplicated_track_ids and queried_track_data and (user_id or (partner_id is not None and partner_id != 1)):
                     # Get the queried track's database ID from its UUID
                     queried_track_uuid = queried_track_data.get("id")
                     if queried_track_uuid:
@@ -746,5 +750,5 @@ class SimilarityService:
             payload["partner_id"] = partner_id
 
         return await self._call_similarity_server(
-            "/admin/similarity/rebuild-index/", data=payload
+            "/internal/ingest/rebuild-index", data=payload
         )

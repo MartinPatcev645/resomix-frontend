@@ -196,11 +196,17 @@ class TrackRepository(BaseRepository[Track]):
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None) -> List[Track]:
-        """Async version of get_tracks_by_uuids with partner scoping."""
+    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None, exclude_uploads: bool = False) -> List[Track]:
+        """Async version of get_tracks_by_uuids with partner scoping.
+
+        ``exclude_uploads`` filters out partner-uploaded tracks (``track_type ==
+        UPLOAD``). Uploaded tracks are stored under the partner's own folder for
+        playback but must never surface as similarity-search *results* — only
+        ingested/catalog tracks should be returned to a searcher.
+        """
         if not uuids:
             return []
-            
+
         stmt = (
             select(self.model)
             .options(
@@ -209,10 +215,13 @@ class TrackRepository(BaseRepository[Track]):
             )
             .where(self.model.uuid.in_(uuids))
         )
-        
+
         if partner_id is not None:
             stmt = stmt.where(self.model.partner_id == partner_id)
-            
+
+        if exclude_uploads:
+            stmt = stmt.where(self.model.track_type != TrackType.UPLOAD)
+
         result = await db.execute(stmt)
         return result.scalars().unique().all()
     

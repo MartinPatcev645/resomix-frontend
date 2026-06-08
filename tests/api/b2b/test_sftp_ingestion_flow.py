@@ -160,9 +160,9 @@ async def test_sftp_ingestion_flow_failed(setup_sftp_partner, temp_sftp_dir):
     from app.core.context import set_current_partner_id
     set_current_partner_id(partner_id)
     
-    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "incoming"
+    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "live"
     incoming_path.mkdir(parents=True, exist_ok=True)
-    
+
     # Write physical audio files
     (incoming_path / "track1.wav").write_text("audio data")
     (incoming_path / "track2.wav").write_text("audio data")
@@ -182,7 +182,7 @@ async def test_sftp_ingestion_flow_failed(setup_sftp_partner, temp_sftp_dir):
                 "action": "upload",
                 "name": ".done",
                 "username": creds["username"],
-                "virtual_target_path": "/incoming/.done"
+                "virtual_target_path": "/live/.done"
             }
         )
     
@@ -241,9 +241,9 @@ async def test_sftp_ingestion_flow_success(setup_sftp_partner, temp_sftp_dir):
     from app.core.context import set_current_partner_id
     set_current_partner_id(partner_id)
     
-    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "incoming"
+    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "live"
     incoming_path.mkdir(parents=True, exist_ok=True)
-    
+
     # Write physical files
     (incoming_path / "track1.wav").write_text("audio data 1")
     (incoming_path / "track2.wav").write_text("audio data 2")
@@ -263,7 +263,7 @@ async def test_sftp_ingestion_flow_success(setup_sftp_partner, temp_sftp_dir):
                 "action": "upload",
                 "name": ".done",
                 "username": creds["username"],
-                "virtual_target_path": "/incoming/.done"
+                "virtual_target_path": "/live/.done"
             }
         )
     

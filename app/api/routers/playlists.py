@@ -15,13 +15,13 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Security, Depends, Request, status, Query
+from fastapi import APIRouter, Depends, Request, status, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
-from app.api.dependencies.auth import get_current_user_optional, get_current_user, get_api_key
+from app.api.dependencies.auth import get_current_user_optional, get_current_user
 from app.api.dependencies.partner import get_current_partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
@@ -291,7 +291,7 @@ async def get_playlist_hls_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    partner: Partner = Depends(get_current_partner),  # sets request.state.partner_id
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
@@ -404,13 +404,18 @@ async def get_all_user_playlists_endpoint(
         },
         400: {
             "description": "Failed to generate session"
+        },
+        401: {
+            "description": "Login required (frontend partner with no authenticated user)"
         }
     }
 )
 async def get_playlist_playback_session_endpoint(
     request: Request,
     playlist_id: str,
-    partner: Partner = Depends(get_current_partner)
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_current_partner),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> JSONResponse:
     """
     Generate an Edge Authorization JWT session token.
@@ -419,5 +424,11 @@ async def get_playlist_playback_session_endpoint(
     restrictions and takedowns for the playlist. If allowed, it mints a
     cryptographic JWT token that grants the client direct access to the
     Hetzner Edge Node for gapless HLS streaming without hitting the database again.
+
+    For the frontend partner (partner_id=1), authentication is required.
+    Returns 401 if the caller is not authenticated.
+    Returns 404 if the playlist does not exist (e.g. stale link or wrong UUID).
     """
-    return await playlist_controller.get_playlist_playback_session(request, playlist_id)
+    return await playlist_controller.get_playlist_playback_session(
+        request, db, playlist_id, partner_id=partner.id, current_user=current_user
+    )

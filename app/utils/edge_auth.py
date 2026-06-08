@@ -13,6 +13,7 @@ Email: usman.naeem2212@gmail.com
 
 import time
 import logging
+from typing import Optional
 from jose import jwt
 
 from app.core.config import settings
@@ -20,7 +21,12 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def generate_edge_token(playlist_id: str, client_ip: str) -> str:
+def generate_edge_token(
+    playlist_id: str,
+    client_ip: str,
+    partner_id: Optional[int] = None,
+    scope: Optional[str] = None,
+) -> str:
     """
     Generate a cryptographic Edge Authorization JWT for a playlist playback session.
 
@@ -34,6 +40,9 @@ def generate_edge_token(playlist_id: str, client_ip: str) -> str:
     Args:
         playlist_id: The UUID of the playlist being requested
         client_ip: The IP address of the requesting client to lock the token to their network
+        partner_id: Optional partner ID to embed so Hetzner can resolve partner-scoped
+            assets directly from the verified token claim (no DB round-trip).
+        scope: Optional scope marker (e.g. "playback") describing what the token grants.
 
     Returns:
         A signed JSON Web Token string
@@ -46,13 +55,48 @@ def generate_edge_token(playlist_id: str, client_ip: str) -> str:
             "exp": int(time.time()) + settings.edge_token_ttl_seconds
         }
 
+        # Partner-scoped storage refactor: embed the owning partner so the Hetzner
+        # edge can resolve assets under {partner_data_root}/{partner_id}/internal/...
+        if partner_id is not None:
+            payload["partner_id"] = partner_id
+        if scope is not None:
+            payload["scope"] = scope
+
         # Encode and sign using HS256 and the shared secret
         token = jwt.encode(payload, settings.edge_jwt_secret, algorithm="HS256")
-        
+
         return token
     except Exception as e:
         logger.error(f"Failed to generate edge token for playlist {playlist_id}: {e}")
         raise
+
+
+def generate_playback_token(partner_id: int, client_ip: str) -> dict:
+    """
+    Mint a short-lived "valet" playback token for a partner.
+
+    Unlike :func:`generate_edge_token`, this token is not bound to a single playlist.
+    It carries ``partner_id`` + ``scope="playback"`` so the partner can fetch any of
+    their own server-managed assets (previews, peaks, covers, HLS segments) from the
+    Hetzner edge for the duration of the token, without Hetzner needing DB access or
+    re-validating the partner's API key on every request.
+
+    Args:
+        partner_id: The authenticated partner's ID.
+        client_ip: The requesting client's IP (token is locked to this network).
+
+    Returns:
+        ``{"token": <jwt>, "expires_in": <ttl_seconds>}``
+    """
+    ttl = settings.edge_token_ttl_seconds
+    payload = {
+        "scope": "playback",
+        "partner_id": partner_id,
+        "ip": client_ip,
+        "exp": int(time.time()) + ttl,
+    }
+    token = jwt.encode(payload, settings.edge_jwt_secret, algorithm="HS256")
+    return {"token": token, "expires_in": ttl}
 
 
 def verify_edge_token(token: str, playlist_id: str, client_ip: str) -> bool:

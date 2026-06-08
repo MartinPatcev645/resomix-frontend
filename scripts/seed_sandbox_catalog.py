@@ -52,7 +52,7 @@ def seed_sandbox():
             # Insert the public Sandbox Key
             conn.execute(text("""
                 INSERT INTO partner_api_keys (partner_id, key_prefix, key_hash, label, scopes, rate_limit_rps, rate_limit_monthly)
-                VALUES (1, :prefix, :hash, 'Public Sandbox Key', '["similarity:read", "metadata:read"]', 5, 3000)
+                VALUES (1, :prefix, :hash, 'Public Sandbox Key', '["similarity:read", "metadata:read", "playback:read"]', 5, 3000)
                 ON DUPLICATE KEY UPDATE label=label
             """), {'prefix': key_prefix, 'hash': key_hash})
             

@@ -88,9 +88,9 @@ async def test_rebuild_faiss_indexes_passes_partner_id():
         mock_call.return_value = {"status": "success"}
         
         await service.rebuild_faiss_indexes(partner_id=partner_id)
-        
+
         mock_call.assert_called_once_with(
-            "/admin/similarity/rebuild-index/",
+            "/internal/ingest/rebuild-index",
             data={"partner_id": partner_id}
         )
 
@@ -103,8 +103,8 @@ async def test_rebuild_faiss_indexes_no_partner_id():
         mock_call.return_value = {"status": "success"}
         
         await service.rebuild_faiss_indexes()
-        
+
         mock_call.assert_called_once_with(
-            "/admin/similarity/rebuild-index/",
+            "/internal/ingest/rebuild-index",
             data={}
         )

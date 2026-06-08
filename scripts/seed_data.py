@@ -337,8 +337,8 @@ class SeedDataManager:
                     local_path = track_info.get('local_file_path')
                     if local_path:
                         conn.execute(text("""
-                            INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, original_filename, stored_path, audio_codec, partner_id)
-                            VALUES ('ARGO_01', 1, :tid, 'Master', :orig, :path, :codec, 1)
+                            INSERT INTO audio_files (party_id, ingest_log_id, track_id, asset_class, asset_subtype, original_filename, stored_path, audio_codec, partner_id)
+                            VALUES ('ARGO_01', 1, :tid, 'Master', 'master', :orig, :path, :codec, 1)
                             ON DUPLICATE KEY UPDATE stored_path=:path
                         """), {
                             'tid': tid,
@@ -346,6 +346,23 @@ class SeedDataManager:
                             'path': local_path,
                             'codec': local_path.split('.')[-1].upper() if '.' in local_path else 'FLAC'
                         })
+
+                    # 7. Processing status — seeded sandbox catalog is already live & indexed,
+                    #    so mark every stage completed so the admin panel reflects reality.
+                    conn.execute(text("""
+                        INSERT INTO track_processing_status
+                            (track_id, partner_id, ingest_log_id, audio_filename, sftp_env,
+                             embedding_status, peaks_status, segments_status, faiss_indexed,
+                             embedding_completed_at, peaks_completed_at, segments_completed_at, faiss_indexed_at)
+                        VALUES
+                            (:tid, 1, 1, :orig, 'live',
+                             'completed', 'completed', 'completed', 1,
+                             NOW(), NOW(), NOW(), NOW())
+                        ON DUPLICATE KEY UPDATE faiss_indexed=1
+                    """), {
+                        'tid': tid,
+                        'orig': os.path.basename(local_path) if local_path else None,
+                    })
 
                 return True
         except Exception as e:
@@ -362,14 +379,14 @@ class SeedDataManager:
                 conn.execute(text("""
                     INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
                     VALUES (1, :uuid, 'admin', 'dj@argo.fm', :pw, 'DJ Argo (Admin)', 1, 1)
-                """), {'uuid': admin_uuid, 'pw': self._hash_password('dj@argo.fm')})
+                """), {'uuid': admin_uuid, 'pw': self._hash_password('12345678')})
                 
                 # 2. Listener
                 user_uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d480'
                 conn.execute(text("""
                     INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
                     VALUES (2, :uuid, 'listener_01', 'listener@resomix.com', :pw, 'Music Lover', 1, 1)
-                """), {'uuid': user_uuid, 'pw': self._hash_password('User@123')})
+                """), {'uuid': user_uuid, 'pw': self._hash_password('12345678')})
                 
                 # Assign Roles
                 conn.execute(text("INSERT INTO user_roles (user_id, role_id) SELECT 1, id FROM roles WHERE name='admin'"))

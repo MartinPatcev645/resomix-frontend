@@ -90,32 +90,58 @@ async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
     # Only care about .done file uploads indicating the partner has finished uploading the batch
     if body.get("action") == "upload" and body.get("name") == ".done":
         username = body.get("username")
+        # Derive which SFTP env the batch was uploaded to (test = dry-run, live = persist).
+        # The .done marker lives inside the env folder, so its path carries the env segment.
+        env = _derive_env_from_event(body)
         # In a real scenario, we might need a DB session to look up the user.
         # But for the hook event, we can just defer it or use a new session block.
         # Here we just pass the username downstream or fetch it using a scoped session.
         from database.connection import AsyncSessionLocal
-        
+
         async with AsyncSessionLocal() as db:
             sftp_user = await sftp_user_repo.get_by_username(db, username)
             if sftp_user:
                 partner_id = sftp_user.partner_id
-                batch_path = f"{settings.sftp_base_path}/partners/{partner_id}/incoming"
-                
-                async def _validate_and_ingest(p_id: int, b_path: str):
-                    logger.info(f"Validating incoming batch for partner {p_id} at {b_path}")
+                batch_path = f"{settings.sftp_base_path}/partners/{partner_id}/{env}"
+
+                async def _validate_and_ingest(p_id: int, b_path: str, b_env: str):
+                    logger.info(f"Validating incoming batch for partner {p_id} (env={b_env}) at {b_path}")
                     # Run validation
                     result = await sftp_service.validate_incoming_batch(p_id, b_path)
-                    
-                    # Then process
+
+                    # Then process (test => dry-run report only; live => full persist)
                     await process_ingestion_batch(
-                        partner_id=p_id, 
+                        partner_id=p_id,
                         batch_path=b_path,
+                        env=b_env,
                         csv_path=str(result.csv_path) if result.csv_path else None,
                         checksum_verified=result.checksum_verified,
                         validation_error=result.error
                     )
-                
+
                 # Enqueue wrapper task
-                background_tasks.add_task(_validate_and_ingest, partner_id, batch_path)
-    
+                background_tasks.add_task(_validate_and_ingest, partner_id, batch_path, env)
+
     return {"status": "ok"}
+
+
+def _derive_env_from_event(body: dict) -> str:
+    """
+    Determine the SFTP env ("test" | "live") a batch was uploaded to from an SFTPGo event.
+
+    SFTPGo events carry the uploaded object path under a few possible keys depending on version
+    (``virtual_path``, ``virtual_target_path``, ``path``, ``fs_path``). We look for a ``/test/``
+    or ``/live/`` segment. Defaults to ``live`` when the path is ambiguous so a misconfigured
+    client never silently skips real ingestion.
+    """
+    candidate = (
+        body.get("virtual_path")
+        or body.get("virtual_target_path")
+        or body.get("path")
+        or body.get("fs_path")
+        or ""
+    )
+    norm = str(candidate).replace("\\", "/").lower()
+    if "/test/" in norm or norm.endswith("/test") or norm.startswith("test/") or norm == "test":
+        return "test"
+    return "live"

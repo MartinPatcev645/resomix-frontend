@@ -245,7 +245,8 @@ class SimilarityRepository(BaseRepository[Track]):
         return details_map
 
     async def async_get_track_details_by_uuids(
-        self, db: AsyncSession, track_uuids: List[str], partner_id: Optional[int] = None
+        self, db: AsyncSession, track_uuids: List[str], partner_id: Optional[int] = None,
+        exclude_uploads: bool = True
     ) -> Dict[str, Dict[str, Any]]:
         """
         Fetches full track details from MariaDB based on a list of UUIDs
@@ -254,6 +255,12 @@ class SimilarityRepository(BaseRepository[Track]):
         Args:
             db: Database session
             track_uuids: A list of track UUIDs.
+            partner_id: Optional tenant scope.
+            exclude_uploads: When True (default), partner-uploaded tracks are
+                dropped from the result set. This is the search path, so uploads
+                must never appear as similarity results — only ingested catalog
+                tracks. (The query/reference track is fetched via a separate
+                method that is not affected by this filter.)
 
         Returns:
             A dictionary mapping UUID to track_details_dict.
@@ -274,7 +281,7 @@ class SimilarityRepository(BaseRepository[Track]):
 
             track_repo = TrackRepository()
             tracks = await track_repo.async_get_tracks_by_uuids(
-                db, list(uuids_to_query), partner_id=partner_id
+                db, list(uuids_to_query), partner_id=partner_id, exclude_uploads=exclude_uploads
             )
 
             for track in tracks:

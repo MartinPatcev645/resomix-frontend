@@ -259,9 +259,9 @@ async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_di
     set_current_partner_id(partner_id)
     
     # Setup dummy directory structure and CSV file
-    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "incoming"
+    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "live"
     incoming_path.mkdir(parents=True, exist_ok=True)
-    
+
     csv_file = incoming_path / "metadata.csv"
     with open(csv_file, "w", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist"])
@@ -294,7 +294,7 @@ async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_di
                 "action": "upload",
                 "name": ".done",
                 "username": p2["sftp_username"],
-                "virtual_target_path": "/incoming/.done"
+                "virtual_target_path": "/live/.done"
             }
         )
         assert response.status_code == 200

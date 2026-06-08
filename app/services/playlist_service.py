@@ -344,9 +344,15 @@ class PlaylistService:
                 tracks[0].get("type", "internal") if tracks else "internal"
             )
 
-            # Call media server to generate segmented M3U8
+            # Call media server to generate segmented M3U8.
+            # partner_id is passed as a query param so the Hetzner edge-auth
+            # middleware (which reads from request.query_params) can resolve
+            # the partner-scoped assets correctly.
+            hls_endpoint = "/signed-audio/hls-m3u8/"
+            if partner_id is not None:
+                hls_endpoint = f"{hls_endpoint}?partner_id={partner_id}"
             m3u8_content = await self._call_media_server(
-                "/signed-audio/hls-m3u8/",
+                hls_endpoint,
                 {"uuids": uuid_list, "reference_track_type": seed_track_type},
             )
 
@@ -724,7 +730,7 @@ class PlaylistService:
             }
 
     async def get_playlist_playback_session(
-        self, playlist_id: str, client_ip: str
+        self, playlist_id: str, client_ip: str, partner_id: Optional[int] = None
     ) -> dict:
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
@@ -739,7 +745,12 @@ class PlaylistService:
         from app.core.config import settings
 
         try:
-            token = generate_edge_token(playlist_id, client_ip)
+            # Embed the owning partner so the Hetzner edge can resolve partner-scoped
+            # assets directly from the verified token claim (defaults to the system
+            # partner / partner 1 for frontend/B2C traffic).
+            token = generate_edge_token(
+                playlist_id, client_ip, partner_id=partner_id, scope="playback"
+            )
 
             # The Similarity server handles the stitched HLS playlists
             base_url = settings.public_alwyzon_url.rstrip("/")
