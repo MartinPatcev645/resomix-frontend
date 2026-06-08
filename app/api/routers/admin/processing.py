@@ -304,27 +304,62 @@ async def retry_ingestion(
     summary="List tracks with processing status",
 )
 async def list_tracks(
-    partner_id: Optional[int] = Query(None),
-    is_active: Optional[bool] = Query(None),
+    partner_id: int = Query(..., description="Partner ID to filter tracks by (required)"),
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    ingestion_source: Optional[str] = Query(None, description="Filter by ingestion source (csv, cc_by, user_upload, …)"),
+    q: Optional[str] = Query(None, description="Search in title, ISRC, UUID, or display_artist"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
     set_admin_context(True)
-    stmt = select(Track, TrackProcessingStatus).join(
-        TrackProcessingStatus, TrackProcessingStatus.track_id == Track.id, isouter=True
-    )
-    if partner_id is not None:
-        stmt = stmt.where(Track.partner_id == partner_id)
+
+    base_where = [Track.partner_id == partner_id]
     if is_active is not None:
-        stmt = stmt.where(Track.is_active == is_active)
-    stmt = stmt.order_by(Track.id.desc()).limit(page_size).offset((page - 1) * page_size)
+        base_where.append(Track.is_active == is_active)
+    if ingestion_source is not None:
+        base_where.append(Track.ingestion_source == ingestion_source)
+    if q:
+        pattern = f"%{q}%"
+        from sqlalchemy import or_
+        base_where.append(
+            or_(
+                Track.title.ilike(pattern),
+                Track.isrc.ilike(pattern),
+                Track.uuid.ilike(pattern),
+                Track.display_artist.ilike(pattern),
+            )
+        )
+
+    # Total count (without pagination)
+    count_stmt = select(func.count()).select_from(Track).where(*base_where)
+    total = (await db.execute(count_stmt)).scalar_one()
+
+    # Paginated data
+    stmt = (
+        select(Track, TrackProcessingStatus)
+        .join(TrackProcessingStatus, TrackProcessingStatus.track_id == Track.id, isouter=True)
+        .where(*base_where)
+        .order_by(Track.id.desc())
+        .limit(page_size)
+        .offset((page - 1) * page_size)
+    )
     rows = (await db.execute(stmt)).all()
+
+    total_pages = (total + page_size - 1) // page_size
 
     return JSONResponse(
         content={
             "status": "success",
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1,
+            },
             "tracks": [
                 {
                     "id": t.id,
@@ -332,8 +367,15 @@ async def list_tracks(
                     "title": t.title,
                     "display_artist": t.display_artist,
                     "isrc": t.isrc,
+                    "type": t.track_type,
+                    "duration_seconds": round(t.duration_ms / 1000.0, 3) if t.duration_ms else None,
+                    "bpm": t.bpm,
+                    "musical_key": t.musical_key,
+                    "ingestion_source": t.ingestion_source,
                     "is_active": t.is_active,
                     "partner_id": t.partner_id,
+                    "created_at": t.created_at.isoformat() if t.created_at else None,
+                    "updated_at": t.updated_at.isoformat() if t.updated_at else None,
                     "processing": _tps_to_dict(tps) if tps else None,
                 }
                 for (t, tps) in rows
@@ -482,6 +524,8 @@ def _tps_to_dict(tps: TrackProcessingStatus) -> dict:
         "peaks_status": tps.peaks_status,
         "segments_status": tps.segments_status,
         "faiss_indexed": tps.faiss_indexed,
+        "faiss_indexed_at": tps.faiss_indexed_at.isoformat() if tps.faiss_indexed_at else None,
         "sftp_env": tps.sftp_env,
+        "audio_filename": tps.audio_filename,
         "embedding_error": tps.embedding_error,
     }

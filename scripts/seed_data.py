@@ -379,14 +379,14 @@ class SeedDataManager:
                 conn.execute(text("""
                     INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
                     VALUES (1, :uuid, 'admin', 'dj@argo.fm', :pw, 'DJ Argo (Admin)', 1, 1)
-                """), {'uuid': admin_uuid, 'pw': self._hash_password('dj@argo.fm')})
+                """), {'uuid': admin_uuid, 'pw': self._hash_password('12345678')})
                 
                 # 2. Listener
                 user_uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d480'
                 conn.execute(text("""
                     INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
                     VALUES (2, :uuid, 'listener_01', 'listener@resomix.com', :pw, 'Music Lover', 1, 1)
-                """), {'uuid': user_uuid, 'pw': self._hash_password('User@123')})
+                """), {'uuid': user_uuid, 'pw': self._hash_password('12345678')})
                 
                 # Assign Roles
                 conn.execute(text("INSERT INTO user_roles (user_id, role_id) SELECT 1, id FROM roles WHERE name='admin'"))

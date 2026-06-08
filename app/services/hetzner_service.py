@@ -203,6 +203,64 @@ class HetznerService:
             logger.error(f"Hetzner batch-embeddings connection error (partner {partner_id}): {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
+    async def rebuild_index(
+        self, partner_id: int
+    ) -> Dict[str, Any]:
+        """
+        Trigger a full FAISS index rebuild on the Hetzner media server for a specific partner.
+
+        Calls Hetzner once per engine (maest + discogs) because the endpoint requires
+        both ``partner_id`` and ``engine`` as mandatory fields.
+
+        Args:
+            partner_id: The partner whose FAISS indexes should be rebuilt.
+
+        Returns:
+            Dict with overall ``success`` boolean and per-engine results under
+            ``engines.maest`` and ``engines.discogs``.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        endpoint = f"{base_url}/internal/ingest/rebuild-index"
+        headers = {
+            "Authorization": f"Bearer {self.internal_api_key}",
+            "Content-Type": "application/json",
+        }
+
+        engines = ["maest", "discogs"]
+        results: Dict[str, Any] = {}
+        all_ok = True
+
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                for engine in engines:
+                    payload = {"partner_id": partner_id, "engine": engine}
+                    resp = await client.post(endpoint, json=payload, headers=headers)
+                    if resp.status_code in (200, 202):
+                        results[engine] = {"success": True, "data": resp.json()}
+                    else:
+                        all_ok = False
+                        results[engine] = {
+                            "success": False,
+                            "error": f"Media server returned {resp.status_code}",
+                            "detail": resp.text[:300],
+                        }
+                        logger.error(
+                            f"Hetzner rebuild-index failed for partner {partner_id} engine={engine}: "
+                            f"{resp.status_code} {resp.text[:200]}"
+                        )
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner rebuild-index connection error: {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+        return {
+            "success": all_ok,
+            "partner_id": partner_id,
+            "engines": results,
+        }
+
     async def get_deletion_log(
         self,
         partner_id: int,

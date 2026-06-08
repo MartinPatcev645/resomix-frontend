@@ -160,6 +160,7 @@ python scripts/seed_data.py seed-all
 Check data:
 ```bash
 docker exec -i resomix-test-db mariadb -uroot -ptest resomix_db -e "SELECT COUNT(*) FROM tracks;"
+docker exec -i resomix-test-db mariadb -uroot -ptest resomix_db -e "SELECT * FROM partners where id = 1;"
 ```
 
 Create migrations in future (not recommended for now):

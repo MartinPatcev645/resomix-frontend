@@ -1900,11 +1900,42 @@ class PlaylistController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
 
-    async def get_playlist_playback_session(self, request: Request, playlist_id: str, partner_id: Optional[int] = None):
+    async def get_playlist_playback_session(
+        self,
+        request: Request,
+        db: AsyncSession,
+        playlist_id: str,
+        partner_id: Optional[int] = None,
+        current_user=None,
+    ):
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
         for playing a server-stitched playlist.
+
+        For the frontend partner (partner_id=1), the caller must be authenticated.
+        Returns 401 for anonymous frontend users before any DB work.
+
+        Validates that the playlist exists in the database before minting a token.
+        Returns 404 when the playlist is not found.
         """
+        # For the frontend partner, require an authenticated user.
+        # B2B partners (partner_id != 1) authenticate via API key alone — no user required.
+        if partner_id == 1 and not current_user:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Login required to access playback. Please sign in."},
+            )
+
+        # Pre-flight: verify the playlist exists for this partner before minting a token.
+        playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
+            db, playlist_id, partner_id=partner_id
+        )
+        if playlist is None:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"detail": "Playlist not found."},
+            )
+
         client_ip = request.client.host if request.client else "unknown"
         result = await self.playlist_service.get_playlist_playback_session(
             playlist_id, client_ip, partner_id=partner_id
