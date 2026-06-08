@@ -39,7 +39,8 @@ import type {
   PartnerApiKey, 
   PartnerTier, 
   PartnerCreateRequest, 
-  ApiKeyIssueRequest 
+  ApiKeyIssueRequest,
+  ServiceMode
 } from '@resomix/api-client';
 
 const { Title, Text, Paragraph } = Typography;
@@ -227,6 +228,19 @@ function PartnersPage() {
           enterprise: 'purple'
         };
         return <Tag color={colors[tier]}>{tier.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: 'Service Mode',
+      dataIndex: 'service_mode',
+      key: 'service_mode',
+      render: (mode?: ServiceMode) => {
+        if (!mode) return <Tag color="default">SIMILARITY ONLY</Tag>;
+        return mode === 'similarity_playback' ? (
+          <Tag color="green">SIMILARITY + PLAYBACK</Tag>
+        ) : (
+          <Tag color="default">SIMILARITY ONLY</Tag>
+        );
       },
     },
     {
@@ -422,13 +436,25 @@ function PartnersPage() {
                 <Option value="enterprise">Enterprise</Option>
               </Select>
             </Form.Item>
+            <Form.Item 
+              name="service_mode" 
+              label={<Text className="font-medium text-primary">Service Mode</Text>}
+              extra={<span className="text-amber-500 font-medium text-[10px] leading-tight block mt-0.5">Note: Changing this records intent but won't reprocess existing tracks yet.</span>}
+            >
+              <Select className="h-11 rounded-lg">
+                <Option value="similarity_only">Similarity only</Option>
+                <Option value="similarity_playback">Similarity + Playback</Option>
+              </Select>
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <Form.Item name="country_code" label={<Text className="font-medium text-primary">Country (ISO)</Text>}>
               <Input placeholder="US, GB, etc." maxLength={2} className="h-11 rounded-lg" />
             </Form.Item>
+            <Form.Item name="vat_number" label={<Text className="font-medium text-primary">VAT / Tax ID (Optional)</Text>}>
+              <Input placeholder="EU123456789" className="h-11 rounded-lg" />
+            </Form.Item>
           </div>
-          <Form.Item name="vat_number" label={<Text className="font-medium text-primary">VAT / Tax ID (Optional)</Text>}>
-            <Input placeholder="EU123456789" className="h-11 rounded-lg" />
-          </Form.Item>
           <Form.Item name="is_active" label={<Text className="font-medium text-primary">Status</Text>}>
             <Select className="h-11 rounded-lg">
               <Option value={true}>Active</Option>
@@ -448,7 +474,7 @@ function PartnersPage() {
           form={createForm}
           layout="vertical"
           onFinish={handleCreatePartner}
-          initialValues={{ tier: 'sandbox' }}
+          initialValues={{ tier: 'sandbox', service_mode: 'similarity_only' }}
           className="mt-4"
         >
           <Form.Item
@@ -484,13 +510,30 @@ function PartnersPage() {
                 <Option value="enterprise">Enterprise</Option>
               </Select>
             </Form.Item>
+            <Form.Item 
+              name="service_mode" 
+              label={<Text className="font-medium text-primary">Service Mode</Text>}
+              extra={
+                <div className="text-[10px] text-secondary leading-tight mt-0.5">
+                  <strong>Similarity only</strong>: Stores preview + embedding (cheapest).<br/>
+                  <strong>Similarity + Playback</strong>: Stores embeddings + peaks + segments (full playback).
+                </div>
+              }
+            >
+              <Select className="h-11 rounded-lg">
+                <Option value="similarity_only">Similarity only</Option>
+                <Option value="similarity_playback">Similarity + Playback</Option>
+              </Select>
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <Form.Item name="country_code" label={<Text className="font-medium text-primary">Country (ISO)</Text>}>
               <Input placeholder="US, GB, etc." maxLength={2} className="h-11 rounded-lg" />
             </Form.Item>
+            <Form.Item name="vat_number" label={<Text className="font-medium text-primary">VAT / Tax ID (Optional)</Text>}>
+              <Input placeholder="EU123456789" className="h-11 rounded-lg" />
+            </Form.Item>
           </div>
-          <Form.Item name="vat_number" label="VAT / Tax ID (Optional)">
-            <Input placeholder="EU123456789" />
-          </Form.Item>
           <Form.Item name="notes" label="Internal Notes">
             <Input.TextArea placeholder="Any specific requirements or context..." rows={3} />
           </Form.Item>

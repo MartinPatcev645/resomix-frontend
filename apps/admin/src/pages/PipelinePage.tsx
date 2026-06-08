@@ -644,153 +644,167 @@ function PipelinePage() {
         ]}
         width={650}
       >
-        {selectedJob && (
-          <div className="py-4 flex flex-col gap-6">
-            {/* Status & Metadata Alert */}
-            {selectedJob.status === 'failed' && (
-              <Alert 
-                type="error"
-                showIcon
-                message="This processing job failed to complete successfully."
-                description={selectedJob.error_details || "No detailed error logs were reported by the backend worker."}
-                className="rounded-xl"
-              />
-            )}
+        {selectedJob && (() => {
+          const total = selectedJob.total_tracks || 0;
+          const processed = selectedJob.processed_tracks || 0;
+          const failed = selectedJob.failed_tracks || 0;
+          const percent = total > 0 ? Math.round(((processed + failed) / total) * 100) : 0;
+          
+          const getErrorDescription = (err: any) => {
+            if (!err) return "No detailed error logs were reported by the backend worker.";
+            return typeof err === 'object' 
+              ? "See system error logs below for detailed JSON feedback." 
+              : err;
+          };
 
-            {selectedJob.status === 'partial' && (
-              <Alert 
-                type="warning"
-                showIcon
-                message="This processing job completed with partial failures."
-                description={selectedJob.error_details || "Some tracks encountered problems during generation."}
-                className="rounded-xl"
-              />
-            )}
+          return (
+            <div className="py-4 flex flex-col gap-6">
+              {/* Status & Metadata Alert */}
+              {selectedJob.status === 'failed' && (
+                <Alert 
+                  type="error"
+                  showIcon
+                  message="This processing job failed to complete successfully."
+                  description={getErrorDescription(selectedJob.error_details)}
+                  className="rounded-xl"
+                />
+              )}
 
-            {selectedJob.status === 'completed' && (
-              <Alert 
-                type="success"
-                showIcon
-                message="Embeddings generated and indexed successfully!"
-                className="rounded-xl"
-              />
-            )}
+              {selectedJob.status === 'partial' && (
+                <Alert 
+                  type="warning"
+                  showIcon
+                  message="This processing job completed with partial failures."
+                  description={getErrorDescription(selectedJob.error_details)}
+                  className="rounded-xl"
+                />
+              )}
 
-            {/* Main info panel */}
-            <div className="grid grid-cols-2 gap-6 border border-default p-4 rounded-xl bg-background-secondary">
-              <div>
-                <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Partner</Text>
-                <Text strong className="text-sm text-primary">{getPartnerName(selectedJob.partner_id)}</Text>
+              {selectedJob.status === 'completed' && (
+                <Alert 
+                  type="success"
+                  showIcon
+                  message="Embeddings generated and indexed successfully!"
+                  className="rounded-xl"
+                />
+              )}
+
+              {/* Main info panel */}
+              <div className="grid grid-cols-2 gap-6 border border-default p-4 rounded-xl bg-background-secondary">
+                <div>
+                  <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Partner</Text>
+                  <Text strong className="text-sm text-primary">{getPartnerName(selectedJob.partner_id)}</Text>
+                </div>
+
+                <div>
+                  <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Job Type</Text>
+                  <Tag color="blue" className="uppercase font-mono text-xs">{selectedJob.job_type}</Tag>
+                </div>
+
+                <div>
+                  <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Status</Text>
+                  <span className="mt-0.5 block">{getJobStatusTag(selectedJob.status)}</span>
+                </div>
+
+                <div>
+                  <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Triggered By</Text>
+                  <Text className="text-sm font-medium">{selectedJob.triggered_by || 'System Automatic'}</Text>
+                </div>
+
+                <div>
+                  <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Ingest Run Reference</Text>
+                  <Text className="text-sm font-mono">{selectedJob.ingest_log_id ? `#${selectedJob.ingest_log_id}` : 'All pending tracks'}</Text>
+                </div>
               </div>
 
+              {/* Progress breakdown */}
               <div>
-                <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Job Type</Text>
-                <Tag color="blue" className="uppercase font-mono text-xs">{selectedJob.job_type}</Tag>
+                <Title level={5} className="!mb-2 !text-primary">Progress Breakdown</Title>
+                <div className="border border-default p-4 rounded-xl bg-surface">
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <Text className="text-secondary">Overall Progress</Text>
+                      <Text strong className="text-primary">{percent}%</Text>
+                    </div>
+                    <Progress 
+                      percent={percent} 
+                      status={selectedJob.status === 'failed' ? 'exception' : selectedJob.status === 'completed' ? 'success' : 'active'}
+                      size="small"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 text-center mt-2">
+                    <div className="border-r border-default">
+                      <Text className="text-secondary text-[10px] uppercase block">Total Tracks</Text>
+                      <Text strong className="text-lg text-primary">{total}</Text>
+                    </div>
+                    <div className="border-r border-default">
+                      <Text className="text-secondary text-[10px] uppercase block">Processed</Text>
+                      <Text strong className="text-lg text-success">{processed}</Text>
+                    </div>
+                    <div>
+                      <Text className="text-secondary text-[10px] uppercase block">Failed</Text>
+                      <Text strong className={`text-lg ${failed > 0 ? 'text-red-500' : 'text-secondary'}`}>{failed}</Text>
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Timing analysis */}
               <div>
-                <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Status</Text>
-                <span className="mt-0.5 block">{getJobStatusTag(selectedJob.status)}</span>
-              </div>
-
-              <div>
-                <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Triggered By</Text>
-                <Text className="text-sm font-medium">{selectedJob.triggered_by || 'System Automatic'}</Text>
-              </div>
-
-              <div>
-                <Text className="text-secondary text-[10px] uppercase block font-semibold mb-0.5">Ingest Run Reference</Text>
-                <Text className="text-sm font-mono">{selectedJob.ingest_log_id ? `#${selectedJob.ingest_log_id}` : 'All pending tracks'}</Text>
-              </div>
-            </div>
-
-            {/* Progress breakdown */}
-            <div>
-              <Title level={5} className="!mb-2 !text-primary">Progress Breakdown</Title>
-              <div className="border border-default p-4 rounded-xl bg-surface">
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <Text className="text-secondary">Overall Progress</Text>
-                    <Text strong className="text-primary">
-                      {Math.round(((selectedJob.processed_tracks + selectedJob.failed_tracks) / (selectedJob.total_tracks || 1)) * 100)}%
+                <Title level={5} className="!mb-2 !text-primary">Timing Analysis</Title>
+                <div className="border border-default p-4 rounded-xl bg-surface flex flex-col gap-3">
+                  <div className="flex justify-between text-sm">
+                    <Text className="text-secondary">Created At:</Text>
+                    <Text className="text-primary font-medium">{new Date(selectedJob.created_at).toLocaleString()}</Text>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <Text className="text-secondary">Started At:</Text>
+                    <Text className="text-primary font-medium">
+                      {selectedJob.started_at ? new Date(selectedJob.started_at).toLocaleString() : 'Pending start...'}
                     </Text>
                   </div>
-                  <Progress 
-                    percent={Math.round(((selectedJob.processed_tracks + selectedJob.failed_tracks) / (selectedJob.total_tracks || 1)) * 100)} 
-                    status={selectedJob.status === 'failed' ? 'exception' : selectedJob.status === 'completed' ? 'success' : 'active'}
-                    size="small"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 text-center mt-2">
-                  <div className="border-r border-default">
-                    <Text className="text-secondary text-[10px] uppercase block">Total Tracks</Text>
-                    <Text strong className="text-lg text-primary">{selectedJob.total_tracks}</Text>
-                  </div>
-                  <div className="border-r border-default">
-                    <Text className="text-secondary text-[10px] uppercase block">Processed</Text>
-                    <Text strong className="text-lg text-success">{selectedJob.processed_tracks}</Text>
-                  </div>
-                  <div>
-                    <Text className="text-secondary text-[10px] uppercase block">Failed</Text>
-                    <Text strong className={`text-lg ${selectedJob.failed_tracks > 0 ? 'text-red-500' : 'text-secondary'}`}>
-                      {selectedJob.failed_tracks}
+                  <div className="flex justify-between text-sm">
+                    <Text className="text-secondary">Completed At:</Text>
+                    <Text className="text-primary font-medium">
+                      {selectedJob.completed_at ? new Date(selectedJob.completed_at).toLocaleString() : 'In progress/incomplete'}
                     </Text>
                   </div>
+                  {selectedJob.started_at && selectedJob.completed_at && (
+                    <div className="flex justify-between text-sm border-t border-default pt-2 mt-1">
+                      <Text strong className="text-secondary">Total Duration:</Text>
+                      <Text strong className="text-indigo-500">
+                        {(() => {
+                          const start = new Date(selectedJob.started_at).getTime();
+                          const end = new Date(selectedJob.completed_at).getTime();
+                          const diffSecs = Math.floor((end - start) / 1000);
+                          if (diffSecs < 60) return `${diffSecs}s`;
+                          const mins = Math.floor(diffSecs / 60);
+                          const secs = diffSecs % 60;
+                          return `${mins}m ${secs}s`;
+                        })()}
+                      </Text>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Timing analysis */}
-            <div>
-              <Title level={5} className="!mb-2 !text-primary">Timing Analysis</Title>
-              <div className="border border-default p-4 rounded-xl bg-surface flex flex-col gap-3">
-                <div className="flex justify-between text-sm">
-                  <Text className="text-secondary">Created At:</Text>
-                  <Text className="text-primary font-medium">{new Date(selectedJob.created_at).toLocaleString()}</Text>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <Text className="text-secondary">Started At:</Text>
-                  <Text className="text-primary font-medium">
-                    {selectedJob.started_at ? new Date(selectedJob.started_at).toLocaleString() : 'Pending start...'}
-                  </Text>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <Text className="text-secondary">Completed At:</Text>
-                  <Text className="text-primary font-medium">
-                    {selectedJob.completed_at ? new Date(selectedJob.completed_at).toLocaleString() : 'In progress/incomplete'}
-                  </Text>
-                </div>
-                {selectedJob.started_at && selectedJob.completed_at && (
-                  <div className="flex justify-between text-sm border-t border-default pt-2 mt-1">
-                    <Text strong className="text-secondary">Total Duration:</Text>
-                    <Text strong className="text-indigo-500">
-                      {(() => {
-                        const start = new Date(selectedJob.started_at).getTime();
-                        const end = new Date(selectedJob.completed_at).getTime();
-                        const diffSecs = Math.floor((end - start) / 1000);
-                        if (diffSecs < 60) return `${diffSecs}s`;
-                        const mins = Math.floor(diffSecs / 60);
-                        const secs = diffSecs % 60;
-                        return `${mins}m ${secs}s`;
-                      })()}
-                    </Text>
+              {/* Error logs raw container if present */}
+              {selectedJob.error_details && (
+                <div>
+                  <Title level={5} className="!mb-2 !text-red-500">System Error Logs</Title>
+                  <div className="max-h-[250px] overflow-y-auto border border-red-200 dark:border-red-900 rounded-xl bg-red-50 dark:bg-red-950 p-3 font-mono text-xs text-red-600 dark:text-red-300">
+                    <pre className="whitespace-pre-wrap m-0 font-mono">
+                      {typeof selectedJob.error_details === 'object' 
+                        ? JSON.stringify(selectedJob.error_details, null, 2) 
+                        : selectedJob.error_details}
+                    </pre>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Error logs raw container if present */}
-            {selectedJob.error_details && (
-              <div>
-                <Title level={5} className="!mb-2 !text-red-500">System Error Logs</Title>
-                <div className="max-h-[150px] overflow-y-auto border border-red-200 dark:border-red-900 rounded-xl bg-red-50 dark:bg-red-950 p-3 font-mono text-xs text-red-600 dark:text-red-300">
-                  <pre className="whitespace-pre-wrap m-0 font-mono">{selectedJob.error_details}</pre>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
       </Modal>
     </div>
   );

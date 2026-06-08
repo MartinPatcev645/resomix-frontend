@@ -1,4 +1,5 @@
 export type PartnerTier = "sandbox" | "starter" | "growth" | "enterprise";
+export type ServiceMode = "similarity_only" | "similarity_playback";
 
 export interface Partner {
   id: number;
@@ -11,6 +12,7 @@ export interface Partner {
   onboarded_at: string;
   country_code?: string;
   vat_number?: string;
+  service_mode?: ServiceMode;
 }
 
 export interface PartnerApiKey {
@@ -38,6 +40,7 @@ export interface PartnerCreateRequest {
   country_code?: string;
   vat_number?: string;
   notes?: string;
+  service_mode?: ServiceMode;
 }
 
 export interface ApiKeyIssueRequest {

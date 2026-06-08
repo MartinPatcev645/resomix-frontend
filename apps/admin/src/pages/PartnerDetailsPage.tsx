@@ -385,6 +385,15 @@ function PartnerDetailsPage() {
               <Tag color={selectedPartner.is_active ? 'success' : 'error'} className="text-xs px-2.5 py-0.5 rounded font-medium">
                 {selectedPartner.is_active ? 'ACTIVE' : 'INACTIVE'}
               </Tag>
+              <Tooltip title={
+                selectedPartner.service_mode === 'similarity_playback'
+                  ? "Stores embeddings + peaks + segments for full playback."
+                  : "Stores preview + embedding. Cheapest; preview kept so playback can be enabled later."
+              }>
+                <Tag color={selectedPartner.service_mode === 'similarity_playback' ? 'green' : 'default'} className="text-xs px-2.5 py-0.5 rounded font-medium cursor-pointer">
+                  {selectedPartner.service_mode === 'similarity_playback' ? 'SIMILARITY + PLAYBACK' : 'SIMILARITY ONLY'}
+                </Tag>
+              </Tooltip>
             </div>
             <Text className="text-secondary text-sm font-mono mt-1 block">
               UUID: {selectedPartner.partner_uuid}
@@ -435,6 +444,17 @@ function PartnerDetailsPage() {
                       <Descriptions.Item label="Onboarded Date">
                         {selectedPartner.onboarded_at ? new Date(selectedPartner.onboarded_at).toLocaleString() : '—'}
                       </Descriptions.Item>
+                      <Descriptions.Item label="Service Mode">
+                        <Tooltip title={
+                          selectedPartner.service_mode === 'similarity_playback'
+                            ? "Stores embeddings + peaks + segments for full playback."
+                            : "Stores preview + embedding. Cheapest; preview kept so playback can be enabled later."
+                        }>
+                          <Tag color={selectedPartner.service_mode === 'similarity_playback' ? 'green' : 'default'} className="cursor-pointer">
+                            {selectedPartner.service_mode === 'similarity_playback' ? 'SIMILARITY + PLAYBACK' : 'SIMILARITY ONLY'}
+                          </Tag>
+                        </Tooltip>
+                      </Descriptions.Item>
                     </Descriptions>
                   ) : (
                     <Form
@@ -476,13 +496,25 @@ function PartnerDetailsPage() {
                             <Option value="enterprise">Enterprise</Option>
                           </Select>
                         </Form.Item>
+                        <Form.Item 
+                          name="service_mode" 
+                          label={<Text className="font-semibold text-primary">Service Mode</Text>}
+                          extra={<span className="text-amber-500 font-medium text-[10px] leading-tight block mt-0.5">Note: Changing this records intent but won't reprocess existing tracks yet.</span>}
+                        >
+                          <Select className="h-11 rounded-lg">
+                            <Option value="similarity_only">Similarity only</Option>
+                            <Option value="similarity_playback">Similarity + Playback</Option>
+                          </Select>
+                        </Form.Item>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <Form.Item name="country_code" label={<Text className="font-semibold text-primary">Country (ISO)</Text>}>
                           <Input maxLength={2} className="h-11 rounded-lg" placeholder="US" />
                         </Form.Item>
+                        <Form.Item name="vat_number" label={<Text className="font-semibold text-primary">VAT / Tax ID</Text>}>
+                          <Input className="h-11 rounded-lg" placeholder="e.g. EU123456789" />
+                        </Form.Item>
                       </div>
-                      <Form.Item name="vat_number" label={<Text className="font-semibold text-primary">VAT / Tax ID</Text>}>
-                        <Input className="h-11 rounded-lg" placeholder="e.g. EU123456789" />
-                      </Form.Item>
                       <Form.Item name="is_active" label={<Text className="font-semibold text-primary">Active Status</Text>} valuePropName="checked">
                         <Switch className="bg-secondary" />
                       </Form.Item>
