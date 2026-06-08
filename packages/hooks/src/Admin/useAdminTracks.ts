@@ -20,6 +20,7 @@ export function useAdminTracks() {
   // Filters
   const [partnerFilter, setPartnerFilter] = useState<number | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
+  const [sourceFilter, setSourceFilter] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
 
@@ -34,29 +35,32 @@ export function useAdminTracks() {
   // Reset page to 1 when filters or queries change
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }));
-  }, [partnerFilter, statusFilter, debouncedQuery]);
+  }, [partnerFilter, statusFilter, debouncedQuery, sourceFilter]);
 
   const fetchTracks = useCallback(async () => {
+    if (partnerFilter === undefined) {
+      setTracks([]);
+      setPagination(prev => ({ ...prev, total: 0 }));
+      return;
+    }
+    const currentPartnerId = partnerFilter;
     setLoading(true);
     try {
       const params: ListTracksParams = {
         page: pagination.current,
         page_size: pagination.pageSize,
-        partner_id: partnerFilter,
+        partner_id: currentPartnerId,
         is_active: statusFilter,
+        ingestion_source: sourceFilter,
+        q: debouncedQuery || undefined,
       };
-
-      // Since backend doesn't search natively in listAdminTracks, we can optionally send it or filter client-side, but let's query as-is
-      if (debouncedQuery) {
-        (params as any).q = debouncedQuery;
-      }
 
       const result = await listAdminTracks(params);
       if (result && result.tracks) {
         setTracks(result.tracks);
         setPagination(prev => ({
           ...prev,
-          total: (result as any).pagination?.total || result.tracks.length,
+          total: result.pagination?.total || result.tracks.length,
         }));
       }
     } catch {
@@ -64,7 +68,7 @@ export function useAdminTracks() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, partnerFilter, statusFilter, debouncedQuery]);
+  }, [pagination.current, pagination.pageSize, partnerFilter, statusFilter, debouncedQuery, sourceFilter]);
 
   const activateTrack = async (trackId: number) => {
     try {
@@ -114,6 +118,8 @@ export function useAdminTracks() {
     setPartnerFilter,
     statusFilter,
     setStatusFilter,
+    sourceFilter,
+    setSourceFilter,
     searchQuery,
     setSearchQuery,
     fetchTracks,

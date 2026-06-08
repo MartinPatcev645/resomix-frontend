@@ -26,14 +26,24 @@ export interface AdminTrack {
 }
 
 export interface ListTracksParams {
-  partner_id?: number;
+  partner_id: number;
   is_active?: boolean;
   page?: number;
   page_size?: number;
+  ingestion_source?: string;
+  q?: string;
 }
 
 export interface ListTracksResponse {
   status: string;
+  pagination?: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
   tracks: AdminTrack[];
 }
 
@@ -67,7 +77,7 @@ export interface StopTrackResponse {
  * List partner tracks with their current processing status.
  */
 export const listAdminTracks = async (
-  params: ListTracksParams = {},
+  params: ListTracksParams,
 ): Promise<ListTracksResponse> => {
   try {
     return await axiosWrapper(

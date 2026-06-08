@@ -43,9 +43,9 @@ export function useAdminLogs() {
     }
   };
 
-  const rebuildIndex = async () => {
+  const rebuildIndex = async (partnerId: number) => {
     try {
-      const result = await rebuildSimilarityIndex();
+      const result = await rebuildSimilarityIndex(partnerId);
       if (result && result.success) {
         message.success('FAISS similarity search index rebuild started successfully');
         return true;

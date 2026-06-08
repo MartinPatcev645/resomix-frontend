@@ -42,6 +42,7 @@ function LogsPage() {
 
   // Rebuild index loading
   const [rebuildLoading, setRebuildLoading] = useState(false);
+  const [selectedPartnerIdForRebuild, setSelectedPartnerIdForRebuild] = useState<number | undefined>(undefined);
 
   const [promoForm] = Form.useForm();
 
@@ -79,15 +80,50 @@ function LogsPage() {
   };
 
   const handleRebuildIndex = () => {
+    if (selectedPartnerIdForRebuild === undefined) return;
+    const partnerToRebuild = partners.find(p => p.id === selectedPartnerIdForRebuild);
+    if (!partnerToRebuild) return;
+
     modal.confirm({
       title: 'Rebuild Similarity Search Index',
       content: (
-        <div className="mt-2 flex flex-col gap-2">
-          <Text>Are you sure you want to rebuild the similarity FAISS index? This is a high-memory, CPU-intensive background operation.</Text>
+        <div className="mt-2 flex flex-col gap-4">
+          <Text>Are you sure you want to rebuild the similarity FAISS index for the partner below?</Text>
+          
+          <div className="border border-default p-4 rounded-xl bg-background-secondary flex flex-col gap-2">
+            <div>
+              <Text className="text-secondary text-[10px] uppercase block font-semibold">Display Name</Text>
+              <Text strong className="text-primary text-base">{partnerToRebuild.display_name || partnerToRebuild.legal_name}</Text>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-1">
+              <div>
+                <Text className="text-secondary text-[10px] uppercase block font-semibold">Legal Name</Text>
+                <Text className="text-sm font-medium">{partnerToRebuild.legal_name || '—'}</Text>
+              </div>
+              <div>
+                <Text className="text-secondary text-[10px] uppercase block font-semibold">Tier</Text>
+                <Tag color={
+                  partnerToRebuild.tier === 'sandbox' ? 'blue' :
+                  partnerToRebuild.tier === 'starter' ? 'cyan' :
+                  partnerToRebuild.tier === 'growth' ? 'purple' :
+                  partnerToRebuild.tier === 'enterprise' ? 'orange' : 'default'
+                } className="rounded-full font-medium uppercase text-[10px] mt-0.5 m-0">
+                  {partnerToRebuild.tier}
+                </Tag>
+              </div>
+            </div>
+
+            <div className="mt-1">
+              <Text className="text-secondary text-[10px] uppercase block font-semibold">Contact Email</Text>
+              <Text className="text-sm font-medium">{partnerToRebuild.contact_email}</Text>
+            </div>
+          </div>
+
           <Alert 
             type="warning" 
             showIcon 
-            message="This should only be run if search indices are corrupted or sync is broken." 
+            message="This is a CPU & memory intensive background operation that locks database components." 
             className="rounded-xl mt-2"
           />
         </div>
@@ -96,8 +132,11 @@ function LogsPage() {
       okType: 'danger',
       onOk: async () => {
         setRebuildLoading(true);
-        await rebuildIndex();
-        setRebuildLoading(false);
+        try {
+          await rebuildIndex(selectedPartnerIdForRebuild);
+        } finally {
+          setRebuildLoading(false);
+        }
       },
     });
   };
@@ -331,13 +370,29 @@ function LogsPage() {
                   className="rounded-xl"
                 />
                 
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <Text className="text-secondary text-xs font-medium uppercase">Select Partner</Text>
+                  <Select
+                    placeholder="Select a partner to rebuild index..."
+                    style={{ width: '100%' }}
+                    className="h-10"
+                    value={selectedPartnerIdForRebuild}
+                    onChange={setSelectedPartnerIdForRebuild}
+                  >
+                    {partners.map(p => (
+                      <Option key={p.id} value={p.id}>{p.display_name}</Option>
+                    ))}
+                  </Select>
+                </div>
+
                 <Button 
                   danger 
                   type="primary" 
                   size="large"
                   onClick={handleRebuildIndex}
                   loading={rebuildLoading}
-                  className="h-12 w-full font-semibold rounded-lg flex items-center justify-center gap-2"
+                  disabled={selectedPartnerIdForRebuild === undefined}
+                  className="h-12 w-full font-semibold rounded-lg flex items-center justify-center gap-2 mt-2"
                 >
                   <RotateCw size={18} className={rebuildLoading ? "animate-spin" : ""} />
                   Rebuild Similarity Index
