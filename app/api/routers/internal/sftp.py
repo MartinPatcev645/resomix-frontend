@@ -1,4 +1,5 @@
 import logging
+import os
 from fastapi import APIRouter, Request, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -86,9 +87,22 @@ async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
     #     raise HTTPException(403)
     
     body = await request.json()
-    
+
+    # SFTPGo's upload notification carries the object path under `virtual_path`
+    # (and/or `path`/`fs_path`) — there is NO top-level `name` field. We derive the
+    # uploaded filename from the path basename, but still honour an explicit `name`
+    # (e.g. when called by tests) as a fallback.
+    _name_source = (
+        body.get("name")
+        or body.get("virtual_path")
+        or body.get("path")
+        or body.get("fs_path")
+        or ""
+    )
+    uploaded_name = os.path.basename(str(_name_source).replace("\\", "/").rstrip("/"))
+
     # Only care about .done file uploads indicating the partner has finished uploading the batch
-    if body.get("action") == "upload" and body.get("name") == ".done":
+    if body.get("action") == "upload" and uploaded_name == ".done":
         username = body.get("username")
         # Derive which SFTP env the batch was uploaded to (test = dry-run, live = persist).
         # The .done marker lives inside the env folder, so its path carries the env segment.

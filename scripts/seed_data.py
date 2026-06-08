@@ -48,23 +48,33 @@ class SeedDataManager:
         try:
             with self.engine.begin() as conn:
                 conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-                # List of tables to clear (ordered for safety)
+                # List of tables to clear. FK checks are disabled above, so order is
+                # not load-bearing — but we keep children-before-parents for clarity.
                 tables = [
+                    # partner domain
                     'partner_usage_logs', 'webhook_delivery_logs', 'partner_webhooks',
+                    'partner_processing_jobs', 'partner_quotas',
                     'partner_api_keys', 'partners',
-                    'consumption_events', 'manual_takedowns', 'ingestion_errors', 
-                    'sftp_users', 'user_spotify_apps', 'spotify_apps', 
-                    'user_operation_limits', 'operation_types', 'contacts', 'feedbacks', 
-                    'system_logs', 'cart_items', 'carts', 'user_subscriptions', 
-                    'purchases', 'orders', 'promo_codes', 
-                    'waitlists', 'playlist_ratings', 'track_ratings', 
-                    'user_track_engagements', 'user_playlist_engagements', 
-                    'playlist_transfer_tracks', 'playlist_tracks', 'playlists', 
-                    'track_contributors', 'contributors', 
-                    'release_deals', 'royalty_rates', 'deals', 'release_tracks', 
-                    'release_contributors', 'releases', 'tracks', 'audio_files', 'image_files',
-                    'labels', 'messages', 'ingest_logs', 'parties', 'genres', 
-                    'user_roles', 'role_permissions', 'permissions', 'roles', 
+                    # processing / ingestion domain
+                    'track_processing_status', 'acr_infringement_logs',
+                    'consumption_events', 'manual_takedowns', 'ingestion_errors',
+                    'sftp_users', 'user_spotify_apps', 'spotify_apps',
+                    'user_operation_limits', 'operation_types', 'contacts', 'feedbacks',
+                    'system_logs', 'admin_operation_logs', 'generated_reports',
+                    'cart_items', 'carts', 'user_subscriptions',
+                    'purchases', 'orders', 'promo_codes',
+                    'waitlists', 'playlist_ratings', 'track_ratings',
+                    'user_track_engagements', 'user_playlist_engagements',
+                    'playlist_transfer_tracks', 'playlist_tracks', 'playlists',
+                    'track_contributors', 'contributors',
+                    # deals / releases
+                    'label_payouts', 'deal_territories', 'deal_use_types',
+                    'release_deals', 'royalty_rates', 'deals', 'release_tracks',
+                    'release_contributors', 'release_files', 'releases',
+                    'tracks', 'audio_files', 'document_files', 'image_files',
+                    'labels', 'messages', 'ingest_logs', 'parties', 'genres',
+                    # auth / rbac
+                    'user_roles', 'role_permissions', 'permissions', 'roles',
                     'user_auth_providers', 'user_sessions', 'user_tokens', 'users'
                 ]
                 for t in tables:
@@ -488,6 +498,10 @@ class SeedDataManager:
         if not self.seed_ingestion_chain(): return
         if not self.seed_catalog(): return
         if not self.seed_users(): return
+        # NOTE: Playlists are intentionally NOT seeded — they are created via the
+        # frontend later. The seed only provisions core data (partners, users,
+        # catalog, RBAC, commerce, telemetry). seed_engagement() remains defined
+        # below for optional manual use but is not part of the default seed run.
         if not self.seed_commerce(): return
         if not self.seed_telemetry(): return
         logger.info("🎉 Seeding Completed Successfully!")
