@@ -50,10 +50,17 @@ export function usePipeline() {
       const result = await listIngestLogs(params);
       if (result && result.logs) {
         setIngestLogs(result.logs);
-        // Backend handles logs as array, fallback for pagination
+        
+        let dynamicTotal = result.logs.length;
+        if (result.logs.length === ingestPagination.pageSize) {
+          dynamicTotal = ingestPagination.current * ingestPagination.pageSize + 1;
+        } else {
+          dynamicTotal = (ingestPagination.current - 1) * ingestPagination.pageSize + result.logs.length;
+        }
+
         setIngestPagination(prev => ({
           ...prev,
-          total: (result as any).pagination?.total || result.logs.length,
+          total: (result as any).pagination?.total || dynamicTotal,
         }));
       }
     } catch {
@@ -75,9 +82,17 @@ export function usePipeline() {
       const result = await listProcessingJobs(params);
       if (result && result.jobs) {
         setProcessingJobs(result.jobs);
+        
+        let dynamicTotal = result.jobs.length;
+        if (result.jobs.length === jobsPagination.pageSize) {
+          dynamicTotal = jobsPagination.current * jobsPagination.pageSize + 1;
+        } else {
+          dynamicTotal = (jobsPagination.current - 1) * jobsPagination.pageSize + result.jobs.length;
+        }
+
         setJobsPagination(prev => ({
           ...prev,
-          total: (result as any).pagination?.total || result.jobs.length,
+          total: (result as any).pagination?.total || dynamicTotal,
         }));
       }
     } catch {

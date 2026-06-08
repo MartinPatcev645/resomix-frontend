@@ -10,7 +10,7 @@ const navigation = [
   { name: 'Feedback', path: '/feedback', Icon: MessageSquare },
   { name: 'Contact', path: '/contact', Icon: Mail },
   { name: 'Waitlist', path: '/waitlist', Icon: ClipboardList },
-  { name: 'Pipeline', path: '/pipeline', Icon: GitBranch },
+  { name: 'Pipeline & Jobs', path: '/pipeline', Icon: GitBranch },
   { name: 'Analytics', path: '/analytics', Icon: BarChart3 },
   { name: 'Operations', path: '/operations', Icon: Settings },
   { name: 'Spotify Apps', path: '/spotify-apps', Icon: Headphones },

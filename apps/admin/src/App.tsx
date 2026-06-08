@@ -82,6 +82,8 @@ function App() {
               <Route path="contact" element={<ContactPage />} />
               <Route path="waitlist" element={<WaitlistPage />} />
               <Route path="pipeline" element={<PipelinePage />} />
+              <Route path="jobs" element={<Navigate to="/pipeline" replace />} />
+              <Route path="processing-jobs" element={<Navigate to="/pipeline" replace />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
               <Route path="playlists/:uuid" element={<PlaylistDetailsPage />} />
