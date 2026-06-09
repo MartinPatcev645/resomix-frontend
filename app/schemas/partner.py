@@ -12,7 +12,7 @@ Date: May 09, 2026
 
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, EmailStr, model_validator
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, model_validator, field_validator
 from enum import Enum
 
 from app.schemas.common import APIResponse, PaginationResponse, PaginatedResponse
@@ -69,8 +69,16 @@ class PartnerBaseResponse(BaseModel):
     onboarded_at: datetime
     country_code: Optional[str] = None
     vat_number: Optional[str] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("service_mode", mode="before")
+    @classmethod
+    def _default_service_mode(cls, v):
+        # The model column is non-null with a server/Python default, but SQLAlchemy
+        # only applies that default on flush. An un-flushed in-memory Partner exposes
+        # service_mode=None, so mirror the column default rather than failing.
+        return ServiceMode.SIMILARITY_ONLY if v is None else v
 
 
 class PartnerUpdateRequest(BaseModel):

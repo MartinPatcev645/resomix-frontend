@@ -85,6 +85,15 @@ async def _refresh_log_from_hetzner(db: AsyncSession, log: IngestLog) -> IngestL
     Any media-server error is swallowed (best-effort): the log simply stays
     PROCESSING and the caller still sees the current DB state.
     """
+    # A sibling log's refresh may have triggered a rollback (e.g. a persist
+    # IntegrityError inside apply_ingestion_result). rollback() expires every
+    # object in the session regardless of expire_on_commit, so reading an expired
+    # scalar like ``log.status`` here would emit lazy SQL outside the async
+    # greenlet → MissingGreenlet. Re-hydrate through an awaited refresh first.
+    from sqlalchemy import inspect as sa_inspect
+
+    if sa_inspect(log).expired or "status" in sa_inspect(log).unloaded:
+        await db.refresh(log)
     if log.status in ("COMPLETED", "FAILED"):
         return log
     try:

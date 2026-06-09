@@ -309,13 +309,16 @@ async def test_admin_operation_limits():
 
 @pytest.mark.asyncio
 async def test_admin_similarity():
-    from app.services.similarity_service import SimilarityService
-    mock_service = MagicMock(spec=SimilarityService)
-    mock_service.rebuild_faiss_indexes = AsyncMock(return_value={"success": True, "status": "success", "message": "Rebuild triggered"})
-
-    with patch("app.api.routers.admin.similarity.similarity_service", mock_service):
+    # The rebuild endpoint now delegates to HetznerService.rebuild_index(partner_id=...)
+    # and requires a partner_id query param.
+    with patch(
+        "app.api.routers.admin.similarity.hetzner_service.rebuild_index",
+        AsyncMock(return_value={"success": True, "engines": {"maest": "ok", "discogs": "ok"}}),
+    ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             headers = {"X-API-KEY": settings.api_key}
-            res = await ac.post("/api/v1/admin/similarity/rebuild-index", headers=headers)
+            res = await ac.post(
+                "/api/v1/admin/similarity/rebuild-index?partner_id=1", headers=headers
+            )
             assert res.status_code == 202

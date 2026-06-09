@@ -48,19 +48,24 @@ class TestSftpService:
             use_public_key=False
         )
         
-        mock_partner = Partner(id=42, tier="starter")
+        mock_partner = Partner(id=42, tier="starter", partner_uuid="ec150000-0000-0000-0000-65c20f1c06df")
         sftp_service.partner_repo.async_get_by_id.return_value = mock_partner
         
         from app.services.sftp_service import sftp_user_repo
         sftp_user_repo.get_by_partner_id = AsyncMock(return_value=None)
-        
+        sftp_user_repo.get_by_username = AsyncMock(return_value=None)
+
         mock_created_sftp_user = SftpUser(id=1, partner_id=42, username="testuser")
         sftp_user_repo.async_create = AsyncMock(return_value=mock_created_sftp_user)
         sftp_user_repo.mark_provisioned = AsyncMock(return_value=mock_created_sftp_user)
         
-        with patch.object(sftp_service, '_call_hetzner_provisioning', AsyncMock()) as mock_hetzner:
+        with patch.object(
+            sftp_service,
+            '_call_hetzner_provisioning',
+            AsyncMock(return_value={"status": "ok"}),
+        ) as mock_hetzner:
             result = await sftp_service.provision_partner_sftp(mock_db, request)
-            
+
             assert result.id == 1
             sftp_user_repo.async_create.assert_called_once()
             mock_hetzner.assert_called_once()

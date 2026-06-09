@@ -6,6 +6,7 @@ import csv
 import time
 import asyncio
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient
 
 from app.main import app
@@ -86,6 +87,7 @@ async def setup_sftp_partner():
         try:
             yield {
                 "partner_id": partner.id,
+                "partner_uuid": partner.partner_uuid,
                 "username": username,
                 "password": plain_password,
                 "sftp_user_id": sftp_user.id
@@ -126,8 +128,14 @@ async def test_sftp_auth_hook_success(setup_sftp_partner, temp_sftp_dir):
     data = response.json()
     assert data["status"] == 1
     assert data["username"] == creds["username"]
-    assert str(creds["partner_id"]) in data["home_dir"]
-    assert "upload" in data["permissions"]["/"]
+    # The home dir is now derived from the partner UUID slug (partners/<slug>),
+    # not the integer partner id.
+    slug = creds["partner_uuid"].split("-")[-1]
+    assert slug in data["home_dir"]
+    # Lockdown policy: root is list-only; uploads are confined to live/ and test/.
+    assert data["permissions"]["/"] == ["list"]
+    assert "upload" in data["permissions"]["/live"]
+    assert "upload" in data["permissions"]["/test"]
     assert data["quota_size"] == 53687091200
 
 @pytest.mark.asyncio
@@ -150,172 +158,113 @@ async def test_sftp_auth_hook_invalid_password(setup_sftp_partner, temp_sftp_dir
     assert data["status"] == 0
     assert data["username"] == ""
 
-@pytest.mark.asyncio
-async def test_sftp_ingestion_flow_failed(setup_sftp_partner, temp_sftp_dir):
-    """Test that a single row failure rejects and rolls back the entire batch."""
-    creds = setup_sftp_partner
-    partner_id = creds["partner_id"]
-    
-    # Establish partner context in the test thread to satisfy the multi-tenancy global failsafe
-    from app.core.context import set_current_partner_id
-    set_current_partner_id(partner_id)
-    
-    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "live"
-    incoming_path.mkdir(parents=True, exist_ok=True)
-
-    # Write physical audio files
-    (incoming_path / "track1.wav").write_text("audio data")
-    (incoming_path / "track2.wav").write_text("audio data")
-    
-    csv_file = incoming_path / "metadata.csv"
-    with open(csv_file, "w", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist"])
-        writer.writeheader()
-        writer.writerow({"isrc": "USXXX2600001", "title": "Test Track 1", "audio_filename": "track1.wav", "display_artist": "Artist One"})
-        writer.writerow({"isrc": "", "title": "Test Track 2", "audio_filename": "track2.wav", "display_artist": "Artist Two"}) # Invalid: missing ISRC
-    
-    # 1. Trigger the event hook
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.post(
-            "/internal/sftp/event",
-            json={
-                "action": "upload",
-                "name": ".done",
-                "username": creds["username"],
-                "virtual_target_path": "/live/.done"
-            }
-        )
-    
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
-    
-    # 2. Wait for BackgroundTask to complete in the background loop
-    max_wait = 5.0
-    wait_interval = 0.5
+async def _wait_for_log(partner_id, max_wait=5.0, wait_interval=0.25):
+    """Poll for the ingest_log row the background hand-off task creates."""
+    from sqlalchemy import select
     elapsed = 0.0
-    
-    ingest_log = None
-    async with AsyncSessionLocal() as db:
-        while elapsed < max_wait:
-            from sqlalchemy import select
-            log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
-            log_res = await db.execute(log_stmt)
-            ingest_log = log_res.scalar_one_or_none()
-            if ingest_log and ingest_log.status in ["COMPLETED", "FAILED"]:
-                break
-            await asyncio.sleep(wait_interval)
-            elapsed += wait_interval
-    
-    # 3. Verify Database state - Atomic Rollback
-    async with AsyncSessionLocal() as db:
-        from sqlalchemy import select
-        log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
-        log_res = await db.execute(log_stmt)
-        ingest_log = log_res.scalar_one_or_none()
-        
-        assert ingest_log is not None
-        assert ingest_log.status == "FAILED" # Because row 2 had an error
-        assert ingest_log.track_count == 0 # 0 ingested tracks because of rollback!
-        
-        # Check Track table is empty for this partner
-        track_stmt = select(Track).where(Track.partner_id == partner_id)
-        track_res = await db.execute(track_stmt)
-        tracks = track_res.scalars().all()
-        assert len(tracks) == 0
-        
-        # Check IngestionError
-        err_stmt = select(IngestionError).where(IngestionError.ingest_log_id == ingest_log.id)
-        err_res = await db.execute(err_stmt)
-        errors = err_res.scalars().all()
-        
-        assert len(errors) == 1
-        assert "Missing required field 'isrc'" in errors[0].error_message
+    while elapsed < max_wait:
+        async with AsyncSessionLocal() as db:
+            log = (
+                await db.execute(select(IngestLog).where(IngestLog.partner_id == partner_id))
+            ).scalar_one_or_none()
+        if log is not None:
+            return log
+        await asyncio.sleep(wait_interval)
+        elapsed += wait_interval
+    return None
 
 
 @pytest.mark.asyncio
-async def test_sftp_ingestion_flow_success(setup_sftp_partner, temp_sftp_dir):
-    """Test successful ingestion when all rows are valid and physical files exist."""
+async def test_sftp_ingestion_event_hands_off_to_media_server(setup_sftp_partner, temp_sftp_dir):
+    """A .done upload event hands the batch off to the Hetzner media server.
+
+    Alwyzon no longer parses the CSV or creates tracks locally — the files live on
+    the media server. The event hook only opens an ingest_log (PROCESSING) and POSTs
+    the job to Hetzner; the admin status poll later persists the result. The actual
+    CSV validation + track creation is exercised by the Hetzner ingestion_runner suite.
+    """
     creds = setup_sftp_partner
     partner_id = creds["partner_id"]
-    
+
     from app.core.context import set_current_partner_id
     set_current_partner_id(partner_id)
-    
-    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "live"
-    incoming_path.mkdir(parents=True, exist_ok=True)
 
-    # Write physical files
-    (incoming_path / "track1.wav").write_text("audio data 1")
-    (incoming_path / "track2.wav").write_text("audio data 2")
-    
-    csv_file = incoming_path / "metadata.csv"
-    with open(csv_file, "w", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist", "bpm"])
-        writer.writeheader()
-        writer.writerow({"isrc": "USXXX2600001", "title": "Test Track 1", "audio_filename": "track1.wav", "display_artist": "Artist One", "bpm": "128"})
-        writer.writerow({"isrc": "GBBGD1987654", "title": "Test Track 2", "audio_filename": "track2.wav", "display_artist": "Artist Two", "bpm": "120"})
-        
-    # Trigger the event hook
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.post(
-            "/internal/sftp/event",
-            json={
-                "action": "upload",
-                "name": ".done",
-                "username": creds["username"],
-                "virtual_target_path": "/live/.done"
-            }
-        )
-    
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
-    
-    max_wait = 5.0
-    wait_interval = 0.5
-    elapsed = 0.0
-    
-    ingest_log = None
-    async with AsyncSessionLocal() as db:
-        while elapsed < max_wait:
-            from sqlalchemy import select
-            log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
-            log_res = await db.execute(log_stmt)
-            ingest_log = log_res.scalar_one_or_none()
-            if ingest_log and ingest_log.status in ["COMPLETED", "FAILED"]:
-                break
-            await asyncio.sleep(wait_interval)
-            elapsed += wait_interval
-            
-    # Verify Database state - Successful Commit
-    async with AsyncSessionLocal() as db:
+    with patch(
+        "app.services.hetzner_service.HetznerService.start_ingestion",
+        new_callable=AsyncMock,
+    ) as mock_start, patch(
+        "app.services.ingestion_service.dispatch_webhook.delay"
+    ):
+        mock_start.return_value = {"success": True}
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post(
+                "/internal/sftp/event",
+                json={
+                    "action": "upload",
+                    "name": ".done",
+                    "username": creds["username"],
+                    "virtual_target_path": "/live/.done",
+                },
+            )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+        ingest_log = await _wait_for_log(partner_id)
+
+    assert ingest_log is not None
+    # The hand-off opens the log in PROCESSING; it is only advanced to a terminal
+    # state later when the admin polls Hetzner for the result.
+    assert ingest_log.status == "PROCESSING"
+    # The media server was actually asked to run the ingestion for this partner/env.
+    mock_start.assert_awaited_once()
+    _, kwargs = mock_start.call_args
+    assert kwargs["partner_id"] == partner_id
+    assert kwargs["env"] == "live"
+
+
+@pytest.mark.asyncio
+async def test_sftp_ingestion_handoff_failure_marks_log_failed(setup_sftp_partner, temp_sftp_dir):
+    """If the media-server hand-off fails, the ingest_log is marked FAILED with the error."""
+    creds = setup_sftp_partner
+    partner_id = creds["partner_id"]
+
+    from app.core.context import set_current_partner_id
+    set_current_partner_id(partner_id)
+
+    with patch(
+        "app.services.hetzner_service.HetznerService.start_ingestion",
+        new_callable=AsyncMock,
+    ) as mock_start, patch(
+        "app.services.ingestion_service.dispatch_webhook.delay"
+    ):
+        mock_start.return_value = {"success": False, "error": "media server unreachable"}
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post(
+                "/internal/sftp/event",
+                json={
+                    "action": "upload",
+                    "name": ".done",
+                    "username": creds["username"],
+                    "virtual_target_path": "/live/.done",
+                },
+            )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+        # Poll until the hand-off task flips the log to FAILED.
         from sqlalchemy import select
-        log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
-        log_res = await db.execute(log_stmt)
-        ingest_log = log_res.scalar_one_or_none()
-        
-        assert ingest_log is not None
-        assert ingest_log.status == "COMPLETED"
-        assert ingest_log.track_count == 2
-        
-        # Check Tracks exist
-        track_stmt = select(Track).where(Track.partner_id == partner_id).order_by(Track.id)
-        track_res = await db.execute(track_stmt)
-        tracks = track_res.scalars().all()
-        
-        assert len(tracks) == 2
-        assert tracks[0].isrc == "USXXX2600001"
-        assert tracks[0].bpm == 128
-        assert tracks[1].isrc == "GBBGD1987654"
-        assert tracks[1].bpm == 120
-        
-        # Check Audio files exist and are associated
-        from app.models.audio_file import AudioFile
-        audio_stmt = select(AudioFile).where(AudioFile.partner_id == partner_id).order_by(AudioFile.id)
-        audio_res = await db.execute(audio_stmt)
-        audios = audio_res.scalars().all()
-        
-        assert len(audios) == 2
-        assert audios[0].track_id == tracks[0].id
-        assert audios[0].original_filename == "track1.wav"
-        assert audios[1].track_id == tracks[1].id
-        assert audios[1].original_filename == "track2.wav"
+        ingest_log = None
+        for _ in range(20):
+            async with AsyncSessionLocal() as db:
+                ingest_log = (
+                    await db.execute(select(IngestLog).where(IngestLog.partner_id == partner_id))
+                ).scalar_one_or_none()
+            if ingest_log is not None and ingest_log.status == "FAILED":
+                break
+            await asyncio.sleep(0.25)
+
+    assert ingest_log is not None
+    assert ingest_log.status == "FAILED"
+    assert "media server unreachable" in (ingest_log.error_message or "")

@@ -980,10 +980,11 @@ Before deploying:
 | Document | Purpose |
 |----------|---------|
 | [QUICK_START.md](QUICK_START.md) | Setup, installation, troubleshooting |
-| [docs/AUTH_IMPLEMENTATION_GUIDE.md](docs/AUTH_IMPLEMENTATION_GUIDE.md) | JWT, sessions, 2FA implementation |
-| [docs/SPOTIFY_TRANSFER_README.md](docs/SPOTIFY_TRANSFER_README.md) | Spotify OAuth integration |
-| [docs/TIDAL_TRANSFER_README.md](docs/TIDAL_TRANSFER_README.md) | Tidal OAuth integration |
-| [docs/database.md](docs/database.md) | Schema design, relationships |
+| [docs/reference/AUTH_IMPLEMENTATION_GUIDE.md](docs/reference/AUTH_IMPLEMENTATION_GUIDE.md) | JWT, sessions, 2FA implementation |
+| [docs/reference/SPOTIFY_TRANSFER_README.md](docs/reference/SPOTIFY_TRANSFER_README.md) | Spotify OAuth integration |
+| [docs/reference/TIDAL_TRANSFER_README.md](docs/reference/TIDAL_TRANSFER_README.md) | Tidal OAuth integration |
+| [docs/reference/database.md](docs/reference/database.md) | Schema design, relationships |
+| [docs/reference/](docs/reference/) | **Canonical partner & developer docs** (API, onboarding, compliance, runbooks) |
 | API Docs | Available at `/docs` (Swagger UI) and `/redoc` |
 
 ---

@@ -65,7 +65,7 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
 
     # Return SFTPGo virtual user spec.
     #
-    # Lockdown policy (kept in sync with docs/PARTNER_ONBOARDING.md §3b):
+    # Lockdown policy (kept in sync with docs/reference/PARTNER_ONBOARDING.md §3b):
     #   • Per-directory permissions — root is list-only; only the pre-existing
     #     live/ and test/ folders accept uploads. `create_dirs` is granted
     #     NOWHERE, so partners cannot create their own folders.

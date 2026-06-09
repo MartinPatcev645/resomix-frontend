@@ -5,6 +5,7 @@ import tempfile
 import csv
 import asyncio
 from pathlib import Path
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app
@@ -136,14 +137,14 @@ async def setup_two_partners():
         req2 = ApiKeyIssueRequest(
             partner_id=p2.id,
             label="Partner 2 Hardening Key",
-            scopes=["similarity:read", "search", "metadata", "similarity"]
+            scopes=["similarity:read", "search", "search:read", "metadata", "similarity"]
         )
         key_record2, plaintext_key2 = await service.issue_api_key(db, req2)
         
         req3 = ApiKeyIssueRequest(
             partner_id=p3.id,
             label="Partner 3 Hardening Key",
-            scopes=["similarity:read", "search", "metadata", "similarity"]
+            scopes=["similarity:read", "search", "search:read", "metadata", "similarity"]
         )
         key_record3, plaintext_key3 = await service.issue_api_key(db, req3)
         
@@ -248,94 +249,81 @@ async def test_idempotency_cross_tenant_collision(setup_redis, setup_two_partner
 @pytest.mark.asyncio
 async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_dir):
     """
-    Verify that SQL Injection and Path Traversal strings in uploaded CSV manifests
-    are treated strictly as literals, inserted safely, and do not lead to privilege escalation.
+    Verify that SQL Injection and Path Traversal strings in an ingestion result are
+    treated strictly as literals, inserted safely, and do not lead to privilege escalation.
+
+    CSV parsing/validation now runs on the (DB-less) Hetzner media server, which POSTs a
+    validated record set back. Alwyzon persists those records via ``apply_ingestion_result``
+    using the ORM (fully parameterized) — that is the layer where injection safety matters,
+    so we feed it a malicious result directly and assert literal storage.
     """
+    from app.services.ingestion_service import apply_ingestion_result
+
     data = setup_two_partners
     p2 = data["p2"]
     partner_id = p2["partner_id"]
-    
-    # Establish partner context to bypass tenant failsafe in the test
+
+    set_admin_context(True)
     set_current_partner_id(partner_id)
-    
-    # Setup dummy directory structure and CSV file
-    incoming_path = Path(temp_sftp_dir) / "partners" / str(partner_id) / "live"
-    incoming_path.mkdir(parents=True, exist_ok=True)
 
-    csv_file = incoming_path / "metadata.csv"
-    with open(csv_file, "w", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["isrc", "title", "audio_filename", "display_artist"])
-        writer.writeheader()
-        # Row 2 contains SQL injection attempt
-        writer.writerow({
-            "isrc": "USSQL2600001",
-            "title": "'; DROP TABLE tracks; --",
-            "audio_filename": "track1.wav",
-            "display_artist": "Artist 1"
-        })
-        # Row 3 contains Path Traversal attempt
-        writer.writerow({
-            "isrc": "USPAT2600002",
-            "title": "../../../../etc/passwd",
-            "audio_filename": "track2.wav",
-            "display_artist": "Artist 2"
-        })
-
-    # Write dummy physical files to pass validation
-    (incoming_path / "track1.wav").write_text("dummy")
-    (incoming_path / "track2.wav").write_text("dummy")
-    
-    # Trigger Event Hook directly (simulates SFTPGo finishing the upload)
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        response = await client.post(
-            "/internal/sftp/event",
-            json={
-                "action": "upload",
-                "name": ".done",
-                "username": p2["sftp_username"],
-                "virtual_target_path": "/live/.done"
-            }
-        )
-        assert response.status_code == 200
-        assert response.json()["status"] == "ok"
-    
-    # Wait for background ingestion processing
-    max_wait = 5.0
-    wait_interval = 0.5
-    elapsed = 0.0
-    
-    ingest_log = None
+    # Open a PROCESSING ingest_log, mirroring what the SFTP event hand-off creates.
     async with AsyncSessionLocal() as db:
-        while elapsed < max_wait:
-            from sqlalchemy import select
-            log_stmt = select(IngestLog).where(IngestLog.partner_id == partner_id)
-            log_res = await db.execute(log_stmt)
-            ingest_log = log_res.scalar_one_or_none()
-            if ingest_log and ingest_log.status in ["COMPLETED", "FAILED"]:
-                break
-            await asyncio.sleep(wait_interval)
-            elapsed += wait_interval
-            
-    assert ingest_log is not None
-    assert ingest_log.status == "COMPLETED"
-    
-    # Assert database is safe and strings are inserted literally
+        log = IngestLog(
+            partner_id=partner_id,
+            party_id=f"HARD-PARTY-2-{partner_id}",
+            package_folder=f"/srv/sftp/partners/{partner_id}/live",
+            status="PROCESSING",
+        )
+        db.add(log)
+        await db.commit()
+        await db.refresh(log)
+        log_id = log.id
+
+    # Simulate the media server's "completed" result carrying hostile literals.
+    state = {
+        "status": "completed",
+        "env": "live",
+        "records": [
+            {
+                "isrc": "USSQL2600001",
+                "title": "'; DROP TABLE tracks; --",
+                "audio_filename": "track1.wav",
+                "display_artist": "Artist 1",
+            },
+            {
+                "isrc": "USPAT2600002",
+                "title": "../../../../etc/passwd",
+                "audio_filename": "track2.wav",
+                "display_artist": "Artist 2",
+            },
+        ],
+    }
+
+    with patch("app.services.ingestion_service.dispatch_webhook.delay"):
+        async with AsyncSessionLocal() as db:
+            log = await db.get(IngestLog, log_id)
+            log = await apply_ingestion_result(db, log, state)
+
+    assert log.status == "COMPLETED"
+
+    # Assert database is safe and strings are inserted literally.
     async with AsyncSessionLocal() as db:
         from sqlalchemy import select
-        stmt = select(Track).where(Track.partner_id == partner_id).order_by(Track.id)
-        res = await db.execute(stmt)
-        tracks = res.scalars().all()
-        
+        tracks = (
+            await db.execute(
+                select(Track).where(Track.partner_id == partner_id).order_by(Track.id)
+            )
+        ).scalars().all()
+
         assert len(tracks) == 2
-        
-        # Verify SQL injection title was stored exactly as a literal string
+        # SQL injection title stored exactly as a literal string (tables intact).
         assert tracks[0].isrc == "USSQL2600001"
         assert tracks[0].title == "'; DROP TABLE tracks; --"
-        
-        # Verify path traversal title was stored exactly as a literal string
+        # Path traversal title stored exactly as a literal string.
         assert tracks[1].isrc == "USPAT2600002"
         assert tracks[1].title == "../../../../etc/passwd"
+
+    set_admin_context(False)
 
 @pytest.mark.asyncio
 async def test_sftp_impersonation_attempts(setup_two_partners):

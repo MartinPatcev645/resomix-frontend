@@ -111,10 +111,13 @@ def _client():
 # ===========================================================================
 @pytest.mark.asyncio
 async def test_trigger_embeddings_job_success(admin_auth_headers, seeded):
+    # Mock only the network hand-off to the media server; the real service code
+    # (create_job + work-list collection + status transitions) still runs.
     with patch(
-        "app.api.routers.admin.processing.partner_processing_service.run_embeddings_job",
+        "app.services.partner_processing_service.hetzner_service.start_embeddings",
         new_callable=AsyncMock,
-    ):
+    ) as mock_start:
+        mock_start.return_value = {"success": True}
         async with _client() as ac:
             res = await ac.post(
                 "/api/v1/admin/processing/jobs/embeddings",
@@ -194,9 +197,15 @@ async def test_get_ingestion_log_404(admin_auth_headers):
 
 @pytest.mark.asyncio
 async def test_trigger_ingestion_success(admin_auth_headers, seeded):
+    # Mock only the media-server hand-off and the Celery webhook dispatch; the real
+    # start_ingestion_job code (ingest_logs row creation + status) still runs.
     with patch(
-        "app.api.routers.admin.processing.process_ingestion_batch", new_callable=AsyncMock
+        "app.services.hetzner_service.HetznerService.start_ingestion",
+        new_callable=AsyncMock,
+    ) as mock_start, patch(
+        "app.services.ingestion_service.dispatch_webhook.delay"
     ):
+        mock_start.return_value = {"success": True}
         async with _client() as ac:
             res = await ac.post(
                 "/api/v1/admin/ingestion/trigger",

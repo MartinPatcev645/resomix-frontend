@@ -52,7 +52,7 @@ class AudioFile(Base):
     
     # Storage location
     original_filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    stored_path: Mapped[str] = mapped_column(String(1024), nullable=False) # UNIQUE KEY uq_audio_path (stored_path(512))
+    stored_path: Mapped[str] = mapped_column(String(1024), nullable=False) # UNIQUE KEY uq_audio_path (partner_id, stored_path(512))
     mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     # Size & Integrity
