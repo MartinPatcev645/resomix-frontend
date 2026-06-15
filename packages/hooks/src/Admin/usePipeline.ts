@@ -6,6 +6,8 @@ import {
   retryIngestion,
   listProcessingJobs,
   triggerEmbeddingsJob,
+  pauseProcessingJob,
+  resumeProcessingJob,
   type IngestLog,
   type IngestLogError,
   type ProcessingJob,
@@ -153,6 +155,36 @@ export function usePipeline() {
     }
   };
 
+  const pauseJob = async (jobId: number) => {
+    try {
+      const result = await pauseProcessingJob(jobId);
+      if (result && result.status === 'accepted') {
+        message.success(result.message || 'Job paused successfully');
+        fetchProcessingJobs();
+        return true;
+      }
+      return false;
+    } catch {
+      message.error('Failed to pause processing job');
+      return false;
+    }
+  };
+
+  const resumeJob = async (jobId: number, env: 'live' | 'test' = 'live', indexAfter: boolean = true) => {
+    try {
+      const result = await resumeProcessingJob(jobId, { env, index_after: indexAfter });
+      if (result && result.status === 'accepted') {
+        message.success(result.message || 'Job resumed successfully');
+        fetchProcessingJobs();
+        return true;
+      }
+      return false;
+    } catch {
+      message.error('Failed to resume processing job');
+      return false;
+    }
+  };
+
   const getIngestLogDetail = async (logId: number): Promise<{ log: IngestLog; errors: IngestLogError[] } | null> => {
     try {
       const result = await getIngestLog(logId);
@@ -200,6 +232,8 @@ export function usePipeline() {
     triggerIngest,
     retryIngest,
     triggerEmbeddings,
+    pauseJob,
+    resumeJob,
     getIngestLogDetail,
     handleIngestPageChange,
     handleJobsPageChange,

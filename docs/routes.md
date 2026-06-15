@@ -629,11 +629,39 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
     }
   }
   ```
-  _`status` values: `pending` → `running` → `completed` | `partial` | `failed`_
+  _`status` values: `pending` → `running` → `paused` → `completed` | `partial` | `failed`_
+
+#### Pause Job
+- **`POST /api/v1/admin/processing/jobs/{job_id}/pause`** — `200 OK`
+- **Description:** Pause a running embeddings processing job.
+- **Returns:**
+  ```json
+  {
+    "status": "accepted",
+    "message": "Pause requested",
+    "job_id": 17,
+    "job_status": "paused"
+  }
+  ```
+
+#### Resume Job
+- **`POST /api/v1/admin/processing/jobs/{job_id}/resume`** — `202 Accepted`
+- **Description:** Resume a paused or crashed/interrupted processing job.
+- **Query params:** `env` (optional, default `"live"`), `index_after` (optional, default `true`)
+- **Returns:**
+  ```json
+  {
+    "status": "accepted",
+    "message": "Embeddings job resumed",
+    "job_id": 17,
+    "job_status": "running",
+    "total_tracks": 50
+  }
+  ```
 
 #### List Jobs
 - **`GET /api/v1/admin/processing/jobs`**
-- **Query params:** `partner_id`, `status` (`pending|running|completed|partial|failed`), `page` (default 1), `page_size` (default 50, max 100)
+- **Query params:** `partner_id`, `status` (`pending|running|paused|completed|partial|failed`), `page` (default 1), `page_size` (default 50, max 100)
 - **Returns:** `{ "status": "success", "jobs": [ ...job objects... ] }`
 
 ---

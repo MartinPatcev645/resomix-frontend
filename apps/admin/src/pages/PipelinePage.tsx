@@ -18,6 +18,7 @@ import {
 } from 'antd';
 import { 
   Play, 
+  Pause,
   RotateCw, 
   AlertTriangle, 
   CheckCircle2, 
@@ -69,6 +70,8 @@ function PipelinePage() {
     triggerIngest,
     retryIngest,
     triggerEmbeddings,
+    pauseJob,
+    resumeJob,
     getIngestLogDetail,
     handleIngestPageChange,
     handleJobsPageChange,
@@ -170,6 +173,8 @@ function PipelinePage() {
         return <Tag color="warning">PARTIAL</Tag>;
       case 'running':
         return <Tag color="processing" icon={<SyncIcon />}>RUNNING</Tag>;
+      case 'paused':
+        return <Tag color="orange">PAUSED</Tag>;
       default:
         return <Tag color="default">{status.toUpperCase()}</Tag>;
     }
@@ -293,7 +298,7 @@ function PipelinePage() {
             <Progress 
               percent={percent} 
               size="small" 
-              status={record.status === 'failed' ? 'exception' : percent === 100 ? 'success' : 'active'}
+              status={record.status === 'failed' ? 'exception' : record.status === 'paused' ? 'normal' : percent === 100 ? 'success' : 'active'}
             />
             <div className="flex justify-between text-[10px] text-secondary">
               <span>Processed: {processed}/{total}</span>
@@ -321,6 +326,25 @@ function PipelinePage() {
       align: 'right' as const,
       render: (_: any, record: any) => (
         <Space>
+          {record.status === 'running' && (
+            <Tooltip title="Pause Job">
+              <Button 
+                icon={<Pause size={14} />} 
+                onClick={() => pauseJob(record.id)}
+                className="flex items-center"
+              />
+            </Tooltip>
+          )}
+          {record.status === 'paused' && (
+            <Tooltip title="Resume Job">
+              <Button 
+                icon={<Play size={14} />} 
+                type="primary"
+                onClick={() => resumeJob(record.id)}
+                className="flex items-center"
+              />
+            </Tooltip>
+          )}
           <Tooltip title="View Job Details">
             <Button 
               icon={<Eye size={14} />} 
@@ -666,6 +690,16 @@ function PipelinePage() {
                   showIcon
                   message="This processing job failed to complete successfully."
                   description={getErrorDescription(selectedJob.error_details)}
+                  className="rounded-xl"
+                />
+              )}
+
+              {selectedJob.status === 'paused' && (
+                <Alert 
+                  type="warning"
+                  showIcon
+                  message="This processing job is currently paused."
+                  description="You can resume this job from the actions menu."
                   className="rounded-xl"
                 />
               )}

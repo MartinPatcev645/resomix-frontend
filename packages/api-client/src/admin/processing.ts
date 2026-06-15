@@ -9,7 +9,8 @@ export type ProcessingJobStatus =
   | "running"
   | "completed"
   | "partial"
-  | "failed";
+  | "failed"
+  | "paused";
 
 export interface ProcessingJob {
   id: number;
@@ -106,6 +107,39 @@ export const listProcessingJobs = async (
   try {
     return await axiosWrapper(
       authClient.get(API_CONFIG.ENDPOINTS.ADMIN_PROCESSING_JOBS, { params }),
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Pause a running processing job.
+ */
+export const pauseProcessingJob = async (
+  jobId: number,
+): Promise<{ status: "accepted"; message: string; job_id: number; job_status: "paused" }> => {
+  try {
+    const url = API_CONFIG.ENDPOINTS.ADMIN_PROCESSING_JOBS_PAUSE.replace("{id}", jobId.toString());
+    return await axiosWrapper(
+      authClient.post(url),
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Resume a paused/crashed processing job.
+ */
+export const resumeProcessingJob = async (
+  jobId: number,
+  params: { env: "live" | "test"; index_after?: boolean },
+): Promise<{ status: "accepted"; message: string; job_id: number; job_status: "running"; total_tracks: number }> => {
+  try {
+    const url = API_CONFIG.ENDPOINTS.ADMIN_PROCESSING_JOBS_RESUME.replace("{id}", jobId.toString());
+    return await axiosWrapper(
+      authClient.post(url, null, { params }),
     );
   } catch (error: any) {
     return handleApiError(error) as any;

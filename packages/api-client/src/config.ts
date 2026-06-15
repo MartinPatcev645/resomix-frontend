@@ -150,6 +150,8 @@ export interface ApiConfig {
     // Admin — Processing Jobs
     ADMIN_PROCESSING_JOBS_EMBEDDINGS: string;
     ADMIN_PROCESSING_JOBS: string;
+    ADMIN_PROCESSING_JOBS_PAUSE: string;
+    ADMIN_PROCESSING_JOBS_RESUME: string;
 
     // Admin — Ingestion Control
     ADMIN_INGESTION_LOGS: string;
@@ -331,6 +333,8 @@ export const API_CONFIG: ApiConfig = {
     // Admin — Processing Jobs
     ADMIN_PROCESSING_JOBS_EMBEDDINGS: "/api/v1/admin/processing/jobs/embeddings",
     ADMIN_PROCESSING_JOBS: "/api/v1/admin/processing/jobs",
+    ADMIN_PROCESSING_JOBS_PAUSE: "/api/v1/admin/processing/jobs/{id}/pause",
+    ADMIN_PROCESSING_JOBS_RESUME: "/api/v1/admin/processing/jobs/{id}/resume",
     // Admin — Ingestion Control
     ADMIN_INGESTION_LOGS: "/api/v1/admin/ingestion/logs",
     ADMIN_INGESTION_TRIGGER: "/api/v1/admin/ingestion/trigger",
