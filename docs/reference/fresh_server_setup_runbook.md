@@ -636,6 +636,29 @@ id sftpgo                            # sanity-check the group exists
 > sudo chmod -R 2770    /srv/sftp/partners/<slug>
 > ```
 
+#### Same model on the production Hetzner media box
+
+This isn't staging-only. On the **production** two-server layout, SFTPGo and the
+media server are **co-located on the Hetzner box**, so they share `/srv/sftp` there
+too and need the identical setup. The load-bearing rule on **any** box where
+SFTPGo + media coexist:
+
+1. **One shared group** between the media service user and the SFTPGo runtime user
+   (here: the media user joins `sftpgo`).
+2. `/srv/sftp` **group-owned** by that group, **`2775` + setgid** so new dirs
+   inherit the group.
+3. Partner dirs **`2770`** (group-write) — the provisioner does this.
+4. The media service runs as a **non-root** user (so its `chown 1000:1000` attempt
+   no-ops and the group rules govern). Don't run media as root, or that chown would
+   succeed and re-break group access.
+
+> The `1000:1000` in the provisioner / the `uid:gid` in Alwyzon's SFTP auth hook are
+> legacy from a **Docker** SFTPGo deployment (where SFTPGo ran as uid 1000). With a
+> **native** SFTPGo (`.deb`, runs as `sftpgo`, non-root) those values are ignored —
+> the shared **group** is what makes reads/writes work. Use native SFTPGo on
+> production too for parity with this runbook; if you ever run SFTPGo in Docker
+> instead, map the container to uid/gid `1000` and keep that uid in the shared group.
+
 ### D3. Create the SFTPGo admin (for the REST API)
 
 > ⚠️ Replace `<SFTPGO_ADMIN_PASS>` with a **real strong password** — do not type
