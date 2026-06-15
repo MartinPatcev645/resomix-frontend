@@ -75,9 +75,12 @@ class SimilarityController:
         else:
             logger.info("SIMILARITY UPLOAD AUTH: Anonymous user processing")
 
-        # Enforce authentication if required by settings
-        if settings.similarity_auth_required and not current_user:
-            logger.warning("SIMILARITY UPLOAD: Authentication required but no user provided")
+        # Enforce authentication if required by settings.
+        # Auth is satisfied by EITHER a logged-in user (JWT) OR a validated partner
+        # API key (partner_id is set only after the scoped partner dependency passes).
+        # Only reject when neither is present.
+        if settings.similarity_auth_required and not current_user and not partner_id:
+            logger.warning("SIMILARITY UPLOAD: Authentication required but neither user nor partner provided")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content=format_response(
@@ -959,9 +962,12 @@ class SimilarityController:
         else:
             logger.info("SIMILARITY BY ID AUTH: Anonymous user processing")
 
-        # Enforce authentication if required by settings
-        if settings.similarity_auth_required and not current_user:
-            logger.warning("SIMILARITY BY ID: Authentication required but no user provided")
+        # Enforce authentication if required by settings.
+        # Auth is satisfied by EITHER a logged-in user (JWT) OR a validated partner
+        # API key (partner_id is set only after the scoped partner dependency passes).
+        # Only reject when neither is present.
+        if settings.similarity_auth_required and not current_user and not partner_id:
+            logger.warning("SIMILARITY BY ID: Authentication required but neither user nor partner provided")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content=format_response(

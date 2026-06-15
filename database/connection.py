@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 import os
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, AsyncGenerator
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker, Session, with_loader_criteria
@@ -277,15 +277,25 @@ def get_db() -> Session:
     return get_database_session()
 
 
-async def get_async_db() -> AsyncSession:
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Get an asynchronous database session.
-    Alias for get_async_database_session() for compatibility.
-    
-    Returns:
-        SQLAlchemy AsyncSession instance
+    FastAPI async database session dependency.
+
+    Yields a session and guarantees it is returned to the pool when the request
+    ends. MUST be a generator (``yield`` + cleanup), not ``return AsyncSessionLocal()``
+    — a plain return leaks the connection (it is only reclaimed by the GC, which
+    logs ``SAWarning: garbage collector is trying to clean up non-checked-in
+    connection`` and can exhaust the pool under load, e.g. the SFTP auth hook).
+
+    Usage:
+        async def endpoint(db: AsyncSession = Depends(get_async_db)):
+            ...
     """
-    return await get_async_database_session()
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 def test_connection() -> bool:
