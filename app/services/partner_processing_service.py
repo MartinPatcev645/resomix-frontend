@@ -16,7 +16,7 @@ can surface them. The state-machine itself lives in ``track_processing_status``.
 
 import logging
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 from sqlalchemy import select
 
@@ -210,6 +210,89 @@ async def start_embeddings_job(
     return job
 
 
+async def pause_embeddings_job(db, job: PartnerProcessingJob) -> Tuple[PartnerProcessingJob, Dict[str, Any]]:
+    """
+    Ask the media server to pause a running embeddings job, then mark it ``paused``.
+
+    The media loop stops after its current track and writes a ``paused`` snapshot.
+    Idempotent — safe even if the job already finished or isn't actively running.
+    """
+    set_current_partner_id(job.partner_id)
+    result = await hetzner_service.pause_embeddings(job.partner_id, job.id)
+    if result.get("success"):
+        job.status = "paused"
+        await db.commit()
+        logger.info(f"[ProcessingService] Job {job.id} paused (partner {job.partner_id}).")
+    else:
+        logger.error(
+            f"[ProcessingService] Job {job.id} pause request failed: {result.get('error')}"
+        )
+    return job, result
+
+
+async def resume_embeddings_job(
+    db,
+    job: PartnerProcessingJob,
+    env: str = "live",
+    index_after: bool = True,
+) -> PartnerProcessingJob:
+    """
+    Resume a paused/interrupted embeddings job.
+
+    Re-collects the partner's FULL track list (``only_pending=False``) and re-hands
+    it to the media server under the SAME ``job_id``. The media runner skips every
+    track whose ``.npy`` already exists, so only the outstanding work runs, and the
+    FAISS index is rebuilt from all embeddings on completion. This makes resume
+    idempotent and crash-safe (e.g. after a process restart mid-job).
+    """
+    env = (env or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+    dry_run = env == "test"
+
+    set_current_partner_id(job.partner_id)
+
+    job.status = "running"
+    job.completed_at = None
+    job.started_at = job.started_at or datetime.utcnow()
+    await db.commit()
+
+    targets = await _collect_targets(db, job.partner_id, job.ingest_log_id, only_pending=False)
+    job.total_tracks = len(targets)
+    await db.commit()
+
+    if not targets:
+        job.status = "completed"
+        job.completed_at = datetime.utcnow()
+        await db.commit()
+        logger.info(f"[ProcessingService] Resume job {job.id}: nothing to process.")
+        return job
+
+    items = [{"track_uuid": t["track_uuid"], "filename": t["filename"]} for t in targets]
+    result = await hetzner_service.start_embeddings(
+        job_id=job.id,
+        partner_id=job.partner_id,
+        items=items,
+        env=env,
+        index_after=index_after and not dry_run,
+    )
+    if not result.get("success"):
+        job.status = "failed"
+        job.completed_at = datetime.utcnow()
+        job.error_details = {"error": result.get("error"), "detail": result.get("detail")}
+        await db.commit()
+        logger.error(
+            f"[ProcessingService] Resume job {job.id} hand-off failed: {result.get('error')}"
+        )
+        return job
+
+    logger.info(
+        f"[ProcessingService] Resumed embeddings job {job.id} "
+        f"(partner {job.partner_id}, {len(items)} track(s); already-done skipped on media)."
+    )
+    return job
+
+
 async def apply_embeddings_result(
     db,
     job: PartnerProcessingJob,
@@ -234,12 +317,16 @@ async def apply_embeddings_result(
     partner_id = job.partner_id
     ingest_log_id = job.ingest_log_id
 
-    # ----- Still running: just surface live progress counters. ---------------
-    if status in ("running", "pending", "unknown"):
+    # ----- Non-terminal (running/paused): surface live progress, never finalize. -
+    # 'paused' must NOT fall through to the terminal branch (that would mark the
+    # job completed). Keep it paused so it can be resumed.
+    if status in ("running", "pending", "unknown", "paused"):
         if state.get("total"):
             job.total_tracks = state["total"]
         job.processed_tracks = state.get("succeeded", job.processed_tracks)
         job.failed_tracks = state.get("failed", job.failed_tracks)
+        if status == "paused":
+            job.status = "paused"
         await db.commit()
         return job
 

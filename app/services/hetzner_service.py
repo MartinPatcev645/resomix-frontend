@@ -409,6 +409,35 @@ class HetznerService:
             logger.error(f"Hetzner start-embeddings connection error (job {job_id}): {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
+    async def pause_embeddings(self, partner_id: int, job_id: int) -> Dict[str, Any]:
+        """
+        Signal the media server to pause a running embeddings job.
+
+        Hetzner's loop stops after the current track and writes a 'paused' snapshot.
+        Idempotent and safe even if the job already finished or isn't running.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/process/embeddings/pause/{partner_id}/{job_id}",
+                    headers=headers,
+                )
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {
+                    "success": False,
+                    "error": f"Media server returned {resp.status_code}",
+                    "detail": resp.text[:300],
+                }
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner pause-embeddings connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
     async def get_embeddings_status(
         self, partner_id: int, job_id: int
     ) -> Dict[str, Any]:
