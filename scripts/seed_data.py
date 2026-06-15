@@ -388,7 +388,7 @@ class SeedDataManager:
                 admin_uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
                 conn.execute(text("""
                     INSERT INTO users (id, uuid, username, email, password_hash, name, is_email_verified, partner_id)
-                    VALUES (1, :uuid, 'admin', 'dj@argo.fm', :pw, 'DJ Argo (Admin)', 1, 1)
+                    VALUES (1, :uuid, 'admin', 'admin@resomix.com', :pw, 'Admin', 1, 1)
                 """), {'uuid': admin_uuid, 'pw': self._hash_password('12345678')})
                 
                 # 2. Listener

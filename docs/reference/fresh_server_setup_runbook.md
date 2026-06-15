@@ -601,14 +601,40 @@ sudo apt install -y ./sftpgo_${SFTPGO_VER}-1_amd64.deb
 sftpgo --version
 ```
 
-### D2. Align SFTP storage ownership
+### D2. Align SFTP storage ownership (shared group)
+
+`/srv/sftp` is written by **two** users: SFTPGo (runs as `sftpgo`) writes partner
+uploads, and the **media server** (runs as `devuser`) *creates* each partner's
+`<slug>/{test,live}` dirs + a `.slugmap` during provisioning and later *reads* the
+uploads for ingestion. So both need read+write. Give them a shared group:
 
 ```bash
-# Make the SFTP homes owned by the sftpgo runtime user (check the uid with:
-# id sftpgo). Keep this uid consistent with the chown the media server's
-# provisioner applies to new partner folders.
 sudo chown -R sftpgo:sftpgo /srv/sftp
+sudo usermod -aG sftpgo devuser     # media's user joins the sftpgo group
+sudo chmod -R 2775 /srv/sftp        # group rwx + setgid → new dirs inherit the group
+id sftpgo                            # sanity-check the group exists
 ```
+
+> ⚠️ Without this, provisioning fails with
+> `PermissionError: [Errno 13] Permission denied: '/srv/sftp/partners/<slug>'`.
+>
+> ⚠️ `usermod -aG` only applies to **new** login sessions — it does **not** affect
+> a media process already running. Restart the media server in a fresh session
+> (re-login, or `newgrp sftpgo`) so it picks up the group; the Part H systemd
+> unit gets it automatically on (re)start.
+
+> ⚠️ **Partner upload dirs must be group-writable (`2770`), not `750`.** The media
+> provisioner creates `/srv/sftp/partners/<slug>/{test,live}` and `chmod`s them;
+> with `750` the `sftpgo` group can't write and uploads fail with
+> `dest open "...": Permission denied`. The provisioner sets `2770` (setgid +
+> `rwxrwx---`) so SFTPGo (group `sftpgo`) can write while "other" stays denied
+> (partners are also chrooted). If a partner was provisioned **before** that code
+> fix, remediate its dirs once:
+>
+> ```bash
+> sudo chown -R :sftpgo /srv/sftp/partners/<slug>
+> sudo chmod -R 2770    /srv/sftp/partners/<slug>
+> ```
 
 ### D3. Create the SFTPGo admin (for the REST API)
 
