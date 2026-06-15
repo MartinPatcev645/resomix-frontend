@@ -344,19 +344,57 @@ There are two paths depending on how the partner delivers their catalog.
 
 ### Path A — SFTP Batch Upload (standard B2B flow)
 
-1. Partner uploads a **ZIP** (or loose files) to their SFTP `live/` folder containing:
-   - A CSV manifest (`manifest.csv`) with track metadata
-   - Audio files referenced in the CSV
+The partner uploads their audio + `manifest.csv` into `live/` (or `test/` for a
+dry-run), then uploads an empty **`.done`** marker **last**. The `.done` upload is
+what triggers ingestion automatically — no manual API call needed.
 
-2. **Trigger ingestion** (Admin UI: Processing → Ingestion → Trigger, or API):
+**How the auto-trigger works** (already wired on a box set up per the runbook):
+SFTPGo's `common.actions` hook (`execute_on: ["upload"]`) POSTs every upload to
+Alwyzon `:8001/internal/sftp/event`. That handler ignores everything **except** a
+file named `.done`; on `.done` it derives the env from the path (`/live/` vs
+`/test/`) and hands the batch to the media server, which validates `manifest.csv`
+row-by-row and ingests. So: **upload all files first, `.done` last.**
+
+1. **Upload the batch** (audio + manifest first, then `.done`). From any host
+   with the files — example uploading a whole folder. Replace `<sftp-host>` with
+   the partner's SFTP host (prod: `sftp.resomix.com`; on-box test: `localhost`),
+   `<sftp-user>` with the provisioned username, and `<audio_folder>` with the
+   local folder of audio + `manifest.csv`:
+
+   ```bash
+   # 1a. put the manifest alongside the audio so they upload together
+   cp manifest.csv <audio_folder>/
+
+   # 1b. upload audio + manifest (everything EXCEPT .done). You'll be prompted
+   #     for the partner's SFTP password.
+   sftp -P 2022 <sftp-user>@<sftp-host> <<'EOF'
+   cd live
+   lcd <audio_folder>
+   mput *.flac
+   put manifest.csv
+   bye
+   EOF
+
+   # 1c. upload the .done marker LAST — this fires ingestion
+   touch /tmp/.done
+   sftp -P 2022 <sftp-user>@<sftp-host> <<'EOF'
+   cd live
+   put /tmp/.done
+   bye
+   EOF
+   ```
+
+   > Use `test` instead of `live` for a non-persisting dry-run. For fully
+   > unattended uploads use `lftp -u "<user>,<pass>" sftp://<sftp-host>:2022 -e "..."`
+   > or `sshpass`, since plain `sftp` prompts for the password interactively.
+
+2. **(Fallback) Manual trigger** — if the `.done` hook didn't fire (e.g. SFTPGo
+   `common.actions` not configured), trigger ingestion explicitly:
    ```http
    POST /api/v1/admin/ingestion/trigger
    Authorization: Bearer <admin_jwt>
-   
-   {
-     "partner_id": 42,
-     "env": "live"
-   }
+
+   { "partner_id": 42, "env": "live" }
    ```
    Returns `job_id`. Poll `GET /api/v1/admin/ingestion/logs?partner_id=42` to watch progress.
 
@@ -367,14 +405,34 @@ There are two paths depending on how the partner delivers their catalog.
    ```
    The response includes a per-row `errors` array for any validation failures.
 
-**CSV manifest format** (`manifest.csv`):
+**CSV manifest format** (`manifest.csv`) — must match the media-server validator
+(`resomix-similarity-open/app/services/ingestion_runner.py`):
+
 ```csv
-uuid,title,display_artist,isrc,duration_ms,bpm,musical_key,filename
-<uuid-v4>,Track Title,Artist Name,US-ABC-25-00001,240000,128,Am,track_01.wav
+isrc,title,audio_filename,display_artist,mix_name,duration_ms,bpm,genre
+USABC2500001,Track Title,track_01.flac,Artist Name,Original Mix,240000,128,Electronic
 ```
 
-Required columns: `uuid`, `title`, `display_artist`, `filename`  
-Optional: `isrc`, `duration_ms`, `bpm`, `musical_key`
+**Required columns:** `isrc`, `title`, `audio_filename`, `display_artist`
+- `isrc` — 12 chars, format `^[A-Z]{2}[A-Z0-9]{3}\d{7}$`, **unique within the batch** (no hyphens).
+- `audio_filename` — exact basename of the uploaded file (the validator looks for `live/<audio_filename>`).
+
+**Optional** (validated only if present): `mix_name` (default `Original Mix`),
+`version_title`, `genre`, `sub_genre`, `duration_ms`, `bpm` (30–300),
+`musical_key`, `parental_warning` (`NoAdviceAvailable`|`NotExplicit`|`Explicit`|`ExplicitContentEdited`),
+`release_date` (`YYYY-MM-DD`), `audio_language` (2-letter), `is_explicit`/`is_instrumental`
+(`0`|`1`|`true`|`false`), `p_line_year`, `p_line_text`, `upc_ean` (12–13 digits),
+`language_of_lyrics`.
+
+> ⚠️ There is **no `uuid` column** — the media server assigns each track's UUID.
+> The column is `audio_filename`, **not** `filename`.
+
+**No manifest yet?** Generate one from a folder of audio files:
+```bash
+# Alwyzon repo — synthesizes valid placeholder ISRCs + parses artist/title/mix
+.venv/bin/python scripts/generate_manifest.py /path/to/audio_folder \
+    --out manifest.csv --genre Electronic
+```
 
 ### Path B — Script-based seeding (dev / migration)
 

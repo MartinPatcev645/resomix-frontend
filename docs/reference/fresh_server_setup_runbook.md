@@ -259,7 +259,10 @@ RESOMIX_APP_VERSION=3.0.1
 
 # ── CORS (production) ───────────────────────────────────────────────
 RESOMIX_USE_DEVELOPMENT_CORS=false                 # ⚠️ was true
-RESOMIX_ALLOWED_ORIGINS_PRODUCTION=https://staging.resomix.com,https://resomix.com  # ⚠️ set real frontend origin(s)
+# ⚠️ JSON array (NOT comma-separated) — pydantic parses List[str] as JSON.
+# Include EVERY browser origin that calls the API: the user frontend AND the
+# admin frontend. A missing origin → login preflight returns 400 "Disallowed CORS origin".
+RESOMIX_ALLOWED_ORIGINS_PRODUCTION=["https://staging-admin.resomix.com","https://staging.resomix.com","https://resomix.com"]
 
 # ── Modes ───────────────────────────────────────────────────────────
 DEMO_MODE=false

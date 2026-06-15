@@ -18,6 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -253,34 +254,18 @@ class Settings(BaseModel):
         default=False, description="Whether to use Elasticsearch for search"
     )
 
-    # CORS Configuration
-    # Production: Explicit allowed origins (no wildcards when credentials=True)
+    # CORS Configuration — fully env-driven, NO hardcoded defaults.
+    # Set via RESOMIX_ALLOWED_ORIGINS_PRODUCTION / RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT
+    # in the .env (JSON array preferred, comma-separated also accepted). An empty
+    # list means NO browser origin is allowed — set the env var or CORS will block
+    # every cross-origin request (fail-closed).
     allowed_origins_production: List[str] = Field(
-        default=[
-            "https://resomix.com",
-            "https://beta.resomix.com",
-            "https://stack.resomix.com",
-            "https://demo-stack.resomix.com",
-            "https://bserver.resomix.com",
-            "https://r-admin.resomix.com",
-            "https://landing.resomix.com",
-            # Have these here temporarily for development
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://127.0.0.1:5175",
-        ],
-        description="Explicit allowed origins for production",
+        default_factory=list,
+        description="Allowed CORS origins for production — set RESOMIX_ALLOWED_ORIGINS_PRODUCTION",
     )
-    # Development: Allow localhost and common dev ports
     allowed_origins_development: List[str] = Field(
-        default=[
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5175",
-            "http://localhost:8004",
-            "http://127.0.0.1:8004",
-        ],
-        description="Allowed origins for development",
+        default_factory=list,
+        description="Allowed CORS origins for development — set RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT",
     )
 
     # CORS Methods and Headers
@@ -606,6 +591,9 @@ class Settings(BaseModel):
             "LOGIN_RATE_LIMIT": "login_rate_limit",
             "REGISTER_RATE_LIMIT": "register_rate_limit",
             "PASSWORD_RESET_RATE_LIMIT": "password_reset_rate_limit",
+            # CORS allowed origins (value may be a JSON array or comma-separated)
+            "RESOMIX_ALLOWED_ORIGINS_PRODUCTION": "allowed_origins_production",
+            "RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT": "allowed_origins_development",
         }
 
         for env_key, config_key in direct_env_vars.items():
@@ -639,6 +627,18 @@ class Settings(BaseModel):
                         env_overrides[config_key] = int(env_value)
                     except ValueError:
                         pass
+                # Handle list conversion (JSON array preferred; comma-separated fallback)
+                elif config_key in ["allowed_origins_production", "allowed_origins_development"]:
+                    try:
+                        parsed = json.loads(env_value)
+                    except (ValueError, TypeError):
+                        parsed = None
+                    if isinstance(parsed, list):
+                        env_overrides[config_key] = parsed
+                    else:
+                        env_overrides[config_key] = [
+                            o.strip() for o in env_value.split(",") if o.strip()
+                        ]
                 else:
                     env_overrides[config_key] = env_value
 
