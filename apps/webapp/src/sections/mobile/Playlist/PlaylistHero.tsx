@@ -228,6 +228,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-19)] h-[var(--px-14)]" />
               </button>
             </div>
+            
             {/* Creative Commons License Icons - Bottom Right */}
             {!playlistData?.isUpload && (
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">

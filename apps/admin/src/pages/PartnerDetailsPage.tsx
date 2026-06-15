@@ -76,6 +76,7 @@ function PartnerDetailsPage() {
     showSuccessModal,
     closeSuccessModal,
   } = useStatusModals();
+  
 
   const {
     selectedPartner,
