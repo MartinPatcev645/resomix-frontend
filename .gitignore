@@ -185,4 +185,5 @@ timing.txt
 all_uuids.txt
 completed.txt
 db_query.txt
+.staging.env
 

@@ -80,7 +80,7 @@ def seed_sandbox():
             genre = conn.execute(text("SELECT id FROM genres WHERE name = 'Electronic'")).fetchone()
             if not genre:
                 logger.info("🎸 Seeding default genre Electronic...")
-                conn.execute(text("INSERT INTO genres (id, name, parent_id) VALUES (1, 'Electronic', None)"))
+                conn.execute(text("INSERT INTO genres (id, name, parent_id) VALUES (1, 'Electronic', NULL)"))
 
     except SQLAlchemyError as e:
         logger.error(f"Failed during initial setup: {e}")
