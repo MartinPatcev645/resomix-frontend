@@ -44,6 +44,14 @@ ffmpeg -version    # media server needs ffmpeg + ffprobe on PATH
 # libmariadb-dev provides `mariadb_config`, required to build the `mariadb`
 # Python wheel in Alwyzon's requirements.txt (otherwise pip fails with
 # "mariadb_config not found").
+
+# audiowaveform — required by the media server's peaks/segment generation.
+# Not in the default repos; install from the maintainer PPA (or a release .deb).
+sudo add-apt-repository -y ppa:chris-needham/ppa
+sudo apt update && sudo apt install -y audiowaveform
+audiowaveform --version
+# If the PPA has no build for this Ubuntu release, grab the .deb from
+# https://github.com/bbc/audiowaveform/releases and: sudo apt install -y ./audiowaveform_*.deb
 ```
 
 ### A2. Non-root service user
@@ -735,8 +743,8 @@ curl -s http://127.0.0.1:8004/ >/dev/null && echo "media OK"
 curl -s http://127.0.0.1:8090/api/v2/token >/dev/null && echo "sftpgo admin OK"
 
 # 3. Shared secrets identical on both apps (compare without printing them):
-grep -h '^HETZNER_INTERNAL_API_KEY=' ~/basic_fastapi_server_resomix/.env ~/resomix-similarity-open/.env | sort -u | wc -l   # expect 1
-grep -h '^EDGE_JWT_SECRET='          ~/basic_fastapi_server_resomix/.env ~/resomix-similarity-open/.env | sort -u | wc -l   # expect 1
+grep -h '^HETZNER_INTERNAL_API_KEY=' ~/usman/basic_fastapi_server_resomix/.env ~/usman/resomix-similarity-open/.env | sort -u | wc -l   # expect 1
+grep -h '^EDGE_JWT_SECRET='          ~/usman/basic_fastapi_server_resomix/.env ~/usman/resomix-similarity-open/.env | sort -u | wc -l   # expect 1
 ```
 
 A full end-to-end provisioning check (create partner in Alwyzon admin → SFTP
@@ -746,70 +754,312 @@ is the final acceptance test — see the partner onboarding guide
 
 ---
 
-## Part F — nginx (two vhosts) + TLS
+## Part F — nginx + TLS
 
-Point DNS A-records for **both** subdomains at the VPS IP before running Certbot:
-`staging-bserver.resomix.com` and `staging-media.resomix.com`.
+### F0. DNS records (do this first)
+
+All services share one box → every subdomain is an `A` record to the **same**
+public IPv4 (find it with `curl -4 ifconfig.me`). Add `AAAA` too if the VPS has
+IPv6. "Name" is just the label; the provider appends `.resomix.com`.
+
+| Type | Name | Value | Notes |
+|------|------|-------|-------|
+| `A` | `staging-bserver` | `<SERVER_PUBLIC_IPV4>` | Alwyzon (→ nginx → 8001) |
+| `A` | `staging-media` | `<SERVER_PUBLIC_IPV4>` | media HTTPS (→ 8004) **and** SFTP host (`:2022`) |
+| `A` | `staging-sftp-admin` | `<SERVER_PUBLIC_IPV4>` | only if exposing the admin (F-d) |
+
+> ⚠️ **Cloudflare users — set these to "DNS only" (grey cloud) for staging.**
+> Partners reach `staging-media.resomix.com:2022` over raw SSH/SFTP; Cloudflare's
+> proxy forwards only HTTP/HTTPS ports, so a proxied (orange) record kills SFTP.
+> Grey cloud also keeps Certbot HTTP-01 simple and lets nginx see the real client
+> IP as `$remote_addr` (so `EDGE_VERIFY_IP=true` works without CF real-IP config).
+
+### F1. Install nginx + Certbot
 
 ```bash
-sudo apt install -y nginx certbot python3-certbot-nginx
+sudo apt install -y nginx certbot python3-certbot-nginx apache2-utils
 ```
 
-**a. Shared rate-limit / real-IP layer** — create
-`/etc/nginx/conf.d/ratelimits_realip.conf` from the repo-root `s_nginx.txt`
-template (Cloudflare real-IP ranges, `real_ip_header CF-Connecting-IP`,
-`limit_req` zones, CORS map).
+### F2. HTTP-level rate-limit + CORS layer
 
-**b. Alwyzon vhost** `/etc/nginx/sites-available/staging-bserver`:
+Write `/etc/nginx/conf.d/ratelimits_realip.conf`. This defines the shared
+rate-limit zones and the browser-CORS allowlist used by the vhosts. The
+Cloudflare real-IP block is **commented out** — uncomment it **only** if you put
+the records behind the Cloudflare proxy (orange cloud); on a grey-cloud/direct
+staging box, trusting `CF-Connecting-IP` would let clients spoof their IP.
 
-```nginx
+```bash
+sudo tee /etc/nginx/conf.d/ratelimits_realip.conf >/dev/null <<'EOF'
+# ── Rate-limit / connection zones (per client IP) ──────────────────────
+limit_req_zone  $binary_remote_addr zone=api_rl:10m    rate=3r/s;    # API/search
+limit_req_zone  $binary_remote_addr zone=media_rl:10m  rate=25r/s;   # HLS/segments (bursty)
+limit_req_zone  $binary_remote_addr zone=global_rl:10m rate=5r/s;    # catch-all
+limit_req_zone  $binary_remote_addr zone=admin_rl:2m   rate=10r/m;   # admin (strict)
+limit_conn_zone $binary_remote_addr zone=perip_conn:10m;
+limit_req_status 429;
+
+# ── Browser CORS allowlist (FastAPI still sets CORS on proxied 2xx) ─────
+map $http_origin $cors_allow_origin {
+    default "";
+    "~^https://([\w\-]+\.)*resomix\.com$" $http_origin;
+    # Dev only — remove in a locked-down prod:
+    "~^http://localhost:517[2-5]$"        $http_origin;
+}
+
+# ── Cloudflare real-IP — UNCOMMENT ONLY IF PROXYING THROUGH CLOUDFLARE ──
+# real_ip_header CF-Connecting-IP;
+# real_ip_recursive on;
+# set_real_ip_from 173.245.48.0/20;
+# set_real_ip_from 103.21.244.0/22;
+# set_real_ip_from 103.22.200.0/22;
+# set_real_ip_from 103.31.4.0/22;
+# set_real_ip_from 141.101.64.0/18;
+# set_real_ip_from 108.162.192.0/18;
+# set_real_ip_from 190.93.240.0/20;
+# set_real_ip_from 188.114.96.0/20;
+# set_real_ip_from 197.234.240.0/22;
+# set_real_ip_from 198.41.128.0/17;
+# set_real_ip_from 162.158.0.0/15;
+# set_real_ip_from 104.16.0.0/13;
+# set_real_ip_from 104.24.0.0/14;
+# set_real_ip_from 172.64.0.0/13;
+# set_real_ip_from 131.0.72.0/22;
+# set_real_ip_from 2400:cb00::/32;
+# set_real_ip_from 2606:4700::/32;
+# set_real_ip_from 2803:f800::/32;
+# set_real_ip_from 2405:b500::/32;
+# set_real_ip_from 2405:8100::/32;
+# set_real_ip_from 2a06:98c0::/29;
+# set_real_ip_from 2c0f:f248::/32;
+EOF
+```
+
+### F3. Alwyzon vhost
+
+Write `/etc/nginx/sites-available/staging-bserver` (plain HTTP for now — Certbot
+in F6 rewrites it to add the 443 block and the HTTP→HTTPS redirect):
+
+```bash
+sudo tee /etc/nginx/sites-available/staging-bserver >/dev/null <<'EOF'
 server {
+    listen 80;
     server_name staging-bserver.resomix.com;
     client_max_body_size 105M;
-    location / {
+
+    # Security headers
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer-when-downgrade always;
+
+    # Global safety-net limits
+    limit_req  zone=global_rl burst=10;
+    limit_conn perip_conn 30;
+
+    # Tighter limits on API-ish paths
+    location ~ ^/(api|search|upload|v1|v2)/ {
+        limit_req  zone=api_rl burst=10 nodelay;
+        limit_conn perip_conn 20;
         proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
     }
 }
+EOF
 ```
 
-**c. Media vhost** `/etc/nginx/sites-available/staging-media`:
+### F4. Media vhost
 
-```nginx
+Write `/etc/nginx/sites-available/staging-media`:
+
+```bash
+sudo tee /etc/nginx/sites-available/staging-media >/dev/null <<'EOF'
 server {
+    listen 80;
     server_name staging-media.resomix.com;
     client_max_body_size 105M;           # large audio uploads / range requests
+
+    add_header X-Content-Type-Options nosniff always;
+
     location / {
+        # generous limit — HLS playback fires many small segment requests
+        limit_req  zone=media_rl burst=50 nodelay;
+        limit_conn perip_conn 40;
         proxy_pass http://127.0.0.1:8004;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_buffering off;             # streaming media / HLS
+        proxy_request_buffering off;     # stream large uploads through, don't spool
+        proxy_read_timeout 300s;         # long media / embedding calls
+        proxy_send_timeout 300s;
     }
 }
+EOF
 ```
+
+### F5. (Optional) SFTPGo admin vhost
+
+> **Preferred: skip this and use an SSH tunnel** — `ssh -L 8090:127.0.0.1:8090
+> devuser@<SERVER>`, then browse `http://localhost:8090`. Zero public exposure;
+> no DNS record or cert needed. Only create the vhost below if you need remote
+> browser access. Keep the DNS record **grey-cloud** so the IP allowlist sees
+> real IPs.
+
+```bash
+# basic-auth credential file (you'll be prompted for a password):
+sudo htpasswd -c /etc/nginx/.sftpgo_admin_htpasswd <admin-username>
+
+sudo tee /etc/nginx/sites-available/staging-sftp-admin >/dev/null <<'EOF'
+server {
+    listen 80;
+    server_name staging-sftp-admin.resomix.com;
+    allow <YOUR_ADMIN_IP>;               # your fixed IP; everyone else denied
+    deny  all;
+    location / {
+        limit_req zone=admin_rl burst=5 nodelay;
+        auth_basic "SFTPGo Admin";
+        auth_basic_user_file /etc/nginx/.sftpgo_admin_htpasswd;
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+```
+
+### F6. Enable vhosts + issue certificates
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/staging-bserver /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/staging-media  /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/staging-media   /etc/nginx/sites-enabled/
+# sudo ln -s /etc/nginx/sites-available/staging-sftp-admin /etc/nginx/sites-enabled/   # only if F5
+
+# (optional) drop nginx's default welcome site so it doesn't shadow your vhosts
+sudo rm -f /etc/nginx/sites-enabled/default
+
 sudo nginx -t && sudo systemctl reload nginx
+
+# Certbot rewrites each vhost to add the 443 block + HTTP→HTTPS redirect.
 sudo certbot --nginx -d staging-bserver.resomix.com -d staging-media.resomix.com
-sudo certbot renew --dry-run
+# add  -d staging-sftp-admin.resomix.com  to the line above if you enabled F5
+
+sudo certbot renew --dry-run        # confirm auto-renewal works
 ```
 
 ---
 
 ## Part G — fail2ban (recommended)
 
+Bans IPs that probe/scan over HTTP. All filters read nginx's access log.
+
+### G1. Install
+
 ```bash
 sudo apt install -y fail2ban
-# create /etc/fail2ban/jail.local + filters from the repo-root s_fail2ban.txt template
+```
+
+### G2. Jails — `/etc/fail2ban/jail.local`
+
+```bash
+sudo tee /etc/fail2ban/jail.local >/dev/null <<'EOF'
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 10
+backend  = auto
+# (optional) ignoreip = 127.0.0.1/8 ::1 <YOUR_ADMIN_IP>
+
+[nginx-4xx-5xx]
+enabled  = true
+filter   = nginx-4xx-5xx
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 40
+findtime = 2m
+bantime  = 2h
+
+[nginx-admin-abuse]
+enabled  = true
+filter   = nginx-admin-abuse
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 6
+findtime = 5m
+bantime  = 12h
+
+[nginx-404]
+enabled  = true
+filter   = nginx-404
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 25
+findtime = 3m
+bantime  = 3h
+
+[recidive]
+enabled  = true
+logpath  = /var/log/fail2ban.log
+findtime = 1d
+bantime  = 7d
+maxretry = 5
+EOF
+```
+
+### G3. Filters — `/etc/fail2ban/filter.d/*.conf`
+
+```bash
+sudo tee /etc/fail2ban/filter.d/nginx-4xx-5xx.conf >/dev/null <<'EOF'
+[Definition]
+failregex = ^<HOST> - - .*"[^"]*" (4\d\d|5\d\d) \d+ "[^"]*"
+ignoreregex =
+EOF
+
+sudo tee /etc/fail2ban/filter.d/nginx-admin-abuse.conf >/dev/null <<'EOF'
+[Definition]
+failregex = ^<HOST> - - .*"GET /(?:admin|r-admin|login|wp-login\.php)[^"]*" (404|401|403) \d+ "[^"]*"
+ignoreregex =
+EOF
+
+sudo tee /etc/fail2ban/filter.d/nginx-404.conf >/dev/null <<'EOF'
+[Definition]
+failregex = ^<HOST> - - .*"[^"]*" 404 \d+ "[^"]*"
+ignoreregex = robots\.txt|favicon\.ico
+EOF
+```
+
+### G4. Start + verify
+
+```bash
+sudo touch /var/log/fail2ban.log
+sudo fail2ban-client -t                 # config test
+sudo systemctl enable --now fail2ban
 sudo systemctl restart fail2ban
-sudo fail2ban-client status
+sudo fail2ban-client status             # lists the active jails
 ```
 
 ---
@@ -893,3 +1143,32 @@ This runbook stops before loading live data.
   `/srv/resomix/partners` + the SFTP homes under `/srv/sftp/partners`. Embeddings
   are (re)generated by the GPU server; FAISS indexes are rebuilt per partner via
   the Alwyzon admin `rebuild-index` action.
+
+### J1. Global open-tracks catalog (optional)
+
+On first media-server start you'll see a **non-fatal** error if the global
+open-tracks FAISS index is absent:
+
+```
+ERROR ... could not open /srv/resomix/data/embeddings/maest_index.index ... No such file or directory
+```
+
+The `except` in `lifespan` swallows it, so uvicorn still binds 8004 — but the
+steps after `similarity_service.preload()` (e.g. monthly-pipeline init) are
+skipped, and the **global** similarity catalog is unavailable. **Partner-scoped
+flows do not need this** (per-partner indexes are built at ingestion).
+
+To load the global catalog, copy these into `/srv/resomix/data/embeddings/`
+(owned by `devuser`, so scp lands directly). Required: `maest_index.index` +
+`maest_catalog.json`. Optional: the Discogs pair + the `maest/` `discogs/`
+full-vector dirs.
+
+```bash
+# from a host that has the files (e.g. your workstation):
+scp -P <SSH_PORT> maest_index.index maest_catalog.json \
+    devuser@<SERVER>:/srv/resomix/data/embeddings/
+```
+
+> Heads-up — **`audiowaveform`** (Part A) must be installed for peaks/segment
+> generation; without it the media log warns `audiowaveform not found - peaks
+> generation will fail`, and `similarity_playback` partners can't produce peaks.
