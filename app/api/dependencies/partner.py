@@ -106,20 +106,22 @@ async def _get_partner_core(
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
-    # 2. Standard Platform Access (Legacy JWT or Admin Key)
+    # 2. Standard Platform Access (Legacy JWT or Admin Key) — only reached when no
+    #    partner key was supplied, so an authenticated user always lands on the
+    #    global System Partner 1 catalog.
     partner = None
-    
+
     # Check for Admin/Frontend System Key
     from app.core.config import settings
     from app.core.context import set_admin_context
-    if token == settings.api_key:
+    if platform_token and platform_token == settings.api_key:
         partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
         set_admin_context(True)
         request.state.partner_id = SYSTEM_PARTNER_ID
     else:
         # Check for User JWT or Anonymous fallback
-        if token:
-            user = await get_current_user_optional(token, db)
+        if platform_token:
+            user = await get_current_user_optional(platform_token, db)
             if user:
                 partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
                 request.state.partner_id = SYSTEM_PARTNER_ID
@@ -148,8 +150,9 @@ async def get_current_partner(
     partner_service: PartnerService = Depends(PartnerService)
 ) -> Partner:
     """Default dependency for getting current partner (REQUIRES token)."""
-    token = auth.credentials if auth else api_key_header
-    return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=token, allow_anonymous=False)
+    # Pass the raw X-Api-Key separately (the Bearer header is forwarded via `auth`)
+    # so _get_partner_core can prioritise an rmx_ partner key over a JWT.
+    return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=api_key_header, allow_anonymous=False)
 
 async def get_public_partner(
     request: Request,
@@ -160,8 +163,7 @@ async def get_public_partner(
     partner_service: PartnerService = Depends(PartnerService)
 ) -> Partner:
     """Dependency that allows anonymous fallback to Partner 1 (Public Access)."""
-    token = auth.credentials if auth else api_key_header
-    return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=token, allow_anonymous=True)
+    return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=api_key_header, allow_anonymous=True)
 
 def get_current_partner_scoped(required_scope: str):
     """Factory for getting partner with a required scope."""
@@ -173,10 +175,9 @@ def get_current_partner_scoped(required_scope: str):
         db: AsyncSession = Depends(get_database_session),
         partner_service: PartnerService = Depends(PartnerService)
     ) -> Partner:
-        token = auth.credentials if auth else api_key_header
         return await _get_partner_core(
-            request, auth, db, partner_service, background_tasks, 
-            api_key_token=token, required_scope=required_scope
+            request, auth, db, partner_service, background_tasks,
+            api_key_token=api_key_header, required_scope=required_scope
         )
     return scoped_dependency
 
