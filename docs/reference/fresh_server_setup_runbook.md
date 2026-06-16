@@ -52,6 +52,16 @@ sudo apt update && sudo apt install -y audiowaveform
 audiowaveform --version
 # If the PPA has no build for this Ubuntu release, grab the .deb from
 # https://github.com/bbc/audiowaveform/releases and: sudo apt install -y ./audiowaveform_*.deb
+
+# ClamAV — Alwyzon virus-scans every uploaded audio file (similarity/upload).
+# Without the clamd daemon socket, /api/v1/similarity/upload returns 500.
+sudo apt install -y clamav clamav-daemon
+sudo systemctl stop clamav-freshclam            # release the DB lock
+sudo freshclam                                  # download the initial virus DB (a few min)
+sudo systemctl enable --now clamav-freshclam    # keep the DB updated
+sudo systemctl enable --now clamav-daemon       # starts clamd → creates /var/run/clamav/clamd.ctl
+sudo usermod -aG clamav devuser                 # let the app user read the clamd socket
+ls -l /var/run/clamav/clamd.ctl                 # confirm the socket exists
 ```
 
 ### A2. Non-root service user

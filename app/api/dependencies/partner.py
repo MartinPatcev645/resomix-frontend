@@ -46,14 +46,31 @@ async def _get_partner_core(
     required_scope: Optional[str] = None,
     allow_anonymous: bool = False
 ) -> Partner:
-    """Internal core logic for partner resolution."""
-    # Extract token from Bearer auth, header, or query parameter
-    token = auth.credentials if auth else (api_key_token or request.query_params.get("api_key"))
-    
-    # 1. Try Partner API Key (rmx_...)
-    if token and token.startswith("rmx_"):
+    """Internal core logic for partner resolution.
+
+    Credential priority (do NOT confuse the partner key with the admin/system key):
+      1. Partner API key (``rmx_…``) — scopes the request to THAT partner. Wins over
+         everything, from whichever source it arrives (Bearer header, ``X-Api-Key``
+         header, or ``?api_key=`` query param). So a request carrying BOTH a user
+         JWT and a partner key is scoped to the partner.
+      2. Admin/frontend system key (``settings.api_key``) — System Partner 1 + admin.
+      3. User JWT — System Partner 1 (the global open-tracks catalog).
+      4. Anonymous — System Partner 1, only when ``allow_anonymous`` and no scope.
+    """
+    # Gather every place a credential can arrive, then split partner key vs.
+    # platform (JWT/admin) token so an rmx_ key always takes priority regardless of
+    # which header carried the JWT.
+    bearer_token = auth.credentials if auth else None
+    candidates = [
+        t for t in (bearer_token, api_key_token, request.query_params.get("api_key")) if t
+    ]
+    partner_key = next((t for t in candidates if t.startswith("rmx_")), None)
+    platform_token = next((t for t in candidates if not t.startswith("rmx_")), None)
+
+    # 1. Try Partner API Key (rmx_...) — highest priority
+    if partner_key:
         try:
-            partner, api_key = await partner_service.validate_api_key(db, token, required_scope=required_scope)
+            partner, api_key = await partner_service.validate_api_key(db, partner_key, required_scope=required_scope)
             
             # Set the partner_id in the request context for global failsafe (W1-6)
             set_current_partner_id(partner.id)

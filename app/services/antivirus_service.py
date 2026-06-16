@@ -58,7 +58,11 @@ class AntivirusService:
                 self._clamd_client = cd
                 print(f"[AntiVirus] clamd daemon available at {self.socket_path}")
             return self._clamd_available
-        except (ImportError, ConnectionError, FileNotFoundError) as e:
+        except Exception as e:
+            # Catch broadly: the clamd library raises its OWN clamd.ConnectionError
+            # (NOT a subclass of the builtin ConnectionError), so a narrow except
+            # would let it escape and 500 the upload. Any failure here just means
+            # "clamd unavailable" → fall back to clamscan / graceful error.
             print(f"[AntiVirus] clamd not available: {e}")
             self._clamd_available = False
             return False
