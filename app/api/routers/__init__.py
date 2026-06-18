@@ -28,6 +28,7 @@ from .admin.auth import router as admin_auth_router
 from .admin.users import router as admin_users_router
 from .admin.roles import router as admin_roles_router
 from .admin.processing import router as admin_processing_router
+from .admin.logs import router as admin_logs_router
 from .partner import router as partner_router
 from .contact import router as contact_router
 from .health import router as health_router
@@ -88,6 +89,7 @@ v1_routers = [
     (admin_users_router, V1_PREFIX),
     (admin_roles_router, V1_PREFIX),
     (admin_processing_router, V1_PREFIX),
+    (admin_logs_router, V1_PREFIX),
     (health_router, V1_PREFIX),
     (dummy_router, V1_PREFIX),
     # Special case: webhooks_router has internal /api/v1 prefix

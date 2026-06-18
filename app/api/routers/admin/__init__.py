@@ -23,6 +23,7 @@ from .auth import router as admin_auth_router
 from .users import router as admin_users_router
 from .roles import router as admin_roles_router
 from .processing import router as admin_processing_router
+from .logs import router as admin_logs_router
 
 __all__ = [
     "admin_feedback_router",
@@ -38,4 +39,5 @@ __all__ = [
     "admin_users_router",
     "admin_roles_router",
     "admin_processing_router",
+    "admin_logs_router",
 ]

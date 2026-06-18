@@ -531,6 +531,78 @@ class LogRepository(BaseRepository[SystemLog]):
             logger.error(f"Failed to get filtered logs: {e}")
             return [], 0
 
+    async def async_get_filtered_logs(
+        self,
+        db: AsyncSession,
+        filters: Optional[Dict[str, Any]] = None,
+        limit: int = 50,
+        offset: int = 0,
+        order_by: str = "created_at",
+        order_dir: str = "desc",
+    ) -> Tuple[List[SystemLog], int]:
+        """Async, filtered + paginated fetch of system logs for the admin logs page.
+
+        Returns a ``(rows, total_count)`` tuple. Supported filter keys:
+        ``level``, ``category``, ``action`` (LIKE), ``endpoint`` (LIKE),
+        ``q`` (free-text over message/action/endpoint), ``client_ip``,
+        ``correlation_id``, ``status_code``, ``track_id``, ``playlist_id``,
+        ``min_duration``, ``start_date``, ``end_date``.
+        """
+        try:
+            conditions = []
+            if filters:
+                if filters.get("level"):
+                    conditions.append(SystemLog.level == filters["level"])
+                if filters.get("category"):
+                    conditions.append(SystemLog.category == filters["category"])
+                if filters.get("action"):
+                    conditions.append(SystemLog.action.like(f"%{filters['action']}%"))
+                if filters.get("endpoint"):
+                    conditions.append(SystemLog.endpoint.like(f"%{filters['endpoint']}%"))
+                if filters.get("q"):
+                    pattern = f"%{filters['q']}%"
+                    conditions.append(or_(
+                        SystemLog.message.like(pattern),
+                        SystemLog.action.like(pattern),
+                        SystemLog.endpoint.like(pattern),
+                    ))
+                if filters.get("client_ip"):
+                    conditions.append(SystemLog.client_ip == filters["client_ip"])
+                if filters.get("correlation_id"):
+                    conditions.append(SystemLog.correlation_id == filters["correlation_id"])
+                if filters.get("status_code"):
+                    conditions.append(SystemLog.status_code == filters["status_code"])
+                if filters.get("track_id"):
+                    conditions.append(SystemLog.track_id == filters["track_id"])
+                if filters.get("playlist_id"):
+                    conditions.append(SystemLog.playlist_id == filters["playlist_id"])
+                if filters.get("min_duration"):
+                    conditions.append(SystemLog.duration_ms >= filters["min_duration"])
+                if filters.get("start_date"):
+                    conditions.append(SystemLog.created_at >= filters["start_date"])
+                if filters.get("end_date"):
+                    conditions.append(SystemLog.created_at <= filters["end_date"])
+
+            base = select(SystemLog)
+            count_stmt = select(func.count(SystemLog.id))
+            if conditions:
+                cond = and_(*conditions)
+                base = base.where(cond)
+                count_stmt = count_stmt.where(cond)
+
+            total = (await db.execute(count_stmt)).scalar() or 0
+
+            order_column = getattr(SystemLog, order_by, SystemLog.created_at)
+            base = base.order_by(asc(order_column) if order_dir.lower() == "asc" else desc(order_column))
+            base = base.offset(offset).limit(limit)
+
+            rows = (await db.execute(base)).scalars().all()
+            return rows, total
+
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get filtered logs (async): {e}")
+            return [], 0
+
     async def async_get_log_by_stripe_event_id(self, db: AsyncSession, stripe_event_id: str) -> Optional[SystemLog]:
         """Check if a Stripe event ID has already been logged (for idempotency checks)."""
         stmt = select(self.model).where(
