@@ -168,6 +168,10 @@ class ApiKeyRotateRequest(BaseModel):
     """Request to rotate an API key (revokes old, issues new)."""
     api_key_id: int
     label: Optional[str] = None
+    # Optional new expiry for the rotated key. If omitted, the new key gets a FRESH
+    # expiry preserving the original key's validity window (so a rotated key is never
+    # born already-expired). If the original key had no expiry, the new one has none.
+    expires_at: Optional[datetime] = None
 
 
 # --- SFTP Provisioning Schemas ---

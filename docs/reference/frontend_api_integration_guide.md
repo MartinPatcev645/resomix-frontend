@@ -437,8 +437,16 @@ All admin endpoints require an authenticated admin. Supply either:
   ```
   Returns: `{ "api_key": "rmx_...", "key_id": "...", "label": "..." }` — **Store the raw key immediately; it is not stored.**
 - **List keys:** `GET /api/v1/admin/partners/api-keys/{partner_id}`
-- **Revoke key:** `POST /api/v1/admin/partners/api-keys/revoke` — Body: `{ "key_id": "..." }`
+- **Revoke key:** `POST /api/v1/admin/partners/api-keys/revoke`
+  ```json
+  { "api_key_id": 3, "reason": "compromised (min 5 chars)" }
+  ```
+  ⚠️ The field is **`api_key_id`** (the integer id from the list), **not** `key_id`, and **`reason` is required** (5–255 chars). Returns `200`; `404` if the id doesn't exist. (Sending `key_id` or omitting `reason` → `422`.)
 - **Rotate key:** `POST /api/v1/admin/partners/api-keys/rotate` — `201`
+  ```json
+  { "api_key_id": 3, "label": "Production Key (optional)" }
+  ```
+  Revokes the old key, issues a new one with the same scopes/limits. The new key gets a **fresh expiry** (preserves the original validity window, starting now — never born expired); optionally pass `expires_at` (ISO datetime) to set it explicitly. Response `data.plaintext_key` is shown **only once** — store it immediately.
 
 #### SFTP Provisioning
 - **Provision:** `POST /api/v1/admin/partners/sftp/provision` — `201`

@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 from fastapi import APIRouter, Request, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,40 +16,97 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Internal SFTP"])
 sftp_service = SftpService()
 
+# Deny response SFTPGo interprets as "authentication failed".
+_DENY = {"username": "", "status": 0}
+
+
+def _normalize_public_key(raw: str) -> Optional[tuple]:
+    """Reduce an OpenSSH public key line to its identity ``(type, base64-body)``.
+
+    The trailing comment (and any surrounding whitespace) is irrelevant to the
+    key's identity, so we compare only the algorithm + key material. Returns
+    ``None`` for anything that doesn't look like a key.
+    """
+    if not raw:
+        return None
+    parts = raw.strip().split()
+    if len(parts) < 2:
+        return None
+    return (parts[0], parts[1])
+
+
+def _public_key_authorized(presented: Optional[str], stored: Optional[str]) -> bool:
+    """True when ``presented`` matches one of the keys in ``stored``.
+
+    ``stored`` may hold several authorized keys (one per line). Matching ignores
+    the comment field so a re-exported key with a different comment still works.
+    """
+    target = _normalize_public_key(presented)
+    if not target or not stored:
+        return False
+    for line in stored.splitlines():
+        if _normalize_public_key(line) == target:
+            return True
+    return False
+
 
 @router.post("/internal/sftp/auth")
 async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_db)):
     """
     Webhook used by SFTPGo to authenticate external partners.
     Only accessible by the SX65 server IP.
+
+    With ``external_auth_scope=0`` SFTPGo delegates BOTH password and public-key
+    auth here. A public-key attempt arrives with the presented key in the
+    ``public_key`` field and an empty ``password``; a password attempt has the
+    reverse. We must branch on which credential was actually sent — verifying a
+    password unconditionally would reject every key-based login.
     """
     body = await request.json()
     username = body.get("username")
     password = body.get("password")
+    presented_public_key = body.get("public_key")
     ip = body.get("ip")
-    
+
     # In production, we should validate request.client.host against the known SX65 IP.
     # For local development / tests, we allow localhost/docker IPs.
     client_ip = request.client.host if request.client else "unknown"
-    # if client_ip not in ["127.0.0.1", "::1", "YOUR_SX65_IP"]: 
+    # if client_ip not in ["127.0.0.1", "::1", "YOUR_SX65_IP"]:
     #     raise HTTPException(403)
-    
+
     # Look up sftp_users table
     sftp_user = await sftp_user_repo.get_by_username(db, username)
     if not sftp_user or not sftp_user.is_active:
-        return {"username": "", "status": 0}  # deny
-    
-    # Verify password hash
-    if not verify_password(password, sftp_user.password_hash):
-        return {"username": "", "status": 0}  # deny
-    
-    # Activate IP whitelist check
+        return _DENY  # deny
+
+    # Credential check. SFTPGo sends EITHER a public key (key attempt) OR a
+    # password (password attempt). Branch on what was presented.
+    if presented_public_key:
+        # Public-key attempt: only valid for key-enabled accounts whose stored key
+        # matches the presented one. Never fall through to password verification.
+        if not sftp_user.use_public_key:
+            return _DENY
+        if not _public_key_authorized(presented_public_key, sftp_user.public_key):
+            return _DENY
+    else:
+        # Password attempt: verify against the stored bcrypt hash.
+        if not verify_password(password, sftp_user.password_hash):
+            return _DENY
+
+    # IP whitelist enforcement (defense in depth). SFTPGo also enforces the
+    # ``allowed_ip`` filter we return below, but rejecting here means a connection
+    # from an unlisted IP never authenticates even if the filter were misapplied.
     if sftp_user.allowed_ip and ip:
-        allowed_ips = [allowed_ip.strip() for allowed_ip in sftp_user.allowed_ip.split(",")]
-        # Note: In a real system you'd do proper CIDR matching here.
-        # SFTPGo has its own IP whitelist feature, so we can also pass it in filters.
-        # But this basic check prevents invalid IPs from passing the hook at all.
-    
+        allowed_ips = [a.strip() for a in sftp_user.allowed_ip.split(",") if a.strip()]
+        # Exact-match check. CIDR ranges are handled by SFTPGo's own allowed_ip
+        # filter (returned in the response); this guard covers plain IPs.
+        if allowed_ips and ip not in allowed_ips and not any("/" in a for a in allowed_ips):
+            logger.warning(
+                "SFTP auth denied for '%s': IP %s not in allowed list %s",
+                username, ip, allowed_ips,
+            )
+            return _DENY
+
     partner_id = sftp_user.partner_id
 
     # Resolve the per-account SFTP limits (quota + bandwidth/sessions/transfer)
@@ -112,11 +170,12 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
     response.update(limits)
 
     if sftp_user.allowed_ip:
-        response["filters"]["allowed_ip"] = [ip.strip() for ip in sftp_user.allowed_ip.split(",")]
-        
+        response["filters"]["allowed_ip"] = [a.strip() for a in sftp_user.allowed_ip.split(",") if a.strip()]
+
     if sftp_user.use_public_key and sftp_user.public_key:
-        response["public_keys"] = [sftp_user.public_key]
-        
+        # The stored value may hold several authorized keys (one per line).
+        response["public_keys"] = [k.strip() for k in sftp_user.public_key.splitlines() if k.strip()]
+
     return response
 
 @router.post("/internal/sftp/event")

@@ -17,6 +17,7 @@ from app.models.sftp_user import SftpUser
 from app.models.b2b import IngestLog, IngestionError
 from app.models.track import Track
 from app.core.security import hash_password
+from app.repositories.sftp_user_repository import sftp_user_repo
 from database.connection import AsyncSessionLocal
 
 @pytest.fixture(scope="module")
@@ -157,6 +158,129 @@ async def test_sftp_auth_hook_invalid_password(setup_sftp_partner, temp_sftp_dir
     data = response.json()
     assert data["status"] == 0
     assert data["username"] == ""
+
+# A pair of well-formed (but fake) OpenSSH public keys. Only the algorithm + key
+# body matter for matching; the trailing comment is intentionally varied to prove
+# the hook ignores it.
+_PUBKEY_A = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITESTPARTNERKEYBODYAAAAAAAAAAAAAAAAAAAA partner@laptop"
+_PUBKEY_A_DIFFERENT_COMMENT = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITESTPARTNERKEYBODYAAAAAAAAAAAAAAAAAAAA someone-else@ci"
+_PUBKEY_B = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDIFFERENTKEYBODYBBBBBBBBBBBBBBBBBBBBBBBBBB attacker@host"
+
+
+async def _configure_sftp_user(username, **fields):
+    """Mutate the fixture's SFTP user row with the given columns (e.g. allowed_ip,
+    use_public_key, public_key) so a single test can exercise a specific scenario."""
+    async with AsyncSessionLocal() as db:
+        sftp_user = await sftp_user_repo.get_by_username(db, username)
+        for key, value in fields.items():
+            setattr(sftp_user, key, value)
+        db.add(sftp_user)
+        await db.commit()
+
+
+@pytest.mark.asyncio
+async def test_sftp_auth_hook_ip_whitelist_allows_listed_ip(setup_sftp_partner, temp_sftp_dir):
+    """A connection from a whitelisted IP authenticates and the allowed_ip filter is
+    echoed back to SFTPGo."""
+    creds = setup_sftp_partner
+    await _configure_sftp_user(creds["username"], allowed_ip="203.0.113.5,203.0.113.6")
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/auth",
+            json={"username": creds["username"], "password": creds["password"], "ip": "203.0.113.5"},
+        )
+
+    data = response.json()
+    assert data["status"] == 1
+    # The IP whitelist is passed through to SFTPGo for its own enforcement too.
+    assert data["filters"]["allowed_ip"] == ["203.0.113.5", "203.0.113.6"]
+
+
+@pytest.mark.asyncio
+async def test_sftp_auth_hook_ip_whitelist_denies_unlisted_ip(setup_sftp_partner, temp_sftp_dir):
+    """A correct password from an IP NOT on the whitelist is denied by the hook
+    itself (defense in depth), not just by the SFTPGo filter."""
+    creds = setup_sftp_partner
+    await _configure_sftp_user(creds["username"], allowed_ip="203.0.113.5")
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/auth",
+            json={"username": creds["username"], "password": creds["password"], "ip": "198.51.100.9"},
+        )
+
+    data = response.json()
+    assert data["status"] == 0
+    assert data["username"] == ""
+
+
+@pytest.mark.asyncio
+async def test_sftp_auth_hook_public_key_success(setup_sftp_partner, temp_sftp_dir):
+    """A key-enabled account authenticates with a matching public key and NO password
+    — the partner keeps their private key and logs in with it."""
+    creds = setup_sftp_partner
+    await _configure_sftp_user(creds["username"], use_public_key=True, public_key=_PUBKEY_A)
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/auth",
+            json={"username": creds["username"], "public_key": _PUBKEY_A, "password": "", "ip": "127.0.0.1"},
+        )
+
+    data = response.json()
+    assert data["status"] == 1
+    assert data["username"] == creds["username"]
+    # SFTPGo is told which key(s) are authorized for this virtual user.
+    assert _PUBKEY_A in data["public_keys"]
+
+
+@pytest.mark.asyncio
+async def test_sftp_auth_hook_public_key_ignores_comment(setup_sftp_partner, temp_sftp_dir):
+    """The same key material with a different trailing comment still authenticates."""
+    creds = setup_sftp_partner
+    await _configure_sftp_user(creds["username"], use_public_key=True, public_key=_PUBKEY_A)
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/auth",
+            json={"username": creds["username"], "public_key": _PUBKEY_A_DIFFERENT_COMMENT, "ip": "127.0.0.1"},
+        )
+
+    assert response.json()["status"] == 1
+
+
+@pytest.mark.asyncio
+async def test_sftp_auth_hook_public_key_mismatch_denied(setup_sftp_partner, temp_sftp_dir):
+    """A different (wrong) public key is denied — and must NOT silently fall through
+    to password verification."""
+    creds = setup_sftp_partner
+    await _configure_sftp_user(creds["username"], use_public_key=True, public_key=_PUBKEY_A)
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/auth",
+            json={"username": creds["username"], "public_key": _PUBKEY_B, "ip": "127.0.0.1"},
+        )
+
+    data = response.json()
+    assert data["status"] == 0
+    assert data["username"] == ""
+
+
+@pytest.mark.asyncio
+async def test_sftp_auth_hook_public_key_on_password_only_account_denied(setup_sftp_partner, temp_sftp_dir):
+    """A key attempt against a password-only account (use_public_key False) is denied."""
+    creds = setup_sftp_partner  # fixture user has use_public_key=False, no public_key
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/internal/sftp/auth",
+            json={"username": creds["username"], "public_key": _PUBKEY_A, "ip": "127.0.0.1"},
+        )
+
+    assert response.json()["status"] == 0
+
 
 async def _wait_for_log(partner_id, max_wait=5.0, wait_interval=0.25):
     """Poll for the ingest_log row the background hand-off task creates."""

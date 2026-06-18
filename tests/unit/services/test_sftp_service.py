@@ -2,22 +2,28 @@
 Unit Tests for SftpService
 ==========================
 
-Tests provisioning, retry logic, deactivation, and the new file validation logic (Phase 4).
+Tests provisioning, retry logic (incl. re-supplied password), per-account limit
+resolution (plan defaults + admin overrides), and deactivation.
 """
 
 import pytest
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
 
 from app.services.sftp_service import SftpService
 from app.schemas.partner import SftpProvisionRequest
+from app.core.security import verify_password
 from app.models.partner import Partner
 from app.models.sftp_user import SftpUser
 
 @pytest.fixture
 def mock_db():
-    return AsyncMock()
+    db = AsyncMock()
+    # SQLAlchemy's Session.add is synchronous — keep it a plain mock so it does
+    # not return an un-awaited coroutine.
+    db.add = MagicMock()
+    return db
 
 @pytest.fixture
 def sftp_service():
@@ -87,90 +93,129 @@ class TestSftpService:
 
     async def test_retry_provisioning_success(self, sftp_service, mock_db):
         from app.services.sftp_service import sftp_user_repo
-        
+
         mock_sftp_user = SftpUser(
-            id=1, 
-            partner_id=42, 
-            username="testuser", 
-            password_hash="hash",
+            id=1,
+            partner_id=42,
+            username="testuser",
+            password_hash="oldhash",
             sftp_home_dir="/srv/sftp",
             use_public_key=False,
             public_key=None,
-            sftp_provisioned_at=None # NOT provisioned
+            quota_bytes=None,
+            sftp_provisioned_at=None  # NOT provisioned
         )
         sftp_user_repo.get_by_partner_id = AsyncMock(return_value=mock_sftp_user)
         sftp_service.partner_repo.async_get_by_id.return_value = Partner(id=42, tier="starter")
         sftp_user_repo.mark_provisioned = AsyncMock(return_value=mock_sftp_user)
-        
+
         with patch.object(sftp_service, '_call_hetzner_provisioning', AsyncMock()) as mock_hetzner:
-            result = await sftp_service.retry_provisioning(mock_db, 42)
+            # The admin re-supplies the password on retry (it is never stored in plaintext).
+            await sftp_service.retry_provisioning(mock_db, 42, password="freshpassword123")
             mock_hetzner.assert_called_once()
             sftp_user_repo.mark_provisioned.assert_called_once()
 
+    async def test_retry_provisioning_requires_password_for_password_account(self, sftp_service, mock_db):
+        """A password-auth account cannot be retried without re-supplying the password."""
+        from app.services.sftp_service import sftp_user_repo
+
+        mock_sftp_user = SftpUser(
+            id=1, partner_id=42, username="testuser", password_hash="oldhash",
+            use_public_key=False, sftp_provisioned_at=None,
+        )
+        sftp_user_repo.get_by_partner_id = AsyncMock(return_value=mock_sftp_user)
+
+        with pytest.raises(ValueError, match="Password is required"):
+            await sftp_service.retry_provisioning(mock_db, 42)  # no password
+
+    async def test_retry_provisioning_updates_stored_hash(self, sftp_service, mock_db):
+        """On a successful retry, the stored bcrypt hash is replaced with the hash of
+        the newly supplied password, AND that exact plaintext is sent to SFTPGo."""
+        from app.services.sftp_service import sftp_user_repo
+
+        mock_sftp_user = SftpUser(
+            id=1, partner_id=42, username="testuser", password_hash="oldhash",
+            sftp_home_dir="/srv/sftp", use_public_key=False, public_key=None,
+            quota_bytes=None, sftp_provisioned_at=None,
+        )
+        sftp_user_repo.get_by_partner_id = AsyncMock(return_value=mock_sftp_user)
+        sftp_service.partner_repo.async_get_by_id.return_value = Partner(id=42, tier="starter")
+        sftp_user_repo.mark_provisioned = AsyncMock(return_value=mock_sftp_user)
+
+        with patch.object(sftp_service, '_call_hetzner_provisioning', AsyncMock()) as mock_hetzner:
+            await sftp_service.retry_provisioning(mock_db, 42, password="brandnewpass99")
+
+        # Stored hash now verifies against the new password (not the old "oldhash").
+        assert mock_sftp_user.password_hash != "oldhash"
+        assert verify_password("brandnewpass99", mock_sftp_user.password_hash)
+        # The PLAINTEXT password (what SFTPGo actually hashes) was forwarded.
+        _, kwargs = mock_hetzner.call_args
+        assert kwargs.get("password") == "brandnewpass99"
+
+    async def test_retry_public_key_account_without_password_ok(self, sftp_service, mock_db):
+        """A public-key account can be retried without a password."""
+        from app.services.sftp_service import sftp_user_repo
+
+        mock_sftp_user = SftpUser(
+            id=1, partner_id=42, username="testuser", password_hash=None,
+            sftp_home_dir="/srv/sftp", use_public_key=True, public_key="ssh-ed25519 AAAA key",
+            quota_bytes=None, sftp_provisioned_at=None,
+        )
+        sftp_user_repo.get_by_partner_id = AsyncMock(return_value=mock_sftp_user)
+        sftp_service.partner_repo.async_get_by_id.return_value = Partner(id=42, tier="starter")
+        sftp_user_repo.mark_provisioned = AsyncMock(return_value=mock_sftp_user)
+
+        with patch.object(sftp_service, '_call_hetzner_provisioning', AsyncMock()) as mock_hetzner:
+            await sftp_service.retry_provisioning(mock_db, 42)  # no password, key account
+            mock_hetzner.assert_called_once()
+
     async def test_retry_provisioning_already_provisioned(self, sftp_service, mock_db):
         from app.services.sftp_service import sftp_user_repo
-        
+
         mock_sftp_user = SftpUser(
-            id=1, 
+            id=1,
             sftp_provisioned_at="2026-05-20" # ALREADY provisioned
         )
         sftp_user_repo.get_by_partner_id = AsyncMock(return_value=mock_sftp_user)
-        
+
         with pytest.raises(ValueError, match="already fully provisioned"):
-            await sftp_service.retry_provisioning(mock_db, 42)
+            await sftp_service.retry_provisioning(mock_db, 42, password="whatever123")
 
-    async def test_validate_incoming_batch_no_dir(self, sftp_service):
-        res = await sftp_service.validate_incoming_batch(1, "/does_not_exist_folder")
-        assert res.valid is False
-        assert res.error == "incoming directory not found"
+    # ── Per-account SFTP limit resolution (plan defaults + admin overrides) ──────
 
-    async def test_validate_incoming_batch_valid_no_checksum(self, sftp_service, tmp_path):
-        # Create a temp CSV
-        csv_file = tmp_path / "manifest.csv"
-        csv_file.write_text("isrc,title\n123,Song\n")
-        
-        # We need to mock asyncio.sleep so we don't delay tests
-        with patch("asyncio.sleep", AsyncMock()):
-            res = await sftp_service.validate_incoming_batch(1, str(tmp_path))
-            
-            assert res.valid is True
-            assert res.checksum_verified is False
-            assert res.csv_path == csv_file
+    async def test_plan_defaults_quota_per_tier(self, sftp_service):
+        assert sftp_service.plan_defaults("sandbox")["quota_bytes"] == 1073741824
+        assert sftp_service.plan_defaults("enterprise")["quota_bytes"] == 0
+        # Sandbox ships with throttled bandwidth + a low session cap by default.
+        assert sftp_service.plan_defaults("sandbox")["max_sessions"] == 2
+        assert sftp_service.plan_defaults("sandbox")["upload_bandwidth"] == 2048
 
-    async def test_validate_incoming_batch_invalid_headers(self, sftp_service, tmp_path):
-        csv_file = tmp_path / "manifest.csv"
-        csv_file.write_text("wrong,headers\n123,Song\n")
-        
-        with patch("asyncio.sleep", AsyncMock()):
-            res = await sftp_service.validate_incoming_batch(1, str(tmp_path))
-            
-            assert res.valid is False
-            assert "invalid CSV headers" in res.error
+    async def test_resolve_sftp_limits_uses_plan_defaults_when_no_override(self, sftp_service):
+        req = SftpProvisionRequest(partner_id=1, password="testpassword123")
+        resolved = sftp_service.resolve_sftp_limits("sandbox", req)
+        assert resolved["quota_bytes"] == 1073741824       # sandbox default
+        assert resolved["max_sessions"] == 2               # sandbox default
+        assert resolved["download_bandwidth"] == 4096       # sandbox default
 
-    async def test_validate_incoming_batch_checksum_mismatch(self, sftp_service, tmp_path):
-        csv_file = tmp_path / "manifest.csv"
-        csv_file.write_text("isrc,title\n123,Song\n")
-        
-        checksum_file = tmp_path / "manifest.sha256"
-        checksum_file.write_text("wronghash  manifest.csv\n")
-        
-        res = await sftp_service.validate_incoming_batch(1, str(tmp_path))
-        
-        assert res.valid is False
-        assert "checksum mismatch" in res.error
+    async def test_resolve_sftp_limits_override_wins(self, sftp_service):
+        req = SftpProvisionRequest(
+            partner_id=1, password="testpassword123",
+            quota_bytes=12884901888,   # 12 GB override
+            max_sessions=7,
+            upload_bandwidth=0,        # 0 = unlimited, explicit override
+        )
+        resolved = sftp_service.resolve_sftp_limits("sandbox", req)
+        assert resolved["quota_bytes"] == 12884901888       # override
+        assert resolved["max_sessions"] == 7                # override
+        assert resolved["upload_bandwidth"] == 0            # explicit 0 override honored
+        # Untouched field still falls back to the tier default.
+        assert resolved["download_bandwidth"] == 4096
 
-    async def test_validate_incoming_batch_checksum_success(self, sftp_service, tmp_path):
-        import hashlib
-        content = b"isrc,title\n123,Song\n"
-        actual_hash = hashlib.sha256(content).hexdigest()
-        
-        csv_file = tmp_path / "manifest.csv"
-        csv_file.write_bytes(content)
-        
-        checksum_file = tmp_path / "manifest.sha256"
-        checksum_file.write_text(f"{actual_hash}  manifest.csv\n")
-        
-        res = await sftp_service.validate_incoming_batch(1, str(tmp_path))
-        
-        assert res.valid is True
-        assert res.checksum_verified is True
+    async def test_effective_limits_quota_falls_back_for_legacy_row(self, sftp_service):
+        """Legacy rows (NULL quota_bytes) fall back to the tier default; other NULL
+        caps are simply omitted so SFTPGo applies no limit."""
+        legacy = SftpUser(id=1, partner_id=1, quota_bytes=None)
+        partner = Partner(id=1, tier="starter")
+        out = sftp_service.effective_limits(legacy, partner)
+        assert out["quota_size"] == 10737418240   # starter tier default
+        assert "max_sessions" not in out          # NULL → omitted

@@ -11,7 +11,7 @@ Date: May 09, 2026
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.services.partner_service import PartnerService
 from app.schemas.partner import PartnerCreateRequest, ApiKeyIssueRequest, ApiKeyRotateRequest, PartnerTier
@@ -139,6 +139,30 @@ class TestPartnerService:
             assert result_key.id == 6
             partner_service.api_key_repo.async_revoke_key.assert_called_once()
             partner_service.issue_api_key.assert_called_once()
+
+    async def test_rotate_api_key_gives_fresh_expiry(self, partner_service, mock_db):
+        """Rotating an expiring/expired key must NOT inherit its stale expires_at,
+        otherwise the new key is born already-expired and fails validation."""
+        created = datetime.utcnow() - timedelta(days=180)
+        already_expired = datetime.utcnow() - timedelta(days=1)  # source key already dead
+        mock_old_key = PartnerApiKey(
+            id=5, partner_id=10, label="Old", scopes=["search:read"],
+            rate_limit_rps=10, rate_limit_monthly=1000, is_active=True,
+            created_at=created, expires_at=already_expired,
+        )
+        partner_service.api_key_repo.async_get_by_id.return_value = mock_old_key
+
+        captured = {}
+        async def _fake_issue(db, request, current_admin=None, ip_address=None):
+            captured["expires_at"] = request.expires_at
+            return PartnerApiKey(id=6, partner_id=10), "new-plaintext"
+
+        with patch.object(partner_service, 'issue_api_key', side_effect=_fake_issue):
+            await partner_service.rotate_api_key(mock_db, ApiKeyRotateRequest(api_key_id=5))
+
+        # New key must expire in the FUTURE (not inherit the old past timestamp).
+        assert captured["expires_at"] is not None
+        assert captured["expires_at"] > datetime.utcnow(), "rotated key must have a future expiry"
 
     async def test_rotate_api_key_inactive(self, partner_service, mock_db):
         """Test rotation fails for already inactive key."""

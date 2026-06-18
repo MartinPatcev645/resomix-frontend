@@ -4,7 +4,7 @@ import uuid
 import logging
 import calendar
 from typing import List, Optional, Tuple, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 import redis.asyncio as aioredis
@@ -382,14 +382,27 @@ class PartnerService:
             # 1. Revoke old key (commit=False)
             await self.api_key_repo.async_revoke_key(db, old_key.id, "Rotated by admin", commit=False)
 
-            # 2. Issue new key with same parameters
+            # 2. Decide the new key's expiry. Copying the old key's absolute
+            #    expires_at would make the rotated key born already-expired — and the
+            #    usual reason to rotate is an expiring key. So: honour an explicit
+            #    request.expires_at; otherwise preserve the original VALIDITY WINDOW
+            #    starting from now; if the old key never expired, keep it non-expiring.
+            new_expires_at = request.expires_at
+            if new_expires_at is None and old_key.expires_at is not None:
+                created = old_key.created_at or datetime.utcnow()
+                window = old_key.expires_at - created
+                if window.total_seconds() <= 0:  # source key already expired
+                    window = timedelta(days=180)
+                new_expires_at = datetime.utcnow() + window
+
+            # 3. Issue new key with the same config + the fresh expiry
             issue_request = ApiKeyIssueRequest(
                 partner_id=old_key.partner_id,
                 label=request.label or old_key.label,
                 scopes=old_key.scopes,
                 rate_limit_rps=old_key.rate_limit_rps,
                 rate_limit_monthly=old_key.rate_limit_monthly,
-                expires_at=old_key.expires_at,
+                expires_at=new_expires_at,
             )
 
             if current_admin:
