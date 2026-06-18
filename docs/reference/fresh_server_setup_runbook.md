@@ -495,6 +495,10 @@ SIMILARITY_TOP_K_DESCRIPTION=Number of similar tracks to return
 # ── Embedding server (the dedicated GPU box) ────────────────────────
 EMBED_SERVER=<GPU_EMBED_SERVER_URL>                 # ⚠️ e.g. http://1.2.3.4:8005
 EMBED_ENDPOINT=/get_all_embeddings
+# Max tracks embedded concurrently across ALL partner jobs (global cap on
+# simultaneous EMBED_SERVER requests; 1 track = 1 GPU request). Higher = faster
+# ingestion but more GPU/box load. Optional — defaults to 8 if unset.
+MAX_CONCURRENT_EMBEDS=15
 
 # ── FAISS indexes / catalogs (⚠️ remapped; files must be imported) ──
 MAEST_INDEX=/srv/resomix/data/embeddings/maest_index.index
@@ -1014,11 +1018,53 @@ server {
 EOF
 ```
 
+### F5b. Developer docs (api-docs) — static SPA
+
+The `resomix_docs` site is a Vite/React **single-page app** with clean path-based
+URLs (no `#`). That means nginx must serve `index.html` for any unknown path
+(`/playground`, `/api-ref`, `/quickstart`, …) so the client router can take over —
+otherwise a direct hit or refresh on a deep link 404s. The `try_files … /index.html`
+line below is what makes the clean URLs work; do not omit it.
+
+```bash
+# Build the SPA (on the build box or here) and publish the static output:
+#   cd resomix_docs && npm ci && npm run build      # produces ./dist
+sudo mkdir -p /var/www/api-docs
+sudo rsync -a --delete /path/to/resomix_docs/dist/ /var/www/api-docs/
+sudo chown -R www-data:www-data /var/www/api-docs
+
+sudo tee /etc/nginx/sites-available/api-docs >/dev/null <<'EOF'
+server {
+    listen 80;
+    server_name api-docs.resomix.com;
+    root /var/www/api-docs;
+    index index.html;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer-when-downgrade always;
+
+    # Long-cache fingerprinted assets; never cache the HTML shell.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    location = /index.html { add_header Cache-Control "no-cache"; }
+
+    # SPA fallback — REQUIRED for clean (hash-less) URLs. sitemap.xml / robots.txt
+    # are real files in dist/ and are served directly before this fallback.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+```
+
 ### F6. Enable vhosts + issue certificates
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/staging-bserver /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/staging-media   /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/api-docs        /etc/nginx/sites-enabled/
 # sudo ln -s /etc/nginx/sites-available/staging-sftp-admin /etc/nginx/sites-enabled/   # only if F5
 
 # (optional) drop nginx's default welcome site so it doesn't shadow your vhosts
@@ -1027,7 +1073,7 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 
 # Certbot rewrites each vhost to add the 443 block + HTTP→HTTPS redirect.
-sudo certbot --nginx -d staging-bserver.resomix.com -d staging-media.resomix.com
+sudo certbot --nginx -d staging-bserver.resomix.com -d staging-media.resomix.com -d api-docs.resomix.com
 # add  -d staging-sftp-admin.resomix.com  to the line above if you enabled F5
 
 sudo certbot renew --dry-run        # confirm auto-renewal works

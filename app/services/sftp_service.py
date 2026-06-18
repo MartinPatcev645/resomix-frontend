@@ -37,13 +37,30 @@ logger = logging.getLogger(__name__)
 class SftpService:
     """Service for handling SFTP provisioning and lifecycle."""
 
-    # Storage quota tier mapping (in bytes)
+    # Storage quota tier mapping (in bytes). 0 = unlimited.
     QUOTA_MAP: Dict[str, int] = {
         "sandbox": 1073741824,      # 1 GB
         "starter": 10737418240,     # 10 GB
         "growth": 53687091200,      # 50 GB
         "enterprise": 0             # 0 = Unlimited
     }
+
+    # Per-tier defaults for the remaining SFTP limits. These are *defaults* — an
+    # admin can override any of them per-account at provision time. 0 = unlimited
+    # (SFTPGo convention). Bandwidth is KB/s; data-transfer is MB; sessions is a
+    # concurrency count.
+    PLAN_LIMITS: Dict[str, Dict[str, int]] = {
+        "sandbox":    {"quota_files": 0, "upload_bandwidth": 2048, "download_bandwidth": 4096, "max_sessions": 2,  "upload_data_transfer": 0, "download_data_transfer": 0, "total_data_transfer": 0},
+        "starter":    {"quota_files": 0, "upload_bandwidth": 0,    "download_bandwidth": 0,    "max_sessions": 5,  "upload_data_transfer": 0, "download_data_transfer": 0, "total_data_transfer": 0},
+        "growth":     {"quota_files": 0, "upload_bandwidth": 0,    "download_bandwidth": 0,    "max_sessions": 10, "upload_data_transfer": 0, "download_data_transfer": 0, "total_data_transfer": 0},
+        "enterprise": {"quota_files": 0, "upload_bandwidth": 0,    "download_bandwidth": 0,    "max_sessions": 0,  "upload_data_transfer": 0, "download_data_transfer": 0, "total_data_transfer": 0},
+    }
+
+    # The non-quota limit columns, in the order they map to SFTPGo user fields.
+    LIMIT_FIELDS = (
+        "quota_files", "upload_bandwidth", "download_bandwidth", "max_sessions",
+        "upload_data_transfer", "download_data_transfer", "total_data_transfer",
+    )
 
     def __init__(self):
         self.partner_repo = PartnerRepository()
@@ -52,6 +69,43 @@ class SftpService:
     def get_quota_bytes(self, tier: str) -> int:
         """Get the storage quota limit in bytes for a given tier."""
         return self.QUOTA_MAP.get(tier, self.QUOTA_MAP["sandbox"])
+
+    def plan_defaults(self, tier: str) -> Dict[str, int]:
+        """Full set of default limits for a tier (quota + bandwidth/sessions/transfer)."""
+        base = dict(self.PLAN_LIMITS.get(tier, self.PLAN_LIMITS["sandbox"]))
+        base["quota_bytes"] = self.get_quota_bytes(tier)
+        return base
+
+    def resolve_sftp_limits(self, tier: str, request: "SftpProvisionRequest") -> Dict[str, int]:
+        """Merge a tier's plan defaults with the admin's per-account overrides.
+
+        An override wins only when explicitly provided (not None); otherwise the
+        tier default applies. Returns the resolved values to persist + send to SFTPGo.
+        """
+        defaults = self.plan_defaults(tier)
+        resolved: Dict[str, int] = {
+            "quota_bytes": request.quota_bytes if request.quota_bytes is not None else defaults["quota_bytes"],
+        }
+        for field in self.LIMIT_FIELDS:
+            override = getattr(request, field, None)
+            resolved[field] = override if override is not None else defaults[field]
+        return resolved
+
+    def effective_limits(self, sftp_user: "SftpUser", partner) -> Dict[str, int]:
+        """Limits to hand SFTPGo for an existing account (used by the auth hook).
+
+        Reads the persisted per-account columns; for quota it falls back to the
+        tier default if the column is NULL (legacy rows), and other limits are
+        simply omitted when NULL so SFTPGo applies no cap.
+        """
+        tier = partner.tier if partner else "sandbox"
+        quota = sftp_user.quota_bytes if sftp_user.quota_bytes is not None else self.get_quota_bytes(tier)
+        out: Dict[str, int] = {"quota_size": quota}
+        for field in self.LIMIT_FIELDS:
+            val = getattr(sftp_user, field, None)
+            if val is not None:
+                out[field] = val
+        return out
 
     async def provision_partner_sftp(
         self,
@@ -91,6 +145,11 @@ class SftpService:
             if clashing:
                 raise ValueError(f"SFTP username '{username}' is already in use")
 
+            # 4b. Resolve the effective SFTP limits = tier plan defaults overlaid
+            #     with any admin overrides on the request. Persisted on the row so
+            #     the auth hook and any retry use exactly these values.
+            limits = self.resolve_sftp_limits(partner.tier, request)
+
             # 5. Create SftpUser row (sftp_provisioned_at=None)
             sftp_user_data = {
                 "partner_id": partner.id,
@@ -102,7 +161,8 @@ class SftpService:
                 "public_key": request.public_key if request.use_public_key else None,
                 "allowed_ip": request.allowed_ip,
                 "is_active": True,
-                "label_id": None
+                "label_id": None,
+                **limits,  # quota_bytes + quota_files/bandwidth/sessions/transfer
             }
 
             sftp_user = await sftp_user_repo.async_create(db, commit=False, **sftp_user_data)
@@ -111,13 +171,12 @@ class SftpService:
             await db.flush()
 
             # 7. Call Hetzner provisioning (REQUIRED — failure aborts the transaction)
-            quota_bytes = self.get_quota_bytes(partner.tier)
             result = await self._call_hetzner_provisioning(
                 partner.id,
                 username,
                 pwd_hash,
                 home_dir,
-                quota_bytes,
+                limits,
                 request.use_public_key,
                 request.public_key if request.use_public_key else None,
                 password=request.password,  # PLAINTEXT — what SFTPGo actually hashes/stores
@@ -150,7 +209,7 @@ class SftpService:
 
     async def _call_hetzner_provisioning(
         self, partner_id: int, username: str, password_hash: Optional[str], home_dir: str,
-        quota_bytes: int, use_public_key: bool, public_key: Optional[str],
+        limits: Dict[str, int], use_public_key: bool, public_key: Optional[str],
         password: Optional[str] = None,
     ) -> dict:
         """Call the internal Hetzner provisioning endpoint.
@@ -158,6 +217,8 @@ class SftpService:
         ``password`` is the PLAINTEXT password — SFTPGo hashes it itself, so this
         is what the partner actually logs in with. ``password_hash`` (bcrypt) is
         sent only for records/back-compat; SFTPGo cannot use it as a login secret.
+        ``limits`` carries the resolved per-account caps (quota + bandwidth/sessions/
+        transfer); SFTPGo applies them to the created user.
         """
         if not settings.hetzner_sftp_provision_url:
             logger.warning("hetzner_sftp_provision_url is not set. Skipping Hetzner provisioning.")
@@ -171,7 +232,14 @@ class SftpService:
             "password": password,
             "password_hash": password_hash,
             "home_dir": home_dir,
-            "quota_bytes": quota_bytes,
+            "quota_bytes": limits.get("quota_bytes", 0),
+            "quota_files": limits.get("quota_files"),
+            "upload_bandwidth": limits.get("upload_bandwidth"),
+            "download_bandwidth": limits.get("download_bandwidth"),
+            "max_sessions": limits.get("max_sessions"),
+            "upload_data_transfer": limits.get("upload_data_transfer"),
+            "download_data_transfer": limits.get("download_data_transfer"),
+            "total_data_transfer": limits.get("total_data_transfer"),
             "use_public_key": use_public_key,
             "public_key": public_key
         }
@@ -264,15 +332,18 @@ class SftpService:
                 raise ValueError("SFTP account is already fully provisioned")
                 
             partner = await self.partner_repo.async_get_by_id(db, partner_id)
-            quota_bytes = self.get_quota_bytes(partner.tier)
-            
+            # Reuse the limits chosen at provision time (persisted on the row), with
+            # a tier fallback for legacy rows that predate the limit columns.
+            limits = self.effective_limits(sftp_user, partner)
+            limits["quota_bytes"] = limits.pop("quota_size")
+
             try:
                 await self._call_hetzner_provisioning(
-                    partner.id, 
-                    sftp_user.username, 
-                    sftp_user.password_hash, 
-                    sftp_user.sftp_home_dir or sftp_user.home_directory, 
-                    quota_bytes,
+                    partner.id,
+                    sftp_user.username,
+                    sftp_user.password_hash,
+                    sftp_user.sftp_home_dir or sftp_user.home_directory,
+                    limits,
                     sftp_user.use_public_key,
                     sftp_user.public_key
                 )

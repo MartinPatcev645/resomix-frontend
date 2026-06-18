@@ -183,6 +183,18 @@ class SftpProvisionRequest(BaseModel):
     public_key: Optional[str] = None
     allowed_ip: Optional[str] = None
 
+    # ── Optional per-account SFTP limits (override the plan/tier defaults) ──────
+    # When omitted (None), the default for the partner's tier is used. ``0`` means
+    # "unlimited" (SFTPGo convention). Units are noted per field.
+    quota_bytes: Optional[int] = Field(default=None, ge=0, description="Storage quota in bytes (0 = unlimited).")
+    quota_files: Optional[int] = Field(default=None, ge=0, description="Max number of files (0 = unlimited).")
+    upload_bandwidth: Optional[int] = Field(default=None, ge=0, description="Upload bandwidth cap in KB/s (0 = unlimited).")
+    download_bandwidth: Optional[int] = Field(default=None, ge=0, description="Download bandwidth cap in KB/s (0 = unlimited).")
+    max_sessions: Optional[int] = Field(default=None, ge=0, description="Max concurrent sessions (0 = unlimited).")
+    upload_data_transfer: Optional[int] = Field(default=None, ge=0, description="Total upload allowed in MB (0 = unlimited).")
+    download_data_transfer: Optional[int] = Field(default=None, ge=0, description="Total download allowed in MB (0 = unlimited).")
+    total_data_transfer: Optional[int] = Field(default=None, ge=0, description="Total combined transfer in MB (0 = unlimited).")
+
     @model_validator(mode="after")
     def validate_public_key(self):
         if self.use_public_key and not self.public_key:
@@ -202,6 +214,18 @@ class SftpProvisionResponse(BaseModel):
     provisioned_at: datetime
 
 
+class SftpLimits(BaseModel):
+    """The per-account SFTP caps currently in effect (for the admin UI to show/edit)."""
+    quota_bytes: Optional[int] = None
+    quota_files: Optional[int] = None
+    upload_bandwidth: Optional[int] = None
+    download_bandwidth: Optional[int] = None
+    max_sessions: Optional[int] = None
+    upload_data_transfer: Optional[int] = None
+    download_data_transfer: Optional[int] = None
+    total_data_transfer: Optional[int] = None
+
+
 class SftpStatusDetail(BaseModel):
     """SFTP status details matching frontend expectations."""
     provisioned: bool
@@ -209,6 +233,7 @@ class SftpStatusDetail(BaseModel):
     port: Optional[int] = None
     username: Optional[str] = None
     last_provisioned_at: Optional[datetime] = None
+    limits: Optional[SftpLimits] = None
 
 
 class SftpStatusResponse(APIResponse):

@@ -50,11 +50,13 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
         # But this basic check prevents invalid IPs from passing the hook at all.
     
     partner_id = sftp_user.partner_id
-    
-    # Map tier to quota bytes via service
+
+    # Resolve the per-account SFTP limits (quota + bandwidth/sessions/transfer)
+    # chosen at provision time and persisted on the row. Quota falls back to the
+    # tier default for legacy rows; other caps are simply absent when unset.
     partner = sftp_user.partner
-    quota_size = sftp_service.get_quota_bytes(partner.tier) if partner else 1073741824
-    
+    limits = sftp_service.effective_limits(sftp_user, partner)
+
     # The home dir is stamped at provision time from the partner UUID slug
     # (``partners/<slug>``). Always prefer the stored value; only fall back to a
     # slug-derived path if it is somehow missing.
@@ -84,7 +86,6 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
             "/live": ["list", "download", "upload", "delete"],
             "/test": ["list", "download", "upload", "delete"],
         },
-        "quota_size": quota_size,
         "filters": {
             "file_patterns": [
                 {
@@ -105,6 +106,10 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
             ]
         },
     }
+
+    # Apply the resolved limits (quota_size + any bandwidth/sessions/transfer caps).
+    # Keys are SFTPGo user fields; unset caps are simply absent (no limit).
+    response.update(limits)
 
     if sftp_user.allowed_ip:
         response["filters"]["allowed_ip"] = [ip.strip() for ip in sftp_user.allowed_ip.split(",")]

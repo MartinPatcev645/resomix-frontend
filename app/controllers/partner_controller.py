@@ -34,6 +34,7 @@ from app.schemas.partner import (
     SftpProvisionResponse,
     SftpStatusResponse,
     SftpStatusDetail,
+    SftpLimits,
 )
 from app.utils.response_utils import format_response
 from app.services.sftp_service import SftpService
@@ -414,7 +415,17 @@ class PartnerController:
                 host=settings.sftp_server_host,
                 port=settings.sftp_server_port,
                 username=sftp_user.username,
-                last_provisioned_at=sftp_user.sftp_provisioned_at
+                last_provisioned_at=sftp_user.sftp_provisioned_at,
+                limits=SftpLimits(
+                    quota_bytes=sftp_user.quota_bytes,
+                    quota_files=sftp_user.quota_files,
+                    upload_bandwidth=sftp_user.upload_bandwidth,
+                    download_bandwidth=sftp_user.download_bandwidth,
+                    max_sessions=sftp_user.max_sessions,
+                    upload_data_transfer=sftp_user.upload_data_transfer,
+                    download_data_transfer=sftp_user.download_data_transfer,
+                    total_data_transfer=sftp_user.total_data_transfer,
+                ),
             )
             response_data = SftpStatusResponse(success=True, data=detail)
             
@@ -456,7 +467,17 @@ class PartnerController:
                 host=settings.sftp_server_host,
                 port=settings.sftp_server_port,
                 username=sftp_user.username,
-                last_provisioned_at=sftp_user.sftp_provisioned_at
+                last_provisioned_at=sftp_user.sftp_provisioned_at,
+                limits=SftpLimits(
+                    quota_bytes=sftp_user.quota_bytes,
+                    quota_files=sftp_user.quota_files,
+                    upload_bandwidth=sftp_user.upload_bandwidth,
+                    download_bandwidth=sftp_user.download_bandwidth,
+                    max_sessions=sftp_user.max_sessions,
+                    upload_data_transfer=sftp_user.upload_data_transfer,
+                    download_data_transfer=sftp_user.download_data_transfer,
+                    total_data_transfer=sftp_user.total_data_transfer,
+                ),
             )
             response_data = SftpStatusResponse(success=True, data=detail)
             

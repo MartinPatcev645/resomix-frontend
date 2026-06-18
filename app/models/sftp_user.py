@@ -121,6 +121,44 @@ class SftpUser(Base):
         comment="When Hetzner SFTPGo provisioning succeeded; NULL = pending (W2-4)",
     )
 
+    # ── Per-account SFTP limits (W-SFTP-limits) ───────────────────────────────
+    # Resolved at provision time from the partner's plan/tier defaults plus any
+    # admin overrides, then returned to SFTPGo by the auth hook. NULL means "not
+    # customised" — the auth hook falls back to the tier default (quota) or simply
+    # omits the limit (bandwidth/sessions/transfer). ``0`` = unlimited (SFTPGo).
+    quota_bytes: Mapped[Optional[int]] = mapped_column(
+        mysql.BIGINT(unsigned=True), nullable=True,
+        comment="Storage quota in bytes; NULL = use tier default, 0 = unlimited",
+    )
+    quota_files: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Max file count; NULL = unset, 0 = unlimited",
+    )
+    upload_bandwidth: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Upload bandwidth cap in KB/s; NULL = unset, 0 = unlimited",
+    )
+    download_bandwidth: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Download bandwidth cap in KB/s; NULL = unset, 0 = unlimited",
+    )
+    max_sessions: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Max concurrent sessions; NULL = unset, 0 = unlimited",
+    )
+    upload_data_transfer: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Total upload allowed in MB; NULL = unset, 0 = unlimited",
+    )
+    download_data_transfer: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Total download allowed in MB; NULL = unset, 0 = unlimited",
+    )
+    total_data_transfer: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), nullable=True,
+        comment="Total combined transfer in MB; NULL = unset, 0 = unlimited",
+    )
+
     # ── End Provisioning Fields ───────────────────────────────────────────────
 
     # User ID: Link to platform user (RBAC Part 1)
