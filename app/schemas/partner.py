@@ -226,6 +226,30 @@ class SftpLimits(BaseModel):
     total_data_transfer: Optional[int] = None
 
 
+class SftpLimitsUpdateRequest(BaseModel):
+    """Update the SFTP caps of an already-provisioned partner. All fields optional —
+    only the ones you send are changed; the rest keep their current values.
+    Same units as provisioning (quota_bytes = bytes, bandwidth = KB/s, transfer = MB).
+    0 = unlimited."""
+    quota_bytes: Optional[int] = Field(default=None, ge=0)
+    quota_files: Optional[int] = Field(default=None, ge=0)
+    upload_bandwidth: Optional[int] = Field(default=None, ge=0)
+    download_bandwidth: Optional[int] = Field(default=None, ge=0)
+    max_sessions: Optional[int] = Field(default=None, ge=0)
+    upload_data_transfer: Optional[int] = Field(default=None, ge=0)
+    download_data_transfer: Optional[int] = Field(default=None, ge=0)
+    total_data_transfer: Optional[int] = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def at_least_one(self):
+        if all(getattr(self, f) is None for f in (
+            "quota_bytes", "quota_files", "upload_bandwidth", "download_bandwidth",
+            "max_sessions", "upload_data_transfer", "download_data_transfer", "total_data_transfer",
+        )):
+            raise ValueError("Provide at least one limit to update")
+        return self
+
+
 class SftpStatusDetail(BaseModel):
     """SFTP status details matching frontend expectations."""
     provisioned: bool

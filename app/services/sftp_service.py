@@ -8,19 +8,11 @@ quota management, and status reporting.
 """
 
 import logging
-from typing import Optional, Dict, NamedTuple, Any
+from typing import Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-import asyncio
-from pathlib import Path
-import hashlib
 
-class BatchValidationResult(NamedTuple):
-    valid: bool
-    error: Optional[str]
-    csv_path: Optional[Path]
-    checksum_verified: bool
 
 from app.repositories.sftp_user_repository import sftp_user_repo
 from app.repositories.partner_repository import PartnerRepository
@@ -386,73 +378,92 @@ class SftpService:
             logger.error(f"Error retrying SFTP provisioning: {e}")
             raise
 
-    async def validate_incoming_batch(self, partner_id: int, batch_path: str) -> BatchValidationResult:
-        """
-        Validates an incoming batch folder before ingestion begins.
-        """
-        # Step 1 — Directory sanity check
-        folder = Path(batch_path)
-        if not folder.exists() or not folder.is_dir():
-            return BatchValidationResult(valid=False, error="incoming directory not found", csv_path=None, checksum_verified=False)
-            
-        # Step 2 — Find the CSV
-        csv_files = list(folder.glob("*.csv"))
-        if not csv_files:
-            return BatchValidationResult(valid=False, error="no CSV manifest found", csv_path=None, checksum_verified=False)
-        if len(csv_files) > 1:
-            return BatchValidationResult(valid=False, error="ambiguous batch: multiple CSV files", csv_path=None, checksum_verified=False)
-            
-        manifest_path = csv_files[0]
-        
-        # Step 3 — Find the checksum file
-        checksum_file = folder / f"{manifest_path.stem}.sha256"
-        checksum_verified = False
-        
-        if checksum_file.exists():
-            # Step 4 — Checksum verification (when present)
-            try:
-                expected_hash_line = checksum_file.read_text().strip()
-                # Format is typically "hash  filename"
-                expected_hash = expected_hash_line.split()[0]
-                
-                # Compute hashlib.sha256 in chunks
-                sha256_hash = hashlib.sha256()
-                with open(manifest_path, "rb") as f:
-                    for byte_block in iter(lambda: f.read(65536), b""):
-                        sha256_hash.update(byte_block)
-                actual_hash = sha256_hash.hexdigest()
-                
-                if actual_hash != expected_hash:
-                    return BatchValidationResult(valid=False, error="checksum mismatch — file may be corrupted or truncated", csv_path=None, checksum_verified=False)
-                
-                checksum_verified = True
-            except Exception as e:
-                logger.error(f"Error reading checksum file: {e}")
-                return BatchValidationResult(valid=False, error="error reading checksum file", csv_path=None, checksum_verified=False)
-        else:
-            logger.warning(f"No checksum file found for {manifest_path.name}. Proceeding without verification.")
-            
-            # Step 5 — Partial upload detection
-            try:
-                initial_size = manifest_path.stat().st_size
-                await asyncio.sleep(0.5)
-                final_size = manifest_path.stat().st_size
-                if initial_size != final_size:
-                    return BatchValidationResult(valid=False, error="file still uploading — retry in 30 seconds", csv_path=None, checksum_verified=False)
-            except Exception as e:
-                return BatchValidationResult(valid=False, error="error checking file size", csv_path=None, checksum_verified=False)
+    async def update_sftp_limits(
+        self,
+        db: AsyncSession,
+        partner_id: int,
+        request: "SftpLimitsUpdateRequest",
+        current_admin: Optional[User] = None,
+        ip_address: Optional[str] = None,
+    ) -> SftpUser:
+        """Change the SFTP caps of an already-provisioned partner.
 
-        # Step 6 — CSV header validation
+        Only the fields present on ``request`` are changed; the rest keep their
+        current values. The new values are persisted (so the auth hook serves them
+        on the next connection) and pushed to SFTPGo immediately on a best-effort
+        basis (so quota tracking / active limits update without waiting for reconnect).
+        """
         try:
-            with open(manifest_path, "r", encoding='utf-8-sig') as f:
-                first_line = f.readline().strip()
-                if not first_line:
-                    return BatchValidationResult(valid=False, error="empty CSV file", csv_path=None, checksum_verified=False)
-                    
-                headers = [h.strip().lower() for h in first_line.split(",")]
-                if "isrc" not in headers or "title" not in headers:
-                    return BatchValidationResult(valid=False, error="invalid CSV headers — expected at least: isrc, title", csv_path=None, checksum_verified=False)
+            sftp_user = await sftp_user_repo.get_by_partner_id(db, partner_id)
+            if not sftp_user:
+                raise ValueError(f"SFTP user for partner {partner_id} not found")
+
+            fields = ("quota_bytes",) + self.LIMIT_FIELDS
+            before = {f: getattr(sftp_user, f) for f in fields}
+
+            # Overlay only the provided fields onto the current values.
+            changed: Dict[str, int] = {}
+            for f in fields:
+                new_val = getattr(request, f, None)
+                if new_val is not None and new_val != getattr(sftp_user, f):
+                    setattr(sftp_user, f, new_val)
+                    changed[f] = new_val
+
+            if not changed:
+                return sftp_user  # nothing actually changed
+
+            db.add(sftp_user)
+            await db.flush()
+
+            # Best-effort: push the changed caps straight to SFTPGo so they apply
+            # now (not just on the partner's next login). DB is the source of truth;
+            # if SFTPGo is unreachable the auth hook still serves the new caps next
+            # connect, so we log and continue rather than failing the update.
+            try:
+                await self._call_hetzner_update_limits(sftp_user.username, changed)
+            except Exception as push_err:
+                logger.warning(
+                    "SFTP limits saved but live SFTPGo push failed for partner %s (will apply on next connect): %s",
+                    partner_id, push_err,
+                )
+
+            if current_admin:
+                await self.admin_log_service.log_operation(
+                    db=db,
+                    admin_user_id=current_admin.id,
+                    action="partner.sftp_update_limits",
+                    target_type="sftp_user",
+                    target_id=str(sftp_user.id),
+                    before_state={k: before[k] for k in changed},
+                    after_state=changed,
+                    ip_address=ip_address,
+                )
+
+            await db.commit()
+            await db.refresh(sftp_user)
+            return sftp_user
+
         except Exception as e:
-            return BatchValidationResult(valid=False, error=f"error reading CSV headers: {e}", csv_path=None, checksum_verified=False)
-            
-        return BatchValidationResult(valid=True, error=None, csv_path=manifest_path, checksum_verified=checksum_verified)
+            await db.rollback()
+            logger.error(f"Error updating SFTP limits for partner {partner_id}: {e}")
+            raise
+
+    async def _call_hetzner_update_limits(self, username: str, limits: Dict[str, int]) -> dict:
+        """Push changed SFTP caps to the media/SFTPGo update endpoint (best-effort)."""
+        base_url = settings.hetzner_sftp_provision_url
+        if not base_url:
+            logger.warning("hetzner_sftp_provision_url not set — skipping live SFTPGo limits push for %s", username)
+            return {"skipped": True}
+
+        # Derive the sibling endpoint: .../provision-sftp-user -> .../update-sftp-user-limits
+        update_url = base_url.rstrip("/").rsplit("/provision-sftp-user", 1)[0] + "/update-sftp-user-limits"
+
+        import httpx
+
+        payload = {"username": username, **limits}
+        headers = {"Authorization": f"Bearer {settings.hetzner_internal_api_key}"}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(update_url, json=payload, headers=headers)
+            if resp.status_code not in (200, 201):
+                raise RuntimeError(f"SFTPGo limits update returned {resp.status_code}: {resp.text}")
+            return resp.json()

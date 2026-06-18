@@ -31,6 +31,7 @@ from app.schemas.partner import (
     SftpProvisionRequest,
     SftpProvisionResponse,
     SftpStatusResponse,
+    SftpLimitsUpdateRequest,
 )
 
 router = APIRouter(
@@ -209,6 +210,23 @@ async def provision_sftp(
     _: User = Depends(require_permission("partners:manage"))
 ) -> JSONResponse:
     return await partner_controller.provision_partner_sftp(db, request, payload, current_admin=current_admin)
+
+
+@router.patch(
+    "/{partner_id}/sftp/limits",
+    response_model=SftpStatusResponse,
+    summary="Update SFTP Limits",
+    description="Change quota / bandwidth / session / transfer caps for a provisioned partner. Only the fields you send are changed.",
+)
+async def update_sftp_limits(
+    request: Request,
+    partner_id: int,
+    payload: SftpLimitsUpdateRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("partners:manage"))
+) -> JSONResponse:
+    return await partner_controller.update_partner_sftp_limits(db, request, partner_id, payload, current_admin=current_admin)
 
 
 @router.get(

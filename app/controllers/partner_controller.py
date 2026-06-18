@@ -35,6 +35,7 @@ from app.schemas.partner import (
     SftpStatusResponse,
     SftpStatusDetail,
     SftpLimits,
+    SftpLimitsUpdateRequest,
 )
 from app.utils.response_utils import format_response
 from app.services.sftp_service import SftpService
@@ -503,4 +504,52 @@ class PartnerController:
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=jsonable_encoder(format_response(success=False, error="Failed to retry SFTP provisioning")),
+            )
+
+    async def update_partner_sftp_limits(
+        self,
+        db: AsyncSession,
+        request: Request,
+        partner_id: int,
+        payload: "SftpLimitsUpdateRequest",
+        current_admin: Optional[User] = None,
+    ) -> JSONResponse:
+        """Update the SFTP caps (quota/bandwidth/sessions/transfer) for a partner."""
+        ip_address = request.client.host if request and request.client else None
+        try:
+            sftp_user = await self.sftp_service.update_sftp_limits(
+                db, partner_id, payload, current_admin=current_admin, ip_address=ip_address
+            )
+            detail = SftpStatusDetail(
+                provisioned=sftp_user.sftp_provisioned_at is not None,
+                host=settings.sftp_server_host,
+                port=settings.sftp_server_port,
+                username=sftp_user.username,
+                last_provisioned_at=sftp_user.sftp_provisioned_at,
+                limits=SftpLimits(
+                    quota_bytes=sftp_user.quota_bytes,
+                    quota_files=sftp_user.quota_files,
+                    upload_bandwidth=sftp_user.upload_bandwidth,
+                    download_bandwidth=sftp_user.download_bandwidth,
+                    max_sessions=sftp_user.max_sessions,
+                    upload_data_transfer=sftp_user.upload_data_transfer,
+                    download_data_transfer=sftp_user.download_data_transfer,
+                    total_data_transfer=sftp_user.total_data_transfer,
+                ),
+            )
+            response_data = SftpStatusResponse(success=True, data=detail)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder(response_data.model_dump()),
+            )
+        except ValueError as e:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content=jsonable_encoder(format_response(success=False, error=str(e))),
+            )
+        except Exception as e:
+            logger.error(f"Failed to update SFTP limits: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=jsonable_encoder(format_response(success=False, error="Failed to update SFTP limits")),
             )
