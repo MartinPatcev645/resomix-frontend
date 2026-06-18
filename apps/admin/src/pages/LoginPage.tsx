@@ -69,10 +69,11 @@ const LoginPage: React.FC = () => {
             <Input 
               prefix={<User className="text-[var(--color-text-tertiary)] mr-2" size={16} />} 
               placeholder="admin@resomix.com" 
+              autoComplete="username"
               className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300"
             />
           </Form.Item>
-
+ 
           <Form.Item
             name="password"
             label={<span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)]">Password</span>}
@@ -81,6 +82,7 @@ const LoginPage: React.FC = () => {
             <Input.Password
               prefix={<Lock className="text-[var(--color-text-tertiary)] mr-2" size={16} />}
               placeholder="••••••••"
+              autoComplete="current-password"
               className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300"
             />
           </Form.Item>
