@@ -7,12 +7,14 @@ import {
   getSystemLogs,
   getSystemLogDetail,
   getSystemLogsStats,
+  getSystemLogsOverview,
   getOperationLogs,
   getOperationLogDetail,
   type WebhookDeliveryLog,
   type PromoCreateRequest,
   type SystemLog,
   type SystemLogsStats,
+  type SystemOverviewStats,
   type OperationLog,
   type ListSystemLogsParams,
   type ListOperationLogsParams,
@@ -31,6 +33,10 @@ export function useAdminLogs() {
   const [systemLogsStats, setSystemLogsStats] = useState<SystemLogsStats | null>(null);
   const [selectedSystemLog, setSelectedSystemLog] = useState<SystemLog | null>(null);
   const [systemLogDetailLoading, setSystemLogDetailLoading] = useState(false);
+
+  // System Overview State
+  const [systemOverview, setSystemOverview] = useState<SystemOverviewStats | null>(null);
+  const [systemOverviewLoading, setSystemOverviewLoading] = useState(false);
 
   // Operation Logs State
   const [operationLogs, setOperationLogs] = useState<OperationLog[]>([]);
@@ -149,6 +155,23 @@ export function useAdminLogs() {
     }
   }, []);
 
+  // Fetch System Logs Overview
+  const fetchSystemLogsOverview = useCallback(async (hours = 24) => {
+    setSystemOverviewLoading(true);
+    try {
+      const result = await getSystemLogsOverview(hours);
+      if (result && result.success) {
+        setSystemOverview(result.data);
+      } else {
+        message.error(result.error || 'Failed to load system logs overview');
+      }
+    } catch {
+      message.error('Failed to load system logs overview');
+    } finally {
+      setSystemOverviewLoading(false);
+    }
+  }, []);
+
   // Fetch Operation Logs
   const fetchOperationLogs = useCallback(async (params: ListOperationLogsParams) => {
     setOperationLogsLoading(true);
@@ -204,12 +227,15 @@ export function useAdminLogs() {
     systemLogsLoading,
     systemLogsPagination,
     systemLogsStats,
+    systemOverview,
+    systemOverviewLoading,
     selectedSystemLog,
     setSelectedSystemLog,
     systemLogDetailLoading,
     fetchSystemLogs,
     fetchSystemLogDetail,
     fetchSystemLogsStats,
+    fetchSystemLogsOverview,
 
     // Operation Logs
     operationLogs,

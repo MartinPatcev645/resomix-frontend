@@ -31,6 +31,40 @@ export interface SystemLogsStats {
   period_hours: number;
 }
 
+export interface SystemOverviewStats {
+  window_hours: number;
+  generated_at: string;
+  status: "healthy" | "degraded" | "critical";
+  system_logs: {
+    status: "healthy" | "degraded" | "critical";
+    total_all_time: number;
+    total_in_window: number;
+    error_count: number;
+    critical_count: number;
+    warning_count: number;
+    error_rate_percent: number;
+    by_level: Record<string, number>;
+    by_category: Record<string, number>;
+    avg_duration_ms: number;
+    slow_request_count: number;
+    recent_attention: SystemLog[];
+    timeseries: {
+      bucket: string;
+      total: number;
+      errors: number;
+      warnings: number;
+    }[];
+  };
+  operations: {
+    total_in_window: number;
+    active_admins: number;
+    top_actions: {
+      action: string;
+      count: number;
+    }[];
+  };
+}
+
 export interface ListSystemLogsParams {
   page?: number;
   page_size?: number;
@@ -146,6 +180,16 @@ export const getOperationLogDetail = async (logId: number): Promise<DetailRespon
   try {
     return await axiosWrapper(
       authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LOGS}/${logId}`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+export const getSystemLogsOverview = async (hours = 24): Promise<DetailResponse<SystemOverviewStats>> => {
+  try {
+    return await axiosWrapper(
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SYSTEM_LOGS_OVERVIEW, { params: { hours } })
     );
   } catch (error: any) {
     return handleApiError(error) as any;

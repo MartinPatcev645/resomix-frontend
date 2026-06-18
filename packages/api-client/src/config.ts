@@ -100,6 +100,7 @@ export interface ApiConfig {
     ADMIN_WEBHOOK_LOGS_RETRY: string;
     ADMIN_SYSTEM_LOGS: string;
     ADMIN_SYSTEM_LOGS_STATS: string;
+    ADMIN_SYSTEM_LOGS_OVERVIEW: string;
     ADMIN_OPERATION_LOGS: string;
     ADMIN_PARTNER_STRIPE_CHECKOUT: string;
     ADMIN_AUTH_LOGIN: string;
@@ -315,6 +316,7 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_WEBHOOK_LOGS_RETRY: "/api/v1/admin/partners/webhooks/logs/",
     ADMIN_SYSTEM_LOGS: "/api/v1/admin/logs",
     ADMIN_SYSTEM_LOGS_STATS: "/api/v1/admin/logs/stats",
+    ADMIN_SYSTEM_LOGS_OVERVIEW: "/api/v1/admin/logs/overview",
     ADMIN_OPERATION_LOGS: "/api/v1/admin/operation-logs",
     ADMIN_PARTNER_STRIPE_CHECKOUT: "/api/v1/admin/partners/",
     ADMIN_AUTH_LOGIN: "/api/v1/admin/auth/login",

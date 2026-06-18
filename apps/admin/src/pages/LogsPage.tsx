@@ -26,16 +26,42 @@ import {
   Eye, 
   Shield,
   Activity,
-  FileText,
-  Terminal
+  FileText
 } from 'lucide-react';
 import { useAdminLogs } from '@resomix/hooks';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+const renderJsonOrString = (val: any): string => {
+  if (val === null || val === undefined) {
+    return '';
+  }
+  if (typeof val === 'object') {
+    try {
+      return JSON.stringify(val, null, 2);
+    } catch {
+      return String(val);
+    }
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(val);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        // Fall through
+      }
+    }
+    return val;
+  }
+  return String(val);
+};
+
 function LogsPage() {
   const [activeTab, setActiveTab] = useState('1');
+  const [overviewHours, setOverviewHours] = useState<number>(24);
   const [, modalContextHolder] = Modal.useModal();
 
   // Filter forms
@@ -59,13 +85,14 @@ function LogsPage() {
     systemLogs,
     systemLogsLoading,
     systemLogsPagination,
-    systemLogsStats,
+    systemOverview,
+    systemOverviewLoading,
     selectedSystemLog,
     setSelectedSystemLog,
     systemLogDetailLoading,
     fetchSystemLogs,
     fetchSystemLogDetail,
-    fetchSystemLogsStats,
+    fetchSystemLogsOverview,
 
     // Operation Logs
     operationLogs,
@@ -89,10 +116,11 @@ function LogsPage() {
     page_size: 50,
   });
 
-  // Fetch stats on mount
+
+
   useEffect(() => {
-    fetchSystemLogsStats();
-  }, [fetchSystemLogsStats]);
+    fetchSystemLogsOverview(overviewHours);
+  }, [overviewHours, fetchSystemLogsOverview]);
 
   // Fetch logs when tab or filters change
   useEffect(() => {
@@ -408,72 +436,7 @@ function LogsPage() {
       ),
       children: (
         <div className="py-4">
-          {/* Stats widgets */}
-          {systemLogsStats && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card className="border-default rounded-xl shadow-sm bg-surface">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Text className="text-secondary text-xs font-semibold uppercase tracking-wider block">Total Log Events</Text>
-                    <Title level={3} className="!m-0 !mt-1 text-primary">{systemLogsStats.total_logs?.toLocaleString()}</Title>
-                  </div>
-                  <div className="p-2 bg-primary/5 text-primary rounded-lg">
-                    <Logs size={18} />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <Text className="text-secondary text-[11px]">Recorded in last {systemLogsStats.period_hours}h</Text>
-                </div>
-              </Card>
-
-              <Card className="border-default rounded-xl shadow-sm bg-surface">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Text className="text-secondary text-xs font-semibold uppercase tracking-wider block">System Error Rate</Text>
-                    <Title level={3} className={`!m-0 !mt-1 ${systemLogsStats.error_rate_percent > 5 ? 'text-error' : 'text-primary'}`}>
-                      {systemLogsStats.error_rate_percent?.toFixed(1)}%
-                    </Title>
-                  </div>
-                  <div className={`p-2 rounded-lg ${systemLogsStats.error_rate_percent > 5 ? 'bg-error/5 text-error' : 'bg-success/5 text-success'}`}>
-                    <Activity size={18} />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <Text className="text-secondary text-[11px]">{systemLogsStats.level_distribution?.ERROR || 0} error events logged</Text>
-                </div>
-              </Card>
-
-              <Card className="border-default rounded-xl shadow-sm bg-surface">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Text className="text-secondary text-xs font-semibold uppercase tracking-wider block">API Requests</Text>
-                    <Title level={3} className="!m-0 !mt-1 text-primary">{systemLogsStats.total_requests?.toLocaleString()}</Title>
-                  </div>
-                  <div className="p-2 bg-blue-500/5 text-blue-500 rounded-lg">
-                    <Terminal size={18} />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <Text className="text-secondary text-[11px]">HTTP endpoints hit</Text>
-                </div>
-              </Card>
-
-              <Card className="border-default rounded-xl shadow-sm bg-surface">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Text className="text-secondary text-xs font-semibold uppercase tracking-wider block">Failed Requests</Text>
-                    <Title level={3} className="!m-0 !mt-1 text-error">{systemLogsStats.error_requests?.toLocaleString()}</Title>
-                  </div>
-                  <div className="p-2 bg-error/5 text-error rounded-lg">
-                    <Activity size={18} />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <Text className="text-secondary text-[11px]">Returned 5xx server status</Text>
-                </div>
-              </Card>
-            </div>
-          )}
+          {/* Stats widgets removed in favor of Overview Dashboard */}
 
           {/* Search Filters */}
           <Card className="mb-6 bg-surface border-default shadow-sm rounded-xl overflow-hidden">
@@ -757,6 +720,254 @@ function LogsPage() {
         <Text className="text-secondary text-base">Observe system application traces, endpoint executions, and administrative operation audits.</Text>
       </div>
 
+      {/* System Health & Overview Dashboard Widget */}
+      <Card 
+        className="mb-8 border-default rounded-2xl shadow-sm overflow-hidden"
+        style={{
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 pb-4 border-b border-default">
+          <div>
+            <div className="flex items-center gap-2">
+              <Activity className="text-primary animate-pulse" size={20} />
+              <Text className="text-primary font-semibold text-base block">System Health & Overview</Text>
+            </div>
+            <Text className="text-secondary text-xs">Derived from system exceptions and admin activities in the selected window.</Text>
+          </div>
+          <div className="flex items-center gap-2 self-stretch lg:self-auto">
+            <Select 
+              value={overviewHours} 
+              onChange={(val) => setOverviewHours(val)}
+              className="w-40 h-9"
+            >
+              <Option value={1}>Last hour</Option>
+              <Option value={24}>Last 24 hours</Option>
+              <Option value={72}>Last 3 days</Option>
+              <Option value={168}>Last week</Option>
+              <Option value={720}>Last month</Option>
+              <Option value={2160}>Last 3 months</Option>
+              <Option value={4320}>Last 6 months</Option>
+              <Option value={8760}>Last year</Option>
+              <Option value={0}>All time</Option>
+            </Select>
+            <Button 
+              icon={<RotateCw size={14} className={systemOverviewLoading ? "animate-spin" : ""} />} 
+              onClick={() => fetchSystemLogsOverview(overviewHours)}
+              className="h-9 flex items-center justify-center"
+            />
+          </div>
+        </div>
+
+        {systemOverviewLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Spin size="large" tip="Loading system health overview..." />
+          </div>
+        ) : systemOverview ? (
+          <Row gutter={[20, 20]}>
+            {/* System Health Card */}
+            <Col xs={24} md={12} lg={6}>
+              <div className="p-5 rounded-xl bg-background-secondary border border-default h-full flex flex-col justify-between relative overflow-hidden">
+                {/* Glowing Accent Gradient Background */}
+                <div 
+                  className={`absolute top-0 right-0 w-32 h-32 rounded-full filter blur-[40px] opacity-20 -mr-10 -mt-10 ${
+                    systemOverview.status === 'healthy' ? 'bg-emerald-500' :
+                    systemOverview.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500'
+                  }`}
+                />
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-secondary text-xs font-semibold uppercase tracking-wider">Status</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full animate-ping ${
+                        systemOverview.status === 'healthy' ? 'bg-emerald-500' :
+                        systemOverview.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500'
+                      }`} />
+                      <span className={`w-2 h-2 rounded-full -ml-3.5 ${
+                        systemOverview.status === 'healthy' ? 'bg-emerald-500' :
+                        systemOverview.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500'
+                      }`} />
+                      <Tag color={
+                        systemOverview.status === 'healthy' ? 'success' :
+                        systemOverview.status === 'degraded' ? 'warning' : 'error'
+                      } className="font-bold uppercase tracking-wider text-xs border-0 px-2.5 py-0.5 rounded-full">
+                        {systemOverview.status}
+                      </Tag>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-[11px] text-secondary">System Logs: </span>
+                    <span className="font-semibold text-primary">{systemOverview.system_logs?.total_in_window?.toLocaleString() || 0}</span>
+                    <span className="text-secondary text-[11px]"> events</span>
+                  </div>
+                  <div className="mt-1">
+                    <span className="text-[11px] text-secondary">Exceptions/Errors: </span>
+                    <span className="font-semibold text-rose-500">{systemOverview.system_logs?.error_count || 0}</span>
+                  </div>
+                  <div className="mt-1">
+                    <span className="text-[11px] text-secondary">Warnings: </span>
+                    <span className="font-semibold text-amber-500">{systemOverview.system_logs?.warning_count || 0}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-default/60">
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <Text className="text-[10px] text-secondary uppercase tracking-wider block">Avg Latency</Text>
+                      <Text className="text-primary font-bold text-sm">
+                        {systemOverview.system_logs?.avg_duration_ms ? `${systemOverview.system_logs.avg_duration_ms.toFixed(1)}ms` : '—'}
+                      </Text>
+                    </Col>
+                    <Col span={12}>
+                      <Text className="text-[10px] text-secondary uppercase tracking-wider block">Error Rate</Text>
+                      <Text className={`font-bold text-sm ${systemOverview.system_logs?.error_rate_percent > 5 ? 'text-error' : 'text-primary'}`}>
+                        {systemOverview.system_logs?.error_rate_percent ? `${systemOverview.system_logs.error_rate_percent.toFixed(1)}%` : '0%'}
+                      </Text>
+                    </Col>
+                  </Row>
+                </div>
+              </div>
+            </Col>
+
+            {/* Timeseries Sparkline Custom SVG flex bar chart */}
+            <Col xs={24} md={12} lg={8}>
+              <div className="p-5 rounded-xl bg-background-secondary border border-default h-full flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-secondary text-xs font-semibold uppercase tracking-wider">Activity Timeseries</span>
+                  <span className="text-[10px] text-secondary bg-primary/5 px-2 py-0.5 rounded border border-default/50 uppercase">
+                    {systemOverview.system_logs?.timeseries?.length > 0 ? `By ${systemOverview.system_logs.timeseries[0].bucket.includes(':') ? 'Hour' : systemOverview.system_logs.timeseries[0].bucket.length === 7 ? 'Month' : 'Day'}` : 'N/A'}
+                  </span>
+                </div>
+
+                {/* Sparkline Custom SVG Bar Chart */}
+                <div className="h-28 flex items-end justify-between gap-1 pt-2 pb-1 px-1 relative">
+                  {systemOverview.system_logs?.timeseries?.length > 0 ? (
+                    (() => {
+                      const timeseries = systemOverview.system_logs.timeseries;
+                      const maxCount = Math.max(...timeseries.map(t => t.total), 1);
+                      return timeseries.map((bucket, idx) => {
+                        const totalHeightPercent = (bucket.total / maxCount) * 100;
+                        const errorPercent = bucket.total > 0 ? (bucket.errors / bucket.total) * 100 : 0;
+                        const warningPercent = bucket.total > 0 ? (bucket.warnings / bucket.total) * 100 : 0;
+                        const infoPercent = bucket.total > 0 ? Math.max(0, 100 - errorPercent - warningPercent) : 0;
+
+                        return (
+                          <Tooltip 
+                            key={idx}
+                            title={
+                              <div className="text-xs p-1">
+                                <div className="font-semibold mb-1 text-[11px] border-b border-white/20 pb-0.5">{bucket.bucket}</div>
+                                <div>Total: <span className="font-semibold">{bucket.total}</span></div>
+                                <div>Errors: <span className="font-semibold text-rose-400">{bucket.errors}</span></div>
+                                <div>Warnings: <span className="font-semibold text-amber-400">{bucket.warnings}</span></div>
+                              </div>
+                            }
+                          >
+                            <div 
+                              className="flex-1 min-w-[6px] max-w-[24px] bg-transparent flex flex-col justify-end hover:brightness-110 transition-all cursor-pointer relative rounded-t-sm overflow-hidden h-full"
+                            >
+                              <div 
+                                className="w-full flex flex-col justify-end h-full"
+                                style={{ height: `${totalHeightPercent}%` }}
+                              >
+                                {/* Stacked segments */}
+                                <div className="w-full bg-rose-500 rounded-t-sm" style={{ height: `${errorPercent}%` }} />
+                                <div className="w-full bg-amber-500" style={{ height: `${warningPercent}%` }} />
+                                <div className="w-full bg-primary/30" style={{ height: `${infoPercent}%` }} />
+                              </div>
+                            </div>
+                          </Tooltip>
+                        );
+                      });
+                    })()
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs text-secondary italic">No timeseries data available</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-between items-center text-[10px] text-secondary mt-1 px-1">
+                  <span>{systemOverview.system_logs?.timeseries?.[0]?.bucket || 'Start'}</span>
+                  <span>{systemOverview.system_logs?.timeseries?.[systemOverview.system_logs.timeseries.length - 1]?.bucket || 'End'}</span>
+                </div>
+              </div>
+            </Col>
+
+            {/* Recent Attention List */}
+            <Col xs={24} md={12} lg={6}>
+              <div className="p-5 rounded-xl bg-background-secondary border border-default h-full flex flex-col">
+                <span className="text-secondary text-xs font-semibold uppercase tracking-wider block mb-3">Recent Attention</span>
+                <div className="flex-1 overflow-y-auto max-h-[140px] pr-1 flex flex-col gap-2">
+                  {systemOverview.system_logs?.recent_attention && systemOverview.system_logs.recent_attention.length > 0 ? (
+                    systemOverview.system_logs.recent_attention.map((log) => (
+                      <div 
+                        key={log.id} 
+                        onClick={() => handleViewSystemDetail(log.id)}
+                        className="p-2 rounded bg-surface border border-default hover:border-primary/30 transition-all cursor-pointer flex items-start justify-between gap-2 group"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <Tag color={log.level === 'CRITICAL' ? 'purple' : 'red'} className="text-[9px] font-bold px-1.5 m-0 leading-tight">
+                              {log.level}
+                            </Tag>
+                            <span className="text-[10px] text-secondary font-mono">{log.category}</span>
+                          </div>
+                          <div className="text-[11px] text-primary truncate font-semibold font-mono group-hover:text-primary">{log.action}</div>
+                          <div className="text-[10px] text-secondary truncate">{log.message}</div>
+                        </div>
+                        <span className="text-[10px] text-secondary font-mono self-start whitespace-nowrap">{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full py-6">
+                      <span className="text-xs text-secondary italic">No items require attention</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Col>
+
+            {/* Top Admin Activities / Operations Stats */}
+            <Col xs={24} md={12} lg={4}>
+              <div className="p-5 rounded-xl bg-background-secondary border border-default h-full flex flex-col justify-between">
+                <div>
+                  <span className="text-secondary text-xs font-semibold uppercase tracking-wider block mb-2">Admin Activities</span>
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-secondary">Total Actions</span>
+                    <span className="font-semibold text-primary">{systemOverview.operations?.total_in_window || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs mb-3">
+                    <span className="text-secondary">Active Admins</span>
+                    <span className="font-semibold text-primary">{systemOverview.operations?.active_admins || 0}</span>
+                  </div>
+                </div>
+                
+                <div className="overflow-y-auto max-h-[85px] pr-1 flex flex-wrap gap-1.5 pt-2 border-t border-default/60">
+                  {systemOverview.operations?.top_actions && systemOverview.operations.top_actions.length > 0 ? (
+                    systemOverview.operations.top_actions.map((act, idx) => (
+                      <Tooltip key={idx} title={`${act.count} executions`}>
+                        <Tag className="bg-primary/5 text-primary border-primary/10 text-[10px] m-0 max-w-full truncate font-semibold cursor-default">
+                          {act.action.replace('partner.', '')}: {act.count}
+                        </Tag>
+                      </Tooltip>
+                    ))
+                  ) : (
+                    <span className="text-[10px] text-secondary italic">No operations recorded</span>
+                  )}
+                </div>
+              </div>
+            </Col>
+          </Row>
+        ) : (
+          <div className="flex justify-center py-6">
+            <span className="text-secondary text-sm">Failed to load system overview stats</span>
+          </div>
+        )}
+      </Card>
+
       <div className="bg-surface border border-default rounded-xl p-4 md:p-6 shadow-sm animate-fade-in">
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
       </div>
@@ -820,7 +1031,7 @@ function LogsPage() {
               <>
                 <Title level={5} className="!mb-2">Log Metadata</Title>
                 <div className="border border-default p-4 rounded-xl bg-background-secondary mb-4 max-h-[200px] overflow-y-auto">
-                  <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{JSON.stringify(selectedSystemLog.log_metadata, null, 2)}</pre>
+                  <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedSystemLog.log_metadata)}</pre>
                 </div>
               </>
             )}
@@ -829,7 +1040,7 @@ function LogsPage() {
               <>
                 <Title level={5} className="!mb-2">Query Parameters</Title>
                 <div className="border border-default p-4 rounded-xl bg-background-secondary mb-4 max-h-[150px] overflow-y-auto">
-                  <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{selectedSystemLog.query_params}</pre>
+                  <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedSystemLog.query_params)}</pre>
                 </div>
               </>
             )}
@@ -897,7 +1108,7 @@ function LogsPage() {
                 <Title level={5} className="!mb-2">Before State</Title>
                 <div className="border border-default p-4 rounded-xl bg-background-secondary max-h-[400px] overflow-y-auto">
                   {selectedOperationLog.before_state ? (
-                    <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{JSON.stringify(selectedOperationLog.before_state, null, 2)}</pre>
+                    <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedOperationLog.before_state)}</pre>
                   ) : (
                     <Text className="text-secondary italic">No state recorded (NULL)</Text>
                   )}
@@ -907,7 +1118,7 @@ function LogsPage() {
                 <Title level={5} className="!mb-2">After State</Title>
                 <div className="border border-default p-4 rounded-xl bg-background-secondary max-h-[400px] overflow-y-auto">
                   {selectedOperationLog.after_state ? (
-                    <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{JSON.stringify(selectedOperationLog.after_state, null, 2)}</pre>
+                    <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedOperationLog.after_state)}</pre>
                   ) : (
                     <Text className="text-secondary italic">No state recorded (NULL)</Text>
                   )}
@@ -953,17 +1164,17 @@ function LogsPage() {
 
             <Title level={5} className="!mb-2">Request Headers</Title>
             <div className="border border-default p-4 rounded-xl bg-background-secondary mb-4 max-h-[150px] overflow-y-auto">
-              <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{selectedWebhookLog.request_headers || 'None'}</pre>
+              <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedWebhookLog.request_headers) || 'None'}</pre>
             </div>
 
             <Title level={5} className="!mb-2">Webhook JSON Payload</Title>
             <div className="border border-default p-4 rounded-xl bg-background-secondary mb-4 max-h-[200px] overflow-y-auto">
-              <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{selectedWebhookLog.payload || 'None'}</pre>
+              <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedWebhookLog.payload) || 'None'}</pre>
             </div>
 
             <Title level={5} className="!mb-2">Response Body</Title>
             <div className="border border-default p-4 rounded-xl bg-background-secondary max-h-[200px] overflow-y-auto">
-              <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{selectedWebhookLog.response_body || 'None'}</pre>
+              <pre className="font-mono text-xs text-primary whitespace-pre-wrap">{renderJsonOrString(selectedWebhookLog.response_body) || 'None'}</pre>
             </div>
           </div>
         )}
