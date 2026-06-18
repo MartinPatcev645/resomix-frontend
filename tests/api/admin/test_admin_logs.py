@@ -117,6 +117,45 @@ async def test_system_log_stats(admin_auth_headers, seeded_logs):
 
 
 @pytest.mark.asyncio
+async def test_logs_overview(admin_auth_headers, seeded_logs):
+    async with _client() as ac:
+        res = await ac.get("/api/v1/admin/logs/overview", params={"hours": 24}, headers=admin_auth_headers)
+    assert res.status_code == 200
+    data = res.json()["data"]
+    # Shape the dashboard header relies on.
+    assert data["window_hours"] == 24
+    assert data["status"] in ("healthy", "degraded", "critical")
+    sysblock = data["system_logs"]
+    assert "by_level" in sysblock and "by_category" in sysblock
+    assert "timeseries" in sysblock
+    # We seeded one ERROR system log in-window → health must not be "healthy".
+    assert sysblock["error_count"] >= 1
+    assert data["status"] in ("degraded", "critical")
+    # Admin activity block present.
+    assert "operations" in data
+    assert data["operations"]["total_in_window"] >= 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("hours,expected_bucket", [
+    (1, "hour"), (24, "hour"), (72, "hour"),
+    (168, "day"), (2160, "day"),
+    (4320, "month"), (8760, "month"),
+    (0, "month"),  # 0 = all time
+])
+async def test_overview_window_presets_and_all_time(admin_auth_headers, seeded_logs, hours, expected_bucket):
+    """Every preset window resolves, and 0 means all-time with adaptive buckets."""
+    async with _client() as ac:
+        res = await ac.get("/api/v1/admin/logs/overview", params={"hours": hours}, headers=admin_auth_headers)
+    assert res.status_code == 200
+    sysblock = res.json()["data"]["system_logs"]
+    assert sysblock["bucket_granularity"] == expected_bucket
+    assert sysblock["all_time"] is (hours == 0)
+    # All-time must see at least everything the 1h window could.
+    assert sysblock["total_in_window"] >= 1
+
+
+@pytest.mark.asyncio
 async def test_list_and_filter_operation_logs(admin_auth_headers, seeded_logs):
     tag = seeded_logs["tag"]
     async with _client() as ac:

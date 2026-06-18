@@ -7,6 +7,7 @@ admin logs page. Writes are handled by :class:`AdminOperationLogService`.
 """
 
 from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime, timedelta
 from sqlalchemy import select, func, and_, asc, desc
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,6 +74,38 @@ class AdminOperationLogRepository(BaseRepository[AdminOperationLog]):
 
         rows = (await db.execute(base)).scalars().all()
         return rows, total
+
+    async def async_get_activity_summary(self, db: AsyncSession, hours: int = 24) -> Dict[str, Any]:
+        """Admin-activity rollup for the overview widget: total operations in the
+        window, number of distinct admins active, and the most frequent actions.
+
+        ``hours`` ≤ 0 (or falsy) means **all time** — no lower bound on ``created_at``.
+        """
+        all_time = not hours or hours <= 0
+        time_cond = [] if all_time else [AdminOperationLog.created_at >= datetime.utcnow() - timedelta(hours=hours)]
+
+        total = (await db.execute(
+            select(func.count(AdminOperationLog.id)).where(and_(*time_cond)) if time_cond
+            else select(func.count(AdminOperationLog.id))
+        )).scalar() or 0
+
+        active_admins = (await db.execute(
+            select(func.count(func.distinct(AdminOperationLog.admin_user_id)))
+            .where(and_(AdminOperationLog.admin_user_id.isnot(None), *time_cond))
+        )).scalar() or 0
+
+        top_stmt = select(AdminOperationLog.action, func.count(AdminOperationLog.id).label("c"))
+        if time_cond:
+            top_stmt = top_stmt.where(and_(*time_cond))
+        top_rows = (await db.execute(
+            top_stmt.group_by(AdminOperationLog.action).order_by(desc("c")).limit(8)
+        )).all()
+
+        return {
+            "total_in_window": total,
+            "active_admins": active_admins,
+            "top_actions": [{"action": a, "count": c} for a, c in top_rows],
+        }
 
     async def async_get_detail(self, db: AsyncSession, log_id: int) -> Optional[AdminOperationLog]:
         """Fetch one operation log with the acting admin eager-loaded."""

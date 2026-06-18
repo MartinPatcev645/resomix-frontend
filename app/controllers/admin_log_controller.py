@@ -110,6 +110,33 @@ class AdminLogController:
                 content=jsonable_encoder(format_response(success=False, error="Failed to fetch log stats")),
             )
 
+    async def overview(self, db: AsyncSession, hours: int = 24) -> JSONResponse:
+        """Combined system-health + admin-activity snapshot for the admin dashboard
+        header. Merges the ``system_logs`` health rollup with the
+        ``admin_operation_logs`` activity summary under one ``health`` status."""
+        try:
+            system = await self.log_repo.async_get_system_overview(db, hours=hours)
+            operations = await self.op_log_repo.async_get_activity_summary(db, hours=hours)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder({
+                    "success": True,
+                    "data": {
+                        "window_hours": hours,
+                        "generated_at": datetime.utcnow().isoformat(),
+                        "status": system.get("status", "unknown"),
+                        "system_logs": system,
+                        "operations": operations,
+                    },
+                }),
+            )
+        except Exception as e:
+            logger.error(f"Failed to build log overview: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=jsonable_encoder(format_response(success=False, error="Failed to build overview")),
+            )
+
     # ── Admin operation logs (admin_operation_logs) ─────────────────────────
 
     @staticmethod

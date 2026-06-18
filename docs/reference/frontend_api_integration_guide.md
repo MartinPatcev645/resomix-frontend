@@ -898,6 +898,102 @@ There are **two** distinct sources:
 | **System logs** | `/api/v1/admin/logs` | Broad application/request/event log — every `LoggingService` write (categories like `REQUEST`, `PARTNER`, `AUTH`, `SYSTEM`), with level, endpoint, status code, duration, client IP, correlation id, and a free-form `log_metadata` blob. |
 | **Operation logs** | `/api/v1/admin/operation-logs` | The admin audit trail ("who did what") — one row per privileged action (e.g. `partner.rotate_api_key`, `partner.sftp_provision`) with `before_state` / `after_state` JSON snapshots and the acting admin. |
 
+#### System Health & Overview (dashboard header widget)
+
+`GET /api/v1/admin/logs/overview?hours=24`
+
+One call that powers a "System Health" card at the top of the admin area. It
+**merges both log tables** and derives a coarse health status. Important: health
+is computed from log **level** (ERROR / CRITICAL / WARNING), **not** from a
+request error rate — the platform logs business events and exceptions, not every
+successful request, so a request-based rate would read ~0 and mislead.
+
+**Time range — the `hours` query param.** Pass the window as a number of hours.
+The same endpoint backs every range selector in the UI; map your dropdown to these
+values. `hours=0` means **all time** (no lower bound). The response echoes
+`all_time` (bool) and `bucket_granularity` so the chart can label its axis.
+
+| UI label | `hours` |
+|---|---|
+| Last hour | `1` |
+| Last 24 hours (day) | `24` |
+| Last 3 days | `72` |
+| Last week | `168` |
+| Last month | `720` |
+| Last 3 months | `2160` |
+| Last 6 months | `4320` |
+| Last year | `8760` |
+| All time | `0` |
+
+```http
+GET /api/v1/admin/logs/overview?hours=168    # last week
+GET /api/v1/admin/logs/overview?hours=0       # all time
+```
+
+```js
+const RANGES = {
+  "1h": 1, "24h": 24, "3d": 72, "1w": 168,
+  "1mo": 720, "3mo": 2160, "6mo": 4320, "1y": 8760, "all": 0,
+};
+const res = await fetch(`/api/v1/admin/logs/overview?hours=${RANGES[selected]}`, { headers: authHeaders });
+```
+
+The `timeseries` granularity adapts automatically so the series never explodes:
+**hourly** for `hours ≤ 72`, **daily** for `≤ 2160`, and **monthly** for longer
+windows or all time. The chosen granularity is returned as `bucket_granularity`
+(`"hour"` | `"day"` | `"month"`), and each point's `bucket` is a string in that
+unit (e.g. `"2026-06-18 15:00"`, `"2026-06-18"`, or `"2026-06"`).
+
+```json
+{
+  "success": true,
+  "data": {
+    "window_hours": 24,
+    "generated_at": "2026-06-18T15:20:00",
+    "status": "degraded",
+    "system_logs": {
+      "status": "degraded",
+      "total_all_time": 4821,
+      "total_in_window": 36,
+      "error_count": 0,
+      "critical_count": 0,
+      "warning_count": 7,
+      "error_rate_percent": 0.0,
+      "by_level": { "INFO": 29, "WARNING": 7 },
+      "by_category": { "PARTNER": 12, "ADMIN_ACTION": 22, "SIMILARITY": 5 },
+      "avg_duration_ms": 16.7,
+      "slow_request_count": 0,
+      "recent_attention": [
+        { "id": 858, "level": "WARNING", "category": "INTERNAL", "action": "http_exception",
+          "message": "404 Not Found", "endpoint": "/api/v1/...", "status_code": 404,
+          "created_at": "2026-06-18T03:38:35" }
+      ],
+      "timeseries": [
+        { "bucket": "2026-06-18 14:00", "total": 20, "errors": 0, "warnings": 3 },
+        { "bucket": "2026-06-18 15:00", "total": 16, "errors": 0, "warnings": 4 }
+      ]
+    },
+    "operations": {
+      "total_in_window": 41,
+      "active_admins": 3,
+      "top_actions": [
+        { "action": "partner.issue_api_key", "count": 19 },
+        { "action": "partner.rotate_api_key", "count": 8 }
+      ]
+    }
+  }
+}
+```
+
+**`status`** is `healthy` (no errors/warnings in window), `degraded` (some
+warnings or errors), or `critical` (any CRITICAL log, or error rate ≥ 10%). Drive
+the card's colour from it. Render `timeseries` as a sparkline (total + errors),
+`recent_attention` as an "needs attention" list (each item links to
+`/admin/logs/{id}`), and `operations.top_actions` as an "admin activity" strip.
+
+> `GET /api/v1/admin/logs/stats?hours=` still exists as a lighter subset (level
+> distribution + counts) if you only need numbers without the series/activity blocks.
+
 #### System logs — list with filters
 
 `GET /api/v1/admin/logs`

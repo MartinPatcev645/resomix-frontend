@@ -70,10 +70,31 @@ async def list_system_logs(
     )
 
 
+@router.get("/logs/overview")
+async def logs_overview(
+    db: AsyncSession = Depends(get_async_db),
+    hours: int = Query(
+        24, ge=0,
+        description=(
+            "Look-back window in hours. Presets: 1 (last hour), 24 (day), 72 (3 days), "
+            "168 (week), 720 (month), 2160 (3 months), 4320 (6 months), 8760 (year), "
+            "0 = all time. Buckets adapt: ≤72h hourly, ≤2160h daily, longer/all-time monthly."
+        ),
+    ),
+):
+    """System-health + admin-activity snapshot for the dashboard header widget.
+
+    Health is derived from log *level* (ERROR/CRITICAL/WARNING) and merges the
+    system-log rollup with admin-operation activity. Use a small ``hours`` (e.g.
+    24) for a live header; larger windows for trend cards; ``0`` for all time.
+    """
+    return await controller.overview(db, hours=hours)
+
+
 @router.get("/logs/stats")
 async def system_log_stats(
     db: AsyncSession = Depends(get_async_db),
-    hours: int = Query(24, ge=1, le=8760, description="Look-back window in hours"),
+    hours: int = Query(24, ge=0, description="Look-back window in hours (0 = all time)"),
 ):
     """Aggregate counters (level/category distribution, error rate) for the page header."""
     return await controller.system_log_stats(db, hours=hours)

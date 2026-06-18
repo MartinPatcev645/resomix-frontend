@@ -393,38 +393,37 @@ class LogRepository(BaseRepository[SystemLog]):
             return []
     
     async def async_get_log_stats(self, db: AsyncSession, hours: int = 24) -> Dict[str, Any]:
-        """Async version of get_log_stats"""
-        since = datetime.utcnow() - timedelta(hours=hours)
-        
+        """Async version of get_log_stats. ``hours`` ≤ 0 means all time."""
+        all_time = not hours or hours <= 0
+        time_cond = [] if all_time else [SystemLog.created_at >= datetime.utcnow() - timedelta(hours=hours)]
+
         try:
             # Count by level
             level_query = select(
                 SystemLog.level,
                 func.count(SystemLog.id).label('count')
-            ).where(SystemLog.created_at >= since)\
-             .group_by(SystemLog.level)
-            
+            ).where(and_(*time_cond)).group_by(SystemLog.level) if time_cond else select(
+                SystemLog.level, func.count(SystemLog.id).label('count')
+            ).group_by(SystemLog.level)
+
             level_result = await db.execute(level_query)
             level_counts = level_result.all()
-            
+
             # Total requests count
             total_query = select(func.count(SystemLog.id))\
-                .where(and_(
-                    SystemLog.created_at >= since,
-                    SystemLog.category == 'REQUEST'
-                ))
-            
+                .where(and_(SystemLog.category == 'REQUEST', *time_cond))
+
             total_result = await db.execute(total_query)
             total_requests = total_result.scalar() or 0
-            
+
             # Error requests count
             error_query = select(func.count(SystemLog.id))\
                 .where(and_(
-                    SystemLog.created_at >= since,
                     SystemLog.category == 'REQUEST',
-                    SystemLog.status_code >= 400
+                    SystemLog.status_code >= 400,
+                    *time_cond,
                 ))
-            
+
             error_result = await db.execute(error_query)
             error_requests = error_result.scalar() or 0
             
@@ -602,6 +601,129 @@ class LogRepository(BaseRepository[SystemLog]):
         except SQLAlchemyError as e:
             logger.error(f"Failed to get filtered logs (async): {e}")
             return [], 0
+
+    async def async_get_system_overview(self, db: AsyncSession, hours: int = 24) -> Dict[str, Any]:
+        """System-health rollup over ``system_logs`` for the admin overview widget.
+
+        ``hours`` selects the look-back window; ``0`` (or any value ≤ 0) means
+        **all time** (no lower bound on ``created_at``). Health is derived from
+        log *level* (ERROR/CRITICAL/WARNING), not from the ``REQUEST`` category —
+        successful requests are not logged here, so a request-based error rate
+        would be meaningless. Returns window counts, level/category distributions,
+        latest error/warning samples, an adaptive time series, and an all-time total.
+        """
+        all_time = not hours or hours <= 0
+        since = None if all_time else datetime.utcnow() - timedelta(hours=hours)
+
+        def _win(*extra):
+            """Combine the time-window predicate (unless all-time) with extras."""
+            conds = list(extra)
+            if not all_time:
+                conds.append(SystemLog.created_at >= since)
+            return and_(*conds) if conds else None
+
+        def _apply(stmt, *extra):
+            cond = _win(*extra)
+            return stmt.where(cond) if cond is not None else stmt
+
+        try:
+            total_window = (await db.execute(_apply(select(func.count(SystemLog.id))))).scalar() or 0
+            total_all_time = (await db.execute(select(func.count(SystemLog.id)))).scalar() or 0
+
+            # By level (in window)
+            level_rows = (await db.execute(
+                _apply(select(SystemLog.level, func.count(SystemLog.id))).group_by(SystemLog.level)
+            )).all()
+            by_level = {lvl: cnt for lvl, cnt in level_rows}
+
+            # By category (in window)
+            cat_rows = (await db.execute(
+                _apply(select(SystemLog.category, func.count(SystemLog.id))).group_by(SystemLog.category)
+            )).all()
+            by_category = {(cat or "UNCATEGORIZED"): cnt for cat, cnt in cat_rows}
+
+            error_count = by_level.get("ERROR", 0) + by_level.get("CRITICAL", 0)
+            critical_count = by_level.get("CRITICAL", 0)
+            warning_count = by_level.get("WARNING", 0)
+            error_rate = round((error_count / total_window * 100), 2) if total_window else 0.0
+
+            # Average duration + slow count, where duration is recorded
+            avg_duration = (await db.execute(
+                _apply(select(func.avg(SystemLog.duration_ms)), SystemLog.duration_ms.isnot(None))
+            )).scalar()
+            slow_count = (await db.execute(
+                _apply(select(func.count(SystemLog.id)), SystemLog.duration_ms >= 1000.0)
+            )).scalar() or 0
+
+            # Latest error/warning samples (for an "attention needed" list)
+            sample_rows = (await db.execute(
+                _apply(select(SystemLog), SystemLog.level.in_(["ERROR", "CRITICAL", "WARNING"]))
+                .order_by(desc(SystemLog.created_at))
+                .limit(10)
+            )).scalars().all()
+            recent_attention = [
+                {
+                    "id": r.id, "level": r.level, "category": r.category,
+                    "action": r.action, "message": r.message,
+                    "endpoint": r.endpoint, "status_code": r.status_code,
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                }
+                for r in sample_rows
+            ]
+
+            # Adaptive bucket granularity so the series stays bounded:
+            #   ≤ 3 days → hourly · ≤ 90 days → daily · longer / all-time → monthly.
+            if all_time or hours > 2160:
+                bucket_fmt, bucket_granularity = "%Y-%m", "month"
+            elif hours > 72:
+                bucket_fmt, bucket_granularity = "%Y-%m-%d", "day"
+            else:
+                bucket_fmt, bucket_granularity = "%Y-%m-%d %H:00", "hour"
+
+            bucket = func.date_format(SystemLog.created_at, bucket_fmt)
+            series_rows = (await db.execute(
+                _apply(select(
+                    bucket.label("bucket"),
+                    func.count(SystemLog.id).label("total"),
+                    func.sum(func.if_(SystemLog.level.in_(["ERROR", "CRITICAL"]), 1, 0)).label("errors"),
+                    func.sum(func.if_(SystemLog.level == "WARNING", 1, 0)).label("warnings"),
+                ))
+                .group_by("bucket")
+                .order_by("bucket")
+            )).all()
+            timeseries = [
+                {"bucket": b, "total": int(t or 0), "errors": int(e or 0), "warnings": int(w or 0)}
+                for b, t, e, w in series_rows
+            ]
+
+            # Derive a coarse health status.
+            if critical_count > 0 or error_rate >= 10:
+                status = "critical"
+            elif error_count > 0 or warning_count > 0:
+                status = "degraded"
+            else:
+                status = "healthy"
+
+            return {
+                "status": status,
+                "all_time": all_time,
+                "bucket_granularity": bucket_granularity,
+                "total_all_time": total_all_time,
+                "total_in_window": total_window,
+                "error_count": error_count,
+                "critical_count": critical_count,
+                "warning_count": warning_count,
+                "error_rate_percent": error_rate,
+                "by_level": by_level,
+                "by_category": by_category,
+                "avg_duration_ms": round(float(avg_duration), 2) if avg_duration is not None else None,
+                "slow_request_count": slow_count,
+                "recent_attention": recent_attention,
+                "timeseries": timeseries,
+            }
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to build system overview: {e}")
+            return {}
 
     async def async_get_log_by_stripe_event_id(self, db: AsyncSession, stripe_event_id: str) -> Optional[SystemLog]:
         """Check if a Stripe event ID has already been logged (for idempotency checks)."""
