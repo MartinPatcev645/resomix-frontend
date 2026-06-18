@@ -21,6 +21,7 @@ export * from "./admin/operationLimits";
 export * from "./admin/spotifyApps";
 export * from "./admin/users";
 export * from "./admin/partners";
+export * from "./admin/logs";
 export * from "./admin/auth";
 export * from "./admin/similarity";
 export * from "./admin/promo";

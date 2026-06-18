@@ -556,6 +556,13 @@ function PipelinePage() {
         onOk={() => embeddingsForm.submit()}
         okText="Start Job"
       >
+        <Alert
+          type="warning"
+          showIcon
+          message="Resource Intensive Operation"
+          description="Generating embeddings is a CPU and memory intensive background operation that can run for an extended duration."
+          className="mt-4 mb-2 rounded-xl"
+        />
         <Form form={embeddingsForm} layout="vertical" onFinish={onTriggerEmbeddings} className="mt-4" initialValues={{ env: 'live', index_after: true, only_pending: true }}>
           <Form.Item
             name="partner_id"

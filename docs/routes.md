@@ -437,8 +437,16 @@ All admin endpoints require an authenticated admin. Supply either:
   ```
   Returns: `{ "api_key": "rmx_...", "key_id": "...", "label": "..." }` — **Store the raw key immediately; it is not stored.**
 - **List keys:** `GET /api/v1/admin/partners/api-keys/{partner_id}`
-- **Revoke key:** `POST /api/v1/admin/partners/api-keys/revoke` — Body: `{ "key_id": "..." }`
+- **Revoke key:** `POST /api/v1/admin/partners/api-keys/revoke`
+  ```json
+  { "api_key_id": 3, "reason": "compromised (min 5 chars)" }
+  ```
+  ⚠️ The field is **`api_key_id`** (the integer id from the list), **not** `key_id`, and **`reason` is required** (5–255 chars). Returns `200`; `404` if the id doesn't exist. (Sending `key_id` or omitting `reason` → `422`.)
 - **Rotate key:** `POST /api/v1/admin/partners/api-keys/rotate` — `201`
+  ```json
+  { "api_key_id": 3, "label": "Production Key (optional)" }
+  ```
+  Revokes the old key, issues a new one with the same scopes/limits. The new key gets a **fresh expiry** (preserves the original validity window, starting now — never born expired); optionally pass `expires_at` (ISO datetime) to set it explicitly. Response `data.plaintext_key` is shown **only once** — store it immediately.
 
 #### SFTP Provisioning
 - **Provision:** `POST /api/v1/admin/partners/sftp/provision` — `201`
@@ -733,7 +741,7 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
 
 #### List Jobs
 - **`GET /api/v1/admin/processing/jobs`**
-- **Query params:** `partner_id`, `status` (`pending|running|paused|completed|partial|failed`), `page` (default 1), `page_size` (default 50, max 100)
+- **Query params:** `partner_id`, `status` (`pending|running|completed|partial|failed`), `page` (default 1), `page_size` (default 50, max 100)
 - **Returns:** `{ "status": "success", "jobs": [ ...job objects... ] }`
 
 ---
@@ -874,6 +882,144 @@ The following routes are kept for backward compatibility but replaced by the adm
 - `POST /api/v1/monthly_pipeline/update_embeddings/`
 - `POST /api/v1/open_tracks_pipeline/track/`
 - `POST /api/v1/open_tracks_pipeline/update_embeddings/`
+
+---
+
+### 19.16 Logs & Audit Trail (`/api/v1/admin/logs`, `/api/v1/admin/operation-logs`)
+
+Read-only viewers for the two log tables the platform writes to MariaDB. All
+routes require an admin session and the `reports:view` permission. Responses use
+the standard `{ success, data, pagination }` envelope; list results are newest-first.
+
+There are **two** distinct sources:
+
+| Source | Endpoint base | What it contains |
+|---|---|---|
+| **System logs** | `/api/v1/admin/logs` | Broad application/request/event log — every `LoggingService` write (categories like `REQUEST`, `PARTNER`, `AUTH`, `SYSTEM`), with level, endpoint, status code, duration, client IP, correlation id, and a free-form `log_metadata` blob. |
+| **Operation logs** | `/api/v1/admin/operation-logs` | The admin audit trail ("who did what") — one row per privileged action (e.g. `partner.rotate_api_key`, `partner.sftp_provision`) with `before_state` / `after_state` JSON snapshots and the acting admin. |
+
+#### System logs — list with filters
+
+`GET /api/v1/admin/logs`
+
+Query params (all optional; omit to skip the filter):
+
+| Param | Type | Notes |
+|---|---|---|
+| `page` | int | default `1` |
+| `page_size` | int | default `50`, max `500` |
+| `level` | string | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` |
+| `category` | string | exact match, e.g. `REQUEST`, `PARTNER`, `AUTH`, `SYSTEM` |
+| `action` | string | substring match |
+| `endpoint` | string | substring match |
+| `q` | string | free-text search over message / action / endpoint |
+| `client_ip` | string | exact match |
+| `correlation_id` | string | exact match (trace one request across rows) |
+| `status_code` | int | exact match, e.g. `500` |
+| `track_id` / `playlist_id` | int | related-entity filter |
+| `min_duration` | float | min `duration_ms` (find slow requests) |
+| `start_date` / `end_date` | ISO 8601 datetime | inclusive range on `created_at` |
+| `order_by` | string | default `created_at` |
+| `order_dir` | string | `asc` \| `desc` (default `desc`) |
+
+```http
+GET /api/v1/admin/logs?level=ERROR&q=provision&page=1&page_size=50
+```
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 48213,
+      "level": "ERROR",
+      "category": "SYSTEM",
+      "action": "SFTP_PROVISION_FAILED",
+      "message": "Hetzner provisioning returned 502",
+      "endpoint": "/api/v1/admin/partners/sftp/provision",
+      "status_code": 500,
+      "duration_ms": 1342.5,
+      "client_ip": "203.0.113.10",
+      "correlation_id": "b1f2...-36c",
+      "log_metadata": { "partner_id": 42 },
+      "created_at": "2026-06-18T14:05:11"
+    }
+  ],
+  "pagination": { "total": 3, "pages": 1, "page": 1, "size": 50, "has_next": false, "has_prev": false }
+}
+```
+
+#### System logs — detail
+
+`GET /api/v1/admin/logs/{log_id}` → `{ success, data }` with the full row (including
+`stack_trace`, `query_params`, `user_agent`, etc.). Returns `404` if not found.
+
+#### System logs — stats (page header)
+
+`GET /api/v1/admin/logs/stats?hours=24` → counters for the dashboard header:
+
+```json
+{
+  "success": true,
+  "data": {
+    "total_logs": 1820,
+    "level_distribution": { "INFO": 1700, "ERROR": 40 },
+    "error_rate_percent": 2.2,
+    "total_requests": 1500,
+    "error_requests": 33,
+    "period_hours": 24
+  }
+}
+```
+
+#### Operation (audit) logs — list with filters
+
+`GET /api/v1/admin/operation-logs`
+
+| Param | Type | Notes |
+|---|---|---|
+| `page` / `page_size` | int | default `1` / `50` (max `500`) |
+| `admin_user_id` | int | filter by acting admin |
+| `action` | string | substring match, e.g. `rotate_api_key` |
+| `target_type` | string | exact, e.g. `partner`, `api_key`, `sftp_user`, `user` |
+| `target_id` | string | exact id of the affected resource |
+| `correlation_id` | string | exact match |
+| `start_date` / `end_date` | ISO 8601 | inclusive range |
+| `order_dir` | string | `asc` \| `desc` (default `desc`) |
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 991,
+      "admin_user_id": 1,
+      "admin_email": "ops@resomix.com",
+      "action": "partner.rotate_api_key",
+      "target_type": "api_key",
+      "target_id": "77",
+      "before_state": null,
+      "after_state": { "new_key_prefix": "rmx_live_ab12cd34" },
+      "ip_address": "203.0.113.10",
+      "correlation_id": "b1f2...-36c",
+      "created_at": "2026-06-18T14:06:02"
+    }
+  ],
+  "pagination": { "total": 1, "pages": 1, "page": 1, "size": 50, "has_next": false, "has_prev": false }
+}
+```
+
+#### Operation log — detail
+
+`GET /api/v1/admin/operation-logs/{log_id}` → `{ success, data }` with the full audit
+record including the complete `before_state` / `after_state` JSON. Returns `404` if not found.
+
+**Frontend notes**
+- Build a single "Logs" page with a tab switch between **System** and **Audit (Operations)**.
+- Drive the table from the `pagination` block; pass the same filter params back on page change.
+- For the detail drawer, call the `/{log_id}` endpoint (don't rely on the list row) so you get `stack_trace` / full state.
+- `correlation_id` links the two tables — clicking it can cross-filter both views to trace one request end to end.
+- All timestamps are UTC ISO 8601 without a `Z` suffix; render with an explicit UTC assumption.
 
 ---
 
