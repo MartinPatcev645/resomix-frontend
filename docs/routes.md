@@ -498,7 +498,14 @@ All admin endpoints require an authenticated admin. Supply either:
   ```
   _`limits` fields are `null` for partners provisioned before custom limits existed._
 
-- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry` — reuses the limits stored at provision time.
+- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry`
+  ```json
+  { "password": "min-8-chars" }
+  ```
+  - For accounts that already failed initial provisioning (`sftp_provisioned_at` is null). Re-creates the SFTPGo user with the limits stored at provision time.
+  - **Send the partner's password again** (the plaintext is never stored). It becomes the partner's login password — the SFTPGo user is created with it and the stored hash is updated to match. `password` may be omitted **only** for public-key accounts.
+  - If the account is already fully provisioned, returns `400` with `"SFTP account is already fully provisioned"` (no-op — nothing to do).
+  - **Returns** the same body as *Get SFTP status*.
 
 ##### SFTP Limits reference (units + per-tier defaults)
 

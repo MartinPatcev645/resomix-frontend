@@ -231,10 +231,13 @@ export const getSftpStatus = async (partnerId: number): Promise<SftpStatusRespon
 /**
  * Retry SFTP provisioning for a partner (Admin)
  */
-export const retrySftpProvisioning = async (partnerId: number): Promise<SftpProvisionResponse> => {
+export const retrySftpProvisioning = async (
+  partnerId: number,
+  payload?: { password?: string }
+): Promise<SftpProvisionResponse> => {
   try {
     return await axiosWrapper(
-      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/retry`)
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/retry`, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;

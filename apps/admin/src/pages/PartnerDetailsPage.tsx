@@ -227,6 +227,8 @@ function PartnerDetailsPage() {
   const [editLimitsModalVisible, setEditLimitsModalVisible] = useState(false);
   const [showAdvancedLimits, setShowAdvancedLimits] = useState(false);
   const [editLimitsForm] = Form.useForm();
+  const [retrySftpModalVisible, setRetrySftpModalVisible] = useState(false);
+  const [retrySftpForm] = Form.useForm();
 
   // Load All Partner Details
   const fetchAllData = useCallback(async () => {
@@ -364,16 +366,18 @@ function PartnerDetailsPage() {
     }
   };
 
-  const handleRetrySftp = async () => {
+  const handleRetrySftp = async (values: any) => {
     if (isNaN(partnerId)) return;
     setSftpLoading(true);
     try {
-      const result = await retrySftp(partnerId);
+      const result = await retrySftp(partnerId, { password: values.password });
       if (result && result.success) {
         const status = await getSftpStatus(partnerId);
         if (status?.success) {
           setSftpData(status.data);
         }
+        setRetrySftpModalVisible(false);
+        retrySftpForm.resetFields();
       }
     } finally {
       setSftpLoading(false);
@@ -813,7 +817,7 @@ function PartnerDetailsPage() {
                         </div>
                         <Button 
                           icon={<RotateCw size={16} />} 
-                          onClick={handleRetrySftp}
+                          onClick={() => setRetrySftpModalVisible(true)}
                           className="h-10 rounded-lg flex items-center gap-2 border-default hover:border-primary hover:text-primary font-medium"
                         >
                           Retry Provisioning
@@ -1481,6 +1485,35 @@ function PartnerDetailsPage() {
               </Form.Item>
             </Col>
           </Row>
+        </Form>
+      </Modal>
+
+      {/* ── Retry SFTP Provisioning Modal ── */}
+      <Modal
+        title="Retry SFTP Provisioning"
+        open={retrySftpModalVisible}
+        onCancel={() => setRetrySftpModalVisible(false)}
+        onOk={() => retrySftpForm.submit()}
+      >
+        <Alert
+          type="info"
+          message="Password Required"
+          description="To retry provisioning, you must enter the partner's SFTP password again. Plaintext passwords are not stored by the system."
+          showIcon
+          className="mt-4 mb-6 rounded-lg"
+        />
+        <Form
+          form={retrySftpForm}
+          layout="vertical"
+          onFinish={handleRetrySftp}
+        >
+          <Form.Item
+            name="password"
+            label={<Text className="font-semibold text-primary">SFTP Password</Text>}
+            rules={[{ required: true, message: 'Password is required to retry provisioning' }]}
+          >
+            <Input.Password className="h-11 rounded-lg" placeholder="••••••••••••" />
+          </Form.Item>
         </Form>
       </Modal>
 

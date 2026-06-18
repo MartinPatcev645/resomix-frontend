@@ -279,9 +279,9 @@ export function usePartners(options?: UsePartnersOptions) {
     }
   };
 
-  const retrySftp = async (partnerId: number): Promise<SftpProvisionResponse | null> => {
+  const retrySftp = async (partnerId: number, payload?: { password?: string }): Promise<SftpProvisionResponse | null> => {
     try {
-      const result = await apiRetrySftp(partnerId);
+      const result = await apiRetrySftp(partnerId, payload);
       if (result.success) {
         if (optionsRef.current?.onSuccess) optionsRef.current.onSuccess('SFTP Retry Queued', 'SFTP provisioning retry has been initiated.');
         else message.success('SFTP retry initiated');
