@@ -136,12 +136,33 @@ export const getPartnerDetail = async (partnerId: number): Promise<{ success: bo
 
 // ─── SFTP Provisioning Types ───────────────────────────────
 
+export interface SftpLimits {
+  quota_bytes: number | null;
+  quota_files: number | null;
+  upload_bandwidth: number | null;
+  download_bandwidth: number | null;
+  max_sessions: number | null;
+  upload_data_transfer: number | null;
+  download_data_transfer: number | null;
+  total_data_transfer: number | null;
+}
+
 export interface SftpProvisionRequest {
   partner_id: number;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
   use_public_key?: boolean;
   public_key?: string | null;
+  allowed_ip?: string | null;
+
+  quota_bytes?: number | null;
+  quota_files?: number | null;
+  upload_bandwidth?: number | null;
+  download_bandwidth?: number | null;
+  max_sessions?: number | null;
+  upload_data_transfer?: number | null;
+  download_data_transfer?: number | null;
+  total_data_transfer?: number | null;
 }
 
 export interface SftpProvisionResponse {
@@ -163,8 +184,20 @@ export interface SftpStatusResponse {
     port: number | null;
     username: string | null;
     last_provisioned_at: string | null;
+    limits?: SftpLimits | null;
   };
   error?: string;
+}
+
+export interface SftpLimitsUpdateRequest {
+  quota_bytes?: number | null;
+  quota_files?: number | null;
+  upload_bandwidth?: number | null;
+  download_bandwidth?: number | null;
+  max_sessions?: number | null;
+  upload_data_transfer?: number | null;
+  download_data_transfer?: number | null;
+  total_data_transfer?: number | null;
 }
 
 // ─── SFTP API Calls ────────────────────────────────────────
@@ -202,6 +235,22 @@ export const retrySftpProvisioning = async (partnerId: number): Promise<SftpProv
   try {
     return await axiosWrapper(
       authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/retry`)
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Update SFTP limits for an already-provisioned partner (Admin)
+ */
+export const updateSftpLimits = async (
+  partnerId: number,
+  payload: SftpLimitsUpdateRequest
+): Promise<SftpStatusResponse> => {
+  try {
+    return await axiosWrapper(
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PARTNER_DETAIL}${partnerId}/sftp/limits`, payload)
     );
   } catch (error: any) {
     return handleApiError(error) as any;

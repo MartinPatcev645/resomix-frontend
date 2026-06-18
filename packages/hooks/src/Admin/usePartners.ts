@@ -12,6 +12,7 @@ import {
   provisionSftpPartner as apiProvisionSftp,
   getSftpStatus as apiGetSftpStatus,
   retrySftpProvisioning as apiRetrySftp,
+  updateSftpLimits as apiUpdateSftpLimits,
   getPartnerWebhooks,
   createPartnerWebhook,
   updatePartnerWebhook,
@@ -27,6 +28,8 @@ import {
   type SftpProvisionRequest,
   type SftpProvisionResponse,
   type SftpStatusResponse,
+  type SftpLimitsUpdateRequest,
+  type SftpLimits,
   type WebhookConfig,
   type WebhookDeliveryLog
 } from '@resomix/api-client';
@@ -295,6 +298,25 @@ export function usePartners(options?: UsePartnersOptions) {
     }
   };
 
+  const updateSftpLimits = async (partnerId: number, payload: SftpLimitsUpdateRequest): Promise<SftpStatusResponse | null> => {
+    try {
+      const result = await apiUpdateSftpLimits(partnerId, payload);
+      if (result.success) {
+        if (optionsRef.current?.onSuccess) optionsRef.current.onSuccess('SFTP Limits Updated', 'SFTP limits have been successfully updated.');
+        else message.success('SFTP limits updated successfully');
+        return result;
+      } else {
+        const errorMsg = result.error || 'Failed to update SFTP limits';
+        if (optionsRef.current?.onError) optionsRef.current.onError('Update Failed', errorMsg);
+        else message.error(errorMsg);
+        return null;
+      }
+    } catch {
+      message.error('Error updating SFTP limits');
+      return null;
+    }
+  };
+
   const fetchPartnerWebhooks = async (partnerId: number) => {
     setWebhooksLoading(true);
     try {
@@ -436,6 +458,7 @@ export function usePartners(options?: UsePartnersOptions) {
     provisionSftp,
     getSftpStatus,
     retrySftp,
+    updateSftpLimits,
     fetchPartnerWebhooks,
     saveWebhookConfig,
     deleteWebhook,

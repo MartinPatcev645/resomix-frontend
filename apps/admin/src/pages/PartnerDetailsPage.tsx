@@ -9,6 +9,9 @@ import {
   Card, 
   Form, 
   Input, 
+  InputNumber,
+  Row,
+  Col,
   Select, 
   Space, 
   Typography, 
@@ -50,12 +53,104 @@ import type {
   PartnerCreateRequest, 
   ApiKeyIssueRequest,
   SftpProvisionRequest,
+  SftpLimitsUpdateRequest,
   WebhookConfig,
   WebhookDeliveryLog
 } from '@resomix/api-client';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
+
+interface SftpLimitsConfig {
+  quota_gb: number;
+  quota_files: number;
+  upload_bandwidth: number;
+  download_bandwidth: number;
+  max_sessions: number;
+  upload_data_transfer: number;
+  download_data_transfer: number;
+  total_data_transfer: number;
+}
+
+const SFTP_TIER_DEFAULTS: Record<PartnerTier, SftpLimitsConfig> = {
+  sandbox: {
+    quota_gb: 1,
+    quota_files: 0,
+    upload_bandwidth: 2048,
+    download_bandwidth: 4096,
+    max_sessions: 2,
+    upload_data_transfer: 0,
+    download_data_transfer: 0,
+    total_data_transfer: 0,
+  },
+  starter: {
+    quota_gb: 10,
+    quota_files: 0,
+    upload_bandwidth: 0,
+    download_bandwidth: 0,
+    max_sessions: 5,
+    upload_data_transfer: 0,
+    download_data_transfer: 0,
+    total_data_transfer: 0,
+  },
+  growth: {
+    quota_gb: 50,
+    quota_files: 0,
+    upload_bandwidth: 0,
+    download_bandwidth: 0,
+    max_sessions: 10,
+    upload_data_transfer: 0,
+    download_data_transfer: 0,
+    total_data_transfer: 0,
+  },
+  enterprise: {
+    quota_gb: 0,
+    quota_files: 0,
+    upload_bandwidth: 0,
+    download_bandwidth: 0,
+    max_sessions: 0,
+    upload_data_transfer: 0,
+    download_data_transfer: 0,
+    total_data_transfer: 0,
+  },
+};
+
+const getTierDefaults = (tier?: string): SftpLimitsConfig => {
+  const normalized = (tier?.toLowerCase() || 'starter') as PartnerTier;
+  return SFTP_TIER_DEFAULTS[normalized] || SFTP_TIER_DEFAULTS.starter;
+};
+
+const formatLimitValue = (
+  fieldName: keyof SftpLimitsConfig,
+  currentValBytesOrNum: number | null | undefined,
+  tier?: string
+) => {
+  const defaults = getTierDefaults(tier);
+  const isDefault = currentValBytesOrNum === null || currentValBytesOrNum === undefined;
+  
+  let activeValueNum: number;
+  if (isDefault) {
+    if (fieldName === 'quota_gb') {
+      activeValueNum = defaults.quota_gb;
+    } else {
+      activeValueNum = defaults[fieldName];
+    }
+  } else {
+    if (fieldName === 'quota_gb') {
+      activeValueNum = currentValBytesOrNum! / 1073741824;
+    } else {
+      activeValueNum = currentValBytesOrNum!;
+    }
+  }
+
+  let unit = '';
+  if (fieldName === 'quota_gb') unit = ' GB';
+  else if (fieldName === 'upload_bandwidth' || fieldName === 'download_bandwidth') unit = ' KB/s';
+  else if (fieldName === 'upload_data_transfer' || fieldName === 'download_data_transfer' || fieldName === 'total_data_transfer') unit = ' MB';
+
+  const valueStr = activeValueNum === 0 ? 'Unlimited' : `${activeValueNum}${unit}`;
+  return isDefault ? `${valueStr} (Plan Default)` : valueStr;
+};
 
 function PartnerDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -92,6 +187,7 @@ function PartnerDetailsPage() {
     provisionSftp,
     getSftpStatus,
     retrySftp,
+    updateSftpLimits,
     webhooks,
     failedLogs,
     webhooksLoading,
@@ -126,6 +222,11 @@ function PartnerDetailsPage() {
   const [revealedKey, setRevealedKey] = useState<{ plaintext_key: string; label: string } | null>(null);
   const [usePubKey, setUsePubKey] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // SFTP limits and allowed IP states
+  const [editLimitsModalVisible, setEditLimitsModalVisible] = useState(false);
+  const [showAdvancedLimits, setShowAdvancedLimits] = useState(false);
+  const [editLimitsForm] = Form.useForm();
 
   // Load All Partner Details
   const fetchAllData = useCallback(async () => {
@@ -189,12 +290,27 @@ function PartnerDetailsPage() {
     if (isNaN(partnerId)) return;
     setSftpLoading(true);
     try {
+      const mapField = (val: any) => {
+        if (val === undefined || val === null || val === '') return null;
+        return Number(val);
+      };
+
       const payload: SftpProvisionRequest = {
         partner_id: partnerId,
-        username: values.username,
         password: values.password,
         use_public_key: usePubKey,
-        public_key: usePubKey ? values.public_key : null
+        public_key: usePubKey ? values.public_key : null,
+        allowed_ip: values.allowed_ip || null,
+        quota_bytes: values.quota_gb !== undefined && values.quota_gb !== null && values.quota_gb !== ''
+          ? Math.round(Number(values.quota_gb) * 1073741824)
+          : null,
+        quota_files: mapField(values.quota_files),
+        upload_bandwidth: mapField(values.upload_bandwidth),
+        download_bandwidth: mapField(values.download_bandwidth),
+        max_sessions: mapField(values.max_sessions),
+        upload_data_transfer: mapField(values.upload_data_transfer),
+        download_data_transfer: mapField(values.download_data_transfer),
+        total_data_transfer: mapField(values.total_data_transfer),
       };
 
       const result = await provisionSftp(payload);
@@ -206,6 +322,42 @@ function PartnerDetailsPage() {
         }
         sftpForm.resetFields();
         setUsePubKey(false);
+        setShowAdvancedLimits(false);
+      }
+    } finally {
+      setSftpLoading(false);
+    }
+  };
+
+  const handleUpdateSftpLimits = async (values: any) => {
+    if (isNaN(partnerId)) return;
+    setSftpLoading(true);
+    try {
+      const mapField = (val: any) => {
+        if (val === undefined || val === null || val === '') return null;
+        return Number(val);
+      };
+
+      const payload: SftpLimitsUpdateRequest = {
+        quota_bytes: values.quota_gb !== undefined && values.quota_gb !== null && values.quota_gb !== ''
+          ? Math.round(Number(values.quota_gb) * 1073741824)
+          : null,
+        quota_files: mapField(values.quota_files),
+        upload_bandwidth: mapField(values.upload_bandwidth),
+        download_bandwidth: mapField(values.download_bandwidth),
+        max_sessions: mapField(values.max_sessions),
+        upload_data_transfer: mapField(values.upload_data_transfer),
+        download_data_transfer: mapField(values.download_data_transfer),
+        total_data_transfer: mapField(values.total_data_transfer),
+      };
+
+      const result = await updateSftpLimits(partnerId, payload);
+      if (result && result.success) {
+        const status = await getSftpStatus(partnerId);
+        if (status?.success) {
+          setSftpData(status.data);
+        }
+        setEditLimitsModalVisible(false);
       }
     } finally {
       setSftpLoading(false);
@@ -591,6 +743,67 @@ function PartnerDetailsPage() {
                         </Descriptions>
                       </Card>
 
+                      <Card 
+                        title={
+                          <div className="flex justify-between items-center w-full">
+                            <span className="flex items-center gap-2 text-primary font-semibold">
+                              <Shield size={18} />
+                              <span>Limits & Quotas</span>
+                            </span>
+                            <Button 
+                              type="link" 
+                              onClick={() => {
+                                const limits = sftpData.limits || {};
+                                editLimitsForm.setFieldsValue({
+                                  quota_gb: limits.quota_bytes !== null && limits.quota_bytes !== undefined
+                                    ? limits.quota_bytes / 1073741824
+                                    : null,
+                                  quota_files: limits.quota_files,
+                                  upload_bandwidth: limits.upload_bandwidth,
+                                  download_bandwidth: limits.download_bandwidth,
+                                  max_sessions: limits.max_sessions,
+                                  upload_data_transfer: limits.upload_data_transfer,
+                                  download_data_transfer: limits.download_data_transfer,
+                                  total_data_transfer: limits.total_data_transfer,
+                                });
+                                setEditLimitsModalVisible(true);
+                              }}
+                              className="p-0 h-auto"
+                            >
+                              Edit Limits
+                            </Button>
+                          </div>
+                        }
+                        className="border-default rounded-xl shadow-sm mb-6"
+                      >
+                        <Descriptions bordered column={1} size="middle" className="rounded-xl overflow-hidden border-default">
+                          <Descriptions.Item label="Storage Quota">
+                            {formatLimitValue('quota_gb', sftpData.limits?.quota_bytes, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="File Count Limit">
+                            {formatLimitValue('quota_files', sftpData.limits?.quota_files, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Upload Bandwidth">
+                            {formatLimitValue('upload_bandwidth', sftpData.limits?.upload_bandwidth, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Download Bandwidth">
+                            {formatLimitValue('download_bandwidth', sftpData.limits?.download_bandwidth, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Max Sessions">
+                            {formatLimitValue('max_sessions', sftpData.limits?.max_sessions, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Upload Data Transfer">
+                            {formatLimitValue('upload_data_transfer', sftpData.limits?.upload_data_transfer, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Download Data Transfer">
+                            {formatLimitValue('download_data_transfer', sftpData.limits?.download_data_transfer, selectedPartner.tier)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Total Data Transfer">
+                            {formatLimitValue('total_data_transfer', sftpData.limits?.total_data_transfer, selectedPartner.tier)}
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </Card>
+
                       <div className="bg-background-secondary border border-default rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                           <Title level={5} className="!mb-1 flex items-center gap-2 text-primary"><Activity size={16} /><span>Redeploy Server Access</span></Title>
@@ -631,21 +844,21 @@ function PartnerDetailsPage() {
                           form={sftpForm}
                           layout="vertical"
                           onFinish={handleProvisionSftp}
-                          initialValues={{ username: `partner_${selectedPartner.id}` }}
                         >
-                          <Form.Item
-                            name="username"
-                            label={<Text className="font-semibold text-primary">SFTP Username</Text>}
-                            rules={[{ required: true, message: 'SFTP username is required' }]}
-                          >
-                            <Input className="h-11 rounded-lg font-mono" placeholder="partner_username" />
-                          </Form.Item>
                           <Form.Item
                             name="password"
                             label={<Text className="font-semibold text-primary">SFTP Password</Text>}
                             rules={[{ required: true, message: 'Password is required for credentials' }]}
                           >
                             <Input.Password className="h-11 rounded-lg" placeholder="••••••••••••" />
+                          </Form.Item>
+
+                          <Form.Item
+                            name="allowed_ip"
+                            label={<Text className="font-semibold text-primary">Allowed IP / CIDR Range (Optional)</Text>}
+                            tooltip="Optional comma-separated list of IP addresses or CIDR blocks authorized to connect."
+                          >
+                            <Input className="h-11 rounded-lg font-mono" placeholder="e.g. 192.168.1.1, 10.0.0.0/24" />
                           </Form.Item>
 
                           <Form.Item className="mb-4">
@@ -667,6 +880,125 @@ function PartnerDetailsPage() {
                                 className="font-mono rounded-lg"
                               />
                             </Form.Item>
+                          )}
+
+                          <Form.Item className="mb-4">
+                            <Space align="center">
+                              <Switch checked={showAdvancedLimits} onChange={setShowAdvancedLimits} className="bg-secondary" />
+                              <Text className="font-medium text-primary">Configure Custom Limits & Quotas</Text>
+                            </Space>
+                          </Form.Item>
+
+                          {showAdvancedLimits && (
+                            <div className="bg-background-secondary p-5 rounded-xl border border-default mb-4">
+                              <Title level={5} className="!mb-4 text-primary">Custom Limit Overrides</Title>
+                              <Row gutter={[16, 16]}>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="quota_gb"
+                                    label={<Text className="font-semibold text-primary">Storage Quota (GB)</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={1}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).quota_gb} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="quota_files"
+                                    label={<Text className="font-semibold text-primary">File Count Limit</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={1}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).quota_files} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="upload_bandwidth"
+                                    label={<Text className="font-semibold text-primary">Upload Bandwidth (KB/s)</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={128}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).upload_bandwidth} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="download_bandwidth"
+                                    label={<Text className="font-semibold text-primary">Download Bandwidth (KB/s)</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={128}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).download_bandwidth} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="max_sessions"
+                                    label={<Text className="font-semibold text-primary">Max Sessions</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={1}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).max_sessions} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="upload_data_transfer"
+                                    label={<Text className="font-semibold text-primary">Upload Data Transfer (MB)</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={10}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).upload_data_transfer} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="download_data_transfer"
+                                    label={<Text className="font-semibold text-primary">Download Data Transfer (MB)</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={10}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).download_data_transfer} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item
+                                    name="total_data_transfer"
+                                    label={<Text className="font-semibold text-primary">Total Data Transfer (MB)</Text>}
+                                  >
+                                    <InputNumber
+                                      min={0}
+                                      step={10}
+                                      className="w-full h-11 rounded-lg flex items-center"
+                                      placeholder={`${getTierDefaults(selectedPartner.tier).total_data_transfer} (Plan Default)`}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </div>
                           )}
 
                           <Form.Item className="!mb-0 mt-6">
@@ -1022,6 +1354,135 @@ function PartnerDetailsPage() {
           ]}
         />
       </Card>
+
+      {/* ── Edit SFTP Limits Modal ── */}
+      <Modal
+        title="Edit SFTP Limits"
+        open={editLimitsModalVisible}
+        onCancel={() => setEditLimitsModalVisible(false)}
+        onOk={() => editLimitsForm.submit()}
+        width={650}
+      >
+        <Alert
+          type="info"
+          message="Custom Limit Overrides"
+          description="Specify values here to override the default limits for this partner's tier. Enter 0 for Unlimited. Leave a field blank (or delete its value) to fall back to the plan defaults."
+          showIcon
+          className="mt-4 mb-6 rounded-lg"
+        />
+        <Form
+          form={editLimitsForm}
+          layout="vertical"
+          onFinish={handleUpdateSftpLimits}
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Form.Item
+                name="quota_gb"
+                label={<Text className="font-semibold text-primary">Storage Quota (GB)</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={1}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).quota_gb} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="quota_files"
+                label={<Text className="font-semibold text-primary">File Count Limit</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={1}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).quota_files} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="upload_bandwidth"
+                label={<Text className="font-semibold text-primary">Upload Bandwidth (KB/s)</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={128}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).upload_bandwidth} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="download_bandwidth"
+                label={<Text className="font-semibold text-primary">Download Bandwidth (KB/s)</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={128}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).download_bandwidth} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="max_sessions"
+                label={<Text className="font-semibold text-primary">Max Sessions</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={1}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).max_sessions} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="upload_data_transfer"
+                label={<Text className="font-semibold text-primary">Upload Data Transfer (MB)</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={10}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).upload_data_transfer} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="download_data_transfer"
+                label={<Text className="font-semibold text-primary">Download Data Transfer (MB)</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={10}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).download_data_transfer} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="total_data_transfer"
+                label={<Text className="font-semibold text-primary">Total Data Transfer (MB)</Text>}
+              >
+                <InputNumber
+                  min={0}
+                  step={10}
+                  className="w-full h-11 rounded-lg flex items-center"
+                  placeholder={`${getTierDefaults(selectedPartner.tier).total_data_transfer} (Plan Default)`}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
 
       {/* ── Issue Key Modal ── */}
       <Modal

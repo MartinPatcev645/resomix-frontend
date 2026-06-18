@@ -2,7 +2,7 @@
 
 This guide is the canonical reference for all API endpoints the frontend (admin dashboard, consumer app, B2B partner portal) can call. It is generated from the live route list and should be kept in sync whenever new routes are added.
 
-**Last verified:** 2026-06-07 against live server on `http://localhost:8001`
+**Last verified:** 2026-06-18 against live server on `http://localhost:8001` (SFTP custom limits + update endpoint added in §19.2)
 
 ## Base URL
 
@@ -443,10 +443,80 @@ All admin endpoints require an authenticated admin. Supply either:
 #### SFTP Provisioning
 - **Provision:** `POST /api/v1/admin/partners/sftp/provision` — `201`
   ```json
-  { "partner_id": 42, "username": "acme_sftp", "password": "...", "use_public_key": false, "public_key": null }
+  {
+    "partner_id": 42,
+    "password": "min-8-chars",
+    "use_public_key": false,
+    "public_key": null,
+    "allowed_ip": null,
+
+    "quota_bytes": null,
+    "quota_files": null,
+    "upload_bandwidth": null,
+    "download_bandwidth": null,
+    "max_sessions": null,
+    "upload_data_transfer": null,
+    "download_data_transfer": null,
+    "total_data_transfer": null
+  }
   ```
+  - `username` is **auto-derived** from the partner UUID (`partner_<slug>`) — if sent it is ignored.
+  - `password` required unless `use_public_key=true` (then `public_key` is required). `allowed_ip` = optional comma-separated IP/CIDR allowlist.
+  - **The 8 limit fields are all optional.** Send a value to override; leave it `null` (or omit it) to use the partner tier's default. `0` = unlimited (SFTPGo convention). See the **SFTP Limits** reference table below for units + per-tier defaults.
+
+- **Update SFTP limits:** `PATCH /api/v1/admin/partners/{partner_id}/sftp/limits` — `200`
+  ```json
+  { "quota_bytes": 12884901888, "upload_bandwidth": 5120 }
+  ```
+  - Changes the caps on an already-provisioned partner. **Send only the fields you want to change**; omitted/`null` fields keep their current value. At least one field is required.
+  - Persists the new values (the SFTP auth hook serves them on the partner's next connection) and pushes them to SFTPGo immediately (best-effort).
+  - **Returns** the same body as *Get SFTP status* (with the updated `limits`).
+
 - **Get SFTP status:** `GET /api/v1/admin/partners/{partner_id}/sftp`
-- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry`
+  - **Returns** (now includes the current `limits` so the admin UI can display/prefill them):
+  ```json
+  {
+    "success": true,
+    "data": {
+      "provisioned": true,
+      "host": "sftp.resomix.com",
+      "port": 2022,
+      "username": "partner_65c20f1c06df",
+      "last_provisioned_at": "2026-06-18T10:00:00",
+      "limits": {
+        "quota_bytes": 10737418240,
+        "quota_files": 0,
+        "upload_bandwidth": 0,
+        "download_bandwidth": 0,
+        "max_sessions": 5,
+        "upload_data_transfer": 0,
+        "download_data_transfer": 0,
+        "total_data_transfer": 0
+      }
+    }
+  }
+  ```
+  _`limits` fields are `null` for partners provisioned before custom limits existed._
+
+- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry` — reuses the limits stored at provision time.
+
+##### SFTP Limits reference (units + per-tier defaults)
+
+All limits are optional on provision; `0` = unlimited. When omitted, the partner's
+tier default is used — use these for the frontend form's default/placeholder values.
+
+| Field | Unit | sandbox | starter | growth | enterprise |
+|---|---|---|---|---|---|
+| `quota_bytes` | bytes | `1073741824` (1 GB) | `10737418240` (10 GB) | `53687091200` (50 GB) | `0` (unlimited) |
+| `quota_files` | count | `0` | `0` | `0` | `0` |
+| `upload_bandwidth` | KB/s | `2048` | `0` | `0` | `0` |
+| `download_bandwidth` | KB/s | `4096` | `0` | `0` | `0` |
+| `max_sessions` | count | `2` | `5` | `10` | `0` |
+| `upload_data_transfer` | MB | `0` | `0` | `0` | `0` |
+| `download_data_transfer` | MB | `0` | `0` | `0` | `0` |
+| `total_data_transfer` | MB | `0` | `0` | `0` | `0` |
+
+> UI tips: show quota in GB (convert to bytes on submit: `GB × 1073741824`), bandwidth in KB/s, transfer caps in MB. Label `0` as "Unlimited".
 
 #### Webhook Subscriptions
 - **Create webhook:** `POST /api/v1/admin/partners/webhooks` — `201`
@@ -631,33 +701,28 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
   ```
   _`status` values: `pending` → `running` → `paused` → `completed` | `partial` | `failed`_
 
-#### Pause Job
-- **`POST /api/v1/admin/processing/jobs/{job_id}/pause`** — `200 OK`
-- **Description:** Pause a running embeddings processing job.
+#### Pause a Running Embeddings Job
+- **`POST /api/v1/admin/processing/jobs/{job_id}/pause`** — `200`
+- **Description:** Signals the media server to stop after the current track. In-flight tracks finish, then the job persists a `paused` snapshot. Only `embeddings` jobs support pause (`400` otherwise; `404` if the job doesn't exist).
 - **Returns:**
   ```json
-  {
-    "status": "accepted",
-    "message": "Pause requested",
-    "job_id": 17,
-    "job_status": "paused"
-  }
+  { "status": "accepted", "message": "Pause requested", "job_id": 17, "job_status": "paused" }
   ```
+  _`502` with `{ "status": "error", "detail": "..." }` if the media server can't be reached._
 
-#### Resume Job
+#### Resume a Paused / Interrupted Embeddings Job
 - **`POST /api/v1/admin/processing/jobs/{job_id}/resume`** — `202 Accepted`
-- **Description:** Resume a paused or crashed/interrupted processing job.
-- **Query params:** `env` (optional, default `"live"`), `index_after` (optional, default `true`)
+- **Query params:**
+  | Param | Default | Description |
+  |---|---|---|
+  | `env` | `live` | `"live"` = persist; `"test"` = dry-run |
+  | `index_after` | `true` | Rebuild the partner FAISS index from all embeddings on completion |
+- **Description:** Re-hands the job's full track list to the media server; tracks that already have embeddings are skipped, so it picks up where it left off (also recovers a job interrupted by a crash/restart). Only `embeddings` jobs (`400` otherwise; `404` if missing).
 - **Returns:**
   ```json
-  {
-    "status": "accepted",
-    "message": "Embeddings job resumed",
-    "job_id": 17,
-    "job_status": "running",
-    "total_tracks": 50
-  }
+  { "status": "accepted", "message": "Embeddings job resumed", "job_id": 17, "job_status": "running", "total_tracks": 200 }
   ```
+  _`502` if the media server can't be reached._
 
 #### List Jobs
 - **`GET /api/v1/admin/processing/jobs`**
