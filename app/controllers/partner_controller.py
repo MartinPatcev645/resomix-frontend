@@ -442,12 +442,13 @@ class PartnerController:
             )
 
     async def retry_partner_sftp(
-        self, db: AsyncSession, request: Request, partner_id: int, current_admin: Optional[User] = None
+        self, db: AsyncSession, request: Request, partner_id: int,
+        password: Optional[str] = None, current_admin: Optional[User] = None
     ) -> JSONResponse:
         """Retry Hetzner provisioning for a partner."""
         ip_address = request.client.host if request and request.client else None
         try:
-            sftp_user = await self.sftp_service.retry_provisioning(db, partner_id)
+            sftp_user = await self.sftp_service.retry_provisioning(db, partner_id, password=password)
             
             if current_admin:
                 await self.admin_log_service.log_operation(

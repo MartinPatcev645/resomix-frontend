@@ -250,6 +250,13 @@ class SftpLimitsUpdateRequest(BaseModel):
         return self
 
 
+class SftpRetryRequest(BaseModel):
+    """Body for retrying SFTP provisioning. The partner's plaintext password is not
+    stored, so the admin re-supplies it here; it becomes the partner's login password.
+    Optional only for public-key accounts."""
+    password: Optional[str] = Field(default=None, min_length=8)
+
+
 class SftpStatusDetail(BaseModel):
     """SFTP status details matching frontend expectations."""
     provisioned: bool

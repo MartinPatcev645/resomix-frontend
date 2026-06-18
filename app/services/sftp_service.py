@@ -311,33 +311,50 @@ class SftpService:
         self,
         db: AsyncSession,
         partner_id: int,
+        password: Optional[str] = None,
         current_admin: Optional[User] = None,
         ip_address: Optional[str] = None
     ) -> SftpUser:
-        """Retry the Hetzner provisioning call for an unprovisioned SFTP user."""
+        """Retry the Hetzner provisioning call for an unprovisioned SFTP user.
+
+        The partner's plaintext password is intentionally never stored (only its
+        bcrypt hash), so it can't be reconstructed on retry. The admin therefore
+        re-supplies it: it is sent to SFTPGo as the real login password, and the
+        stored bcrypt hash is updated to match so the auth hook keeps verifying the
+        partner's logins. ``password`` may be omitted only for public-key accounts.
+        """
         try:
             sftp_user = await sftp_user_repo.get_by_partner_id(db, partner_id)
             if not sftp_user:
                 raise ValueError(f"SFTP user for partner {partner_id} not found")
-                
+
             if sftp_user.sftp_provisioned_at is not None:
                 raise ValueError("SFTP account is already fully provisioned")
-                
+
+            # Password is required to (re)create a password-authenticated SFTPGo user.
+            if not password and not sftp_user.use_public_key:
+                raise ValueError("Password is required to retry provisioning for this account")
+
             partner = await self.partner_repo.async_get_by_id(db, partner_id)
             # Reuse the limits chosen at provision time (persisted on the row), with
             # a tier fallback for legacy rows that predate the limit columns.
             limits = self.effective_limits(sftp_user, partner)
             limits["quota_bytes"] = limits.pop("quota_size")
 
+            # Hash the re-supplied password now (so the auth hook verifies against it),
+            # but only commit the new hash once provisioning actually succeeds.
+            new_password_hash = hash_password(password) if password else None
+
             try:
                 await self._call_hetzner_provisioning(
                     partner.id,
                     sftp_user.username,
-                    sftp_user.password_hash,
+                    new_password_hash or sftp_user.password_hash,
                     sftp_user.sftp_home_dir or sftp_user.home_directory,
                     limits,
                     sftp_user.use_public_key,
-                    sftp_user.public_key
+                    sftp_user.public_key,
+                    password=password,  # PLAINTEXT — what SFTPGo actually stores/hashes
                 )
             except Exception as e:
                 logger.error(f"Failed to retry SFTP provisioning on Hetzner: {e}")
@@ -354,7 +371,13 @@ class SftpService:
                     )
                 await db.commit() # Keep the DB state
                 raise RuntimeError(f"Hetzner provisioning retry failed: {e}")
-                
+
+            # Provisioning succeeded → persist the new password hash so the partner's
+            # login (verified by the auth hook) matches what we just sent to SFTPGo.
+            if new_password_hash:
+                sftp_user.password_hash = new_password_hash
+                db.add(sftp_user)
+
             sftp_user = await sftp_user_repo.mark_provisioned(db, sftp_user)
 
             if current_admin:

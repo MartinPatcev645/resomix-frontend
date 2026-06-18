@@ -32,6 +32,7 @@ from app.schemas.partner import (
     SftpProvisionResponse,
     SftpStatusResponse,
     SftpLimitsUpdateRequest,
+    SftpRetryRequest,
 )
 
 router = APIRouter(
@@ -250,11 +251,15 @@ async def get_sftp_status(
 async def retry_sftp_provisioning(
     request: Request,
     partner_id: int,
+    payload: Optional[SftpRetryRequest] = None,
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("partners:manage"))
 ) -> JSONResponse:
-    return await partner_controller.retry_partner_sftp(db, request, partner_id, current_admin=current_admin)
+    # Body is optional (public-key accounts need no password); password-auth
+    # accounts must supply the password the admin re-enters in the retry modal.
+    password = payload.password if payload else None
+    return await partner_controller.retry_partner_sftp(db, request, partner_id, password=password, current_admin=current_admin)
 
 
 # --- NEW: Webhook Administration (CRUD & Logs) & Stripe B2B Checkout ---

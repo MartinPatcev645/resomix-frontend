@@ -498,7 +498,14 @@ All admin endpoints require an authenticated admin. Supply either:
   ```
   _`limits` fields are `null` for partners provisioned before custom limits existed._
 
-- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry` — reuses the limits stored at provision time.
+- **Retry provisioning:** `POST /api/v1/admin/partners/{partner_id}/sftp/retry`
+  ```json
+  { "password": "min-8-chars" }
+  ```
+  - For accounts that already failed initial provisioning (`sftp_provisioned_at` is null). Re-creates the SFTPGo user with the limits stored at provision time.
+  - **Send the partner's password again** (the plaintext is never stored). It becomes the partner's login password — the SFTPGo user is created with it and the stored hash is updated to match. `password` may be omitted **only** for public-key accounts.
+  - If the account is already fully provisioned, returns `400` with `"SFTP account is already fully provisioned"` (no-op — nothing to do).
+  - **Returns** the same body as *Get SFTP status*.
 
 ##### SFTP Limits reference (units + per-tier defaults)
 
@@ -699,7 +706,30 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
     }
   }
   ```
-  _`status` values: `pending` → `running` → `completed` | `partial` | `failed`_
+  _`status` values: `pending` → `running` → `paused` → `completed` | `partial` | `failed`_
+
+#### Pause a Running Embeddings Job
+- **`POST /api/v1/admin/processing/jobs/{job_id}/pause`** — `200`
+- **Description:** Signals the media server to stop after the current track. In-flight tracks finish, then the job persists a `paused` snapshot. Only `embeddings` jobs support pause (`400` otherwise; `404` if the job doesn't exist).
+- **Returns:**
+  ```json
+  { "status": "accepted", "message": "Pause requested", "job_id": 17, "job_status": "paused" }
+  ```
+  _`502` with `{ "status": "error", "detail": "..." }` if the media server can't be reached._
+
+#### Resume a Paused / Interrupted Embeddings Job
+- **`POST /api/v1/admin/processing/jobs/{job_id}/resume`** — `202 Accepted`
+- **Query params:**
+  | Param | Default | Description |
+  |---|---|---|
+  | `env` | `live` | `"live"` = persist; `"test"` = dry-run |
+  | `index_after` | `true` | Rebuild the partner FAISS index from all embeddings on completion |
+- **Description:** Re-hands the job's full track list to the media server; tracks that already have embeddings are skipped, so it picks up where it left off (also recovers a job interrupted by a crash/restart). Only `embeddings` jobs (`400` otherwise; `404` if missing).
+- **Returns:**
+  ```json
+  { "status": "accepted", "message": "Embeddings job resumed", "job_id": 17, "job_status": "running", "total_tracks": 200 }
+  ```
+  _`502` if the media server can't be reached._
 
 #### List Jobs
 - **`GET /api/v1/admin/processing/jobs`**
