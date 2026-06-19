@@ -185,12 +185,20 @@ async def start_embeddings_job(
 
     items = [{"track_uuid": t["track_uuid"], "filename": t["filename"]} for t in targets]
 
+    processing_dir = None
+    if ingest_log_id:
+        from app.models.b2b import IngestLog
+        log = await db.get(IngestLog, ingest_log_id)
+        if log:
+            processing_dir = log.processing_dir
+
     result = await hetzner_service.start_embeddings(
         job_id=job_id,
         partner_id=partner_id,
         items=items,
         env=env,
         index_after=index_after and not dry_run,
+        processing_dir=processing_dir,
     )
 
     if not result.get("success"):
@@ -403,6 +411,34 @@ async def apply_embeddings_result(
             job.status = "partial"
     job.completed_at = datetime.utcnow()
     await db.commit()
+    
+    if job.ingest_log_id and job.status in ("completed", "partial"):
+        from app.models.b2b import IngestLog
+        from app.services.ingestion_stages import advance_stage, Stage
+        from app.tasks.webhooks import dispatch_webhook
+        
+        log = await db.get(IngestLog, job.ingest_log_id)
+        if log and log.status != "COMPLETED":
+            advance_stage(log, Stage.EMBEDDING)
+            advance_stage(log, Stage.INDEXED)
+            advance_stage(log, Stage.FINALIZING)
+            advance_stage(log, Stage.READY)
+            log.status = "COMPLETED"
+            log.completed_at = datetime.utcnow()
+            await db.commit()
+            
+            dispatch_webhook.delay(
+                partner_id=partner_id,
+                event_type="ingestion.completed",
+                payload={
+                    "batch": log.batch_filename,
+                    "status": "completed",
+                    "stage": Stage.READY,
+                    "track_count": log.track_count,
+                    "env": env,
+                },
+            )
+
     logger.info(
         f"[ProcessingService] Job {job.id} finalized from media server: env={env} "
         f"processed={processed} failed={failed} status={job.status}"

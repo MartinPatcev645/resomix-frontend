@@ -295,3 +295,130 @@ async def test_stop_track_404(admin_auth_headers):
         async with _client() as ac:
             res = await ac.post("/api/v1/admin/tracks/99999999/stop", headers=admin_auth_headers)
     assert res.status_code == 404
+
+@pytest.mark.asyncio
+async def test_apply_ingestion_result_new_error_codes_critical(admin_auth_headers, seeded):
+    from sqlalchemy import select
+    from app.models.b2b import IngestionError
+    
+    # Set the log to PROCESSING so it polls Hetzner
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.status = "PROCESSING"
+        await db.commit()
+
+    with patch(
+        "app.api.routers.admin.processing.hetzner_service.get_ingestion_status", new_callable=AsyncMock
+    ) as mock_status:
+        mock_status.return_value = {
+            "success": True,
+            "data": {
+                "status": "failed",
+                "errors": [
+                    {"code": "ZIP_BOMB", "message": "Zip bomb detected"},
+                    {"code": "DISALLOWED_ZIP_ENTRY", "message": "Bad file"},
+                    {"code": "WARNING_CODE", "message": "Just a warning"},
+                ]
+            }
+        }
+        async with _client() as ac:
+            res = await ac.get(
+                f"/api/v1/admin/ingestion/logs/{seeded['log'].id}/status", headers=admin_auth_headers
+            )
+            
+    assert res.status_code == 200
+    
+    async with AsyncSessionLocal() as db:
+        errors = (await db.execute(select(IngestionError).where(IngestionError.ingest_log_id == seeded['log'].id))).scalars().all()
+    
+    assert len(errors) == 3
+    critical_errors = [e.error_code for e in errors if e.error_severity == "critical"]
+    warning_errors = [e.error_code for e in errors if e.error_severity == "warning"]
+    
+    assert "ZIP_BOMB" in critical_errors
+    assert "DISALLOWED_ZIP_ENTRY" in critical_errors
+    assert "WARNING_CODE" in warning_errors
+
+
+@pytest.mark.asyncio
+async def test_apply_ingestion_result_stores_processing_dir(admin_auth_headers, seeded):
+    """When Hetzner returns processing_dir in its result JSON, apply_ingestion_result
+    stores it on IngestLog.processing_dir, and start_embeddings_job later threads it
+    through to hetzner_service.start_embeddings."""
+    from app.services.ingestion_service import apply_ingestion_result
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.status = "PROCESSING"
+        log.stage = None
+        await db.commit()
+
+    expected_dir = "processing/2026-06-19T120000Z"
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        await apply_ingestion_result(
+            db,
+            log,
+            {
+                "status": "completed",
+                "env": "live",
+                "processing_dir": expected_dir,
+                "records": [],
+            },
+        )
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        assert log.processing_dir == expected_dir
+
+
+@pytest.mark.asyncio
+async def test_apply_embeddings_result_advances_ingest_log_stages(admin_auth_headers, seeded):
+    """When an embeddings job completes, apply_embeddings_result should stamp
+    EMBEDDING→INDEXED→FINALIZING→READY on the linked IngestLog and flip it to
+    status=COMPLETED."""
+    from app.services.partner_processing_service import apply_embeddings_result
+    from app.services.ingestion_stages import Stage
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+
+    # Seed a PartnerProcessingJob linked to the ingest log.
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.status = "PROCESSING"
+        log.stage = Stage.INGESTED
+        log.stage_timeline = {Stage.INGESTED: "2026-06-19T10:00:00+00:00"}
+        await db.commit()
+
+        job = PartnerProcessingJob(
+            partner_id=seeded["partner"].id,
+            ingest_log_id=seeded["log"].id,
+            job_type="embeddings",
+            status="running",
+        )
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+
+    with patch("app.tasks.webhooks.dispatch_webhook") as mock_wh:
+        mock_wh.delay = lambda **kw: None
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job.id)
+            await apply_embeddings_result(
+                db,
+                job,
+                {"status": "completed", "env": "live", "results": []},
+            )
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+
+    assert log.status == "COMPLETED"
+    assert log.stage == Stage.READY
+    timeline_stages = set(log.stage_timeline or {})
+    assert Stage.EMBEDDING in timeline_stages
+    assert Stage.INDEXED in timeline_stages
+    assert Stage.FINALIZING in timeline_stages
+    assert Stage.READY in timeline_stages

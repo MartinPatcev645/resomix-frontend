@@ -143,6 +143,7 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
             "/": ["list"],
             "/live": ["list", "download", "upload", "delete"],
             "/test": ["list", "download", "upload", "delete"],
+            "/processing": ["list"],
         },
         "filters": {
             "file_patterns": [
@@ -225,19 +226,44 @@ async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
                 # it to its own host path.
                 home_dir = sftp_user.sftp_home_dir or f"{settings.sftp_base_path}/partners/{partner_id}"
 
-                async def _handoff_ingestion(p_id: int, h_dir: str, b_env: str):
+                from app.models.b2b import IngestLog
+                from app.services.ingestion_service import (
+                    acquire_partner_ingest_lock, release_partner_ingest_lock,
+                    has_active_batch, create_ingest_log, dispatch_to_media,
+                    reject_duplicate_done,
+                )
+
+                # ── Concurrency guard: one active batch per partner ───────────
+                # Hold a short per-partner lock across the active-check + row
+                # creation so a racing .done can't slip through; if the lock is
+                # already held, or there's already an active batch, delete just
+                # this .done marker and notify the partner to wait.
+                lock_token = await acquire_partner_ingest_lock(partner_id)
+                if lock_token is None:
+                    await reject_duplicate_done(partner_id, home_dir, env)
+                    return {"status": "ok"}
+
+                try:
+                    active = await has_active_batch(db, partner_id)
+                    if active is not None:
+                        await reject_duplicate_done(partner_id, home_dir, env, active_log=active)
+                        return {"status": "ok"}
+                    # No active batch → create the row NOW (under the lock) so a
+                    # racing .done sees it; hand off to media in the background.
+                    log_entry = await create_ingest_log(db, partner_id, home_dir, env)
+                finally:
+                    await release_partner_ingest_lock(partner_id, lock_token)
+
+                async def _handoff_ingestion(log_id: int, p_id: int, h_dir: str, b_env: str):
                     logger.info(
                         f"Handing off incoming batch for partner {p_id} (env={b_env}) to media server"
                     )
                     async with AsyncSessionLocal() as task_db:
-                        await start_ingestion_job(
-                            task_db,
-                            partner_id=p_id,
-                            home_dir=h_dir,
-                            env=b_env,
-                        )
+                        log = await task_db.get(IngestLog, log_id)
+                        if log is not None:
+                            await dispatch_to_media(task_db, log, p_id, h_dir, b_env)
 
-                background_tasks.add_task(_handoff_ingestion, partner_id, home_dir, env)
+                background_tasks.add_task(_handoff_ingestion, log_entry.id, partner_id, home_dir, env)
 
     return {"status": "ok"}
 

@@ -137,6 +137,7 @@ async def test_sftp_auth_hook_success(setup_sftp_partner, temp_sftp_dir):
     assert data["permissions"]["/"] == ["list"]
     assert "upload" in data["permissions"]["/live"]
     assert "upload" in data["permissions"]["/test"]
+    assert data["permissions"]["/processing"] == ["list"]
     assert data["quota_size"] == 53687091200
 
 @pytest.mark.asyncio
@@ -345,6 +346,65 @@ async def test_sftp_ingestion_event_hands_off_to_media_server(setup_sftp_partner
     _, kwargs = mock_start.call_args
     assert kwargs["partner_id"] == partner_id
     assert kwargs["env"] == "live"
+
+
+@pytest.mark.asyncio
+async def test_sftp_event_rejects_done_when_batch_active(setup_sftp_partner, temp_sftp_dir):
+    """A .done that arrives while the partner already has an ACTIVE batch is
+    rejected: the media box is asked to delete only the marker, the partner is
+    notified, and NO second ingestion is started (no new ingest_logs row)."""
+    from sqlalchemy import select, func
+    from app.models.b2b import IngestLog
+    from app.models.party import Party
+    from app.services.ingestion_stages import Stage, advance_stage
+
+    creds = setup_sftp_partner
+    partner_id = creds["partner_id"]
+
+    # Seed one ACTIVE batch (INGESTED is non-terminal → blocks new uploads).
+    async with AsyncSessionLocal() as db:
+        party_id = (await db.execute(
+            select(Party.party_id).where(Party.partner_id == partner_id).limit(1)
+        )).scalar_one()
+        active = IngestLog(
+            partner_id=partner_id, party_id=party_id,
+            package_folder="x/live", status="PROCESSING",
+        )
+        advance_stage(active, Stage.INGESTED)
+        db.add(active)
+        await db.commit()
+
+    from app.core.context import set_current_partner_id
+    set_current_partner_id(partner_id)
+
+    with patch(
+        "app.services.hetzner_service.HetznerService.reject_done", new_callable=AsyncMock
+    ) as mock_reject, patch(
+        "app.services.hetzner_service.HetznerService.start_ingestion", new_callable=AsyncMock
+    ) as mock_start, patch(
+        "app.services.ingestion_service.dispatch_webhook.delay"
+    ):
+        mock_reject.return_value = {"success": True, "data": {"deleted": True}}
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            resp = await ac.post(
+                "/internal/sftp/event",
+                json={
+                    "action": "upload", "name": ".done",
+                    "username": creds["username"], "virtual_target_path": "/live/.done",
+                },
+            )
+
+    assert resp.status_code == 200
+    # Reject path taken synchronously; no ingestion handed off.
+    mock_reject.assert_awaited_once()
+    mock_start.assert_not_awaited()
+
+    # Still exactly one batch for this partner — no duplicate was created.
+    async with AsyncSessionLocal() as db:
+        count = (await db.execute(
+            select(func.count(IngestLog.id)).where(IngestLog.partner_id == partner_id)
+        )).scalar()
+    assert count == 1
 
 
 @pytest.mark.asyncio

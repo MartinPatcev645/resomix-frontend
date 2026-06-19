@@ -8,15 +8,18 @@ Validates metadata, handles insertion of Tracks and Deals, and logs row-level er
 
 import csv
 import logging
+import secrets
 import uuid
 import os
 from datetime import datetime
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_
 
 from typing import Optional
+import redis.asyncio as aioredis
+from app.db import redis as redis_module
 from app.models.b2b import IngestLog, IngestionError, Deal
 from app.models.track import Track
 from app.models.audio_file import AudioFile
@@ -24,6 +27,7 @@ from app.core.context import set_current_partner_id
 from database.connection import AsyncSessionLocal
 from sqlalchemy import text
 from app.tasks.webhooks import dispatch_webhook
+from app.services.ingestion_stages import Stage, advance_stage, ACTIVE_STAGES
 
 logger = logging.getLogger(__name__)
 
@@ -43,27 +47,122 @@ logger = logging.getLogger(__name__)
 #
 # Hetzner stays DB-less; all persistence happens here.
 
-async def start_ingestion_job(
+# ---------------------------------------------------------------------------
+# Per-partner concurrency guard (Stage 3): one active batch per partner.
+# ---------------------------------------------------------------------------
+_INGEST_LOCK_TTL_SECONDS = 60
+_NO_REDIS_TOKEN = "no-redis"
+
+
+def _partner_ingest_lock_key(partner_id: int) -> str:
+    return f"ingest:lock:{partner_id}"
+
+
+async def acquire_partner_ingest_lock(partner_id: int) -> Optional[str]:
+    """Best-effort per-partner lock that serialises ``.done`` handling.
+
+    Returns a token if acquired (caller MUST release), or ``None`` if the lock is
+    already held (a concurrent ``.done`` is mid-flight → reject). If Redis is
+    unavailable the lock is a no-op (returns a sentinel token) and we rely on the
+    DB active-batch check alone.
+    """
+    pool = redis_module._redis_pool
+    if not pool:
+        return _NO_REDIS_TOKEN
+    try:
+        client = aioredis.Redis(connection_pool=pool)
+        token = secrets.token_hex(8)
+        ok = await client.set(
+            _partner_ingest_lock_key(partner_id), token, nx=True, ex=_INGEST_LOCK_TTL_SECONDS
+        )
+        return token if ok else None
+    except Exception as e:  # Redis hiccup → don't block ingestion, fall back to DB check
+        logger.warning(f"[IngestionService] ingest lock acquire failed for {partner_id}: {e}")
+        return _NO_REDIS_TOKEN
+
+
+async def release_partner_ingest_lock(partner_id: int, token: Optional[str]) -> None:
+    """Release the lock only if we still own it (compare-and-delete)."""
+    if not token or token == _NO_REDIS_TOKEN:
+        return
+    pool = redis_module._redis_pool
+    if not pool:
+        return
+    try:
+        client = aioredis.Redis(connection_pool=pool)
+        key = _partner_ingest_lock_key(partner_id)
+        current = await client.get(key)
+        if current is not None and (current.decode() if isinstance(current, bytes) else current) == token:
+            await client.delete(key)
+    except Exception as e:
+        logger.warning(f"[IngestionService] ingest lock release failed for {partner_id}: {e}")
+
+
+async def has_active_batch(db: AsyncSession, partner_id: int) -> Optional[IngestLog]:
+    """Return the partner's currently-active batch row, if any.
+
+    Active = a fine-grained ``stage`` that is non-terminal (RECEIVED … FINALIZING),
+    OR a legacy row (``stage`` NULL) still in coarse status ``PROCESSING``. This is
+    exactly what the ``.done`` guard checks — one active batch per partner.
+    """
+    stmt = (
+        select(IngestLog)
+        .where(
+            IngestLog.partner_id == partner_id,
+            or_(
+                IngestLog.stage.in_(ACTIVE_STAGES),
+                and_(IngestLog.stage.is_(None), IngestLog.status == "PROCESSING"),
+            ),
+        )
+        .order_by(IngestLog.id.desc())
+        .limit(1)
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def reject_duplicate_done(
+    partner_id: int, home_dir: str, env: str, active_log: Optional[IngestLog] = None
+) -> dict:
+    """A ``.done`` arrived while the partner already has an active batch.
+
+    Delete ONLY that marker on the media box (the rest of ``live/`` is untouched)
+    and notify the partner to wait. Never creates an ``ingest_logs`` row.
+    """
+    from app.services.hetzner_service import HetznerService
+
+    result = await HetznerService().reject_done(partner_id, home_dir, env)
+    dispatch_webhook.delay(
+        partner_id=partner_id,
+        event_type="ingestion.rejected",
+        payload={
+            "reason": (
+                "A batch is already in progress for this partner. Wait until it "
+                "completes (through embedding) before uploading another .done."
+            ),
+            "active_ingest_log_id": getattr(active_log, "id", None),
+            "active_stage": getattr(active_log, "stage", None),
+            "env": env,
+        },
+    )
+    logger.info(
+        "[IngestionService] Rejected duplicate .done for partner %s (env=%s); marker_deleted=%s",
+        partner_id, env, result.get("success"),
+    )
+    return result
+
+
+async def create_ingest_log(
     db: AsyncSession,
     partner_id: int,
     home_dir: str,
     env: str = "live",
-):
-    """Create the ingest_logs row and hand the job off to Hetzner (fire-and-forget).
+) -> IngestLog:
+    """Insert the ``ingest_logs`` row (stage RECEIVED) and commit.
 
-    Args:
-        db: Active session (the calling request's session).
-        partner_id: The tenant ID.
-        home_dir: The partner's SFTP container home (``/srv/sftp/partners/<slug>``).
-            Hetzner translates this to its host path; the basename (slug) is what
-            matters cross-server.
-        env: ``"test"`` (dry-run) or ``"live"``.
-
-    Returns:
-        The created ``IngestLog`` instance (status PROCESSING, or FAILED if the
-        Hetzner hand-off could not be initiated).
+    Split out from the media hand-off so the concurrency guard can create the row
+    **synchronously under the per-partner lock** — once it exists, a racing ``.done``
+    sees an active batch and is rejected.
     """
-    from app.services.hetzner_service import HetznerService
     from app.models.party import Party
     from app.models.partner import Partner
 
@@ -101,9 +200,28 @@ async def start_ingestion_job(
         status="PROCESSING",
         started_at=datetime.utcnow(),
     )
+    # v2 fine-grained lifecycle: the batch has been received and accepted.
+    advance_stage(log_entry, Stage.RECEIVED)
     db.add(log_entry)
     await db.commit()
     await db.refresh(log_entry)
+    return log_entry
+
+
+async def dispatch_to_media(
+    db: AsyncSession,
+    log_entry: IngestLog,
+    partner_id: int,
+    home_dir: str,
+    env: str = "live",
+) -> IngestLog:
+    """Hand the (already-created) batch off to Hetzner and advance its stage."""
+    from app.services.hetzner_service import HetznerService
+
+    env = (env or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+    set_current_partner_id(partner_id)
 
     # ingest_logs.id is the cross-server job key.
     result = await HetznerService().start_ingestion(
@@ -115,6 +233,7 @@ async def start_ingestion_job(
 
     if not result.get("success"):
         log_entry.status = "FAILED"
+        advance_stage(log_entry, Stage.FAILED)
         log_entry.error_message = (
             f"Could not start ingestion on media server: "
             f"{result.get('error')} {result.get('detail') or ''}".strip()
@@ -127,6 +246,11 @@ async def start_ingestion_job(
             f"job {log_entry.id}: {log_entry.error_message}"
         )
         return log_entry
+
+    # Hand-off accepted → Hetzner is now validating the batch.
+    advance_stage(log_entry, Stage.VALIDATING)
+    await db.commit()
+    await db.refresh(log_entry)
 
     dispatch_webhook.delay(
         partner_id=partner_id,
@@ -143,6 +267,23 @@ async def start_ingestion_job(
         f"(partner {partner_id}, env={env})."
     )
     return log_entry
+
+
+async def start_ingestion_job(
+    db: AsyncSession,
+    partner_id: int,
+    home_dir: str,
+    env: str = "live",
+) -> IngestLog:
+    """Create the ``ingest_logs`` row and hand the job off to Hetzner.
+
+    Thin wrapper preserved for direct callers/tests. The SFTP event hook does NOT
+    use this — it creates the row under the per-partner lock (``create_ingest_log``)
+    and hands off separately (``dispatch_to_media``) so the concurrency guard can
+    close the race.
+    """
+    log_entry = await create_ingest_log(db, partner_id, home_dir, env)
+    return await dispatch_to_media(db, log_entry, partner_id, home_dir, env)
 
 
 async def apply_ingestion_result(
@@ -175,6 +316,9 @@ async def apply_ingestion_result(
 
     if state.get("batch_filename"):
         log_entry.batch_filename = state["batch_filename"]
+    
+    if state.get("processing_dir"):
+        log_entry.processing_dir = state["processing_dir"]
 
     # --- FAILED on Hetzner (validation errors or runner exception) ---
     if remote_status == "failed":
@@ -188,6 +332,9 @@ async def apply_ingestion_result(
                 "MISSING_HEADERS", "MISSING_ISRC", "MISSING_TITLE",
                 "MISSING_AUDIO_FILENAME", "MISSING_AUDIO_FILE",
                 "DUPLICATE_ISRC_IN_BATCH",
+                "DISALLOWED_ZIP_ENTRY", "ZIP_CONTAINS_FOLDER",
+                "ZIP_SYMLINK", "ZIP_BOMB", "AV_INFECTED",
+                "NOT_AUDIO", "EXTRA_FILE_NOT_IN_MANIFEST"
             ] else "warning"
             db.add(IngestionError(
                 ingest_log_id=log_entry.id,
@@ -198,6 +345,7 @@ async def apply_ingestion_result(
                 reference_node=str(ref),
             ))
         log_entry.status = "FAILED"
+        advance_stage(log_entry, Stage.FAILED_VALIDATION)
         log_entry.track_count = 0
         log_entry.error_message = state.get("error_message") or (
             f"Validation failed with {len(errors)} error(s). Ingestion aborted."
@@ -220,8 +368,11 @@ async def apply_ingestion_result(
     records = state.get("records") or []
 
     if env == "test":
-        # Dry-run: validation passed, persist nothing.
+        # Dry-run: validation passed, persist nothing. Terminal immediately (no
+        # move/transcode/embedding follows), so mark READY so it never counts as an
+        # active batch blocking the partner.
         log_entry.status = "COMPLETED"
+        advance_stage(log_entry, Stage.READY)
         log_entry.track_count = len(records)
         log_entry.error_message = (
             f"DRY-RUN (test env): {len(records)} track(s) passed validation. "
@@ -333,6 +484,10 @@ async def apply_ingestion_result(
             inserted.append(new_track)
 
         log_entry.status = "COMPLETED"
+        # v2: tracks persisted + raw ready = "ingestion successful". The batch stays
+        # ACTIVE (INGESTED ∈ active stages) until the admin runs embeddings → READY,
+        # which is what blocks the partner from a new .done in the meantime.
+        advance_stage(log_entry, Stage.INGESTED)
         log_entry.track_count = len(inserted)
         log_entry.completed_at = datetime.utcnow()
         await db.commit()
@@ -344,6 +499,7 @@ async def apply_ingestion_result(
     except Exception as exc:
         await db.rollback()
         log_entry.status = "FAILED"
+        advance_stage(log_entry, Stage.FAILED)
         log_entry.error_message = f"Failed to persist validated records: {exc}"
         log_entry.completed_at = datetime.utcnow()
         await db.commit()

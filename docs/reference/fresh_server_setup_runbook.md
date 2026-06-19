@@ -53,8 +53,10 @@ audiowaveform --version
 # If the PPA has no build for this Ubuntu release, grab the .deb from
 # https://github.com/bbc/audiowaveform/releases and: sudo apt install -y ./audiowaveform_*.deb
 
-# ClamAV — Alwyzon virus-scans every uploaded audio file (similarity/upload).
-# Without the clamd daemon socket, /api/v1/similarity/upload returns 500.
+# ClamAV — used by BOTH apps:
+#   • Alwyzon virus-scans every similarity/upload audio file (500 without the socket).
+#   • Media virus-scans every ingestion file in the validation phase (ingestion v2),
+#     when ANTIVIRUS_ENABLED=true in the media .env.
 sudo apt install -y clamav clamav-daemon
 sudo systemctl stop clamav-freshclam            # release the DB lock
 sudo freshclam                                  # download the initial virus DB (a few min)
@@ -547,6 +549,17 @@ SFTPGO_ADMIN_PASS=<SFTPGO_ADMIN_PASS from D3>
 PARTNER_DATA_ROOT=/srv/resomix/partners             # ⚠️ remapped
 PARTNER_SFTP_ROOT=/srv/sftp/partners                # ⚠️ remapped
 SHARED_ASSETS_ROOT=/srv/resomix/shared              # ⚠️ remapped
+
+# ── Ingestion pipeline v2 — Celery + antivirus (worker unit in Part H) ─
+# ⚠️ Single box: the media app shares the box Redis but uses its OWN db indices
+#    (2/3) so its Celery tasks never collide with Alwyzon's Celery (db 0/1).
+#    Production split: point these at the media box's own local Redis.
+CELERY_BROKER_URL=redis://127.0.0.1:6379/2
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/3
+MEDIA_REDIS_URL=redis://127.0.0.1:6379/2
+# clamd installed in Part A1 → enable AV for the ingestion validation phase.
+ANTIVIRUS_ENABLED=true                              # ⚠️ false on a box without clamd
+CLAMD_SOCKET=/var/run/clamav/clamd.ctl
 ```
 
 > If you don't already have shared `PREVIEW_*` secrets, generate them once and
@@ -1208,11 +1221,37 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
+**Media Celery worker** (ingestion v2 — durable validate/move/transcode/embed) —
+`/etc/systemd/system/resomix-media-worker.service`:
+
+```ini
+[Unit]
+Description=Resomix Media Celery Worker (ingestion pipeline)
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+User=devuser
+WorkingDirectory=/home/devuser/resomix-similarity-open
+ExecStart=/home/devuser/resomix-similarity-open/.venv/bin/celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now resomix-api resomix-media
-sudo systemctl status resomix-api resomix-media sftpgo
+sudo systemctl enable --now resomix-api resomix-media resomix-media-worker
+sudo systemctl status resomix-api resomix-media resomix-media-worker sftpgo
+# Verify the worker is wired to its broker:
+cd /home/devuser/resomix-similarity-open && \
+  .venv/bin/python -c "from app.tasks.celery_app import ping; print(ping.delay().get(timeout=10))"   # → pong
 ```
+
+> The media worker shares the box Redis but uses its own db indices (`/2`,`/3`,
+> see Part C `.env`), so it never collides with Alwyzon's Celery (`/0`,`/1`).
+> In the production split it runs on the media box against that box's own Redis.
 
 > Alwyzon's background workers (quota flush, webhook dispatch, cleanup) run via
 > the same app/Celery setup — give them their own units if this box runs them.

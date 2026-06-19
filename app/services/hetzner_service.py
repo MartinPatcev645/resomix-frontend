@@ -308,6 +308,36 @@ class HetznerService:
             logger.error(f"Hetzner start-ingestion connection error (job {job_id}): {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
+    async def reject_done(
+        self, partner_id: int, home_dir: str, env: str = "live"
+    ) -> Dict[str, Any]:
+        """Ask the media server to delete ONLY the ``.done`` marker for a partner.
+
+        Used by the per-partner concurrency guard: when a partner uploads a ``.done``
+        while a batch is already active, we remove just that marker (the other files
+        in ``live/`` are untouched) so it doesn't trigger a second ingestion.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {
+            "Authorization": f"Bearer {self.internal_api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {"partner_id": partner_id, "home_dir": home_dir, "env": env}
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/ingestion/reject-done", json=payload, headers=headers
+                )
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {"success": False, "error": f"Media server returned {resp.status_code}", "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner reject-done connection error (partner {partner_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
     async def get_ingestion_status(
         self, partner_id: int, job_id: int
     ) -> Dict[str, Any]:
@@ -357,6 +387,7 @@ class HetznerService:
         items: list,
         env: str = "live",
         index_after: bool = True,
+        processing_dir: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Fire-and-forget hand-off of a batch-embeddings job to the Hetzner media server.
@@ -376,6 +407,7 @@ class HetznerService:
             items: list of {"track_uuid": str, "filename": str}.
             env: "live" persists artifacts; "test" is a dry-run (generate + discard).
             index_after: when live, also insert each vector into FAISS + catalog.
+            processing_dir: the snapshot dir for embedding ingestion.
         """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
@@ -392,6 +424,9 @@ class HetznerService:
             "index_after": index_after,
             "items": items,
         }
+        if processing_dir:
+            payload["processing_dir"] = processing_dir
+            
         try:
             # Only the hand-off — the heavy work runs in Hetzner's background task.
             async with httpx.AsyncClient(timeout=60.0) as client:

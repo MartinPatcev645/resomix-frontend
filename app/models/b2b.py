@@ -47,7 +47,18 @@ class IngestLog(Base):
     file_count: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), default=0)
     batch_filename: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     track_count: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), default=0)
-    
+
+    # ── Ingestion pipeline v2 (fine-grained lifecycle) ──────────────────────
+    # ``status`` (above) stays the coarse PENDING/PROCESSING/COMPLETED/FAILED used
+    # by existing code. ``stage`` is the fine-grained pipeline stage (see
+    # app.services.ingestion_stages.Stage); kept as a plain string so adding stages
+    # needs no migration. ``processing_dir`` is the UTC-named processing/<dt> folder
+    # (the link the later embedding job uses). ``stage_timeline`` is a
+    # {stage: utc_iso} map mirrored verbatim into the partner-visible logs.json.
+    stage: Mapped[Optional[str]] = mapped_column(String(40), nullable=True, index=True)
+    processing_dir: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    stage_timeline: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
