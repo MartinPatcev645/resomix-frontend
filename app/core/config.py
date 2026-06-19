@@ -90,21 +90,6 @@ class Settings(BaseModel):
         default="http://localhost:8001", description="URL of the Resomix server"
     )
 
-    # Google Sheets Configuration
-    service_account_file: Optional[str] = Field(
-        default=None, description="Path to Google service account JSON file"
-    )
-    google_sheet_id: Optional[str] = Field(
-        default=None, description="Google Sheet ID for feedback/contact forms"
-    )
-    feedback_worksheet_name: str = Field(
-        default="Feedback", description="Name of the feedback worksheet"
-    )
-    contact_worksheet_name: str = Field(
-        default="ContactSubmissions",
-        description="Name of the contact submissions worksheet",
-    )
-
     # Spotify Configuration
     spotify_client_id: Optional[str] = Field(
         default=None, description="Spotify client ID for API access"
@@ -514,10 +499,6 @@ class Settings(BaseModel):
             "PUBLIC_ALWYZON_URL": "public_alwyzon_url",
             "DEMO_MODE": "demo_mode",
             "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
-            "SERVICE_ACCOUNT_FILE": "service_account_file",
-            "GOOGLE_SHEET_ID": "google_sheet_id",
-            "FEEDBACK_WORKSHEET_NAME": "feedback_worksheet_name",
-            "CONTACT_WORKSHEET_NAME": "contact_worksheet_name",
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
