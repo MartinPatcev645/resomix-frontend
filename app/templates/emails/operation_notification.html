@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #fafafa; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border: 2px solid #222222; overflow: hidden; }
+        .header { padding: 28px 20px; text-align: center; border-bottom: 1px dotted #cccccc; }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: #1a1a1a; }
+        .content { padding: 32px 28px; }
+        .content h2 { font-size: 18px; font-weight: 500; letter-spacing: 0.5px; margin: 0 0 20px 0; color: #1a1a1a; }
+        .content p { font-size: 14px; font-weight: 300; line-height: 1.6; margin: 12px 0; color: #1a1a1a; }
+        .badge { display: inline-block; padding: 6px 14px; font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; border: 1px solid; margin-bottom: 16px; }
+        .badge-success { color: #1a7a3a; border-color: #1a7a3a; }
+        .badge-failed { color: #b32020; border-color: #b32020; }
+        .badge-rejected { color: #b35a00; border-color: #b35a00; }
+        .badge-warning { color: #b35a00; border-color: #b35a00; }
+        .badge-info { color: #1a1a1a; border-color: #cccccc; }
+        .panel { border: 1px dotted #cccccc; padding: 16px 20px; margin: 20px 0; }
+        .panel h3 { margin: 0 0 12px 0; font-size: 13px; font-weight: 400; letter-spacing: 0.5px; text-transform: uppercase; color: #1a1a1a; }
+        .panel ul { margin: 8px 0; padding-left: 18px; }
+        .panel li { margin: 6px 0; font-size: 13px; font-weight: 300; color: #1a1a1a; }
+        .kv { font-size: 13px; font-weight: 300; margin: 4px 0; }
+        .kv strong { font-weight: 500; }
+        .ref { background-color: transparent; border: 1px dotted #cccccc; padding: 14px 18px; margin: 20px 0; font-size: 13px; font-weight: 300; }
+        .mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
+        .footer { padding: 24px 20px; text-align: center; color: #666666; font-size: 11px; font-weight: 300; border-top: 1px dotted #cccccc; }
+        .footer p { margin: 6px 0; letter-spacing: 0.5px; }
+        .text-muted { color: #666666; font-size: 12px; font-weight: 300; }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header"><h1>RESOMIX</h1></div>
+        <div class="content">
+            <span class="badge badge-{{ status }}">{{ status_label or status }}</span>
+            <h2>{{ title }}</h2>
+
+            {% if audience == 'partner' %}
+            <p>Hi {{ greeting_name or 'there' }},</p>
+            {% endif %}
+
+            <p>{{ summary }}</p>
+
+            {# Admin-only: who this is about #}
+            {% if audience == 'admin' and partner_info %}
+            <div class="panel">
+                <h3>Partner</h3>
+                <p class="kv"><strong>ID:</strong> {{ partner_info.id }}</p>
+                {% if partner_info.name %}<p class="kv"><strong>Name:</strong> {{ partner_info.name }}</p>{% endif %}
+                {% if partner_info.email %}<p class="kv"><strong>Email:</strong> {{ partner_info.email }}</p>{% endif %}
+                {% if partner_info.tier %}<p class="kv"><strong>Tier:</strong> {{ partner_info.tier }}</p>{% endif %}
+                {% if event_type %}<p class="kv"><strong>Event:</strong> {{ event_type }}</p>{% endif %}
+            </div>
+            {% endif %}
+
+            {# Optional counts (e.g. total / succeeded / failed) #}
+            {% if counts %}
+            <div class="panel">
+                <h3>Summary</h3>
+                {% for label, value in counts.items() %}
+                <p class="kv"><strong>{{ label }}:</strong> {{ value }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {# Optional list of partner-safe issues #}
+            {% if details %}
+            <div class="panel">
+                <h3>Details{% if details|length >= max_details %} (first {{ max_details }}){% endif %}</h3>
+                <ul>
+                    {% for d in details[:max_details] %}
+                    <li>{{ d }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {# Where to find the full reason #}
+            {% if reference_path %}
+            <div class="ref">
+                <p style="margin:0 0 6px 0;">A full report is available in your SFTP space at:</p>
+                <p class="mono" style="margin:0;">{{ reference_path }}</p>
+            </div>
+            {% endif %}
+
+            {% if audience == 'partner' %}
+            <p class="text-muted" style="margin-top: 28px;">
+                Need help? Reply to this email or contact our support team.
+            </p>
+            {% endif %}
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Resomix. All rights reserved.</p>
+            <p>Audio Similarity Engine for Music Discovery</p>
+        </div>
+    </div>
+</body>
+
+</html>

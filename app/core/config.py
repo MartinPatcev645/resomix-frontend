@@ -411,6 +411,14 @@ class Settings(BaseModel):
         description="Frontend URL for email verification/reset links",
     )
 
+    # Where operational notifications (ingestion/embedding/etc. outcomes) are CC'd
+    # for the company. Falls back to smtp_from_email if unset so we never silently
+    # drop the admin copy.
+    admin_notification_email: Optional[str] = Field(
+        default=None,
+        description="Admin/ops inbox that receives a copy of every partner operation notification",
+    )
+
     # SCP Configuration (for Open Tracks Pipeline)
     scp_private_key_path: str = Field(
         default="creds/resomix22tbserver-key.pem",
@@ -539,6 +547,7 @@ class Settings(BaseModel):
             "SMTP_PASSWORD": "smtp_password",
             "SMTP_FROM_EMAIL": "smtp_from_email",
             "FRONTEND_URL": "frontend_url",
+            "ADMIN_NOTIFICATION_EMAIL": "admin_notification_email",
             # SCP Configuration
             "SCP_PRIVATE_KEY_PATH": "scp_private_key_path",
             "SCP_REMOTE_USER": "scp_remote_user",

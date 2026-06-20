@@ -95,6 +95,43 @@ class EmailService:
             )
             return False
 
+    async def send_operation_notification(
+        self, email: EmailStr, subject: str, context: dict
+    ) -> bool:
+        """Render + send a generic operation-outcome email (ingestion, embedding, …).
+
+        ``context`` is the full template payload (status, title, summary, details,
+        counts, reference_path, audience, partner_info, …). Generic by design so the
+        same template serves every pipeline stage and both the partner and admin copy.
+        Returns True on success; logs and returns False on SMTP failure (the caller
+        still records the attempt).
+        """
+        ctx = {"subject": subject, "max_details": 25, **context}
+        template = jinja_env.get_template("operation_notification.html")
+        html = template.render(**ctx)
+
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email],
+            body=html,
+            subtype=MessageType.html,
+        )
+        try:
+            await self.fast_mail.send_message(message)
+            return True
+        except Exception as e:
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="operation_notification_send_failed",
+                message="Failed to send operation notification email",
+                metadata={"email": str(email), "subject": subject,
+                          "event_type": context.get("event_type"),
+                          "audience": context.get("audience")},
+                error=e,
+            )
+            return False
+
     async def send_password_reset_email(
         self, email: EmailStr, username: str, reset_token: str
     ) -> bool:

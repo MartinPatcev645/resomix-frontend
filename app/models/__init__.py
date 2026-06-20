@@ -60,6 +60,7 @@ from .partner import (
 )
 from .track_processing_status import TrackProcessingStatus
 from .partner_processing_job import PartnerProcessingJob
+from .partner_notification import PartnerNotification
 
 # Make models available at package level
 __all__ = [
@@ -130,4 +131,5 @@ __all__ = [
     "WebhookDeliveryLog",
     "TrackProcessingStatus",
     "PartnerProcessingJob",
+    "PartnerNotification",
 ]
