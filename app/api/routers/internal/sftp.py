@@ -62,7 +62,17 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
     reverse. We must branch on which credential was actually sent — verifying a
     password unconditionally would reject every key-based login.
     """
-    body = await request.json()
+    # A malformed/empty body must be a clean DENY, never a 500 — SFTPGo treats any
+    # non-200 as a hard auth error, so an unhandled JSONDecodeError would block every
+    # login (and mask the real cause). Parse defensively.
+    try:
+        body = await request.json()
+    except Exception:
+        logger.warning("SFTP auth hook received a non-JSON/empty body; denying.")
+        return _DENY
+    if not isinstance(body, dict):
+        return _DENY
+
     username = body.get("username")
     password = body.get("password")
     presented_public_key = body.get("public_key")
