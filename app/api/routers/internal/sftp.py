@@ -143,12 +143,19 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
     #     (.flac .wav .aiff .mp3 .zip .csv .done) and HIDE (deny_policy=1) any
     #     internal / processing / dotfolder at the root from the partner.
     _ALLOWED_UPLOAD_PATTERNS = ["*.flac", "*.wav", "*.aiff", "*.mp3", "*.zip", "*.csv", "*.done", ".done"]
+    # uid/gid 0 → SFTPGo does NOT chown uploaded files; they stay owned by its own
+    # runtime user (the `sftpgo` system user on a native install). The previous
+    # 1000:1000 was a legacy Docker assumption: on a non-root native SFTPGo the
+    # chown fails ("operation not permitted"), spamming warnings AND turning every
+    # *overwrite* into a hard EACCES (so re-uploading/resuming a batch breaks).
+    # The shared `sftpgo` group (see PARTNER_ONBOARDING §3b) is what lets the media
+    # server read the uploads, so no per-file ownership change is needed.
     response = {
         "status": 1,
         "username": username,
         "home_dir": home_dir,
-        "uid": 1000,
-        "gid": 1000,
+        "uid": 0,
+        "gid": 0,
         "permissions": {
             "/": ["list"],
             "/live": ["list", "download", "upload", "delete"],
