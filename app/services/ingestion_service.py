@@ -120,6 +120,33 @@ async def has_active_batch(db: AsyncSession, partner_id: int) -> Optional[Ingest
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
+async def _notify(
+    partner_id: int,
+    event_type: str,
+    status: str,
+    summary: str,
+    *,
+    title: Optional[str] = None,
+    details: Optional[list] = None,
+    counts: Optional[dict] = None,
+    reference_path: Optional[str] = None,
+) -> None:
+    """Best-effort partner+admin notification. Runs in its OWN session so a mail or
+    DB hiccup can never roll back / block the ingestion flow. Never raises."""
+    try:
+        from app.services.notification_service import NotificationService
+        from database.connection import AsyncSessionLocal
+        async with AsyncSessionLocal() as ndb:
+            await NotificationService().notify_partner_operation(
+                ndb, partner_id=partner_id, event_type=event_type, status=status,
+                summary=summary, title=title, details=details, counts=counts,
+                reference_path=reference_path, commit=True,
+            )
+    except Exception as e:
+        logger.error("[IngestionService] notification failed for partner %s (%s/%s): %s",
+                     partner_id, event_type, status, e)
+
+
 async def reject_duplicate_done(
     partner_id: int, home_dir: str, env: str, active_log: Optional[IngestLog] = None
 ) -> dict:
@@ -143,6 +170,12 @@ async def reject_duplicate_done(
             "active_stage": getattr(active_log, "stage", None),
             "env": env,
         },
+    )
+    await _notify(
+        partner_id, "ingestion", "rejected",
+        "A batch is already being processed for your account. Please wait until it "
+        "finishes (through embedding) before uploading another .done marker.",
+        title="Upload rejected — batch already in progress",
     )
     logger.info(
         "[IngestionService] Rejected duplicate .done for partner %s (env=%s); marker_deleted=%s",
@@ -362,6 +395,25 @@ async def apply_ingestion_result(
                 "failed_at": log_entry.completed_at.isoformat(),
             },
         )
+        # Partner-safe detail list (the validation messages are already partner-safe).
+        detail_list = [
+            (f"Row {e.get('row')}: {e.get('message','')}"
+             if e.get("row", 0) and e.get("row", 0) > 1 else e.get("message", ""))
+            for e in errors if e.get("message")
+        ]
+        await _notify(
+            partner_id, "ingestion", "failed",
+            log_entry.error_message or "Your batch failed validation and was not ingested.",
+            title="Ingestion failed — validation errors",
+            details=detail_list or None,
+            counts={"Errors": len(errors)},
+            # Prefer the partner-visible report the media server actually wrote
+            # (validation fails pre-move, so it lands in live/, not processing/).
+            reference_path=state.get("report_path") or (
+                f"processing/{state['processing_dir']}/errors.txt"
+                if state.get("processing_dir") else None
+            ),
+        )
         return log_entry
 
     # --- COMPLETED on Hetzner ---
@@ -392,6 +444,13 @@ async def apply_ingestion_result(
                 "env": env,
                 "completed_at": log_entry.completed_at.isoformat(),
             },
+        )
+        await _notify(
+            partner_id, "ingestion", "success",
+            f"Dry-run validation passed: {len(records)} track(s) are valid. "
+            f"Nothing was persisted (test environment).",
+            title="Dry-run validation passed",
+            counts={"Validated": len(records)},
         )
         return log_entry
 
@@ -517,6 +576,13 @@ async def apply_ingestion_result(
                 "failed_at": log_entry.completed_at.isoformat(),
             },
         )
+        # Partner-safe summary — do NOT expose the internal exception text.
+        await _notify(
+            partner_id, "ingestion", "failed",
+            "Your batch passed validation but we hit an error while finalizing it. "
+            "Our team has been notified and will look into it.",
+            title="Ingestion failed — processing error",
+        )
         return log_entry
 
     dispatch_webhook.delay(
@@ -542,6 +608,13 @@ async def apply_ingestion_result(
                 "display_artist": track.display_artist,
             },
         )
+    await _notify(
+        partner_id, "ingestion", "success",
+        f"Your batch was ingested successfully: {len(inserted)} track(s) added. "
+        f"Embedding will follow shortly.",
+        title="Ingestion completed",
+        counts={"Tracks ingested": len(inserted)},
+    )
     return log_entry
 
 

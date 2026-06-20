@@ -142,7 +142,17 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
     #   • file_patterns restrict uploads to the approved audio/manifest types
     #     (.flac .wav .aiff .mp3 .zip .csv .done) and HIDE (deny_policy=1) any
     #     internal / processing / dotfolder at the root from the partner.
-    _ALLOWED_UPLOAD_PATTERNS = ["*.flac", "*.wav", "*.aiff", "*.mp3", "*.zip", "*.csv", "*.done", ".done"]
+    # SFTPGo's allow-globs are CASE-SENSITIVE, so a partner uploading FOO.MP3 would
+    # be silently denied by a lowercase-only ``*.mp3``. We list both cases for every
+    # accepted extension so common upper/lower variants are accepted (keeps the
+    # rejection from happening in the first place — see the upload-error capture in
+    # the event hook for anything that still slips through).
+    _BASE_UPLOAD_EXTS = ["flac", "wav", "aiff", "mp3", "zip", "csv"]
+    _ALLOWED_UPLOAD_PATTERNS = (
+        [f"*.{e}" for e in _BASE_UPLOAD_EXTS]
+        + [f"*.{e.upper()}" for e in _BASE_UPLOAD_EXTS]
+        + ["*.done", ".done"]
+    )
     # uid/gid 0 → SFTPGo does NOT chown uploaded files; they stay owned by its own
     # runtime user (the `sftpgo` system user on a native install). The previous
     # 1000:1000 was a legacy Docker assumption: on a non-root native SFTPGo the
@@ -196,6 +206,59 @@ async def sftp_auth_hook(request: Request, db: AsyncSession = Depends(get_async_
 
     return response
 
+_ALLOWED_TYPES_HUMAN = "FLAC, WAV, AIFF, MP3, ZIP, CSV"
+
+
+async def _handle_failed_upload(body: dict, uploaded_name: str, status: str) -> None:
+    """Log + notify a partner that one of their uploads was rejected (never raises).
+
+    Maps SFTPGo's status/error into a partner-SAFE message. ``.done`` failures are
+    skipped (they're a control marker, not partner content)."""
+    if uploaded_name in (".done", ""):
+        return
+    try:
+        from database.connection import AsyncSessionLocal
+        from app.services.notification_service import NotificationService
+
+        username = body.get("username")
+        env = _derive_env_from_event(body)
+        raw_error = str(body.get("error") or "").lower()
+
+        if status == "3" or "quota" in raw_error:
+            summary = (
+                f"Your upload of '{uploaded_name}' was rejected because your storage "
+                f"quota is full. Free up space or contact us to increase it."
+            )
+        elif "permission" in raw_error or "denied" in raw_error or "pattern" in raw_error:
+            summary = (
+                f"Your upload of '{uploaded_name}' was rejected: that file type is not "
+                f"accepted. Allowed types are {_ALLOWED_TYPES_HUMAN}."
+            )
+        else:
+            summary = (
+                f"Your upload of '{uploaded_name}' could not be completed. Please retry; "
+                f"if it keeps failing, contact support."
+            )
+
+        async with AsyncSessionLocal() as db:
+            sftp_user = await sftp_user_repo.get_by_username(db, username) if username else None
+            if not sftp_user:
+                logger.warning("[sftp/event] failed upload for unknown user '%s' (%s)", username, uploaded_name)
+                return
+            await NotificationService().notify_partner_operation(
+                db, partner_id=sftp_user.partner_id,
+                event_type="upload_rejected", status="rejected",
+                summary=summary,
+                title="Upload rejected",
+                details=[f"File: {uploaded_name}", f"Environment: {env}"],
+                commit=True,
+            )
+        logger.info("[sftp/event] notified partner %s of rejected upload '%s' (status=%s)",
+                    sftp_user.partner_id, uploaded_name, status)
+    except Exception as e:
+        logger.error("[sftp/event] failed to handle rejected upload '%s': %s", uploaded_name, e)
+
+
 @router.post("/internal/sftp/event")
 async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
     """
@@ -219,6 +282,17 @@ async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
         or ""
     )
     uploaded_name = os.path.basename(str(_name_source).replace("\\", "/").rstrip("/"))
+
+    # ── Capture FAILED uploads (the "silent permission denied" class) ──────────
+    # SFTPGo reports a per-action status: 1 = OK, anything else = error (e.g. 3 =
+    # quota exceeded). On an error we record + notify so the partner learns WHY an
+    # upload was rejected (and we get a log), instead of only a bare client-side
+    # "permission denied". Returning here also stops a *failed* .done from being
+    # treated as a completed batch below.
+    _status = body.get("status")
+    if body.get("action") == "upload" and _status not in (None, 1, "1"):
+        await _handle_failed_upload(body, uploaded_name, str(_status))
+        return {"status": "ok"}
 
     # Only care about .done file uploads indicating the partner has finished uploading the batch
     if body.get("action") == "upload" and uploaded_name == ".done":

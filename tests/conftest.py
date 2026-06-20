@@ -50,6 +50,7 @@ _HIGH_WATER_TABLES: tuple[str, ...] = (
     # ingestion domain
     "ingestion_errors",
     "ingest_logs",
+    "partner_notifications",
     "sftp_users",
     "track_processing_status",
     "audio_files",

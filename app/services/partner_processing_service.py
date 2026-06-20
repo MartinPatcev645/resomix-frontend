@@ -439,6 +439,37 @@ async def apply_embeddings_result(
                 },
             )
 
+    # Notify partner + admin of the embedding outcome (best-effort; own session so a
+    # mail/DB hiccup can't roll back the finalized job). Skip dry-run (test env) noise.
+    if not dry_run:
+        try:
+            from app.services.notification_service import NotificationService
+            from database.connection import AsyncSessionLocal
+            if job.status == "completed":
+                n_status, summary = "success", (
+                    f"Embedding completed for your batch: {processed} track(s) processed "
+                    f"and indexed. Your tracks are now searchable."
+                )
+            elif job.status == "partial":
+                n_status, summary = "warning", (
+                    f"Embedding finished with some failures: {processed} succeeded, "
+                    f"{failed} failed. The successful tracks are searchable."
+                )
+            else:
+                n_status, summary = "failed", (
+                    "Embedding failed for your batch. Our team has been notified and "
+                    "will look into it."
+                )
+            async with AsyncSessionLocal() as ndb:
+                await NotificationService().notify_partner_operation(
+                    ndb, partner_id=partner_id, event_type="embedding", status=n_status,
+                    summary=summary, counts={"Processed": processed, "Failed": failed},
+                    commit=True,
+                )
+        except Exception as ex:
+            logger.error("[ProcessingService] embedding notification failed for partner %s: %s",
+                         partner_id, ex)
+
     logger.info(
         f"[ProcessingService] Job {job.id} finalized from media server: env={env} "
         f"processed={processed} failed={failed} status={job.status}"
