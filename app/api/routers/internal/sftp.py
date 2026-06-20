@@ -309,6 +309,12 @@ async def sftp_event_hook(request: Request, background_tasks: BackgroundTasks):
             sftp_user = await sftp_user_repo.get_by_username(db, username)
             if sftp_user:
                 partner_id = sftp_user.partner_id
+                # This is an internal webhook (no partner auth ran), so the
+                # multi-tenancy context is empty. Set it now that we've resolved the
+                # owner — otherwise the partner-scoped IngestLog queries below
+                # (has_active_batch / create_ingest_log) trip the global failsafe.
+                from app.core.context import set_current_partner_id
+                set_current_partner_id(partner_id)
                 # The uploaded files live on the Hetzner media server, not here, so
                 # Alwyzon cannot validate them directly. Instead we hand the job off
                 # to Hetzner (fire-and-forget): it validates + writes a result JSON,
