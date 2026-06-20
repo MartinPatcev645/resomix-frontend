@@ -1,6 +1,8 @@
 import axiosInstance, { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
 import { API_CONFIG } from "./config";
 import authClient from "./authClient";
+import type { ApiResponse, RequestOptions } from "./types/api";
+
 
 
 
@@ -9,11 +11,13 @@ import authClient from "./authClient";
  * @param file Audio file
  * @param TOPSK Number of similar tracks to return (default 20)
  * @param progressCallback Optional callback for upload progress (0-100)
+ * @param options Optional request options including idempotency key
  */
 export const getSimilarTracks = async (
   file: File,
   TOPSK = 20,
   progressCallback?: (progress: number) => void,
+  options?: RequestOptions,
 ) => {
   try {
     const validation = validateAudioFile(file);
@@ -37,7 +41,7 @@ export const getSimilarTracks = async (
     const params = { top_sk: TOPSK };
 
     // Use authClient to include Authorization header if user is logged in
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       authClient.post(API_CONFIG.ENDPOINTS.SIMILARITY, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         params,
@@ -48,6 +52,9 @@ export const getSimilarTracks = async (
           }
         },
         timeout: 900_000, // 15 minutes, matches legacy
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
       }),
     );
 
@@ -58,7 +65,7 @@ export const getSimilarTracks = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -66,10 +73,12 @@ export const getSimilarTracks = async (
  * Get track similarity for a selected track ID
  * @param trackId The track ID to find similar tracks for
  * @param TOPSK Number of similar tracks to return (default 20)
+ * @param options Optional request options including idempotency key
  */
 export const getSimilarityForSelectedTrack = async (
   trackId: string,
   TOPSK = 20,
+  options?: RequestOptions,
 ) => {
   try {
     const payload = {
@@ -78,8 +87,12 @@ export const getSimilarityForSelectedTrack = async (
     };
 
     // Use authClient instead of axiosInstance to include credentials and Authorization header
-    const data = await axiosWrapper<any>(
-      authClient.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload),
+    const data = await axiosWrapper<ApiResponse>(
+      authClient.post(API_CONFIG.ENDPOINTS.SELECTION_SIMILARITY, payload, {
+        ...(options?.idempotencyKey
+          ? ({ idempotencyKey: options.idempotencyKey } as any)
+          : {}),
+      }),
     );
 
     if (data.success === true) return data;
@@ -89,45 +102,52 @@ export const getSimilarityForSelectedTrack = async (
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
 /**
- * Polls the /segment_status/ endpoint until segmentation is complete or timeout.
+ * Polls the /segment-status/ endpoint until segmentation is complete or timeout.
  * Returns true when segmentation_completed === true, false on timeout or fatal error.
- *
- * COMMENTED OUT - Segmentation polling no longer needed
  */
-// export const waitForSegmentation = async (
-//   playlistUuid: string,
-//   timeoutMs = 300_000, // 5 minutes
-//   pollIntervalMs = 4_000,
-// ) => {
-//   const deadline = Date.now() + timeoutMs;
+export const getSegmentStatus = async (playlistUuid: string) => {
+  try {
+    const data = await axiosWrapper<{ success: boolean; segmentation_completed: boolean }>(
+      authClient.get(`${API_CONFIG.ENDPOINTS.SEGMENT_STATUS}${playlistUuid}`),
+    );
+    return data;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
 
-//   while (Date.now() < deadline) {
-//     try {
-//       const res = await axiosInstance.get<{ segmentation_completed: boolean }>(
-//         `${API_CONFIG.ENDPOINTS.SEGMENT_STATUS}${playlistUuid}`,
-//       );
+export const waitForSegmentation = async (
+  playlistUuid: string,
+  timeoutMs = 300_000, // 5 minutes
+  pollIntervalMs = 4_000,
+) => {
+  const deadline = Date.now() + timeoutMs;
 
-//       if (res.data?.segmentation_completed) {
-//         return true; // ✅ ready
-//       }
-//       // Not ready → sleep and retry
-//       await new Promise((r) => setTimeout(r, pollIntervalMs));
-//     } catch (err: any) {
-//       // 404 means playlist vanished – abort early
-//       if (err?.response?.status === 404) {
-//         console.error("Playlist not found");
-//         return false;
-//       }
-//       // Log and retry on transient errors
-//       console.warn("Segment status polling error", err);
-//       await new Promise((r) => setTimeout(r, pollIntervalMs));
-//     }
-//   }
+  while (Date.now() < deadline) {
+    try {
+      const res = await getSegmentStatus(playlistUuid);
 
-//   return false;
-// };
+      if (res.success && (res as any).segmentation_completed) {
+        return true; // ✅ ready
+      }
+      // Not ready → sleep and retry
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    } catch (err: any) {
+      // 404 means playlist vanished – abort early
+      if (err?.response?.status === 404) {
+        console.error("Playlist not found");
+        return false;
+      }
+      // Log and retry on transient errors
+      console.warn("Segment status polling error", err);
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+  }
+
+  return false;
+};

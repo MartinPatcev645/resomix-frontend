@@ -16,7 +16,7 @@ export function usePlaylistExport() {
     const { playlist, queried_track, similar_tracks } = data;
     
     // Format playlist name in uppercase
-    const playlistName = playlist.name.toUpperCase();
+    const playlistName = playlist?.name ? playlist.name.toUpperCase() : '';
     
     // Format input track
     const inputTrackLabel = queried_track.label ? ` [${queried_track.label}]` : '';
@@ -27,8 +27,8 @@ export function usePlaylistExport() {
 
     const similarTracksFormatted = tracksToExport
       .map(track => {
-        const trackLabel = track.label ? ` [${track.label}]` : '';
-        return `${track.rank}. ${track.artist} - ${track.title}${trackLabel}`;
+         const trackLabel = track.label ? ` [${track.label}]` : '';
+         return `${track.rank}. ${track.artist} - ${track.title}${trackLabel}`;
       })
       .join('\n');
     
@@ -43,7 +43,8 @@ export function usePlaylistExport() {
   const generateFilename = useCallback((data: typeof playlistData): string => {
     if (!data) return '';
 
-    const sanitizedPlaylistName = data.playlist.name
+    const playlistName = data.playlist?.name || 'playlist';
+    const sanitizedPlaylistName = playlistName
       .replace(/[^a-zA-Z0-9\s-_]/g, '') // Remove special characters
       .replace(/\s+/g, '_') // Replace spaces with underscores
       .toLowerCase();
@@ -154,6 +155,6 @@ export function usePlaylistExport() {
     downloadFile,
     canExport: !!playlistData,
     isExporting,
-    playlistName: playlistData?.playlist.name || null
+    playlistName: playlistData?.playlist?.name || null
   };
 }

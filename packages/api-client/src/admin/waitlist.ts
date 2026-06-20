@@ -1,5 +1,8 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -84,20 +87,20 @@ export const getWaitlistList = async (params: WaitlistListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<WaitlistListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch waitlist.",
+      error: (data as ApiResponse).error || "Failed to fetch waitlist.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -114,7 +117,7 @@ export const deleteWaitlist = async (waitlistId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_DELETE}${waitlistId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_DELETE}${waitlistId}`)
     );
 
     if (data.success) {
@@ -126,10 +129,10 @@ export const deleteWaitlist = async (waitlistId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete waitlist entry.",
+      error: (data as ApiResponse).error || "Failed to delete waitlist entry.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -139,7 +142,7 @@ export const deleteWaitlist = async (waitlistId: number) => {
 export const batchDeleteWaitlist = async (waitlistIds: number[]) => {
   try {
     const data = await axiosWrapper<WaitlistBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_BATCH_DELETE, {
         ids: waitlistIds,
       })
     );
@@ -149,11 +152,11 @@ export const batchDeleteWaitlist = async (waitlistIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete waitlist entries.",
+      error: (data as ApiResponse).error || "Failed to delete waitlist entries.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -168,7 +171,7 @@ export const updateWaitlistStatus = async (
 ) => {
   try {
     const data = await axiosWrapper<WaitlistUpdateResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_UPDATE_STATUS}${waitlistId}`, {
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_UPDATE_STATUS}${waitlistId}`, {
         status,
       })
     );
@@ -177,10 +180,10 @@ export const updateWaitlistStatus = async (
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update waitlist status.",
+      error: (data as ApiResponse).error || "Failed to update waitlist status.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -208,21 +211,21 @@ export const exportWaitlist = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<WaitlistExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_WAITLIST_EXPORT, requestBody)
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export waitlist.",
+      error: (data as ApiResponse).error || "Failed to export waitlist.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",

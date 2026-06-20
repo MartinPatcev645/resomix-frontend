@@ -95,7 +95,8 @@ export const loadPeaksData = async (
       try {
         // Try new v2 endpoint first
         try {
-          const v2Url = `https://media.resomix.com/peaks-rich/?uuid=${encodeURIComponent(uuid)}`;
+          const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
+          const v2Url = `${mediaBase}/peaks-rich/?uuid=${encodeURIComponent(uuid)}`;
           const v2 = await fetchJson(v2Url);
           const parsedV2 = parseV2Payload(v2);
           if (parsedV2) {
@@ -108,7 +109,8 @@ export const loadPeaksData = async (
         }
 
         // Fallback to legacy: returns number[] (fullband only)
-        const legacyUrl = `https://media.resomix.com/peaks/?uuid=${encodeURIComponent(uuid)}`;
+        const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
+        const legacyUrl = `${mediaBase}/peaks/?uuid=${encodeURIComponent(uuid)}`;
         const legacy = await fetchJson(legacyUrl) as number[];
 
         const payload: PeaksRich = {

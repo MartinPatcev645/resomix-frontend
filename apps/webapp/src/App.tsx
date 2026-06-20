@@ -18,6 +18,7 @@ const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 // const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
+const CartPage = lazy(() => import("@/pages/CartPage.tsx"));
 // const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
 // const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
 // const SpotifyRedirect = lazy(() => import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
@@ -119,6 +120,7 @@ function App() {
               <Route path="/profile" element={<AuthPage mode="profile" />} />
               <Route path="/sessions" element={<AuthPage mode="sessions" />} />
               <Route path="/change-password" element={<AuthPage mode="change-password" />} />
+              <Route path="/cart" element={<CartPage />} />
             </Route>
 
             {/* Guest-Only Auth Routes */}

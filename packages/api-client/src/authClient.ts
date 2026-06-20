@@ -6,7 +6,7 @@ import { API_CONFIG } from './config';
 const getAuthStore = () => {
   try {
     // Dynamic import to access Zustand store from another package
-    return (globalThis as any).__RESOMIX_AUTH_STORE__;
+    return (globalThis as Record<string, unknown>).__RESOMIX_AUTH_STORE__ as any;
   } catch {
     return null;
   }
@@ -29,10 +29,10 @@ const authClient: AxiosInstance = axios.create({
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
-  reject: (error: any) => void;
+  reject: (error: unknown) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -46,12 +46,27 @@ const processQueue = (error: any, token: string | null = null) => {
 // Request interceptor - Add auth token and api_key
 authClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add api_key to all requests
-    if (!config.params) {
-      config.params = {};
+    const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
+
+    if (isAdminRoute) {
+      // Administrative endpoints MUST strictly enforce header-only authorization.
+      // Query parameter is deleted to prevent proxy/browser logs leakage.
+      if (config.params) {
+        delete (config.params as Record<string, unknown>).api_key;
+      }
+    } else {
+      // Public/Partner endpoints fallback support for query parameter
+      if (!config.params) {
+        config.params = {};
+      }
+      if (!config.params.api_key) {
+        (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+      }
     }
-    if (!config.params.api_key) {
-      (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+
+    // Enforce secure HTTP headers (Format B and Format A fallback)
+    if (API_CONFIG.API_KEY) {
+      config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
     }
 
     // Add auth token if available
@@ -77,7 +92,18 @@ authClient.interceptors.request.use(
         // console.log(`[authClient] No auth token for ${config.url} - accessToken: ${!!accessToken}, isAuthenticated: ${isAuthenticated}, user: ${!!state.user}`);
       }
     } else {
-      console.warn(`[authClient] Auth store not available for ${config.url} - global store: ${!!(globalThis as any).__RESOMIX_AUTH_STORE__}`);
+      console.warn(`[authClient] Auth store not available for ${config.url} - global store: ${!!(globalThis as Record<string, unknown>).__RESOMIX_AUTH_STORE__}`);
+    }
+
+    // Fallback Bearer header for administrative requests authorized by the admin key directly
+    if (isAdminRoute && !config.headers.Authorization && API_CONFIG.API_KEY) {
+      config.headers.Authorization = `Bearer ${API_CONFIG.API_KEY}`;
+    }
+
+    // Support for Idempotency-Key
+    const customConfig = config as any;
+    if (customConfig.idempotencyKey) {
+      config.headers['Idempotency-Key'] = customConfig.idempotencyKey;
     }
 
     return config;
@@ -100,7 +126,7 @@ authClient.interceptors.response.use(
     }
 
     // CRITICAL: Prevent infinite loop - never try to refresh the refresh endpoint itself
-    const isRefreshEndpoint = originalRequest.url?.includes('/auth/refresh');
+    const isRefreshEndpoint = originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH_REFRESH);
     if (isRefreshEndpoint) {
       // console.log('[authClient] 401 on refresh endpoint - not attempting refresh to prevent infinite loop');
       return Promise.reject(error);
@@ -151,7 +177,7 @@ authClient.interceptors.response.use(
         // console.log('[authClient] Refreshing access token...');
         // Attempt to refresh token - no body needed, server reads from HttpOnly cookie
         const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
+          `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_REFRESH}`,
           {}, // Empty body - server manages refresh token via HttpOnly cookie
           {
             withCredentials: true, // Include cookies
@@ -193,7 +219,7 @@ authClient.interceptors.response.use(
         // Distinguish between network errors and auth errors
         if (typeof window !== 'undefined' && axios.isAxiosError(refreshError)) {
           const refreshStatus = refreshError.response?.status;
-          const refreshMessage = (refreshError.response?.data as any)?.error;
+          const refreshMessage = (refreshError.response?.data as { error?: string })?.error;
           const isNetworkError = !refreshError.response; // No response = network error
           
           // Only logout on auth errors (401, 403), not on network errors
@@ -229,6 +255,20 @@ authClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Interceptor to log correlation ID for debugging
+authClient.interceptors.response.use((response) => {
+  const correlationId = response.headers['x-correlation-id'];
+  if (correlationId) {
+    // console.log(`[Auth API] Correlation-ID: ${correlationId} for ${response.config.url}`);
+  }
+  return response;
+}, (error) => {
+  if (error.response?.headers['x-correlation-id']) {
+    console.error(`[Auth API Error] Correlation-ID: ${error.response.headers['x-correlation-id']} for ${error.config?.url}`);
+  }
+  return Promise.reject(error);
+});
 
 export default authClient;
 

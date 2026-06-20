@@ -11,6 +11,7 @@ import {
   Table,
   Tooltip,
   Typography,
+  App,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { Plus, RefreshCw, Trash2, Pencil } from 'lucide-react'
@@ -21,7 +22,7 @@ import type {
   AdminUserOperationLimit,
   AdminUserSearchItem,
 } from '@resomix/api-client'
-import { searchAdminUsers } from '@resomix/api-client'
+import { listAdminUsers } from '@resomix/api-client'
 
 const { Text } = Typography
 
@@ -70,6 +71,7 @@ function UserOperationLimitsTab({
   onError,
   onSuccess,
 }: UserOperationLimitsTabProps) {
+  const { modal } = App.useApp()
   const {
     data,
     loading,
@@ -266,7 +268,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
               ? existing.limit_value
               : 'N/A'
 
-          Modal.warning({
+          modal.warning({
             title: 'Limit Already Exists',
             content: (
               <div className="space-y-2">
@@ -287,7 +289,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
             getContainer: () => document.body,
           })
         } else {
-          Modal.error({
+          modal.error({
             title: 'Unable to Save Limit',
             content: errorMessage,
             centered: true,
@@ -366,11 +368,11 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
     const requestQuery = trimmed
     userSearchTimeout.current = setTimeout(async () => {
       try {
-        const response = await searchAdminUsers(requestQuery, 10)
+        const response = await listAdminUsers({ q: requestQuery, limit: 10 })
         if (!isMountedRef.current || currentUserSearchQuery.current !== requestQuery) return
 
         if (response.success && response.data) {
-          const validUsers = response.data.filter((user) => Boolean(user.email))
+          const validUsers = response.data.filter((user: AdminUserSearchItem) => Boolean(user.email))
           if (validUsers.length === 0) {
             setUserOptions([])
             setUserSearchError('No users found')
@@ -595,7 +597,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
         okButtonProps={{
           disabled: !isUserSelected || userSearchLoading || formLoading,
         }}
-        destroyOnClose
+        destroyOnHidden
       >
         {formLoading ? (
           <div className="flex items-center justify-center py-12">

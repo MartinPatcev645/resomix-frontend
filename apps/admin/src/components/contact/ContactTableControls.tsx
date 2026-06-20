@@ -1,20 +1,20 @@
 import React from 'react'
 import { Input, Select, DatePicker, Button, Space, Tag } from 'antd'
 import { RefreshCw, Search, Download, Trash2, FilterX } from 'lucide-react'
-import type { ContactItem } from '@/hooks/useContact.ts'
+import type { ContactSearchColumn } from '@/hooks/useContact.ts'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
 interface ContactTableControlsProps {
   searchText: string
-  searchColumn: keyof ContactItem
+  searchColumn: ContactSearchColumn
   dateRange: [string, string] | null
   selectedCount: number
   totalCount: number
   exportLoading: boolean
-  onSearch: (value: string, column: keyof ContactItem) => void
-  onSearchColumnChange: (column: keyof ContactItem) => void
+  onSearch: (value: string, column: ContactSearchColumn) => void
+  onSearchColumnChange: (column: ContactSearchColumn) => void
   onDateRangeChange: (dates: [string, string] | null) => void
   onStatusFilter: (status: 'all' | 'open' | 'resolved') => void
   onRefresh: () => void
@@ -86,7 +86,7 @@ function ContactTableControls({
               id="search-column-select"
               aria-label="Search column"
               value={searchColumn}
-              onChange={(value) => onSearchColumnChange(value as keyof ContactItem)}
+              onChange={(value) => onSearchColumnChange(value as ContactSearchColumn)}
               options={searchColumns}
               style={{ width: 120 }}
             />

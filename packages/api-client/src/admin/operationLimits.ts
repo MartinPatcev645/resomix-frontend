@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import type { AxiosError } from "axios";
 import { API_CONFIG } from "../config";
 
@@ -98,7 +99,7 @@ const defaultPagination = (page?: number, pageSize?: number) => ({
 export const getOperationTypes = async (): Promise<AdminOperationTypesResponse> => {
   try {
     const response = await axiosWrapper<AdminOperationTypesResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_TYPES),
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_TYPES),
     );
 
     if (response.success && response.data) {
@@ -112,7 +113,7 @@ export const getOperationTypes = async (): Promise<AdminOperationTypesResponse> 
       total: 0,
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -139,7 +140,7 @@ export const getUserOperationLimits = async (
     }
 
     const response = await axiosWrapper<AdminUserOperationLimitListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LIMITS, {
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LIMITS, {
         params: queryParams,
       }),
     );
@@ -155,7 +156,7 @@ export const getUserOperationLimits = async (
       pagination: defaultPagination(queryParams.page, queryParams.page_size),
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -170,7 +171,7 @@ export const getUserOperationLimit = async (
 ): Promise<AdminUserOperationLimitResponse> => {
   try {
     const response = await axiosWrapper<AdminUserOperationLimitResponse>(
-      axiosInstance.get(buildDetailPath(userIdentifier, operationCode)),
+      authClient.get(buildDetailPath(userIdentifier, operationCode)),
     );
 
     if (response.success) {
@@ -182,7 +183,7 @@ export const getUserOperationLimit = async (
       error: response.error || "Failed to fetch user operation limit.",
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
     };
@@ -195,7 +196,7 @@ export const upsertUserOperationLimit = async (
 ): Promise<AdminUserOperationLimitUpsertResponse> => {
   try {
     const response = await axiosWrapper<AdminUserOperationLimitUpsertResponse>(
-      axiosInstance.put(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LIMITS, payload, {
+      authClient.put(API_CONFIG.ENDPOINTS.ADMIN_OPERATION_LIMITS, payload, {
         params: options?.force ? { force: true } : undefined,
       }),
     );
@@ -219,7 +220,7 @@ export const upsertUserOperationLimit = async (
         };
       }
     }
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -229,7 +230,7 @@ export const deleteUserOperationLimit = async (
 ): Promise<AdminUserOperationLimitDeleteResponse> => {
   try {
     const response = await axiosWrapper<AdminUserOperationLimitDeleteResponse>(
-      axiosInstance.delete(buildDetailPath(userIdentifier, operationCode)),
+      authClient.delete(buildDetailPath(userIdentifier, operationCode)),
     );
 
     if (response.success) {
@@ -241,7 +242,7 @@ export const deleteUserOperationLimit = async (
       error: response.error || "Failed to delete user operation limit.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

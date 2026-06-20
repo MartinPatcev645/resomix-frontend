@@ -27,7 +27,7 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
     const ratingMap: Record<RatingType, number> = { bad: 0, fine: 1, good: 2, fire: 3 }
 
     const handleSubmit = async () => {
-        if (!selectedRating || !playlistData?.playlist.id) {
+        if (!selectedRating || !playlistData?.playlist?.id) {
             onClose()
             return
         }

@@ -1,5 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./config";
+import type { ApiResponse } from "./types/api";
+
 
 // Create a shared Axios instance
 const axiosInstance: AxiosInstance = axios.create({
@@ -8,16 +10,55 @@ const axiosInstance: AxiosInstance = axios.create({
   withCredentials: true, // Include cookies with all requests
 });
 
-// Interceptor to append `api_key` as query parameter for every request
+// Interceptor to append `api_key` for every request
 axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (!config.params) {
-    config.params = {};
+  const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
+
+  if (isAdminRoute) {
+    // Administrative endpoints MUST strictly enforce header-only authorization.
+    // Query parameter is deleted to prevent proxy/browser logs leakage.
+    if (config.params) {
+      delete (config.params as Record<string, unknown>).api_key;
+    }
+  } else {
+    // Public/Partner endpoints fallback support for query parameter
+    if (!config.params) {
+      config.params = {};
+    }
+    if (!config.params.api_key) {
+      (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+    }
   }
-  // Preserve existing api_key if provided explicitly
-  if (!config.params.api_key) {
-    (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+  
+  // Enforce secure HTTP headers (Format B and Format A fallback)
+  if (API_CONFIG.API_KEY) {
+    config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
+    if (isAdminRoute && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${API_CONFIG.API_KEY}`;
+    }
   }
+  
+  // Support for Idempotency-Key
+  const customConfig = config as any;
+  if (customConfig.idempotencyKey) {
+    config.headers['Idempotency-Key'] = customConfig.idempotencyKey;
+  }
+  
   return config;
+});
+
+// Interceptor to log correlation ID for debugging
+axiosInstance.interceptors.response.use((response) => {
+  const correlationId = response.headers['x-correlation-id'];
+  if (correlationId) {
+    // console.log(`[API] Correlation-ID: ${correlationId} for ${response.config.url}`);
+  }
+  return response;
+}, (error) => {
+  if (error.response?.headers['x-correlation-id']) {
+    console.error(`[API Error] Correlation-ID: ${error.response.headers['x-correlation-id']} for ${error.config?.url}`);
+  }
+  return Promise.reject(error);
 });
 
 // Generic Axios wrapper to unwrap `data` property
@@ -38,17 +79,27 @@ export const handleApiError = (error: AxiosError | Error): {
     const { status, data } = (error as AxiosError).response!;
 
     // Attempt to respect standardized error format
-    if (data && typeof data === "object" && (data as any).success === false) {
-      const apiError = data as { error?: string; details?: unknown[] };
+    if (data && typeof data === "object" && (data as ApiResponse).success === false) {
+      const apiError = data as any;
       let errorMessage = apiError.error || "An error occurred.";
-      if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+      
+      // Try to extract detailed validation errors (for Pydantic exceptions wrapped by standard-response format)
+      if (apiError.data?.details && Array.isArray(apiError.data.details) && apiError.data.details.length > 0) {
+        const first = apiError.data.details[0];
+        if (first?.field && first?.message) {
+          errorMessage = `${first.field}: ${first.message}`;
+        } else if (first?.message) {
+          errorMessage = first.message;
+        }
+      } else if (Array.isArray(apiError.details) && apiError.details.length > 0) {
         const first = apiError.details[0] as { message?: string };
         if (first?.message) errorMessage = first.message;
       }
+
       return {
         success: false,
         error: errorMessage,
-        details: (data as any).details ?? null,
+        details: apiError.data?.details || apiError.details || null,
         status,
       };
     }
@@ -74,14 +125,18 @@ export const handleApiError = (error: AxiosError | Error): {
   // Fallback for generic Error / network issues
   return {
     success: false,
-    error: (error as any).message || "Network error. Please check your connection.",
+    error: (error as Error).message || "Network error. Please check your connection.",
   };
 };
 
 // Helper to construct full URL including path (for cases where we need absolute link)
 export const getUrl = (endpoint: string, queryParams: Record<string, unknown> = {}): string => {
-  const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
-  url.searchParams.append("api_key", API_CONFIG.API_KEY);
+  const base = API_CONFIG.BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+  const url = new URL(`${base}${endpoint}`);
+  const isAdminRoute = endpoint.includes('admin') || endpoint.includes('/admin/');
+  if (!isAdminRoute) {
+    url.searchParams.append("api_key", API_CONFIG.API_KEY);
+  }
   Object.entries(queryParams).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {
       url.searchParams.append(k, String(v));
@@ -102,6 +157,23 @@ export const validateAudioFile = (file: File): { valid: boolean; error?: string 
     return { valid: false, error: "Invalid file type. Please upload an audio file." };
   }
   return { valid: true };
+};
+
+/**
+ * Generate a UUID v4 for use as an idempotency key.
+ * Uses crypto.randomUUID() where available, otherwise falls back to a manual generator.
+ */
+export const generateIdempotencyKey = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 };
 
 export default axiosInstance; 

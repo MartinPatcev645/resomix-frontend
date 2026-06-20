@@ -25,7 +25,7 @@
 //       details: data.details ?? null,
 //     };
 //   } catch (error) {
-//     return handleApiError(error as any);
+//     return handleApiError(error as Error);
 //   }
 // };
 
@@ -52,6 +52,6 @@
 //       details: data.details ?? null,
 //     };
 //   } catch (error) {
-//     return handleApiError(error as any);
+//     return handleApiError(error as Error);
 //   }
 // };

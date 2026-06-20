@@ -1,5 +1,6 @@
 import axiosInstance, { axiosWrapper, handleApiError, getUrl } from "./utils";
 import { API_CONFIG } from "./config";
+import authClient from "./authClient";
 
 export const getAudioUrl = async (trackId: string) => {
   try {
@@ -8,7 +9,7 @@ export const getAudioUrl = async (trackId: string) => {
     );
     return data;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -29,7 +30,7 @@ export const getSimilarityPlaylistHls = async (playlistUuid: string) => {
     );
     return data;
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -58,7 +59,7 @@ export const getPlaylistPlaybackSession = async (
 ): Promise<PlaybackSessionResponse> => {
   try {
     const endpoint = API_CONFIG.ENDPOINTS.PLAYLIST_PLAY_SESSION.replace("{id}", playlistUuid);
-    const { data } = await axiosInstance.post<PlaybackSessionResponse>(endpoint);
+    const { data } = await authClient.post<PlaybackSessionResponse>(endpoint);
     return data;
   } catch (error) {
     throw error;

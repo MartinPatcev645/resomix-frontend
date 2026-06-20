@@ -7,7 +7,8 @@ import {
   exportFeedback,
   apiAxiosInstance,
   type FeedbackItem as ApiFeedbackItem,
-  type FeedbackListParams
+  type FeedbackListParams,
+  type ApiResponse
 } from '@resomix/api-client'
 import { message } from 'antd'
 
@@ -21,6 +22,8 @@ export interface FeedbackItem {
   user_id: string | null
   category: string | null
 }
+
+export type FeedbackSearchColumn = FeedbackListParams['search_column']
 
 // Convert API response to frontend format
 const convertApiFeedback = (apiData: ApiFeedbackItem): FeedbackItem => ({
@@ -43,7 +46,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
   const { onError, onSuccess } = options || {}
   const [data, setData] = useState<FeedbackItem[]>([])
   const [searchText, setSearchText] = useState('')
-  const [searchColumn, setSearchColumn] = useState<keyof FeedbackItem>('message')
+  const [searchColumn, setSearchColumn] = useState<FeedbackListParams['search_column']>('message')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -69,7 +72,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
       // Add search filter if present
       if (searchText.trim()) {
         params.search = searchText.trim()
-        params.search_column = searchColumn as any
+        params.search_column = searchColumn
       }
 
       // Add date range filter if present
@@ -100,7 +103,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
           total: result.pagination.total,
         }))
       } else {
-        const errorMsg = (result as any).error || 'Failed to fetch feedback'
+        const errorMsg = (result as ApiResponse).error || 'Failed to fetch feedback'
         if (onError) {
           onError('Failed to Load Feedback', errorMsg)
         } else {
@@ -120,7 +123,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, searchText, dateRange, statusFilter, sortBy, sortOrder])
+  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter, sortBy, sortOrder, onError])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -151,16 +154,16 @@ export function useFeedback(options?: UseFeedbackOptions) {
     // fetchData will be triggered by useEffect when dependencies change
   }
 
-  const handleSearch = (value: string, column: keyof FeedbackItem) => {
+  const handleSearch = (value: string, column: FeedbackListParams['search_column']) => {
     setSearchColumn(column) // Update column without triggering reload
     setSearchText(value) // This will trigger reload
     setPagination(prev => ({ ...prev, current: 1 })) // Reset to first page
     // fetchData will be triggered by useEffect when dependencies change
   }
 
-  const handleSearchColumnChange = (column: keyof FeedbackItem) => {
+  const handleSearchColumnChange = (column: FeedbackListParams['search_column']) => {
     setSearchColumn(column) // Only update column, don't reload
-  }
+}
 
   const handleDateRangeChange = (dates: [string, string] | null) => {
     setDateRange(dates)
@@ -188,7 +191,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
             message.success('Feedback deleted successfully')
           }
         } else {
-          const errorMsg = (result as any).error || 'Failed to delete feedback'
+          const errorMsg = (result as ApiResponse).error || 'Failed to delete feedback'
           if (onError) {
             onError('Delete Failed', errorMsg)
           } else {
@@ -208,7 +211,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
             message.success(`${result.deleted_count} feedback entries deleted`)
           }
         } else {
-          const errorMsg = (result as any).error || 'Failed to delete feedback'
+          const errorMsg = (result as ApiResponse).error || 'Failed to delete feedback'
           if (onError) {
             onError('Batch Delete Failed', errorMsg)
           } else {
@@ -248,7 +251,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
           message.success(`Feedback marked as ${status}`)
         }
       } else {
-        const errorMsg = (result as any).error || 'Failed to update status'
+        const errorMsg = (result as ApiResponse).error || 'Failed to update status'
         if (onError) {
           onError('Status Update Failed', errorMsg)
         } else {
@@ -279,7 +282,7 @@ export function useFeedback(options?: UseFeedbackOptions) {
 
       const result = await exportFeedback(format, {
         search: searchText.trim() || undefined,
-        search_column: searchColumn as any,
+        search_column: searchColumn,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         date_from: dateRange?.[0],
         date_to: dateRange?.[1],

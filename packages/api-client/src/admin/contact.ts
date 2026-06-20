@@ -1,5 +1,8 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -88,20 +91,20 @@ export const getContactList = async (params: ContactListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<ContactListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch contact list.",
+      error: (data as ApiResponse).error || "Failed to fetch contact list.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -118,7 +121,7 @@ export const deleteContact = async (contactId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DELETE}${contactId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DELETE}${contactId}`)
     );
 
     if (data.success) {
@@ -130,10 +133,10 @@ export const deleteContact = async (contactId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete contact.",
+      error: (data as ApiResponse).error || "Failed to delete contact.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -143,7 +146,7 @@ export const deleteContact = async (contactId: number) => {
 export const batchDeleteContact = async (contactIds: number[]) => {
   try {
     const data = await axiosWrapper<ContactBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_BATCH_DELETE, {
         ids: contactIds,
       })
     );
@@ -153,11 +156,11 @@ export const batchDeleteContact = async (contactIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete contact entries.",
+      error: (data as ApiResponse).error || "Failed to delete contact entries.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -169,7 +172,7 @@ export const batchDeleteContact = async (contactIds: number[]) => {
 export const markContactStatus = async (contactId: number, status: 'open' | 'resolved') => {
   try {
     const data = await axiosWrapper<ContactUpdateResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_MARK_STATUS}${contactId}`, {
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_MARK_STATUS}${contactId}`, {
         status,
       })
     );
@@ -178,10 +181,10 @@ export const markContactStatus = async (contactId: number, status: 'open' | 'res
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update contact status.",
+      error: (data as ApiResponse).error || "Failed to update contact status.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -209,24 +212,48 @@ export const exportContact = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<ContactExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_CONTACT_EXPORT, requestBody)
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export contact.",
+      error: (data as ApiResponse).error || "Failed to export contact.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",
     };
   }
-}; 
+};
+
+/**
+ * Get a single contact submission by ID (Admin)
+ */
+export const getContactById = async (contactId: number) => {
+  try {
+    const data = await axiosWrapper<{ success: boolean; data: ContactItem }>(
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_CONTACT_DETAIL}${contactId}`)
+    );
+
+    if (data.success) return data;
+
+    return {
+      success: false,
+      error: (data as ApiResponse).error || "Failed to fetch contact details.",
+      data: null,
+    };
+  } catch (error) {
+    return {
+      ...handleApiError(error as Error),
+      data: null,
+    };
+  }
+};

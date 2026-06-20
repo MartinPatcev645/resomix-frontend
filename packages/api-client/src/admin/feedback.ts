@@ -1,5 +1,8 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -84,20 +87,20 @@ export const getFeedbackList = async (params: FeedbackListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<FeedbackListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch feedback list.",
+      error: (data as ApiResponse).error || "Failed to fetch feedback list.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -114,7 +117,7 @@ export const deleteFeedback = async (feedbackId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DELETE}${feedbackId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DELETE}${feedbackId}`)
     );
 
     if (data.success) {
@@ -126,10 +129,10 @@ export const deleteFeedback = async (feedbackId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete feedback.",
+      error: (data as ApiResponse).error || "Failed to delete feedback.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -139,7 +142,7 @@ export const deleteFeedback = async (feedbackId: number) => {
 export const batchDeleteFeedback = async (feedbackIds: number[]) => {
   try {
     const data = await axiosWrapper<FeedbackBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_BATCH_DELETE, {
         ids: feedbackIds,
       })
     );
@@ -149,34 +152,31 @@ export const batchDeleteFeedback = async (feedbackIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete feedback entries.",
+      error: (data as ApiResponse).error || "Failed to delete feedback entries.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
 };
 
 /**
- * Update a feedback entry (e.g., change status)
+ * Update a feedback entry's status.
+ *
+ * @deprecated Use `markFeedbackStatus` directly — the backend only exposes
+ * `PATCH /admin/feedback/{id}/status` for status changes. A general content
+ * PATCH endpoint does not exist in the current API spec.
  */
 export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpdateData) => {
-  try {
-    const data = await axiosWrapper<FeedbackUpdateResponse>(
-      axiosInstance.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_UPDATE}${feedbackId}`, updateData)
-    );
-
-    if (data.success) return data;
-    
-    return {
-      success: false,
-      error: (data as any).error || "Failed to update feedback.",
-    };
-  } catch (error) {
-    return handleApiError(error as any);
+  if (updateData.status) {
+    return markFeedbackStatus(feedbackId, updateData.status);
   }
+  return {
+    success: false,
+    error: "updateFeedback: only 'status' updates are supported. Use markFeedbackStatus() instead.",
+  } as const;
 };
 
 /**
@@ -185,19 +185,19 @@ export const updateFeedback = async (feedbackId: number, updateData: FeedbackUpd
 export const getFeedbackById = async (feedbackId: number) => {
   try {
     const data = await axiosWrapper<{ success: boolean; data: FeedbackItem }>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST}${feedbackId}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_DETAIL}${feedbackId}`)
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch feedback details.",
+      error: (data as ApiResponse).error || "Failed to fetch feedback details.",
       data: null,
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: null,
     };
   }
@@ -235,21 +235,21 @@ export const exportFeedback = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<FeedbackExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_EXPORT, requestBody)
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export feedback.",
+      error: (data as ApiResponse).error || "Failed to export feedback.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",
@@ -258,12 +258,12 @@ export const exportFeedback = async (
 };
 
 /**
- * Mark feedback as open or resolved
+ * Mark feedback status as open or resolved (Admin)
  */
 export const markFeedbackStatus = async (feedbackId: number, status: 'open' | 'resolved') => {
   try {
     const data = await axiosWrapper<FeedbackUpdateResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_MARK_STATUS}${feedbackId}`, {
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_MARK_STATUS}${feedbackId}/status`, {
         status,
       })
     );
@@ -272,15 +272,15 @@ export const markFeedbackStatus = async (feedbackId: number, status: 'open' | 'r
     
     return {
       success: false,
-      error: (data as any).error || "Failed to update feedback status.",
+      error: (data as ApiResponse).error || "Failed to update feedback status.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
 /**
- * Get feedback statistics/summary
+ * Get feedback statistics/summary (Admin)
  */
 export const getFeedbackStats = async () => {
   try {
@@ -295,19 +295,19 @@ export const getFeedbackStats = async () => {
         by_category: Record<string, number>;
       };
     }>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_LIST}stats`)
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_FEEDBACK_STATS)
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch feedback statistics.",
+      error: (data as ApiResponse).error || "Failed to fetch feedback statistics.",
       stats: null,
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       stats: null,
     };
   }

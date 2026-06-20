@@ -7,7 +7,8 @@ import {
   exportContact,
   apiAxiosInstance,
   type ContactItem as ApiContactItem,
-  type ContactListParams
+  type ContactListParams,
+  type ApiResponse
 } from '@resomix/api-client'
 import { message } from 'antd'
 
@@ -22,6 +23,8 @@ export interface ContactItem {
   submitted_at: string
   user_id: string | null
 }
+
+export type ContactSearchColumn = ContactListParams['search_column']
 
 // Convert API response to frontend format
 const convertApiContact = (apiData: ApiContactItem): ContactItem => ({
@@ -45,7 +48,7 @@ export function useContact(options?: UseContactOptions) {
   const { onError, onSuccess } = options || {}
   const [data, setData] = useState<ContactItem[]>([])
   const [searchText, setSearchText] = useState('')
-  const [searchColumn, setSearchColumn] = useState<keyof ContactItem>('message')
+  const [searchColumn, setSearchColumn] = useState<ContactListParams['search_column']>('message')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -71,7 +74,7 @@ export function useContact(options?: UseContactOptions) {
       // Add search filter if present
       if (searchText.trim()) {
         params.search = searchText.trim()
-        params.search_column = searchColumn as any
+        params.search_column = searchColumn
       }
 
       // Add date range filter if present
@@ -102,7 +105,7 @@ export function useContact(options?: UseContactOptions) {
           total: result.pagination.total,
         }))
       } else {
-        const errorMsg = (result as any).error || 'Failed to fetch contact submissions'
+        const errorMsg = (result as ApiResponse).error || 'Failed to fetch contact submissions'
         if (onError) {
           onError('Failed to Load Contact', errorMsg)
         } else {
@@ -122,7 +125,7 @@ export function useContact(options?: UseContactOptions) {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, searchText, dateRange, statusFilter, sortBy, sortOrder])
+  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter, sortBy, sortOrder, onError])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -149,15 +152,15 @@ export function useContact(options?: UseContactOptions) {
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
-  const handleSearch = (value: string, column: keyof ContactItem) => {
+  const handleSearch = (value: string, column: ContactListParams['search_column']) => {
     setSearchColumn(column)
     setSearchText(value)
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
-  const handleSearchColumnChange = (column: keyof ContactItem) => {
+  const handleSearchColumnChange = (column: ContactListParams['search_column']) => {
     setSearchColumn(column)
-  }
+}
 
   const handleDateRangeChange = (dates: [string, string] | null) => {
     setDateRange(dates)
@@ -183,7 +186,7 @@ export function useContact(options?: UseContactOptions) {
             message.success('Contact deleted successfully')
           }
         } else {
-          const errorMsg = (result as any).error || 'Failed to delete contact'
+          const errorMsg = (result as ApiResponse).error || 'Failed to delete contact'
           if (onError) {
             onError('Delete Failed', errorMsg)
           } else {
@@ -203,7 +206,7 @@ export function useContact(options?: UseContactOptions) {
             message.success(`${result.deleted_count} contact submissions deleted`)
           }
         } else {
-          const errorMsg = (result as any).error || 'Failed to delete contact'
+          const errorMsg = (result as ApiResponse).error || 'Failed to delete contact'
           if (onError) {
             onError('Batch Delete Failed', errorMsg)
           } else {
@@ -242,7 +245,7 @@ export function useContact(options?: UseContactOptions) {
           message.success(`Contact marked as ${status}`)
         }
       } else {
-        const errorMsg = (result as any).error || 'Failed to update status'
+        const errorMsg = (result as ApiResponse).error || 'Failed to update status'
         if (onError) {
           onError('Status Update Failed', errorMsg)
         } else {
@@ -273,7 +276,7 @@ export function useContact(options?: UseContactOptions) {
 
       const result = await exportContact(format, {
         search: searchText.trim() || undefined,
-        search_column: searchColumn as any,
+        search_column: searchColumn,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         date_from: dateRange?.[0],
         date_to: dateRange?.[1],

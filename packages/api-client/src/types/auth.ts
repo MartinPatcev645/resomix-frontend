@@ -65,6 +65,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface AdminLoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface TwoFactorVerifyRequest {
   user_id: number;
   code: string;

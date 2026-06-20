@@ -72,6 +72,7 @@ class HlsPlaylistController implements AudioController {
   private wiredAudioEvents = false;
   private volumeUnsubscribe: (() => void) | null = null;
   private sessionPromise: Promise<any> | null = null;
+  private lastRestartTime = 0;
 
   constructor() {
     this.audio = new Audio();
@@ -353,25 +354,26 @@ class HlsPlaylistController implements AudioController {
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
         xhrSetup: function (xhr, url) {
+          let finalUrl = url;
           const requestUrl = new URL(url);
-          const isBserver = requestUrl.hostname === bserverHostname;
+          const isLocal = requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1';
+          const mediaHostname = API_CONFIG.MEDIA_URL ? new URL(API_CONFIG.MEDIA_URL).hostname : '';
+          const isInternal = requestUrl.hostname === bserverHostname || requestUrl.hostname === mediaHostname || isLocal;
 
-          if (token && url.includes(urlObj.hostname)) {
-            // Only append if token is not already in the URL
-            if (!url.includes('token=')) {
-              const sep = url.includes('?') ? '&' : '?';
-              url += sep + 'token=' + token;
+          if (token && (requestUrl.hostname === urlObj.hostname || isLocal)) {
+            if (!finalUrl.includes('token=')) {
+              const sep = finalUrl.includes('?') ? '&' : '?';
+              finalUrl += sep + 'token=' + token;
             }
           }
 
-          // Attach api_key for bserver requests
-          if (isBserver && apiKey && !url.includes('api_key=')) {
-            const sep = url.includes('?') ? '&' : '?';
-            url += sep + 'api_key=' + apiKey;
+          if (isInternal && apiKey && !finalUrl.includes('api_key=')) {
+            const sep = finalUrl.includes('?') ? '&' : '?';
+            finalUrl += sep + 'api_key=' + apiKey;
           }
 
-          if (url !== requestUrl.toString()) {
-             xhr.open('GET', url, true);
+          if (finalUrl !== url) {
+            xhr.open('GET', finalUrl, true);
           }
         }
         // only for testing
@@ -402,6 +404,14 @@ class HlsPlaylistController implements AudioController {
   private async restartHls() {
     if (!this.playlistUrl) return;
 
+    // Rate-limit restarts to prevent infinite loops (e.g. hundreds of requests quickly)
+    const now = Date.now();
+    if (now - this.lastRestartTime < 2000) {
+      console.warn("[HLS] Restart requested too soon, skipping to avoid infinite loop.");
+      return;
+    }
+    this.lastRestartTime = now;
+
     if (this.hls) {
       try { this.hls.destroy(); } catch { /* noop */ }
       this.hls = null;
@@ -429,25 +439,26 @@ class HlsPlaylistController implements AudioController {
         fragLoadingMaxRetry: 0,
         fragLoadingTimeOut: RETRY_EVERY,
         xhrSetup: function (xhr, url) {
+          let finalUrl = url;
           const requestUrl = new URL(url);
-          const isBserver = requestUrl.hostname === bserverHostname;
+          const isLocal = requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1';
+          const mediaHostname = API_CONFIG.MEDIA_URL ? new URL(API_CONFIG.MEDIA_URL).hostname : '';
+          const isInternal = requestUrl.hostname === bserverHostname || requestUrl.hostname === mediaHostname || isLocal;
 
-          if (token && url.includes(urlObj.hostname)) {
-            // Only append if token is not already in the URL
-            if (!url.includes('token=')) {
-              const sep = url.includes('?') ? '&' : '?';
-              url += sep + 'token=' + token;
+          if (token && (requestUrl.hostname === urlObj.hostname || isLocal)) {
+            if (!finalUrl.includes('token=')) {
+              const sep = finalUrl.includes('?') ? '&' : '?';
+              finalUrl += sep + 'token=' + token;
             }
           }
 
-          // Attach api_key for bserver requests
-          if (isBserver && apiKey && !url.includes('api_key=')) {
-            const sep = url.includes('?') ? '&' : '?';
-            url += sep + 'api_key=' + apiKey;
+          if (isInternal && apiKey && !finalUrl.includes('api_key=')) {
+            const sep = finalUrl.includes('?') ? '&' : '?';
+            finalUrl += sep + 'api_key=' + apiKey;
           }
 
-          if (url !== requestUrl.toString()) {
-             xhr.open('GET', url, true);
+          if (finalUrl !== url) {
+            xhr.open('GET', finalUrl, true);
           }
         }
       });
@@ -544,13 +555,15 @@ class HlsPlaylistController implements AudioController {
 
   private updatePlaylistUrlWithAuth(rawUrl: string): string {
     try {
-      const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
-      const apiKey = API_CONFIG.API_KEY;
-      let url = rawUrl;
+      const urlObj = new URL(rawUrl);
+      const isLocal = urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1';
+      const bserverHostname = API_CONFIG.BASE_URL ? new URL(API_CONFIG.BASE_URL).hostname : '';
+      const isInternal = urlObj.hostname === bserverHostname || isLocal;
 
-      if (url.includes(bserverHostname) && apiKey && !url.includes('api_key=')) {
+      let url = rawUrl;
+      if (isInternal && API_CONFIG.API_KEY && !url.includes('api_key=')) {
         const sep = url.includes('?') ? '&' : '?';
-        url += sep + 'api_key=' + apiKey;
+        url += sep + 'api_key=' + API_CONFIG.API_KEY;
       }
       return url;
     } catch {

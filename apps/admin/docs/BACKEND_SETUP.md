@@ -1,6 +1,6 @@
 # Admin Backend API - Quick Setup Guide
 
-**Base URL**: `https://bserver.resomix.com`  
+**Base URL**: Driven by `VITE_SERVER_BACKEND` environment variable.  
 **Auth**: All requests include `?api_key=xxx` (handled automatically)
 
 ---

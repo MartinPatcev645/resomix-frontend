@@ -1,4 +1,5 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -154,7 +155,7 @@ export const getSpotifyApps = async (
     }
 
     const response = await axiosWrapper<AdminSpotifyAppListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, {
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, {
         params: queryParams,
       }),
     );
@@ -170,7 +171,7 @@ export const getSpotifyApps = async (
       pagination: defaultPagination(queryParams.page, queryParams.page_size),
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -185,7 +186,7 @@ export const getSpotifyApp = async (
 ): Promise<AdminSpotifyAppResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppResponse>(
-      axiosInstance.get(buildAppPath(appId), {
+      authClient.get(buildAppPath(appId), {
         params: {
           include_secret: includeSecret,
         },
@@ -201,7 +202,7 @@ export const getSpotifyApp = async (
       error: response.error || "Failed to fetch Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -210,7 +211,7 @@ export const createSpotifyApp = async (
 ): Promise<AdminSpotifyAppResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, payload),
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APPS, payload),
     );
 
     if (response.success) {
@@ -222,7 +223,7 @@ export const createSpotifyApp = async (
       error: response.error || "Failed to create Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -232,7 +233,7 @@ export const updateSpotifyApp = async (
 ): Promise<AdminSpotifyAppResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppResponse>(
-      axiosInstance.put(buildAppPath(appId), payload),
+      authClient.put(buildAppPath(appId), payload),
     );
 
     if (response.success) {
@@ -244,7 +245,7 @@ export const updateSpotifyApp = async (
       error: response.error || "Failed to update Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -259,7 +260,7 @@ export const deleteSpotifyApp = async (
     }
 
     const response = await axiosWrapper<AdminSpotifyAppDeleteResponse>(
-      axiosInstance.delete(buildAppPath(appId), {
+      authClient.delete(buildAppPath(appId), {
         params: queryParams,
       }),
     );
@@ -273,7 +274,7 @@ export const deleteSpotifyApp = async (
       error: response.error || "Failed to delete Spotify app.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -295,7 +296,7 @@ export const getSpotifyAppUsers = async (
     }
 
     const response = await axiosWrapper<AdminSpotifyAppUserListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, {
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, {
         params: queryParams,
       }),
     );
@@ -311,7 +312,7 @@ export const getSpotifyAppUsers = async (
       pagination: defaultPagination(queryParams.page, queryParams.page_size),
     };
   } catch (error) {
-    const apiError = handleApiError(error as any);
+    const apiError = handleApiError(error as Error);
     return {
       ...apiError,
       data: [],
@@ -325,7 +326,7 @@ export const getSpotifyAppUser = async (
 ): Promise<AdminSpotifyAppUserResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppUserResponse>(
-      axiosInstance.get(buildUserPath(userIdentifier)),
+      authClient.get(buildUserPath(userIdentifier)),
     );
 
     if (response.success) {
@@ -337,7 +338,7 @@ export const getSpotifyAppUser = async (
       error: response.error || "Failed to fetch Spotify app user.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -346,7 +347,7 @@ export const upsertSpotifyAppUser = async (
 ): Promise<AdminSpotifyAppUserUpsertResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppUserUpsertResponse>(
-      axiosInstance.put(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, payload),
+      authClient.put(API_CONFIG.ENDPOINTS.ADMIN_SPOTIFY_APP_USERS, payload),
     );
 
     if (response.success) {
@@ -358,7 +359,7 @@ export const upsertSpotifyAppUser = async (
       error: response.error || "Failed to save Spotify app user association.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -367,7 +368,7 @@ export const deleteSpotifyAppUser = async (
 ): Promise<AdminSpotifyAppUserDeleteResponse> => {
   try {
     const response = await axiosWrapper<AdminSpotifyAppUserDeleteResponse>(
-      axiosInstance.delete(buildUserPath(userIdentifier)),
+      authClient.delete(buildUserPath(userIdentifier)),
     );
 
     if (response.success) {
@@ -379,7 +380,7 @@ export const deleteSpotifyAppUser = async (
       error: response.error || "Failed to delete Spotify app user association.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 

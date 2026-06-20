@@ -5,7 +5,21 @@ import path from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(), 
+    tailwindcss(),
+    {
+      name: 'remove-crossorigin-stylesheet',
+      transformIndexHtml(html) {
+        return html.replace(/<link\s+([^>]*?)crossorigin([^>]*?)>/g, (match, p1, p2) => {
+          if (p1.includes('rel="stylesheet"') || p2.includes('rel="stylesheet"')) {
+            return `<link ${p1} ${p2}>`.replace(/\s+/g, ' ').replace(' >', '>');
+          }
+          return match;
+        });
+      }
+    }
+  ],
   server: {
     port: 5175,
   },

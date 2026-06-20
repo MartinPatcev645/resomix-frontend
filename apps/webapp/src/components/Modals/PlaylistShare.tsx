@@ -65,7 +65,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     const [buttonText, setButtonText] = useState("Copy Link");
 
     useEffect(() => {
-        if (!isOpen || !playlistData?.playlist.id) return;
+        if (!isOpen || !playlistData?.playlist?.id) return;
 
         const updateVisibilityAndLink = async () => {
             try {
@@ -91,7 +91,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                 }
             } catch (err) {
                 console.error('Failed to change visibility', err);
-                setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData?.playlist.id}`);
+                setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData?.playlist?.id}`);
             }
         };
 
@@ -204,7 +204,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                         PLAYLIST SHARED!
                     </h2>
                     <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                        {playlistData?.playlist.is_public
+                        {playlistData?.playlist?.is_public
                             ? "Your playlist is publicly accessible."
                             : "Your playlist is now publicly accessible."
                         }
@@ -223,7 +223,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                 </button>
 
                 <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                    {playlistData?.playlist.is_public
+                    {playlistData?.playlist?.is_public
                         ? "Your playlist is publicly accessible."
                         : "Your playlist is now publicly accessible."
                     }

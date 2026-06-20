@@ -1,9 +1,11 @@
 import axiosInstance, { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
+import type { ApiResponse } from "./types/api";
+
 
 export const searchTracks = async (query: string, mode: 'auto' | 'artist' | 'title' = 'auto') => {
   try {
-    const data = await axiosWrapper<any>(
+    const data = await axiosWrapper<ApiResponse>(
       axiosInstance.get(API_CONFIG.ENDPOINTS.SEARCH, { params: { query, mode: mode.toLowerCase() } }),
     );
 
@@ -14,6 +16,6 @@ export const searchTracks = async (query: string, mode: 'auto' | 'artist' | 'tit
       details: data.details ?? null,
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };

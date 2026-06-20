@@ -8,6 +8,11 @@ export * from "./playlists";
 export * from "./peaks";
 export * from "./waitlist";
 export * from "./telemetry";
+export * from "./cart";
+export * from "./ratings";
+export * from "./metadata";
+export * from "./system";
+export * from "./partner";
 export * from "./admin/feedback";
 export * from "./admin/contact";
 export * from "./admin/waitlist";
@@ -15,10 +20,22 @@ export * from "./admin/playlist";
 export * from "./admin/operationLimits";
 export * from "./admin/spotifyApps";
 export * from "./admin/users";
-export { default as apiAxiosInstance } from "./utils";
+export * from "./admin/partners";
+export * from "./admin/logs";
+export * from "./admin/auth";
+export * from "./admin/similarity";
+export * from "./admin/promo";
+export * from "./admin/processing";
+export * from "./admin/ingestion";
+export * from "./admin/tracks";
+export * from "./ingest"; // legacy — deprecated, kept for backwards compat
+export * from "./types/partner";
+export * from "./types/api";
+export { default as apiAxiosInstance, generateIdempotencyKey } from "./utils";
 
 // Auth exports
 export { default as authClient } from "./authClient";
 export * from "./auth";
 export * from "./types/auth";
 export * from "./spotify";
+

@@ -50,7 +50,7 @@ function SpotifyAppsPage() {
         <Tabs
           defaultActiveKey="user-associations"
           items={tabItems}
-          destroyInactiveTabPane={false}
+          destroyOnHidden={false}
         />
       </div>
 

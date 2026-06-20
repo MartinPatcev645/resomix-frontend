@@ -12,6 +12,11 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { BASE_BETA_URL } from "@resomix/config";
 
+interface LocationState {
+  from?: string;
+  userId?: number;
+}
+
 interface AuthPageProps {
   mode:
   | "login"
@@ -32,7 +37,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   // Navigation handlers
   const handleNavigateLogin = () => {
     // Preserve redirect information when navigating to login
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -47,7 +52,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
   const handleNavigateRegister = () => {
     // Preserve redirect information when navigating to register
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -59,7 +64,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   const handleNavigateForgotPassword = () => {
     // Preserve redirect information when navigating to forgot password
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -74,14 +79,14 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   // Success handlers
   const handleLoginSuccess = () => {
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const from = fromState || fromQuery || "/";
     navigate(from, { replace: true });
   };
 
   const handleRegisterSuccess = () => {
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -92,7 +97,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
 
   const handleVerifyEmailSuccess = () => {
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -111,7 +116,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
 
   const handleResetPasswordSuccess = () => {
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -126,14 +131,14 @@ export default function AuthPage({ mode }: AuthPageProps) {
   };
 
   const handle2FASuccess = () => {
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const from = fromState || fromQuery || "/";
     navigate(from, { replace: true });
   };
 
   const handleNavigate2FA = (userId: number) => {
-    const fromState = (location.state as any)?.from;
+    const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
@@ -197,7 +202,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
       {mode === "verify-2fa" && (
         <Verify2FAContent
           baseUrl={BASE_BETA_URL}
-          userId={(location.state as any)?.userId}
+          userId={(location.state as LocationState)?.userId}
           onSuccess={handle2FASuccess}
           onNavigateLogin={handleNavigateLogin}
         />

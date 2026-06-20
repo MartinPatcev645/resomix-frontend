@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { App, Spin, Button, Tag, Descriptions } from 'antd'
+import { App, Spin, Button, Tag, Descriptions, message, Space } from 'antd'
 import { ArrowLeft, RefreshCw, Lock, Unlock } from 'lucide-react'
-import { getPlaylistDetails, type PlaylistDetailsResponse } from '@resomix/api-client'
+import { getPlaylistDetails, adminChangePlaylistVisibility, type PlaylistDetailsResponse } from '@resomix/api-client'
 import PlaylistTracksTable from '@/components/playlist/PlaylistTracksTable.tsx'
 import { useStatusModals } from '@resomix/hooks'
 import { StatusModal } from '@resomix/ui'
@@ -12,6 +12,7 @@ function PlaylistDetailsPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [playlistData, setPlaylistData] = useState<PlaylistDetailsResponse['data'] | null>(null)
+  const [visibilityUpdating, setVisibilityUpdating] = useState(false)
   
   const {
     errorModalVisible,
@@ -51,6 +52,35 @@ function PlaylistDetailsPage() {
       )
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleVisibility = async (id: number, currentPublic: boolean) => {
+    setVisibilityUpdating(true)
+    try {
+      const res = await adminChangePlaylistVisibility(id, !currentPublic)
+      if (res.success) {
+        const msg = 'message' in res ? res.message : 'Playlist visibility updated'
+        message.success(msg)
+        // Refresh local state
+        if (playlistData) {
+          setPlaylistData({
+            ...playlistData,
+            playlist: {
+              ...playlistData.playlist,
+              is_public: !currentPublic
+            }
+          })
+        }
+      } else {
+        const errMsg = ('error' in res && res.error) || 'Failed to update visibility'
+        showErrorModal('Error', errMsg)
+      }
+    } catch (err) {
+      console.error(err)
+      showErrorModal('Error', err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setVisibilityUpdating(false)
     }
   }
 
@@ -152,13 +182,22 @@ function PlaylistDetailsPage() {
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Visibility">
-            <Tag 
-              color={playlist.is_public ? 'green' : 'default'} 
-              icon={playlist.is_public ? <Unlock size={12} /> : <Lock size={12} />}
-              style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', justifyContent: 'evenly', gap: '4px' }}
-            >
-              {playlist.is_public ? 'Public' : 'Private'}
-            </Tag>
+            <Space>
+              <Tag 
+                color={playlist.is_public ? 'green' : 'default'} 
+                icon={playlist.is_public ? <Unlock size={12} /> : <Lock size={12} />}
+                style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', justifyContent: 'evenly', gap: '4px' }}
+              >
+                {playlist.is_public ? 'Public' : 'Private'}
+              </Tag>
+              <Button 
+                size="small"
+                onClick={() => handleToggleVisibility(playlist.id, playlist.is_public)}
+                loading={visibilityUpdating}
+              >
+                Make {playlist.is_public ? 'Private' : 'Public'}
+              </Button>
+            </Space>
           </Descriptions.Item>
           <Descriptions.Item label="Total Tracks">{playlist.track_count}</Descriptions.Item>
           <Descriptions.Item label="Created">

@@ -123,7 +123,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   <div className="flex flex-col justify-between min-h-[var(--px-55)]">
                     <h1 className="text-[length:var(--px-13)] font-light uppercase font-helvetica leading-[var(--px-14)]">
                       <HoverFlow
-                        text={playlistData?.playlist.name || ''}
+                        text={playlistData?.playlist?.name || ''}
                         maxChars={26}
                         delay={800}
                         speed={80}
@@ -131,7 +131,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                         maxWidth="210px"
                       />
                     </h1>
-                    <div className={`text-[length:var(--px-9)] lg:text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist.name ? 'hidden' : ''}`}>
+                    <div className={`text-[length:var(--px-9)] lg:text-[length:var(--px-7)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-10)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist?.name ? 'hidden' : ''}`}>
                       {/* Display only if default is changed */}
                       <HoverFlow
                         text={playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title}
@@ -171,7 +171,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 {/* Usage: Use playlistData?.queried_track.type === 'upload' to show an "Uploaded" badge */}
                 <div className="inline-flex py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
                 <div className="py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white">
-                  {playlistData?.playlist.is_public ? (
+                  {playlistData?.playlist?.is_public ? (
                     <>
                       <PublicIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
                       Public
@@ -215,7 +215,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 type="button"
                 onClick={() => onMoreClick?.(
                   playlistData?.queried_track.id || '',
-                  playlistData?.playlist.name || '',
+                  playlistData?.playlist?.name || '',
                   playlistData?.queried_track.label || '',
                   playlistData?.queried_track.duration ?? 0,
                   null,
@@ -228,6 +228,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-19)] h-[var(--px-14)]" />
               </button>
             </div>
+            
             {/* Creative Commons License Icons - Bottom Right */}
             {!playlistData?.isUpload && (
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">

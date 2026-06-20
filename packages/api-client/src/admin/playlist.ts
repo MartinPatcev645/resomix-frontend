@@ -1,5 +1,8 @@
-import axiosInstance, { axiosWrapper, handleApiError } from "../utils";
+import authClient from "../authClient";
+import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
+import type { ApiResponse } from "../types/api";
+
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -151,20 +154,20 @@ export const getPlaylistList = async (params: PlaylistListParams = {}) => {
     if (params.sort_order) queryParams.sort_order = params.sort_order;
 
     const data = await axiosWrapper<PlaylistListResponse>(
-      axiosInstance.get(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_LIST, { params: queryParams })
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_LIST, { params: queryParams })
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch playlists.",
+      error: (data as ApiResponse).error || "Failed to fetch playlists.",
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       data: [],
       pagination: { page: 1, page_size: 30, total: 0, total_pages: 0 },
     };
@@ -181,7 +184,7 @@ export const deletePlaylist = async (playlistId: number) => {
       data?: { message: string };
       error?: string;
     }>(
-      axiosInstance.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DELETE}${playlistId}`)
+      authClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DELETE}${playlistId}`)
     );
 
     if (data.success) {
@@ -193,10 +196,10 @@ export const deletePlaylist = async (playlistId: number) => {
     
     return {
       success: false,
-      error: (data as any).error || "Failed to delete playlist.",
+      error: (data as ApiResponse).error || "Failed to delete playlist.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -206,7 +209,7 @@ export const deletePlaylist = async (playlistId: number) => {
 export const batchDeletePlaylist = async (playlistIds: number[]) => {
   try {
     const data = await axiosWrapper<PlaylistBatchDeleteResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_DELETE, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_DELETE, {
         ids: playlistIds,
       })
     );
@@ -216,11 +219,11 @@ export const batchDeletePlaylist = async (playlistIds: number[]) => {
     return {
       success: false,
       deleted_count: 0,
-      error: (data as any).error || "Failed to delete playlists.",
+      error: (data as ApiResponse).error || "Failed to delete playlists.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       deleted_count: 0,
     };
   }
@@ -253,21 +256,21 @@ export const exportPlaylist = async (
     if (params.sort_order) requestBody.sort_order = params.sort_order;
 
     const data = await axiosWrapper<PlaylistExportResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_EXPORT, requestBody)
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_EXPORT, requestBody)
     );
 
     if (data.success) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to export playlists.",
+      error: (data as ApiResponse).error || "Failed to export playlists.",
       download_url: "",
       filename: "",
       expires_at: "",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       download_url: "",
       filename: "",
       expires_at: "",
@@ -282,17 +285,17 @@ export const exportPlaylist = async (
 export const getPlaylistDetails = async (playlistUuid: string) => {
   try {
     const data = await axiosWrapper<PlaylistDetailsResponse>(
-      axiosInstance.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistUuid}`)
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistUuid}`)
     );
 
     if (data.success && data.data) return data;
     
     return {
       success: false,
-      error: (data as any).error || "Failed to fetch playlist details.",
+      error: (data as ApiResponse).error || "Failed to fetch playlist details.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -304,7 +307,7 @@ export const getPlaylistDetails = async (playlistUuid: string) => {
 export const adminChangePlaylistVisibility = async (playlistId: number, isPublic: boolean) => {
   try {
     const data = await axiosWrapper<PlaylistVisibilityResponse>(
-      axiosInstance.post(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}`, {
+      authClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_VISIBILITY}${playlistId}/visibility`, {
         is_public: isPublic,
       })
     );
@@ -318,10 +321,10 @@ export const adminChangePlaylistVisibility = async (playlistId: number, isPublic
     
     return {
       success: false,
-      error: (data as any).error || "Failed to change playlist visibility.",
+      error: (data as ApiResponse).error || "Failed to change playlist visibility.",
     };
   } catch (error) {
-    return handleApiError(error as any);
+    return handleApiError(error as Error);
   }
 };
 
@@ -333,7 +336,7 @@ export const adminChangePlaylistVisibility = async (playlistId: number, isPublic
 export const adminBatchChangePlaylistVisibility = async (playlistIds: number[], isPublic: boolean) => {
   try {
     const data = await axiosWrapper<PlaylistBatchVisibilityResponse>(
-      axiosInstance.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_VISIBILITY, {
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_BATCH_VISIBILITY, {
         ids: playlistIds,
         is_public: isPublic,
       })
@@ -350,11 +353,11 @@ export const adminBatchChangePlaylistVisibility = async (playlistIds: number[], 
     return {
       success: false,
       updated_count: 0,
-      error: (data as any).error || "Failed to change playlist visibility.",
+      error: (data as ApiResponse).error || "Failed to change playlist visibility.",
     };
   } catch (error) {
     return {
-      ...handleApiError(error as any),
+      ...handleApiError(error as Error),
       updated_count: 0,
     };
   }
