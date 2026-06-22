@@ -69,7 +69,7 @@ _ONE_FAIL = text(
 )
 
 
-async def main(job_id, partner_id_arg, chunk_size: int) -> int:
+async def main(job_id, partner_id_arg, chunk_size: int, ingest_log_override=None) -> int:
     set_admin_context(True)
     hetzner = HetznerService()
 
@@ -89,7 +89,7 @@ async def main(job_id, partner_id_arg, chunk_size: int) -> int:
             return 2
         job_id = job.id
         partner_id = job.partner_id
-        ingest_log_id = job.ingest_log_id
+        ingest_log_id = job.ingest_log_id or ingest_log_override
         set_current_partner_id(partner_id)
         print(f"job {job_id}: partner={partner_id} type={job.job_type} status={job.status} "
               f"ingest_log_id={ingest_log_id} {job.processed_tracks}/{job.total_tracks}")
@@ -184,9 +184,11 @@ if __name__ == "__main__":
     ap.add_argument("job_id", nargs="?", type=int, default=None, help="PartnerProcessingJob id (embeddings)")
     ap.add_argument("--partner-id", type=int, default=None, help="Auto-pick the latest embeddings job for this partner")
     ap.add_argument("--chunk-size", type=int, default=1000)
+    ap.add_argument("--ingest-log-id", type=int, default=None,
+                    help="Advance this ingest log to READY (if the job row's ingest_log_id is NULL)")
     args = ap.parse_args()
     if args.job_id is None and args.partner_id is None:
-        print("Usage: python scripts/finalize_embeddings_job.py <job_id> [--chunk-size N]")
+        print("Usage: python scripts/finalize_embeddings_job.py <job_id> [--ingest-log-id 7]")
         print("   or: python scripts/finalize_embeddings_job.py --partner-id 1")
         sys.exit(64)
-    sys.exit(asyncio.run(main(args.job_id, args.partner_id, args.chunk_size)))
+    sys.exit(asyncio.run(main(args.job_id, args.partner_id, args.chunk_size, args.ingest_log_id)))
