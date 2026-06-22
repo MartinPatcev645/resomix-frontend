@@ -68,20 +68,37 @@ from app.services.hetzner_service import HetznerService
 _GENRE_CACHE: dict[str, int] = {}
 
 
-async def _resolve_genre_id(db, name):
-    """Mirror of apply_ingestion_result._resolve_genre_id (INSERT IGNORE + SELECT)."""
+async def _ensure_genre(name):
+    """Resolve a genre name -> genres.id, creating it durably if needed.
+
+    Crucially this commits the genre in its OWN session, so the id is valid even
+    if the caller's chunk later rolls back. (A process-wide cache that survived a
+    rolled-back INSERT was the source of the tracks_ibfk_4 FK failures.)
+    """
     if not name or not str(name).strip():
         return None
     key = str(name).strip().lower()
     if key in _GENRE_CACHE:
         return _GENRE_CACHE[key]
     clean = str(name).strip()[:80]
-    await db.execute(text("INSERT IGNORE INTO genres (name) VALUES (:name)"), {"name": clean})
-    row = (await db.execute(text("SELECT id FROM genres WHERE name = :name"), {"name": clean})).first()
+    async with AsyncSessionLocal() as gdb:
+        await gdb.execute(text("INSERT IGNORE INTO genres (name) VALUES (:name)"), {"name": clean})
+        await gdb.commit()
+        row = (await gdb.execute(text("SELECT id FROM genres WHERE name = :name"), {"name": clean})).first()
     gid = row[0] if row else None
     if gid:
         _GENRE_CACHE[key] = gid
     return gid
+
+
+def _safe_year(y):
+    """mysql.YEAR accepts 1901..2155. Junk values (e.g. 0 or 12021) raise
+    DataError, so clamp anything out of range to NULL."""
+    try:
+        yi = int(y)
+    except (TypeError, ValueError):
+        return None
+    return yi if 1901 <= yi <= 2155 else None
 
 
 def _stored_path_for(uuid_val: str, audio_fn: str) -> str:
@@ -99,8 +116,8 @@ async def _persist_one(db, rec, party_id, partner_id, env):
     """
     import uuid as _uuid
 
-    genre_id_val = await _resolve_genre_id(db, rec.get("genre"))
-    sub_genre_id_val = await _resolve_genre_id(db, rec.get("sub_genre"))
+    genre_id_val = await _ensure_genre(rec.get("genre"))
+    sub_genre_id_val = await _ensure_genre(rec.get("sub_genre"))
     audio_fn = rec.get("audio_filename")
     track_uuid = rec.get("track_uuid") or str(_uuid.uuid4())
 
@@ -122,7 +139,7 @@ async def _persist_one(db, rec, party_id, partner_id, env):
         is_instrumental=bool(rec.get("is_instrumental")),
         audio_language=rec.get("audio_language") or "xx",
         language_of_lyrics=rec.get("language_of_lyrics"),
-        p_line_year=rec.get("p_line_year"),
+        p_line_year=_safe_year(rec.get("p_line_year")),
         p_line_text=rec.get("p_line_text"),
         ingestion_source="csv",
         track_type="electrobuzz",
