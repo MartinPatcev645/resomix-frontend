@@ -34,9 +34,19 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_REPO_ROOT))
+
+import urllib.parse
 
 from sqlalchemy import create_engine, text
+
+# Load the app's .env so MARIA_DB_* match the running server (same as the app does).
+try:
+    from dotenv import load_dotenv
+    load_dotenv(_REPO_ROOT / ".env")
+except Exception:
+    pass
 
 
 def _engine():
@@ -45,7 +55,11 @@ def _engine():
     host = os.getenv("MARIA_DB_HOST", "127.0.0.1")
     port = os.getenv("MARIA_DB_PORT", "3306")
     db = os.getenv("MARIA_DB_NAME", "resomix_db")
-    return create_engine(f"mysql+pymysql://{user}:{pw}@{host}:{port}/{db}", pool_pre_ping=True)
+    # URL-encode credentials so special chars (@, !, :) don't break the URL.
+    user_q = urllib.parse.quote_plus(user)
+    pw_q = urllib.parse.quote_plus(pw)
+    auth = f"{user_q}:{pw_q}@" if pw else f"{user_q}@"
+    return create_engine(f"mysql+pymysql://{auth}{host}:{port}/{db}", pool_pre_ping=True)
 
 
 def main() -> int:
