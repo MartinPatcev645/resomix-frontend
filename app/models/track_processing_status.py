@@ -60,18 +60,22 @@ class TrackProcessingStatus(Base):
     # processing job reads the audio from (partner_paths.sftp_dir(pid, env)).
     sftp_env: Mapped[str] = mapped_column(String(16), nullable=False, default="live")
 
-    # Stage states
+    # Stage states. transcode is the FIRST post-ingestion stage (raw -> 128k mp3); the
+    # embedding/peaks/segments jobs all consume its output, so it's tracked like the rest.
+    transcode_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
     embedding_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
     peaks_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     segments_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     faiss_indexed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
 
     # Per-stage error messages
+    transcode_error: Mapped[Optional[str]] = mapped_column(mysql.TEXT, nullable=True)
     embedding_error: Mapped[Optional[str]] = mapped_column(mysql.TEXT, nullable=True)
     peaks_error: Mapped[Optional[str]] = mapped_column(mysql.TEXT, nullable=True)
     segments_error: Mapped[Optional[str]] = mapped_column(mysql.TEXT, nullable=True)
 
     # Per-stage completion timestamps
+    transcode_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     embedding_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     peaks_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     segments_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
