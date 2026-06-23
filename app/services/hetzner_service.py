@@ -473,6 +473,82 @@ class HetznerService:
             logger.error(f"Hetzner pause-embeddings connection error (job {job_id}): {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
+    # ------------------------------------------------------------------ transcode
+    async def start_transcode(
+        self,
+        job_id: int,
+        partner_id: int,
+        items: list,
+        processing_dir: str,
+        env: str = "live",
+    ) -> Dict[str, Any]:
+        """Fire-and-forget hand-off of a transcode job (raw upload -> 128k mp3) to Hetzner.
+
+        ``items`` is a list of {"track_uuid": str, "filename": str}; the sources live under
+        ``processing/<processing_dir>/``. Returns on HTTP 202; poll ``get_transcode_status``.
+        """
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}", "Content-Type": "application/json"}
+        payload = {
+            "job_id": job_id, "partner_id": partner_id, "env": env,
+            "processing_dir": processing_dir, "items": items,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/process/transcode/run", json=payload, headers=headers
+                )
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner start-transcode connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def pause_transcode(self, partner_id: int, job_id: int) -> Dict[str, Any]:
+        """Signal the media server to pause a running transcode job (idempotent)."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/process/transcode/pause/{partner_id}/{job_id}", headers=headers
+                )
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner pause-transcode connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def get_transcode_status(self, partner_id: int, job_id: int) -> Dict[str, Any]:
+        """Poll the media server for the current state of a transcode job."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(
+                    f"{base_url}/internal/process/transcode/status/{partner_id}/{job_id}", headers=headers
+                )
+                if resp.status_code == 200:
+                    return {"success": True, "data": resp.json()}
+                if resp.status_code == 404:
+                    return {"success": False, "error": "not_found",
+                            "detail": "No transcode job result found on media server"}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner transcode-status connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
     async def get_embeddings_status(
         self, partner_id: int, job_id: int
     ) -> Dict[str, Any]:
