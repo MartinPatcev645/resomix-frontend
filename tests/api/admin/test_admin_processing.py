@@ -505,7 +505,9 @@ async def test_apply_transcode_result_failed_track_marks_failed_no_double_embed(
         await db.refresh(tjob)
         tjob_id = tjob.id
 
-    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})):
+    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})), \
+         patch("app.services.notification_service.NotificationService.notify_partner_operation",
+               new_callable=AsyncMock) as mock_notify:
         async with AsyncSessionLocal() as db:
             tjob = await db.get(PartnerProcessingJob, tjob_id)
             await apply_transcode_result(
@@ -513,6 +515,12 @@ async def test_apply_transcode_result_failed_track_marks_failed_no_double_embed(
                 {"status": "completed", "results": [{"track_uuid": track_uuid, "status": "error",
                                                      "message": "transcode failed: bad input"}]},
             )
+
+    # partner + admin were notified about the failed track (by filename)
+    assert mock_notify.await_count == 1
+    args, kwargs = mock_notify.await_args
+    assert args[2] == "transcode" and args[3] == "failed"
+    assert "song.wav" in kwargs["details"]
 
     async with AsyncSessionLocal() as db:
         tps = (await db.execute(
@@ -559,7 +567,9 @@ async def test_embedding_failure_deactivates_track(seeded):
         await db.refresh(job)
         job_id = job.id
 
-    with patch("app.tasks.webhooks.dispatch_webhook") as mock_wh:
+    with patch("app.tasks.webhooks.dispatch_webhook") as mock_wh, \
+         patch("app.services.notification_service.NotificationService.notify_partner_operation",
+               new_callable=AsyncMock) as mock_notify:
         mock_wh.delay = lambda **kw: None
         async with AsyncSessionLocal() as db:
             job = await db.get(PartnerProcessingJob, job_id)
@@ -567,6 +577,12 @@ async def test_embedding_failure_deactivates_track(seeded):
                 "status": "completed", "env": "live",
                 "results": [{"track_uuid": track_uuid, "status": "error", "message": "embed failed"}],
             })
+
+    # partner + admin notified about the failed embed (by filename)
+    assert mock_notify.await_count == 1
+    args, kwargs = mock_notify.await_args
+    assert args[2] == "embedding" and args[3] == "failed"
+    assert "song.wav" in kwargs["details"]
 
     async with AsyncSessionLocal() as db:
         assert (await db.get(Track, seeded["track"].id)).is_active is False

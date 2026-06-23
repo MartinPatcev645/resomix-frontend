@@ -337,6 +337,38 @@ async def _ensure_embedding_job_for_log(
     )
 
 
+# Partner-safe per-stage phrasing (no internal error text — the technical reason is
+# kept in track_processing_status.<stage>_error for admin diagnostics).
+_STAGE_FAIL_VERB = {
+    "transcode": "could not be processed",
+    "embedding": "could not be embedded",
+    "peaks": "waveform peaks could not be generated",
+    "segments": "playback segments could not be generated",
+}
+
+
+async def _notify_job_failures(
+    db, partner_id: int, kind: str, failed_files: List[str], succeeded: int, failed: int
+) -> None:
+    """Email partner + admin (with the top-25 failed filenames) when a stage job has
+    per-track failures. Best-effort — never breaks the job finalize."""
+    if not failed_files:
+        return
+    try:
+        from app.services.notification_service import NotificationService
+        verb = _STAGE_FAIL_VERB.get(kind, "failed")
+        more = "" if len(failed_files) <= 25 else f" (+{len(failed_files) - 25} more)"
+        await NotificationService().notify_partner_operation(
+            db, partner_id, kind, "failed",
+            summary=f"{len(failed_files)} track(s) {verb} and were skipped.",
+            title=f"{kind.capitalize()} — {len(failed_files)} track(s) failed",
+            details=[fn for fn in failed_files[:25]] + ([more.strip()] if more else []),
+            counts={"Succeeded": succeeded, "Failed": failed},
+        )
+    except Exception as exc:  # notification must never break the pipeline
+        logger.error(f"[ProcessingService] failure notification ({kind}) errored: {exc}")
+
+
 async def apply_transcode_result(
     db, job: PartnerProcessingJob, state: Dict[str, Any]
 ) -> PartnerProcessingJob:
@@ -365,6 +397,7 @@ async def apply_transcode_result(
     processed = 0
     failed = 0
     errors: List[Dict[str, Any]] = []
+    failed_files: List[str] = []
     for r in results:
         uuid = r.get("track_uuid")
         ok = r.get("status") == "ok"
@@ -387,6 +420,7 @@ async def apply_transcode_result(
             failed += 1
             msg = r.get("message") or "Unknown transcode error"
             errors.append({"track_uuid": uuid, "message": msg})
+            failed_files.append((tps.audio_filename if tps and tps.audio_filename else uuid) or "unknown")
             if tps is not None:
                 tps.transcode_status = "failed"
                 tps.transcode_error = msg
@@ -407,6 +441,9 @@ async def apply_transcode_result(
         job.status = "completed" if failed == 0 else ("failed" if processed == 0 else "partial")
     job.completed_at = datetime.utcnow()
     await db.commit()
+
+    # Notify partner + admin about any tracks that failed to transcode.
+    await _notify_job_failures(db, partner_id, "transcode", failed_files, processed, failed)
 
     # Transcode produced the mp3s → kick off embeddings automatically (idempotent).
     if job.status in ("completed", "partial") and ingest_log_id:
@@ -547,6 +584,7 @@ async def apply_embeddings_result(
     processed = 0
     failed = 0
     errors: List[Dict[str, Any]] = []
+    failed_files: List[str] = []
     now = datetime.utcnow()
 
     for r in results:
@@ -588,6 +626,7 @@ async def apply_embeddings_result(
             failed += 1
             msg = r.get("message") or "Unknown embedding error"
             errors.append({"track_uuid": uuid, "message": msg})
+            failed_files.append((tps.audio_filename if tps and tps.audio_filename else uuid) or "unknown")
             if not dry_run and tps is not None:
                 tps.embedding_status = "failed"
                 tps.embedding_error = msg
@@ -616,7 +655,11 @@ async def apply_embeddings_result(
             job.status = "partial"
     job.completed_at = datetime.utcnow()
     await db.commit()
-    
+
+    # Notify partner + admin about any tracks that failed to embed.
+    if not dry_run:
+        await _notify_job_failures(db, partner_id, "embedding", failed_files, processed, failed)
+
     if job.ingest_log_id and job.status in ("completed", "partial"):
         from app.models.b2b import IngestLog
         from app.services.ingestion_stages import advance_stage, Stage
