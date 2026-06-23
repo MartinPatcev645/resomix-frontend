@@ -492,6 +492,8 @@ async def test_apply_transcode_result_failed_track_marks_failed_no_double_embed(
     async with AsyncSessionLocal() as db:
         log = await db.get(IngestLog, seeded["log"].id)
         log.processing_dir = "20260623T000000Z"
+        t = await db.get(Track, seeded["track"].id)
+        t.is_active = True  # start active so we can prove the failure deactivates it
         await db.commit()
         tjob = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
                                     job_type="transcode", status="running")
@@ -520,6 +522,9 @@ async def test_apply_transcode_result_failed_track_marks_failed_no_double_embed(
         assert tps.transcode_status == "failed"
         assert "bad input" in (tps.transcode_error or "")
 
+        # failed transcode → no mp3 → track deactivated (excluded from catalog/search)
+        assert (await db.get(Track, seeded["track"].id)).is_active is False
+
         tjob = await db.get(PartnerProcessingJob, tjob_id)
         assert tjob.status == "failed"  # the only track failed
 
@@ -530,3 +535,41 @@ async def test_apply_transcode_result_failed_track_marks_failed_no_double_embed(
             )
         )).scalars().all()
         assert len(emb) == 1  # still just the pre-existing one (no duplicate)
+
+
+@pytest.mark.asyncio
+async def test_embedding_failure_deactivates_track(seeded):
+    """A failed embedding marks transcode's downstream track is_active=False so a
+    vector-less track leaves the usable catalog (can't be picked as a reference)."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_embeddings_result
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        t = await db.get(Track, seeded["track"].id)
+        t.is_active = True  # start active
+        job = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                   job_type="embeddings", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    with patch("app.tasks.webhooks.dispatch_webhook") as mock_wh:
+        mock_wh.delay = lambda **kw: None
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await apply_embeddings_result(db, job, {
+                "status": "completed", "env": "live",
+                "results": [{"track_uuid": track_uuid, "status": "error", "message": "embed failed"}],
+            })
+
+    async with AsyncSessionLocal() as db:
+        assert (await db.get(Track, seeded["track"].id)).is_active is False
+        tps = (await db.execute(select(TrackProcessingStatus).where(
+            TrackProcessingStatus.track_id == seeded["track"].id))).scalar_one()
+        assert tps.embedding_status == "failed"

@@ -287,9 +287,16 @@ class TrackRepository(BaseRepository[Track]):
             select(self.model)
             .join(TrackContributor, TrackContributor.track_id == self.model.id, isouter=True)
             .join(Contributor, Contributor.id == TrackContributor.person_id, isouter=True)
-            .where(and_(search_conditions, self.model.track_type != TrackType.UPLOAD))
+            .where(and_(
+                search_conditions,
+                self.model.track_type != TrackType.UPLOAD,
+                # Hide deactivated tracks (embedding/transcode failed, or taken down) so a
+                # vector-less track can never be picked as a similarity reference. NULL
+                # and True remain visible — only explicit False is excluded.
+                self.model.is_active.isnot(False),
+            ))
         )
-        
+
         if partner_id is not None:
             stmt = stmt.where(self.model.partner_id == partner_id)
             

@@ -376,7 +376,7 @@ async def apply_transcode_result(
                 .limit(1)
             )
         ).first()
-        tps = row[0] if row else None
+        tps, track = (row[0], row[1]) if row else (None, None)
         if ok:
             processed += 1
             if tps is not None:
@@ -390,6 +390,9 @@ async def apply_transcode_result(
             if tps is not None:
                 tps.transcode_status = "failed"
                 tps.transcode_error = msg
+            # No mp3 → embedding/peaks/segments can't run → the track is unusable.
+            if track is not None:
+                track.is_active = False
 
     job.processed_tracks = processed
     job.failed_tracks = failed
@@ -588,6 +591,10 @@ async def apply_embeddings_result(
             if not dry_run and tps is not None:
                 tps.embedding_status = "failed"
                 tps.embedding_error = msg
+            # No vector → the track can't be a similarity result or a usable reference.
+            # Deactivate it so it never appears in the partner catalog/search as broken.
+            if not dry_run and track is not None:
+                track.is_active = False
 
     job.processed_tracks = processed
     job.failed_tracks = failed
