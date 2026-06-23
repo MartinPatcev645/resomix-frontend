@@ -653,3 +653,98 @@ async def test_stop_tracks_batch_deactivates_and_calls_media_once(admin_auth_hea
     async with AsyncSessionLocal() as db:
         for tid in ids:
             assert (await db.get(Track, tid)).is_active is False
+
+
+def _persist_records():
+    return [
+        {"track_uuid": str(uuid.uuid4()), "isrc": "USAAA1234567", "title": "C1",
+         "display_artist": "A", "audio_filename": "c1.mp3", "p_line_year": 12021},  # bad year -> clamped
+        {"track_uuid": str(uuid.uuid4()), "isrc": "USBBB1234567", "title": "C2",
+         "display_artist": "A", "audio_filename": "c2.mp3"},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_apply_ingestion_result_enqueues_background_persist_and_debounces(seeded):
+    """On a completed live batch, apply_ingestion_result marks the log PERSISTING and
+    enqueues the background task ONCE; a second poll while PERSISTING does not re-enqueue."""
+    from app.services.ingestion_service import apply_ingestion_result
+    from app.services.ingestion_stages import Stage
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.status = "PROCESSING"
+        log.stage = None
+        log.stage_timeline = {}
+        await db.commit()
+
+    state = {"status": "completed", "env": "live", "records": _persist_records()}
+
+    with patch("app.tasks.ingestion_tasks.persist_and_finalize_ingestion.delay") as mdelay:
+        async with AsyncSessionLocal() as db:
+            log = await db.get(IngestLog, seeded["log"].id)
+            await apply_ingestion_result(db, log, state)
+        assert mdelay.call_count == 1  # enqueued once
+
+        async with AsyncSessionLocal() as db:
+            log = await db.get(IngestLog, seeded["log"].id)
+            assert log.stage == Stage.PERSISTING
+            assert log.status == "PROCESSING"  # not finalized — the task does that
+
+        # Second poll while PERSISTING (fresh) → debounced, no second enqueue.
+        async with AsyncSessionLocal() as db:
+            log = await db.get(IngestLog, seeded["log"].id)
+            await apply_ingestion_result(db, log, state)
+        assert mdelay.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_persist_task_inserts_finalizes_and_is_idempotent(seeded):
+    """The background task pulls records from Hetzner, inserts them (chunked, clamping the
+    bad year), finalizes the log COMPLETED, auto-spawns transcode, and a re-run is a no-op."""
+    from sqlalchemy import select, func
+    from app.tasks.ingestion_tasks import _async_persist_and_finalize
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    records = _persist_records()
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.status = "PROCESSING"
+        log.processing_dir = "20260623T000000Z"
+        await db.commit()
+
+    remote = {"success": True, "data": {"status": "completed", "env": "live", "records": records}}
+    with patch("app.tasks.ingestion_tasks.HetznerService.get_ingestion_status",
+               new_callable=AsyncMock, return_value=remote), \
+         patch("app.services.ingestion_service.dispatch_webhook.delay", lambda **k: None), \
+         patch("app.services.notification_service.NotificationService.notify_partner_operation",
+               new_callable=AsyncMock), \
+         patch("app.services.partner_processing_service.hetzner_service.start_transcode",
+               new_callable=AsyncMock) as mstart:
+        mstart.return_value = {"success": True}
+        await _async_persist_and_finalize(seeded["log"].id)
+        await _async_persist_and_finalize(seeded["log"].id)  # idempotent re-run
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        assert log.status == "COMPLETED"
+
+        uuids = [r["track_uuid"] for r in records]
+        cnt = (await db.execute(
+            select(func.count()).select_from(Track).where(
+                Track.partner_id == partner_id, Track.uuid.in_(uuids))
+        )).scalar()
+        assert cnt == 2  # both inserted, no duplicates
+
+        t = (await db.execute(select(Track).where(Track.uuid == uuids[0]))).scalar_one()
+        assert t.p_line_year is None  # bad year clamped, not an error
+
+        tj = (await db.execute(select(PartnerProcessingJob).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id,
+            PartnerProcessingJob.job_type == "transcode"))).scalars().all()
+        assert len(tj) == 1

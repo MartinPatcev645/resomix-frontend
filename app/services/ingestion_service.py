@@ -319,6 +319,24 @@ async def start_ingestion_job(
     return await dispatch_to_media(db, log_entry, partner_id, home_dir, env)
 
 
+# If a log has been stuck at stage=PERSISTING this long, assume the background worker
+# died mid-run and let a poll re-enqueue the (idempotent) persist task.
+_PERSIST_STALE_SECONDS = int(os.getenv("INGEST_PERSIST_STALE_SECONDS", "900") or 900)  # 15 min
+
+
+def _persist_stage_stale(log_entry) -> bool:
+    """True if PERSISTING was stamped too long ago (worker likely died) → safe to re-enqueue."""
+    ts = (log_entry.stage_timeline or {}).get(Stage.PERSISTING)
+    if not ts:
+        return True
+    try:
+        started = datetime.fromisoformat(ts)
+        now = datetime.now(started.tzinfo) if started.tzinfo else datetime.utcnow()
+        return (now - started).total_seconds() > _PERSIST_STALE_SECONDS
+    except Exception:
+        return True
+
+
 async def apply_ingestion_result(
     db: AsyncSession,
     log_entry: IngestLog,
@@ -454,136 +472,55 @@ async def apply_ingestion_result(
         )
         return log_entry
 
-    # LIVE: persist tracks + audio + processing-status rows.
-    from app.models.track_processing_status import TrackProcessingStatus
+    # LIVE: the DB persist (insert Track/AudioFile/TrackProcessingStatus for every record)
+    # can be 50k–1M rows. Doing it inside this admin poll would hang the request, so we hand
+    # it to a background Celery task and return immediately. The task inserts the records in
+    # idempotent chunks (app.services.ingestion_persist) and finalizes the log COMPLETED when
+    # done; subsequent polls just read progress (stage=PERSISTING, track_count climbing).
+    if log_entry.stage == Stage.PERSISTING and not _persist_stage_stale(log_entry):
+        # A background task is already inserting this batch → just report progress.
+        return log_entry
 
-    # In-batch genre cache: lowercased name -> genres.id.
-    _genre_id_cache: dict[str, int] = {}
-
-    async def _resolve_genre_id(name):
-        if not name or not str(name).strip():
-            return None
-        key = str(name).strip().lower()
-        if key in _genre_id_cache:
-            return _genre_id_cache[key]
-        clean = str(name).strip()[:80]
-        await db.execute(
-            text("INSERT IGNORE INTO genres (name) VALUES (:name)"),
-            {"name": clean},
-        )
-        row = (await db.execute(
-            text("SELECT id FROM genres WHERE name = :name"),
-            {"name": clean},
-        )).first()
-        genre_id = row[0] if row else None
-        if genre_id:
-            _genre_id_cache[key] = genre_id
-        return genre_id
-
-    inserted = []
+    # Claim it: mark PERSISTING (so concurrent polls don't pile up duplicate tasks) and
+    # enqueue. Staleness re-enqueues if a worker died mid-run — the persist is idempotent.
+    advance_stage(log_entry, Stage.PERSISTING)
+    await db.commit()
+    await db.refresh(log_entry)
     try:
-        for rec in records:
-            genre_id_val = await _resolve_genre_id(rec.get("genre"))
-            sub_genre_id_val = await _resolve_genre_id(rec.get("sub_genre"))
-            audio_fn = rec.get("audio_filename")
-
-            new_track = Track(
-                # Use the uuid Hetzner assigned during validation — it already keys the
-                # promoted raw-audio file (internal/raw/{uuid}.ext) the processors read.
-                uuid=rec.get("track_uuid") or str(uuid.uuid4()),
-                isrc=(rec.get("isrc") or "").upper(),
-                title=rec.get("title"),
-                version_title=rec.get("version_title"),
-                display_artist=rec.get("display_artist"),
-                partner_id=partner_id,
-                duration_ms=rec.get("duration_ms"),
-                bpm=rec.get("bpm"),
-                musical_key=rec.get("musical_key"),
-                genre_id=genre_id_val,
-                sub_genre_id=sub_genre_id_val,
-                mix_name=rec.get("mix_name") or "Original Mix",
-                parental_warning=rec.get("parental_warning") or "NotExplicit",
-                is_explicit=bool(rec.get("is_explicit")),
-                is_instrumental=bool(rec.get("is_instrumental")),
-                audio_language=rec.get("audio_language") or "xx",
-                language_of_lyrics=rec.get("language_of_lyrics"),
-                p_line_year=rec.get("p_line_year"),
-                p_line_text=rec.get("p_line_text"),
-                ingestion_source="csv",
-                track_type="electrobuzz",
-            )
-            db.add(new_track)
-            await db.flush()  # populate track.id
-
-            mime = (
-                "audio/wav" if str(audio_fn).endswith(".wav")
-                else "audio/mpeg" if str(audio_fn).endswith(".mp3")
-                else "audio/flac"
-            )
-            db.add(AudioFile(
-                party_id=log_entry.party_id,
-                ingest_log_id=log_entry.id,
-                track_id=new_track.id,
-                partner_id=partner_id,
-                asset_class="Master",
-                asset_subtype="master",
-                original_filename=audio_fn,
-                # Files physically live on Hetzner; we record only the relative name.
-                stored_path=audio_fn,
-                file_size_bytes=rec.get("file_size_bytes") or 0,
-                mime_type=mime,
-            ))
-            db.add(TrackProcessingStatus(
-                track_id=new_track.id,
-                partner_id=partner_id,
-                ingest_log_id=log_entry.id,
-                audio_filename=audio_fn,
-                sftp_env=env,
-            ))
-            inserted.append(new_track)
-
-        log_entry.status = "COMPLETED"
-        # v2: ingestion is the GATE — tracks persisted = "ingestion successful". The batch
-        # stays ACTIVE (INGESTED ∈ active stages) while the auto-spawned transcode →
-        # embedding jobs run (below); that's what blocks a new .done in the meantime.
-        advance_stage(log_entry, Stage.INGESTED)
-        log_entry.track_count = len(inserted)
-        log_entry.completed_at = datetime.utcnow()
-        await db.commit()
-        await db.refresh(log_entry)
+        from app.tasks.ingestion_tasks import persist_and_finalize_ingestion
+        persist_and_finalize_ingestion.delay(log_entry.id)
         logger.info(
-            f"[IngestionService] Persisted {len(inserted)} track(s) from Hetzner "
-            f"result for partner {partner_id} job {log_entry.id}."
+            f"[IngestionService] enqueued background persist for log {log_entry.id} "
+            f"({len(records)} record(s), partner {partner_id})."
         )
     except Exception as exc:
-        await db.rollback()
-        log_entry.status = "FAILED"
-        advance_stage(log_entry, Stage.FAILED)
-        log_entry.error_message = f"Failed to persist validated records: {exc}"
-        log_entry.completed_at = datetime.utcnow()
-        await db.commit()
-        await db.refresh(log_entry)
-        logger.error(
-            f"[IngestionService] Persist failure for partner {partner_id} "
-            f"job {log_entry.id}: {exc}"
+        logger.error(f"[IngestionService] failed to enqueue persist task for log {log_entry.id}: {exc}")
+    return log_entry
+
+
+async def finalize_successful_ingestion(db, log_entry, records, env, result) -> None:
+    """Mark the ingest log COMPLETED, fire webhooks + partner notification, and auto-spawn
+    the transcode job. Called by the background persist task once every record is in.
+    Idempotent on re-run (the transcode auto-spawn guards against duplicate jobs)."""
+    partner_id = log_entry.partner_id
+    inserted_count = result["already"] + result["inserted"]
+
+    log_entry.status = "COMPLETED"
+    # v2: ingestion is the GATE — tracks persisted = "ingestion successful". The batch stays
+    # ACTIVE (INGESTED ∈ active stages) while the auto-spawned transcode → embedding jobs run.
+    advance_stage(log_entry, Stage.INGESTED)
+    log_entry.track_count = inserted_count
+    log_entry.completed_at = datetime.utcnow()
+    if result["failures"]:
+        log_entry.error_message = (
+            f"{len(result['failures'])} record(s) could not be persisted and were skipped."
         )
-        dispatch_webhook.delay(
-            partner_id=partner_id,
-            event_type="ingestion.failed",
-            payload={
-                "ingest_log_id": log_entry.id,
-                "error_message": log_entry.error_message,
-                "failed_at": log_entry.completed_at.isoformat(),
-            },
-        )
-        # Partner-safe summary — do NOT expose the internal exception text.
-        await _notify(
-            partner_id, "ingestion", "failed",
-            "Your batch passed validation but we hit an error while finalizing it. "
-            "Our team has been notified and will look into it.",
-            title="Ingestion failed — processing error",
-        )
-        return log_entry
+    await db.commit()
+    await db.refresh(log_entry)
+    logger.info(
+        f"[IngestionService] Persisted {inserted_count} track(s) "
+        f"({len(result['failures'])} failed) for partner {partner_id} job {log_entry.id}."
+    )
 
     dispatch_webhook.delay(
         partner_id=partner_id,
@@ -591,34 +528,36 @@ async def apply_ingestion_result(
         payload={
             "ingest_log_id": log_entry.id,
             "batch_filename": log_entry.batch_filename,
-            "track_count": len(inserted),
+            "track_count": inserted_count,
             "dry_run": False,
             "env": env,
             "completed_at": log_entry.completed_at.isoformat(),
         },
     )
-    for track in inserted:
+    _failed_fns = {f.get("audio_filename") for f in result["failures"]}
+    for rec in records:
+        if rec.get("audio_filename") in _failed_fns:
+            continue
         dispatch_webhook.delay(
             partner_id=partner_id,
             event_type="track.indexed",
             payload={
-                "track_uuid": track.uuid,
-                "isrc": track.isrc,
-                "title": track.title,
-                "display_artist": track.display_artist,
+                "track_uuid": rec.get("track_uuid"),
+                "isrc": rec.get("isrc"),
+                "title": rec.get("title"),
+                "display_artist": rec.get("display_artist"),
             },
         )
     await _notify(
         partner_id, "ingestion", "success",
-        f"Your batch was ingested successfully: {len(inserted)} track(s) added. "
+        f"Your batch was ingested successfully: {inserted_count} track(s) added. "
         f"Embedding will follow shortly.",
         title="Ingestion completed",
-        counts={"Tracks ingested": len(inserted)},
+        counts={"Tracks ingested": inserted_count},
     )
 
-    # Auto-spawn the transcode job (raw -> 128k mp3). On its completion it auto-spawns
-    # the embeddings job — no admin click. Idempotent: a transcode job already existing
-    # for this batch is left alone (guards the double-job class of bug).
+    # Auto-spawn the transcode job (raw -> 128k mp3). On its completion it auto-spawns the
+    # embeddings job — no admin click. Idempotent: an existing transcode job is left alone.
     try:
         from sqlalchemy import select as _select
         from app.models.partner_processing_job import PartnerProcessingJob
@@ -642,8 +581,6 @@ async def apply_ingestion_result(
             )
     except Exception as exc:  # never let auto-spawn break a successful ingestion
         logger.error(f"[IngestionService] auto-spawn transcode after ingestion failed: {exc}")
-
-    return log_entry
 
 
 async def process_ingestion_batch(

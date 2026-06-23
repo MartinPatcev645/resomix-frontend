@@ -23,6 +23,7 @@ class Stage:
     RECEIVED = "RECEIVED"
     VALIDATING = "VALIDATING"
     MOVED = "MOVED"
+    PERSISTING = "PERSISTING"   # Alwyzon background task is inserting the records into the DB
     TRANSCODING = "TRANSCODING"
     INGESTED = "INGESTED"
     EMBEDDING = "EMBEDDING"
@@ -36,7 +37,7 @@ class Stage:
 
 # Ordered happy-path stages (for display / progress %).
 ORDERED_STAGES = (
-    Stage.RECEIVED, Stage.VALIDATING, Stage.MOVED, Stage.TRANSCODING,
+    Stage.RECEIVED, Stage.VALIDATING, Stage.MOVED, Stage.PERSISTING, Stage.TRANSCODING,
     Stage.INGESTED, Stage.EMBEDDING, Stage.INDEXED, Stage.FINALIZING, Stage.READY,
 )
 
@@ -45,7 +46,7 @@ TERMINAL_STAGES = frozenset({Stage.READY, Stage.FAILED_VALIDATION, Stage.FAILED}
 
 # A batch in any of these is "active" — blocks a new .done for that partner.
 ACTIVE_STAGES = tuple(s for s in (
-    Stage.RECEIVED, Stage.VALIDATING, Stage.MOVED, Stage.TRANSCODING,
+    Stage.RECEIVED, Stage.VALIDATING, Stage.MOVED, Stage.PERSISTING, Stage.TRANSCODING,
     Stage.INGESTED, Stage.EMBEDDING, Stage.INDEXED, Stage.FINALIZING,
 ))
 
