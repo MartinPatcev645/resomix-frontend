@@ -118,13 +118,18 @@ async def _refresh_processing_job_from_hetzner(
     """
     if job.status in partner_processing_service.TERMINAL_JOB_STATES:
         return job
-    # Only embeddings jobs have a Hetzner-side async runner today.
-    if job.job_type != "embeddings":
+    # transcode + embeddings have Hetzner-side async runners; both poll-and-persist here.
+    if job.job_type not in ("embeddings", "transcode"):
         return job
     try:
-        remote = await hetzner_service.get_embeddings_status(job.partner_id, job.id)
-        if remote.get("success"):
-            job = await partner_processing_service.apply_embeddings_result(db, job, remote["data"])
+        if job.job_type == "transcode":
+            remote = await hetzner_service.get_transcode_status(job.partner_id, job.id)
+            if remote.get("success"):
+                job = await partner_processing_service.apply_transcode_result(db, job, remote["data"])
+        else:
+            remote = await hetzner_service.get_embeddings_status(job.partner_id, job.id)
+            if remote.get("success"):
+                job = await partner_processing_service.apply_embeddings_result(db, job, remote["data"])
     except Exception as exc:  # never let a refresh break the listing
         logger.warning(
             f"[processing] refresh of job {job.id} from media server failed: {exc}"

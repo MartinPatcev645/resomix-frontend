@@ -59,9 +59,14 @@ async def _collect_targets(
     partner_id: int,
     ingest_log_id: Optional[int],
     only_pending: bool,
+    pending_field: str = "embedding_status",
 ) -> List[Dict[str, Any]]:
     """
     Build the work list joining tracks + their processing-status rows.
+
+    ``pending_field`` selects which per-stage status the ``only_pending`` filter looks
+    at (``embedding_status`` for embeddings, ``transcode_status`` for transcode, etc.),
+    so the same collector drives every job type.
 
     Returns a list of dicts: {tps_id, track_id, track_uuid, filename, party_id, env}.
     """
@@ -73,7 +78,7 @@ async def _collect_targets(
     if ingest_log_id is not None:
         stmt = stmt.where(TrackProcessingStatus.ingest_log_id == ingest_log_id)
     if only_pending:
-        stmt = stmt.where(TrackProcessingStatus.embedding_status != "completed")
+        stmt = stmt.where(getattr(TrackProcessingStatus, pending_field) != "completed")
 
     rows = (await db.execute(stmt)).all()
     targets: List[Dict[str, Any]] = []
@@ -215,6 +220,199 @@ async def start_embeddings_job(
         f"[ProcessingService] Handed embeddings job {job_id} to Hetzner "
         f"(partner {partner_id}, env={env}, {len(items)} track(s))."
     )
+    return job
+
+
+# ===========================================================================
+# Transcode job (raw upload -> 128k mp3) — auto-spawned at ingestion success.
+# ===========================================================================
+
+async def start_transcode_job(
+    db,
+    job_id: int,
+    partner_id: int,
+    env: str = "live",
+    ingest_log_id: Optional[int] = None,
+    only_pending: bool = True,
+) -> PartnerProcessingJob:
+    """Hand off a transcode job to Hetzner (fire-and-forget). Mirrors
+    ``start_embeddings_job`` but reads the moved sources from the batch's
+    ``processing_dir`` and filters pending on ``transcode_status``."""
+    env = (env or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+    set_current_partner_id(partner_id)
+
+    job = await db.get(PartnerProcessingJob, job_id)
+    if job is None:
+        raise ValueError(f"Processing job {job_id} not found")
+    job.status = "running"
+    job.started_at = datetime.utcnow()
+    await db.commit()
+
+    # The transcode job needs the snapshot dir holding the moved uploads.
+    processing_dir = None
+    if ingest_log_id:
+        from app.models.b2b import IngestLog
+        log = await db.get(IngestLog, ingest_log_id)
+        if log:
+            processing_dir = log.processing_dir
+    if not processing_dir:
+        job.status = "failed"
+        job.completed_at = datetime.utcnow()
+        job.error_details = {"error": "no processing_dir on ingest log; cannot locate sources"}
+        await db.commit()
+        logger.error(f"[ProcessingService] Transcode job {job_id}: no processing_dir; aborting.")
+        return job
+
+    targets = await _collect_targets(
+        db, partner_id, ingest_log_id, only_pending, pending_field="transcode_status"
+    )
+    job.total_tracks = len(targets)
+    await db.commit()
+    if not targets:
+        job.status = "completed"
+        job.completed_at = datetime.utcnow()
+        await db.commit()
+        logger.info(f"[ProcessingService] Transcode job {job_id}: nothing to do.")
+        return job
+
+    items = [{"track_uuid": t["track_uuid"], "filename": t["filename"]} for t in targets]
+    result = await hetzner_service.start_transcode(
+        job_id=job_id, partner_id=partner_id, items=items, processing_dir=processing_dir, env=env,
+    )
+    if not result.get("success"):
+        job.status = "failed"
+        job.completed_at = datetime.utcnow()
+        job.error_details = {"error": result.get("error"), "detail": result.get("detail")}
+        await db.commit()
+        logger.error(f"[ProcessingService] Transcode job {job_id} hand-off failed: {result.get('error')}")
+        return job
+
+    logger.info(
+        f"[ProcessingService] Handed transcode job {job_id} to Hetzner "
+        f"(partner {partner_id}, env={env}, {len(items)} track(s))."
+    )
+    return job
+
+
+async def pause_transcode_job(db, job: PartnerProcessingJob) -> Tuple[PartnerProcessingJob, Dict[str, Any]]:
+    """Ask the media server to pause a running transcode job, then mark it ``paused``."""
+    set_current_partner_id(job.partner_id)
+    result = await hetzner_service.pause_transcode(job.partner_id, job.id)
+    if result.get("success"):
+        job.status = "paused"
+        await db.commit()
+        logger.info(f"[ProcessingService] Transcode job {job.id} paused (partner {job.partner_id}).")
+    else:
+        logger.error(f"[ProcessingService] Transcode job {job.id} pause failed: {result.get('error')}")
+    return job, result
+
+
+async def _ensure_embedding_job_for_log(
+    db, partner_id: int, ingest_log_id: int, triggered_by: Optional[str] = None
+) -> Optional[PartnerProcessingJob]:
+    """Idempotently create + start the embeddings job for a batch. Skips if one already
+    exists for this ingest_log (so re-polls / concurrent applies can't duplicate it —
+    the double-job class of bug)."""
+    set_current_partner_id(partner_id)
+    existing = (
+        await db.execute(
+            select(PartnerProcessingJob.id).where(
+                PartnerProcessingJob.partner_id == partner_id,
+                PartnerProcessingJob.ingest_log_id == ingest_log_id,
+                PartnerProcessingJob.job_type == "embeddings",
+            )
+        )
+    ).first()
+    if existing:
+        return None
+    job = await create_job(
+        db, partner_id=partner_id, job_type="embeddings",
+        ingest_log_id=ingest_log_id, triggered_by=triggered_by,
+    )
+    return await start_embeddings_job(
+        db, job_id=job.id, partner_id=partner_id, env="live",
+        index_after=True, ingest_log_id=ingest_log_id, only_pending=True,
+    )
+
+
+async def apply_transcode_result(
+    db, job: PartnerProcessingJob, state: Dict[str, Any]
+) -> PartnerProcessingJob:
+    """Persist a Hetzner transcode-job snapshot into Alwyzon's DB. Mirrors
+    ``apply_embeddings_result``:
+      • running/paused → update live counters only.
+      • terminal       → set per-track ``transcode_status`` + finalize the job, then
+                         AUTO-SPAWN the embeddings job (idempotently)."""
+    status = (state.get("status") or "unknown").lower()
+    partner_id = job.partner_id
+    ingest_log_id = job.ingest_log_id
+    set_current_partner_id(partner_id)
+
+    if status in ("running", "pending", "unknown", "paused"):
+        if state.get("total"):
+            job.total_tracks = state["total"]
+        job.processed_tracks = state.get("succeeded", job.processed_tracks)
+        job.failed_tracks = state.get("failed", job.failed_tracks)
+        if status == "paused":
+            job.status = "paused"
+        await db.commit()
+        return job
+
+    results = state.get("results", []) or []
+    now = datetime.utcnow()
+    processed = 0
+    failed = 0
+    errors: List[Dict[str, Any]] = []
+    for r in results:
+        uuid = r.get("track_uuid")
+        ok = r.get("status") == "ok"
+        row = (
+            await db.execute(
+                select(TrackProcessingStatus, Track)
+                .join(Track, Track.id == TrackProcessingStatus.track_id)
+                .where(Track.uuid == uuid, TrackProcessingStatus.partner_id == partner_id)
+                .limit(1)
+            )
+        ).first()
+        tps = row[0] if row else None
+        if ok:
+            processed += 1
+            if tps is not None:
+                tps.transcode_status = "completed"
+                tps.transcode_completed_at = now
+                tps.transcode_error = None
+        else:
+            failed += 1
+            msg = r.get("message") or "Unknown transcode error"
+            errors.append({"track_uuid": uuid, "message": msg})
+            if tps is not None:
+                tps.transcode_status = "failed"
+                tps.transcode_error = msg
+
+    job.processed_tracks = processed
+    job.failed_tracks = failed
+    if status == "failed":
+        job.status = "failed"
+        job.error_details = {
+            "error": state.get("error_message") or "Media server reported failure",
+            **({"failures": errors} if errors else {}),
+        }
+    else:
+        job.error_details = {"failures": errors} if errors else None
+        job.status = "completed" if failed == 0 else ("failed" if processed == 0 else "partial")
+    job.completed_at = datetime.utcnow()
+    await db.commit()
+
+    # Transcode produced the mp3s → kick off embeddings automatically (idempotent).
+    if job.status in ("completed", "partial") and ingest_log_id:
+        try:
+            await _ensure_embedding_job_for_log(
+                db, partner_id, ingest_log_id, triggered_by="auto:post-transcode"
+            )
+        except Exception as exc:  # never let the auto-spawn break the transcode finalize
+            logger.error(f"[ProcessingService] auto-spawn embeddings after transcode failed: {exc}")
     return job
 
 

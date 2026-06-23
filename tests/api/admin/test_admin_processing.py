@@ -422,3 +422,111 @@ async def test_apply_embeddings_result_advances_ingest_log_stages(admin_auth_hea
     assert Stage.INDEXED in timeline_stages
     assert Stage.FINALIZING in timeline_stages
     assert Stage.READY in timeline_stages
+
+
+@pytest.mark.asyncio
+async def test_apply_transcode_result_marks_status_and_autospawns_embeddings(seeded):
+    """A completed transcode job sets transcode_status on its tracks AND auto-spawns
+    the embeddings job for the batch (no admin click)."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_transcode_result, hetzner_service
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.processing_dir = "20260623T000000Z"  # so the auto-spawned embed job resolves sources
+        await db.commit()
+        job = PartnerProcessingJob(
+            partner_id=partner_id, ingest_log_id=seeded["log"].id,
+            job_type="transcode", status="running",
+        )
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    # Stub the embeddings hand-off so no real media call happens during auto-spawn.
+    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})):
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await apply_transcode_result(
+                db, job,
+                {"status": "completed", "results": [{"track_uuid": track_uuid, "status": "ok"}]},
+            )
+
+    async with AsyncSessionLocal() as db:
+        tps = (await db.execute(
+            select(TrackProcessingStatus).where(
+                TrackProcessingStatus.ingest_log_id == seeded["log"].id)
+        )).scalar_one()
+        assert tps.transcode_status == "completed"
+
+        job = await db.get(PartnerProcessingJob, job_id)
+        assert job.status == "completed"
+
+        emb = (await db.execute(
+            select(PartnerProcessingJob).where(
+                PartnerProcessingJob.ingest_log_id == seeded["log"].id,
+                PartnerProcessingJob.job_type == "embeddings",
+            )
+        )).scalars().all()
+        assert len(emb) == 1  # exactly one embeddings job auto-spawned
+
+
+@pytest.mark.asyncio
+async def test_apply_transcode_result_failed_track_marks_failed_no_double_embed(seeded):
+    """A failed track gets transcode_status=failed; and if an embeddings job already
+    exists for the batch, the auto-spawn does NOT create a duplicate."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_transcode_result, hetzner_service
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.processing_dir = "20260623T000000Z"
+        await db.commit()
+        tjob = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                    job_type="transcode", status="running")
+        # Pre-existing embeddings job for the same batch → auto-spawn must skip.
+        ejob = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                    job_type="embeddings", status="completed")
+        db.add_all([tjob, ejob])
+        await db.commit()
+        await db.refresh(tjob)
+        tjob_id = tjob.id
+
+    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})):
+        async with AsyncSessionLocal() as db:
+            tjob = await db.get(PartnerProcessingJob, tjob_id)
+            await apply_transcode_result(
+                db, tjob,
+                {"status": "completed", "results": [{"track_uuid": track_uuid, "status": "error",
+                                                     "message": "transcode failed: bad input"}]},
+            )
+
+    async with AsyncSessionLocal() as db:
+        tps = (await db.execute(
+            select(TrackProcessingStatus).where(
+                TrackProcessingStatus.ingest_log_id == seeded["log"].id)
+        )).scalar_one()
+        assert tps.transcode_status == "failed"
+        assert "bad input" in (tps.transcode_error or "")
+
+        tjob = await db.get(PartnerProcessingJob, tjob_id)
+        assert tjob.status == "failed"  # the only track failed
+
+        emb = (await db.execute(
+            select(PartnerProcessingJob).where(
+                PartnerProcessingJob.ingest_log_id == seeded["log"].id,
+                PartnerProcessingJob.job_type == "embeddings",
+            )
+        )).scalars().all()
+        assert len(emb) == 1  # still just the pre-existing one (no duplicate)

@@ -543,9 +543,9 @@ async def apply_ingestion_result(
             inserted.append(new_track)
 
         log_entry.status = "COMPLETED"
-        # v2: tracks persisted + raw ready = "ingestion successful". The batch stays
-        # ACTIVE (INGESTED ∈ active stages) until the admin runs embeddings → READY,
-        # which is what blocks the partner from a new .done in the meantime.
+        # v2: ingestion is the GATE — tracks persisted = "ingestion successful". The batch
+        # stays ACTIVE (INGESTED ∈ active stages) while the auto-spawned transcode →
+        # embedding jobs run (below); that's what blocks a new .done in the meantime.
         advance_stage(log_entry, Stage.INGESTED)
         log_entry.track_count = len(inserted)
         log_entry.completed_at = datetime.utcnow()
@@ -615,6 +615,34 @@ async def apply_ingestion_result(
         title="Ingestion completed",
         counts={"Tracks ingested": len(inserted)},
     )
+
+    # Auto-spawn the transcode job (raw -> 128k mp3). On its completion it auto-spawns
+    # the embeddings job — no admin click. Idempotent: a transcode job already existing
+    # for this batch is left alone (guards the double-job class of bug).
+    try:
+        from sqlalchemy import select as _select
+        from app.models.partner_processing_job import PartnerProcessingJob
+        from app.services import partner_processing_service as _pps
+
+        existing = (await db.execute(
+            _select(PartnerProcessingJob.id).where(
+                PartnerProcessingJob.partner_id == partner_id,
+                PartnerProcessingJob.ingest_log_id == log_entry.id,
+                PartnerProcessingJob.job_type == "transcode",
+            )
+        )).first()
+        if not existing:
+            tjob = await _pps.create_job(
+                db, partner_id=partner_id, job_type="transcode",
+                ingest_log_id=log_entry.id, triggered_by="auto:ingestion",
+            )
+            await _pps.start_transcode_job(
+                db, job_id=tjob.id, partner_id=partner_id, env=env,
+                ingest_log_id=log_entry.id, only_pending=True,
+            )
+    except Exception as exc:  # never let auto-spawn break a successful ingestion
+        logger.error(f"[IngestionService] auto-spawn transcode after ingestion failed: {exc}")
+
     return log_entry
 
 
