@@ -157,6 +157,31 @@ class HetznerService:
             logger.error(f"Hetzner remove-vector connection error for {track_uuid}: {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
+    async def remove_vectors_batch(
+        self, partner_id: int, track_uuids: list, engine: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Take down MANY tracks in one call — the media server rebuilds the index ONCE
+        (vs once per track). Idempotent."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}", "Content-Type": "application/json"}
+        payload: Dict[str, Any] = {"partner_id": partner_id, "track_uuids": list(track_uuids)}
+        if engine:
+            payload["engine"] = engine
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:  # one rebuild can take a while
+                resp = await client.post(
+                    f"{base_url}/internal/ingest/remove-vectors-batch", json=payload, headers=headers
+                )
+                if resp.status_code == 200:
+                    return {"success": True, "data": resp.json()}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner remove-vectors-batch connection error (partner {partner_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
     async def batch_embeddings(
         self,
         partner_id: int,

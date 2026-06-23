@@ -589,3 +589,67 @@ async def test_embedding_failure_deactivates_track(seeded):
         tps = (await db.execute(select(TrackProcessingStatus).where(
             TrackProcessingStatus.track_id == seeded["track"].id))).scalar_one()
         assert tps.embedding_status == "failed"
+
+
+@pytest.mark.asyncio
+async def test_trigger_embeddings_debounced_when_active(admin_auth_headers, seeded):
+    """A second trigger while one is already active returns the existing job (no dup)."""
+    from app.core.context import set_admin_context
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        job = PartnerProcessingJob(partner_id=seeded["partner"].id, ingest_log_id=seeded["log"].id,
+                                   job_type="embeddings", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        existing_id = job.id
+
+    async with _client() as ac:
+        res = await ac.post(
+            "/api/v1/admin/processing/jobs/embeddings",
+            headers=admin_auth_headers,
+            json={"partner_id": seeded["partner"].id, "ingest_log_id": seeded["log"].id},
+        )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "already_running"
+    assert body["job_id"] == existing_id
+
+
+@pytest.mark.asyncio
+async def test_stop_tracks_batch_deactivates_and_calls_media_once(admin_auth_headers, seeded):
+    """Batch stop deactivates every track and hits the media batch-remove exactly once."""
+    from app.core.context import set_admin_context
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+
+    async with AsyncSessionLocal() as db:
+        t2 = Track(
+            uuid=str(uuid.uuid4()),
+            isrc=f"US{uuid.uuid4().hex[:3].upper()}{str(uuid.uuid4().int)[:7]}",
+            title="T2", display_artist="A", partner_id=partner_id,
+            party_id=seeded["party_id"], is_active=True,
+        )
+        t1 = await db.get(Track, seeded["track"].id)
+        t1.is_active = True
+        db.add(t2)
+        await db.commit()
+        await db.refresh(t2)
+        ids = [seeded["track"].id, t2.id]
+
+    with patch("app.api.routers.admin.processing.hetzner_service.remove_vectors_batch",
+               new_callable=AsyncMock) as mock_rm:
+        mock_rm.return_value = {"success": True, "data": {"removed": {"maest": 2}}}
+        async with _client() as ac:
+            res = await ac.post(
+                "/api/v1/admin/processing/tracks/stop-batch",
+                headers=admin_auth_headers,
+                json={"partner_id": partner_id, "track_ids": ids},
+            )
+    assert res.status_code == 200
+    assert res.json()["stopped"] == 2
+    assert mock_rm.await_count == 1  # ONE media call for the whole batch
+
+    async with AsyncSessionLocal() as db:
+        for tid in ids:
+            assert (await db.get(Track, tid)).is_active is False

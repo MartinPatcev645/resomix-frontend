@@ -154,6 +154,22 @@ async def trigger_embeddings_job(
 ) -> JSONResponse:
     set_admin_context(True)
 
+    # Debounce: if an embeddings job for this partner/batch is already pending/running/
+    # paused, return it instead of spawning a duplicate (guards the double-click bug).
+    existing = await partner_processing_service.find_active_job(
+        db, payload.partner_id, "embeddings", payload.ingest_log_id
+    )
+    if existing is not None:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "already_running",
+                "message": "An embeddings job is already active for this partner/batch.",
+                "job_id": existing.id,
+                "job_type": "embeddings",
+            },
+        )
+
     job = await partner_processing_service.create_job(
         db,
         partner_id=payload.partner_id,
@@ -740,6 +756,57 @@ async def stop_track(
             "status": "success" if res.get("success") else "partial",
             "track_id": track_id,
             "is_active": False,
+            "remove_result": res,
+        }
+    )
+
+
+class StopTracksBatchRequest(BaseModel):
+    partner_id: int = Field(..., description="Partner the tracks belong to")
+    track_ids: List[int] = Field(..., description="Track ids to take down")
+
+
+@router.post(
+    "/tracks/stop-batch",
+    summary="Stop MANY tracks at once (deactivate + ONE FAISS rebuild)",
+)
+async def stop_tracks_batch(
+    payload: StopTracksBatchRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("partners:manage")),
+) -> JSONResponse:
+    """Take down a set of tracks in one shot — the media server removes all vectors and
+    rebuilds the index ONCE (vs once per track if you looped /tracks/{id}/stop)."""
+    set_admin_context(True)
+    if not payload.track_ids:
+        raise HTTPException(status_code=400, detail="track_ids is empty")
+
+    tracks = (await db.execute(
+        select(Track).where(Track.id.in_(payload.track_ids), Track.partner_id == payload.partner_id)
+    )).scalars().all()
+    if not tracks:
+        raise HTTPException(status_code=404, detail="No matching tracks for this partner")
+
+    uuids = [t.uuid for t in tracks]
+    res = await hetzner_service.remove_vectors_batch(payload.partner_id, uuids, engine=None)
+
+    track_ids = [t.id for t in tracks]
+    for t in tracks:
+        t.is_active = False
+    tps_rows = (await db.execute(
+        select(TrackProcessingStatus).where(TrackProcessingStatus.track_id.in_(track_ids))
+    )).scalars().all()
+    for tps in tps_rows:
+        tps.faiss_indexed = False
+        tps.faiss_indexed_at = None
+    await db.commit()
+
+    return JSONResponse(
+        content={
+            "status": "success" if res.get("success") else "partial",
+            "partner_id": payload.partner_id,
+            "stopped": len(tracks),
             "remove_result": res,
         }
     )

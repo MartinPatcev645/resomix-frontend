@@ -54,6 +54,24 @@ async def create_job(
     return job
 
 
+async def find_active_job(
+    db, partner_id: int, job_type: str, ingest_log_id: Optional[int] = None
+) -> Optional[PartnerProcessingJob]:
+    """Return an existing NON-terminal job of this type for the partner (+ batch), or
+    None. Used to debounce duplicate triggers — a second click while one is already
+    pending/running/paused returns the existing job instead of spawning a duplicate."""
+    set_current_partner_id(partner_id)
+    stmt = select(PartnerProcessingJob).where(
+        PartnerProcessingJob.partner_id == partner_id,
+        PartnerProcessingJob.job_type == job_type,
+        PartnerProcessingJob.status.notin_(TERMINAL_JOB_STATES),
+    )
+    if ingest_log_id is not None:
+        stmt = stmt.where(PartnerProcessingJob.ingest_log_id == ingest_log_id)
+    stmt = stmt.order_by(PartnerProcessingJob.id.desc()).limit(1)
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
 async def _collect_targets(
     db,
     partner_id: int,
