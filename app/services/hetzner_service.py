@@ -598,6 +598,81 @@ class HetznerService:
             logger.error(f"Hetzner transcode-status connection error (job {job_id}): {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
+    # ---- Phase-2 playback-asset jobs: peaks + segments (consume the transcoded mp3) ----
+    async def _start_stage(self, stage: str, job_id: int, partner_id: int, items: list, env: str) -> Dict[str, Any]:
+        """Fire-and-forget hand-off of a peaks/segments job. ``items`` = [{track_uuid, filename}];
+        the media server reads each track's transcoded mp3 by uuid (no processing_dir)."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}", "Content-Type": "application/json"}
+        payload = {"job_id": job_id, "partner_id": partner_id, "env": env, "items": items}
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(f"{base_url}/internal/process/{stage}/run", json=payload, headers=headers)
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner {stage}-start connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def _pause_stage(self, stage: str, partner_id: int, job_id: int) -> Dict[str, Any]:
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    f"{base_url}/internal/process/{stage}/pause/{partner_id}/{job_id}", headers=headers)
+                if resp.status_code in (200, 202):
+                    return {"success": True, "data": resp.json()}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner {stage}-pause connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def _get_stage_status(self, stage: str, partner_id: int, job_id: int, timeout: float = 30.0) -> Dict[str, Any]:
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        base_url = self.hetzner_url.rstrip("/")
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                resp = await client.get(
+                    f"{base_url}/internal/process/{stage}/status/{partner_id}/{job_id}", headers=headers)
+                if resp.status_code == 200:
+                    return {"success": True, "data": resp.json()}
+                if resp.status_code == 404:
+                    return {"success": False, "error": "not_found",
+                            "detail": f"No {stage} job result found on media server"}
+                return {"success": False, "error": f"Media server returned {resp.status_code}",
+                        "detail": resp.text[:300]}
+        except httpx.RequestError as e:
+            logger.error(f"Hetzner {stage}-status connection error (job {job_id}): {e}")
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    async def start_peaks(self, job_id: int, partner_id: int, items: list, env: str = "live") -> Dict[str, Any]:
+        return await self._start_stage("peaks", job_id, partner_id, items, env)
+
+    async def pause_peaks(self, partner_id: int, job_id: int) -> Dict[str, Any]:
+        return await self._pause_stage("peaks", partner_id, job_id)
+
+    async def get_peaks_status(self, partner_id: int, job_id: int, timeout: float = 30.0) -> Dict[str, Any]:
+        return await self._get_stage_status("peaks", partner_id, job_id, timeout)
+
+    async def start_segments(self, job_id: int, partner_id: int, items: list, env: str = "live") -> Dict[str, Any]:
+        return await self._start_stage("segments", job_id, partner_id, items, env)
+
+    async def pause_segments(self, partner_id: int, job_id: int) -> Dict[str, Any]:
+        return await self._pause_stage("segments", partner_id, job_id)
+
+    async def get_segments_status(self, partner_id: int, job_id: int, timeout: float = 30.0) -> Dict[str, Any]:
+        return await self._get_stage_status("segments", partner_id, job_id, timeout)
+
     async def get_embeddings_status(
         self, partner_id: int, job_id: int,
         include_records: bool = True, timeout: float = 30.0,

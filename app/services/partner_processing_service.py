@@ -46,7 +46,13 @@ _FINALIZE_STALE_SECONDS = int(os.getenv("PROCESSING_FINALIZE_STALE_SECONDS", "90
 _STAGE_FIELDS = {
     "transcode": ("transcode_status", "transcode_error", "transcode_completed_at"),
     "embeddings": ("embedding_status", "embedding_error", "embedding_completed_at"),
+    "peaks": ("peaks_status", "peaks_error", "peaks_completed_at"),
+    "segments": ("segments_status", "segments_error", "segments_completed_at"),
 }
+# Stages whose FAILURE makes the track unusable → deactivate it (exclude from catalog/search).
+# A peaks/segments failure only degrades PLAYBACK; the track stays searchable, so we don't
+# deactivate it (per the pipeline failure matrix).
+_DEACTIVATE_ON_FAIL = {"transcode", "embeddings"}
 
 hetzner_service = HetznerService()
 
@@ -341,6 +347,168 @@ async def _ensure_embedding_job_for_log(
     )
 
 
+# ===========================================================================
+# Phase-2 playback-asset jobs: PEAKS + SEGMENTS (consume the transcoded mp3).
+# Only spawned for similarity_playback partners. They mirror transcode but need no
+# processing_dir (each track is read from raw/<uuid>.mp3 by uuid).
+# ===========================================================================
+
+async def _start_simple_stage_job(
+    db, job_id: int, partner_id: int, stage: str, env: str = "live",
+    ingest_log_id: Optional[int] = None, only_pending: bool = True,
+) -> PartnerProcessingJob:
+    """Shared hand-off for a peaks/segments job (``stage`` ∈ {peaks, segments})."""
+    env = (env or "live").lower()
+    if env not in ("test", "live"):
+        env = "live"
+    set_current_partner_id(partner_id)
+
+    job = await db.get(PartnerProcessingJob, job_id)
+    if job is None:
+        raise ValueError(f"Processing job {job_id} not found")
+    job.status = "running"
+    job.started_at = datetime.utcnow()
+    await db.commit()
+
+    pending_field = "peaks_status" if stage == "peaks" else "segments_status"
+    targets = await _collect_targets(db, partner_id, ingest_log_id, only_pending, pending_field=pending_field)
+    job.total_tracks = len(targets)
+    await db.commit()
+    if not targets:
+        job.status = "completed"
+        job.completed_at = datetime.utcnow()
+        await db.commit()
+        logger.info(f"[ProcessingService] {stage.capitalize()} job {job_id}: nothing to do.")
+        return job
+
+    items = [{"track_uuid": t["track_uuid"], "filename": t["filename"]} for t in targets]
+    starter = hetzner_service.start_peaks if stage == "peaks" else hetzner_service.start_segments
+    result = await starter(job_id=job_id, partner_id=partner_id, items=items, env=env)
+    if not result.get("success"):
+        job.status = "failed"
+        job.completed_at = datetime.utcnow()
+        job.error_details = {"error": result.get("error"), "detail": result.get("detail")}
+        await db.commit()
+        logger.error(f"[ProcessingService] {stage.capitalize()} job {job_id} hand-off failed: {result.get('error')}")
+        return job
+
+    logger.info(
+        f"[ProcessingService] Handed {stage} job {job_id} to Hetzner "
+        f"(partner {partner_id}, env={env}, {len(items)} track(s))."
+    )
+    return job
+
+
+async def start_peaks_job(db, job_id, partner_id, env="live", ingest_log_id=None, only_pending=True):
+    return await _start_simple_stage_job(db, job_id, partner_id, "peaks", env, ingest_log_id, only_pending)
+
+
+async def start_segments_job(db, job_id, partner_id, env="live", ingest_log_id=None, only_pending=True):
+    return await _start_simple_stage_job(db, job_id, partner_id, "segments", env, ingest_log_id, only_pending)
+
+
+async def _pause_stage_job(db, job: PartnerProcessingJob, stage: str) -> Tuple[PartnerProcessingJob, Dict[str, Any]]:
+    set_current_partner_id(job.partner_id)
+    pauser = hetzner_service.pause_peaks if stage == "peaks" else hetzner_service.pause_segments
+    result = await pauser(job.partner_id, job.id)
+    if result.get("success"):
+        job.status = "paused"
+        await db.commit()
+        logger.info(f"[ProcessingService] {stage.capitalize()} job {job.id} paused (partner {job.partner_id}).")
+    else:
+        logger.error(f"[ProcessingService] {stage.capitalize()} job {job.id} pause failed: {result.get('error')}")
+    return job, result
+
+
+async def pause_peaks_job(db, job):
+    return await _pause_stage_job(db, job, "peaks")
+
+
+async def pause_segments_job(db, job):
+    return await _pause_stage_job(db, job, "segments")
+
+
+async def _ensure_stage_job_for_log(
+    db, partner_id: int, ingest_log_id: int, stage: str, triggered_by: Optional[str] = None,
+) -> Optional[PartnerProcessingJob]:
+    """Idempotently create + start a peaks/segments job for a batch (skips if one exists)."""
+    set_current_partner_id(partner_id)
+    existing = (await db.execute(
+        select(PartnerProcessingJob.id).where(
+            PartnerProcessingJob.partner_id == partner_id,
+            PartnerProcessingJob.ingest_log_id == ingest_log_id,
+            PartnerProcessingJob.job_type == stage,
+        )
+    )).first()
+    if existing:
+        return None
+    job = await create_job(db, partner_id=partner_id, job_type=stage,
+                           ingest_log_id=ingest_log_id, triggered_by=triggered_by)
+    return await _start_simple_stage_job(
+        db, job_id=job.id, partner_id=partner_id, stage=stage,
+        env="live", ingest_log_id=ingest_log_id, only_pending=True,
+    )
+
+
+async def _partner_wants_playback(db, partner_id: int) -> bool:
+    """True if the partner's service_mode is similarity_playback (so peaks/segments run)."""
+    from app.models.partner import Partner
+    mode = (await db.execute(select(Partner.service_mode).where(Partner.id == partner_id))).scalar_one_or_none()
+    return (mode or "").lower() == "similarity_playback"
+
+
+async def _apply_simple_stage_result(db, job: PartnerProcessingJob, state: Dict[str, Any], kind: str) -> PartnerProcessingJob:
+    """Persist a peaks/segments job snapshot. Like apply_transcode_result but with no
+    downstream auto-spawn, and a failure does NOT deactivate the track (playback-only)."""
+    status = (state.get("status") or "unknown").lower()
+    partner_id = job.partner_id
+    ingest_log_id = job.ingest_log_id
+    set_current_partner_id(partner_id)
+
+    if status in ("running", "pending", "unknown", "paused"):
+        if state.get("total"):
+            job.total_tracks = state["total"]
+        job.processed_tracks = state.get("succeeded", job.processed_tracks)
+        job.failed_tracks = state.get("failed", job.failed_tracks)
+        if status == "paused":
+            job.status = "paused"
+        await db.commit()
+        return job
+
+    results = state.get("results", []) or []
+    summary = await _apply_track_results_bulk(partner_id, kind, results, ingest_log_id)
+    processed = summary["processed"]
+    failed = summary["failed"]
+    errors = summary["errors"]
+    failed_files = summary["failed_files"]
+
+    job.processed_tracks = processed
+    job.failed_tracks = failed
+    if status == "failed":
+        job.status = "failed"
+        job.error_details = {
+            "error": state.get("error_message") or "Media server reported failure",
+            **({"failures": errors, "failed_count": failed} if errors else {}),
+        }
+    else:
+        job.error_details = {"failures": errors, "failed_count": failed} if errors else None
+        job.status = "completed" if failed == 0 else ("failed" if processed == 0 else "partial")
+    job.completed_at = datetime.utcnow()
+    job.finalizing_at = None
+    await db.commit()
+
+    await _notify_job_failures(db, partner_id, kind, failed_files, processed, failed)
+    return job
+
+
+async def apply_peaks_result(db, job, state):
+    return await _apply_simple_stage_result(db, job, state, "peaks")
+
+
+async def apply_segments_result(db, job, state):
+    return await _apply_simple_stage_result(db, job, state, "segments")
+
+
 # Partner-safe per-stage phrasing (no internal error text — the technical reason is
 # kept in track_processing_status.<stage>_error for admin diagnostics).
 _STAGE_FAIL_VERB = {
@@ -498,9 +666,10 @@ async def _apply_track_results_bulk(
                     )
                 elif len(failed_files) < _MAX_REPORTED:
                     failed_files.append(u or "unknown")
-            if fail_track_ids:
+            if fail_track_ids and job_type in _DEACTIVATE_ON_FAIL:
                 # No mp3 (transcode) / no vector (embedding) → unusable → exclude from
-                # catalog + search (the catalog query filters is_active != False).
+                # catalog + search (the catalog query filters is_active != False). A
+                # peaks/segments failure only degrades playback, so the track stays active.
                 await db.execute(
                     sa_update(Track).where(Track.id.in_(fail_track_ids)).values(is_active=False)
                 )
@@ -616,6 +785,18 @@ async def apply_transcode_result(
             )
         except Exception as exc:  # never let the auto-spawn break the transcode finalize
             logger.error(f"[ProcessingService] auto-spawn embeddings after transcode failed: {exc}")
+
+        # Phase-2 playback assets: peaks + segments jobs, but ONLY for similarity_playback
+        # partners. They consume the transcoded mp3 (now present). Idempotent; independent
+        # of each other and of embeddings (run in parallel on the 3/4-core pool).
+        try:
+            if await _partner_wants_playback(db, partner_id):
+                for _stage in ("peaks", "segments"):
+                    await _ensure_stage_job_for_log(
+                        db, partner_id, ingest_log_id, _stage, triggered_by="auto:post-transcode"
+                    )
+        except Exception as exc:  # never let the auto-spawn break the transcode finalize
+            logger.error(f"[ProcessingService] auto-spawn peaks/segments after transcode failed: {exc}")
     return job
 
 

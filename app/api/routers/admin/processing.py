@@ -122,20 +122,21 @@ async def _refresh_processing_job_from_hetzner(
     """
     if job.status in partner_processing_service.TERMINAL_JOB_STATES:
         return job
-    # transcode + embeddings have Hetzner-side async runners; both poll-and-persist here.
-    if job.job_type not in ("embeddings", "transcode"):
+    # transcode + embeddings + peaks + segments all have Hetzner-side async runners.
+    jt = job.job_type
+    if jt not in ("embeddings", "transcode", "peaks", "segments"):
         return job
     try:
-        # Progress poll: ask for a LIGHT status (no per-track results array). We only need
-        # the status + counts here; the heavy per-track apply happens in a background task.
-        if job.job_type == "transcode":
-            remote = await hetzner_service.get_transcode_status(
-                job.partner_id, job.id, include_records=False
-            )
+        # Progress poll: ask for a LIGHT status (no per-track results array where supported).
+        # We only need the status + counts here; the heavy per-track apply happens in a task.
+        if jt == "transcode":
+            remote = await hetzner_service.get_transcode_status(job.partner_id, job.id, include_records=False)
+        elif jt == "embeddings":
+            remote = await hetzner_service.get_embeddings_status(job.partner_id, job.id, include_records=False)
+        elif jt == "peaks":
+            remote = await hetzner_service.get_peaks_status(job.partner_id, job.id)
         else:
-            remote = await hetzner_service.get_embeddings_status(
-                job.partner_id, job.id, include_records=False
-            )
+            remote = await hetzner_service.get_segments_status(job.partner_id, job.id)
         if remote.get("success"):
             data = remote["data"]
             mstatus = (data.get("status") or "").lower()
@@ -143,10 +144,14 @@ async def _refresh_processing_job_from_hetzner(
                 # Media job is done. Hand the (up to 1M-row) per-track result-apply to a
                 # background task instead of doing N queries in this request.
                 job = await partner_processing_service.claim_and_enqueue_finalize(db, job)
-            elif job.job_type == "transcode":
+            elif jt == "transcode":
                 job = await partner_processing_service.apply_transcode_result(db, job, data)
-            else:
+            elif jt == "embeddings":
                 job = await partner_processing_service.apply_embeddings_result(db, job, data)
+            elif jt == "peaks":
+                job = await partner_processing_service.apply_peaks_result(db, job, data)
+            else:
+                job = await partner_processing_service.apply_segments_result(db, job, data)
     except Exception as exc:  # never let a refresh break the listing
         logger.warning(
             f"[processing] refresh of job {job.id} from media server failed: {exc}"
@@ -242,15 +247,22 @@ async def pause_processing_job(
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("partners:manage")),
 ) -> JSONResponse:
-    """Signal the media server to pause this embeddings job after its current track."""
+    """Signal the media server to pause this job (transcode/embeddings/peaks/segments)."""
     set_admin_context(True)
     job = await db.get(PartnerProcessingJob, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Processing job not found")
-    if job.job_type != "embeddings":
-        raise HTTPException(status_code=400, detail="Only embeddings jobs support pause")
+    _pausers = {
+        "embeddings": partner_processing_service.pause_embeddings_job,
+        "transcode": partner_processing_service.pause_transcode_job,
+        "peaks": partner_processing_service.pause_peaks_job,
+        "segments": partner_processing_service.pause_segments_job,
+    }
+    pauser = _pausers.get(job.job_type)
+    if pauser is None:
+        raise HTTPException(status_code=400, detail=f"Job type '{job.job_type}' does not support pause")
 
-    job, result = await partner_processing_service.pause_embeddings_job(db, job)
+    job, result = await pauser(db, job)
     if not result.get("success"):
         return JSONResponse(
             status_code=502,
@@ -295,6 +307,61 @@ async def resume_processing_job(
         content={"status": "accepted", "message": "Embeddings job resumed",
                  "job_id": job.id, "job_status": job.status, "total_tracks": job.total_tracks},
     )
+
+
+class StageJobRequest(BaseModel):
+    partner_id: int = Field(..., description="Partner tenant id")
+    env: str = Field(default="live", description="'live' | 'test'")
+    ingest_log_id: Optional[int] = Field(default=None, description="Restrict to one ingest batch")
+    only_pending: bool = Field(default=True, description="Skip tracks whose asset already exists")
+
+
+@router.post(
+    "/processing/jobs/{stage}",
+    status_code=202,
+    summary="Trigger a fire-and-forget peaks/segments job (manual run / backfill)",
+)
+async def trigger_stage_job(
+    stage: str,
+    payload: StageJobRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("partners:manage")),
+) -> JSONResponse:
+    """Manually start a peaks or segments job (e.g. to backfill a partner switched to
+    similarity_playback). Debounced like embeddings; normally these auto-spawn after transcode."""
+    set_admin_context(True)
+    if stage not in ("peaks", "segments"):
+        raise HTTPException(status_code=404, detail="stage must be 'peaks' or 'segments'")
+
+    existing = await partner_processing_service.find_active_job(
+        db, payload.partner_id, stage, payload.ingest_log_id
+    )
+    if existing is not None:
+        return JSONResponse(status_code=200, content={
+            "status": "already_running",
+            "message": f"A {stage} job is already active for this partner/batch.",
+            "job_id": existing.id, "job_type": stage,
+        })
+
+    job = await partner_processing_service.create_job(
+        db, partner_id=payload.partner_id, job_type=stage, ingest_log_id=payload.ingest_log_id,
+        triggered_by=getattr(current_admin, "email", None) or str(getattr(current_admin, "id", "admin")),
+    )
+    starter = (partner_processing_service.start_peaks_job if stage == "peaks"
+               else partner_processing_service.start_segments_job)
+    job = await starter(db, job_id=job.id, partner_id=payload.partner_id, env=payload.env,
+                        ingest_log_id=payload.ingest_log_id, only_pending=payload.only_pending)
+
+    if job.status == "failed":
+        return JSONResponse(status_code=502, content={
+            "status": "error", "message": f"Failed to hand the {stage} job to the media server",
+            "job_id": job.id, "detail": (job.error_details or {}).get("error"),
+        })
+    return JSONResponse(status_code=202, content={
+        "status": "accepted", "message": f"{stage.capitalize()} job started",
+        "job_id": job.id, "job_type": stage, "job_status": job.status, "total_tracks": job.total_tracks,
+    })
 
 
 @router.get(

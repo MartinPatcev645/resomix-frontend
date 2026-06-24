@@ -64,8 +64,8 @@ class TrackProcessingStatus(Base):
     # embedding/peaks/segments jobs all consume its output, so it's tracked like the rest.
     transcode_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
     embedding_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
-    peaks_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    segments_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    peaks_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    segments_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
     faiss_indexed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
 
     # Per-stage error messages

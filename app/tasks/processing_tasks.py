@@ -42,15 +42,21 @@ async def _async_finalize_processing_job(job_id: int) -> None:
         job_type = job.job_type
     set_current_partner_id(partner_id)
 
-    if job_type not in ("transcode", "embeddings"):
+    if job_type not in ("transcode", "embeddings", "peaks", "segments"):
         return
 
-    # 2. Fetch the FULL per-track results from the media server (the poll omits them).
+    # 2. Fetch the FULL per-track results from the media server (the poll omits them where
+    #    supported). transcode/embeddings carry a large records array; peaks/segments are
+    #    lighter (uuid+status) but still fetched here so the apply runs off the request.
     svc = HetznerService()
     if job_type == "transcode":
         remote = await svc.get_transcode_status(partner_id, job_id, include_records=True, timeout=_FETCH_TIMEOUT)
-    else:
+    elif job_type == "embeddings":
         remote = await svc.get_embeddings_status(partner_id, job_id, include_records=True, timeout=_FETCH_TIMEOUT)
+    elif job_type == "peaks":
+        remote = await svc.get_peaks_status(partner_id, job_id, timeout=_FETCH_TIMEOUT)
+    else:
+        remote = await svc.get_segments_status(partner_id, job_id, timeout=_FETCH_TIMEOUT)
     if not remote.get("success"):
         logger.error("[finalize-task] job %s: could not fetch media results: %s — will retry on next poll",
                      job_id, remote.get("error"))
@@ -70,8 +76,12 @@ async def _async_finalize_processing_job(job_id: int) -> None:
             return
         if job_type == "transcode":
             job = await pps.apply_transcode_result(db, job, state)
-        else:
+        elif job_type == "embeddings":
             job = await pps.apply_embeddings_result(db, job, state)
+        elif job_type == "peaks":
+            job = await pps.apply_peaks_result(db, job, state)
+        else:
+            job = await pps.apply_segments_result(db, job, state)
     logger.info("[finalize-task] %s job %s finalized: status=%s processed=%s failed=%s",
                 job_type, job_id, job.status, job.processed_tracks, job.failed_tracks)
 

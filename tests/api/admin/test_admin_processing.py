@@ -936,3 +936,121 @@ async def test_bulk_apply_mixed_ok_and_failed(seeded):
         # ok track stays active; failed track is deactivated.
         assert (await db.get(Track, seeded["track"].id)).is_active is True
         assert (await db.get(Track, bad_track_id)).is_active is False
+
+
+# ===========================================================================
+# Phase-2 playback jobs: peaks + segments
+# ===========================================================================
+@pytest.mark.asyncio
+async def test_apply_peaks_result_marks_status_without_deactivating(seeded):
+    """A peaks failure sets peaks_status=failed but must NOT deactivate the track — it's
+    still searchable, only playback is degraded (per the failure matrix)."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_peaks_result
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        (await db.get(Track, seeded["track"].id)).is_active = True
+        job = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                   job_type="peaks", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    with patch("app.services.notification_service.NotificationService.notify_partner_operation",
+               new_callable=AsyncMock):
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await apply_peaks_result(db, job, {
+                "status": "completed",
+                "results": [{"track_uuid": track_uuid, "status": "error", "message": "peaks boom"}],
+            })
+
+    async with AsyncSessionLocal() as db:
+        tps = (await db.execute(select(TrackProcessingStatus).where(
+            TrackProcessingStatus.ingest_log_id == seeded["log"].id))).scalar_one()
+        assert tps.peaks_status == "failed"
+        assert "peaks boom" in (tps.peaks_error or "")
+        # Playback failure must NOT take the track out of the catalog.
+        assert (await db.get(Track, seeded["track"].id)).is_active is True
+        assert (await db.get(PartnerProcessingJob, job_id)).status == "failed"
+
+
+@pytest.mark.asyncio
+async def test_transcode_autospawns_peaks_segments_for_playback_partner(seeded):
+    """A completed transcode for a similarity_playback partner auto-spawns BOTH peaks and
+    segments jobs (in addition to embeddings)."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_transcode_result, hetzner_service
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.processing_dir = "20260623T000000Z"
+        p = await db.get(Partner, partner_id)
+        p.service_mode = "similarity_playback"
+        job = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                   job_type="transcode", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})), \
+         patch.object(hetzner_service, "start_peaks", new=AsyncMock(return_value={"success": True})) as mpeaks, \
+         patch.object(hetzner_service, "start_segments", new=AsyncMock(return_value={"success": True})) as msegs:
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await apply_transcode_result(db, job, {
+                "status": "completed", "results": [{"track_uuid": track_uuid, "status": "ok"}]})
+
+    assert mpeaks.await_count == 1 and msegs.await_count == 1
+    async with AsyncSessionLocal() as db:
+        types = (await db.execute(select(PartnerProcessingJob.job_type).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id))).scalars().all()
+        assert "peaks" in types and "segments" in types
+
+
+@pytest.mark.asyncio
+async def test_transcode_skips_peaks_segments_for_similarity_only(seeded):
+    """The default similarity_only partner gets NO peaks/segments jobs."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_transcode_result, hetzner_service
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id  # service_mode defaults to similarity_only
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.processing_dir = "20260623T000000Z"
+        job = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                   job_type="transcode", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})), \
+         patch.object(hetzner_service, "start_peaks", new=AsyncMock(return_value={"success": True})) as mpeaks, \
+         patch.object(hetzner_service, "start_segments", new=AsyncMock(return_value={"success": True})) as msegs:
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await apply_transcode_result(db, job, {
+                "status": "completed", "results": [{"track_uuid": track_uuid, "status": "ok"}]})
+
+    assert mpeaks.await_count == 0 and msegs.await_count == 0
+    async with AsyncSessionLocal() as db:
+        types = (await db.execute(select(PartnerProcessingJob.job_type).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id))).scalars().all()
+        assert "peaks" not in types and "segments" not in types
