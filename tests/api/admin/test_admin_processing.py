@@ -703,7 +703,8 @@ async def test_apply_ingestion_result_enqueues_background_persist_and_debounces(
 @pytest.mark.asyncio
 async def test_persist_task_inserts_finalizes_and_is_idempotent(seeded):
     """The background task pulls records from Hetzner, inserts them (chunked, clamping the
-    bad year), finalizes the log COMPLETED, auto-spawns transcode, and a re-run is a no-op."""
+    bad year), finalizes the log COMPLETED, auto-spawns transcode AND a concurrent
+    (overlap) embeddings job, and a re-run is a no-op."""
     from sqlalchemy import select, func
     from app.tasks.ingestion_tasks import _async_persist_and_finalize
     from app.core.context import set_admin_context
@@ -725,8 +726,11 @@ async def test_persist_task_inserts_finalizes_and_is_idempotent(seeded):
          patch("app.services.notification_service.NotificationService.notify_partner_operation",
                new_callable=AsyncMock), \
          patch("app.services.partner_processing_service.hetzner_service.start_transcode",
-               new_callable=AsyncMock) as mstart:
+               new_callable=AsyncMock) as mstart, \
+         patch("app.services.partner_processing_service.hetzner_service.start_embeddings",
+               new_callable=AsyncMock) as membed:
         mstart.return_value = {"success": True}
+        membed.return_value = {"success": True}
         await _async_persist_and_finalize(seeded["log"].id)
         await _async_persist_and_finalize(seeded["log"].id)  # idempotent re-run
 
@@ -748,3 +752,51 @@ async def test_persist_task_inserts_finalizes_and_is_idempotent(seeded):
             PartnerProcessingJob.ingest_log_id == seeded["log"].id,
             PartnerProcessingJob.job_type == "transcode"))).scalars().all()
         assert len(tj) == 1
+
+        # Embeddings job spawned CONCURRENTLY (exactly one), not chained off transcode.
+        ej = (await db.execute(select(PartnerProcessingJob).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id,
+            PartnerProcessingJob.job_type == "embeddings"))).scalars().all()
+        assert len(ej) == 1
+
+    # The embeddings hand-off ran in OVERLAP mode against the transcode job id.
+    assert membed.await_count >= 1
+    assert membed.await_args.kwargs.get("transcode_job_id") == tj[0].id
+
+
+@pytest.mark.asyncio
+async def test_partner_subscribes_gate(seeded):
+    """The per-track webhook fan-out is gated on a real subscription so a huge batch
+    doesn't enqueue millions of no-op webhook tasks."""
+    from app.services.ingestion_service import _partner_subscribes
+    from app.models.partner import PartnerWebhook
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+
+    async with AsyncSessionLocal() as db:
+        # No webhooks yet → not subscribed.
+        assert await _partner_subscribes(db, partner_id, "track.indexed") is False
+
+        # Active webhook subscribed to a different event → still not subscribed.
+        db.add(PartnerWebhook(
+            partner_id=partner_id, url="https://example.com/hook",
+            secret_hash="x" * 64, events=["ingestion.completed"], is_active=True,
+        ))
+        await db.commit()
+        assert await _partner_subscribes(db, partner_id, "track.indexed") is False
+
+        # Active webhook subscribed to track.indexed → subscribed.
+        db.add(PartnerWebhook(
+            partner_id=partner_id, url="https://example.com/hook2",
+            secret_hash="y" * 64, events=["track.indexed"], is_active=True,
+        ))
+        await db.commit()
+        assert await _partner_subscribes(db, partner_id, "track.indexed") is True
+
+        # Inactive subscription does not count.
+        await db.execute(text("UPDATE partner_webhooks SET is_active = 0 WHERE partner_id = :p"),
+                         {"p": partner_id})
+        await db.commit()
+        assert await _partner_subscribes(db, partner_id, "track.indexed") is False

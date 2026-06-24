@@ -167,6 +167,7 @@ async def start_embeddings_job(
     index_after: bool = True,
     ingest_log_id: Optional[int] = None,
     only_pending: bool = True,
+    transcode_job_id: Optional[int] = None,
 ) -> PartnerProcessingJob:
     """
     Hand off a batch-embeddings job to Hetzner (fire-and-forget).
@@ -222,6 +223,7 @@ async def start_embeddings_job(
         env=env,
         index_after=index_after and not dry_run,
         processing_dir=processing_dir,
+        transcode_job_id=transcode_job_id,
     )
 
     if not result.get("success"):
@@ -328,11 +330,17 @@ async def pause_transcode_job(db, job: PartnerProcessingJob) -> Tuple[PartnerPro
 
 
 async def _ensure_embedding_job_for_log(
-    db, partner_id: int, ingest_log_id: int, triggered_by: Optional[str] = None
+    db, partner_id: int, ingest_log_id: int, triggered_by: Optional[str] = None,
+    transcode_job_id: Optional[int] = None,
 ) -> Optional[PartnerProcessingJob]:
     """Idempotently create + start the embeddings job for a batch. Skips if one already
     exists for this ingest_log (so re-polls / concurrent applies can't duplicate it —
-    the double-job class of bug)."""
+    the double-job class of bug).
+
+    ``transcode_job_id`` enables OVERLAP mode: the embeddings job is spawned alongside the
+    transcode job (at ingestion success) and consumes each mp3 as transcode produces it.
+    Left None for the post-transcode safety-net call (transcode already done → single pass).
+    """
     set_current_partner_id(partner_id)
     existing = (
         await db.execute(
@@ -352,6 +360,7 @@ async def _ensure_embedding_job_for_log(
     return await start_embeddings_job(
         db, job_id=job.id, partner_id=partner_id, env="live",
         index_after=True, ingest_log_id=ingest_log_id, only_pending=True,
+        transcode_job_id=transcode_job_id,
     )
 
 
@@ -463,7 +472,10 @@ async def apply_transcode_result(
     # Notify partner + admin about any tracks that failed to transcode.
     await _notify_job_failures(db, partner_id, "transcode", failed_files, processed, failed)
 
-    # Transcode produced the mp3s → kick off embeddings automatically (idempotent).
+    # Safety net: the embeddings job is normally spawned concurrently at ingestion
+    # success (overlap mode) and consumes mp3s as they land. This idempotent call only
+    # creates one if that earlier spawn never happened (e.g. the media hand-off hiccuped);
+    # transcode is already done here, so it runs single-pass (transcode_job_id=None).
     if job.status in ("completed", "partial") and ingest_log_id:
         try:
             await _ensure_embedding_job_for_log(

@@ -97,7 +97,11 @@ async def _refresh_log_from_hetzner(db: AsyncSession, log: IngestLog) -> IngestL
     if log.status in ("COMPLETED", "FAILED"):
         return log
     try:
-        remote = await hetzner_service.get_ingestion_status(log.partner_id, log.id)
+        # Progress poll: skip the (possibly 100s-of-MB) records array — only the persist
+        # task needs it. Re-fetching + parsing it on every poll would block the event loop.
+        remote = await hetzner_service.get_ingestion_status(
+            log.partner_id, log.id, include_records=False
+        )
         if remote.get("success"):
             log = await apply_ingestion_result(db, log, remote["data"])
     except Exception as exc:  # never let a refresh break the listing
@@ -123,10 +127,26 @@ async def _refresh_processing_job_from_hetzner(
         return job
     try:
         if job.job_type == "transcode":
-            remote = await hetzner_service.get_transcode_status(job.partner_id, job.id)
+            # Progress poll: skip the per-track results array. Only when the job is terminal
+            # do we need them (to set per-track transcode_status) — fetch them once then.
+            remote = await hetzner_service.get_transcode_status(
+                job.partner_id, job.id, include_records=False
+            )
             if remote.get("success"):
-                job = await partner_processing_service.apply_transcode_result(db, job, remote["data"])
+                data = remote["data"]
+                if (data.get("status") or "").lower() in partner_processing_service.TERMINAL_JOB_STATES:
+                    full = await hetzner_service.get_transcode_status(
+                        job.partner_id, job.id, include_records=True, timeout=300.0
+                    )
+                    if not full.get("success"):
+                        # Can't fetch the per-track results to finalize correctly — leave the
+                        # job running and retry on the next poll (don't finalize with []).
+                        return job
+                    data = full["data"]
+                job = await partner_processing_service.apply_transcode_result(db, job, data)
         else:
+            # The embeddings job-state file is already light while running (it carries the
+            # full results only on a terminal snapshot), so a single poll is cheap.
             remote = await hetzner_service.get_embeddings_status(job.partner_id, job.id)
             if remote.get("success"):
                 job = await partner_processing_service.apply_embeddings_result(db, job, remote["data"])
@@ -483,7 +503,10 @@ async def get_ingestion_status(
             content={"status": "success", "remote_status": None, "log": _log_to_dict(log)}
         )
 
-    remote = await hetzner_service.get_ingestion_status(log.partner_id, log.id)
+    # Progress poll: skip the heavy records array (the persist task fetches it).
+    remote = await hetzner_service.get_ingestion_status(
+        log.partner_id, log.id, include_records=False
+    )
     if not remote.get("success"):
         if remote.get("error") == "not_found":
             # Job file not written yet (or partner mismatch) — still in flight.

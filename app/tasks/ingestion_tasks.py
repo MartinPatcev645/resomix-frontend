@@ -40,7 +40,11 @@ async def _async_persist_and_finalize(log_id: int) -> None:
 
     # 2. Fetch the validated records from Hetzner (not passed through the broker — could be
     #    100MB+). The media server still holds them in the job-state JSON.
-    remote = await HetznerService().get_ingestion_status(partner_id, log_id)
+    # This is the one place that actually needs the (possibly very large) records array;
+    # allow a generous timeout for fetching + transferring it on a big batch.
+    remote = await HetznerService().get_ingestion_status(
+        partner_id, log_id, include_records=True, timeout=300.0,
+    )
     if not remote.get("success"):
         logger.error("[persist-task] log %s: could not fetch media state: %s — will retry on next poll",
                      log_id, remote.get("error"))

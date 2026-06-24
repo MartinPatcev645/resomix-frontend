@@ -324,6 +324,25 @@ async def start_ingestion_job(
 _PERSIST_STALE_SECONDS = int(os.getenv("INGEST_PERSIST_STALE_SECONDS", "900") or 900)  # 15 min
 
 
+async def _partner_subscribes(db, partner_id: int, event_type: str) -> bool:
+    """True if the partner has an active webhook subscribed to ``event_type``. Used to skip
+    a large per-track fan-out when nobody is listening. Best-effort — on any error we assume
+    yes (the dispatch task itself re-checks and no-ops, so we never silently drop events)."""
+    try:
+        from sqlalchemy import select as _select
+        from app.models.partner import PartnerWebhook
+        rows = (await db.execute(
+            _select(PartnerWebhook.events).where(
+                PartnerWebhook.partner_id == partner_id,
+                PartnerWebhook.is_active == True,  # noqa: E712
+            )
+        )).scalars().all()
+        return any(event_type in (events or []) for events in rows)
+    except Exception as exc:
+        logger.warning(f"[IngestionService] webhook-subscription check failed for partner {partner_id}: {exc}")
+        return True
+
+
 def _persist_stage_stale(log_entry) -> bool:
     """True if PERSISTING was stamped too long ago (worker likely died) → safe to re-enqueue."""
     ts = (log_entry.stage_timeline or {}).get(Stage.PERSISTING)
@@ -435,7 +454,12 @@ async def apply_ingestion_result(
         return log_entry
 
     # --- COMPLETED on Hetzner ---
+    # ``records`` may be omitted on progress polls (include_records=false); use the cheap
+    # ``valid_count`` scalar for counts and fall back to the array length when present.
     records = state.get("records") or []
+    valid_count = state.get("valid_count")
+    if valid_count is None:
+        valid_count = len(records)
 
     if env == "test":
         # Dry-run: validation passed, persist nothing. Terminal immediately (no
@@ -443,9 +467,9 @@ async def apply_ingestion_result(
         # active batch blocking the partner.
         log_entry.status = "COMPLETED"
         advance_stage(log_entry, Stage.READY)
-        log_entry.track_count = len(records)
+        log_entry.track_count = valid_count
         log_entry.error_message = (
-            f"DRY-RUN (test env): {len(records)} track(s) passed validation. "
+            f"DRY-RUN (test env): {valid_count} track(s) passed validation. "
             f"Nothing was persisted."
         )
         log_entry.completed_at = datetime.utcnow()
@@ -457,7 +481,7 @@ async def apply_ingestion_result(
             payload={
                 "ingest_log_id": log_entry.id,
                 "batch_filename": log_entry.batch_filename,
-                "track_count": len(records),
+                "track_count": valid_count,
                 "dry_run": True,
                 "env": env,
                 "completed_at": log_entry.completed_at.isoformat(),
@@ -465,10 +489,10 @@ async def apply_ingestion_result(
         )
         await _notify(
             partner_id, "ingestion", "success",
-            f"Dry-run validation passed: {len(records)} track(s) are valid. "
+            f"Dry-run validation passed: {valid_count} track(s) are valid. "
             f"Nothing was persisted (test environment).",
             title="Dry-run validation passed",
-            counts={"Validated": len(records)},
+            counts={"Validated": valid_count},
         )
         return log_entry
 
@@ -477,25 +501,35 @@ async def apply_ingestion_result(
     # it to a background Celery task and return immediately. The task inserts the records in
     # idempotent chunks (app.services.ingestion_persist) and finalizes the log COMPLETED when
     # done; subsequent polls just read progress (stage=PERSISTING, track_count climbing).
-    if log_entry.stage == Stage.PERSISTING and not _persist_stage_stale(log_entry):
-        # A background task is already inserting this batch → just report progress.
-        return log_entry
+    # Atomic claim under a row lock: two concurrent admin polls must not both advance to
+    # PERSISTING and enqueue duplicate persist tasks (→ duplicate finalize → duplicate
+    # transcode/embedding jobs — the double-job bug). The loser blocks on the lock, then
+    # sees PERSISTING (fresh) and returns without enqueueing. (with_for_update is a no-op
+    # on engines that don't support it; the persist task is idempotent regardless.)
+    from sqlalchemy import select as _select
+    locked = (
+        await db.execute(_select(IngestLog).where(IngestLog.id == log_entry.id).with_for_update())
+    ).scalar_one()
+    if locked.stage == Stage.PERSISTING and not _persist_stage_stale(locked):
+        # A background task is already inserting this batch → release the lock, report progress.
+        await db.commit()
+        return locked
 
-    # Claim it: mark PERSISTING (so concurrent polls don't pile up duplicate tasks) and
-    # enqueue. Staleness re-enqueues if a worker died mid-run — the persist is idempotent.
-    advance_stage(log_entry, Stage.PERSISTING)
+    # Claim it: mark PERSISTING and enqueue. Staleness re-enqueues if a worker died
+    # mid-run — the persist is idempotent (skip-existing by uuid).
+    advance_stage(locked, Stage.PERSISTING)
     await db.commit()
-    await db.refresh(log_entry)
+    await db.refresh(locked)
     try:
         from app.tasks.ingestion_tasks import persist_and_finalize_ingestion
-        persist_and_finalize_ingestion.delay(log_entry.id)
+        persist_and_finalize_ingestion.delay(locked.id)
         logger.info(
-            f"[IngestionService] enqueued background persist for log {log_entry.id} "
-            f"({len(records)} record(s), partner {partner_id})."
+            f"[IngestionService] enqueued background persist for log {locked.id} "
+            f"(~{valid_count} record(s), partner {partner_id})."
         )
     except Exception as exc:
-        logger.error(f"[IngestionService] failed to enqueue persist task for log {log_entry.id}: {exc}")
-    return log_entry
+        logger.error(f"[IngestionService] failed to enqueue persist task for log {locked.id}: {exc}")
+    return locked
 
 
 async def finalize_successful_ingestion(db, log_entry, records, env, result) -> None:
@@ -534,20 +568,24 @@ async def finalize_successful_ingestion(db, log_entry, records, env, result) -> 
             "completed_at": log_entry.completed_at.isoformat(),
         },
     )
-    _failed_fns = {f.get("audio_filename") for f in result["failures"]}
-    for rec in records:
-        if rec.get("audio_filename") in _failed_fns:
-            continue
-        dispatch_webhook.delay(
-            partner_id=partner_id,
-            event_type="track.indexed",
-            payload={
-                "track_uuid": rec.get("track_uuid"),
-                "isrc": rec.get("isrc"),
-                "title": rec.get("title"),
-                "display_artist": rec.get("display_artist"),
-            },
-        )
+    # Per-track `track.indexed` webhooks — but only if the partner actually subscribes.
+    # Otherwise a 1M-track batch would enqueue 1M Celery messages that each just query
+    # subscriptions and no-op. One check up front keeps the common case O(1).
+    if await _partner_subscribes(db, partner_id, "track.indexed"):
+        _failed_fns = {f.get("audio_filename") for f in result["failures"]}
+        for rec in records:
+            if rec.get("audio_filename") in _failed_fns:
+                continue
+            dispatch_webhook.delay(
+                partner_id=partner_id,
+                event_type="track.indexed",
+                payload={
+                    "track_uuid": rec.get("track_uuid"),
+                    "isrc": rec.get("isrc"),
+                    "title": rec.get("title"),
+                    "display_artist": rec.get("display_artist"),
+                },
+            )
     await _notify(
         partner_id, "ingestion", "success",
         f"Your batch was ingested successfully: {inserted_count} track(s) added. "
@@ -556,21 +594,25 @@ async def finalize_successful_ingestion(db, log_entry, records, env, result) -> 
         counts={"Tracks ingested": inserted_count},
     )
 
-    # Auto-spawn the transcode job (raw -> 128k mp3). On its completion it auto-spawns the
-    # embeddings job — no admin click. Idempotent: an existing transcode job is left alone.
+    # Auto-spawn the transcode job (raw -> 128k mp3) AND the embeddings job — no admin
+    # click. The two run CONCURRENTLY (overlap mode): the embeddings job consumes each
+    # mp3 as soon as transcode produces it, so the GPU embed-server isn't idle while
+    # ffmpeg runs. Both spawns are idempotent (an existing job for this batch is reused),
+    # so a re-poll / retry never duplicates them.
     try:
         from sqlalchemy import select as _select
         from app.models.partner_processing_job import PartnerProcessingJob
         from app.services import partner_processing_service as _pps
 
-        existing = (await db.execute(
-            _select(PartnerProcessingJob.id).where(
+        # 1. Transcode job (find-or-create + hand off).
+        tjob = (await db.execute(
+            _select(PartnerProcessingJob).where(
                 PartnerProcessingJob.partner_id == partner_id,
                 PartnerProcessingJob.ingest_log_id == log_entry.id,
                 PartnerProcessingJob.job_type == "transcode",
-            )
-        )).first()
-        if not existing:
+            ).limit(1)
+        )).scalar_one_or_none()
+        if tjob is None:
             tjob = await _pps.create_job(
                 db, partner_id=partner_id, job_type="transcode",
                 ingest_log_id=log_entry.id, triggered_by="auto:ingestion",
@@ -579,8 +621,18 @@ async def finalize_successful_ingestion(db, log_entry, records, env, result) -> 
                 db, job_id=tjob.id, partner_id=partner_id, env=env,
                 ingest_log_id=log_entry.id, only_pending=True,
             )
+
+        # 2. Embeddings job, spawned concurrently in OVERLAP mode against the transcode
+        #    job. Only once the transcode hand-off was accepted (status running/paused) —
+        #    if it failed to hand off there are no mp3s to consume, so we leave embeddings
+        #    to the post-transcode safety-net spawn instead. Idempotent.
+        if tjob is not None and tjob.status in ("running", "paused"):
+            await _pps._ensure_embedding_job_for_log(
+                db, partner_id, log_entry.id,
+                triggered_by="auto:ingestion-overlap", transcode_job_id=tjob.id,
+            )
     except Exception as exc:  # never let auto-spawn break a successful ingestion
-        logger.error(f"[IngestionService] auto-spawn transcode after ingestion failed: {exc}")
+        logger.error(f"[IngestionService] auto-spawn transcode/embeddings after ingestion failed: {exc}")
 
 
 async def process_ingestion_batch(

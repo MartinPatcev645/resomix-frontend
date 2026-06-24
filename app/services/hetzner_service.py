@@ -364,7 +364,8 @@ class HetznerService:
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
     async def get_ingestion_status(
-        self, partner_id: int, job_id: int
+        self, partner_id: int, job_id: int,
+        include_records: bool = True, timeout: float = 30.0,
     ) -> Dict[str, Any]:
         """
         Poll the Hetzner media server for the current state of an ingestion job.
@@ -376,17 +377,22 @@ class HetznerService:
         Args:
             partner_id: ID of the partner being ingested.
             job_id: Alwyzon ``ingest_logs.id`` — the cross-server job key.
+            include_records: progress polls pass False to skip the (100s-of-MB) records
+                array — re-downloading + JSON-parsing it on every poll would block the
+                event loop. Only the persist task needs the records (passes True).
+            timeout: HTTP timeout; bump it when fetching records for a huge batch.
         """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
 
         base_url = self.hetzner_url.rstrip("/")
         headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        params = {"include_records": "true" if include_records else "false"}
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.get(
                     f"{base_url}/internal/ingestion/status/{partner_id}/{job_id}",
-                    headers=headers,
+                    headers=headers, params=params,
                 )
                 if resp.status_code == 200:
                     return {"success": True, "data": resp.json()}
@@ -413,6 +419,7 @@ class HetznerService:
         env: str = "live",
         index_after: bool = True,
         processing_dir: Optional[str] = None,
+        transcode_job_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Fire-and-forget hand-off of a batch-embeddings job to the Hetzner media server.
@@ -433,6 +440,10 @@ class HetznerService:
             env: "live" persists artifacts; "test" is a dry-run (generate + discard).
             index_after: when live, also insert each vector into FAISS + catalog.
             processing_dir: the snapshot dir for embedding ingestion.
+            transcode_job_id: when set, the media server runs the embeddings in OVERLAP
+                mode — embedding each track as soon as that transcode job writes its mp3,
+                so the GPU isn't idle while transcode runs. None = single-pass (resume /
+                post-transcode safety net).
         """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
@@ -451,7 +462,11 @@ class HetznerService:
         }
         if processing_dir:
             payload["processing_dir"] = processing_dir
-            
+        # Overlap mode: tell the media server to embed each track as soon as this
+        # transcode job has produced its mp3 (instead of waiting for transcode to finish).
+        if transcode_job_id is not None:
+            payload["transcode_job_id"] = transcode_job_id
+
         try:
             # Only the hand-off — the heavy work runs in Hetzner's background task.
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -552,16 +567,25 @@ class HetznerService:
             logger.error(f"Hetzner pause-transcode connection error (job {job_id}): {e}")
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
-    async def get_transcode_status(self, partner_id: int, job_id: int) -> Dict[str, Any]:
-        """Poll the media server for the current state of a transcode job."""
+    async def get_transcode_status(
+        self, partner_id: int, job_id: int,
+        include_records: bool = True, timeout: float = 30.0,
+    ) -> Dict[str, Any]:
+        """Poll the media server for the current state of a transcode job.
+
+        ``include_records=False`` omits the per-track results array (which grows with the
+        batch) — progress polls use it; the terminal apply re-fetches with it True.
+        """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
         base_url = self.hetzner_url.rstrip("/")
         headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        params = {"include_records": "true" if include_records else "false"}
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.get(
-                    f"{base_url}/internal/process/transcode/status/{partner_id}/{job_id}", headers=headers
+                    f"{base_url}/internal/process/transcode/status/{partner_id}/{job_id}",
+                    headers=headers, params=params,
                 )
                 if resp.status_code == 200:
                     return {"success": True, "data": resp.json()}
