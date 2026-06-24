@@ -21,6 +21,10 @@ export interface IngestLog {
   package_folder: string;
   batch_filename: string;
   status: IngestStatus;
+  /** Granular pipeline position: VALIDATING → MOVED → PERSISTING → INGESTED → EMBEDDING → INDEXED → FINALIZING → READY */
+  stage: string | null;
+  /** Maps each stage entered → UTC timestamp */
+  stage_timeline: Record<string, string> | null;
   track_count: number;
   error_message: string | null;
   started_at: string | null;
@@ -66,6 +70,12 @@ export interface RetryIngestionResponse {
   ingest_log_id: number;
   partner_id: number;
   env: string;
+}
+
+export interface RefreshIngestLogStatusResponse {
+  status: string;
+  remote_status: string;
+  log: IngestLog;
 }
 
 // ─── API Calls ─────────────────────────────────────────────
@@ -128,6 +138,22 @@ export const retryIngestion = async (
       authClient.post(
         `${API_CONFIG.ENDPOINTS.ADMIN_INGESTION_LOGS}/${logId}/retry`,
       ),
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Force-refresh a single ingest log by polling the media server.
+ * GET /api/v1/admin/ingestion/logs/{log_id}/status
+ */
+export const refreshIngestLogStatus = async (
+  logId: number,
+): Promise<RefreshIngestLogStatusResponse> => {
+  try {
+    return await axiosWrapper(
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_INGESTION_LOG_STATUS}/${logId}/status`),
     );
   } catch (error: any) {
     return handleApiError(error) as any;

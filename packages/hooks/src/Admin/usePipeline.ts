@@ -4,15 +4,18 @@ import {
   getIngestLog,
   triggerIngestion,
   retryIngestion,
+  refreshIngestLogStatus,
   listProcessingJobs,
   triggerEmbeddingsJob,
+  triggerPeaksSegmentsJob,
   pauseProcessingJob,
   resumeProcessingJob,
   type IngestLog,
   type IngestLogError,
   type ProcessingJob,
   type ListIngestLogsParams,
-  type ListJobsParams
+  type ListJobsParams,
+  type PeaksSegmentsStage,
 } from '@resomix/api-client';
 import { message } from 'antd';
 
@@ -198,6 +201,43 @@ export function usePipeline() {
     }
   };
 
+  const triggerPeaksSegments = async (stage: PeaksSegmentsStage, payload: {
+    partner_id: number;
+    env: 'live' | 'test';
+    ingest_log_id?: number | null;
+    only_pending?: boolean;
+  }) => {
+    try {
+      const result = await triggerPeaksSegmentsJob(stage, payload);
+      if (result && (result.status === 'accepted' || result.status === 'already_running')) {
+        message.success(result.message || `${stage} job started`);
+        fetchProcessingJobs();
+        return true;
+      }
+      return false;
+    } catch {
+      message.error(`Failed to trigger ${stage} job`);
+      return false;
+    }
+  };
+
+  const refreshIngestLog = async (logId: number) => {
+    try {
+      const result = await refreshIngestLogStatus(logId);
+      if (result && result.log) {
+        // Update the log in-place in the list
+        setIngestLogs(prev =>
+          prev.map(l => l.id === logId ? result.log : l),
+        );
+        return result;
+      }
+      return null;
+    } catch {
+      message.error('Failed to refresh ingest log status');
+      return null;
+    }
+  };
+
   const handleIngestPageChange = (page: number, pageSize: number) => {
     setIngestPagination(prev => ({ ...prev, current: page, pageSize }));
   };
@@ -232,9 +272,11 @@ export function usePipeline() {
     triggerIngest,
     retryIngest,
     triggerEmbeddings,
+    triggerPeaksSegments,
     pauseJob,
     resumeJob,
     getIngestLogDetail,
+    refreshIngestLog,
     handleIngestPageChange,
     handleJobsPageChange,
   };

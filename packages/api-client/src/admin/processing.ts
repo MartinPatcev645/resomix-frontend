@@ -10,7 +10,8 @@ export type ProcessingJobStatus =
   | "completed"
   | "partial"
   | "failed"
-  | "paused";
+  | "paused"
+  | "finalizing";
 
 export interface ProcessingJob {
   id: number;
@@ -25,6 +26,7 @@ export interface ProcessingJob {
   triggered_by: string | null;
   created_at: string;
   started_at: string | null;
+  finalizing_at: string | null;
   completed_at: string | null;
 }
 
@@ -63,6 +65,24 @@ export interface ListJobsParams {
 export interface ListJobsResponse {
   status: string;
   jobs: ProcessingJob[];
+}
+
+export type PeaksSegmentsStage = "peaks" | "segments";
+
+export interface TriggerPeaksSegmentsRequest {
+  partner_id: number;
+  env: "live" | "test";
+  ingest_log_id?: number | null;
+  only_pending?: boolean;
+}
+
+export interface TriggerPeaksSegmentsResponse {
+  status: "accepted" | "already_running";
+  message: string;
+  job_id: number;
+  job_type: string;
+  job_status?: string;
+  total_tracks?: number;
 }
 
 // ─── API Calls ─────────────────────────────────────────────
@@ -140,6 +160,23 @@ export const resumeProcessingJob = async (
     const url = API_CONFIG.ENDPOINTS.ADMIN_PROCESSING_JOBS_RESUME.replace("{id}", jobId.toString());
     return await axiosWrapper(
       authClient.post(url, null, { params }),
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Trigger a peaks or segments (playback assets) job for a partner.
+ * POST /api/v1/admin/processing/jobs/{stage}
+ */
+export const triggerPeaksSegmentsJob = async (
+  stage: PeaksSegmentsStage,
+  payload: TriggerPeaksSegmentsRequest,
+): Promise<TriggerPeaksSegmentsResponse> => {
+  try {
+    return await axiosWrapper(
+      authClient.post(`${API_CONFIG.ENDPOINTS.ADMIN_PROCESSING_JOBS_STAGE}/${stage}`, payload),
     );
   } catch (error: any) {
     return handleApiError(error) as any;

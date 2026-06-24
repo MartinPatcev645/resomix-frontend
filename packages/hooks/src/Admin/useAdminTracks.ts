@@ -3,6 +3,7 @@ import {
   listAdminTracks,
   setTrackLive,
   stopTrack,
+  stopTracksBatch,
   type AdminTrack,
   type ListTracksParams
 } from '@resomix/api-client';
@@ -102,6 +103,23 @@ export function useAdminTracks() {
     }
   };
 
+  const deactivateTracksBatch = async (trackIds: number[]) => {
+    if (partnerFilter === undefined) return false;
+    try {
+      const result = await stopTracksBatch(partnerFilter, trackIds);
+      if (result && (result.status === 'success' || result.status === 'partial')) {
+        message.success(`Successfully stopped ${result.stopped} tracks`);
+        fetchTracks();
+        return true;
+      }
+      message.error('Failed to stop tracks in batch');
+      return false;
+    } catch {
+      message.error('Failed to stop tracks in batch');
+      return false;
+    }
+  };
+
   const handlePageChange = (page: number, pageSize: number) => {
     setPagination(prev => ({ ...prev, current: page, pageSize }));
   };
@@ -125,6 +143,7 @@ export function useAdminTracks() {
     fetchTracks,
     activateTrack,
     deactivateTrack,
+    deactivateTracksBatch,
     handlePageChange,
   };
 }

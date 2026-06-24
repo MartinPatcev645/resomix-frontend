@@ -36,6 +36,7 @@ function TracksPage() {
   const [modal, modalContextHolder] = Modal.useModal();
   const [partnerSearchQuery, setPartnerSearchQuery] = useState('');
   const [viewingTrack, setViewingTrack] = useState<any | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // Load hooks
   const {
@@ -53,8 +54,14 @@ function TracksPage() {
     fetchTracks,
     activateTrack,
     deactivateTrack,
+    deactivateTracksBatch,
     handlePageChange,
   } = useAdminTracks();
+
+  // Reset selection on filter or page change
+  useEffect(() => {
+    setSelectedRowKeys([]);
+  }, [partnerFilter, statusFilter, sourceFilter, searchQuery, pagination.current]);
 
   // Load partners hook to populate filters
   const { 
@@ -108,6 +115,33 @@ function TracksPage() {
       okText: 'Deactivate',
       okType: 'danger',
       onOk: () => deactivateTrack(track.id, shouldDelete),
+    });
+  };
+
+  const handleBulkStop = () => {
+    if (selectedRowKeys.length === 0) return;
+    modal.confirm({
+      title: 'Stop / Deactivate Selected Tracks',
+      content: (
+        <div className="mt-2 flex flex-col gap-2">
+          <Text>Are you sure you want to deactivate <Text strong>{selectedRowKeys.length}</Text> selected tracks? This will remove them from all search indices immediately in a single batch operation.</Text>
+          <Alert 
+            type="warning" 
+            showIcon 
+            message="This action deactivates the tracks but does NOT delete their physical embedding files on the media server." 
+            className="rounded-xl mt-2"
+          />
+        </div>
+      ),
+      okText: 'Deactivate All',
+      okType: 'danger',
+      onOk: async () => {
+        const ids = selectedRowKeys.map(k => typeof k === 'string' ? parseInt(k, 10) : Number(k));
+        const success = await deactivateTracksBatch(ids);
+        if (success) {
+          setSelectedRowKeys([]);
+        }
+      },
     });
   };
 
@@ -421,18 +455,35 @@ function TracksPage() {
             </div>
           </Space>
 
-          <Button 
-            icon={<RotateCw size={14} />} 
-            onClick={fetchTracks}
-            className="h-10 flex items-center gap-1"
-          >
-            Refresh
-          </Button>
+          <Space wrap>
+            {selectedRowKeys.length > 0 && (
+              <Button 
+                danger
+                type="primary"
+                icon={<Ban size={14} />}
+                onClick={handleBulkStop}
+                className="h-10 flex items-center gap-1.5 font-medium animate-fade-in"
+              >
+                Stop Selected ({selectedRowKeys.length})
+              </Button>
+            )}
+            <Button 
+              icon={<RotateCw size={14} />} 
+              onClick={fetchTracks}
+              className="h-10 flex items-center gap-1"
+            >
+              Refresh
+            </Button>
+          </Space>
         </Space>
       </Card>
 
       <div className="bg-surface border border-default rounded-xl overflow-hidden shadow-sm">
         <Table
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+          }}
           columns={columns}
           dataSource={tracks}
           rowKey="id"
@@ -506,36 +557,104 @@ function TracksPage() {
               <div className="mt-2">
                 <Title level={5} className="!mb-2 !text-primary">Processing Status</Title>
                 <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden border-default bg-surface">
-                  <Descriptions.Item label="Embedding Status" span={1}>
+                  <Descriptions.Item label="Transcode" span={1}>
                     <Badge status={
-                      viewingTrack.processing.embedding_status === 'success' || 
+                      viewingTrack.processing.transcode_status === 'completed' ? 'success' : 
+                      viewingTrack.processing.transcode_status === 'failed' ? 'error' : 'processing'
+                    } text={viewingTrack.processing.transcode_status || 'pending'} />
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Embeddings" span={1}>
+                    <Badge status={
                       viewingTrack.processing.embedding_status === 'completed' ? 'success' : 
                       viewingTrack.processing.embedding_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.embedding_status} />
+                    } text={viewingTrack.processing.embedding_status || 'pending'} />
                   </Descriptions.Item>
-                  <Descriptions.Item label="Peaks Status" span={1}>
+                  <Descriptions.Item label="Peaks" span={1}>
                     <Badge status={
-                      viewingTrack.processing.peaks_status === 'success' || 
                       viewingTrack.processing.peaks_status === 'completed' ? 'success' : 
                       viewingTrack.processing.peaks_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.peaks_status} />
+                    } text={viewingTrack.processing.peaks_status || 'pending'} />
                   </Descriptions.Item>
-                  <Descriptions.Item label="Segments Status" span={1}>
+                  <Descriptions.Item label="Segments" span={1}>
                     <Badge status={
-                      viewingTrack.processing.segments_status === 'success' || 
                       viewingTrack.processing.segments_status === 'completed' ? 'success' : 
                       viewingTrack.processing.segments_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.segments_status} />
+                    } text={viewingTrack.processing.segments_status || 'pending'} />
                   </Descriptions.Item>
                   <Descriptions.Item label="FAISS Indexed" span={1}>
                     <Badge status={viewingTrack.processing.faiss_indexed ? 'success' : 'default'} text={viewingTrack.processing.faiss_indexed ? 'YES' : 'NO'} />
                   </Descriptions.Item>
-                  {viewingTrack.processing.embedding_error && (
-                    <Descriptions.Item label="Error" span={2}>
-                      <Text type="danger">{viewingTrack.processing.embedding_error}</Text>
+                  {viewingTrack.processing.audio_filename && (
+                    <Descriptions.Item label="Audio File" span={1}>
+                      <span className="font-mono text-xs">{viewingTrack.processing.audio_filename}</span>
+                    </Descriptions.Item>
+                  )}
+                  {viewingTrack.processing.sftp_env && (
+                    <Descriptions.Item label="SFTP Env" span={1}>
+                      <Tag color={viewingTrack.processing.sftp_env === 'live' ? 'success' : 'blue'}>{viewingTrack.processing.sftp_env.toUpperCase()}</Tag>
                     </Descriptions.Item>
                   )}
                 </Descriptions>
+
+                {/* Completion timestamps */}
+                {(viewingTrack.processing.transcode_completed_at || viewingTrack.processing.embedding_completed_at || viewingTrack.processing.peaks_completed_at || viewingTrack.processing.segments_completed_at || viewingTrack.processing.faiss_indexed_at) && (
+                  <div className="mt-3">
+                    <Text className="text-secondary text-xs font-semibold uppercase block mb-1.5">Completion Timestamps</Text>
+                    <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden border-default bg-surface">
+                      {viewingTrack.processing.transcode_completed_at && (
+                        <Descriptions.Item label="Transcode" span={1}>
+                          <span className="text-xs">{new Date(viewingTrack.processing.transcode_completed_at).toLocaleString()}</span>
+                        </Descriptions.Item>
+                      )}
+                      {viewingTrack.processing.embedding_completed_at && (
+                        <Descriptions.Item label="Embeddings" span={1}>
+                          <span className="text-xs">{new Date(viewingTrack.processing.embedding_completed_at).toLocaleString()}</span>
+                        </Descriptions.Item>
+                      )}
+                      {viewingTrack.processing.peaks_completed_at && (
+                        <Descriptions.Item label="Peaks" span={1}>
+                          <span className="text-xs">{new Date(viewingTrack.processing.peaks_completed_at).toLocaleString()}</span>
+                        </Descriptions.Item>
+                      )}
+                      {viewingTrack.processing.segments_completed_at && (
+                        <Descriptions.Item label="Segments" span={1}>
+                          <span className="text-xs">{new Date(viewingTrack.processing.segments_completed_at).toLocaleString()}</span>
+                        </Descriptions.Item>
+                      )}
+                      {viewingTrack.processing.faiss_indexed_at && (
+                        <Descriptions.Item label="FAISS Indexed" span={1}>
+                          <span className="text-xs">{new Date(viewingTrack.processing.faiss_indexed_at).toLocaleString()}</span>
+                        </Descriptions.Item>
+                      )}
+                    </Descriptions>
+                  </div>
+                )}
+
+                {/* Error details */}
+                {(viewingTrack.processing.transcode_error || viewingTrack.processing.embedding_error || viewingTrack.processing.peaks_error || viewingTrack.processing.segments_error) && (
+                  <Alert
+                    type="error"
+                    showIcon
+                    className="rounded-xl mt-3"
+                    message="Processing Errors"
+                    description={
+                      <div className="flex flex-col gap-1 mt-1">
+                        {viewingTrack.processing.transcode_error && (
+                          <Text type="danger" className="text-xs"><strong>Transcode:</strong> {viewingTrack.processing.transcode_error}</Text>
+                        )}
+                        {viewingTrack.processing.embedding_error && (
+                          <Text type="danger" className="text-xs"><strong>Embedding:</strong> {viewingTrack.processing.embedding_error}</Text>
+                        )}
+                        {viewingTrack.processing.peaks_error && (
+                          <Text type="danger" className="text-xs"><strong>Peaks:</strong> {viewingTrack.processing.peaks_error}</Text>
+                        )}
+                        {viewingTrack.processing.segments_error && (
+                          <Text type="danger" className="text-xs"><strong>Segments:</strong> {viewingTrack.processing.segments_error}</Text>
+                        )}
+                      </div>
+                    }
+                  />
+                )}
               </div>
             )}
           </div>
