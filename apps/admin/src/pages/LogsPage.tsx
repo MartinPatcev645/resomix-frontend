@@ -432,6 +432,11 @@ function LogsPage() {
         <span className="flex items-center gap-2">
           <FileText size={16} />
           <span>System Logs</span>
+          {systemLogsPagination?.total !== undefined && (
+            <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">
+              {systemLogsPagination.total}
+            </Tag>
+          )}
         </span>
       ),
       children: (
@@ -567,6 +572,11 @@ function LogsPage() {
         <span className="flex items-center gap-2">
           <Shield size={16} />
           <span>Audit Trail</span>
+          {operationLogsPagination?.total !== undefined && (
+            <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">
+              {operationLogsPagination.total}
+            </Tag>
+          )}
         </span>
       ),
       children: (
@@ -684,6 +694,11 @@ function LogsPage() {
         <span className="flex items-center gap-2">
           <Globe size={16} />
           <span>Webhook Deliveries</span>
+          {webhookLogs !== undefined && (
+            <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">
+              {webhookLogs.length}
+            </Tag>
+          )}
         </span>
       ),
       children: (

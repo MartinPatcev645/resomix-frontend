@@ -315,7 +315,10 @@ function PartnersPage() {
       {modalContextHolder}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
-          <Title level={2} className="!mb-1 !text-primary">Partner Management</Title>
+          <Title level={2} className="!mb-1 !text-primary flex items-center gap-3">
+            <span>Partner Management</span>
+            <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{pagination.total} partners</Tag>
+          </Title>
           <Text className="text-secondary text-base">Manage B2B tenants and their API access keys.</Text>
         </div>
         <Button 

@@ -130,6 +130,7 @@ Four auth tiers are supported depending on the caller:
   ```json
   { "success": true, "data": [{ "id": 123, "uuid": "...", "title": "...", "artist": "..." }] }
   ```
+- **Note:** Results exclude **deactivated** tracks (`is_active = false`) — i.e. tracks an admin stopped, or whose transcode/embedding failed. Such tracks never appear in search or similarity results.
 
 ---
 
@@ -659,7 +660,12 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ### 19.12 Processing Jobs (`/api/v1/admin/processing`) — §C
 
-Fire-and-forget batch embedding generation. The POST returns immediately (`202 Accepted`) with a `job_id`; poll the GET endpoint for status.
+Fire-and-forget background jobs. A POST returns immediately (`202 Accepted`) with a `job_id`; poll the GET endpoint for status.
+
+> **Job types.** A `job_type` is one of **`transcode | embeddings | peaks | segments`**. In the normal
+> flow these are **auto-spawned** after a partner ingestion (transcode → embeddings, plus peaks +
+> segments for `similarity_playback` partners) — the admin does **not** need to trigger them. The POST
+> endpoints below are for **manual runs / backfills**. The jobs list/detail returns all four job types.
 
 #### Trigger Embeddings Job
 - **`POST /api/v1/admin/processing/jobs/embeddings`** — `202 Accepted`
@@ -691,6 +697,24 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
   }
   ```
 
+#### Trigger Peaks / Segments Job (playback assets)
+- **`POST /api/v1/admin/processing/jobs/{stage}`** where `{stage}` is `peaks` or `segments` — `202 Accepted`
+- **Description:** Manually start a peaks (waveform) or segments (HLS) job — e.g. to backfill a partner switched to `similarity_playback`. Normally these auto-spawn after transcode; use this only for manual runs. **Debounced**: if one is already active for the partner/batch it returns `200` with `{"status":"already_running","job_id":N,"job_type":"<stage>"}`.
+- **Body:**
+  ```json
+  { "partner_id": 42, "env": "live", "ingest_log_id": null, "only_pending": true }
+  ```
+  | Field | Description |
+  |---|---|
+  | `env` | `"live"` or `"test"` |
+  | `ingest_log_id` | Restrict to one ingest batch. `null` = all of the partner's pending tracks. |
+  | `only_pending` | Skip tracks whose asset already exists. |
+- **Returns:**
+  ```json
+  { "status": "accepted", "message": "Peaks job started", "job_id": 31, "job_type": "peaks", "job_status": "running", "total_tracks": 50 }
+  ```
+  _`404` if `{stage}` is not `peaks`/`segments`; `502` if the media hand-off failed._
+
 #### Get Job Status
 - **`GET /api/v1/admin/processing/jobs/{job_id}`**
 - **Returns:**
@@ -710,20 +734,26 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
       "triggered_by": "admin@resomix.com",
       "created_at": "2026-06-07T10:00:00",
       "started_at": "2026-06-07T10:00:01",
+      "finalizing_at": null,
       "completed_at": null
     }
   }
   ```
-  _`status` values: `pending` → `running` → `paused` → `completed` | `partial` | `failed`_
+  - `job_type`: `transcode` | `embeddings` | `peaks` | `segments`.
+  - `status`: `pending` → `running` → [`paused`] → **`finalizing`** → `completed` | `partial` | `failed`.
+    **`finalizing`** is transient — the media work is done and a background task is applying the
+    per-track results; treat it as "still working" (not terminal). `finalizing_at` is when that began.
+  - `error_details` (when present): `{ "error"?: "...", "failures": [ {track_uuid, message}, ... ] (sample, ≤100), "failed_count": N }`.
 
-#### Pause a Running Embeddings Job
+#### Pause a Running Job
 - **`POST /api/v1/admin/processing/jobs/{job_id}/pause`** — `200`
-- **Description:** Signals the media server to stop after the current track. In-flight tracks finish, then the job persists a `paused` snapshot. Only `embeddings` jobs support pause (`400` otherwise; `404` if the job doesn't exist).
+- **Description:** Signals the media server to stop after the current track; in-flight tracks finish, then the job persists a `paused` snapshot. Supported for **`transcode`, `embeddings`, `peaks`, `segments`** jobs (`400` for a job type that doesn't support pause; `404` if the job doesn't exist).
 - **Returns:**
   ```json
   { "status": "accepted", "message": "Pause requested", "job_id": 17, "job_status": "paused" }
   ```
   _`502` with `{ "status": "error", "detail": "..." }` if the media server can't be reached._
+  _**Resume** (`POST .../resume`, below) is currently `embeddings`-only._
 
 #### Resume a Paused / Interrupted Embeddings Job
 - **`POST /api/v1/admin/processing/jobs/{job_id}/resume`** — `202 Accepted`
@@ -750,6 +780,11 @@ Fire-and-forget batch embedding generation. The POST returns immediately (`202 A
 
 Manage the partner SFTP ingestion pipeline without running server commands.
 
+> **Completion is asynchronous.** After validation passes, the log stays `PROCESSING` while a
+> background task inserts the tracks (the **PERSISTING** stage), then flips to `COMPLETED`. For a
+> large batch, expect a `PROCESSING` window of seconds→minutes. Use the `stage` field (below) for
+> granular progress; the coarse `status` only moves to `COMPLETED` at the very end.
+
 #### List Ingest Logs
 - **`GET /api/v1/admin/ingestion/logs`**
 - **Query params:** `partner_id`, `status` (`PENDING|PROCESSING|COMPLETED|FAILED`), `page`, `page_size`
@@ -764,6 +799,8 @@ Manage the partner SFTP ingestion pipeline without running server commands.
       "package_folder": "/srv/sftp/partners/42/live",
       "batch_filename": "metadata.csv",
       "status": "COMPLETED",
+      "stage": "READY",
+      "stage_timeline": { "VALIDATING": "2026-06-07T09:00:00Z", "MOVED": "...", "PERSISTING": "...", "INGESTED": "...", "READY": "..." },
       "track_count": 10,
       "error_message": null,
       "started_at": "2026-06-07T09:00:00",
@@ -772,10 +809,17 @@ Manage the partner SFTP ingestion pipeline without running server commands.
     }]
   }
   ```
+  - `status` (coarse): `PENDING | PROCESSING | COMPLETED | FAILED`.
+  - `stage` (granular pipeline position): `VALIDATING → MOVED → PERSISTING → INGESTED → EMBEDDING → INDEXED → FINALIZING → READY`, or `FAILED_VALIDATION` / `FAILED`. `stage_timeline` maps each stage entered → UTC timestamp. Use these to render a progress bar.
 
 #### Get Ingest Log Detail (with row errors)
 - **`GET /api/v1/admin/ingestion/logs/{log_id}`**
-- **Returns:** `{ "status": "success", "log": { ...log object... }, "errors": [ { "id": 1, "error_code": "...", "error_message": "...", "error_severity": "...", "reference_node": "..." } ] }`
+- **Returns:** `{ "status": "success", "log": { ...log object (incl. `stage`, `stage_timeline`)... }, "errors": [ { "id": 1, "error_code": "...", "error_message": "...", "error_severity": "...", "reference_node": "..." } ] }`
+
+#### Refresh / Poll a Log from the Media Server
+- **`GET /api/v1/admin/ingestion/logs/{log_id}/status`**
+- **Description:** Actively polls the media server for this batch and advances the DB (validation result → enqueues the background persist). Terminal logs (`COMPLETED`/`FAILED`) return immediately. The list endpoint already auto-refreshes non-terminal logs, so use this only to force a single-log refresh.
+- **Returns:** `{ "status": "success", "remote_status": "pending|completed|...", "log": { ...log object... } }`
 
 #### Manually Trigger Ingestion
 - **`POST /api/v1/admin/ingestion/trigger`** — `202 Accepted`
@@ -824,17 +868,28 @@ Control whether individual partner tracks are searchable (active in the FAISS si
       "is_active": false,
       "partner_id": 42,
       "processing": {
+        "transcode_status": "completed",
         "embedding_status": "pending",
         "peaks_status": "pending",
         "segments_status": "pending",
         "faiss_indexed": false,
+        "transcode_error": null,
+        "embedding_error": null,
+        "peaks_error": null,
+        "segments_error": null,
+        "transcode_completed_at": "2026-06-07T10:00:05",
+        "embedding_completed_at": null,
+        "peaks_completed_at": null,
+        "segments_completed_at": null,
+        "faiss_indexed_at": null,
         "sftp_env": "live",
-        "embedding_error": null
+        "audio_filename": "track01.wav"
       }
     }]
   }
   ```
-  _`processing` is `null` if no processing-status row exists for the track._
+  - `processing` is `null` if no processing-status row exists for the track.
+  - Each `*_status` is `pending | completed | failed` (one per pipeline stage: transcode → embedding → peaks → segments). A **peaks/segments** failure does **not** deactivate the track (it stays searchable, playback-degraded); a **transcode/embedding** failure sets `is_active=false`.
 
 #### Set Track Live (Activate + FAISS Index)
 - **`POST /api/v1/admin/tracks/{track_id}/set-live`**
@@ -867,6 +922,24 @@ Control whether individual partner tracks are searchable (active in the FAISS si
     "remove_result": { "success": true, "data": { "removed": 2 } }
   }
   ```
+
+#### Stop Many Tracks at Once (Batch Takedown)
+- **`POST /api/v1/admin/tracks/stop-batch`**
+- **Description:** Deactivate a set of tracks and remove them from FAISS in **one** operation — the media server removes all their vectors and rebuilds the index **once** (vs once per track if you looped the single-stop endpoint). Use this for bulk takedowns. `400` if `track_ids` is empty; `404` if none match the partner.
+- **Body:**
+  ```json
+  { "partner_id": 42, "track_ids": [101, 102, 103] }
+  ```
+- **Returns:**
+  ```json
+  {
+    "status": "success",
+    "partner_id": 42,
+    "stopped": 3,
+    "remove_result": { "success": true, "data": { "removed": 6, "index_size": 68 } }
+  }
+  ```
+  _`status` is `"partial"` if the media-side removal didn't fully succeed._
 
 ---
 

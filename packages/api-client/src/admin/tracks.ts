@@ -5,12 +5,22 @@ import { API_CONFIG } from "../config";
 // ─── Types ─────────────────────────────────────────────────
 
 export interface TrackProcessingStatus {
+  transcode_status: string;
   embedding_status: string;
   peaks_status: string;
   segments_status: string;
   faiss_indexed: boolean;
-  sftp_env: "live" | "test" | null;
+  transcode_error: string | null;
   embedding_error: string | null;
+  peaks_error: string | null;
+  segments_error: string | null;
+  transcode_completed_at: string | null;
+  embedding_completed_at: string | null;
+  peaks_completed_at: string | null;
+  segments_completed_at: string | null;
+  faiss_indexed_at: string | null;
+  sftp_env: "live" | "test" | null;
+  audio_filename: string | null;
 }
 
 export interface AdminTrack {
@@ -71,6 +81,13 @@ export interface StopTrackResponse {
   remove_result: { success: boolean; data?: { removed: number } };
 }
 
+export interface StopTracksBatchResponse {
+  status: "success" | "partial";
+  partner_id: number;
+  stopped: number;
+  remove_result: { success: boolean; data?: { removed: number; index_size: number } };
+}
+
 // ─── API Calls ─────────────────────────────────────────────
 
 /**
@@ -122,6 +139,26 @@ export const stopTrack = async (
         {},
         { params: { delete_embedding_file: deleteEmbeddingFile } },
       ),
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Batch deactivate tracks and remove them from FAISS in one operation.
+ * POST /api/v1/admin/tracks/stop-batch
+ */
+export const stopTracksBatch = async (
+  partnerId: number,
+  trackIds: number[],
+): Promise<StopTracksBatchResponse> => {
+  try {
+    return await axiosWrapper(
+      authClient.post(API_CONFIG.ENDPOINTS.ADMIN_TRACKS_STOP_BATCH, {
+        partner_id: partnerId,
+        track_ids: trackIds,
+      }),
     );
   } catch (error: any) {
     return handleApiError(error) as any;

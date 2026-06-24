@@ -27,7 +27,8 @@ import {
   GitBranch, 
   Cpu, 
   RefreshCw, 
-  Eye 
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { usePipeline, usePartners } from '@resomix/hooks';
 
@@ -38,6 +39,8 @@ function PipelinePage() {
   const [activeTab, setActiveTab] = useState('1');
   const [ingestModalVisible, setIngestModalVisible] = useState(false);
   const [embeddingsModalVisible, setEmbeddingsModalVisible] = useState(false);
+  const [peaksSegmentsModalVisible, setPeaksSegmentsModalVisible] = useState(false);
+  const [refreshingLogId, setRefreshingLogId] = useState<number | null>(null);
   
   // Row Error modal
   const [errorModalVisible, setErrorModalVisible] = useState(false);
@@ -50,6 +53,7 @@ function PipelinePage() {
 
   const [ingestForm] = Form.useForm();
   const [embeddingsForm] = Form.useForm();
+  const [peaksSegmentsForm] = Form.useForm();
 
   // Load pipeline hooks
   const {
@@ -70,9 +74,11 @@ function PipelinePage() {
     triggerIngest,
     retryIngest,
     triggerEmbeddings,
+    triggerPeaksSegments,
     pauseJob,
     resumeJob,
     getIngestLogDetail,
+    refreshIngestLog,
     handleIngestPageChange,
     handleJobsPageChange,
   } = usePipeline();
@@ -124,7 +130,7 @@ function PipelinePage() {
   // Active Polling when jobs or ingestion is in progress
   useEffect(() => {
     const hasActiveIngest = ingestLogs.some(log => log.status === 'PROCESSING');
-    const hasActiveJob = processingJobs.some(job => job.status === 'running');
+    const hasActiveJob = processingJobs.some(job => job.status === 'running' || job.status === 'finalizing');
     
     if (hasActiveIngest || hasActiveJob) {
       const interval = setInterval(() => {
@@ -175,6 +181,8 @@ function PipelinePage() {
         return <Tag color="processing" icon={<SyncIcon />}>RUNNING</Tag>;
       case 'paused':
         return <Tag color="orange">PAUSED</Tag>;
+      case 'finalizing':
+        return <Tag color="processing" icon={<SyncIcon />}>FINALIZING</Tag>;
       default:
         return <Tag color="default">{status.toUpperCase()}</Tag>;
     }
@@ -227,11 +235,40 @@ function PipelinePage() {
       render: (date: string) => date ? new Date(date).toLocaleString() : 'N/A'
     },
     {
+      title: 'Stage',
+      dataIndex: 'stage',
+      key: 'stage',
+      width: 120,
+      render: (stage: string | null, _record: any) => {
+        if (!stage) return <Text className="text-secondary">—</Text>;
+        const stageColor = stage === 'READY' ? 'success' 
+          : stage.startsWith('FAILED') ? 'error' 
+          : 'processing';
+        return <Tag color={stageColor} className="text-[10px]">{stage}</Tag>;
+      }
+    },
+    {
       title: 'Actions',
       key: 'actions',
       align: 'right' as const,
       render: (_: any, record: any) => (
         <Space>
+          {record.status === 'PROCESSING' && (
+            <Tooltip title="Force Refresh Status">
+              <Button 
+                icon={refreshingLogId === record.id 
+                  ? <Loader2 size={14} className="animate-spin" /> 
+                  : <RefreshCw size={14} />} 
+                disabled={refreshingLogId === record.id}
+                onClick={async () => {
+                  setRefreshingLogId(record.id);
+                  await refreshIngestLog(record.id);
+                  setRefreshingLogId(null);
+                }}
+                className="flex items-center"
+              />
+            </Tooltip>
+          )}
           {record.status === 'FAILED' && (
             <>
               <Tooltip title="View Error Details">
@@ -364,6 +401,7 @@ function PipelinePage() {
         <span className="flex items-center gap-2">
           <GitBranch size={16} />
           <span>SFTP Ingestion runs</span>
+          <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">{ingestPagination.total}</Tag>
         </span>
       ),
       children: (
@@ -434,7 +472,8 @@ function PipelinePage() {
       label: (
         <span className="flex items-center gap-2">
           <Cpu size={16} />
-          <span>Embeddings Processing Jobs</span>
+          <span>Processing Jobs</span>
+          <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">{jobsPagination.total}</Tag>
         </span>
       ),
       children: (
@@ -474,14 +513,23 @@ function PipelinePage() {
               </Button>
             </Space>
 
-            <Button
-              type="primary"
-              icon={<Plus size={16} />}
-              onClick={() => setEmbeddingsModalVisible(true)}
-              className="flex items-center gap-1"
-            >
-              Trigger Embeddings Job
-            </Button>
+            <Space wrap>
+              <Button
+                type="primary"
+                icon={<Plus size={16} />}
+                onClick={() => setEmbeddingsModalVisible(true)}
+                className="flex items-center gap-1"
+              >
+                Trigger Embeddings Job
+              </Button>
+              <Button
+                icon={<Plus size={16} />}
+                onClick={() => setPeaksSegmentsModalVisible(true)}
+                className="flex items-center gap-1"
+              >
+                Trigger Peaks / Segments
+              </Button>
+            </Space>
           </div>
 
           <div className="bg-surface border border-default rounded-xl overflow-hidden shadow-sm">
@@ -600,6 +648,87 @@ function PipelinePage() {
             </Form.Item>
 
             <Form.Item name="only_pending" label="Skip tracks that already have embeddings" valuePropName="checked" className="!mb-0">
+              <Switch />
+            </Form.Item>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* Peaks / Segments Job Trigger Modal */}
+      <Modal
+        title="Trigger Peaks / Segments Job"
+        open={peaksSegmentsModalVisible}
+        onCancel={() => { setPeaksSegmentsModalVisible(false); peaksSegmentsForm.resetFields(); }}
+        onOk={() => peaksSegmentsForm.submit()}
+        okText="Start Job"
+      >
+        <Alert
+          type="info"
+          showIcon
+          message="Playback Asset Generation"
+          description="Generates waveform peaks or HLS segments for partner tracks. Normally auto-spawned after transcode — use this for manual backfills."
+          className="mt-4 mb-2 rounded-xl"
+        />
+        <Form
+          form={peaksSegmentsForm}
+          layout="vertical"
+          className="mt-4"
+          initialValues={{ stage: 'peaks', env: 'live', only_pending: true }}
+          onFinish={async (values: any) => {
+            const success = await triggerPeaksSegments(values.stage, {
+              partner_id: values.partner_id,
+              env: values.env,
+              ingest_log_id: values.ingest_log_id ? parseInt(values.ingest_log_id, 10) : null,
+              only_pending: values.only_pending ?? true,
+            });
+            if (success) {
+              setPeaksSegmentsModalVisible(false);
+              peaksSegmentsForm.resetFields();
+            }
+          }}
+        >
+          <Form.Item
+            name="partner_id"
+            label={<Text strong>Select Partner</Text>}
+            rules={[{ required: true, message: 'Please select a partner' }]}
+          >
+            <Select placeholder="Choose partner">
+              {partners.map(p => (
+                <Option key={p.id} value={p.id}>{p.display_name}</Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="stage"
+            label={<Text strong>Job Stage</Text>}
+          >
+            <Select>
+              <Option value="peaks">Peaks (Waveform data)</Option>
+              <Option value="segments">Segments (HLS playback chunks)</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item 
+            name="env" 
+            label={<Text strong>Environment</Text>}
+          >
+            <Select>
+              <Option value="live">Live</Option>
+              <Option value="test">Test</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item 
+            name="ingest_log_id" 
+            label={<Text strong>Ingest Log ID (Optional)</Text>}
+            extra="Restrict to tracks from one ingest batch. Leave blank for all pending tracks."
+          >
+            <Input placeholder="e.g. 5" type="number" />
+          </Form.Item>
+
+          <div className="flex flex-col gap-4 border border-default p-4 rounded-xl bg-background-secondary mb-4">
+            <Form.Item name="only_pending" label="Skip tracks whose asset already exists" valuePropName="checked" className="!mb-0">
               <Switch />
             </Form.Item>
           </div>
@@ -725,7 +854,17 @@ function PipelinePage() {
                 <Alert 
                   type="success"
                   showIcon
-                  message="Embeddings generated and indexed successfully!"
+                  message="Job completed successfully!"
+                  className="rounded-xl"
+                />
+              )}
+
+              {selectedJob.status === 'finalizing' && (
+                <Alert 
+                  type="info"
+                  showIcon
+                  message="Finalizing — media work is done, applying per-track results."
+                  description="This is a transient state. The job will complete shortly."
                   className="rounded-xl"
                 />
               )}
@@ -811,6 +950,14 @@ function PipelinePage() {
                       {selectedJob.completed_at ? new Date(selectedJob.completed_at).toLocaleString() : 'In progress/incomplete'}
                     </Text>
                   </div>
+                  {selectedJob.finalizing_at && (
+                    <div className="flex justify-between text-sm">
+                      <Text className="text-secondary">Finalizing At:</Text>
+                      <Text className="text-primary font-medium">
+                        {new Date(selectedJob.finalizing_at).toLocaleString()}
+                      </Text>
+                    </div>
+                  )}
                   {selectedJob.started_at && selectedJob.completed_at && (
                     <div className="flex justify-between text-sm border-t border-default pt-2 mt-1">
                       <Text strong className="text-secondary">Total Duration:</Text>

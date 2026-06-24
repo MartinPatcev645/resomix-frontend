@@ -156,13 +156,16 @@ export interface ApiConfig {
     ADMIN_PROCESSING_JOBS: string;
     ADMIN_PROCESSING_JOBS_PAUSE: string;
     ADMIN_PROCESSING_JOBS_RESUME: string;
+    ADMIN_PROCESSING_JOBS_STAGE: string;
 
     // Admin — Ingestion Control
     ADMIN_INGESTION_LOGS: string;
     ADMIN_INGESTION_TRIGGER: string;
+    ADMIN_INGESTION_LOG_STATUS: string;
 
     // Admin — Track Control
     ADMIN_TRACKS: string;
+    ADMIN_TRACKS_STOP_BATCH: string;
 
     // Admin — Webhook delete
     ADMIN_PARTNER_WEBHOOK_DETAIL: string;
@@ -343,11 +346,14 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_PROCESSING_JOBS: "/api/v1/admin/processing/jobs",
     ADMIN_PROCESSING_JOBS_PAUSE: "/api/v1/admin/processing/jobs/{id}/pause",
     ADMIN_PROCESSING_JOBS_RESUME: "/api/v1/admin/processing/jobs/{id}/resume",
+    ADMIN_PROCESSING_JOBS_STAGE: "/api/v1/admin/processing/jobs",
     // Admin — Ingestion Control
     ADMIN_INGESTION_LOGS: "/api/v1/admin/ingestion/logs",
     ADMIN_INGESTION_TRIGGER: "/api/v1/admin/ingestion/trigger",
+    ADMIN_INGESTION_LOG_STATUS: "/api/v1/admin/ingestion/logs",
     // Admin — Track Control
     ADMIN_TRACKS: "/api/v1/admin/tracks",
+    ADMIN_TRACKS_STOP_BATCH: "/api/v1/admin/tracks/stop-batch",
     // Admin — Webhook CRUD (detail/delete by ID)
     ADMIN_PARTNER_WEBHOOK_DETAIL: "/api/v1/admin/partners/webhooks",
   },
