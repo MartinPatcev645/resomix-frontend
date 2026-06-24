@@ -14,7 +14,6 @@ a lightweight, records-omitted snapshot) and applies them in idempotent bulk chu
 is idempotent and the job's terminal status short-circuits a duplicate.
 """
 
-import asyncio
 import logging
 
 from app.core.context import set_admin_context, set_current_partner_id
@@ -23,6 +22,7 @@ from app.models.partner_processing_job import PartnerProcessingJob
 from app.services.hetzner_service import HetznerService
 from app.services import partner_processing_service as pps
 from .celery_app import celery_app
+from .async_runner import run_async_task
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ async def _async_finalize_processing_job(job_id: int) -> None:
 def finalize_processing_job(self, job_id: int) -> None:
     """Apply a terminal transcode/embeddings job's per-track results (bulk) + finalize it."""
     try:
-        asyncio.run(_async_finalize_processing_job(int(job_id)))
+        run_async_task(_async_finalize_processing_job(int(job_id)))
     except Exception as exc:  # transient (DB blip, media unreachable) → retry
         logger.error("[finalize-task] job %s failed: %s", job_id, exc, exc_info=True)
         raise self.retry(exc=exc)

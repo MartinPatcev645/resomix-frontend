@@ -13,7 +13,6 @@ Resumable + safe to re-run: ``persist_records_chunked`` skips uuids already inse
 worker that dies mid-run is simply re-enqueued by the next poll (the PERSISTING-stale check).
 """
 
-import asyncio
 import logging
 
 from app.core.context import set_admin_context, set_current_partner_id
@@ -22,6 +21,7 @@ from app.models.b2b import IngestLog
 from app.services.hetzner_service import HetznerService
 from app.services.ingestion_persist import persist_records_chunked
 from .celery_app import celery_app
+from .async_runner import run_async_task
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ async def _async_persist_and_finalize(log_id: int) -> None:
 def persist_and_finalize_ingestion(self, log_id: int) -> None:
     """Insert a validated batch into the DB (idempotent, chunked) then finalize the log."""
     try:
-        asyncio.run(_async_persist_and_finalize(int(log_id)))
+        run_async_task(_async_persist_and_finalize(int(log_id)))
     except Exception as exc:  # transient (DB blip, media unreachable) → retry
         logger.error("[persist-task] log %s failed: %s", log_id, exc, exc_info=True)
         raise self.retry(exc=exc)

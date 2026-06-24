@@ -22,6 +22,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.context import set_current_partner_id
 from app.models.partner import PartnerWebhook, WebhookDeliveryLog
+from .async_runner import run_async_task
 from database.connection import AsyncSessionLocal
 from .celery_app import celery_app
 
@@ -196,7 +197,7 @@ def dispatch_webhook(
     Celery task to dispatch a B2B partner webhook event.
     Executes the underlying async logic in a synchronous celery execution frame.
     """
-    asyncio.run(_async_dispatch_webhook(
+    run_async_task(_async_dispatch_webhook(
         partner_id=partner_id,
         event_type=event_type,
         payload=payload,
