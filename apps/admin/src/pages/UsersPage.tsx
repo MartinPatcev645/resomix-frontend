@@ -316,7 +316,10 @@ function UsersPage() {
       {/* ── Page Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
-          <Title level={2} className="!mb-1 !text-primary">User Management</Title>
+          <Title level={2} className="!mb-1 !text-primary flex items-center gap-3">
+            <span>User Management</span>
+            <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{pagination.total} users</Tag>
+          </Title>
           <Text className="text-secondary text-base">Oversee platform users, roles, and security permissions.</Text>
         </div>
         <Button

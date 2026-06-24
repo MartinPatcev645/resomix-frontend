@@ -3,6 +3,7 @@ import ContactTableControls from '@/components/contact/ContactTableControls.tsx'
 import ContactTable from '@/components/contact/ContactTable.tsx'
 import { useStatusModals, useConfirmDialog } from '@resomix/hooks'
 import { StatusModal } from '@resomix/ui'
+import { Tag } from 'antd'
 
 function ContactPage() {
   // Use reusable hooks
@@ -66,7 +67,10 @@ function ContactPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary">Contact</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary flex items-center gap-3">
+        <span>Contact</span>
+        <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{pagination.total} submissions</Tag>
+      </h1>
 
       <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6 overflow-hidden">
         {/* Table Controls */}

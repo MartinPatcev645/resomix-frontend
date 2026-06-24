@@ -247,7 +247,10 @@ function TracksPage() {
       <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
         {modalContextHolder}
         <div className="mb-8">
-          <Title level={2} className="!mb-1 !text-primary">Tracks Control</Title>
+          <Title level={2} className="!mb-1 !text-primary flex items-center gap-3">
+            <span>Tracks Control</span>
+            <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{partnersPagination.total} partners</Tag>
+          </Title>
           <Text className="text-secondary text-base">Select a partner to manage and activate their tracks.</Text>
         </div>
 
@@ -386,8 +389,9 @@ function TracksPage() {
         >
           <ArrowLeft size={16} /> Back to Partners
         </Button>
-        <Title level={2} className="!mb-1 !text-primary">
-          Tracks Control: <span className="text-secondary font-medium">{selectedPartnerObj?.display_name || `Partner #${partnerFilter}`}</span>
+        <Title level={2} className="!mb-1 !text-primary flex items-center gap-3">
+          <span>Tracks Control: <span className="text-secondary font-medium">{selectedPartnerObj?.display_name || `Partner #${partnerFilter}`}</span></span>
+          <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{pagination.total} tracks</Tag>
         </Title>
         <Text className="text-secondary text-base">Activate partner tracks to make them searchable, or remove them from indexing engines.</Text>
       </div>

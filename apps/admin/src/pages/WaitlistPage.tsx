@@ -3,6 +3,7 @@ import WaitlistTableControls from '@/components/waitlist/WaitlistTableControls.t
 import WaitlistTable from '@/components/waitlist/WaitlistTable.tsx'
 import { useStatusModals, useConfirmDialog } from '@resomix/hooks'
 import { StatusModal } from '@resomix/ui'
+import { Tag } from 'antd'
 
 function WaitlistPage() {
   // Use reusable hooks
@@ -66,7 +67,10 @@ function WaitlistPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary">Waitlist</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary flex items-center gap-3">
+        <span>Waitlist</span>
+        <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{pagination.total} entries</Tag>
+      </h1>
 
       <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6 overflow-hidden">
         {/* Table Controls */}

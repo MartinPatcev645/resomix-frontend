@@ -1,4 +1,4 @@
-import { App } from 'antd'
+import { App, Tag } from 'antd'
 import { usePlaylist } from '@/hooks/usePlaylist.ts'
 import PlaylistTableControls from '@/components/playlist/PlaylistTableControls.tsx'
 import PlaylistTable from '@/components/playlist/PlaylistTable.tsx'
@@ -68,7 +68,10 @@ function PlaylistsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary">Playlists</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-primary flex items-center gap-3">
+        <span>Playlists</span>
+        <Tag color="blue" className="text-sm font-semibold rounded-full px-3 py-0.5 m-0">{pagination.total} playlists</Tag>
+      </h1>
 
       <div className="bg-surface rounded-lg shadow border border-default transition-colors p-3 md:p-6 overflow-hidden">
         {/* Table Controls */}

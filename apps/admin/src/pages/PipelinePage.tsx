@@ -401,6 +401,7 @@ function PipelinePage() {
         <span className="flex items-center gap-2">
           <GitBranch size={16} />
           <span>SFTP Ingestion runs</span>
+          <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">{ingestPagination.total}</Tag>
         </span>
       ),
       children: (
@@ -472,6 +473,7 @@ function PipelinePage() {
         <span className="flex items-center gap-2">
           <Cpu size={16} />
           <span>Processing Jobs</span>
+          <Tag color="blue" className="text-[10px] font-semibold rounded-full px-2 py-0.5 m-0">{jobsPagination.total}</Tag>
         </span>
       ),
       children: (
