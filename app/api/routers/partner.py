@@ -49,7 +49,23 @@ async def mint_playback_token(
     Hetzner playback/serving requests for the duration of its TTL, and Hetzner
     resolves partner-scoped assets directly from the verified claim — no database
     access or per-request API-key validation required on the edge.
+
+    **§9.2 playback gate (the single choke point):** only ``similarity_playback``
+    partners may mint a playback token. Hetzner trusts the signed token, so refusing
+    to mint it here is what blocks ``similarity_only`` partners from fetching any
+    playback asset (peaks/segments/audio) — HTTP 403.
     """
+    if (partner.service_mode or "").lower() != "similarity_playback":
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content=jsonable_encoder(format_response(
+                success=False,
+                error="Playback is not enabled for this partner. "
+                      "This account is 'similarity_only' (search only); upgrade to "
+                      "'similarity_playback' to stream audio.",
+            )),
+        )
+
     client_ip = _extract_client_ip(request)
     token_data = generate_playback_token(partner_id=partner.id, client_ip=client_ip)
 

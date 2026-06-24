@@ -18,11 +18,24 @@ from app.api.dependencies.partner import get_current_partner
 
 class _FakePartner:
     id = 99
+    service_mode = "similarity_playback"   # playback-enabled
+
+
+class _SearchOnlyPartner:
+    id = 99
+    service_mode = "similarity_only"       # search only → must be refused the token
 
 
 @pytest.fixture
 def override_partner():
     app.dependency_overrides[get_current_partner] = lambda: _FakePartner()
+    yield
+    app.dependency_overrides.pop(get_current_partner, None)
+
+
+@pytest.fixture
+def override_partner_search_only():
+    app.dependency_overrides[get_current_partner] = lambda: _SearchOnlyPartner()
     yield
     app.dependency_overrides.pop(get_current_partner, None)
 
@@ -46,6 +59,19 @@ async def test_mint_playback_token_returns_valid_jwt(override_partner):
     assert payload["partner_id"] == 99
     assert payload["scope"] == "playback"
     assert "exp" in payload
+
+
+@pytest.mark.asyncio
+async def test_playback_token_403_for_similarity_only(override_partner_search_only):
+    """§9.2 gate: a similarity_only (search-only) partner must NOT be able to mint a
+    playback token — 403, so it can never fetch playback assets from the edge."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.post("/api/v1/partner/playback-token")
+    assert resp.status_code == 403
+    body = resp.json()
+    assert body.get("success") is False
+    assert "playback" in (body.get("error") or "").lower()
 
 
 @pytest.mark.asyncio

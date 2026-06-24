@@ -41,6 +41,10 @@ _ERR_MAX = 2000  # cap stored per-track error message length
 # A job stuck at status='finalizing' this long means the finalize worker likely died →
 # a poll re-enqueues the (idempotent) finalize task.
 _FINALIZE_STALE_SECONDS = int(os.getenv("PROCESSING_FINALIZE_STALE_SECONDS", "900") or 900)
+# Whether to register per-track embedding .npy artifacts as `document_files` rows (so they show
+# in the admin file browser). That's 2 rows per track — 2M rows for a 1M-track partner — so it can
+# be turned OFF for very large partners. Default ON (preserves existing behaviour).
+_REGISTER_EMBED_ARTIFACTS = (os.getenv("REGISTER_EMBEDDING_ARTIFACTS", "true") or "true").lower() not in ("0", "false", "no")
 
 # Per-stage TrackProcessingStatus column names (status / error / completed-at).
 _STAGE_FIELDS = {
@@ -674,8 +678,9 @@ async def _apply_track_results_bulk(
                     sa_update(Track).where(Track.id.in_(fail_track_ids)).values(is_active=False)
                 )
 
-            # Embeddings artifacts (best-effort; bulk + skip-existing).
-            if job_type == "embeddings" and ingest_log_id:
+            # Embeddings artifacts (best-effort; bulk + skip-existing). Skippable via
+            # REGISTER_EMBEDDING_ARTIFACTS=false for very large partners (2 rows/track).
+            if job_type == "embeddings" and ingest_log_id and _REGISTER_EMBED_ARTIFACTS:
                 ok_artifacts = [
                     (r["track_uuid"], by_uuid[r["track_uuid"]][1], by_uuid[r["track_uuid"]][3])
                     for r in ok if r.get("track_uuid") in by_uuid

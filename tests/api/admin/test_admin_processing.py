@@ -1161,3 +1161,31 @@ async def test_pause_peaks_job_via_http(admin_auth_headers, seeded):
     assert res.status_code == 200
     assert res.json()["job_status"] == "paused"
     assert mock_pause.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_embedding_artifacts_skipped_when_knob_off(seeded, monkeypatch):
+    """REGISTER_EMBEDDING_ARTIFACTS=false → embeddings apply sets status but writes NO
+    document_files artifact rows (the per-track-row cap knob for very large partners)."""
+    from sqlalchemy import select, func
+    from app.services import partner_processing_service as pps
+    from app.models.document_file import DocumentFile
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    monkeypatch.setattr(pps, "_REGISTER_EMBED_ARTIFACTS", False)
+
+    await pps._apply_track_results_bulk(
+        partner_id, "embeddings",
+        [{"track_uuid": seeded["track"].uuid, "status": "ok"}],
+        ingest_log_id=seeded["log"].id,
+    )
+
+    async with AsyncSessionLocal() as db:
+        n = (await db.execute(select(func.count()).select_from(DocumentFile).where(
+            DocumentFile.track_id == seeded["track"].id))).scalar()
+        assert n == 0  # knob off → no artifact rows created
+        tps = (await db.execute(select(TrackProcessingStatus).where(
+            TrackProcessingStatus.track_id == seeded["track"].id))).scalar_one()
+        assert tps.embedding_status == "completed"  # status still applied

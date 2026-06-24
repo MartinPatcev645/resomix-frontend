@@ -359,13 +359,19 @@ These endpoints are called by a B2B partner using their API key (`Authorization:
 - **`GET /api/v1/partner/me`** — Requires Partner API Key
 - **Returns:**
   ```json
-  { "success": true, "data": { "id": 1, "name": "...", "tier": "growth", "is_active": true } }
+  { "success": true, "data": {
+      "id": 1, "partner_uuid": "...", "legal_name": "...", "display_name": "...",
+      "contact_email": "...", "tier": "growth", "service_mode": "similarity_only",
+      "is_active": true, "onboarded_at": "..."
+  } }
   ```
+- **`service_mode`** is `"similarity_only"` (search only) or `"similarity_playback"` (search + audio playback). Use it to decide whether to show play/stream controls — only `similarity_playback` partners can mint a playback token (§17.2).
 
 ### 17.2 Mint Playback Token (Valet Auth)
 - **`POST /api/v1/partner/playback-token`** — Requires Partner API Key
 - **Description:** Exchange the partner API key for a short-lived HS256 "valet" JWT. This token can be attached to Hetzner media-serving requests so they resolve partner-scoped assets without a database lookup per request.
-- **Returns:**
+- **🔒 Playback gate:** only **`similarity_playback`** partners can mint this token. A **`similarity_only`** (search-only) partner gets **`403`** — and since the media edge trusts this token, that partner can never fetch playback assets. The frontend should **hide play controls** when `service_mode` (from `GET /partner/me`) is `similarity_only` rather than calling this and handling a 403.
+- **Returns (`200`):**
   ```json
   {
     "success": true,
@@ -377,6 +383,7 @@ These endpoints are called by a B2B partner using their API key (`Authorization:
     }
   }
   ```
+- **`403`** (search-only partner): `{ "success": false, "error": "Playback is not enabled for this partner. ..." }`
 
 ### 17.3 Track Deletion Audit Log
 - **`GET /api/v1/partner/deletion-log`** — Requires Partner API Key
