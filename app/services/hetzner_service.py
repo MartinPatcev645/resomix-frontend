@@ -599,7 +599,8 @@ class HetznerService:
             return {"success": False, "error": f"Connection error: {str(e)}"}
 
     async def get_embeddings_status(
-        self, partner_id: int, job_id: int
+        self, partner_id: int, job_id: int,
+        include_records: bool = True, timeout: float = 30.0,
     ) -> Dict[str, Any]:
         """
         Poll the Hetzner media server for the current state of an embeddings job.
@@ -611,17 +612,21 @@ class HetznerService:
         Args:
             partner_id: ID of the partner being processed.
             job_id: Alwyzon ``partner_processing_jobs.id`` — the cross-server job key.
+            include_records: progress polls pass False to skip the per-track results array
+                (large for a big batch); only the background finalize fetches it (True).
+            timeout: HTTP timeout; bump it when fetching results for a huge batch.
         """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
 
         base_url = self.hetzner_url.rstrip("/")
         headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        params = {"include_records": "true" if include_records else "false"}
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.get(
                     f"{base_url}/internal/process/embeddings/status/{partner_id}/{job_id}",
-                    headers=headers,
+                    headers=headers, params=params,
                 )
                 if resp.status_code == 200:
                     return {"success": True, "data": resp.json()}

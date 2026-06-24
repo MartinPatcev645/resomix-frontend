@@ -63,6 +63,9 @@ class PartnerProcessingJob(Base):
     )
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # Set when a background finalize (terminal result-apply) is claimed; lets a poll detect
+    # a dead worker (stale 'finalizing') and re-enqueue the idempotent task.
+    finalizing_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     partner: Mapped["Partner"] = relationship("Partner", foreign_keys=[partner_id])

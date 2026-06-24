@@ -15,13 +15,14 @@ can surface them. The state-machine itself lives in ``track_processing_status``.
 """
 
 import logging
-from datetime import datetime
+import os
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import select, update as sa_update
 
 from database.connection import AsyncSessionLocal
-from app.core.context import set_current_partner_id
+from app.core.context import set_current_partner_id, set_admin_context
 from app.models.partner_processing_job import PartnerProcessingJob
 from app.models.track_processing_status import TrackProcessingStatus
 from app.models.track import Track
@@ -29,6 +30,23 @@ from app.models.document_file import DocumentFile
 from app.services.hetzner_service import HetznerService
 
 logger = logging.getLogger(__name__)
+
+# Per-chunk size for the bulk terminal result-apply (kept off the request in a Celery
+# task). Each chunk is one bulk SELECT + a few bulk UPDATEs, committed in its own session.
+_APPLY_CHUNK = max(1, int(os.getenv("PROCESSING_APPLY_CHUNK", "1000") or 1000))
+# Cap how many per-track error samples/filenames we accumulate in memory + persist (a
+# pathological all-failed 1M batch must not build a 1M-entry list). Counts stay exact.
+_MAX_REPORTED = 100
+_ERR_MAX = 2000  # cap stored per-track error message length
+# A job stuck at status='finalizing' this long means the finalize worker likely died →
+# a poll re-enqueues the (idempotent) finalize task.
+_FINALIZE_STALE_SECONDS = int(os.getenv("PROCESSING_FINALIZE_STALE_SECONDS", "900") or 900)
+
+# Per-stage TrackProcessingStatus column names (status / error / completed-at).
+_STAGE_FIELDS = {
+    "transcode": ("transcode_status", "transcode_error", "transcode_completed_at"),
+    "embeddings": ("embedding_status", "embedding_error", "embedding_completed_at"),
+}
 
 hetzner_service = HetznerService()
 
@@ -112,47 +130,6 @@ async def _collect_targets(
             }
         )
     return targets
-
-
-async def _register_embedding_artifacts(
-    db,
-    target: Dict[str, Any],
-    partner_id: int,
-    ingest_log_id: Optional[int],
-) -> None:
-    """
-    Best-effort: register the generated embedding files as document_files rows so
-    they appear in the admin file browser. The files physically live on Hetzner;
-    we store a logical reference path. Skipped silently if required FKs are missing.
-    """
-    party_id = target.get("party_id")
-    if not party_id or ingest_log_id is None:
-        return
-    uuid = target["track_uuid"]
-    for engine, doc_type in (("maest", "embedding_maest"), ("discogs", "embedding_discogs")):
-        # Avoid duplicate registration.
-        existing = (
-            await db.execute(
-                select(DocumentFile.id).where(
-                    DocumentFile.track_id == target["track_id"],
-                    DocumentFile.doc_type == doc_type,
-                )
-            )
-        ).first()
-        if existing:
-            continue
-        db.add(
-            DocumentFile(
-                party_id=party_id,
-                ingest_log_id=ingest_log_id,
-                track_id=target["track_id"],
-                partner_id=partner_id,
-                original_filename=f"{uuid}.npy",
-                stored_path=f"internal/embeddings/{engine}/{uuid}.npy",
-                mime_type="application/octet-stream",
-                doc_type=doc_type,
-            )
-        )
 
 
 # Job states that are final — no further Hetzner polling needed.
@@ -377,23 +354,205 @@ _STAGE_FAIL_VERB = {
 async def _notify_job_failures(
     db, partner_id: int, kind: str, failed_files: List[str], succeeded: int, failed: int
 ) -> None:
-    """Email partner + admin (with the top-25 failed filenames) when a stage job has
-    per-track failures. Best-effort — never breaks the job finalize."""
-    if not failed_files:
+    """Email partner + admin (with up to 25 sample failed filenames) when a stage job has
+    per-track failures. ``failed`` is the TRUE failure count (``failed_files`` may be a
+    capped sample). Best-effort — never breaks the job finalize."""
+    if failed <= 0:
         return
     try:
         from app.services.notification_service import NotificationService
         verb = _STAGE_FAIL_VERB.get(kind, "failed")
-        more = "" if len(failed_files) <= 25 else f" (+{len(failed_files) - 25} more)"
+        shown = failed_files[:25]
+        more = "" if failed <= len(shown) else f" (+{failed - len(shown)} more)"
         await NotificationService().notify_partner_operation(
             db, partner_id, kind, "failed",
-            summary=f"{len(failed_files)} track(s) {verb} and were skipped.",
-            title=f"{kind.capitalize()} — {len(failed_files)} track(s) failed",
-            details=[fn for fn in failed_files[:25]] + ([more.strip()] if more else []),
+            summary=f"{failed} track(s) {verb} and were skipped.",
+            title=f"{kind.capitalize()} — {failed} track(s) failed",
+            details=list(shown) + ([more.strip()] if more else []),
             counts={"Succeeded": succeeded, "Failed": failed},
         )
     except Exception as exc:  # notification must never break the pipeline
         logger.error(f"[ProcessingService] failure notification ({kind}) errored: {exc}")
+
+
+async def _register_embedding_artifacts_bulk(
+    db, partner_id: int, ingest_log_id: int, ok_rows: List[Tuple[str, int, Any]]
+) -> None:
+    """Bulk-register embedding .npy ``document_files`` for the ok tracks (both engines),
+    skipping any that already exist — ONE existence query + bulk add (vs 2 SELECT + 2 add
+    per track). ``ok_rows`` = list of (uuid, track_id, party_id)."""
+    rows = [(u, tid, p) for (u, tid, p) in ok_rows if p]
+    if not rows:
+        return
+    track_ids = [tid for _u, tid, _p in rows]
+    existing = set()
+    res = await db.execute(
+        select(DocumentFile.track_id, DocumentFile.doc_type).where(
+            DocumentFile.track_id.in_(track_ids),
+            DocumentFile.doc_type.in_(["embedding_maest", "embedding_discogs"]),
+        )
+    )
+    for tid, dt in res.all():
+        existing.add((tid, dt))
+    for uuid, track_id, party_id in rows:
+        for engine, doc_type in (("maest", "embedding_maest"), ("discogs", "embedding_discogs")):
+            if (track_id, doc_type) in existing:
+                continue
+            db.add(DocumentFile(
+                party_id=party_id, ingest_log_id=ingest_log_id, track_id=track_id,
+                partner_id=partner_id, original_filename=f"{uuid}.npy",
+                stored_path=f"internal/embeddings/{engine}/{uuid}.npy",
+                mime_type="application/octet-stream", doc_type=doc_type,
+            ))
+
+
+async def _apply_track_results_bulk(
+    partner_id: int, job_type: str, results: List[Dict[str, Any]],
+    ingest_log_id: Optional[int], dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Apply per-track transcode/embedding outcomes to ``track_processing_status`` + ``tracks``
+    in BULK, chunked with a fresh committed session per chunk.
+
+    This replaces the old per-result ``SELECT``-then-mutate loop that ran inline in the admin
+    poll — at 50k–1M tracks that was N queries in one giant request-bound transaction and would
+    hang. Here each chunk is one bulk SELECT (uuid→row map) + a handful of bulk UPDATEs, so the
+    whole apply is O(total/chunk) statements and never holds a batch-sized transaction.
+    Idempotent (re-running sets the same terminal statuses), so a re-enqueue is safe.
+
+    Returns ``{processed, failed, indexed, failed_files (≤100 sample), errors (≤100 sample)}``.
+    ``processed``/``failed`` are exact counts; the sample lists are capped for memory.
+    """
+    status_col, error_col, completed_col = _STAGE_FIELDS[job_type]
+    processed = 0
+    failed = 0
+    indexed = 0
+    failed_files: List[str] = []
+    errors: List[Dict[str, Any]] = []
+    now = datetime.utcnow()
+
+    for i in range(0, len(results), _APPLY_CHUNK):
+        chunk = results[i:i + _APPLY_CHUNK]
+        ok = [r for r in chunk if r.get("status") == "ok"]
+        bad = [r for r in chunk if r.get("status") != "ok"]
+        processed += len(ok)
+        failed += len(bad)
+
+        if dry_run:
+            for r in bad:
+                if len(errors) < _MAX_REPORTED:
+                    errors.append({"track_uuid": r.get("track_uuid"), "message": r.get("message") or "error"})
+                if len(failed_files) < _MAX_REPORTED:
+                    failed_files.append(r.get("track_uuid") or "unknown")
+            continue
+
+        chunk_uuids = [r.get("track_uuid") for r in chunk if r.get("track_uuid")]
+        async with AsyncSessionLocal() as db:
+            set_admin_context(True)
+            set_current_partner_id(partner_id)
+            rows = (await db.execute(
+                select(
+                    TrackProcessingStatus.id, TrackProcessingStatus.track_id,
+                    TrackProcessingStatus.audio_filename, Track.uuid, Track.party_id,
+                )
+                .join(Track, Track.id == TrackProcessingStatus.track_id)
+                .where(Track.uuid.in_(chunk_uuids), TrackProcessingStatus.partner_id == partner_id)
+            )).all()
+            # uuid -> (tps_id, track_id, filename, party_id)
+            by_uuid = {uuid: (tps_id, tid, fn, party) for tps_id, tid, fn, uuid, party in rows}
+
+            # OK: bulk status update + bulk faiss_indexed for the indexed subset (embeddings).
+            ok_tps = [by_uuid[r["track_uuid"]][0] for r in ok if r.get("track_uuid") in by_uuid]
+            if ok_tps:
+                await db.execute(
+                    sa_update(TrackProcessingStatus).where(TrackProcessingStatus.id.in_(ok_tps))
+                    .values(**{status_col: "completed", error_col: None, completed_col: now})
+                )
+            if job_type == "embeddings":
+                idx_tps = [
+                    by_uuid[r["track_uuid"]][0] for r in ok
+                    if r.get("track_uuid") in by_uuid and (r.get("maest_indexed") or r.get("discogs_indexed"))
+                ]
+                indexed += len(idx_tps)
+                if idx_tps:
+                    await db.execute(
+                        sa_update(TrackProcessingStatus).where(TrackProcessingStatus.id.in_(idx_tps))
+                        .values(faiss_indexed=True, faiss_indexed_at=now)
+                    )
+
+            # FAILED: per-row message differs → small loop (failures are the exception, not
+            # the rule). Collect track_ids to deactivate in one bulk UPDATE.
+            fail_track_ids: List[int] = []
+            for r in bad:
+                u = r.get("track_uuid")
+                raw_msg = r.get("message") or "Unknown error"
+                if len(errors) < _MAX_REPORTED:
+                    errors.append({"track_uuid": u, "message": raw_msg})
+                if u in by_uuid:
+                    tps_id, tid, fn, _party = by_uuid[u]
+                    if len(failed_files) < _MAX_REPORTED:
+                        failed_files.append(fn or u or "unknown")
+                    fail_track_ids.append(tid)
+                    await db.execute(
+                        sa_update(TrackProcessingStatus).where(TrackProcessingStatus.id == tps_id)
+                        .values(**{status_col: "failed", error_col: raw_msg[:_ERR_MAX]})
+                    )
+                elif len(failed_files) < _MAX_REPORTED:
+                    failed_files.append(u or "unknown")
+            if fail_track_ids:
+                # No mp3 (transcode) / no vector (embedding) → unusable → exclude from
+                # catalog + search (the catalog query filters is_active != False).
+                await db.execute(
+                    sa_update(Track).where(Track.id.in_(fail_track_ids)).values(is_active=False)
+                )
+
+            # Embeddings artifacts (best-effort; bulk + skip-existing).
+            if job_type == "embeddings" and ingest_log_id:
+                ok_artifacts = [
+                    (r["track_uuid"], by_uuid[r["track_uuid"]][1], by_uuid[r["track_uuid"]][3])
+                    for r in ok if r.get("track_uuid") in by_uuid
+                ]
+                try:
+                    await _register_embedding_artifacts_bulk(db, partner_id, ingest_log_id, ok_artifacts)
+                except Exception as art_ex:
+                    logger.warning(f"[ProcessingService] bulk artifact registration failed: {art_ex}")
+
+            await db.commit()
+
+    return {"processed": processed, "failed": failed, "indexed": indexed,
+            "failed_files": failed_files, "errors": errors}
+
+
+def _finalize_stale(job: PartnerProcessingJob) -> bool:
+    """True if a job has been stuck at status='finalizing' too long (worker likely died)."""
+    if job.finalizing_at is None:
+        return True
+    return (datetime.utcnow() - job.finalizing_at).total_seconds() > _FINALIZE_STALE_SECONDS
+
+
+async def claim_and_enqueue_finalize(db, job: PartnerProcessingJob) -> PartnerProcessingJob:
+    """The media job is terminal → hand the (potentially huge) per-track result-apply to a
+    background task instead of doing it in the poll request. Row-locked claim so concurrent
+    polls don't enqueue duplicates; a stale 'finalizing' (dead worker) re-enqueues."""
+    set_current_partner_id(job.partner_id)
+    locked = (await db.execute(
+        select(PartnerProcessingJob).where(PartnerProcessingJob.id == job.id).with_for_update()
+    )).scalar_one()
+    if locked.status in TERMINAL_JOB_STATES:
+        await db.commit()
+        return locked
+    if locked.status == "finalizing" and not _finalize_stale(locked):
+        await db.commit()  # already being finalized → release lock, report progress
+        return locked
+    locked.status = "finalizing"
+    locked.finalizing_at = datetime.utcnow()
+    await db.commit()
+    try:
+        from app.tasks.processing_tasks import finalize_processing_job
+        finalize_processing_job.delay(locked.id)
+        logger.info(f"[ProcessingService] enqueued background finalize for {locked.job_type} job {locked.id}.")
+    except Exception as exc:
+        logger.error(f"[ProcessingService] failed to enqueue finalize for job {locked.id}: {exc}")
+    return locked
 
 
 async def apply_transcode_result(
@@ -419,41 +578,14 @@ async def apply_transcode_result(
         await db.commit()
         return job
 
+    # Terminal: apply per-track outcomes in BULK (chunked, own sessions — never an N-query
+    # in-request loop), then finalize the job row here.
     results = state.get("results", []) or []
-    now = datetime.utcnow()
-    processed = 0
-    failed = 0
-    errors: List[Dict[str, Any]] = []
-    failed_files: List[str] = []
-    for r in results:
-        uuid = r.get("track_uuid")
-        ok = r.get("status") == "ok"
-        row = (
-            await db.execute(
-                select(TrackProcessingStatus, Track)
-                .join(Track, Track.id == TrackProcessingStatus.track_id)
-                .where(Track.uuid == uuid, TrackProcessingStatus.partner_id == partner_id)
-                .limit(1)
-            )
-        ).first()
-        tps, track = (row[0], row[1]) if row else (None, None)
-        if ok:
-            processed += 1
-            if tps is not None:
-                tps.transcode_status = "completed"
-                tps.transcode_completed_at = now
-                tps.transcode_error = None
-        else:
-            failed += 1
-            msg = r.get("message") or "Unknown transcode error"
-            errors.append({"track_uuid": uuid, "message": msg})
-            failed_files.append((tps.audio_filename if tps and tps.audio_filename else uuid) or "unknown")
-            if tps is not None:
-                tps.transcode_status = "failed"
-                tps.transcode_error = msg
-            # No mp3 → embedding/peaks/segments can't run → the track is unusable.
-            if track is not None:
-                track.is_active = False
+    summary = await _apply_track_results_bulk(partner_id, "transcode", results, ingest_log_id)
+    processed = summary["processed"]
+    failed = summary["failed"]
+    errors = summary["errors"]
+    failed_files = summary["failed_files"]
 
     job.processed_tracks = processed
     job.failed_tracks = failed
@@ -461,12 +593,13 @@ async def apply_transcode_result(
         job.status = "failed"
         job.error_details = {
             "error": state.get("error_message") or "Media server reported failure",
-            **({"failures": errors} if errors else {}),
+            **({"failures": errors, "failed_count": failed} if errors else {}),
         }
     else:
-        job.error_details = {"failures": errors} if errors else None
+        job.error_details = {"failures": errors, "failed_count": failed} if errors else None
         job.status = "completed" if failed == 0 else ("failed" if processed == 0 else "partial")
     job.completed_at = datetime.utcnow()
+    job.finalizing_at = None
     await db.commit()
 
     # Notify partner + admin about any tracks that failed to transcode.
@@ -610,60 +743,17 @@ async def apply_embeddings_result(
     # A mid-run crash on Hetzner reports status="failed" *with* partial results, so
     # we always persist the per-track outcomes we did get, then let the media-server
     # status decide the final job state (a crash must never be reported as success).
+    # Apply per-track outcomes in BULK (chunked, own sessions) — no N-query in-request loop.
+    # Sets embedding_status/error, faiss_indexed for the indexed subset, deactivates failed
+    # tracks, and bulk-registers embedding artifacts. dry_run (test env) computes counts only.
     results = state.get("results", []) or []
-    processed = 0
-    failed = 0
-    errors: List[Dict[str, Any]] = []
-    failed_files: List[str] = []
-    now = datetime.utcnow()
-
-    for r in results:
-        uuid = r.get("track_uuid")
-        ok = r.get("status") == "ok"
-
-        # Re-derive the track + its processing-status row by uuid.
-        row = (
-            await db.execute(
-                select(TrackProcessingStatus, Track)
-                .join(Track, Track.id == TrackProcessingStatus.track_id)
-                .where(Track.uuid == uuid, TrackProcessingStatus.partner_id == partner_id)
-                .limit(1)
-            )
-        ).first()
-        tps, track = (row[0], row[1]) if row else (None, None)
-
-        if ok:
-            processed += 1
-            if not dry_run and tps is not None:
-                tps.embedding_status = "completed"
-                tps.embedding_completed_at = now
-                tps.embedding_error = None
-                if r.get("maest_indexed") or r.get("discogs_indexed"):
-                    tps.faiss_indexed = True
-                    tps.faiss_indexed_at = now
-                # Register embedding artifacts (best-effort).
-                if track is not None:
-                    target = {
-                        "track_uuid": track.uuid,
-                        "track_id": track.id,
-                        "party_id": track.party_id,
-                    }
-                    try:
-                        await _register_embedding_artifacts(db, target, partner_id, ingest_log_id)
-                    except Exception as art_ex:
-                        logger.warning(f"Artifact registration failed for {uuid}: {art_ex}")
-        else:
-            failed += 1
-            msg = r.get("message") or "Unknown embedding error"
-            errors.append({"track_uuid": uuid, "message": msg})
-            failed_files.append((tps.audio_filename if tps and tps.audio_filename else uuid) or "unknown")
-            if not dry_run and tps is not None:
-                tps.embedding_status = "failed"
-                tps.embedding_error = msg
-            # No vector → the track can't be a similarity result or a usable reference.
-            # Deactivate it so it never appears in the partner catalog/search as broken.
-            if not dry_run and track is not None:
-                track.is_active = False
+    summary = await _apply_track_results_bulk(
+        partner_id, "embeddings", results, ingest_log_id, dry_run=dry_run
+    )
+    processed = summary["processed"]
+    failed = summary["failed"]
+    errors = summary["errors"]
+    failed_files = summary["failed_files"]
 
     job.processed_tracks = processed
     job.failed_tracks = failed
@@ -673,10 +763,10 @@ async def apply_embeddings_result(
         job.status = "failed"
         job.error_details = {
             "error": state.get("error_message") or "Media server reported failure",
-            **({"failures": errors} if errors else {}),
+            **({"failures": errors, "failed_count": failed} if errors else {}),
         }
     else:
-        job.error_details = {"failures": errors} if errors else None
+        job.error_details = {"failures": errors, "failed_count": failed} if errors else None
         if failed == 0:
             job.status = "completed"
         elif processed == 0:
@@ -684,6 +774,7 @@ async def apply_embeddings_result(
         else:
             job.status = "partial"
     job.completed_at = datetime.utcnow()
+    job.finalizing_at = None
     await db.commit()
 
     # Notify partner + admin about any tracks that failed to embed.

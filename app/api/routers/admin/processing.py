@@ -126,30 +126,27 @@ async def _refresh_processing_job_from_hetzner(
     if job.job_type not in ("embeddings", "transcode"):
         return job
     try:
+        # Progress poll: ask for a LIGHT status (no per-track results array). We only need
+        # the status + counts here; the heavy per-track apply happens in a background task.
         if job.job_type == "transcode":
-            # Progress poll: skip the per-track results array. Only when the job is terminal
-            # do we need them (to set per-track transcode_status) — fetch them once then.
             remote = await hetzner_service.get_transcode_status(
                 job.partner_id, job.id, include_records=False
             )
-            if remote.get("success"):
-                data = remote["data"]
-                if (data.get("status") or "").lower() in partner_processing_service.TERMINAL_JOB_STATES:
-                    full = await hetzner_service.get_transcode_status(
-                        job.partner_id, job.id, include_records=True, timeout=300.0
-                    )
-                    if not full.get("success"):
-                        # Can't fetch the per-track results to finalize correctly — leave the
-                        # job running and retry on the next poll (don't finalize with []).
-                        return job
-                    data = full["data"]
-                job = await partner_processing_service.apply_transcode_result(db, job, data)
         else:
-            # The embeddings job-state file is already light while running (it carries the
-            # full results only on a terminal snapshot), so a single poll is cheap.
-            remote = await hetzner_service.get_embeddings_status(job.partner_id, job.id)
-            if remote.get("success"):
-                job = await partner_processing_service.apply_embeddings_result(db, job, remote["data"])
+            remote = await hetzner_service.get_embeddings_status(
+                job.partner_id, job.id, include_records=False
+            )
+        if remote.get("success"):
+            data = remote["data"]
+            mstatus = (data.get("status") or "").lower()
+            if mstatus in partner_processing_service.TERMINAL_JOB_STATES:
+                # Media job is done. Hand the (up to 1M-row) per-track result-apply to a
+                # background task instead of doing N queries in this request.
+                job = await partner_processing_service.claim_and_enqueue_finalize(db, job)
+            elif job.job_type == "transcode":
+                job = await partner_processing_service.apply_transcode_result(db, job, data)
+            else:
+                job = await partner_processing_service.apply_embeddings_result(db, job, data)
     except Exception as exc:  # never let a refresh break the listing
         logger.warning(
             f"[processing] refresh of job {job.id} from media server failed: {exc}"

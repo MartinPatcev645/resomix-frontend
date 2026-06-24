@@ -800,3 +800,139 @@ async def test_partner_subscribes_gate(seeded):
                          {"p": partner_id})
         await db.commit()
         assert await _partner_subscribes(db, partner_id, "track.indexed") is False
+
+
+# ===========================================================================
+# Background terminal result-apply (bulk, off the poll request)
+# ===========================================================================
+@pytest.mark.asyncio
+async def test_claim_and_enqueue_finalize_debounces(seeded):
+    """When the media job is terminal, the poll claims the job (status=finalizing +
+    finalizing_at) and enqueues the finalize task ONCE; a second poll while finalizing
+    (fresh) does not re-enqueue."""
+    from app.services.partner_processing_service import claim_and_enqueue_finalize
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        job = PartnerProcessingJob(partner_id=seeded["partner"].id, ingest_log_id=seeded["log"].id,
+                                   job_type="transcode", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    with patch("app.tasks.processing_tasks.finalize_processing_job.delay") as mdelay:
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await claim_and_enqueue_finalize(db, job)
+        assert mdelay.call_count == 1
+
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            assert job.status == "finalizing"
+            assert job.finalizing_at is not None
+
+        # Second poll while finalizing (fresh) → debounced, no second enqueue.
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await claim_and_enqueue_finalize(db, job)
+        assert mdelay.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_finalize_task_applies_bulk_and_is_idempotent(seeded):
+    """The finalize task fetches the full results from media, applies them in bulk
+    (per-track transcode_status), finalizes the job, auto-spawns embeddings, and a
+    re-run is a no-op."""
+    from sqlalchemy import select
+    from datetime import datetime as _dt
+    from app.tasks.processing_tasks import _async_finalize_processing_job
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    track_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.processing_dir = "20260623T000000Z"
+        job = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                   job_type="transcode", status="finalizing", finalizing_at=_dt.utcnow())
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    remote = {"success": True, "data": {"status": "completed",
+                                        "results": [{"track_uuid": track_uuid, "status": "ok"}]}}
+    with patch("app.tasks.processing_tasks.HetznerService.get_transcode_status",
+               new_callable=AsyncMock, return_value=remote), \
+         patch("app.services.partner_processing_service.hetzner_service.start_embeddings",
+               new_callable=AsyncMock, return_value={"success": True}):
+        await _async_finalize_processing_job(job_id)
+        await _async_finalize_processing_job(job_id)  # idempotent re-run
+
+    async with AsyncSessionLocal() as db:
+        tps = (await db.execute(select(TrackProcessingStatus).where(
+            TrackProcessingStatus.ingest_log_id == seeded["log"].id))).scalar_one()
+        assert tps.transcode_status == "completed"
+
+        job = await db.get(PartnerProcessingJob, job_id)
+        assert job.status == "completed"
+        assert job.finalizing_at is None  # cleared on finalize
+
+        emb = (await db.execute(select(PartnerProcessingJob).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id,
+            PartnerProcessingJob.job_type == "embeddings"))).scalars().all()
+        assert len(emb) == 1  # auto-spawned once, not duplicated by the re-run
+
+
+@pytest.mark.asyncio
+async def test_bulk_apply_mixed_ok_and_failed(seeded):
+    """_apply_track_results_bulk processes many tracks in one pass: ok→completed,
+    error→failed + the failed track is deactivated. (No per-track N+1.)"""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import _apply_track_results_bulk
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    ok_uuid = seeded["track"].uuid
+
+    # Add a second track (will fail) so the chunk has a mix.
+    async with AsyncSessionLocal() as db:
+        bad_uuid = str(uuid.uuid4())
+        t2 = Track(uuid=bad_uuid, isrc=f"US{uuid.uuid4().hex[:3].upper()}{str(uuid.uuid4().int)[:7]}",
+                   title="T2", display_artist="A", partner_id=partner_id,
+                   party_id=seeded["party_id"], is_active=True)
+        db.add(t2)
+        await db.commit()
+        await db.refresh(t2)
+        db.add(TrackProcessingStatus(track_id=t2.id, partner_id=partner_id,
+                                     ingest_log_id=seeded["log"].id, audio_filename="t2.wav", sftp_env="live"))
+        # ok track starts active too
+        (await db.get(Track, seeded["track"].id)).is_active = True
+        await db.commit()
+        bad_track_id = t2.id
+
+    summary = await _apply_track_results_bulk(
+        partner_id, "transcode",
+        [{"track_uuid": ok_uuid, "status": "ok"},
+         {"track_uuid": bad_uuid, "status": "error", "message": "transcode failed: x"}],
+        ingest_log_id=seeded["log"].id,
+    )
+
+    assert summary["processed"] == 1 and summary["failed"] == 1
+    assert "t2.wav" in summary["failed_files"]
+
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(select(TrackProcessingStatus).where(
+            TrackProcessingStatus.ingest_log_id == seeded["log"].id))).scalars().all()
+        by_fn = {r.audio_filename: r for r in rows}
+        assert by_fn["song.wav"].transcode_status == "completed"
+        assert by_fn["t2.wav"].transcode_status == "failed"
+        assert "transcode failed" in (by_fn["t2.wav"].transcode_error or "")
+        # ok track stays active; failed track is deactivated.
+        assert (await db.get(Track, seeded["track"].id)).is_active is True
+        assert (await db.get(Track, bad_track_id)).is_active is False
