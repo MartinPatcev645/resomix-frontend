@@ -907,7 +907,9 @@ def _job_to_dict(job: PartnerProcessingJob) -> dict:
         "id": job.id,
         "partner_id": job.partner_id,
         "ingest_log_id": job.ingest_log_id,
+        # transcode | embeddings | peaks | segments
         "job_type": job.job_type,
+        # pending | running | paused | finalizing | completed | partial | failed
         "status": job.status,
         "total_tracks": job.total_tracks,
         "processed_tracks": job.processed_tracks,
@@ -916,6 +918,8 @@ def _job_to_dict(job: PartnerProcessingJob) -> dict:
         "triggered_by": job.triggered_by,
         "created_at": job.created_at.isoformat() if job.created_at else None,
         "started_at": job.started_at.isoformat() if job.started_at else None,
+        # set while a background task applies the terminal per-track results
+        "finalizing_at": job.finalizing_at.isoformat() if job.finalizing_at else None,
         "completed_at": job.completed_at.isoformat() if job.completed_at else None,
     }
 
@@ -928,6 +932,11 @@ def _log_to_dict(log: IngestLog) -> dict:
         "package_folder": log.package_folder,
         "batch_filename": log.batch_filename,
         "status": log.status,
+        # granular pipeline stage (VALIDATING → MOVED → PERSISTING → TRANSCODING →
+        # INGESTED → EMBEDDING → INDEXED → FINALIZING → READY; or FAILED_VALIDATION/FAILED)
+        "stage": log.stage,
+        # {stage_name: UTC ISO timestamp} — when each stage was entered
+        "stage_timeline": log.stage_timeline,
         "track_count": log.track_count,
         "error_message": log.error_message,
         "started_at": log.started_at.isoformat() if log.started_at else None,
@@ -938,12 +947,23 @@ def _log_to_dict(log: IngestLog) -> dict:
 
 def _tps_to_dict(tps: TrackProcessingStatus) -> dict:
     return {
+        # per-stage status: pending | completed | failed
+        "transcode_status": tps.transcode_status,
         "embedding_status": tps.embedding_status,
         "peaks_status": tps.peaks_status,
         "segments_status": tps.segments_status,
         "faiss_indexed": tps.faiss_indexed,
+        # per-stage failure reasons (null unless that stage failed)
+        "transcode_error": tps.transcode_error,
+        "embedding_error": tps.embedding_error,
+        "peaks_error": tps.peaks_error,
+        "segments_error": tps.segments_error,
+        # per-stage completion timestamps
+        "transcode_completed_at": tps.transcode_completed_at.isoformat() if tps.transcode_completed_at else None,
+        "embedding_completed_at": tps.embedding_completed_at.isoformat() if tps.embedding_completed_at else None,
+        "peaks_completed_at": tps.peaks_completed_at.isoformat() if tps.peaks_completed_at else None,
+        "segments_completed_at": tps.segments_completed_at.isoformat() if tps.segments_completed_at else None,
         "faiss_indexed_at": tps.faiss_indexed_at.isoformat() if tps.faiss_indexed_at else None,
         "sftp_env": tps.sftp_env,
         "audio_filename": tps.audio_filename,
-        "embedding_error": tps.embedding_error,
     }

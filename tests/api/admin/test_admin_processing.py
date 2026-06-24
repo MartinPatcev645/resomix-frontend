@@ -642,7 +642,7 @@ async def test_stop_tracks_batch_deactivates_and_calls_media_once(admin_auth_hea
         mock_rm.return_value = {"success": True, "data": {"removed": {"maest": 2}}}
         async with _client() as ac:
             res = await ac.post(
-                "/api/v1/admin/processing/tracks/stop-batch",
+                "/api/v1/admin/tracks/stop-batch",
                 headers=admin_auth_headers,
                 json={"partner_id": partner_id, "track_ids": ids},
             )
@@ -1054,3 +1054,110 @@ async def test_transcode_skips_peaks_segments_for_similarity_only(seeded):
         types = (await db.execute(select(PartnerProcessingJob.job_type).where(
             PartnerProcessingJob.ingest_log_id == seeded["log"].id))).scalars().all()
         assert "peaks" not in types and "segments" not in types
+
+
+# ===========================================================================
+# API-response shape: new pipeline fields exposed to the admin UI
+# (added 2026-06-24 alongside the frontend_api_integration_guide update)
+# ===========================================================================
+@pytest.mark.asyncio
+async def test_get_processing_job_exposes_finalizing_and_job_type(admin_auth_headers, seeded):
+    """GET /processing/jobs/{id} exposes job_type, the transient 'finalizing' status, and finalizing_at."""
+    from app.core.context import set_admin_context
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        job = PartnerProcessingJob(partner_id=seeded["partner"].id, ingest_log_id=seeded["log"].id,
+                                   job_type="peaks", status="finalizing", finalizing_at=datetime.utcnow())
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        jid = job.id
+    async with _client() as ac:
+        res = await ac.get(f"/api/v1/admin/processing/jobs/{jid}", headers=admin_auth_headers)
+    assert res.status_code == 200
+    j = res.json()["job"]
+    assert j["job_type"] == "peaks"
+    assert j["status"] == "finalizing"
+    assert "finalizing_at" in j and j["finalizing_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_list_tracks_exposes_all_pipeline_stage_fields(admin_auth_headers, seeded):
+    """The /tracks 'processing' object exposes transcode + every per-stage status/error/completed_at."""
+    async with _client() as ac:
+        res = await ac.get(f"/api/v1/admin/tracks?partner_id={seeded['partner'].id}",
+                           headers=admin_auth_headers)
+    assert res.status_code == 200
+    track = next(t for t in res.json()["tracks"] if t["id"] == seeded["track"].id)
+    proc = track["processing"]
+    for f in ("transcode_status", "embedding_status", "peaks_status", "segments_status", "faiss_indexed",
+              "transcode_error", "embedding_error", "peaks_error", "segments_error",
+              "transcode_completed_at", "embedding_completed_at", "peaks_completed_at",
+              "segments_completed_at", "faiss_indexed_at", "sftp_env", "audio_filename"):
+        assert f in proc, f"missing field: {f}"
+    assert proc["transcode_status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_get_ingestion_log_exposes_stage_timeline(admin_auth_headers, seeded):
+    """The ingest log object exposes the granular `stage` + `stage_timeline`."""
+    from app.core.context import set_admin_context
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.stage = "PERSISTING"
+        log.stage_timeline = {"VALIDATING": "2026-06-24T00:00:00+00:00",
+                              "PERSISTING": "2026-06-24T00:01:00+00:00"}
+        await db.commit()
+    async with _client() as ac:
+        res = await ac.get(f"/api/v1/admin/ingestion/logs/{seeded['log'].id}", headers=admin_auth_headers)
+    assert res.status_code == 200
+    log = res.json()["log"]
+    assert log["stage"] == "PERSISTING"
+    assert log["stage_timeline"].get("PERSISTING")
+
+
+@pytest.mark.asyncio
+async def test_trigger_peaks_job_via_http(admin_auth_headers, seeded):
+    """POST /processing/jobs/peaks creates a peaks job and hands it to the media server."""
+    with patch("app.services.partner_processing_service.hetzner_service.start_peaks",
+               new_callable=AsyncMock) as mock_start:
+        mock_start.return_value = {"success": True}
+        async with _client() as ac:
+            res = await ac.post("/api/v1/admin/processing/jobs/peaks", headers=admin_auth_headers,
+                                json={"partner_id": seeded["partner"].id, "env": "live"})
+    assert res.status_code == 202
+    body = res.json()
+    assert body["status"] == "accepted" and body["job_type"] == "peaks"
+    assert isinstance(body["job_id"], int)
+    assert mock_start.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_trigger_stage_job_invalid_stage_404(admin_auth_headers, seeded):
+    """An unknown {stage} (not peaks/segments) is rejected with 404."""
+    async with _client() as ac:
+        res = await ac.post("/api/v1/admin/processing/jobs/foobar", headers=admin_auth_headers,
+                            json={"partner_id": seeded["partner"].id})
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_pause_peaks_job_via_http(admin_auth_headers, seeded):
+    """Pause now works for non-embeddings jobs too (here: a peaks job)."""
+    from app.core.context import set_admin_context
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        job = PartnerProcessingJob(partner_id=seeded["partner"].id, job_type="peaks", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        jid = job.id
+    with patch("app.services.partner_processing_service.hetzner_service.pause_peaks",
+               new_callable=AsyncMock) as mock_pause:
+        mock_pause.return_value = {"success": True}
+        async with _client() as ac:
+            res = await ac.post(f"/api/v1/admin/processing/jobs/{jid}/pause", headers=admin_auth_headers)
+    assert res.status_code == 200
+    assert res.json()["job_status"] == "paused"
+    assert mock_pause.await_count == 1
