@@ -52,13 +52,16 @@ export const PIPELINE_STAGES: { id: PipelineStage; label: string }[] = [
 ];
 
 /**
- * Ingestion → Transcode is linear.
- * After Transcode, Embedding / Peaks / Segments branch in parallel.
+ * At INGESTED the backend spawns Embedding and Transcode concurrently (siblings of
+ * Ingestion) — embeddings are computed off the original/preview, not the 128k mp3, so
+ * they do not wait for transcode. Peaks / Segments fork off Transcode (they consume the
+ * transcoded mp3) and only for similarity_playback partners. Embedding is the critical
+ * path to READY; transcode does not gate it.
  */
 export const STAGE_DEPENDENCIES: Record<PipelineStage, PipelineStage | null> = {
   ingestion: null,
   transcode: 'ingestion',
-  embeddings: 'transcode',
+  embeddings: 'ingestion',
   peaks: 'transcode',
   segments: 'transcode',
 };

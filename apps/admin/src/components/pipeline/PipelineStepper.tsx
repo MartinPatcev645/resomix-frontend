@@ -9,7 +9,7 @@ import {
   Minus,
 } from 'lucide-react';
 import type { StageInfo, PipelineStage, GateResult } from './pipelineUtils.js';
-import { getStatusStyle, computeStageGate, STAGE_DEPENDENCIES } from './pipelineUtils.js';
+import { getStatusStyle, computeStageGate } from './pipelineUtils.js';
 import './PipelineStepper.css';
 
 // ─── Stage Icons ──────────────────────────────────────────────
@@ -36,36 +36,7 @@ function GateIcon({ gate }: { gate: GateResult }) {
   }
 }
 
-// ─── Single Connector ─────────────────────────────────────────
 
-function Connector({ 
-  fromStage, 
-  stages,
-}: { 
-  fromStage: StageInfo; 
-  stages: StageInfo[];
-}) {
-  const fromStyle = getStatusStyle(fromStage.status);
-  const isUpstreamDone = ['completed', 'partial'].includes(fromStage.status);
-  const connectorColor = isUpstreamDone ? fromStyle.color : '#d1d5db';
-  
-  // Find downstream stage to compute gate
-  // This connector is placed between fromStage and the next stage in the linear chain
-  const downstreamDep = stages.find(s => STAGE_DEPENDENCIES[s.id] === fromStage.id);
-  const gate: GateResult = downstreamDep 
-    ? computeStageGate(fromStage.status, fromStage.failed, fromStage.total)
-    : { state: 'pending' };
-
-  return (
-    <div className="pipeline-connector">
-      <div 
-        className="pipeline-connector-line" 
-        style={{ background: connectorColor } as React.CSSProperties}
-      />
-      <GateIcon gate={gate} />
-    </div>
-  );
-}
 
 // ─── Single Stage Node ────────────────────────────────────────
 
@@ -123,23 +94,19 @@ function StageNode({
   );
 }
 
-// ─── Fork Branch Connector ────────────────────────────────────
+// ─── Fork Line Connector ──────────────────────────────────────
 
-function ForkBranchConnector({ 
-  parentStage, 
-}: { 
-  parentStage: StageInfo;
-}) {
-  const parentStyle = getStatusStyle(parentStage.status);
-  const isParentDone = ['completed', 'partial'].includes(parentStage.status);
+function ForkLine({ parent }: { parent: StageInfo }) {
+  const parentStyle = getStatusStyle(parent.status);
+  const isParentDone = ['completed', 'partial'].includes(parent.status);
   const connectorColor = isParentDone ? parentStyle.color : '#d1d5db';
   
-  const gate = computeStageGate(parentStage.status, parentStage.failed, parentStage.total);
+  const gate = computeStageGate(parent.status, parent.failed, parent.total);
 
   return (
-    <div className="pipeline-connector" style={{ width: 40, minWidth: 28 }}>
+    <div className="pipeline-fork-line-container">
       <div 
-        className="pipeline-connector-line"
+        className="pipeline-fork-line"
         style={{ background: connectorColor } as React.CSSProperties}
       />
       <GateIcon gate={gate} />
@@ -162,57 +129,69 @@ export default function PipelineStepper({ stages, activeStage, onStageClick }: P
   const peaks = stages.find(s => s.id === 'peaks')!;
   const segments = stages.find(s => s.id === 'segments')!;
 
+  const getForkStyle = (parent: StageInfo) => {
+    const parentStyle = getStatusStyle(parent.status);
+    const isParentDone = ['completed', 'partial'].includes(parent.status);
+    const forkColor = isParentDone ? parentStyle.color : '#d1d5db';
+    return { '--fork-line-color': forkColor } as React.CSSProperties;
+  };
+
   return (
-    <div className="pipeline-stepper">
-      <div className="pipeline-main-row">
-        {/* Ingestion */}
+    <div className="pipeline-stepper-v2">
+      <div className="pipeline-root-node">
+        {/* Stage 1: Ingestion */}
         <StageNode
           stage={ingestion}
           isActive={activeStage === 'ingestion'}
           onClick={() => onStageClick('ingestion')}
         />
+      </div>
 
-        {/* Connector: Ingestion → Transcode */}
-        <Connector fromStage={ingestion} stages={stages} />
+      {/* Fork 1: Ingestion splits into Embeddings and Transcode */}
+      <div className="pipeline-fork-group" style={getForkStyle(ingestion)}>
+        <ForkLine parent={ingestion} />
+        
+        <div className="pipeline-fork-destinations">
+          {/* Path 1: Embeddings (Critical Path) */}
+          <div className="pipeline-path-row">
+            <StageNode
+              stage={embeddings}
+              isActive={activeStage === 'embeddings'}
+              onClick={() => onStageClick('embeddings')}
+            />
+            <span className="pipeline-path-badge critical-path">Critical Path</span>
+          </div>
 
-        {/* Transcode */}
-        <StageNode
-          stage={transcode}
-          isActive={activeStage === 'transcode'}
-          onClick={() => onStageClick('transcode')}
-        />
-
-        {/* Fork point: Transcode splits into 3 parallel branches */}
-        <div className="pipeline-fork-container">
-          <div className="pipeline-fork-branches">
-            {/* Branch 1: Embedding */}
-            <div className="pipeline-fork-branch">
-              <ForkBranchConnector parentStage={transcode} />
+          {/* Path 2: Transcode (which splits into Peaks and Segments) */}
+          <div className="pipeline-path-row transcode-path-row">
+            <div className="pipeline-node-wrapper">
               <StageNode
-                stage={embeddings}
-                isActive={activeStage === 'embeddings'}
-                onClick={() => onStageClick('embeddings')}
+                stage={transcode}
+                isActive={activeStage === 'transcode'}
+                onClick={() => onStageClick('transcode')}
               />
             </div>
 
-            {/* Branch 2: Peaks */}
-            <div className="pipeline-fork-branch">
-              <ForkBranchConnector parentStage={transcode} />
-              <StageNode
-                stage={peaks}
-                isActive={activeStage === 'peaks'}
-                onClick={() => onStageClick('peaks')}
-              />
-            </div>
-
-            {/* Branch 3: Segments */}
-            <div className="pipeline-fork-branch">
-              <ForkBranchConnector parentStage={transcode} />
-              <StageNode
-                stage={segments}
-                isActive={activeStage === 'segments'}
-                onClick={() => onStageClick('segments')}
-              />
+            {/* Fork 2: Transcode splits into Peaks and Segments */}
+            <div className="pipeline-fork-group sub-fork" style={getForkStyle(transcode)}>
+              <ForkLine parent={transcode} />
+              
+              <div className="pipeline-fork-destinations">
+                <div className="pipeline-path-row">
+                  <StageNode
+                    stage={peaks}
+                    isActive={activeStage === 'peaks'}
+                    onClick={() => onStageClick('peaks')}
+                  />
+                </div>
+                <div className="pipeline-path-row">
+                  <StageNode
+                    stage={segments}
+                    isActive={activeStage === 'segments'}
+                    onClick={() => onStageClick('segments')}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

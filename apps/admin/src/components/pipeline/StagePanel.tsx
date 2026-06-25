@@ -503,6 +503,7 @@ function ProcessingPanel(props: StagePanelProps) {
     onViewJobDetails,
     onRefreshJobs,
     onReTriggerJob,
+    onRetryIngest,
     onTriggerEmbeddings,
     onTriggerPeaksSegments,
     getPartnerName,
@@ -626,7 +627,16 @@ function ProcessingPanel(props: StagePanelProps) {
               />
             </Tooltip>
           )}
-          {record.status === 'paused' && record.job_type !== 'embeddings' && onReTriggerJob && (
+          {record.status === 'paused' && record.job_type === 'transcode' && record.ingest_log_id && (
+            <Tooltip title="Retry Ingestion Batch">
+              <Button
+                icon={<RotateCw size={14} />}
+                onClick={() => record.ingest_log_id && onRetryIngest(record.ingest_log_id)}
+                className="flex items-center"
+              />
+            </Tooltip>
+          )}
+          {record.status === 'paused' && record.job_type !== 'embeddings' && record.job_type !== 'transcode' && onReTriggerJob && (
             <Tooltip title="Re-trigger Job">
               <Button
                 icon={<Play size={14} />}
@@ -636,8 +646,17 @@ function ProcessingPanel(props: StagePanelProps) {
               />
             </Tooltip>
           )}
-          {record.status === 'failed' && onReTriggerJob && (
-            <Tooltip title="Re-trigger Failed Job">
+          {record.status === 'failed' && record.job_type === 'transcode' && record.ingest_log_id && (
+            <Tooltip title="Retry Ingestion Batch">
+              <Button
+                icon={<RotateCw size={14} />}
+                onClick={() => record.ingest_log_id && onRetryIngest(record.ingest_log_id)}
+                className="flex items-center"
+              />
+            </Tooltip>
+          )}
+          {record.status === 'failed' && record.job_type !== 'transcode' && onReTriggerJob && (
+            <Tooltip title="Re-trigger Job">
               <Button
                 icon={<RotateCw size={14} />}
                 onClick={() => onReTriggerJob(record)}

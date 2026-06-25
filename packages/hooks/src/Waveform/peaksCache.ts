@@ -1,3 +1,5 @@
+import { getPlaybackToken, clearPlaybackToken } from '@resomix/api-client';
+
 export interface PeaksRich {
   fullband: number[];
   lowband?: number[];
@@ -65,12 +67,56 @@ function parseV2Payload(payload: any): PeaksRich | null {
   return { fullband, lowband, durationSeconds };
 }
 
+/** Error carrying the HTTP status so callers can react to auth failures (401/403). */
+class HttpError extends Error {
+  status: number;
+  constructor(status: number) {
+    super(`HTTP ${status}`);
+    this.status = status;
+  }
+}
+
+function isAuthError(err: unknown): boolean {
+  return err instanceof HttpError && (err.status === 401 || err.status === 403);
+}
+
 async function fetchJson(url: string): Promise<any> {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+    throw new HttpError(res.status);
   }
   return res.json();
+}
+
+/**
+ * Fetch peaks for one uuid with the given token, trying the rich (v2) endpoint
+ * first and falling back to the legacy endpoint. Auth failures (401/403) are NOT
+ * swallowed by the legacy fallback — they propagate so the caller can re-mint.
+ */
+async function fetchPeaksOnce(uuid: string, token: string | null): Promise<PeaksRich> {
+  const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
+  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+
+  // Try the rich v2 endpoint first.
+  try {
+    const v2Url = `${mediaBase}/peaks-rich/?uuid=${encodeURIComponent(uuid)}${tokenParam}`;
+    const v2 = await fetchJson(v2Url);
+    const parsedV2 = parseV2Payload(v2);
+    if (parsedV2) return parsedV2;
+    // Parsed-but-not-v2 (e.g. legacy payload echoed): fall through to legacy.
+  } catch (e) {
+    if (isAuthError(e)) throw e; // don't mask a 403 behind the legacy fallback
+    // otherwise fall through to legacy
+  }
+
+  // Fallback: legacy endpoint returns number[] (fullband only).
+  const legacyUrl = `${mediaBase}/peaks/?uuid=${encodeURIComponent(uuid)}${tokenParam}`;
+  const legacy = await fetchJson(legacyUrl) as number[];
+  return {
+    fullband: Array.isArray(legacy) ? legacy : [],
+    lowband: undefined,
+    durationSeconds: Array.isArray(legacy) ? legacy.length : undefined,
+  };
 }
 
 export const loadPeaksData = async (
@@ -86,47 +132,47 @@ export const loadPeaksData = async (
 
   const maxRetries = options?.maxRetries ?? Infinity;
   const retryIntervalMs = options?.retryIntervalMs ?? 2000;
-  const token = options?.token;
+  // An explicit token (if passed) overrides the managed token and disables re-minting.
+  const explicitToken = options?.token;
 
   const loadPromise = (async (): Promise<PeaksRich> => {
     let attempt = 0;
+    let remintAttempted = false;
 
     while (true) {
       attempt += 1;
       try {
-        // Try new v2 endpoint first
+        const token = explicitToken ?? (await getPlaybackToken());
+
+        let payload: PeaksRich;
         try {
-          const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
-          const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-          const v2Url = `${mediaBase}/peaks-rich/?uuid=${encodeURIComponent(uuid)}${tokenParam}`;
-          const v2 = await fetchJson(v2Url);
-          const parsedV2 = parseV2Payload(v2);
-          if (parsedV2) {
-            peaksCache.set(uuid, { data: parsedV2, timestamp: Date.now() });
-            evictIfNeeded();
-            return parsedV2;
-          }
+          payload = await fetchPeaksOnce(uuid, token);
         } catch (e) {
-          // Silently fall back to legacy
+          // The Media server rejected the token (expired / missing / stale). If we
+          // manage the token ourselves, force one re-mint and retry immediately.
+          if (isAuthError(e) && !explicitToken && !remintAttempted) {
+            remintAttempted = true;
+            clearPlaybackToken();
+            const fresh = await getPlaybackToken(true);
+            payload = await fetchPeaksOnce(uuid, fresh);
+          } else {
+            throw e;
+          }
         }
-
-        // Fallback to legacy: returns number[] (fullband only)
-        const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
-        const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-        const legacyUrl = `${mediaBase}/peaks/?uuid=${encodeURIComponent(uuid)}${tokenParam}`;
-        const legacy = await fetchJson(legacyUrl) as number[];
-
-        const payload: PeaksRich = {
-          fullband: Array.isArray(legacy) ? legacy : [],
-          lowband: undefined,
-          durationSeconds: Array.isArray(legacy) ? legacy.length : undefined
-        };
 
         peaksCache.set(uuid, { data: payload, timestamp: Date.now() });
         evictIfNeeded();
         return payload;
 
       } catch (err) {
+        // A persistent auth failure means playback isn't permitted for this partner
+        // (or the token was rejected even after re-minting). Do NOT retry-storm —
+        // surface it so the outer handler returns empty peaks.
+        if (isAuthError(err)) {
+          console.warn('Peaks request rejected (auth) — playback may not be enabled for this partner', err);
+          throw err;
+        }
+
         const canRetry = attempt < maxRetries || maxRetries === Infinity;
         console.warn(`Failed to load peaks (attempt ${attempt})`, err);
 

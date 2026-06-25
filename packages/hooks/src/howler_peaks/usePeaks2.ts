@@ -1,5 +1,6 @@
 // usePeaks2.ts
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { loadPeaksData } from '../Waveform/peaksCache';
 
 export type UsePeaksReturn = {
   loading: boolean;
@@ -86,16 +87,11 @@ export function usePeaks2(
     const loadData = async () => {
       try {
         setLoading(true);
-        const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
-        const res = await fetch(`${mediaBase}/peaks/?uuid=${uuid}`, {
-          cache: 'no-store'
-        });
-
-        if (!res.ok) console.error(`Peaks fetch failed (${res.status})`);
-
-        const data = await res.json();
-        setNormalizedData(data);
-        setDuration(data.length);
+        // Use the shared, token-aware loader (mints + attaches the edge playback
+        // token, prefers the rich endpoint, and caches) instead of a bare fetch.
+        const payload = await loadPeaksData(uuid);
+        setNormalizedData(payload.fullband || []);
+        setDuration(payload.durationSeconds ?? (payload.fullband?.length ?? 0));
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
