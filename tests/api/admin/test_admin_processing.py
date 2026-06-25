@@ -578,11 +578,15 @@ async def test_embedding_failure_deactivates_track(seeded):
                 "results": [{"track_uuid": track_uuid, "status": "error", "message": "embed failed"}],
             })
 
-    # partner + admin notified about the failed embed (by filename)
-    assert mock_notify.await_count == 1
-    args, kwargs = mock_notify.await_args
-    assert args[2] == "embedding" and args[3] == "failed"
-    assert "song.wav" in kwargs["details"]
+    # partner + admin notified about the failed embed (by filename). apply_embeddings_result
+    # sends two notifications for a failure — the per-track failure detail AND the overall
+    # outcome — so assert the FAILURE-detail call (event=embedding, status=failed, filename) is present.
+    fail_calls = [
+        c for c in mock_notify.await_args_list
+        if len(c.args) >= 4 and c.args[2] == "embedding" and c.args[3] == "failed"
+        and "song.wav" in (c.kwargs.get("details") or [])
+    ]
+    assert len(fail_calls) == 1
 
     async with AsyncSessionLocal() as db:
         assert (await db.get(Track, seeded["track"].id)).is_active is False
@@ -1189,3 +1193,112 @@ async def test_embedding_artifacts_skipped_when_knob_off(seeded, monkeypatch):
         tps = (await db.execute(select(TrackProcessingStatus).where(
             TrackProcessingStatus.track_id == seeded["track"].id))).scalar_one()
         assert tps.embedding_status == "completed"  # status still applied
+
+
+# ===========================================================================
+# Auto-progression failure gate (<5% → auto-start next; else halt + admin-notify)
+# ===========================================================================
+@pytest.mark.asyncio
+async def test_transcode_high_failure_rate_halts_peaks_segments(seeded):
+    """Transcode failure rate >= threshold → peaks/segments are NOT auto-started, and an
+    ADMIN-ONLY escalation fires (search/embeddings is never gated)."""
+    from sqlalchemy import select
+    from app.services.partner_processing_service import apply_transcode_result, hetzner_service
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    partner_id = seeded["partner"].id
+    ok_uuid = seeded["track"].uuid
+
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.processing_dir = "20260623T000000Z"
+        (await db.get(Partner, partner_id)).service_mode = "similarity_playback"
+        bad_uuid = str(uuid.uuid4())
+        t2 = Track(uuid=bad_uuid, isrc=f"US{uuid.uuid4().hex[:3].upper()}{str(uuid.uuid4().int)[:7]}",
+                   title="T2", display_artist="A", partner_id=partner_id,
+                   party_id=seeded["party_id"], is_active=True)
+        db.add(t2)
+        await db.commit()
+        await db.refresh(t2)
+        db.add(TrackProcessingStatus(track_id=t2.id, partner_id=partner_id,
+                                     ingest_log_id=seeded["log"].id, audio_filename="t2.wav", sftp_env="live"))
+        job = PartnerProcessingJob(partner_id=partner_id, ingest_log_id=seeded["log"].id,
+                                   job_type="transcode", status="running")
+        db.add(job)
+        await db.commit()
+        await db.refresh(job)
+        job_id = job.id
+
+    with patch.object(hetzner_service, "start_embeddings", new=AsyncMock(return_value={"success": True})), \
+         patch.object(hetzner_service, "start_peaks", new=AsyncMock(return_value={"success": True})) as mpeaks, \
+         patch.object(hetzner_service, "start_segments", new=AsyncMock(return_value={"success": True})) as msegs, \
+         patch("app.services.notification_service.NotificationService.notify_partner_operation",
+               new_callable=AsyncMock) as mnotify:
+        async with AsyncSessionLocal() as db:
+            job = await db.get(PartnerProcessingJob, job_id)
+            await apply_transcode_result(db, job, {"status": "completed", "results": [
+                {"track_uuid": ok_uuid, "status": "ok"},
+                {"track_uuid": bad_uuid, "status": "error", "message": "transcode failed"}]})  # 50% fail
+
+    assert mpeaks.await_count == 0 and msegs.await_count == 0       # halted
+    assert any(c.kwargs.get("admin_only") is True for c in mnotify.await_args_list)  # admin-only escalation
+    async with AsyncSessionLocal() as db:
+        types = (await db.execute(select(PartnerProcessingJob.job_type).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id))).scalars().all()
+        assert "peaks" not in types and "segments" not in types
+
+
+@pytest.mark.asyncio
+async def test_ingestion_high_persist_failure_halts_transcode(seeded):
+    """Persist failure rate >= threshold → transcode/embeddings NOT auto-started; admin-only notify.
+    (Ingestion itself is still finalized COMPLETED.)"""
+    from sqlalchemy import select, func
+    from app.services.ingestion_service import finalize_successful_ingestion
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        log = await db.get(IngestLog, seeded["log"].id)
+        log.status = "PROCESSING"
+        await db.commit()
+
+    result = {"total": 10, "already": 0, "inserted": 8, "remaining": 0, "done": True,
+              "failures": [{"audio_filename": "a.mp3"}, {"audio_filename": "b.mp3"}]}  # 20% fail
+
+    with patch("app.services.ingestion_service.dispatch_webhook.delay", lambda **k: None), \
+         patch("app.services.notification_service.NotificationService.notify_partner_operation",
+               new_callable=AsyncMock) as mnotify, \
+         patch("app.services.partner_processing_service.hetzner_service.start_transcode",
+               new_callable=AsyncMock) as mtrans:
+        async with AsyncSessionLocal() as db:
+            log = await db.get(IngestLog, seeded["log"].id)
+            await finalize_successful_ingestion(db, log, [], "live", result)
+
+    assert mtrans.await_count == 0  # transcode NOT handed off
+    assert any(c.kwargs.get("admin_only") is True for c in mnotify.await_args_list)
+    async with AsyncSessionLocal() as db:
+        n = (await db.execute(select(func.count()).select_from(PartnerProcessingJob).where(
+            PartnerProcessingJob.ingest_log_id == seeded["log"].id,
+            PartnerProcessingJob.job_type == "transcode"))).scalar()
+        assert n == 0
+        assert (await db.get(IngestLog, seeded["log"].id)).status == "COMPLETED"  # ingestion still succeeded
+
+
+@pytest.mark.asyncio
+async def test_notify_admin_only_skips_partner(seeded):
+    """notify_partner_operation(admin_only=True) must NOT send/log the partner copy."""
+    from app.services.notification_service import NotificationService
+    from app.core.context import set_admin_context
+
+    set_admin_context(True)
+    audiences = []
+
+    async def _fake_send(self, db, pid, ev, st, audience, *a, **k):
+        audiences.append(audience)
+
+    with patch.object(NotificationService, "_send_and_log", new=_fake_send):
+        async with AsyncSessionLocal() as db:
+            await NotificationService().notify_partner_operation(
+                db, seeded["partner"].id, "transcode", "warning", "x", admin_only=True, commit=False)
+    assert "partner" not in audiences  # partner copy skipped

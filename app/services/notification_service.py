@@ -68,8 +68,13 @@ class NotificationService:
         counts: Optional[Dict[str, Any]] = None,
         reference_path: Optional[str] = None,
         commit: bool = True,
+        admin_only: bool = False,
     ) -> None:
         """Email the partner + admin about an operation outcome and log both.
+
+        ``admin_only=True`` sends + logs ONLY the admin copy (no partner email) — used for
+        internal ops escalations like "stage failure-rate exceeded the auto-progress threshold;
+        downstream paused; review and start manually".
 
         Args:
             partner_id:   tenant the operation belongs to.
@@ -102,13 +107,14 @@ class NotificationService:
         }
         subject = f"[Resomix] {event_label} {status_label.lower()}"
 
-        # ── 1. Partner copy ────────────────────────────────────────────────
-        partner_ctx = {**base_ctx, "audience": "partner",
-                       "greeting_name": partner.display_name or partner.legal_name}
-        await self._send_and_log(
-            db, partner_id, event_type, status, "partner",
-            partner.contact_email, subject, summary, details, reference_path, partner_ctx,
-        )
+        # ── 1. Partner copy (skipped for admin-only escalations) ───────────
+        if not admin_only:
+            partner_ctx = {**base_ctx, "audience": "partner",
+                           "greeting_name": partner.display_name or partner.legal_name}
+            await self._send_and_log(
+                db, partner_id, event_type, status, "partner",
+                partner.contact_email, subject, summary, details, reference_path, partner_ctx,
+            )
 
         # ── 2. Admin copy (with partner info) ──────────────────────────────
         admin_email = settings.admin_notification_email or settings.smtp_from_email

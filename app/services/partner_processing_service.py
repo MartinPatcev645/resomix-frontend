@@ -45,6 +45,37 @@ _FINALIZE_STALE_SECONDS = int(os.getenv("PROCESSING_FINALIZE_STALE_SECONDS", "90
 # in the admin file browser). That's 2 rows per track — 2M rows for a 1M-track partner — so it can
 # be turned OFF for very large partners. Default ON (preserves existing behaviour).
 _REGISTER_EMBED_ARTIFACTS = (os.getenv("REGISTER_EMBEDDING_ARTIFACTS", "true") or "true").lower() not in ("0", "false", "no")
+# Auto-progression failure gate: when a stage's per-track failure rate reaches this fraction, the
+# NEXT stage is NOT auto-started — an ADMIN-ONLY escalation fires and they start it manually.
+# Default 5%; override via env.
+_AUTOSPAWN_MAX_FAILURE_RATE = float(os.getenv("PIPELINE_AUTOSPAWN_MAX_FAILURE_RATE", "0.05") or 0.05)
+
+
+def _failure_rate(failed: int, total: int) -> float:
+    """Per-track failure fraction (0.0 when nothing was attempted)."""
+    return (failed / total) if total and total > 0 else 0.0
+
+
+async def _notify_autospawn_halted(db, partner_id: int, stage: str, failed: int, total: int, halted: str) -> None:
+    """ADMIN-ONLY escalation: ``stage`` breached the auto-progress failure threshold, so the named
+    downstream ``halted`` stage(s) were NOT auto-started — review the batch + start manually."""
+    try:
+        from app.services.notification_service import NotificationService
+        pct = round(_failure_rate(failed, total) * 100, 1)
+        thr = round(_AUTOSPAWN_MAX_FAILURE_RATE * 100)
+        await NotificationService().notify_partner_operation(
+            db, partner_id, stage, "warning",
+            summary=(f"{stage.capitalize()} failed on {failed}/{total} track(s) ({pct}%), at/above the "
+                     f"{thr}% auto-progress threshold. Auto-start of {halted} was SKIPPED — review the "
+                     f"batch and start the next stage manually once resolved."),
+            title=f"Pipeline auto-progress paused — {stage} failures {pct}%",
+            counts={"Failed": failed, "Total": total, "Threshold %": thr},
+            admin_only=True,
+        )
+        logger.warning("[ProcessingService] AUTO-PROGRESS HALTED at %s (%s/%s failed) for partner %s — "
+                       "%s not auto-started.", stage, failed, total, partner_id, halted)
+    except Exception as exc:
+        logger.error(f"[ProcessingService] autospawn-halt notification ({stage}) errored: {exc}")
 
 # Per-stage TrackProcessingStatus column names (status / error / completed-at).
 _STAGE_FIELDS = {
@@ -794,12 +825,22 @@ async def apply_transcode_result(
         # Phase-2 playback assets: peaks + segments jobs, but ONLY for similarity_playback
         # partners. They consume the transcoded mp3 (now present). Idempotent; independent
         # of each other and of embeddings (run in parallel on the 3/4-core pool).
+        # AUTO-PROGRESS GATE: if transcode failed too many tracks, do NOT auto-start them —
+        # escalate to admin so the batch is reviewed first. (Embeddings/search is NOT gated.)
         try:
             if await _partner_wants_playback(db, partner_id):
-                for _stage in ("peaks", "segments"):
-                    await _ensure_stage_job_for_log(
-                        db, partner_id, ingest_log_id, _stage, triggered_by="auto:post-transcode"
+                # Rate over the tracks actually ATTEMPTED this run (processed+failed), not
+                # job.total_tracks (which can be 0/stale if the job wasn't started normally).
+                _attempted = processed + failed
+                if _failure_rate(failed, _attempted) >= _AUTOSPAWN_MAX_FAILURE_RATE:
+                    await _notify_autospawn_halted(
+                        db, partner_id, "transcode", failed, _attempted, "peaks + segments"
                     )
+                else:
+                    for _stage in ("peaks", "segments"):
+                        await _ensure_stage_job_for_log(
+                            db, partner_id, ingest_log_id, _stage, triggered_by="auto:post-transcode"
+                        )
         except Exception as exc:  # never let the auto-spawn break the transcode finalize
             logger.error(f"[ProcessingService] auto-spawn peaks/segments after transcode failed: {exc}")
     return job

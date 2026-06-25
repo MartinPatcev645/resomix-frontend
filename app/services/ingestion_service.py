@@ -594,6 +594,18 @@ async def finalize_successful_ingestion(db, log_entry, records, env, result) -> 
         counts={"Tracks ingested": inserted_count},
     )
 
+    # AUTO-PROGRESS GATE: if too many records failed to persist, do NOT auto-start the
+    # downstream pipeline (transcode/embeddings) — escalate to admin (only) to review + start
+    # manually. The ingestion itself is already COMPLETED above; only auto-progress is paused.
+    from app.services import partner_processing_service as _pps
+    _persist_failed = len(result.get("failures") or [])
+    _persist_total = result.get("total") or 0
+    if _pps._failure_rate(_persist_failed, _persist_total) >= _pps._AUTOSPAWN_MAX_FAILURE_RATE:
+        await _pps._notify_autospawn_halted(
+            db, partner_id, "ingestion", _persist_failed, _persist_total, "transcode + embeddings"
+        )
+        return
+
     # Auto-spawn the transcode job (raw -> 128k mp3) AND the embeddings job — no admin
     # click. The two run CONCURRENTLY (overlap mode): the embeddings job consumes each
     # mp3 as soon as transcode produces it, so the GPU embed-server isn't idle while
