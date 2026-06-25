@@ -13,6 +13,7 @@ export * from "./ratings";
 export * from "./metadata";
 export * from "./system";
 export * from "./partner";
+export * from "./playbackToken";
 export * from "./admin/feedback";
 export * from "./admin/contact";
 export * from "./admin/waitlist";
