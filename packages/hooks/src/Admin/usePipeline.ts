@@ -55,18 +55,20 @@ export function usePipeline() {
       const result = await listIngestLogs(params);
       if (result && result.logs) {
         setIngestLogs(result.logs);
-        
-        let dynamicTotal = result.logs.length;
-        if (result.logs.length === ingestPagination.pageSize) {
-          dynamicTotal = ingestPagination.current * ingestPagination.pageSize + 1;
-        } else {
-          dynamicTotal = (ingestPagination.current - 1) * ingestPagination.pageSize + result.logs.length;
-        }
 
-        setIngestPagination(prev => ({
-          ...prev,
-          total: (result as any).pagination?.total || dynamicTotal,
-        }));
+        // Use server-provided total if available; otherwise compute a
+        // stable estimate that never shrinks as the user pages forward.
+        const serverTotal = (result as any).pagination?.total as number | undefined;
+        if (serverTotal != null && serverTotal > 0) {
+          setIngestPagination(prev => ({ ...prev, total: serverTotal }));
+        } else {
+          const itemsSoFar = (ingestPagination.current - 1) * ingestPagination.pageSize + result.logs.length;
+          // Full page → there *may* be more; partial page → we've seen the last item
+          const hasMore = result.logs.length === ingestPagination.pageSize;
+          const estimate = hasMore ? itemsSoFar + 1 : itemsSoFar;
+          // Never let the total decrease (prevents badge from jumping down)
+          setIngestPagination(prev => ({ ...prev, total: Math.max(prev.total, estimate) }));
+        }
       }
     } catch {
       message.error('Failed to load ingestion logs');
@@ -87,18 +89,16 @@ export function usePipeline() {
       const result = await listProcessingJobs(params);
       if (result && result.jobs) {
         setProcessingJobs(result.jobs);
-        
-        let dynamicTotal = result.jobs.length;
-        if (result.jobs.length === jobsPagination.pageSize) {
-          dynamicTotal = jobsPagination.current * jobsPagination.pageSize + 1;
-        } else {
-          dynamicTotal = (jobsPagination.current - 1) * jobsPagination.pageSize + result.jobs.length;
-        }
 
-        setJobsPagination(prev => ({
-          ...prev,
-          total: (result as any).pagination?.total || dynamicTotal,
-        }));
+        const serverTotal = (result as any).pagination?.total as number | undefined;
+        if (serverTotal != null && serverTotal > 0) {
+          setJobsPagination(prev => ({ ...prev, total: serverTotal }));
+        } else {
+          const itemsSoFar = (jobsPagination.current - 1) * jobsPagination.pageSize + result.jobs.length;
+          const hasMore = result.jobs.length === jobsPagination.pageSize;
+          const estimate = hasMore ? itemsSoFar + 1 : itemsSoFar;
+          setJobsPagination(prev => ({ ...prev, total: Math.max(prev.total, estimate) }));
+        }
       }
     } catch {
       message.error('Failed to load processing jobs');
