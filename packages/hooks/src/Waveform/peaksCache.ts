@@ -75,7 +75,7 @@ async function fetchJson(url: string): Promise<any> {
 
 export const loadPeaksData = async (
   uuid: string,
-  options?: { maxRetries?: number; retryIntervalMs?: number }
+  options?: { maxRetries?: number; retryIntervalMs?: number; token?: string }
 ): Promise<PeaksRich> => {
   const cached = peaksCache.get(uuid);
   if (cached) return cached.data;
@@ -86,6 +86,7 @@ export const loadPeaksData = async (
 
   const maxRetries = options?.maxRetries ?? Infinity;
   const retryIntervalMs = options?.retryIntervalMs ?? 2000;
+  const token = options?.token;
 
   const loadPromise = (async (): Promise<PeaksRich> => {
     let attempt = 0;
@@ -96,7 +97,8 @@ export const loadPeaksData = async (
         // Try new v2 endpoint first
         try {
           const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
-          const v2Url = `${mediaBase}/peaks-rich/?uuid=${encodeURIComponent(uuid)}`;
+          const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+          const v2Url = `${mediaBase}/peaks-rich/?uuid=${encodeURIComponent(uuid)}${tokenParam}`;
           const v2 = await fetchJson(v2Url);
           const parsedV2 = parseV2Payload(v2);
           if (parsedV2) {
@@ -110,7 +112,8 @@ export const loadPeaksData = async (
 
         // Fallback to legacy: returns number[] (fullband only)
         const mediaBase = (import.meta as any).env?.VITE_SERVER_MEDIA || "https://media.resomix.com";
-        const legacyUrl = `${mediaBase}/peaks/?uuid=${encodeURIComponent(uuid)}`;
+        const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+        const legacyUrl = `${mediaBase}/peaks/?uuid=${encodeURIComponent(uuid)}${tokenParam}`;
         const legacy = await fetchJson(legacyUrl) as number[];
 
         const payload: PeaksRich = {

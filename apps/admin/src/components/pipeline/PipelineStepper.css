@@ -1,0 +1,382 @@
+/* ═══════════════════════════════════════════════════════════════
+   Pipeline Stepper — Visual pipeline stepper with fork topology
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Status Colors ─────────────────────────────────────────── */
+.pipeline-stepper {
+  --status-queued:      #8b8fa3;
+  --status-running:     #3b82f6;
+  --status-finalizing:  #6366f1;
+  --status-completed:   #10b981;
+  --status-partial:     #f59e0b;
+  --status-halted:      #ef4444;
+  --status-paused:      #64748b;
+  --status-skipped:     #94a3b8;
+}
+
+/* ─── Container ─────────────────────────────────────────────── */
+.pipeline-stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 16px;
+  gap: 0;
+  user-select: none;
+}
+
+/* ─── Main Row: Ingestion → Transcode → Fork ────────────────── */
+.pipeline-main-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  justify-content: center;
+}
+
+/* ─── Stage Node ────────────────────────────────────────────── */
+.pipeline-stage-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  min-width: 90px;
+}
+
+.pipeline-stage-node:hover {
+  transform: translateY(-2px);
+}
+
+.pipeline-stage-node.active .pipeline-stage-circle {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+/* Circle */
+.pipeline-stage-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid var(--stage-color, #8b8fa3);
+  background: var(--stage-bg, rgba(139, 143, 163, 0.08));
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.pipeline-stage-circle svg {
+  color: var(--stage-color, #8b8fa3);
+  transition: color 0.25s ease;
+}
+
+/* Skipped → dashed border + hollow */
+.pipeline-stage-node.skipped .pipeline-stage-circle {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.55;
+}
+
+.pipeline-stage-node.skipped .pipeline-stage-label,
+.pipeline-stage-node.skipped .pipeline-stage-badge {
+  opacity: 0.5;
+}
+
+/* Running → pulse animation */
+.pipeline-stage-node.running .pipeline-stage-circle::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--status-running);
+  animation: pipeline-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pipeline-pulse {
+  0%, 100% { opacity: 0; transform: scale(0.95); }
+  50%      { opacity: 0.5; transform: scale(1.05); }
+}
+
+/* Label */
+.pipeline-stage-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stage-color, #8b8fa3);
+  text-align: center;
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+
+/* Mini-summary badge */
+.pipeline-stage-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  background: var(--bg-surface, rgba(0, 0, 0, 0.04));
+  border-radius: 10px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.pipeline-stage-badge .failed-count {
+  color: var(--status-halted);
+  font-weight: 600;
+}
+
+/* ─── Connector Line ────────────────────────────────────────── */
+.pipeline-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 56px;
+  min-width: 40px;
+  flex-shrink: 0;
+  margin-bottom: 38px; /* align with circle center */
+}
+
+.pipeline-connector-line {
+  width: 100%;
+  height: 2.5px;
+  background: var(--connector-color, #d1d5db);
+  border-radius: 2px;
+  transition: background 0.25s ease;
+}
+
+/* Gate icon (✓ or ⛔) sitting on the connector */
+.pipeline-connector-gate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  z-index: 2;
+  border: 2px solid #fff;
+}
+
+.pipeline-connector-gate.passed {
+  background: var(--status-completed);
+  color: #fff;
+}
+
+.pipeline-connector-gate.halted {
+  background: var(--status-halted);
+  color: #fff;
+}
+
+.pipeline-connector-gate.pending {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+/* ─── Fork Section ──────────────────────────────────────────── */
+.pipeline-fork-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.pipeline-fork-branches {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.pipeline-fork-branch {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* The fork origin dot — sits at the split point */
+.pipeline-fork-origin {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--connector-color, #d1d5db);
+  flex-shrink: 0;
+  margin-bottom: 38px;
+}
+
+/* The SVG fork lines */
+.pipeline-fork-svg {
+  flex-shrink: 0;
+  margin-bottom: 38px;
+}
+
+.pipeline-fork-svg line {
+  stroke: var(--connector-color, #d1d5db);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* ─── Responsive ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pipeline-stepper {
+    padding: 16px 8px 12px;
+  }
+
+  .pipeline-stage-circle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .pipeline-stage-label {
+    font-size: 10px;
+  }
+
+  .pipeline-stage-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+
+  .pipeline-connector {
+    width: 32px;
+    min-width: 24px;
+  }
+
+  .pipeline-stage-node {
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pipeline-main-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pipeline-connector {
+    width: 20px;
+    min-width: 16px;
+  }
+}
+
+/* ─── Macro Timeline Stepper ────────────────────────────────── */
+.macro-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-default, #e5e7eb);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.macro-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-default, #e5e7eb);
+  padding-bottom: 12px;
+}
+
+.macro-timeline-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  overflow-x: auto;
+  padding: 10px 0;
+  gap: 8px;
+}
+
+.macro-timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+}
+
+.macro-timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #d1d5db;
+  z-index: 2;
+  transition: all 0.25s ease;
+}
+
+.macro-timeline-step.completed .macro-timeline-dot {
+  background: #10b981;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.macro-timeline-step.active .macro-timeline-dot {
+  background: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+  animation: timeline-dot-pulse 1.5s infinite;
+}
+
+@keyframes timeline-dot-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 1px #3b82f6, 0 0 0 4px rgba(59, 130, 246, 0.3); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 1px #3b82f6, 0 0 0 8px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 1px #3b82f6, 0 0 0 4px rgba(59, 130, 246, 0.3); }
+}
+
+.macro-timeline-step.failed .macro-timeline-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
+}
+
+.macro-timeline-connector {
+  position: absolute;
+  top: 7px;
+  left: calc(50% + 8px);
+  right: calc(-50% + 8px);
+  height: 2px;
+  background: #e5e7eb;
+  z-index: 1;
+}
+
+.macro-timeline-step.completed .macro-timeline-connector {
+  background: #10b981;
+}
+
+.macro-timeline-step:last-child .macro-timeline-connector {
+  display: none;
+}
+
+.macro-timeline-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.macro-timeline-step.active .macro-timeline-label {
+  color: #3b82f6;
+}
+
+.macro-timeline-step.completed .macro-timeline-label {
+  color: #10b981;
+}
+
+.macro-timeline-time {
+  font-size: 8px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
