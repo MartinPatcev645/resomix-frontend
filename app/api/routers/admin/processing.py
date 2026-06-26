@@ -394,16 +394,40 @@ async def list_processing_jobs(
     current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
     set_admin_context(True)
-    stmt = select(PartnerProcessingJob)
+    base_where = []
     if partner_id is not None:
-        stmt = stmt.where(PartnerProcessingJob.partner_id == partner_id)
+        base_where.append(PartnerProcessingJob.partner_id == partner_id)
     if status:
-        stmt = stmt.where(PartnerProcessingJob.status == status)
-    stmt = stmt.order_by(PartnerProcessingJob.id.desc()).limit(page_size).offset((page - 1) * page_size)
+        base_where.append(PartnerProcessingJob.status == status)
+
+    # Total count (without pagination)
+    count_stmt = select(func.count()).select_from(PartnerProcessingJob).where(*base_where)
+    total = (await db.execute(count_stmt)).scalar_one()
+
+    stmt = (
+        select(PartnerProcessingJob)
+        .where(*base_where)
+        .order_by(PartnerProcessingJob.id.desc())
+        .limit(page_size)
+        .offset((page - 1) * page_size)
+    )
     jobs = (await db.execute(stmt)).scalars().all()
     # Self-heal: pull live progress / final results for any non-terminal job from Hetzner.
     refreshed = [await _refresh_processing_job_from_hetzner(db, j) for j in jobs]
-    return JSONResponse(content={"status": "success", "jobs": [_job_to_dict(j) for j in refreshed]})
+
+    total_pages = (total + page_size - 1) // page_size
+    return JSONResponse(content={
+        "status": "success",
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        },
+        "jobs": [_job_to_dict(j) for j in refreshed],
+    })
 
 
 # ===========================================================================
@@ -422,18 +446,42 @@ async def list_ingestion_logs(
     current_admin: User = Depends(require_admin),
 ) -> JSONResponse:
     set_admin_context(True)
-    stmt = select(IngestLog)
+    base_where = []
     if partner_id is not None:
-        stmt = stmt.where(IngestLog.partner_id == partner_id)
+        base_where.append(IngestLog.partner_id == partner_id)
     if status:
-        stmt = stmt.where(IngestLog.status == status)
-    stmt = stmt.order_by(IngestLog.id.desc()).limit(page_size).offset((page - 1) * page_size)
+        base_where.append(IngestLog.status == status)
+
+    # Total count (without pagination)
+    count_stmt = select(func.count()).select_from(IngestLog).where(*base_where)
+    total = (await db.execute(count_stmt)).scalar_one()
+
+    stmt = (
+        select(IngestLog)
+        .where(*base_where)
+        .order_by(IngestLog.id.desc())
+        .limit(page_size)
+        .offset((page - 1) * page_size)
+    )
     logs = (await db.execute(stmt)).scalars().all()
 
     # Self-heal: for any log still in flight, pull the latest state from Hetzner and
     # persist it before serializing. Terminal logs are skipped (no media-server call).
     refreshed = [await _refresh_log_from_hetzner(db, l) for l in logs]
-    return JSONResponse(content={"status": "success", "logs": [_log_to_dict(l) for l in refreshed]})
+
+    total_pages = (total + page_size - 1) // page_size
+    return JSONResponse(content={
+        "status": "success",
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        },
+        "logs": [_log_to_dict(l) for l in refreshed],
+    })
 
 
 @router.get(
