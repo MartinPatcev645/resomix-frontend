@@ -761,9 +761,12 @@ class PlaylistService:
             # Embed the owning partner so the Hetzner edge can resolve partner-scoped
             # assets directly from the verified token claim (defaults to the system
             # partner / partner 1 for frontend/B2C traffic).
-            # Anonymous frontend → cap the manifest to a preview (first ANON_VISIBLE_COUNT).
+            # Anonymous frontend → cap the manifest to a preview. The HLS track list is
+            # [seed, similar_1, similar_2, …], so to make the first ANON_VISIBLE_COUNT *similar*
+            # tracks (the ones shown un-scrambled in the metadata) all playable we keep the seed
+            # plus that many → ANON_VISIBLE_COUNT + 1 uuids.
             max_tracks = (
-                ANON_VISIBLE_COUNT
+                ANON_VISIBLE_COUNT + 1
                 if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id)
                 else None
             )
