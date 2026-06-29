@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SimilarityPlayer, CCLicenseGroup } from "@/components/index.ts";
 import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
-import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
-import { HoverFlow } from "@resomix/ui";
+import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
+import { HoverFlow, ButtonSleek } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import { DEMO_MODE } from "@resomix/config";
@@ -16,7 +16,7 @@ interface PlaylistTableProps {
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
-    const demoTracksRestricted = DEMO_MODE && tracks.length > 20;
+    const { isAuthenticated } = useAuthStore();
 
     // --- Analysis footer stats ---
     const playlistId = playlistData?.playlist?.id;
@@ -72,17 +72,29 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]" role="table" aria-label="Similar tracks">
             <h2 className="sr-only">Similar Tracks</h2>
             {tracks.map((track) => {
-                const isRestricted = demoTracksRestricted && track.rank > 20;
+                const isRestricted = !isAuthenticated && track.rank > 10;
                 return (
                     <div key={track.id} className="relative w-full">
-                        {track.rank === 22 && demoTracksRestricted && (
-                            <div className="absolute inset-0 z-50 flex items-center justify-center text-white text-[length:var(--px-12)] font-fira font-semibold uppercase tracking-[var(--px-0-5)] text-center px-[var(--px-16)]">
-                                Only 20 tracks accessible in Demo Mode.
+                        {track.rank === 12 && isRestricted && (
+                            <div className="absolute z-50 left-0 w-full flex flex-col items-center justify-center px-[var(--px-20)] pt-[var(--px-20)] pointer-events-auto">
+                                <div className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-30)] pb-[var(--px-30)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-350)] w-full">
+                                    <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
+                                        Unlock all matching tracks
+                                    </h3>
+                                    <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-center text-white mb-[var(--px-20)]">
+                                        Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
+                                    </p>
+                                    <div className="flex flex-col gap-[var(--px-10)] items-center w-full">
+                                        <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+                                        <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                    </div>
+                                </div>
                             </div>
                         )}
-                        <div className={isRestricted ? "pointer-events-none select-none" : ""}>
+                        {isRestricted && <div className="absolute inset-0 backdrop-blur-md z-0" />}
+                        <div className={isRestricted ? "pointer-events-none select-none blur-xs relative z-10" : ""}>
                             <div
-                                className={`w-full border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] pb-[var(--px-18)] relative ${isRestricted ? "blur-xs" : ""}`}
+                                className={`w-full border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] pb-[var(--px-18)] relative`}
                                 role="row"
                             >
                                 <div className="flex flex-col w-full">

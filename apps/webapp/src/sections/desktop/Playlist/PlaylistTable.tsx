@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
-import { IconComp, Tooltip } from "@resomix/ui";
+import { IconComp, Tooltip, ButtonSleek } from "@resomix/ui";
 import { formatDuration, formatPercentage, useGlobalAudioController, useCart } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
@@ -124,11 +124,23 @@ const PlaylistTable: React.FC = () => {
                     <div key={track.id} className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
                         {/* Check if the rank is 12 and isRestricted is true, display a text here on top of the usual track details */}
                         {track.rank === 12 && isRestricted && (
-                            <div className="absolute z-50 top-0 left-0 w-full h-full flex items-center justify-center text-white text-[length:var(--px-12)] font-fira font-semibold uppercase tracking-[var(--px-0-5)] text-center px-[var(--px-20)] rounded-sm">
-                                Log in to access all tracks.
+                            <div className="absolute z-50 left-0 w-full flex flex-col items-center justify-center px-[var(--px-20)] pt-[var(--px-40)] pointer-events-auto">
+                                <div className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-40)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-450)] w-full">
+                                    <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
+                                        Unlock all matching tracks
+                                    </h3>
+                                    <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-center text-white mb-[var(--px-20)]">
+                                        Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
+                                    </p>
+                                    <div className="flex gap-[var(--px-15)] justify-center items-center">
+                                        <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+                                        <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                    </div>
+                                </div>
                             </div>
                         )}
-                        <div className={isRestricted ? "blur-xs" : ""}>
+                        {isRestricted && <div className="absolute inset-0 backdrop-blur-md z-0" />}
+                        <div className={isRestricted ? "blur-xs relative z-10" : ""}>
                             <div className="w-full border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
                                 <div className="flex flex-col w-full">
                                     <div className="flex items-center" role="row">
