@@ -75,6 +75,20 @@ class SimilarityController:
         else:
             logger.info("SIMILARITY UPLOAD AUTH: Anonymous user processing")
 
+        # Frontend partner (partner_id == 1) requires an authenticated user — mirrors the
+        # playback play-session gate, so an anonymous user can't drive the similarity → playlist
+        # flow (only to be blocked later at playback). B2B partners (partner_id != 1) authenticate
+        # via API key alone and are unaffected.
+        if partner_id == 1 and not current_user:
+            logger.warning("SIMILARITY UPLOAD: Login required for frontend partner (anonymous blocked)")
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content=format_response(
+                    success=False,
+                    error="Login required to use similarity. Please sign in.",
+                ),
+            )
+
         # Enforce authentication if required by settings.
         # Auth is satisfied by EITHER a logged-in user (JWT) OR a validated partner
         # API key (partner_id is set only after the scoped partner dependency passes).
@@ -961,6 +975,20 @@ class SimilarityController:
             )
         else:
             logger.info("SIMILARITY BY ID AUTH: Anonymous user processing")
+
+        # Frontend partner (partner_id == 1) requires an authenticated user — mirrors the
+        # playback play-session gate, so an anonymous user can't drive the similarity → playlist
+        # flow (only to be blocked later at playback). B2B partners (partner_id != 1) authenticate
+        # via API key alone and are unaffected.
+        if partner_id == 1 and not current_user:
+            logger.warning("SIMILARITY BY ID: Login required for frontend partner (anonymous blocked)")
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content=format_response(
+                    success=False,
+                    error="Login required to use similarity. Please sign in.",
+                ),
+            )
 
         # Enforce authentication if required by settings.
         # Auth is satisfied by EITHER a logged-in user (JWT) OR a validated partner

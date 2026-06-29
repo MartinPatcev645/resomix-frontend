@@ -209,6 +209,59 @@ class Cache:
     async def genre(self, db: AsyncSession, name: str) -> int:
         return await self._get_or_create(db, "genres", self.genres, name)
 
+    async def _ensure_upload_message(self, db: AsyncSession, partner_id: int) -> str:
+        """Guarantee a valid `messages` row exists for manual uploads and return its message_id.
+
+        `releases.message_id` is a NOT NULL FK to `messages.message_id`, and `messages` is only
+        populated by DDEX ingestion (it needs an `ingest_log_id`). Manual uploads have no DDEX
+        message, so without this the release INSERT fails the FK. We lazily create a sentinel
+        chain (party → ingest_log → message); everything is idempotent. We always verify against
+        the DB (the `messages.message_id` lookup is indexed/UNIQUE) rather than caching a flag, so
+        a rolled-back transaction can't leave a stale "already created" belief.
+        """
+        MSG_ID = "MANUAL_UPLOADS"
+        existing = (
+            await db.execute(
+                text("SELECT message_id FROM messages WHERE message_id = :m"), {"m": MSG_ID}
+            )
+        ).first()
+        if existing:
+            return MSG_ID
+
+        # party_id is already known-valid (artists/labels inserted with it); ensure it anyway.
+        await db.execute(
+            text(
+                """INSERT IGNORE INTO parties (party_id, party_name, is_active, partner_id)
+                       VALUES (:p, 'Manual Uploads', 1, :pid)"""
+            ),
+            {"p": self.party_id, "pid": partner_id},
+        )
+        # Reuse (or create) a sentinel ingest_log so the message FK is satisfiable.
+        il = (
+            await db.execute(
+                text("SELECT id FROM ingest_logs WHERE package_folder = '__manual_uploads__' LIMIT 1")
+            )
+        ).first()
+        if il:
+            ingest_log_id = il[0]
+        else:
+            res = await db.execute(
+                text(
+                    """INSERT INTO ingest_logs (party_id, package_folder, status, partner_id)
+                           VALUES (:p, '__manual_uploads__', 'COMPLETED', :pid)"""
+                ),
+                {"p": self.party_id, "pid": partner_id},
+            )
+            ingest_log_id = res.lastrowid
+        await db.execute(
+            text(
+                """INSERT IGNORE INTO messages (ingest_log_id, party_id, message_id, message_type, partner_id)
+                       VALUES (:il, :p, :m, 'ManualUpload', :pid)"""
+            ),
+            {"il": ingest_log_id, "p": self.party_id, "m": MSG_ID, "pid": partner_id},
+        )
+        return MSG_ID
+
     async def release(self, db: AsyncSession, title: str, primary_artist_id: int, partner_id: int) -> int:
         # Sanitize the album title
         original_title = title
@@ -225,33 +278,49 @@ class Cache:
             return self.releases[key]
 
         try:
-            # Insert into releases table
-            insert_sql = text(
-                """INSERT IGNORE INTO releases (title, party_id, message_id, partner_id) 
-                       VALUES (:title, :party_id, :message_id, :partner_id) """
-            )
-            await db.execute(
-                insert_sql, {
-                    "title": sanitized_title, 
-                    "party_id": self.party_id, 
-                    "message_id": self.message_id,
-                    "partner_id": partner_id
-                }
-            )
-
-            # Get the ID - scoped by partner_id
-            select_result = await db.execute(
-                text("SELECT id FROM releases WHERE title = :title AND partner_id = :partner_id"),
-                {"title": sanitized_title, "partner_id": partner_id},
-            )
-            row = select_result.first()
-            if row is None:
-                raise Exception(
-                    f"Failed to insert or find album record for: '{sanitized_title}' (original: '{original_title}') with partner_id {partner_id}"
+            # Reuse an existing release for this partner if present (re-uploads / repeats).
+            existing = (
+                await db.execute(
+                    text("SELECT id FROM releases WHERE title = :title AND partner_id = :partner_id LIMIT 1"),
+                    {"title": sanitized_title, "partner_id": partner_id},
                 )
+            ).first()
+            if existing:
+                id_ = existing[0]
+                self.releases[key] = id_
+                return id_
 
-            id_ = row[0]
-            
+            # Ensure the NOT NULL message_id FK is satisfiable for manual uploads.
+            message_id = await self._ensure_upload_message(db, partner_id)
+
+            # Plain INSERT (NOT "INSERT IGNORE", which silently swallowed FK errors and left
+            # nothing to find → the old 500). Use lastrowid so we don't depend on a re-SELECT.
+            result = await db.execute(
+                text(
+                    """INSERT INTO releases (title, party_id, message_id, partner_id)
+                           VALUES (:title, :party_id, :message_id, :partner_id)"""
+                ),
+                {
+                    "title": sanitized_title,
+                    "party_id": self.party_id,
+                    "message_id": message_id,
+                    "partner_id": partner_id,
+                },
+            )
+            id_ = result.lastrowid
+            if not id_:
+                row = (
+                    await db.execute(
+                        text("SELECT id FROM releases WHERE title = :title AND partner_id = :partner_id ORDER BY id DESC LIMIT 1"),
+                        {"title": sanitized_title, "partner_id": partner_id},
+                    )
+                ).first()
+                if row is None:
+                    raise Exception(
+                        f"Failed to insert album record for: '{sanitized_title}' (original: '{original_title}') with partner_id {partner_id}"
+                    )
+                id_ = row[0]
+
             # Also link the primary artist in release_contributors junction table
             rc_insert = insert(ReleaseContributor).values(
                 release_id=id_,
@@ -260,7 +329,7 @@ class Cache:
                 sequence_num=1
             )
             await db.execute(rc_insert)
-            
+
             self.releases[key] = id_
             return id_
 

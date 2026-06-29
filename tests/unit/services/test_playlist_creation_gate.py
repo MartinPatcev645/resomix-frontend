@@ -668,13 +668,14 @@ class TestAuthGate_LiveServer:
             f"Expected 401/403 for wrong API key on similarity search, got {r.status_code}"
         )
 
-    def test_similarity_search_valid_key_anonymous_succeeds_no_playlist(self):
+    def test_similarity_search_valid_key_anonymous_frontend_401(self):
         """
-        POST /similarity/search with valid API key, no user JWT → 200 response.
-        The response must NOT contain a 'playlist' key because the caller is anonymous.
+        POST /similarity/search with valid API key but NO JWT user token → 401 "Login required".
 
-        This is the direct reproduction of the June-2026 bug: the similarity search
-        was succeeding and appearing to create a playlist even for anonymous users.
+        Enforcement is now applied at the similarity endpoint itself (not only at play-session):
+        the frontend partner (partner_id=1) requires an authenticated user, so an anonymous
+        caller cannot drive the similarity → playlist flow at all. B2B partners (partner_id != 1)
+        are unaffected (they authenticate via API key alone). Text /search_tracks stays open.
         """
         import requests as req
         r = req.post(
@@ -683,12 +684,12 @@ class TestAuthGate_LiveServer:
             params={"api_key": self.VALID_API_KEY},
             # No Authorization header → anonymous user
         )
-        assert r.status_code == 200, (
-            f"Similarity search with valid API key should return 200, got {r.status_code}: {r.text}"
+        assert r.status_code == 401, (
+            f"Expected 401 for anonymous frontend + valid API key on similarity search, "
+            f"got {r.status_code}: {r.text}"
         )
         body = r.json()
-        data = body.get("data", body)
-        assert "playlist" not in data, (
-            "Anonymous frontend user must NOT receive a playlist in the similarity response. "
-            f"Got keys: {list(data.keys())}"
+        detail = body.get("error") or body.get("detail") or ""
+        assert "login" in detail.lower() or "sign in" in detail.lower(), (
+            f"Expected 'login' in the message, got: {detail}"
         )
