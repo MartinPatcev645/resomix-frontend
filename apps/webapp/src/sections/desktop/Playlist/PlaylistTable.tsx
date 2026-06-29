@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
 import { IconComp, Tooltip } from "@resomix/ui";
 import { formatDuration, formatPercentage, useGlobalAudioController, useCart } from "@resomix/hooks";
-import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
+import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
@@ -22,6 +22,7 @@ const PlaylistTable: React.FC = () => {
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
     const { toggleItem, isInCart, isLoading: isCartLoading } = useCart();
+    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
     const handlePlayButtonClick = useCallback((trackId: string) => {
         if (!DEMO_MODE) {
@@ -58,7 +59,6 @@ const PlaylistTable: React.FC = () => {
     }, []);
 
     const tracks = playlistData?.similar_tracks ?? [];
-    const demoTracksRestricted = DEMO_MODE && tracks.length > 20;
 
     // --- Analysis footer stats ---
     const playlistId = playlistData?.playlist?.id;
@@ -118,14 +118,14 @@ const PlaylistTable: React.FC = () => {
                 <div className="ml-[var(--px-30)]" role="columnheader">Chain Discover</div>
             </div>
             {tracks.map((track) => {
-                const isRestricted = demoTracksRestricted && track.rank > 20;
+                const isRestricted = !isAuthenticated && track.rank > 10;
 
                 return (
                     <div key={track.id} className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
-                        {/* Check if the rank is 21 and isRestricted is true, display a text here on top of the usual track details */}
-                        {track.rank === 22 && isRestricted && (
+                        {/* Check if the rank is 12 and isRestricted is true, display a text here on top of the usual track details */}
+                        {track.rank === 12 && isRestricted && (
                             <div className="absolute z-50 top-0 left-0 w-full h-full flex items-center justify-center text-white text-[length:var(--px-12)] font-fira font-semibold uppercase tracking-[var(--px-0-5)] text-center px-[var(--px-20)] rounded-sm">
-                                Only 20 tracks accessible in Demo Mode.
+                                Log in to access all tracks.
                             </div>
                         )}
                         <div className={isRestricted ? "blur-xs" : ""}>
