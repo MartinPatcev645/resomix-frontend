@@ -91,7 +91,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 </div>
                             </div>
                         )}
-                        {isRestricted && <div className="absolute inset-0 backdrop-blur-md z-0" />}
+                        {isRestricted && <div className="absolute inset-0 backdrop-blur-md bg-black/20 z-0 transform-gpu" style={{ WebkitBackdropFilter: 'blur(12px)' }} />}
                         <div className={isRestricted ? "pointer-events-none select-none blur-xs relative z-10" : ""}>
                             <div
                                 className={`w-full border border-dotted border-slate-200 flex justify-between p-[var(--px-5)] pb-[var(--px-18)] relative`}

@@ -139,7 +139,7 @@ const PlaylistTable: React.FC = () => {
                                 </div>
                             </div>
                         )}
-                        {isRestricted && <div className="absolute inset-0 backdrop-blur-md z-0" />}
+                        {isRestricted && <div className="absolute inset-0 backdrop-blur-md bg-black/20 z-0 transform-gpu" style={{ WebkitBackdropFilter: 'blur(12px)' }} />}
                         <div className={isRestricted ? "blur-xs relative z-10" : ""}>
                             <div className="w-full border border-dotted border-slate-200 flex justify-between px-[var(--px-10)] py-[var(--px-14)]">
                                 <div className="flex flex-col w-full">
