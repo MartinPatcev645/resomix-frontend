@@ -77,15 +77,17 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     <div key={track.id} className="relative w-full">
                         {track.rank === 12 && isRestricted && (
                             <div className="absolute z-50 left-0 w-full flex flex-col items-center justify-center px-[var(--px-20)] pt-[var(--px-20)] pointer-events-auto">
-                                <h3 className="text-white text-[length:var(--px-18)] font-fira font-semibold mb-[var(--px-10)] text-center">
-                                    Unlock all matching tracks
-                                </h3>
-                                <p className="text-white text-[length:var(--px-14)] font-fira font-light text-center mb-[var(--px-20)]">
-                                    Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
-                                </p>
-                                <div className="flex flex-col gap-[var(--px-10)] items-center w-full">
-                                    <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
-                                    <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                <div className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-30)] pb-[var(--px-30)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-350)] w-full">
+                                    <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
+                                        Unlock all matching tracks
+                                    </h3>
+                                    <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-center text-white mb-[var(--px-20)]">
+                                        Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
+                                    </p>
+                                    <div className="flex flex-col gap-[var(--px-10)] items-center w-full">
+                                        <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+                                        <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                    </div>
                                 </div>
                             </div>
                         )}
