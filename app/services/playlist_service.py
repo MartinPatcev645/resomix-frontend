@@ -308,7 +308,6 @@ class PlaylistService:
 
     async def get_playlist_hls_data(
         self, db: AsyncSession, playlist_uuid: str, token: Optional[str] = None, partner_id: Optional[int] = None,
-        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get playlist as HLS M3U8 format by calling media server.
@@ -339,11 +338,14 @@ class PlaylistService:
             # Extract ordered UUIDs (seed track first, then similar tracks by position)
             uuid_list = [track.get("uuid") for track in tracks if track.get("uuid")]
 
-            # Anonymous frontend users only get to play the first ANON_VISIBLE_COUNT tracks —
-            # truncate the HLS manifest accordingly (the rest are scrambled in the metadata view,
-            # nudging them to log in). Authenticated users and B2B partners get the full manifest.
-            if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id):
-                uuid_list = uuid_list[:ANON_VISIBLE_COUNT]
+            # Freemium gate: the play-session bakes a signed `max_tracks` claim into the edge
+            # token for anonymous frontend sessions. The HLS player request carries only that
+            # token (no user JWT), so we read the preview cap from the token and truncate the
+            # manifest. Authenticated/B2B sessions carry no cap → full manifest.
+            from app.utils.edge_auth import decode_edge_token
+            max_tracks = decode_edge_token(token).get("max_tracks") if token else None
+            if max_tracks:
+                uuid_list = uuid_list[: int(max_tracks)]
 
             # Get the seed track type (it's the first track in the list)
             seed_track_type = (
@@ -736,11 +738,16 @@ class PlaylistService:
             }
 
     async def get_playlist_playback_session(
-        self, playlist_id: str, client_ip: str, partner_id: Optional[int] = None
+        self, playlist_id: str, client_ip: str, partner_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> dict:
         """
         Evaluate territory restrictions and generate an Edge Authorization session token
         for playing a server-stitched playlist.
+
+        For an anonymous frontend session (no user_id, System Partner) we bake a signed
+        ``max_tracks`` cap into the token so the HLS manifest is truncated to a preview —
+        the m3u8 request itself carries no user auth, so the cap must travel in the token.
         """
         # TODO: Phase 3.1 Integration
         # Once Redis deal_terms and GeoIP are integrated, evaluate takedowns
@@ -754,8 +761,15 @@ class PlaylistService:
             # Embed the owning partner so the Hetzner edge can resolve partner-scoped
             # assets directly from the verified token claim (defaults to the system
             # partner / partner 1 for frontend/B2C traffic).
+            # Anonymous frontend → cap the manifest to a preview (first ANON_VISIBLE_COUNT).
+            max_tracks = (
+                ANON_VISIBLE_COUNT
+                if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id)
+                else None
+            )
             token = generate_edge_token(
-                playlist_id, client_ip, partner_id=partner_id, scope="playback"
+                playlist_id, client_ip, partner_id=partner_id, scope="playback",
+                max_tracks=max_tracks,
             )
 
             # The Similarity server handles the stitched HLS playlists

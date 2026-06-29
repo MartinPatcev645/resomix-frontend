@@ -26,6 +26,7 @@ def generate_edge_token(
     client_ip: str,
     partner_id: Optional[int] = None,
     scope: Optional[str] = None,
+    max_tracks: Optional[int] = None,
 ) -> str:
     """
     Generate a cryptographic Edge Authorization JWT for a playlist playback session.
@@ -61,6 +62,11 @@ def generate_edge_token(
             payload["partner_id"] = partner_id
         if scope is not None:
             payload["scope"] = scope
+        # Freemium gate: cap how many tracks the HLS manifest may expose for this session
+        # (set for anonymous frontend users so playback is limited to a preview). Signed, so
+        # it can't be tampered with on the m3u8 request (where the user JWT isn't present).
+        if max_tracks is not None:
+            payload["max_tracks"] = int(max_tracks)
 
         # Encode and sign using HS256 and the shared secret
         token = jwt.encode(payload, settings.edge_jwt_secret, algorithm="HS256")
@@ -69,6 +75,26 @@ def generate_edge_token(
     except Exception as e:
         logger.error(f"Failed to generate edge token for playlist {playlist_id}: {e}")
         raise
+
+
+def decode_edge_token(token: str) -> dict:
+    """Decode an edge token and return its claims, or ``{}`` on any failure.
+
+    Used to read non-security session hints (e.g. ``max_tracks``) on requests where the
+    user JWT isn't available (the HLS player only sends the edge token). The signature is
+    verified with the shared secret; expiry is NOT enforced here (the edge node enforces it).
+    """
+    if not token:
+        return {}
+    try:
+        return jwt.decode(
+            token,
+            settings.edge_jwt_secret,
+            algorithms=["HS256"],
+            options={"verify_exp": False},
+        )
+    except Exception:
+        return {}
 
 
 def generate_playback_token(partner_id: int, client_ip: str) -> dict:

@@ -603,8 +603,7 @@ class PlaylistController:
             token = all_tokens[0] if all_tokens else None
 
             result = await self.playlist_service.get_playlist_hls_data(
-                db, playlist_id, token, partner_id=partner_id,
-                user_id=current_user.id if current_user else None,
+                db, playlist_id, token, partner_id=partner_id
             )
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
@@ -1935,7 +1934,8 @@ class PlaylistController:
 
         client_ip = request.client.host if request.client else "unknown"
         result = await self.playlist_service.get_playlist_playback_session(
-            playlist_id, client_ip, partner_id=partner_id
+            playlist_id, client_ip, partner_id=partner_id,
+            user_id=current_user.id if current_user else None,
         )
 
         if result.get("success"):
