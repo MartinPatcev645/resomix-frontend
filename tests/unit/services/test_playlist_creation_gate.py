@@ -2,25 +2,26 @@
 Playlist Creation Gate Tests
 =============================
 
-Ensures that the similarity search endpoint only creates a persistent playlist
-under the correct conditions:
+Ensures the similarity endpoint creates a persistent playlist with the correct
+visibility (anonymous frontend users are now ALLOWED, but degraded — see below):
 
-    ┌─────────────────────────────────┬───────────────────────┐
-    │ Caller                          │ Playlist created?     │
-    ├─────────────────────────────────┼───────────────────────┤
-    │ Frontend — anonymous            │ NO  (partner_id=1,    │
-    │ (partner_id=1, user_id=None)    │      user_id=None)    │
-    ├─────────────────────────────────┼───────────────────────┤
-    │ Frontend — authenticated        │ YES (partner_id=1,    │
-    │ (partner_id=1, user_id set)     │      user_id set)     │
-    ├─────────────────────────────────┼───────────────────────┤
-    │ B2B partner — API key only      │ YES (partner_id!=1,   │
-    │ (partner_id=2, user_id=None)    │      any user_id)     │
-    └─────────────────────────────────┴───────────────────────┘
+    ┌─────────────────────────────────┬───────────────────────────────┐
+    │ Caller                          │ Playlist created? / visibility│
+    ├─────────────────────────────────┼───────────────────────────────┤
+    │ Frontend — anonymous            │ YES, PUBLIC (is_public=True)  │
+    │ (partner_id=1, user_id=None)    │  + response degraded:         │
+    │                                 │  first 10 real, rest scrambled│
+    ├─────────────────────────────────┼───────────────────────────────┤
+    │ Frontend — authenticated        │ YES, PRIVATE (is_public=False)│
+    │ (partner_id=1, user_id set)     │  + full (no redaction)        │
+    ├─────────────────────────────────┼───────────────────────────────┤
+    │ B2B partner — API key only      │ YES, PRIVATE (is_public=False)│
+    │ (partner_id=2, user_id=None)    │  + full                       │
+    └─────────────────────────────────┴───────────────────────────────┘
 
 Also tests the play-session gating:
 
-    • Anonymous frontend → 401 (Login required)
+    • Anonymous frontend → 200 (allowed; HLS truncated to the first 10 tracks)
     • No API key → 401/403
     • Wrong API key → 401/403
     • Valid B2B key → payload processed (no crash)
@@ -147,12 +148,15 @@ class TestPlaylistGate_SimilarityByPath:
         return service, similar_uuids
 
     @pytest.mark.asyncio
-    async def test_anonymous_frontend_no_playlist_created(self):
+    async def test_anonymous_frontend_public_playlist_created(self):
         """
-        partner_id=1 + user_id=None → playlist_repository.async_create_similarity_playlist
-        must NOT be called, and the returned dict must NOT contain a 'playlist' key.
+        partner_id=1 + user_id=None (anonymous frontend) → a playlist IS created and it is
+        PUBLIC (is_public=True), so the limited preview can be shared/shown. The response
+        itself is degraded elsewhere (first ANON_VISIBLE_COUNT real, the rest scrambled).
         """
         service, similar_uuids = self._make_service_with_mocks()
+        playlist = _make_playlist_info()
+        service.playlist_repository.async_create_similarity_playlist.return_value = playlist
         db = AsyncMock()
 
         with patch.object(
@@ -160,22 +164,23 @@ class TestPlaylistGate_SimilarityByPath:
             "_call_similarity_server",
             new_callable=AsyncMock,
             return_value=_make_similarity_server_response(similar_uuids),
-        ), _patch_internal_singletons():
+        ), _patch_internal_singletons(playlist_info=playlist):
             result = await service.get_similarity_by_path(
                 db=db,
                 server_track_path=f"previews/{SEED_UUID}.mp3",
                 queried_track_uuid=SEED_UUID,
                 partner_id=1,
-                user_id=None,      # <-- anonymous
+                user_id=None,      # <-- anonymous frontend
             )
 
-        # No playlist must be created
-        service.playlist_repository.async_create_similarity_playlist.assert_not_called()
-        # Response must not include 'playlist' key
-        assert "playlist" not in result, (
-            "Anonymous frontend users must NOT get a playlist. "
-            f"Got keys: {list(result.keys())}"
+        service.playlist_repository.async_create_similarity_playlist.assert_called_once()
+        call_kwargs = service.playlist_repository.async_create_similarity_playlist.call_args.kwargs
+        assert call_kwargs.get("user_id") is None
+        assert call_kwargs.get("partner_id") == 1
+        assert call_kwargs.get("is_public") is True, (
+            "Anonymous frontend playlists must be PUBLIC (is_public=True)."
         )
+        assert "playlist" in result
 
     @pytest.mark.asyncio
     async def test_authenticated_frontend_playlist_created(self):
@@ -205,6 +210,9 @@ class TestPlaylistGate_SimilarityByPath:
         call_kwargs = service.playlist_repository.async_create_similarity_playlist.call_args.kwargs
         assert call_kwargs.get("user_id") == 99
         assert call_kwargs.get("partner_id") == 1
+        assert call_kwargs.get("is_public") is False, (
+            "Authenticated users' playlists must be PRIVATE (is_public=False)."
+        )
 
         assert "playlist" in result, (
             "Authenticated frontend user must get a playlist in the response."
@@ -239,6 +247,9 @@ class TestPlaylistGate_SimilarityByPath:
         call_kwargs = service.playlist_repository.async_create_similarity_playlist.call_args.kwargs
         assert call_kwargs.get("partner_id") == 2
         assert call_kwargs.get("user_id") is None
+        assert call_kwargs.get("is_public") is False, (
+            "B2B playlists must be PRIVATE (is_public=False); only anonymous frontend is public."
+        )
 
         assert "playlist" in result, (
             "B2B partners must always get a playlist, even without a user_id."
@@ -329,8 +340,10 @@ class TestPlaylistGate_Upload:
         return service, similar_uuids
 
     @pytest.mark.asyncio
-    async def test_upload_anonymous_frontend_no_playlist(self):
+    async def test_upload_anonymous_frontend_public_playlist_created(self):
         service, similar_uuids = self._make_service_with_mocks()
+        playlist = _make_playlist_info()
+        service.playlist_repository.async_create_similarity_playlist.return_value = playlist
         db = AsyncMock()
 
         with patch.object(
@@ -341,7 +354,7 @@ class TestPlaylistGate_Upload:
         ), patch(
             "app.services.similarity_service.get_duration_from_bytes_sync",
             return_value=120.0,
-        ), _patch_internal_singletons():
+        ), _patch_internal_singletons(playlist_info=playlist):
             result = await service.calculate_similarity_for_upload(
                 db=db,
                 audio_bytes=b"fake",
@@ -351,8 +364,12 @@ class TestPlaylistGate_Upload:
                 user_id=None,
             )
 
-        service.playlist_repository.async_create_similarity_playlist.assert_not_called()
-        assert "playlist" not in result
+        service.playlist_repository.async_create_similarity_playlist.assert_called_once()
+        call_kwargs = service.playlist_repository.async_create_similarity_playlist.call_args.kwargs
+        assert call_kwargs.get("is_public") is True, (
+            "Anonymous frontend upload playlists must be PUBLIC."
+        )
+        assert "playlist" in result
 
     @pytest.mark.asyncio
     async def test_upload_authenticated_frontend_playlist_created(self):
@@ -419,8 +436,8 @@ class TestPlaySessionGate:
     """
     Unit tests for PlaylistController.get_playlist_playback_session.
 
-    These test the three gate outcomes without needing a running server:
-      • Anonymous frontend (partner_id=1, no user) → 401
+    These test the gate outcomes without needing a running server:
+      • Anonymous frontend (partner_id=1, no user) → 200 (allowed; HLS is truncated elsewhere)
       • Authenticated user with existing playlist → 200 (JWT minted)
       • Any caller with non-existent playlist UUID → 404
     """
@@ -450,11 +467,15 @@ class TestPlaySessionGate:
         return p
 
     @pytest.mark.asyncio
-    async def test_anonymous_frontend_returns_401(self, controller):
+    async def test_anonymous_frontend_allowed_mints_token(self, controller):
         """
-        partner_id=1, current_user=None → 401 without touching the DB.
+        partner_id=1, current_user=None → anonymous playback is now ALLOWED (the HLS manifest
+        is truncated to the first ANON_VISIBLE_COUNT tracks elsewhere). The controller looks the
+        playlist up and mints a session token → 200.
         """
-        controller.playlist_service.playlist_repository.async_get_playlist_by_uuid = AsyncMock()
+        controller.playlist_service.playlist_repository.async_get_playlist_by_uuid = AsyncMock(
+            return_value=self._make_playlist()
+        )
         db = AsyncMock()
 
         response = await controller.get_playlist_playback_session(
@@ -465,9 +486,9 @@ class TestPlaySessionGate:
             current_user=None,  # anonymous
         )
 
-        assert response.status_code == 401
-        # DB must NOT be queried for anonymous callers
-        controller.playlist_service.playlist_repository.async_get_playlist_by_uuid.assert_not_called()
+        assert response.status_code == 200
+        # Anonymous callers are no longer short-circuited; the playlist is looked up + token minted.
+        controller.playlist_service.playlist_repository.async_get_playlist_by_uuid.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_authenticated_frontend_missing_playlist_returns_404(self, controller):
@@ -616,13 +637,12 @@ class TestAuthGate_LiveServer:
             f"Expected 401/403 for wrong API key, got {r.status_code}: {r.text}"
         )
 
-    def test_play_session_valid_key_anonymous_frontend_401(self):
+    def test_play_session_valid_key_anonymous_frontend_allowed(self):
         """
-        POST /playlists/{uuid}/play-session with valid API key but NO JWT user token
-        → 401 "Login required" (not 404, not 403, not 200).
-
-        This covers the exact failure path from the June-2026 bug report where
-        the frontend called play-session with the seed track UUID and no user.
+        POST /playlists/{uuid}/play-session with valid API key but NO JWT user token →
+        anonymous playback is now ALLOWED (the HLS manifest is truncated to the first 10 tracks
+        elsewhere), so this mints a session token. Expect 200 (existing playlist) or 404
+        (unknown uuid) — but NOT 401.
         """
         import requests as req
         r = req.post(
@@ -630,13 +650,11 @@ class TestAuthGate_LiveServer:
             params={"api_key": self.VALID_API_KEY},
             # No Authorization header → anonymous user
         )
-        assert r.status_code == 401, (
-            f"Expected 401 for anonymous frontend + valid API key, got {r.status_code}: {r.text}"
+        assert r.status_code != 401, (
+            f"Anonymous frontend playback must no longer be blocked with 401, got {r.status_code}: {r.text}"
         )
-        body = r.json()
-        detail = body.get("detail", "")
-        assert "login" in detail.lower() or "sign in" in detail.lower(), (
-            f"Expected 'login' in detail message, got: {detail}"
+        assert r.status_code in (200, 404), (
+            f"Expected 200 (token minted) or 404 (unknown playlist), got {r.status_code}: {r.text}"
         )
 
     # --- similarity search endpoint ---
@@ -668,14 +686,13 @@ class TestAuthGate_LiveServer:
             f"Expected 401/403 for wrong API key on similarity search, got {r.status_code}"
         )
 
-    def test_similarity_search_valid_key_anonymous_frontend_401(self):
+    def test_similarity_search_valid_key_anonymous_allowed_degraded(self):
         """
-        POST /similarity/search with valid API key but NO JWT user token → 401 "Login required".
+        POST /similarity/search with valid API key but NO JWT user token → 200.
 
-        Enforcement is now applied at the similarity endpoint itself (not only at play-session):
-        the frontend partner (partner_id=1) requires an authenticated user, so an anonymous
-        caller cannot drive the similarity → playlist flow at all. B2B partners (partner_id != 1)
-        are unaffected (they authenticate via API key alone). Text /search_tracks stays open.
+        Anonymous frontend users are ALLOWED but degraded: the response shows the first
+        ANON_VISIBLE_COUNT (10) tracks in full and scrambles the rest (and the playlist is
+        created PUBLIC). The endpoint itself no longer blocks. Text /search_tracks stays open.
         """
         import requests as req
         r = req.post(
@@ -684,12 +701,6 @@ class TestAuthGate_LiveServer:
             params={"api_key": self.VALID_API_KEY},
             # No Authorization header → anonymous user
         )
-        assert r.status_code == 401, (
-            f"Expected 401 for anonymous frontend + valid API key on similarity search, "
-            f"got {r.status_code}: {r.text}"
-        )
-        body = r.json()
-        detail = body.get("error") or body.get("detail") or ""
-        assert "login" in detail.lower() or "sign in" in detail.lower(), (
-            f"Expected 'login' in the message, got: {detail}"
+        assert r.status_code == 200, (
+            f"Anonymous frontend similarity search must be allowed (200), got {r.status_code}: {r.text}"
         )

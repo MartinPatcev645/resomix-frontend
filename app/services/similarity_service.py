@@ -25,7 +25,7 @@ from app.repositories.similarity_repository import SimilarityRepository
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.similarity_segment import SimilaritySegmentService
 from app.core.config import settings
-from app.utils.demo_mode_utils import apply_demo_mode_redaction
+from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
 from app.utils.similarity_utils import (
     get_duration_from_bytes_sync,
     deduplicate_tracks,
@@ -236,9 +236,12 @@ class SimilarityService:
                                 )
                             break
 
-                # Create similarity playlist for authenticated users (frontend) or any B2B partner
+                # Always create the similarity playlist — for anonymous frontend users too.
+                # Anonymous frontend playlists are PUBLIC (so the limited preview can be shared/
+                # shown); authenticated-user and B2B playlists stay PRIVATE.
                 playlist_info = None
-                if deduplicated_track_ids and (user_id or (partner_id is not None and partner_id != settings.system_partner_id)):
+                anon_frontend = is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id)
+                if deduplicated_track_ids:
                     # Get the uploaded track's database ID
                     uploaded_track = await self.track_repository.async_get_by_uuid(
                         db, track_uuid, partner_id=partner_id
@@ -258,6 +261,7 @@ class SimilarityService:
                             playlist_type=PlaylistType.SIMILARITY,
                             user_id=user_id,
                             partner_id=partner_id,
+                            is_public=anon_frontend,
                         )
 
                 # Format response like similarity by ID
@@ -307,8 +311,8 @@ class SimilarityService:
 
                 await db.commit()
 
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(response_data)
+                if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id):
+                    apply_demo_mode_redaction(response_data, visible_count=ANON_VISIBLE_COUNT)
 
                 return response_data
             except Exception as e:
@@ -455,9 +459,11 @@ class SimilarityService:
                                 )
                             break
 
-                # Create similarity playlist for authenticated users (frontend) or any B2B partner
+                # Always create the similarity playlist — for anonymous frontend users too.
+                # Anonymous frontend playlists are PUBLIC; authenticated-user and B2B stay PRIVATE.
                 playlist_info = None
-                if deduplicated_track_ids and queried_track_data and (user_id or (partner_id is not None and partner_id != settings.system_partner_id)):
+                anon_frontend = is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id)
+                if deduplicated_track_ids and queried_track_data:
                     # Get the queried track's database ID from its UUID
                     queried_track_uuid = queried_track_data.get("id")
                     if queried_track_uuid:
@@ -479,6 +485,7 @@ class SimilarityService:
                                 playlist_type=PlaylistType.SIMILARITY,
                                 user_id=user_id,
                                 partner_id=partner_id,
+                                is_public=anon_frontend,
                             )
 
                 response_data = {
@@ -527,8 +534,8 @@ class SimilarityService:
 
                 await db.commit()
 
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(response_data)
+                if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id):
+                    apply_demo_mode_redaction(response_data, visible_count=ANON_VISIBLE_COUNT)
 
                 return response_data
             elif similarity_response.get("status") == "not_found":

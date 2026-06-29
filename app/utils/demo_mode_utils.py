@@ -11,8 +11,21 @@ from __future__ import annotations
 from typing import Any, Dict, List, MutableMapping
 
 REDACTION_LIMIT = 20
+# How many tracks an un-authenticated ("logged-out") frontend caller may see/play in full
+# before the rest are scrambled. The scramble (not removal) lets the UI show "log in to unlock".
+ANON_VISIBLE_COUNT = 10
 _ID_PATTERN = "dEm0"
 _TEXT_PATTERN = "demo"
+
+
+def is_anonymous_frontend(authenticated: bool, partner_id: Any, system_partner_id: Any) -> bool:
+    """True when the caller is an un-authenticated frontend (System Partner) user.
+
+    This is the group we *degrade* (first ``ANON_VISIBLE_COUNT`` real, rest scrambled, HLS
+    truncated) to push them toward logging in — instead of blocking. B2B partners
+    (``partner_id != system_partner_id``) authenticate via API key and are never degraded.
+    """
+    return (not authenticated) and partner_id == system_partner_id
 
 
 def _mask_id(value: str) -> str:

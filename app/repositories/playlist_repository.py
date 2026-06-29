@@ -50,6 +50,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         playlist_type: str = PlaylistType.SIMILARITY,
         user_id: Optional[int] = None,
         partner_id: Optional[int] = None,
+        is_public: bool = False,
     ) -> Dict[str, Any]:
         """
         Create a similarity playlist with tracks.
@@ -103,7 +104,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             playlist = Playlist(
                 user_id=user_id, partner_id=partner_id,  # Associate with user if logged in
                 name=name,
-                is_public=False,  # Keep is_public as 0
+                is_public=is_public,  # anonymous frontend previews are public; others private
                 type=playlist_type,
                 seed_track_id=seed_track_id,
                 num_tracks=num_tracks,

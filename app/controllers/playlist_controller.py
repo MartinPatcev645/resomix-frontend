@@ -24,7 +24,7 @@ from app.services.playlist_service import PlaylistService
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.logging_service import LoggingService
-from app.utils.demo_mode_utils import apply_demo_mode_redaction
+from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
 from app.utils.response_utils import format_response
 from app.models.user import User
 from app.services.admin_operation_log_service import AdminOperationLogService
@@ -445,8 +445,8 @@ class PlaylistController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(result)
+                if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
+                    apply_demo_mode_redaction(result, visible_count=ANON_VISIBLE_COUNT)
                 # Extract playlist integer ID if available
                 playlist_int_id = None
                 try:
@@ -603,7 +603,8 @@ class PlaylistController:
             token = all_tokens[0] if all_tokens else None
 
             result = await self.playlist_service.get_playlist_hls_data(
-                db, playlist_id, token, partner_id=partner_id
+                db, playlist_id, token, partner_id=partner_id,
+                user_id=current_user.id if current_user else None,
             )
             duration_ms = (time.time() - start_time) * 1000
             if result.get("success"):
@@ -1918,13 +1919,9 @@ class PlaylistController:
         Validates that the playlist exists in the database before minting a token.
         Returns 404 when the playlist is not found.
         """
-        # For the frontend partner, require an authenticated user.
-        # B2B partners (partner_id != system) authenticate via API key alone — no user required.
-        if partner_id == settings.system_partner_id and not current_user:
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Login required to access playback. Please sign in."},
-            )
+        # Anonymous frontend users are ALLOWED to play — but the HLS playlist is truncated to
+        # the first ANON_VISIBLE_COUNT tracks (see get_playlist_hls_data). We still mint a token
+        # here so they can stream that limited preview; full playback requires logging in.
 
         # Pre-flight: verify the playlist exists for this partner before minting a token.
         playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(

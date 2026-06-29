@@ -31,7 +31,7 @@ from app.services.similarity_service import SimilarityService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
-from app.utils.demo_mode_utils import apply_demo_mode_redaction
+from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 import time
@@ -75,19 +75,8 @@ class SimilarityController:
         else:
             logger.info("SIMILARITY UPLOAD AUTH: Anonymous user processing")
 
-        # Frontend partner (partner_id == 1) requires an authenticated user — mirrors the
-        # playback play-session gate, so an anonymous user can't drive the similarity → playlist
-        # flow (only to be blocked later at playback). B2B partners (partner_id != 1) authenticate
-        # via API key alone and are unaffected.
-        if partner_id == settings.system_partner_id and not current_user:
-            logger.warning("SIMILARITY UPLOAD: Login required for frontend partner (anonymous blocked)")
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content=format_response(
-                    success=False,
-                    error="Login required to use similarity. Please sign in.",
-                ),
-            )
+        # Anonymous frontend users are ALLOWED here, but get a degraded preview (first
+        # ANON_VISIBLE_COUNT real, rest scrambled) — see the redaction below. We do not block.
 
         # Enforce authentication if required by settings.
         # Auth is satisfied by EITHER a logged-in user (JWT) OR a validated partner
@@ -536,8 +525,8 @@ class SimilarityController:
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(similarity_results)
+                if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
+                    apply_demo_mode_redaction(similarity_results, visible_count=ANON_VISIBLE_COUNT)
                 response_content = format_response(
                     success=True, data=similarity_results
                 )
@@ -853,8 +842,8 @@ class SimilarityController:
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(similarity_results)
+                if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
+                    apply_demo_mode_redaction(similarity_results, visible_count=ANON_VISIBLE_COUNT)
                 response_content = format_response(
                     success=True, data=similarity_results
                 )
@@ -976,19 +965,8 @@ class SimilarityController:
         else:
             logger.info("SIMILARITY BY ID AUTH: Anonymous user processing")
 
-        # Frontend partner (partner_id == 1) requires an authenticated user — mirrors the
-        # playback play-session gate, so an anonymous user can't drive the similarity → playlist
-        # flow (only to be blocked later at playback). B2B partners (partner_id != 1) authenticate
-        # via API key alone and are unaffected.
-        if partner_id == settings.system_partner_id and not current_user:
-            logger.warning("SIMILARITY BY ID: Login required for frontend partner (anonymous blocked)")
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content=format_response(
-                    success=False,
-                    error="Login required to use similarity. Please sign in.",
-                ),
-            )
+        # Anonymous frontend users are ALLOWED here, but get a degraded preview (first
+        # ANON_VISIBLE_COUNT real, rest scrambled) — see the redaction below. We do not block.
 
         # Enforce authentication if required by settings.
         # Auth is satisfied by EITHER a logged-in user (JWT) OR a validated partner
@@ -1193,8 +1171,8 @@ class SimilarityController:
                 playlist_int_id = playlist.id if playlist else None
 
             duration_ms = (time.time() - start_time) * 1000
-            if settings.demo_mode:
-                apply_demo_mode_redaction(similarity_results)
+            if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
+                apply_demo_mode_redaction(similarity_results, visible_count=ANON_VISIBLE_COUNT)
             response_content = format_response(success=True, data=similarity_results)
             self.logging_service.log(
                 async_db=db,

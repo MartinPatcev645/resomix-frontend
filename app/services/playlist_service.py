@@ -25,7 +25,7 @@ from app.repositories.track_repository import TrackRepository
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.services.metadata_service import MetadataService
-from app.utils.demo_mode_utils import apply_demo_mode_redaction
+from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
 from app.core.config import settings
 
 
@@ -249,8 +249,8 @@ class PlaylistService:
                 }
             else:
                 filtered_data = self._apply_playlist_response_filtering(similarity_data)
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(filtered_data)
+                if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id):
+                    apply_demo_mode_redaction(filtered_data, visible_count=ANON_VISIBLE_COUNT)
                 return {"success": True, "data": filtered_data}
 
         except Exception as e:
@@ -296,8 +296,7 @@ class PlaylistService:
             else:
                 # Valid data returned - apply metadata filtering
                 filtered_data = self._apply_playlist_response_filtering(result)
-                if settings.demo_mode:
-                    apply_demo_mode_redaction(filtered_data)
+                # Fork requires an authenticated user, so the caller is never anonymous → full data.
                 return {"success": True, "data": filtered_data}
 
         except Exception as e:
@@ -308,7 +307,8 @@ class PlaylistService:
             }
 
     async def get_playlist_hls_data(
-        self, db: AsyncSession, playlist_uuid: str, token: Optional[str] = None, partner_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, token: Optional[str] = None, partner_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get playlist as HLS M3U8 format by calling media server.
@@ -338,6 +338,12 @@ class PlaylistService:
 
             # Extract ordered UUIDs (seed track first, then similar tracks by position)
             uuid_list = [track.get("uuid") for track in tracks if track.get("uuid")]
+
+            # Anonymous frontend users only get to play the first ANON_VISIBLE_COUNT tracks —
+            # truncate the HLS manifest accordingly (the rest are scrambled in the metadata view,
+            # nudging them to log in). Authenticated users and B2B partners get the full manifest.
+            if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id):
+                uuid_list = uuid_list[:ANON_VISIBLE_COUNT]
 
             # Get the seed track type (it's the first track in the list)
             seed_track_type = (
