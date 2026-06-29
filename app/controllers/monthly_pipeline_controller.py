@@ -633,7 +633,7 @@ class MonthlyPipelineController:
                 file, 
                 audio_bytes,
                 track_uuid,  # Use the same UUID we sent to similarity server
-                partner_id=1,  # Admin/System partner
+                partner_id=settings.system_partner_id,  # Admin/System partner
                 track_type=TrackType.ELECTROBUZZ,  # Mark as electrobuzz track
                 duration_sec=duration_sec,  # Pass the probed duration
                 full_path=path  # Pass the full path for proper duplicate detection

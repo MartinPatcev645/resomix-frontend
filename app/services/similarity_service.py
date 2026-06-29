@@ -238,7 +238,7 @@ class SimilarityService:
 
                 # Create similarity playlist for authenticated users (frontend) or any B2B partner
                 playlist_info = None
-                if deduplicated_track_ids and (user_id or (partner_id is not None and partner_id != 1)):
+                if deduplicated_track_ids and (user_id or (partner_id is not None and partner_id != settings.system_partner_id)):
                     # Get the uploaded track's database ID
                     uploaded_track = await self.track_repository.async_get_by_uuid(
                         db, track_uuid, partner_id=partner_id
@@ -457,7 +457,7 @@ class SimilarityService:
 
                 # Create similarity playlist for authenticated users (frontend) or any B2B partner
                 playlist_info = None
-                if deduplicated_track_ids and queried_track_data and (user_id or (partner_id is not None and partner_id != 1)):
+                if deduplicated_track_ids and queried_track_data and (user_id or (partner_id is not None and partner_id != settings.system_partner_id)):
                     # Get the queried track's database ID from its UUID
                     queried_track_uuid = queried_track_data.get("id")
                     if queried_track_uuid:

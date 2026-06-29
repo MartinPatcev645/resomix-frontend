@@ -1919,8 +1919,8 @@ class PlaylistController:
         Returns 404 when the playlist is not found.
         """
         # For the frontend partner, require an authenticated user.
-        # B2B partners (partner_id != 1) authenticate via API key alone — no user required.
-        if partner_id == 1 and not current_user:
+        # B2B partners (partner_id != system) authenticate via API key alone — no user required.
+        if partner_id == settings.system_partner_id and not current_user:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Login required to access playback. Please sign in."},

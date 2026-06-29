@@ -79,7 +79,7 @@ class SimilarityController:
         # playback play-session gate, so an anonymous user can't drive the similarity → playlist
         # flow (only to be blocked later at playback). B2B partners (partner_id != 1) authenticate
         # via API key alone and are unaffected.
-        if partner_id == 1 and not current_user:
+        if partner_id == settings.system_partner_id and not current_user:
             logger.warning("SIMILARITY UPLOAD: Login required for frontend partner (anonymous blocked)")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -980,7 +980,7 @@ class SimilarityController:
         # playback play-session gate, so an anonymous user can't drive the similarity → playlist
         # flow (only to be blocked later at playback). B2B partners (partner_id != 1) authenticate
         # via API key alone and are unaffected.
-        if partner_id == 1 and not current_user:
+        if partner_id == settings.system_partner_id and not current_user:
             logger.warning("SIMILARITY BY ID: Login required for frontend partner (anonymous blocked)")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,

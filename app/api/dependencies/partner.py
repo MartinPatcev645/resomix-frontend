@@ -32,7 +32,8 @@ rate_limit_service = RateLimitService()
 security_scheme = HTTPBearer(auto_error=False)
 
 # Constants
-SYSTEM_PARTNER_ID = 1  # Resomix System Partner
+from app.core.config import settings  # leaf module; safe to import at top
+SYSTEM_PARTNER_ID = settings.system_partner_id  # System/frontend partner (env SYSTEM_PARTNER_ID, default 1)
 
 import sys
 

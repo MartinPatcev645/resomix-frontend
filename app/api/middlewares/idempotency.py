@@ -26,6 +26,7 @@ from app.services.idempotency_service import IdempotencyService
 from app.services.partner_service import PartnerService
 from app.api.dependencies.database import AsyncSessionLocal
 from app.api.dependencies.auth import get_current_user_optional
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -73,9 +74,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     async with AsyncSessionLocal() as db:
                         user = await get_current_user_optional(token, db)
                         if user:
-                            # Frontend users are mapped to the System Partner (ID 1)
-                            # We use ID 1 as the tenant scope for frontend idempotency
-                            partner_id = 1
+                            # Frontend users are mapped to the System Partner
+                            # (env SYSTEM_PARTNER_ID, default 1) as the tenant scope for idempotency
+                            partner_id = settings.system_partner_id
                             request.state.partner_id = partner_id
                 except Exception:
                     pass

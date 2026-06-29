@@ -446,6 +446,12 @@ class Settings(BaseModel):
         default=3600,
         description="TTL in seconds for anonymous track storage on Hetzner (default: 1 hour)",
     )
+    system_partner_id: int = Field(
+        default=1,
+        description="The platform's own 'frontend' partner id (the System Partner). Used to gate "
+                    "frontend-only behaviour (e.g. login-required similarity/playback) and as the "
+                    "default partner scope for frontend/system requests. Default 1.",
+    )
 
     # Telemetry Configuration
     telemetry_flush_interval_seconds: int = Field(
@@ -507,6 +513,7 @@ class Settings(BaseModel):
             "PUBLIC_ALWYZON_URL": "public_alwyzon_url",
             "DEMO_MODE": "demo_mode",
             "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
+            "SYSTEM_PARTNER_ID": "system_partner_id",
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
@@ -612,6 +619,7 @@ class Settings(BaseModel):
                     "telemetry_max_batch_size",
                     "telemetry_worker_pop_size",
                     "edge_token_ttl_seconds",
+                    "system_partner_id",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)

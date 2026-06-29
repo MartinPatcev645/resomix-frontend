@@ -24,6 +24,7 @@ from fastapi import UploadFile
 
 from sqlalchemy import text, select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.config import settings
 from app.models.constants import TrackType
 from app.models.track import Track
 from app.models.track_contributor import TrackContributor
@@ -170,7 +171,7 @@ class Cache:
             # Only contributors and labels tables use party_id
             if table in ["contributors", "labels"]:
                 # Use partner_id if provided, otherwise default to 1
-                pid = partner_id if partner_id is not None else 1
+                pid = partner_id if partner_id is not None else settings.system_partner_id
                 insert_sql = text(f"INSERT IGNORE INTO {table} ({col_name}, party_id, partner_id) VALUES (:name, :party_id, :partner_id)")
                 await db.execute(insert_sql, {"name": sanitized_name, "party_id": self.party_id, "partner_id": pid})
             else:
