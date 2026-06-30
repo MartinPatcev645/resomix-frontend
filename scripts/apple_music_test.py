@@ -104,7 +104,7 @@ def search_track(query, token):
     }
 
     try:
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=headers, params=params, timeout=10)
         
         if response.status_code == 429:
             print("  [!] Rate limit hit. Backing off for 5 seconds...")
