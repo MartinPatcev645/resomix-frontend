@@ -4,6 +4,7 @@ import urllib.parse
 import jwt
 import requests
 import json
+import pymysql
 
 # ==========================================
 # CONFIGURATION
@@ -17,6 +18,50 @@ STOREFRONT = "us"
 
 USE_JSON_LIST = True
 JSON_FILE_PATH = "scripts/apple_music_tracks_selection.json"
+
+# ==========================================
+# DATABASE CONFIGURATION
+# ==========================================
+DB_HOST = "localhost"
+DB_USER = "resomix_user"
+DB_PASS = "resomix_prod"
+DB_NAME = "resomix_prod"
+
+# ==========================================
+# DB FUNCTION
+# ==========================================
+def get_track_metadata(file_path):
+    try:
+        connection = pymysql.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASS,
+            database=DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        
+        query = """
+        SELECT 
+            t.title, 
+            t.duration_sec, 
+            GROUP_CONCAT(a.name SEPARATOR ', ') AS artists
+        FROM tracks t
+        LEFT JOIN track_artists ta ON t.id = ta.track_id
+        LEFT JOIN artists a ON ta.artist_id = a.id
+        WHERE t.file_path = %s
+        GROUP BY t.id
+        """
+        
+        with connection.cursor() as cursor:
+            cursor.execute(query, (file_path,))
+            result = cursor.fetchone()
+            return result
+    except Exception as e:
+        print(f"DB Error: {e}")
+        return None
+    finally:
+        if 'connection' in locals() and connection.open:
+            connection.close()
 
 # ==========================================
 # JWT GENERATION
@@ -41,35 +86,34 @@ def generate_developer_token():
     return token
 
 # ==========================================
-# APPLE MUSIC API CALL
+# APPLE MUSIC API SEARCH
 # ==========================================
-def search_track(query, token, retries=3):
-    """Searches a track query using the Apple Music API, managing rate limits."""
-    encoded_query = urllib.parse.quote_plus(query)
-    url = f"https://api.music.apple.com/v1/catalog/{STOREFRONT}/search?types=songs&limit=1&term={encoded_query}"
-    
+def search_track(query, token):
+    """
+    Searches for a track on Apple Music using the catalog search API.
+    Returns the top result's metadata.
+    """
+    url = f"https://api.music.apple.com/v1/catalog/{STOREFRONT}/search"
     headers = {
         "Authorization": f"Bearer {token}"
     }
+    params = {
+        "types": "songs",
+        "term": query,
+        "limit": 1
+    }
 
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, params=params)
         
-        # Handle Rate Limits (HTTP 429)
         if response.status_code == 429:
-            if retries > 0:
-                print(f"[Rate Limit] Hit 429. Backing off for 5 seconds... ({retries} retries left)")
-                time.sleep(5)
-                return search_track(query, token, retries - 1)
-            else:
-                print(f"Max retries exceeded due to rate limit for: {query}")
-                return None
-
-        if response.status_code != 200:
-            print(f"HTTP Error {response.status_code} for query: {query}")
-            return None
-
+            print("  [!] Rate limit hit. Backing off for 5 seconds...")
+            time.sleep(5)
+            return search_track(query, token)
+            
+        response.raise_for_status()
         data = response.json()
+        
         results = data.get("results", {}).get("songs", {}).get("data", [])
         
         if results:
@@ -78,12 +122,7 @@ def search_track(query, token, retries=3):
             previews = attributes.get("previews", [])
             preview_url = previews[0].get("url") if previews else "No preview URL"
             
-            # The artwork URL contains placeholders like {w}x{h}. 
-            # We replace them to request a 600x600 pixel image.
-            artwork_data = attributes.get("artwork", {})
-            raw_artwork_url = artwork_data.get("url", "NO_ARTWORK")
-            artwork_url = raw_artwork_url.replace("{w}", "600").replace("{h}", "600")
-            
+            artwork_url = attributes.get("artwork", {}).get("url", "").replace("{w}", "600").replace("{h}", "600")
             apple_duration_ms = attributes.get("durationInMillis", 0)
             
             return {
@@ -119,26 +158,52 @@ def process_tracks():
     # Initialize the CSV file with headers if it doesn't exist
     if not os.path.exists(OUTPUT_FILE):
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-            f.write("Query,SongID,ISRC,DurationMs,DurationFormatted,Name,Artist,Album,ReleaseDate,Genres,AppleMusicURL,PreviewURL,ArtworkURL,DeepLinkURL\n")
+            f.write("Query,FilePath,IsMatch,SongID,ISRC,DurationMs,DurationFormatted,Name,Artist,Album,ReleaseDate,Genres,AppleMusicURL,PreviewURL,ArtworkURL,DeepLinkURL\n")
             
-    queries = []
+    tasks = []
     if USE_JSON_LIST:
         print(f"Loading queries from JSON: {JSON_FILE_PATH}")
         with open(JSON_FILE_PATH, "r", encoding="utf-8") as f:
             paths = json.load(f)
         for path in paths:
-            filename = os.path.basename(path)
-            query, _ = os.path.splitext(filename)
-            queries.append(query)
+            db_meta = get_track_metadata(path)
+            if db_meta and db_meta.get('title'):
+                artists = db_meta.get('artists')
+                title = db_meta.get('title')
+                query = f"{artists} - {title}" if artists else title
+                tasks.append({
+                    "query": query,
+                    "path": path,
+                    "db_title": title,
+                    "db_duration_sec": db_meta.get('duration_sec')
+                })
+            else:
+                print(f"Path not found in DB or missing title: {path}")
+                # Fallback to filename
+                filename = os.path.basename(path)
+                query, _ = os.path.splitext(filename)
+                tasks.append({
+                    "query": query,
+                    "path": path,
+                    "db_title": None,
+                    "db_duration_sec": None
+                })
     else:
         query, _ = os.path.splitext(FILENAME)
-        queries.append(query)
+        tasks.append({
+            "query": query,
+            "path": "",
+            "db_title": None,
+            "db_duration_sec": None
+        })
             
-    print(f"Starting processing for {len(queries)} track(s)...")
+    print(f"Starting processing for {len(tasks)} track(s)...")
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as outfile:
-        for idx, query in enumerate(queries):
-            print(f"[{idx+1}/{len(queries)}] Searching Apple Music for query: '{query}'")
+        for idx, task in enumerate(tasks):
+            query = task['query']
+            path = task['path']
+            print(f"[{idx+1}/{len(tasks)}] Searching Apple Music for query: '{query}'")
             result = search_track(query, token)
             
             if result:
@@ -147,12 +212,26 @@ def process_tracks():
                 safe_artist = result['artist'].replace('"', '""')
                 safe_album = result['albumName'].replace('"', '""')
                 
-                csv_line = f'"{query}","{result["id"]}","{result["isrc"]}","{result["durationInMillis"]}","{result["durationFormatted"]}","{safe_name}","{safe_artist}","{safe_album}","{result["releaseDate"]}","{result["genres"]}","{result["constructed_url"]}","{result["preview"]}","{result["artwork_url"]}","{result["url"]}"\n'
+                # Check match logic
+                is_match = "N/A"
+                if task['db_title'] and task['db_duration_sec'] and result.get('durationInMillis'):
+                    db_duration_ms = float(task['db_duration_sec']) * 1000
+                    apple_duration_ms = float(result['durationInMillis'])
+                    db_title_lower = task['db_title'].lower()
+                    
+                    if "(radio edit)" in db_title_lower or "(extended mix)" in db_title_lower:
+                        # Allow Apple Music duration to be less or equal to our DB duration (+ 2s margin)
+                        is_match = "True" if apple_duration_ms <= (db_duration_ms + 2000) else "False"
+                    else:
+                        # Require exact match (+/- 2 seconds)
+                        is_match = "True" if abs(apple_duration_ms - db_duration_ms) <= 2000 else "False"
+                
+                csv_line = f'"{query}","{path}","{is_match}","{result["id"]}","{result["isrc"]}","{result["durationInMillis"]}","{result["durationFormatted"]}","{safe_name}","{safe_artist}","{safe_album}","{result["releaseDate"]}","{result["genres"]}","{result["constructed_url"]}","{result["preview"]}","{result["artwork_url"]}","{result["url"]}"\n'
                 outfile.write(csv_line)
-                print(f"  -> MATCH: ID: {result['id']}")
+                print(f"  -> MATCH: ID: {result['id']} (IsMatch: {is_match})")
             else:
                 # Write an empty row for tracks not found, preserving the column count
-                outfile.write(f'"{query}","NOT_FOUND","","","","","","","","","","","",""\n')
+                outfile.write(f'"{query}","{path}","N/A","NOT_FOUND","","","","","","","","","","","",""\n')
                 print(f"  -> MISS")
 
     print(f"Processing complete. Results saved in: {OUTPUT_FILE}")
