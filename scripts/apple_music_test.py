@@ -201,7 +201,24 @@ def clean_db_metadata(artists, title, file_path):
             
     if clean_title:
         clean_title = re.sub(r'^\d+[\.\-_ ]*', '', clean_title).strip()
-        
+
+    # Remove [Label] square-bracket segments, but KEEP version/feat info that this catalogue
+    # also puts in square brackets (e.g. "[Reborn Mix]", "[Deep Mix]", "[feat. X]", "[... Rework]").
+    # Heuristic: a bracket is a label unless it contains a version/feat keyword.
+    keep_kw = re.compile(r'\b(mix|remix|rework|re-edit|edit|version|instrumental|dub|bootleg|vip|feat\.?|ft\.?)\b', re.IGNORECASE)
+    def _strip_labels(s):
+        return re.sub(r'\s*\[([^\]]*)\]', lambda m: m.group(0) if keep_kw.search(m.group(1)) else '', s)
+    clean_title = _strip_labels(clean_title)
+
+    # Drop standalone numeric disambiguators like "(2)" (Discogs artist suffixes / dedup markers).
+    # These are NOT version tags like "(Original Mix)", which are preserved.
+    clean_artists = re.sub(r'\s*\(\s*\d+\s*\)', '', clean_artists)
+    clean_title = re.sub(r'\s*\(\s*\d+\s*\)', '', clean_title)
+
+    # Collapse any double spaces left by the removals.
+    clean_artists = re.sub(r'\s{2,}', ' ', clean_artists).strip()
+    clean_title = re.sub(r'\s{2,}', ' ', clean_title).strip()
+
     return clean_artists, clean_title
 
 def format_seconds_to_mmss(seconds):
