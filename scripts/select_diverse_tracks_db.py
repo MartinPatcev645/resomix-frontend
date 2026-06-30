@@ -4,9 +4,9 @@ import json
 import random
 
 DB_HOST = "localhost"
-DB_USER = "resomix_user"
-DB_PASS = "resomix_prod"
-DB_NAME = "resomix_prod"
+DB_USER = "resomixAdmin"
+DB_PASS = "OWwGeZ3-resomix@2212@Admin!"
+DB_NAME = "resomix_db"
 
 PATHS = [
     "veggera/public_html/electrobuzz_music/Electrobuzz_FTP/ULTIMATE/BASIC/Dj_Chart",

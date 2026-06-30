@@ -25,9 +25,9 @@ JSON_FILE_PATH = "scripts/apple_music_tracks_selection.json"
 # DATABASE CONFIGURATION
 # ==========================================
 DB_HOST = "localhost"
-DB_USER = "resomix_user"
-DB_PASS = "resomix_prod"
-DB_NAME = "resomix_prod"
+DB_USER = "resomixAdmin"
+DB_PASS = "OWwGeZ3-resomix@2212@Admin!"
+DB_NAME = "resomix_db"
 
 # ==========================================
 # DB FUNCTION
