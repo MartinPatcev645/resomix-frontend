@@ -5,6 +5,8 @@ import jwt
 import requests
 import json
 import pymysql
+import csv
+import re
 
 # ==========================================
 # CONFIGURATION
@@ -149,16 +151,103 @@ def search_track(query, token):
         return None
 
 # ==========================================
+# METADATA CLEANING & FORMATTING HELPERS
+# ==========================================
+def clean_db_metadata(artists, title, file_path):
+    clean_artists = artists or ''
+    clean_title = title or ''
+    
+    # Remove file extension from title if present
+    for ext in ['.mp3', '.flac', '.wav', '.aiff', '.FLAC', '.WAV', '.MP3']:
+        if clean_title.endswith(ext):
+            clean_title = clean_title[:-len(ext)]
+            break
+            
+    # If artists is 'Unknown' or empty, try to parse from the title or filename
+    if not clean_artists or clean_artists.lower() == 'unknown':
+        if clean_title and ' - ' in clean_title:
+            parts = clean_title.split(' - ', 1)
+            potential_artist = re.sub(r'^\d+[\.\-_ ]*', '', parts[0]).strip()
+            potential_title = parts[1].strip()
+            if potential_artist and potential_title:
+                clean_artists = potential_artist
+                clean_title = potential_title
+        else:
+            filename = os.path.basename(file_path)
+            name_without_ext, _ = os.path.splitext(filename)
+            # Clean common electrobuzz network tags
+            name_without_ext = re.sub(r'[-_]electrobuzz\.(net|pro|com|click|dj)', '', name_without_ext, flags=re.IGNORECASE)
+            name_without_ext = re.sub(r'_\(www\.electrobuzz\.(net|pro|com|dj)\)', '', name_without_ext, flags=re.IGNORECASE)
+            if ' - ' in name_without_ext:
+                parts = name_without_ext.split(' - ', 1)
+                potential_artist = re.sub(r'^\d+[\.\-_ ]*', '', parts[0]).strip()
+                potential_title = parts[1].strip()
+                if potential_artist and potential_title:
+                    clean_artists = potential_artist
+                    clean_title = potential_title
+            elif '-' in name_without_ext:
+                parts = name_without_ext.split('-', 1)
+                potential_artist = re.sub(r'^\d+[\.\-_ ]*', '', parts[0]).strip()
+                potential_title = parts[1].strip()
+                if potential_artist and potential_title:
+                    clean_artists = potential_artist
+                    clean_title = potential_title
+                    
+    # Strip leading track numbers/indices from artists and title
+    if clean_artists:
+        clean_artists = re.sub(r'^\d+[\.\-_ ]*', '', clean_artists).strip()
+        if clean_artists.lower() == 'unknown':
+            clean_artists = ''
+            
+    if clean_title:
+        clean_title = re.sub(r'^\d+[\.\-_ ]*', '', clean_title).strip()
+        
+    return clean_artists, clean_title
+
+def format_seconds_to_mmss(seconds):
+    if seconds is None:
+        return ""
+    try:
+        total_seconds = int(float(seconds))
+        mins = total_seconds // 60
+        secs = total_seconds % 60
+        return f"{mins:02d}:{secs:02d}"
+    except (ValueError, TypeError):
+        return ""
+
+# ==========================================
 # MAIN EXECUTION
 # ==========================================
 def process_tracks():
     print("Generating Developer Token...")
     token = generate_developer_token()
     
-    # Initialize the CSV file with headers if it doesn't exist
-    if not os.path.exists(OUTPUT_FILE):
-        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-            f.write("Query,FilePath,IsMatch,SongID,ISRC,DurationMs,DurationFormatted,Name,Artist,Album,ReleaseDate,Genres,AppleMusicURL,PreviewURL,ArtworkURL,DeepLinkURL\n")
+    # We define the strict headers as requested by the user
+    headers = [
+        "in_house_query",
+        "in_house_file_path",
+        "is_match",
+        "apple_song_id",
+        "apple_isrc",
+        "in_house_duration",
+        "apple_duration",
+        "apple_name",
+        "apple_artist",
+        "apple_album",
+        "apple_release_date",
+        "apple_genres",
+        "apple_music_url",
+        "apple_preview_url",
+        "apple_artwork_url",
+        "apple_deep_link_url",
+        "in_house_duration_ms",
+        "apple_duration_ms"
+    ]
+    
+    # Overwrite the file to ensure the columns are correct and aligned
+    with open(OUTPUT_FILE, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+        writer.writerow(headers)
             
     tasks = []
     if USE_JSON_LIST:
@@ -168,24 +257,31 @@ def process_tracks():
         for path in paths:
             db_meta = get_track_metadata(path)
             if db_meta and db_meta.get('title'):
-                artists = db_meta.get('artists')
-                title = db_meta.get('title')
-                query = f"{artists} - {title}" if artists else title
+                artists = db_meta.get('artists') or ''
+                title = db_meta.get('title') or ''
+                
+                # Perform robust cleaning
+                clean_artists, clean_title = clean_db_metadata(artists, title, path)
+                query = f"{clean_artists} - {clean_title}" if clean_artists else clean_title
+                
                 tasks.append({
                     "query": query,
                     "path": path,
-                    "db_title": title,
+                    "db_title": clean_title,
                     "db_duration_sec": db_meta.get('duration_sec')
                 })
             else:
                 print(f"Path not found in DB or missing title: {path}")
-                # Fallback to filename
+                # Fallback to filename parsing
                 filename = os.path.basename(path)
-                query, _ = os.path.splitext(filename)
+                name_without_ext, _ = os.path.splitext(filename)
+                clean_artists, clean_title = clean_db_metadata('', name_without_ext, path)
+                query = f"{clean_artists} - {clean_title}" if clean_artists else clean_title
+                
                 tasks.append({
                     "query": query,
                     "path": path,
-                    "db_title": None,
+                    "db_title": clean_title,
                     "db_duration_sec": None
                 })
     else:
@@ -199,39 +295,78 @@ def process_tracks():
             
     print(f"Starting processing for {len(tasks)} track(s)...")
 
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as outfile:
+    with open(OUTPUT_FILE, "a", encoding="utf-8", newline="") as outfile:
+        writer = csv.writer(outfile, quoting=csv.QUOTE_ALL)
+        
         for idx, task in enumerate(tasks):
             query = task['query']
             path = task['path']
             print(f"[{idx+1}/{len(tasks)}] Searching Apple Music for query: '{query}'")
             result = search_track(query, token)
             
+            in_house_duration = format_seconds_to_mmss(task['db_duration_sec'])
+            in_house_duration_ms = int(float(task['db_duration_sec']) * 1000) if task['db_duration_sec'] is not None else ""
+            
             if result:
-                # Escape double quotes inside strings for valid CSV generation
-                safe_name = result['name'].replace('"', '""')
-                safe_artist = result['artist'].replace('"', '""')
-                safe_album = result['albumName'].replace('"', '""')
-                
                 # Check match logic
                 is_match = "N/A"
-                if task['db_title'] and task['db_duration_sec'] and result.get('durationInMillis'):
-                    db_duration_ms = float(task['db_duration_sec']) * 1000
-                    apple_duration_ms = float(result['durationInMillis'])
+                apple_duration_ms = result.get('durationInMillis', 0)
+                
+                if task['db_title'] and in_house_duration_ms:
                     db_title_lower = task['db_title'].lower()
                     
-                    if "(radio edit)" in db_title_lower or "(extended mix)" in db_title_lower:
+                    if "radio edit" in db_title_lower or "extended mix" in db_title_lower or "extended remix" in db_title_lower:
                         # Allow Apple Music duration to be less or equal to our DB duration (+ 2s margin)
-                        is_match = "True" if apple_duration_ms <= (db_duration_ms + 2000) else "False"
+                        is_match = "True" if apple_duration_ms <= (in_house_duration_ms + 2000) else "False"
                     else:
                         # Require exact match (+/- 2 seconds)
-                        is_match = "True" if abs(apple_duration_ms - db_duration_ms) <= 2000 else "False"
+                        is_match = "True" if abs(apple_duration_ms - in_house_duration_ms) <= 2000 else "False"
                 
-                csv_line = f'"{query}","{path}","{is_match}","{result["id"]}","{result["isrc"]}","{result["durationInMillis"]}","{result["durationFormatted"]}","{safe_name}","{safe_artist}","{safe_album}","{result["releaseDate"]}","{result["genres"]}","{result["constructed_url"]}","{result["preview"]}","{result["artwork_url"]}","{result["url"]}"\n'
-                outfile.write(csv_line)
+                row = [
+                    query,
+                    path,
+                    is_match,
+                    result["id"],
+                    result["isrc"],
+                    in_house_duration,
+                    result["durationFormatted"],
+                    result["name"],
+                    result["artist"],
+                    result["albumName"],
+                    result["releaseDate"],
+                    result["genres"],
+                    result["constructed_url"],
+                    result["preview"],
+                    result["artwork_url"],
+                    result["url"],
+                    in_house_duration_ms,
+                    apple_duration_ms
+                ]
+                writer.writerow(row)
                 print(f"  -> MATCH: ID: {result['id']} (IsMatch: {is_match})")
             else:
                 # Write an empty row for tracks not found, preserving the column count
-                outfile.write(f'"{query}","{path}","N/A","NOT_FOUND","","","","","","","","","","","",""\n')
+                row = [
+                    query,
+                    path,
+                    "N/A",
+                    "NOT_FOUND",
+                    "",  # ISRC
+                    in_house_duration,
+                    "",  # apple_duration
+                    "",  # apple_name
+                    "",  # apple_artist
+                    "",  # apple_album
+                    "",  # apple_release_date
+                    "",  # apple_genres
+                    "",  # apple_music_url
+                    "",  # apple_preview_url
+                    "",  # apple_artwork_url
+                    "",  # apple_deep_link_url
+                    in_house_duration_ms,
+                    ""   # apple_duration_ms
+                ]
+                writer.writerow(row)
                 print(f"  -> MISS")
 
     print(f"Processing complete. Results saved in: {OUTPUT_FILE}")
