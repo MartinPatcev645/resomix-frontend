@@ -30,13 +30,13 @@ TRACK_METADATA_QUERY = """
     SELECT
         t.title, t.duration_sec, t.year,
         g.name AS genre,
-        GROUP_CONCAT(DISTINCT a.name ORDER BY ta.id SEPARATOR ', ') AS artists,
-        (SELECT r.title FROM release_tracks rt JOIN releases r ON rt.release_id = r.id
-         WHERE rt.track_id = t.id LIMIT 1) AS album
+        GROUP_CONCAT(DISTINCT a.name ORDER BY a.name SEPARATOR ', ') AS artists,
+        alb.title AS album
     FROM tracks t
     LEFT JOIN genres g ON t.genre_id = g.id
     LEFT JOIN track_artists ta ON t.id = ta.track_id
     LEFT JOIN artists a ON ta.artist_id = a.id
+    LEFT JOIN albums alb ON t.album_id = alb.id
     WHERE t.file_path = %s
     GROUP BY t.id
 """
