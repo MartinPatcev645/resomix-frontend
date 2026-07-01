@@ -1,0 +1,77 @@
+APPLE MUSIC MATCHER — RESULTS VERSION LOG
+=========================================
+Each results_*.csv in this folder is one run of the matcher. This file records what the matcher
+was doing for that run, so we can explain a score, compare approaches, or roll back to any
+version's behaviour. Newest changes are described relative to the version before it.
+
+The comparison workflow: compare_results.py scores a chosen results_*.csv against the client's
+manually-verified baseline and records each run as a column in master_results.csv, so all
+versions below can be compared side by side.
+
+
+-----------------------------------------------------------------------------------------------
+results.csv   —   VERSION 1  (baseline, "before changes")
+-----------------------------------------------------------------------------------------------
+Source: converted from results.numbers via numbers_to_results_csv.py (this was our very first run,
+        kept in Apple Numbers). 225 tracks; 187 got an apple_song_id, 38 NOT_FOUND.
+
+Behaviour:
+  - Apple search LIMIT = 1. We took Apple's #1 result and trusted it — no candidate scoring.
+  - QUERY was built from the DB metadata (ID3): "artist - title" (artist + title from the
+    database), sent as the search term.
+  - MATCH DECISION was duration-only: compare our DB duration against the chosen track's Apple
+    duration; if they matched (within tolerance) we set is_match = True, otherwise False
+    (N/A when we couldn't judge / nothing was found).
+
+Known weakness this exposed:
+  - Trusting result #1 means when Apple returns a (Dub)/(Mixed)/(Radio) cut first, we accept the
+    wrong version even though the correct track sits at position 2-5.
+  - No fuzzy title/artist check, so a plausible-but-wrong #1 could still pass on duration alone.
+
+
+-----------------------------------------------------------------------------------------------
+results_1.csv   —   VERSION 2  (top-5 + fuzzy + duration-primary priority)
+-----------------------------------------------------------------------------------------------
+What changed vs Version 1, and what it does now:
+
+  1. TOP-5 CANDIDATES (SEARCH_LIMIT = 5), not just #1. We fetch the top 5 songs and pick the
+     best ourselves, so the correct track at position 2-5 can still win over a wrong #1.
+
+  2. FUZZY MATCHING (rapidfuzz) on "artist title" (both sides normalized, lowercased):
+       - token_set_ratio  -> "is this the right base song?" (ignores extra tokens like "(Dub)",
+         so a Dub and the exact track both score ~100). This is the qualifying score.
+       - token_sort_ratio -> DOES penalise extra tokens, so it discriminates between versions;
+         used only as the final tiebreaker.
+     A candidate must reach FUZZY_THRESHOLD = 85 on token_set_ratio to be eligible.
+
+  3. QUERY CLEANUP: we strip generic "(Original Mix)" / "(Extended Mix)" (and version/variant
+     wording) from the SEARCH QUERY and from the fuzzy comparison, because Apple usually lists
+     the plain title. Real remix/dub/edit/feat info is KEPT (it identifies the version).
+
+  4. DURATION RULE (relaxed to +/- 10s, DURATION_TOLERANCE_MS = 10000, when artist+title match):
+       - Normal tracks: |apple_duration - our_duration| <= 10s.
+       - Extended Mix / Radio Edit: one-sided rule — Apple's duration must be <= ours + tolerance
+         (an extended cut on our side should not match a shorter Apple track pretending to be it,
+         and vice-versa). We DETECT extended/radio from the ORIGINAL title before stripping.
+
+  5. PRIORITY (this is the key ordering rule):
+       DURATION IS PRIMARY. Among candidates that pass fuzzy (>=85) AND the duration gate, we rank
+       by:  (a) token_set_ratio (highest) ->  (b) smallest duration difference  ->
+            (c) token_sort_ratio (tiebreak).
+       In practice: if only one candidate has the correct in-threshold duration, it wins even if a
+       higher-fuzzy candidate exists but is out of duration range. If several are all within
+       tolerance, the highest fuzzy wins, and token_sort_ratio breaks ties.
+
+  6. OUTPUT adds two columns vs Version 1: apple_match_score (the winning token_set_ratio) and
+     apple_chosen_rank (which of the top-5 we picked), for transparency into why a track was chosen.
+
+  is_match is True / False / None (None = our duration was missing so we couldn't judge).
+
+
+-----------------------------------------------------------------------------------------------
+HOW TO ADD THE NEXT VERSION
+-----------------------------------------------------------------------------------------------
+Running apple_music_test.py auto-versions the output (results.csv -> results_1.csv -> results_2.csv ...).
+When you make a matcher change and produce a new results_N.csv, append a section here describing
+what changed vs the previous version and why, then re-run compare_results.py pointing at the new
+file to add its column to master_results.csv.
