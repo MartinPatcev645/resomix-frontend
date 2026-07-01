@@ -54,10 +54,22 @@ What it does now (and what changed vs Version 1):
      verbatim, with the ONE exception that generic "(Original Mix)" / "(Extended Mix)" is removed
      from the search term (Apple lists the plain title) — and also from the fuzzy comparison.
 
+  3b. UNKNOWN-ARTIST FALLBACK. (New.) Some DB rows have artist = "Unknown" and the title set to
+      the raw filename. ONLY in that case we extract artist + title from the filename
+      ("Artist - Title.ext", split on the first " - "). A leading track number is removed ONLY if
+      it is "N. " (number, dot, space) or "N - " (number, spaced dash); a number that is part of
+      the artist ("20 Dub Person", "01 -Artist") is left intact. Rows that already have a real
+      artist are untouched (still fully as-is).
+
   4. NUMBER GATE. (New.) Integer tokens in the title must match between our title and the Apple
      candidate. A number mismatch = a different track, so it fails the match even at fuzzy 100.
      This kills false positives like "123 BPM" wrongly matching "115 Bpm". (Numbers in ARTIST
      names, e.g. "84Bit", "Kx5", are ignored — only title numbers are compared.)
+
+  4b. WHITESPACE-INSENSITIVE FUZZY. (New.) Alongside token_set_ratio we also compute a
+      spaces-removed ratio and keep the HIGHER of the two, so spacing/punctuation quirks like
+      "2 + 2 = 5" vs "2+2=5" don't tank an otherwise-exact match. Taking the max only ever raises
+      a score, so nothing that matched before can regress.
 
   5. DURATION RULE — STRICT (DURATION_TOLERANCE_MS = 10000, i.e. +/- 10s). (Reaffirmed.)
      Same title but a different duration usually means a DIFFERENT track, and we always want the

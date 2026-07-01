@@ -86,6 +86,22 @@ def title_numbers(s):
     '2Ms', '2 + 2 = 5'), so a number mismatch means a different track."""
     return set(int(n) for n in re.findall(r'\d+', clean_unicode(s or '')))
 
+
+def parse_from_filename(path):
+    """Extract (artist, title) from a filename when the DB metadata has no real artist.
+    Filename form is "Artist - Title.ext". A leading track number is removed ONLY when it is
+    "N. " (number, dot, space) or "N - " (number, spaced dash) — so an artist that legitimately
+    starts with a number (e.g. "20 Dub Person", "01 -Artist") is left intact. Then split on the
+    first " - " into artist / title."""
+    base = os.path.splitext(os.path.basename(path))[0]
+    base = re.sub(r'^\d+\.\s+', '', base)      # "33. Deadfunk..." -> "Deadfunk..."
+    base = re.sub(r'^\d+\s+-\s+', '', base)    # "01 - Artist..."  -> "Artist..."
+    base = base.strip()
+    if ' - ' in base:
+        artist, title = base.split(' - ', 1)
+        return artist.strip(), title.strip()
+    return '', base
+
 # ==========================================
 # JWT GENERATION
 # ==========================================
@@ -184,7 +200,13 @@ def pick_best_match(candidates, q_artist, q_title, db_ms, is_ext, is_radio):
         cand = _norm(f"{c.get('artist', '')} {c.get('name', '')}")
         # token_set_ratio = "is this the right base song?" (ignores extra tokens like "(Dub)");
         # token_sort_ratio DOES penalise extra tokens, so it discriminates versions (tiebreak only).
-        score = fuzz.token_set_ratio(q, cand)
+        # We also take a whitespace-insensitive ratio (spaces stripped) and keep the higher score,
+        # so punctuation-spacing quirks like "2 + 2 = 5" vs "2+2=5" don't tank an otherwise-exact
+        # match. Taking the max only ever RAISES a score, so nothing that matched before regresses.
+        score = max(
+            fuzz.token_set_ratio(q, cand),
+            fuzz.ratio(q.replace(" ", ""), cand.replace(" ", "")),
+        )
         sort_score = fuzz.token_sort_ratio(q, cand)
         a_ms = c.get("durationInMillis") or 0
 
@@ -288,12 +310,16 @@ def process_tracks():
                 title = (item.get("title") or "").strip()
                 duration_sec = item.get("duration_sec")
             else:
-                # Legacy bare-path fallback (our JSON is enriched, so rarely used): take the
-                # filename as the title, no artist. No cleanup.
+                # Legacy bare-path fallback (our JSON is enriched, so rarely used).
                 path = item
                 artists = ""
-                title = os.path.splitext(os.path.basename(path))[0].strip()
+                title = ""
                 duration_sec = None
+
+            # If the DB has no real artist ("Unknown"/empty), extract artist + title from the
+            # filename. Otherwise the DB values are used exactly as-is.
+            if not artists or artists.lower() == "unknown":
+                artists, title = parse_from_filename(path)
 
             # Query = DB "artists - title". Only generic (Original/Extended Mix) is removed from
             # the search term (Apple lists the plain title); everything else is used AS-IS.
