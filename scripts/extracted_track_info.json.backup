@@ -1,0 +1,1200 @@
+[
+  {
+    "uuid": "4a2a80b5-3cd2-483d-8b89-f9ccd2d08dd1",
+    "title": "I Can't Sleep Because You Can",
+    "year": 2013,
+    "duration_sec": "370.077",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Phone Booth Robbers - I Can't Sleep Because You Can.mp3",
+    "album_title": "Falling Into One",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Downtempo",
+    "artists": [
+      "Phone Booth Robbers"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Phone Booth Robbers - I Can_t Sleep Because You Can.flac"
+  },
+  {
+    "uuid": "93b84c2f-55cb-47f3-9a44-a20b63865984",
+    "title": "Discordance",
+    "year": 2013,
+    "duration_sec": "695.801",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/35-StephenBriggs-Discordance.mp3",
+    "album_title": "Album In A Day volume 7 - 28th September 2013",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Unknown",
+    "artists": [
+      "Stephen Briggs"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Photophobia vs Myzyx - DiscorDance.flac"
+  },
+  {
+    "uuid": "6a0b94ab-2eb0-4649-853e-e97de1e46b7c",
+    "title": "The Last Squibble",
+    "year": 2014,
+    "duration_sec": "217.130",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Phsiris - The Last Squibble.mp3",
+    "album_title": "Make Friends With Meat",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Phsiris"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Phsiris - The Last Squibble.flac"
+  },
+  {
+    "uuid": "3f114e33-0950-4623-8c7e-44dc41553b39",
+    "title": "And Your Mama Told You (Vaeya Remix)",
+    "year": 2013,
+    "duration_sec": "452.153",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Pick - And Your Mama Told You (Vaeya Remix).mp3",
+    "album_title": "Age Of Deceit",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Pick"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Pick - And Your Mama Told You (Vaeya Remix).flac"
+  },
+  {
+    "uuid": "5a43fdc2-52ec-4fc6-84f3-958197156b56",
+    "title": "G27 (Radioactive.Cake Remix)",
+    "year": 2015,
+    "duration_sec": "466.834",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Pick - G27 (Radioactive.Cake Remix).mp3",
+    "album_title": "Merger",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Pick"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Pick - G27 (Radioactive.Cake Remix).flac"
+  },
+  {
+    "uuid": "6cb34183-473f-4460-938d-7391edca200e",
+    "title": "Broken Face",
+    "year": 2007,
+    "duration_sec": "490.031",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Pinganeda - Broken Face.mp3",
+    "album_title": "Goblins Gathering",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Pinganeda"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Pinganeda - Broken Face.flac"
+  },
+  {
+    "uuid": "5b51a994-90b8-4425-ab87-846d2039266d",
+    "title": "Nowy",
+    "year": 2015,
+    "duration_sec": "469.812",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Planet B - Nowy.mp3",
+    "album_title": "MIDIval Tourist",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Downtempo",
+    "artists": [
+      "Planet B"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Planet B - Nowy.flac"
+  },
+  {
+    "uuid": "23054259-6fb2-4309-ad72-ec0845c4dae2",
+    "title": "Seventh Heaven",
+    "year": 2014,
+    "duration_sec": "449.463",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Planet B - Seventh Heaven.mp3",
+    "album_title": "Omboclat",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Downtempo",
+    "artists": [
+      "Planet B"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Planet B - Seventh Heaven.flac"
+  },
+  {
+    "uuid": "2522deb7-9670-4c12-80e3-a6c0fd5ca331",
+    "title": "Tachyon Helix",
+    "year": 2013,
+    "duration_sec": "467.226",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Planewalker - Tachyon Helix.mp3",
+    "album_title": "Kabbalistic Kazoo",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Planewalker"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Planewalker - Tachyon Helix.flac"
+  },
+  {
+    "uuid": "24cfae01-c1ab-45c2-992f-1ba23e304fdf",
+    "title": "Grey Sky",
+    "year": 2012,
+    "duration_sec": "372.167",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Point - Grey Sky.mp3",
+    "album_title": "Deepending",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Techno",
+    "artists": [
+      "Point"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Point - Grey Sky.flac"
+  },
+  {
+    "uuid": "c1c3a8af-37b8-4820-932d-39486b48e6e9",
+    "title": "Roll The Rock",
+    "year": 2012,
+    "duration_sec": "473.365",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Point - Roll The Rock.mp3",
+    "album_title": "Waveform",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Techno",
+    "artists": [
+      "Point"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Point - Roll The Rock.flac"
+  },
+  {
+    "uuid": "97b1b538-1ea8-4b08-8da7-4a3ae915903b",
+    "title": "Cyber Slave",
+    "year": 2011,
+    "duration_sec": "519.576",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Polux - Cyber Slave.mp3",
+    "album_title": "Empire",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Polux"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Polux - Cyber Slave.flac"
+  },
+  {
+    "uuid": "422d4524-8bc1-4167-9204-2bb1e905871b",
+    "title": "Eola Komatia Dub Mix (feat. Metasoliton)",
+    "year": 2017,
+    "duration_sec": "217.051",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Pororoca - Eola Komatia Dub Mix (feat. Metasoliton).mp3",
+    "album_title": "Opposite Orchestra",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Downtempo",
+    "artists": [
+      "Pororoca"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Pororoca - Eola Komatia Dub Mix (feat. Metasoliton).flac"
+  },
+  {
+    "uuid": "a3e487cf-f846-481b-8e46-a6bee7ab452d",
+    "title": "Fail Safe",
+    "year": 2016,
+    "duration_sec": "489.404",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Praktika - Fail Safe.mp3",
+    "album_title": "Playing The Presets",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Praktika"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Praktika - Fail Safe.flac"
+  },
+  {
+    "uuid": "38ba047d-da8e-4e7b-86fa-2ba946304658",
+    "title": "Stone Temple",
+    "year": 2018,
+    "duration_sec": "430.211",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Pranadarma & Toadstool - Stone Temple.mp3",
+    "album_title": "Hadron Collider",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Pranadarma",
+      "Toadstool"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Pranadarma & Toadstool - Stone Temple.flac"
+  },
+  {
+    "uuid": "13c86a06-89e9-4f28-9e5a-3635bb36c0c4",
+    "title": "Chapter 3.1",
+    "year": 2015,
+    "duration_sec": "472.451",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Priapizzm - Chapter 3.1.mp3",
+    "album_title": "'Murican",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Priapizzm"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Priapizzm - Chapter 3.1.flac"
+  },
+  {
+    "uuid": "f9462f43-6d63-4e21-b54c-5685811b5a30",
+    "title": "Hyperbole",
+    "year": 2012,
+    "duration_sec": "485.251",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Priapizzm - Hyperbole.mp3",
+    "album_title": "CetaCreate Benefit For CinderVOMIT Vol. 1",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Priapizzm"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Priapizzm - Hyperbole.flac"
+  },
+  {
+    "uuid": "7cb61490-480f-43b7-83ac-61ebdf1d8d7f",
+    "title": "Shinkansen",
+    "year": 2011,
+    "duration_sec": "529.737",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Priapizzm - Shinkansen.mp3",
+    "album_title": "Cinder N Frenz Vol. 1",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Priapizzm"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Priapizzm - Shinkansen.flac"
+  },
+  {
+    "uuid": "7b42a9c5-f5ed-4c5b-834c-b029419cc21c",
+    "title": "Mubali Says This Is Gayer Than Liberace",
+    "year": 2012,
+    "duration_sec": "437.447",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Primordial Ooze - Mubali Says This Is Gayer Than Liberace.mp3",
+    "album_title": "Divine Interventions",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Primordial Ooze"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Primordial Ooze - Mubali Says This Is Gayer Than Liberace.flac"
+  },
+  {
+    "uuid": "fab5c525-60b7-48ce-a00f-473b2675ac73",
+    "title": "Song from Scratch",
+    "year": 2012,
+    "duration_sec": "300.438",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/12piper_ben-SongFromScratch.mp3",
+    "album_title": "Album In A Day volume 4 - 7 April 2012",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Other",
+    "artists": [
+      "piper_ben"
+    ]
+  },
+  {
+    "uuid": "0905f6e8-ccbf-4731-bd92-307d9be6ed40",
+    "title": "Daemons Of Negativity",
+    "year": 2009,
+    "duration_sec": "483.918",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Prisoners Of The Sun - Daemons Of Negativity.mp3",
+    "album_title": "Discovery",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Prisoners Of The Sun"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Prisoners Of The Sun - Daemons Of Negativity.flac"
+  },
+  {
+    "uuid": "b3e4b202-ec66-44ce-9135-ce59f5768436",
+    "title": "Like, Seriously Now!",
+    "year": 2011,
+    "duration_sec": "394.580",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Prog-A-Lot - Like, Seriously Now!.mp3",
+    "album_title": "Prog-A-Lot",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Prog-A-Lot"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Prog-A-Lot - Like, Seriously Now!.flac"
+  },
+  {
+    "uuid": "88f4b714-687d-4347-85ff-f55733fe750d",
+    "title": "Rain Road",
+    "year": 2009,
+    "duration_sec": "459.050",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Progress - Rain Road.mp3",
+    "album_title": "Entheos Audio Archive 3.0",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Downtempo",
+    "artists": [
+      "Progress"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Progress - Rain Road.flac"
+  },
+  {
+    "uuid": "800a3f6a-da1b-4c7b-a6cb-314a909bd4e8",
+    "title": "Maori Depth",
+    "year": 2015,
+    "duration_sec": "380.738",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/22. Matthias Springer - Maori Depth.mp3",
+    "album_title": "VA Aesthesia Vol. 2",
+    "album_cover": null,
+    "label_name": "Energostatic Records",
+    "genre_name": "Dub Techno",
+    "artists": [
+      "Matthias Springer"
+    ]
+  },
+  {
+    "uuid": "90dbc5ac-f870-4615-acaa-5a10200d1693",
+    "title": "Wombatz",
+    "year": 2013,
+    "duration_sec": "494.994",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Prosonic - Wombatz.mp3",
+    "album_title": "Tank Moovez Vol 2",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Prosonic"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Prosonic - Wombatz.flac"
+  },
+  {
+    "uuid": "a1ebbe8f-1e09-4a05-b738-7bcc03a56676",
+    "title": "There's No Spoon",
+    "year": 2010,
+    "duration_sec": "496.039",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Prosonik - There's No Spoon.mp3",
+    "album_title": "Namaskar Vol. 1",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Prosonik"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Prosonik - There_s No Spoon.flac"
+  },
+  {
+    "uuid": "c81bde91-d246-4b32-9566-b39d55329b64",
+    "title": "Illimitable",
+    "year": 2009,
+    "duration_sec": "897.646",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Proton Kinoun - Illimitable.mp3",
+    "album_title": "Apeiron",
+    "album_cover": null,
+    "label_name": "Omnitropic",
+    "genre_name": "Ambient",
+    "artists": [
+      "Proton Kinoun"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Proton Kinoun - Illimitable.flac"
+  },
+  {
+    "uuid": "affa35a0-05c3-427a-807f-2df5acc6b6db",
+    "title": "Chandra Knows",
+    "year": 2015,
+    "duration_sec": "497.711",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Proxeeus - Chandra Knows.mp3",
+    "album_title": "At The Mountains Of Madness",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Proxeeus"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Proxeeus - Chandra Knows.flac"
+  },
+  {
+    "uuid": "63e1bb3d-a922-466a-97a3-0a6d41d1a6e8",
+    "title": "Dagon",
+    "year": 2016,
+    "duration_sec": "363.680",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/08-ConcealedSequence-Dagon.mp3",
+    "album_title": "Nonlocality",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Electronica",
+    "artists": [
+      "Concealed Sequence"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Proxeeus - Dagon.flac"
+  },
+  {
+    "uuid": "8bcdcf3d-c0f4-4b34-b2e9-6cea3820ac11",
+    "title": "White Shell",
+    "year": 2012,
+    "duration_sec": "430.550",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psicodelicat - White Shell.mp3",
+    "album_title": "Primordial Genesis",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psicodelicat"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psicodelicat - White Shell.flac"
+  },
+  {
+    "uuid": "8b6ea68d-a9e0-4a06-9384-b23304d849ba",
+    "title": "Interconectedness",
+    "year": 2014,
+    "duration_sec": "490.553",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - PsiloCybian - Interconectedness.mp3",
+    "album_title": "Brain Dissolver",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "PsiloCybian"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - PsiloCybian - Interconectedness.flac"
+  },
+  {
+    "uuid": "bf1526b0-a28f-4cee-bf28-7bbef4be213e",
+    "title": "Purification Ritual",
+    "year": 2016,
+    "duration_sec": "397.740",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psilogod - Purification Ritual.mp3",
+    "album_title": "The Opposing Force",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psilogod"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psilogod - Purification Ritual.flac"
+  },
+  {
+    "uuid": "daf0e831-0cc8-4107-9118-4a3926b8c964",
+    "title": "Witch Doctor",
+    "year": 2013,
+    "duration_sec": "275.252",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psilogod - Witch Doctor.mp3",
+    "album_title": "Exquisite Landscapes",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Unknown",
+    "artists": [
+      "Psilogod"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psilogod - Witch Doctor.flac"
+  },
+  {
+    "uuid": "4871dd54-fa8c-4144-a800-172113a082bd",
+    "title": "Rescected",
+    "year": 2011,
+    "duration_sec": "401.868",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psy4Tecks - Rescected.mp3",
+    "album_title": "Contortionist",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psy4Tecks"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psy4Tecks - Rescected.flac"
+  },
+  {
+    "uuid": "b2ca7619-b46d-4863-82ba-760778a3439b",
+    "title": "Zimmer159.07 - Black Forest",
+    "year": 2019,
+    "duration_sec": "456.046",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/Zimmer159.07_Andreas_Florin_-_Black_Forest.mp3",
+    "album_title": "ZIMMER159",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Electronic",
+    "artists": [
+      "Andreas Florin"
+    ]
+  },
+  {
+    "uuid": "c27d7b3d-d6b6-4d3f-aa92-48b7afa107b1",
+    "title": "Mad Cows",
+    "year": 2014,
+    "duration_sec": "417.933",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psychosis Generator - Mad Cows.mp3",
+    "album_title": "SpaceCamp Psyfari 2013: Aliens In Atlantis",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psychosis Generator"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psychosis Generator - Mad Cows.flac"
+  },
+  {
+    "uuid": "2c9e569e-71dd-4661-805b-bbb494a2d09a",
+    "title": "Tokyo 1945",
+    "year": 2012,
+    "duration_sec": "368.065",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/08 - Shinji Bomb - Tokyo 1945.mp3",
+    "album_title": "Into This Wired Abyss",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Shinji Bomb"
+    ]
+  },
+  {
+    "uuid": "b786d25d-410e-4846-b85a-1f8a0613ac6f",
+    "title": "Break The Floor",
+    "year": 2011,
+    "duration_sec": "474.906",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psychotic Micro - Break The Floor.mp3",
+    "album_title": "Pyrethrum Records Vol. 1",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psychotic Micro"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psychotic Micro - Break The Floor.flac"
+  },
+  {
+    "uuid": "cd0cd543-7606-4960-9ac8-47f614eed668",
+    "title": "Ode To My Bretheren",
+    "year": 2012,
+    "duration_sec": "346.951",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/19FloatingSpirits-OdeToMyBretheren.mp3",
+    "album_title": "[S27-100] Sectioned v3.0",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Electronic",
+    "artists": [
+      "Floating Spirits"
+    ]
+  },
+  {
+    "uuid": "c773e02b-7e13-4b51-b8ca-ea5d286c72bb",
+    "title": "Galaktika",
+    "year": 2013,
+    "duration_sec": "345.313",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psychoz - Galaktika.mp3",
+    "album_title": "Smaragdwald",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psychoz"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psychoz - Galaktika.flac"
+  },
+  {
+    "uuid": "e57ff0a7-cca7-459b-a445-e498311d00df",
+    "title": "Gorgoroth",
+    "year": 2017,
+    "duration_sec": "392.046",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psychoz - Gorgoroth.mp3",
+    "album_title": "Airborne",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psychoz"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psychoz - Gorgoroth.flac"
+  },
+  {
+    "uuid": "3156052e-38a8-42fa-82ea-5ac320483ed4",
+    "title": "Manaus (Remix)",
+    "year": 2011,
+    "duration_sec": "370.051",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psychoz - Manaus (Remix).mp3",
+    "album_title": "Boom Shankar",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psychoz"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psychoz - Manaus (Remix).flac"
+  },
+  {
+    "uuid": "85d48f41-2318-40e9-928e-a8201c780902",
+    "title": "RAINY DAYZ",
+    "year": 2009,
+    "duration_sec": "200.385",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/03-438341-DUB TERMINATOR-RAINY DAYZ.mp3",
+    "album_title": "Dub Terminator Instrumentals",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Unknown",
+    "artists": [
+      "DUB TERMINATOR"
+    ]
+  },
+  {
+    "uuid": "57ad235b-4bd9-40e2-8b01-4fc3a70c0289",
+    "title": "Sistema Nervoso (Dub Mix)",
+    "year": 2010,
+    "duration_sec": "360.882",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psycoholic - Sistema Nervoso (Dub Mix).mp3",
+    "album_title": "Parallel Universe",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psycoholic"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psycoholic - Sistema Nervoso (Dub Mix).flac"
+  },
+  {
+    "uuid": "100f2444-d924-4bf4-a137-531073cebff2",
+    "title": "Logitek",
+    "year": 2017,
+    "duration_sec": "475.167",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psydewise - Logitek.mp3",
+    "album_title": "Genetic Expression",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psydewise"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psydewise - Logitek.flac"
+  },
+  {
+    "uuid": "8712aa2f-2316-47e5-8364-6847a2a238b8",
+    "title": "anubis claws",
+    "year": 2003,
+    "duration_sec": "246.883",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/10-16754-subatomicglue-anubis claws .mp3",
+    "album_title": null,
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Techno",
+    "artists": [
+      "subatomicglue"
+    ]
+  },
+  {
+    "uuid": "16c94b93-6e20-4a14-9ba4-eb5ee3361bb0",
+    "title": "Magic Tsipouro",
+    "year": 2012,
+    "duration_sec": "431.047",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psyfactor vs Sample Bugs - Magic Tsipouro.mp3",
+    "album_title": "Climp To The Universe",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psyfactor vs Sample Bugs"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psyfactor vs Sample Bugs - Magic Tsipouro.flac"
+  },
+  {
+    "uuid": "c056d836-3206-4777-987d-b824497a8071",
+    "title": "Fingers Vertigo",
+    "year": 2008,
+    "duration_sec": "458.214",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psyhamaa vs Ikpeng - Fingers Vertigo.mp3",
+    "album_title": "Contagion Volume 1",
+    "album_cover": null,
+    "label_name": "Dead Tree Productions",
+    "genre_name": "Psychedelic",
+    "artists": [
+      "Psyhamaa vs. Ikpeng"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psyhamaa vs Ikpeng - Fingers Vertigo.flac"
+  },
+  {
+    "uuid": "82393b5a-982f-49c8-8581-0c3e14dbceff",
+    "title": "Playgroundation",
+    "year": 2014,
+    "duration_sec": "518.766",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psylophonica - Playgroundation.mp3",
+    "album_title": "Catharsis",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psylophonica"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psylophonica - Playgroundation.flac"
+  },
+  {
+    "uuid": "5192ae08-6168-4d55-bfee-72c77bd4c52d",
+    "title": "Nostril Boogie",
+    "year": 2011,
+    "duration_sec": "348.029",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psynaptix - Nostril Boogie.mp3",
+    "album_title": "Dark Pineapples & Chocolate",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psynaptix"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psynaptix - Nostril Boogie.flac"
+  },
+  {
+    "uuid": "75cca4a8-19f8-4bf5-80d3-d2b5d59fb4d1",
+    "title": "natura - physis compressed",
+    "year": 2012,
+    "duration_sec": "759.197",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/01-1189766-Ov Moi Omm-natura - physis compressed.mp3",
+    "album_title": "Hector B. Poole",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Ambient",
+    "artists": [
+      "Ov Moi omm"
+    ]
+  },
+  {
+    "uuid": "8129becc-7a49-418d-9032-98562ac537ff",
+    "title": "The D.N.Architect",
+    "year": 2013,
+    "duration_sec": "523.311",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psynetic - The D.N.Architect.mp3",
+    "album_title": "Full Activity",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psynetic"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psynetic - The D.N.Architect.flac"
+  },
+  {
+    "uuid": "5ff47d25-3ead-4b17-8b2f-6c663c94a8ba",
+    "title": "Animamundi",
+    "year": 2011,
+    "duration_sec": "438.047",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psynthax - Animamundi.mp3",
+    "album_title": "Landing",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psynthax"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psynthax - Animamundi.flac"
+  },
+  {
+    "uuid": "a5538ab8-d572-4711-bbdd-cc7317aefb50",
+    "title": "Headbusters",
+    "year": 2009,
+    "duration_sec": "470.282",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psynthax - Headbusters.mp3",
+    "album_title": "Entities",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psynthax"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psynthax - Headbusters.flac"
+  },
+  {
+    "uuid": "c25f525d-283e-46dc-9b4f-e7a409d66f49",
+    "title": "Beyond The Edge",
+    "year": 2014,
+    "duration_sec": "435.435",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psyolopher - Beyond The Edge.mp3",
+    "album_title": "Shared Knowledge",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psyolopher"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psyolopher - Beyond The Edge.flac"
+  },
+  {
+    "uuid": "1e746976-58d3-4c61-9767-1bad4bed38ac",
+    "title": "Beneath The Remains",
+    "year": 2015,
+    "duration_sec": "537.835",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psyonysus - Beneath The Remains.mp3",
+    "album_title": "Unity",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psyonysus"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psyonysus - Beneath The Remains.flac"
+  },
+  {
+    "uuid": "dd70f212-4a27-466c-863a-43aed01bab4a",
+    "title": "Perpetual Light",
+    "year": 2018,
+    "duration_sec": "362.527",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Psyonysus - Perpetual Light.mp3",
+    "album_title": "Interbeing",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Psyonysus"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Psyonysus - Perpetual Light.flac"
+  },
+  {
+    "uuid": "1d2c8101-e37e-49db-bea1-4ffb9fde919e",
+    "title": "Point Of No Return",
+    "year": 2014,
+    "duration_sec": "545.463",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/03 - Open Source - Point Of No Return.mp3",
+    "album_title": "Enormously Insignificant",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Open Source"
+    ]
+  },
+  {
+    "uuid": "ab044f67-c916-482b-85d9-315ecc5090b2",
+    "title": "08 Vertigo ( House Mix )",
+    "year": 2015,
+    "duration_sec": "410.723",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/23-1180842-Hasenchat-08 Vertigo _ House Mix _.mp3",
+    "album_title": "Vocal House 19",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "House",
+    "artists": [
+      "Hasenchat"
+    ]
+  },
+  {
+    "uuid": "5c1bb2f7-6d8e-4f64-a2c4-5622a5e79c9a",
+    "title": "Double Personality (Part 2)",
+    "year": 2012,
+    "duration_sec": "445.179",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Pupsidelic - Double Personality (Part 2).mp3",
+    "album_title": "Badgers Attack",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Pupsidelic"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Pupsidelic - Double Personality (Part 2).flac"
+  },
+  {
+    "uuid": "a7a69bdb-4cde-482a-a635-70f554bf4eb2",
+    "title": "Carousel Syndrome",
+    "year": 2013,
+    "duration_sec": "420.049",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Q-Beast - Carousel Syndrome.mp3",
+    "album_title": "Karmatonic Vol. 2",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Downtempo",
+    "artists": [
+      "Q-Beast"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Q-Beast - Carousel Syndrome.flac"
+  },
+  {
+    "uuid": "31f08e08-3a5f-4493-91d2-e0d1ee9fae53",
+    "title": "Volkano",
+    "year": 2017,
+    "duration_sec": "416.575",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Qawa Beat - Volkano.mp3",
+    "album_title": "Singularity",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Qawa Beat"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Qawa Beat - Volkano.flac"
+  },
+  {
+    "uuid": "424873f2-3582-4644-b50b-7d49788efaea",
+    "title": "Cycle Of Five",
+    "year": 2018,
+    "duration_sec": "633.887",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Qiujan - Cycle Of Five.mp3",
+    "album_title": "Jah\u0101n-e Qiu",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Qiujan"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Qiujan - Cycle Of Five.flac"
+  },
+  {
+    "uuid": "1fe7a548-efe7-4321-acfa-2dcceb13a889",
+    "title": "Levitating In The Passageways",
+    "year": 2014,
+    "duration_sec": "476.761",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/04 - Decibel - Levitating In The Passageways.mp3",
+    "album_title": "Vivid Hallucination",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Decibel"
+    ]
+  },
+  {
+    "uuid": "670cf2cc-fb57-4a01-8cab-662d9c63551c",
+    "title": "Dream Liner (Remix)",
+    "year": 2009,
+    "duration_sec": "450.038",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Quantica - Dream Liner (Remix).mp3",
+    "album_title": "Groove & Roots",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Unknown",
+    "artists": [
+      "Quantica"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Quantica - Dream Liner (Remix).flac"
+  },
+  {
+    "uuid": "460b6af9-b959-4021-bb9f-2a0a1c07f579",
+    "title": "Psilofunk",
+    "year": 2007,
+    "duration_sec": "498.233",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Quantica - Psilofunk.mp3",
+    "album_title": "Astrobiology",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Quantica"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Quantica - Psilofunk.flac"
+  },
+  {
+    "uuid": "a17b1bdb-bbec-4137-93cc-cc6f98f7ce6f",
+    "title": "Basilisk",
+    "year": 2013,
+    "duration_sec": "425.404",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Quarantine - Basilisk.mp3",
+    "album_title": "Quantum Spores",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Quarantine"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Quarantine - Basilisk.flac"
+  },
+  {
+    "uuid": "696db875-dd0d-464c-8af1-7424f330e3d7",
+    "title": "Smuggler's Moon",
+    "year": 2016,
+    "duration_sec": "396.225",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Quirk & S\u00f8ren Nordstr\u00f6m - Smuggler's Moon.mp3",
+    "album_title": "Hive Mind Volume One",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Techno",
+    "artists": [
+      "S\u00f8ren Nordstr\u00f6m",
+      "Quirk"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Quirk & S\u00f8ren Nordstro\u0308m - Smuggler_s Moon.flac"
+  },
+  {
+    "uuid": "857c484b-4292-4d2c-8776-c71cfc91c6ee",
+    "title": "Last Time",
+    "year": 2016,
+    "duration_sec": "333.793",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Quite K - Last Time.mp3",
+    "album_title": "Psychedelic Techno Vol. 3",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Quite K"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Quite K - Last Time.flac"
+  },
+  {
+    "uuid": "d1545b13-db63-4c18-9114-9f39f9b3c115",
+    "title": "Glass Bead Game",
+    "year": 2013,
+    "duration_sec": "386.638",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Ra Djan - Glass Bead Game.mp3",
+    "album_title": "Anima Fuga",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Unknown",
+    "artists": [
+      "Ra Djan"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Ra Djan - Glass Bead Game.flac"
+  },
+  {
+    "uuid": "e781fb18-9deb-4570-a625-22708e498939",
+    "title": "Reminiscense Angeles",
+    "year": 2015,
+    "duration_sec": "545.071",
+    "bpm": null,
+    "musical_key": null,
+    "file_path": "/mnt/data/OPEN_TRACKS/RAW/07 - Raaya - Reminiscense Angeles.mp3",
+    "album_title": "Temple Of Existence",
+    "album_cover": null,
+    "label_name": null,
+    "genre_name": "Psytrance",
+    "artists": [
+      "Raaya"
+    ],
+    "local_file_path": "/Users/muhammadusmannaeem/Data/projects/Upwork/George/aa_staging_resources/audio_files/07 - Raaya - Reminiscense Angeles.flac"
+  }
+]

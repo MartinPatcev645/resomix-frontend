@@ -188,3 +188,6 @@ db_query.txt
 .staging.env
 .env.prod
 
+logs/
+scripts/duration/*.csv
+scripts/duration/*.txt

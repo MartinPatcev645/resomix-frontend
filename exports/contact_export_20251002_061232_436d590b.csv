@@ -1,0 +1,28 @@
+ID,User ID,Name,Email,Phone,Subject,Message,Status,Submitted At
+1,,Test User,test@example.com,,Test Contact,This is a test contact form submission from the test suite,resolved,2025-06-12T12:54:03
+2,,John Doe,john.doe@example.com,+1-555-123-4567,Test Subject,This is a test contact form submission from the unit test suite,open,2025-06-12T13:22:13
+3,test-user-123,John Doe,john.doe@example.com,+1-555-123-4567,Test Subject,This is a test contact form submission from the unit test suite,open,2025-06-13T07:03:49
+4,,Test User,test@example.com,,Testing,Test contact for getting by ID,open,2025-06-13T07:03:49
+5,test-user-123,John Doe,john.doe@example.com,+1-555-123-4567,Test Subject,This is a test contact form submission from the unit test suite,open,2025-06-13T07:12:18
+6,,Test User,test@example.com,,Testing,Test contact for getting by ID,open,2025-06-13T07:12:18
+7,,Usman,usman.naeem2212@gmail.com,,Review maybe,Fucking awesome,open,2025-06-13T07:31:48
+8,,OK,usman@usm.com,,,ok,open,2025-06-13T07:56:52
+9,,Usman,usman@email.com,+2-13432456345,testing,Okay I see,open,2025-06-13T07:57:59
+10,,test,test@test.com,21342342134,subject,This is a message,open,2025-06-13T11:13:42
+11,,Usman,usman@test.com,,,This is perfect. I would like to reach out....,open,2025-06-13T13:14:10
+12,,Deli Szilagyi,fszilagyi@danubesummit.org,,I am interested in your concept,"Hello, my name is Deli and I am a 19 year old Olympic athlete, serial entrepreneur, and deep subgenre, highly technical sound design music producer out of Europe who had the idea of creating the exact product you have. 
+
+Seeing as though you are in the Beta stage, I’m wondering if there is any chance I could play a role in helping create this business. 
+
+My expertise lies in marketing, particularly towards youth. I have experience and insight into short form content, and I am the head of an EU wide youth entrepreneurship program called the Danube Summit, where I work closely with various EU governments and organizations such as Cambridge University and Microsoft. I also ran a music production company with about a dozen producers in my mid teens, and have recently been particularly interested in creating and working on AI projects. 
+
+If you think I could be valuable for your business, please reach out, and let’s find a time to chat. 
+
+It would honestly be incredible to create something amazing together, and I really hope to hear from you!
+
+Best,
+Deli",open,2025-07-09T23:24:38
+13,,Usman,usman@tset.com,,,Okay,open,2025-08-18T15:58:23
+14,,Usman,usman.naeem2212@gmail.com,923327418544,Nice,Great Service,open,2025-09-21T17:17:54
+15,,Muhammad Usman Naeem,Test@oka.com,03327418544,okay,Ah,resolved,2025-09-21T17:20:11
+16,,Muhammad Usman Naeem,usman.naeem2212@gmail.com,03327418544,Test,Best service ever,resolved,2025-09-22T08:35:02
