@@ -22,9 +22,9 @@ KEY_ID = os.getenv("APPLE_KEY_ID", "")
 PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "../../creds/AuthKey.p8")
 STOREFRONT = os.getenv("APPLE_STOREFRONT", "us")
 
-FILENAME = "Tim Green - Old Sunshine"   # used only when USE_JSON_LIST = False (single-track test)
+FILENAME = "Allan pillai, DeLixx - Get Off My Lawn (Oryza Remix)"   # used only when USE_JSON_LIST = False (single-track test)
 
-USE_JSON_LIST = True
+USE_JSON_LIST = False
 # The JSON (produced by select_diverse_tracks_db.py / enrich_selection_from_db.py) carries all
 # the metadata (title/artists/duration/file_path) — this matcher makes NO DB calls. Lives here.
 JSON_FILE_PATH = os.path.join(SCRIPT_DIR, "apple_music_tracks_selection.json")
