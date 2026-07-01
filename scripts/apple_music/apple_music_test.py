@@ -18,7 +18,7 @@ load_dotenv(os.path.join(SCRIPT_DIR, "..", ".env"))
 # ==========================================
 TEAM_ID = os.getenv("APPLE_TEAM_ID", "")
 KEY_ID = os.getenv("APPLE_KEY_ID", "")
-PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "./creds/AuthKey.p8")
+PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "../../creds/AuthKey.p8")
 STOREFRONT = os.getenv("APPLE_STOREFRONT", "us")
 
 FILENAME = "Tim Green - Old Sunshine"   # used only when USE_JSON_LIST = False (single-track test)
