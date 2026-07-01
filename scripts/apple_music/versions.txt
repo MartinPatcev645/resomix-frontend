@@ -30,42 +30,57 @@ Known weakness this exposed:
 
 
 -----------------------------------------------------------------------------------------------
-results_1.csv   —   VERSION 2  (top-5 + fuzzy + duration-primary priority)
+results_1.csv   —   VERSION 2  (top-5 + fuzzy + numbers + strict duration; DB metadata AS-IS)
 -----------------------------------------------------------------------------------------------
-What changed vs Version 1, and what it does now:
+NOTE: the first results_1.csv (an early top-5 run) was deleted and re-generated with the
+refinements below, so this section describes the CURRENT matcher.
+
+What it does now (and what changed vs Version 1):
 
   1. TOP-5 CANDIDATES (SEARCH_LIMIT = 5), not just #1. We fetch the top 5 songs and pick the
      best ourselves, so the correct track at position 2-5 can still win over a wrong #1.
 
-  2. FUZZY MATCHING (rapidfuzz) on "artist title" (both sides normalized, lowercased):
+  2. FUZZY MATCHING (rapidfuzz) on "artist title" (compared lowercased & unicode-cleaned, with
+     generic (Original/Extended Mix) removed from BOTH sides for the comparison only):
        - token_set_ratio  -> "is this the right base song?" (ignores extra tokens like "(Dub)",
          so a Dub and the exact track both score ~100). This is the qualifying score.
-       - token_sort_ratio -> DOES penalise extra tokens, so it discriminates between versions;
-         used only as the final tiebreaker.
+       - token_sort_ratio -> penalises extra tokens; used only as the final tiebreaker.
      A candidate must reach FUZZY_THRESHOLD = 85 on token_set_ratio to be eligible.
 
-  3. QUERY CLEANUP: we strip generic "(Original Mix)" / "(Extended Mix)" (and version/variant
-     wording) from the SEARCH QUERY and from the fuzzy comparison, because Apple usually lists
-     the plain title. Real remix/dub/edit/feat info is KEPT (it identifies the version).
+  3. TITLE/ARTIST USED AS-IS FROM THE DATABASE — NO cleanup. (Changed.) We no longer strip
+     leading track numbers, [labels], "(N)" disambiguators, etc. The earlier cleanup was
+     corrupting real titles (e.g. "2 + 2 = 5" -> "+ 2 = 5", "123 BPM" -> "BPM", "2Ms" -> "Ms",
+     "4 The Luv Of Music" -> "The Luv Of Music"). The search query is the DB "artists - title"
+     verbatim, with the ONE exception that generic "(Original Mix)" / "(Extended Mix)" is removed
+     from the search term (Apple lists the plain title) — and also from the fuzzy comparison.
 
-  4. DURATION RULE (relaxed to +/- 10s, DURATION_TOLERANCE_MS = 10000, when artist+title match):
-       - Normal tracks: |apple_duration - our_duration| <= 10s.
-       - Extended Mix / Radio Edit: one-sided rule — Apple's duration must be <= ours + tolerance
-         (an extended cut on our side should not match a shorter Apple track pretending to be it,
-         and vice-versa). We DETECT extended/radio from the ORIGINAL title before stripping.
+  4. NUMBER GATE. (New.) Integer tokens in the title must match between our title and the Apple
+     candidate. A number mismatch = a different track, so it fails the match even at fuzzy 100.
+     This kills false positives like "123 BPM" wrongly matching "115 Bpm". (Numbers in ARTIST
+     names, e.g. "84Bit", "Kx5", are ignored — only title numbers are compared.)
 
-  5. PRIORITY (this is the key ordering rule):
-       DURATION IS PRIMARY. Among candidates that pass fuzzy (>=85) AND the duration gate, we rank
-       by:  (a) token_set_ratio (highest) ->  (b) smallest duration difference  ->
-            (c) token_sort_ratio (tiebreak).
-       In practice: if only one candidate has the correct in-threshold duration, it wins even if a
-       higher-fuzzy candidate exists but is out of duration range. If several are all within
-       tolerance, the highest fuzzy wins, and token_sort_ratio breaks ties.
+  5. DURATION RULE — STRICT (DURATION_TOLERANCE_MS = 10000, i.e. +/- 10s). (Reaffirmed.)
+     Same title but a different duration usually means a DIFFERENT track, and we always want the
+     proper track, so we reject on any duration difference beyond 10s. The ONLY exception: if OUR
+     title explicitly says Extended Mix / Extended Remix / Radio Edit, the Apple cut may be shorter
+     (apple <= ours + 10s), because that's the same song's shorter edit. Detected from the title.
 
-  6. OUTPUT adds two columns vs Version 1: apple_match_score (the winning token_set_ratio) and
-     apple_chosen_rank (which of the top-5 we picked), for transparency into why a track was chosen.
+  6. PRIORITY / SELECTION among the top-5:
+       (a) numbers match  ->  (b) token_set_ratio (highest)  ->  (c) smallest duration difference
+       ->  (d) token_sort_ratio (tiebreak).
+     A candidate "qualifies" (is_match = True) only if fuzzy >= 85 AND numbers match AND the
+     duration gate passes. Otherwise the best candidate is still surfaced with is_match = False so
+     the row (and its song_id) stays reviewable. is_match = N/A only if our duration is missing.
 
-  is_match is True / False / None (None = our duration was missing so we couldn't judge).
+  7. UNICODE hardening (low priority). (New.) NFC-compose so "E + accent" becomes a single "É"
+     (more likely to match Apple), and drop invisible/zero-width format characters.
+
+  8. OUTPUT columns vs Version 1: adds apple_match_score (winning token_set_ratio) and
+     apple_chosen_rank (which of the top-5 we picked).
+
+  9. CONSOLE now prints, per track: the query + our duration, then one line for EACH of the 5
+     Apple candidates (artist - title (duration) | fuzzy | dur:OK/NO | num:OK/NO), then a final
+     verdict line (which candidate matched / no match / nothing found). The chosen row is marked "*".
 
 
 -----------------------------------------------------------------------------------------------

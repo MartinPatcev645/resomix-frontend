@@ -6,6 +6,7 @@ import json
 import csv
 import re
 import glob
+import unicodedata
 from rapidfuzz import fuzz
 from dotenv import load_dotenv
 
@@ -53,9 +54,9 @@ SEARCH_LIMIT = 5           # fetch top-N candidates and score them (not just #1)
 FUZZY_THRESHOLD = 85       # min token_set_ratio on "artist title" for a title/artist match
 DURATION_TOLERANCE_MS = 10000  # ±10s when artist+title match (relaxed, as requested)
 
-# "(Original Mix)" / "(Extended Mix)" (+ version-word variants) are dropped from the SEARCH QUERY
-# and from the fuzzy comparison, since Apple usually lists the plain title. We still DETECT
-# extended/radio on the ORIGINAL title to drive the one-sided duration rule.
+# NOTE: title/artist are used AS-IS from the database (no cleanup). "(Original Mix)"/"(Extended
+# Mix)" are removed ONLY for the fuzzy comparison and for detecting the extended/radio one-sided
+# duration rule — never from the stored metadata.
 _ORIG_EXT_RE = re.compile(
     r'[\(\[]\s*(original mix|extended mix|original version|extended version)\s*[\)\]]',
     re.IGNORECASE,
@@ -67,9 +68,23 @@ def strip_orig_ext(s):
     return re.sub(r'\s{2,}', ' ', _ORIG_EXT_RE.sub('', s or '')).strip()
 
 
+def clean_unicode(s):
+    """NFC-compose (so 'É' is a single codepoint, more likely to match Apple) and drop invisible
+    format characters (zero-width spaces etc., Unicode category 'Cf'). Low-priority hardening."""
+    s = unicodedata.normalize('NFC', s or '')
+    return ''.join(ch for ch in s if unicodedata.category(ch) != 'Cf')
+
+
 def _norm(s):
-    """Normalize a string for fuzzy comparison: drop orig/ext tags, lowercase, squeeze spaces."""
-    return re.sub(r'\s{2,}', ' ', strip_orig_ext(s or '')).lower().strip()
+    """Normalize for fuzzy comparison only: unicode-clean, drop orig/ext, lowercase, squeeze."""
+    s = strip_orig_ext(clean_unicode(s))
+    return re.sub(r'\s{2,}', ' ', s).lower().strip()
+
+
+def title_numbers(s):
+    """Set of integer tokens in a title. Numbers in titles are meaningful ('123 BPM' vs '115 Bpm',
+    '2Ms', '2 + 2 = 5'), so a number mismatch means a different track."""
+    return set(int(n) for n in re.findall(r'\d+', clean_unicode(s or '')))
 
 # ==========================================
 # JWT GENERATION
@@ -150,23 +165,25 @@ def search_track(query, token, limit=SEARCH_LIMIT):
 
 def pick_best_match(candidates, q_artist, q_title, db_ms, is_ext, is_radio):
     """
-    Score the candidates against our query and pick the best one.
+    Score the candidates and pick the best.
 
-    - Fuzzy: token_set_ratio on "artist title" (both sides normalized, orig/ext stripped).
-    - Duration: extended/radio → Apple must be <= ours (+tolerance); otherwise within ±tolerance.
-    A candidate "qualifies" only if BOTH the fuzzy and duration checks pass.
+    - Fuzzy: token_set_ratio on "artist title" (compared unicode-cleaned & orig/ext-stripped).
+    - Numbers: integer tokens in the title must match (a number mismatch = a different track).
+    - Duration: STRICT — |apple - ours| <= tolerance. Exception: if OUR title says Extended Mix /
+      Extended Remix / Radio Edit, Apple's shorter cut is acceptable (apple <= ours + tolerance),
+      because that's the same song's shorter edit. Otherwise a different duration = different track.
+    A candidate "qualifies" only if fuzzy AND numbers AND duration all pass.
 
-    Returns (best_candidate, is_match, score, rank) where is_match is True / False / None
-    (None = we couldn't judge duration because our duration is missing).
+    Returns (best_candidate, is_match, score, rank, scored) where is_match is True / False / None
+    (None = our duration was missing) and `scored` is the per-candidate detail list (for display).
     """
     q = _norm(f"{q_artist} {q_title}")
+    q_nums = title_numbers(q_title)
     scored = []
     for idx, c in enumerate(candidates):
         cand = _norm(f"{c.get('artist', '')} {c.get('name', '')}")
-        # token_set_ratio = "is this the right base song?" (ignores extra tokens like "(Dub)",
-        # so a Dub and the exact both score ~100). token_sort_ratio DOES penalise extra tokens,
-        # so it discriminates versions and keeps the candidate that matches our query's version
-        # (we keep the real version in the query — only Original/Extended Mix are stripped).
+        # token_set_ratio = "is this the right base song?" (ignores extra tokens like "(Dub)");
+        # token_sort_ratio DOES penalise extra tokens, so it discriminates versions (tiebreak only).
         score = fuzz.token_set_ratio(q, cand)
         sort_score = fuzz.token_sort_ratio(q, cand)
         a_ms = c.get("durationInMillis") or 0
@@ -174,105 +191,38 @@ def pick_best_match(candidates, q_artist, q_title, db_ms, is_ext, is_radio):
         if db_ms is None:
             dur_ok = None
         elif is_ext or is_radio:
+            # our track is the long/edit-marked version -> Apple's shorter cut is acceptable
             dur_ok = a_ms <= db_ms + DURATION_TOLERANCE_MS
         else:
             dur_ok = abs(a_ms - db_ms) <= DURATION_TOLERANCE_MS
 
+        num_ok = (title_numbers(c.get("name", "")) == q_nums)
         dur_diff = abs(a_ms - db_ms) if db_ms is not None else 10 ** 12
-        scored.append((c, score, dur_ok, dur_diff, idx + 1, sort_score))
+        scored.append({
+            "cand": c, "score": score, "sort": sort_score,
+            "dur_ok": dur_ok, "dur_diff": dur_diff, "num_ok": num_ok, "rank": idx + 1,
+        })
 
-    # Ranking among candidates that PASSED the duration gate (duration is primary — a high
-    # fuzzy score with the wrong duration is already excluded from `qualifying`):
-    #   1. token_set  (highest base-song match)
-    #   2. closest duration  (duration outranks the title-version tiebreak)
-    #   3. token_sort  (only used when fuzzy AND duration are effectively tied — picks the exact
-    #      title over a "(Dub)"/"(Mixed)")
+    # Selection priority: numbers match -> token_set -> closest duration -> token_sort.
     def rank_key(s):
-        return (s[1], -s[3], s[5])
+        return (s["num_ok"], s["score"], -s["dur_diff"], s["sort"])
 
-    qualifying = [s for s in scored if s[1] >= FUZZY_THRESHOLD and s[2] is True]
+    qualifying = [s for s in scored
+                  if s["score"] >= FUZZY_THRESHOLD and s["dur_ok"] is True and s["num_ok"]]
     if qualifying:
         best = max(qualifying, key=rank_key)
-        return best[0], True, best[1], best[4]
+        return best["cand"], True, best["score"], best["rank"], scored
 
     # Nothing qualifies — surface the best candidate so the row is reviewable, is_match False
     # (or None when our duration is missing).
     best = max(scored, key=rank_key)
     is_match = None if db_ms is None else False
-    return best[0], is_match, best[1], best[4]
+    return best["cand"], is_match, best["score"], best["rank"], scored
 
 
 # ==========================================
-# METADATA CLEANING & FORMATTING HELPERS
+# FORMATTING HELPERS
 # ==========================================
-def clean_db_metadata(artists, title, file_path):
-    clean_artists = artists or ''
-    clean_title = title or ''
-    
-    # Remove file extension from title if present
-    for ext in ['.mp3', '.flac', '.wav', '.aiff', '.FLAC', '.WAV', '.MP3']:
-        if clean_title.endswith(ext):
-            clean_title = clean_title[:-len(ext)]
-            break
-            
-    # If artists is 'Unknown' or empty, try to parse from the title or filename
-    if not clean_artists or clean_artists.lower() == 'unknown':
-        if clean_title and ' - ' in clean_title:
-            parts = clean_title.split(' - ', 1)
-            potential_artist = re.sub(r'^\d+[\.\-_ ]*', '', parts[0]).strip()
-            potential_title = parts[1].strip()
-            if potential_artist and potential_title:
-                clean_artists = potential_artist
-                clean_title = potential_title
-        else:
-            filename = os.path.basename(file_path)
-            name_without_ext, _ = os.path.splitext(filename)
-            # Clean common electrobuzz network tags
-            name_without_ext = re.sub(r'[-_]electrobuzz\.(net|pro|com|click|dj)', '', name_without_ext, flags=re.IGNORECASE)
-            name_without_ext = re.sub(r'_\(www\.electrobuzz\.(net|pro|com|dj)\)', '', name_without_ext, flags=re.IGNORECASE)
-            if ' - ' in name_without_ext:
-                parts = name_without_ext.split(' - ', 1)
-                potential_artist = re.sub(r'^\d+[\.\-_ ]*', '', parts[0]).strip()
-                potential_title = parts[1].strip()
-                if potential_artist and potential_title:
-                    clean_artists = potential_artist
-                    clean_title = potential_title
-            elif '-' in name_without_ext:
-                parts = name_without_ext.split('-', 1)
-                potential_artist = re.sub(r'^\d+[\.\-_ ]*', '', parts[0]).strip()
-                potential_title = parts[1].strip()
-                if potential_artist and potential_title:
-                    clean_artists = potential_artist
-                    clean_title = potential_title
-                    
-    # Strip leading track numbers/indices from artists and title
-    if clean_artists:
-        clean_artists = re.sub(r'^\d+[\.\-_ ]*', '', clean_artists).strip()
-        if clean_artists.lower() == 'unknown':
-            clean_artists = ''
-            
-    if clean_title:
-        clean_title = re.sub(r'^\d+[\.\-_ ]*', '', clean_title).strip()
-
-    # Remove [Label] square-bracket segments, but KEEP version/feat info that this catalogue
-    # also puts in square brackets (e.g. "[Reborn Mix]", "[Deep Mix]", "[feat. X]", "[... Rework]").
-    # Heuristic: a bracket is a label unless it contains a version/feat keyword.
-    keep_kw = re.compile(r'\b(mix|remix|rework|re-edit|edit|version|instrumental|dub|bootleg|vip|feat\.?|ft\.?)\b', re.IGNORECASE)
-    def _strip_labels(s):
-        return re.sub(r'\s*\[([^\]]*)\]', lambda m: m.group(0) if keep_kw.search(m.group(1)) else '', s)
-    clean_title = _strip_labels(clean_title)
-
-    # Drop standalone numeric disambiguators like "(2)" (Discogs artist suffixes / dedup markers).
-    # These are NOT version tags like "(Original Mix)", which are preserved.
-    clean_artists = re.sub(r'\s*\(\s*\d+\s*\)', '', clean_artists)
-    clean_title = re.sub(r'\s*\(\s*\d+\s*\)', '', clean_title)
-
-    # Collapse any double spaces left by the removals.
-    clean_artists = re.sub(r'\s{2,}', ' ', clean_artists).strip()
-    clean_title = re.sub(r'\s{2,}', ' ', clean_title).strip()
-
-    return clean_artists, clean_title
-
 def format_seconds_to_mmss(seconds):
     if seconds is None:
         return ""
@@ -325,52 +275,54 @@ def process_tracks():
             
     tasks = []
     if USE_JSON_LIST:
-        # The JSON already carries the metadata (from select_diverse_tracks_db.py /
-        # enrich_selection_from_db.py) — NO database calls here. Also tolerates the legacy
-        # format (a bare list of path strings) by falling back to filename parsing.
+        # The JSON carries the DB metadata (title/artists/duration/file_path). We use title and
+        # artists EXACTLY as they are in the database — NO cleanup — and build the query from them.
+        # NO database calls here.
         print(f"Loading tracks from JSON: {JSON_FILE_PATH}")
         with open(JSON_FILE_PATH, "r", encoding="utf-8") as f:
             items = json.load(f)
         for item in items:
             if isinstance(item, dict):
                 path = item.get("file_path", "")
-                artists = item.get("artists") or ""
-                title = item.get("title") or ""
+                artists = (item.get("artists") or "").strip()
+                title = (item.get("title") or "").strip()
                 duration_sec = item.get("duration_sec")
             else:
-                path, artists, title, duration_sec = item, "", "", None
+                # Legacy bare-path fallback (our JSON is enriched, so rarely used): take the
+                # filename as the title, no artist. No cleanup.
+                path = item
+                artists = ""
+                title = os.path.splitext(os.path.basename(path))[0].strip()
+                duration_sec = None
 
-            if title:
-                clean_artists, clean_title = clean_db_metadata(artists, title, path)
-            else:
-                # No metadata (legacy path / not in DB) -> parse the filename.
-                base, _ = os.path.splitext(os.path.basename(path))
-                clean_artists, clean_title = clean_db_metadata("", base, path)
-
-            # Drop (Original Mix)/(Extended Mix) from the search + fuzzy query (Apple lists the
-            # plain title); keep clean_title (with version) for the duration rule.
-            q_title = strip_orig_ext(clean_title)
-            query = f"{clean_artists} - {q_title}".strip(" -") if clean_artists else q_title
+            # Query = DB "artists - title". Only generic (Original/Extended Mix) is removed from
+            # the search term (Apple lists the plain title); everything else is used AS-IS.
+            search_title = strip_orig_ext(title)
+            query = clean_unicode(f"{artists} - {search_title}".strip(" -") if artists else search_title)
             tasks.append({
                 "query": query,
                 "path": path,
-                "q_artist": clean_artists,
-                "q_title": q_title,
-                "db_title": clean_title,
+                "q_artist": artists,
+                "q_title": title,
+                "db_title": title,
                 "db_duration_sec": duration_sec,
             })
     else:
-        base, _ = os.path.splitext(FILENAME)
-        clean_artists, clean_title = clean_db_metadata('', base, "")
-        q_title = strip_orig_ext(clean_title)
-        query = f"{clean_artists} - {q_title}".strip(" -") if clean_artists else q_title
+        # Single-track test: FILENAME is "Artist - Title".
+        if " - " in FILENAME:
+            artists, title = FILENAME.split(" - ", 1)
+        else:
+            artists, title = "", FILENAME
+        artists, title = artists.strip(), title.strip()
+        search_title = strip_orig_ext(title)
+        query = clean_unicode(f"{artists} - {search_title}".strip(" -") if artists else search_title)
         tasks.append({
             "query": query,
             "path": "",
-            "q_artist": clean_artists,
-            "q_title": q_title,
-            "db_title": clean_title,
-            "db_duration_sec": None
+            "q_artist": artists,
+            "q_title": title,
+            "db_title": title,
+            "db_duration_sec": None,
         })
             
     print(f"Starting processing for {len(tasks)} track(s)...")
@@ -381,23 +333,44 @@ def process_tracks():
         for idx, task in enumerate(tasks):
             query = task['query']
             path = task['path']
-            print(f"[{idx+1}/{len(tasks)}] Searching Apple Music for query: '{query}'")
-            candidates = search_track(query, token)
 
             in_house_duration = format_seconds_to_mmss(task['db_duration_sec'])
             db_ms = int(float(task['db_duration_sec']) * 1000) if task['db_duration_sec'] is not None else None
             in_house_duration_ms = db_ms if db_ms is not None else ""
 
-            # Detect version on the ORIGINAL (un-stripped) title for the one-sided duration rule.
+            print(f"[{idx+1}/{len(tasks)}] Query: '{query}'  (our duration {in_house_duration or '--:--'})")
+            candidates = search_track(query, token)
+
+            # Detect version on the title for the one-sided duration rule.
             low = (task['db_title'] or '').lower()
             is_ext = ("extended mix" in low) or ("extended remix" in low)
             is_radio = "radio edit" in low
 
             if candidates:
-                best, is_match_bool, score, rank = pick_best_match(
+                best, is_match_bool, score, rank, scored = pick_best_match(
                     candidates, task['q_artist'], task['q_title'], db_ms, is_ext, is_radio
                 )
                 is_match = {True: "True", False: "False", None: "N/A"}[is_match_bool]
+
+                # 5 lines: each Apple candidate — artist/title/duration, fuzzy, duration & number check.
+                for s in scored:
+                    c = s['cand']
+                    dur_flag = {True: "dur:OK", False: "dur:NO", None: "dur:? "}[s['dur_ok']]
+                    num_flag = "num:OK" if s['num_ok'] else "num:NO"
+                    marker = "*" if s['rank'] == rank else " "
+                    print(f"   {marker}r{s['rank']} {c['artist']} - {c['name']} ({c['durationFormatted']})"
+                          f"  fuzzy={s['score']:>3.0f}  {dur_flag}  {num_flag}")
+                for k in range(len(scored) + 1, SEARCH_LIMIT + 1):  # pad if Apple returned fewer than 5
+                    print(f"    r{k} -")
+
+                # 7th line: the verdict.
+                if is_match_bool is True:
+                    print(f"   => MATCHED r{rank}: {best['artist']} - {best['name']}  (fuzzy={score:.0f})")
+                elif is_match_bool is False:
+                    print(f"   => NO MATCH (best was r{rank}, fuzzy={score:.0f}) — failed number/duration gate")
+                else:
+                    print(f"   => UNVERIFIED r{rank} (our duration missing)")
+
                 apple_duration_ms = best.get('durationInMillis', 0)
                 row = [
                     query,
@@ -422,7 +395,6 @@ def process_tracks():
                     apple_duration_ms
                 ]
                 writer.writerow(row)
-                print(f"  -> MATCH r{rank} score={score:.0f} IsMatch={is_match}: {best['artist']} - {best['name']}")
             else:
                 # Write an empty row for tracks not found, preserving the column count
                 row = [
@@ -447,8 +419,10 @@ def process_tracks():
                     in_house_duration_ms,
                     ""   # apple_duration_ms
                 ]
+                for k in range(1, SEARCH_LIMIT + 1):
+                    print(f"    r{k} -")
                 writer.writerow(row)
-                print(f"  -> MISS")
+                print("   => NOTHING FOUND (no candidates from Apple)")
 
     print(f"Processing complete. Results saved in: {output_file}")
 
