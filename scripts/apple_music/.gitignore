@@ -1,0 +1,17 @@
+# Large / derived outputs of the Apple-Music matching pipeline — never commit these.
+# At full scale (2.35M) they are ~1.5 GB+ and will bloat the repo.
+tracks_input.jsonl
+apple_matches.jsonl
+*.jsonl
+
+# run logs and checkpoints
+run_*.log
+nohup.out
+
+# python + editor cruft
+__pycache__/
+*.pyc
+
+# enrichment backups
+*.bak
+apple_music_tracks_selection.json.*.bak
