@@ -20,6 +20,7 @@ import os
 import sys
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, wait, as_completed, FIRST_COMPLETED
 
 import apple_music_test as amt
 
@@ -31,8 +32,15 @@ OUTPUT_JSONL = os.path.join(SCRIPT_DIR, "apple_matches.jsonl")
 PROCESS_LIMIT = None            # cap tracks processed this run (None = all in the input file)
 PROGRESS_EVERY = 200            # log progress every N processed tracks
 FULL_SCALE = 2_350_000          # for ETA extrapolation
-REQUEST_MIN_INTERVAL = 0.0      # seconds between tracks (0 = as fast as possible; raise to throttle)
 FSYNC_EVERY = 500               # force flush to disk every N writes (durability vs speed)
+
+# Concurrency: WORKERS parallel Apple requests. Sequential (WORKERS=1) is ~1/latency (~2.7/s here);
+# raise WORKERS to push harder and find Apple's rate ceiling (429s). Matching is network-bound, so
+# throughput ~= WORKERS / latency until Apple throttles.
+WORKERS = 8
+# Optional global pace: minimum seconds between REQUEST submissions (0 = unlimited). Set this once
+# you know Apple's ceiling to pin a safe rate (e.g. 0.05 ~= 20 submissions/s).
+SUBMIT_MIN_INTERVAL = 0.0
 # -------------------
 
 
@@ -172,21 +180,60 @@ def fmt_hms(seconds):
     return f"{seconds//3600:d}h{(seconds%3600)//60:02d}m{seconds%60:02d}s"
 
 
+def process_one(rec, token):
+    """Worker (runs in a thread): match one input record and return its output dict. Any error is
+    caught and turned into an N/A row (with the error noted) so a single bad track never kills a
+    multi-day run."""
+    try:
+        task = build_task(rec)
+        res, _db_ms = match_one(task, token)
+        return output_record(task, res, rec)
+    except Exception as e:  # noqa: BLE001 — deliberately swallow to keep the run alive
+        task = {"uuid": rec.get("uuid", ""), "path": rec.get("file_path", "")}
+        res = {"query": "", "found": False, "best": None, "is_match": None, "score": None, "rank": None}
+        rec_out = output_record(task, res, rec)
+        rec_out["review"]["error"] = f"{type(e).__name__}: {e}"
+        return rec_out
+
+
 def run():
     if not os.path.exists(INPUT_JSONL):
         sys.exit(f"INPUT_JSONL not found: {INPUT_JSONL} (run export_tracks_jsonl.py first)")
 
     done = load_done(OUTPUT_JSONL)
-    print(f"Resuming: {len(done)} tracks already matched.", flush=True)
+    print(f"Resuming: {len(done)} tracks already matched.  WORKERS={WORKERS}", flush=True)
 
     print("Generating Developer Token...", flush=True)
     token = amt.generate_developer_token()
 
     start = time.time()
-    processed = 0            # tracks matched THIS run
-    accepted = 0
-    last_req_time = 0.0
-    with open(OUTPUT_JSONL, "a", encoding="utf-8") as out:
+    state = {"processed": 0, "accepted": 0}
+
+    def write_result(out, recout):
+        out.write(json.dumps(recout, ensure_ascii=False, default=str) + "\n")
+        out.flush()
+        state["processed"] += 1
+        if recout["is_match"] == "True":
+            state["accepted"] += 1
+        p = state["processed"]
+        if p % FSYNC_EVERY == 0:
+            os.fsync(out.fileno())
+        if p % PROGRESS_EVERY == 0:
+            elapsed = time.time() - start
+            rate = p / elapsed if elapsed else 0.0
+            eta_full = FULL_SCALE / rate if rate else 0
+            s = amt.STATS
+            print(f"[{len(done)+p}] +{p} this run | {rate:.2f} tracks/s | "
+                  f"accepted {state['accepted']}/{p} | reqs={s['requests']} "
+                  f"429s={s['rate_limited']} net_err={s['network_errors']} "
+                  f"backoff={int(s['backoff_seconds'])}s | ETA(2.35M) ~{fmt_hms(eta_full)}", flush=True)
+
+    max_inflight = max(1, WORKERS * 2)   # bounded submission window (never all futures in memory)
+    submitted = 0
+    last_submit = 0.0
+    with open(OUTPUT_JSONL, "a", encoding="utf-8") as out, \
+            ThreadPoolExecutor(max_workers=WORKERS) as ex:
+        inflight = set()
         for line in open(INPUT_JSONL, "r", encoding="utf-8"):
             line = line.strip()
             if not line:
@@ -198,50 +245,41 @@ def run():
             key = rec.get("uuid") or rec.get("file_path")
             if key in done:
                 continue
-            if PROCESS_LIMIT is not None and processed >= PROCESS_LIMIT:
+            if PROCESS_LIMIT is not None and submitted >= PROCESS_LIMIT:
                 break
 
-            if REQUEST_MIN_INTERVAL:
-                delta = time.time() - last_req_time
-                if delta < REQUEST_MIN_INTERVAL:
-                    time.sleep(REQUEST_MIN_INTERVAL - delta)
-            last_req_time = time.time()
+            if SUBMIT_MIN_INTERVAL:
+                delta = time.time() - last_submit
+                if delta < SUBMIT_MIN_INTERVAL:
+                    time.sleep(SUBMIT_MIN_INTERVAL - delta)
+                last_submit = time.time()
 
-            task = build_task(rec)
-            res, db_ms = match_one(task, token)
-            out.write(json.dumps(output_record(task, res, rec), ensure_ascii=False, default=str) + "\n")
-            out.flush()
-            processed += 1
-            if res.get("is_match") is True:
-                accepted += 1
-            if processed % FSYNC_EVERY == 0:
-                os.fsync(out.fileno())
+            inflight.add(ex.submit(process_one, rec, token))
+            submitted += 1
+            if len(inflight) >= max_inflight:
+                completed, inflight = wait(inflight, return_when=FIRST_COMPLETED)
+                for f in completed:
+                    write_result(out, f.result())
 
-            if processed % PROGRESS_EVERY == 0:
-                elapsed = time.time() - start
-                rate = processed / elapsed if elapsed else 0.0
-                eta_full = FULL_SCALE / rate if rate else 0
-                s = amt.STATS
-                print(f"[{len(done)+processed}] +{processed} this run | "
-                      f"{rate:.2f} tracks/s | accepted {accepted}/{processed} | "
-                      f"reqs={s['requests']} 429s={s['rate_limited']} "
-                      f"net_err={s['network_errors']} backoff={int(s['backoff_seconds'])}s | "
-                      f"ETA(2.35M) ~{fmt_hms(eta_full)}", flush=True)
+        for f in as_completed(inflight):   # drain the tail
+            write_result(out, f.result())
 
     elapsed = time.time() - start
+    processed = state["processed"]
     rate = processed / elapsed if elapsed else 0.0
     s = amt.STATS
     print("\n==== run complete ====")
-    print(f"processed this run : {processed}  (accepted {accepted})")
+    print(f"processed this run : {processed}  (accepted {state['accepted']})")
     print(f"total done         : {len(done)+processed}")
-    print(f"wall time          : {fmt_hms(elapsed)}  ({rate:.2f} tracks/s)")
-    print(f"apple requests     : {s['requests']}  (avg {s['requests']/processed:.2f}/track)" if processed else "")
+    print(f"wall time          : {fmt_hms(elapsed)}  ({rate:.2f} tracks/s, WORKERS={WORKERS})")
+    if processed:
+        print(f"apple requests     : {s['requests']}  (avg {s['requests']/processed:.2f}/track)")
     print(f"rate-limit (429)   : {s['rate_limited']}   server 5xx: {s['server_errors']}   "
           f"network err: {s['network_errors']}")
     print(f"total backoff wait : {int(s['backoff_seconds'])}s")
-    if rate:
+    if rate and processed:
         print(f"EXTRAPOLATION -> full {FULL_SCALE:,} tracks ~ {fmt_hms(FULL_SCALE / rate)} "
-              f"and ~{int(s['requests']/processed*FULL_SCALE):,} requests" if processed else "")
+              f"and ~{int(s['requests']/processed*FULL_SCALE):,} requests")
 
 
 if __name__ == "__main__":

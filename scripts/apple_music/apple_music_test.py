@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 import jwt
 import requests
 import json
@@ -68,9 +69,24 @@ HTTP_BACKOFF_BASE = 2      # seconds; wait = base * attempt (linear backoff)
 RETRY_NA = True
 
 # Live counters (read by the production runner run_apple_matching.py for throughput / rate-limit
-# estimates). Every Apple request increments these.
+# estimates). Every Apple request increments these. Locked because the runner may call
+# search_track from multiple worker threads.
 STATS = {"requests": 0, "rate_limited": 0, "server_errors": 0,
          "network_errors": 0, "backoff_seconds": 0.0}
+_STATS_LOCK = threading.Lock()
+
+
+def _bump(**kw):
+    with _STATS_LOCK:
+        for k, v in kw.items():
+            STATS[k] += v
+
+
+# One shared HTTP session with a connection pool, so concurrent workers reuse connections instead of
+# opening a fresh one per request. urllib3's pool is thread-safe for concurrent GETs.
+_SESSION = requests.Session()
+_SESSION.mount("https://", requests.adapters.HTTPAdapter(
+    pool_connections=64, pool_maxsize=64, max_retries=0))
 
 # NOTE: title/artist are used AS-IS from the database (no cleanup). "(Original Mix)"/"(Extended
 # Mix)" are removed ONLY for the fuzzy comparison and for detecting the extended/radio one-sided
@@ -231,22 +247,20 @@ def search_track(query, token, limit=SEARCH_LIMIT):
     last_err = None
     for attempt in range(1, HTTP_MAX_RETRIES + 1):
         try:
-            STATS["requests"] += 1
-            response = requests.get(url, headers=headers, params=params, timeout=HTTP_TIMEOUT)
+            _bump(requests=1)
+            response = _SESSION.get(url, headers=headers, params=params, timeout=HTTP_TIMEOUT)
 
             # 429 rate limit — honour Retry-After if present, else linear backoff.
             if response.status_code == 429:
                 wait = int(response.headers.get("Retry-After") or HTTP_BACKOFF_BASE * attempt)
-                STATS["rate_limited"] += 1
-                STATS["backoff_seconds"] += wait
+                _bump(rate_limited=1, backoff_seconds=wait)
                 print(f"  [!] 429 rate limit; waiting {wait}s (attempt {attempt}/{HTTP_MAX_RETRIES})")
                 time.sleep(wait)
                 continue
             # 5xx server errors — transient, retry.
             if 500 <= response.status_code < 600:
                 wait = HTTP_BACKOFF_BASE * attempt
-                STATS["server_errors"] += 1
-                STATS["backoff_seconds"] += wait
+                _bump(server_errors=1, backoff_seconds=wait)
                 print(f"  [!] server error {response.status_code}; retry in {wait}s "
                       f"(attempt {attempt}/{HTTP_MAX_RETRIES})")
                 time.sleep(wait)
@@ -263,8 +277,7 @@ def search_track(query, token, limit=SEARCH_LIMIT):
             # Network hiccup (read timeout, connection reset, etc.) — retry with backoff.
             last_err = e
             wait = HTTP_BACKOFF_BASE * attempt
-            STATS["network_errors"] += 1
-            STATS["backoff_seconds"] += wait
+            _bump(network_errors=1, backoff_seconds=wait)
             print(f"  [!] network error ({type(e).__name__}); retry in {wait}s "
                   f"(attempt {attempt}/{HTTP_MAX_RETRIES})")
             time.sleep(wait)

@@ -74,7 +74,14 @@ Just re-run the same `nohup python run_apple_matching.py ...` command.
 
 ## Knobs (top of run_apple_matching.py)
 
+- `WORKERS`            — parallel Apple requests. **The main speed knob.** 1 = sequential (~1/latency);
+  8 ≈ 15–20 tracks/s here. Raise to push harder / probe the ceiling; if 429s appear, that's the wall
+  — dial it back or set `SUBMIT_MIN_INTERVAL`.
+- `SUBMIT_MIN_INTERVAL`— min seconds between request submissions (0 = unlimited). Use once you know
+  Apple's ceiling to pin a safe global rate (e.g. `0.05` ≈ 20/s).
 - `PROCESS_LIMIT`      — cap tracks this run (None = all in the input).
-- `REQUEST_MIN_INTERVAL` — throttle between tracks (0 = max speed; raise if Apple throttles).
 - `PROGRESS_EVERY`     — progress log cadence.
 - `FULL_SCALE`         — total catalogue size, for the ETA extrapolation (2,350,000).
+
+Writes stay serial and safe regardless of `WORKERS` (workers only do the network calls; the main
+thread does all file writes), so checkpoint/resume is unaffected by concurrency.
