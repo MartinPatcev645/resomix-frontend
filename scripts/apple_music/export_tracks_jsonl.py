@@ -26,7 +26,7 @@ DB_PASSWORD = os.getenv("RESOMIX_DB_PASSWORD", "")
 DB_NAME = os.getenv("RESOMIX_DB_NAME", "resomix_db")
 
 OUTPUT_JSONL = os.path.join(SCRIPT_DIR, "tracks_input.jsonl")
-LIMIT = 10000          # 10k for the staging run; set to None for the full 2.35M
+LIMIT = None           # full 2.35M run (was 10000 for staging)
 PROGRESS_EVERY = 5000
 
 QUERY = """
