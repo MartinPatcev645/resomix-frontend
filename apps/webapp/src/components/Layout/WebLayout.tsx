@@ -55,7 +55,7 @@ export function WebLayout() {
         if (path === '/') return 'upload';
         if (path === '/playlist' || path === '/sonic-discovery') return 'playlist';
         if (path === '/cart') return 'cart';
-        if (path.startsWith('/profile') || path.startsWith('/sessions') || path.startsWith('/change-password')) return 'profile';
+        if (path.startsWith('/profile') || path.startsWith('/sessions') || path.startsWith('/change-password') || path.startsWith('/library') || path.startsWith('/analysis')) return 'profile';
         if (path.startsWith('/auth/')) return 'auth';
         if (path === '/contact') return 'contact';
         if (path === '/error') return 'error';

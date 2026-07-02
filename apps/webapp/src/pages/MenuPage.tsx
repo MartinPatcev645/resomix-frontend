@@ -1,5 +1,5 @@
 import React from "react";
-import { ButtonHeavyRight, ButtonSleek, ProfileIcon } from "@resomix/ui";
+import { ButtonHeavyRight, ButtonSleek } from "@resomix/ui";
 import { useFeedbackStore } from "@resomix/stores";
 import { useAuthStore } from "@resomix/stores";
 import CrossSvg from "@/assets/icons/cross.svg";
@@ -64,14 +64,65 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
             [Journal]
           </a>
 
-          {/* Auth button */}
+          {/* Auth section */}
           {isAuthenticated ? (
-            <ProfileIcon 
-              className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" 
-              onClick={() => {
-                window.location.href = `${BASE_BETA_URL}/profile`;
-              }}
-            />
+            <>
+              <a 
+                href={`${BASE_BETA_URL}/profile`}
+                className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+                id="beta-menu-profile-link"
+                aria-label="Profile"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = `${BASE_BETA_URL}/profile`;
+                }}
+              >
+                [Profile]
+              </a>
+              <a 
+                href={`${BASE_BETA_URL}/library`}
+                className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+                id="beta-menu-library-link"
+                aria-label="Library"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = `${BASE_BETA_URL}/library`;
+                }}
+              >
+                [Library]
+              </a>
+              <a 
+                href={`${BASE_BETA_URL}/analysis`}
+                className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+                id="beta-menu-analysis-link"
+                aria-label="Analysis"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = `${BASE_BETA_URL}/analysis`;
+                }}
+              >
+                [Analysis]
+              </a>
+              <button 
+                type="button"
+                onClick={async () => {
+                  try {
+                    const { logout } = await import("@resomix/api-client");
+                    await logout();
+                  } catch (error) {
+                    console.error("Logout error:", error);
+                  } finally {
+                    const { useAuthStore } = await import("@resomix/stores");
+                    useAuthStore.getState().logout();
+                    window.location.href = `${BASE_BETA_URL}/auth/login`;
+                  }
+                }}
+                className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
+                id="beta-menu-logout-button"
+              >
+                [Logout]
+              </button>
+            </>
           ) : (
             <ButtonSleek 
               text="Login" 
