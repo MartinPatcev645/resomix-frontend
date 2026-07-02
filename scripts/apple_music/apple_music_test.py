@@ -88,6 +88,51 @@ _SESSION = requests.Session()
 _SESSION.mount("https://", requests.adapters.HTTPAdapter(
     pool_connections=64, pool_maxsize=64, max_retries=0))
 
+
+class RateLimiter:
+    """Adaptive token-bucket limiter (AIMD) that rides just UNDER Apple's rate ceiling instead of
+    hammering it. Every request acquires a token; a 429 multiplicatively drops the rate, a streak of
+    clean successes nudges it back up. Converges automatically to whatever Apple currently tolerates
+    (which also varies by time of day). Thread-safe."""
+
+    def __init__(self, start_rps=4.0, min_rps=1.0, max_rps=30.0,
+                 up_every=40, up_step=0.5, down_factor=0.6):
+        self.rate = float(start_rps)
+        self.min_rps, self.max_rps = min_rps, max_rps
+        self.up_every, self.up_step, self.down_factor = up_every, up_step, down_factor
+        self.tokens = 0.0
+        self.last = time.monotonic()
+        self.ok_streak = 0
+        self.lock = threading.Lock()
+
+    def acquire(self):
+        while True:
+            with self.lock:
+                now = time.monotonic()
+                self.tokens = min(max(1.0, self.rate), self.tokens + (now - self.last) * self.rate)
+                self.last = now
+                if self.tokens >= 1.0:
+                    self.tokens -= 1.0
+                    return
+                wait = (1.0 - self.tokens) / self.rate
+            time.sleep(min(wait, 0.5))
+
+    def on_success(self):
+        with self.lock:
+            self.ok_streak += 1
+            if self.ok_streak >= self.up_every and self.rate < self.max_rps:
+                self.rate = min(self.max_rps, self.rate + self.up_step)
+                self.ok_streak = 0
+
+    def on_429(self):
+        with self.lock:
+            self.rate = max(self.min_rps, self.rate * self.down_factor)
+            self.ok_streak = 0
+
+
+# Optional global limiter. The production runner sets this; the test tool leaves it None (unpaced).
+_RATE_LIMITER = None
+
 # NOTE: title/artist are used AS-IS from the database (no cleanup). "(Original Mix)"/"(Extended
 # Mix)" are removed ONLY for the fuzzy comparison and for detecting the extended/radio one-sided
 # duration rule — never from the stored metadata.
@@ -247,14 +292,17 @@ def search_track(query, token, limit=SEARCH_LIMIT):
     last_err = None
     for attempt in range(1, HTTP_MAX_RETRIES + 1):
         try:
+            if _RATE_LIMITER:
+                _RATE_LIMITER.acquire()   # proactive global pacing (rides under Apple's ceiling)
             _bump(requests=1)
             response = _SESSION.get(url, headers=headers, params=params, timeout=HTTP_TIMEOUT)
 
-            # 429 rate limit — honour Retry-After if present, else linear backoff.
+            # 429 rate limit — drop the global rate and back off; Retry-After if present.
             if response.status_code == 429:
+                if _RATE_LIMITER:
+                    _RATE_LIMITER.on_429()
                 wait = int(response.headers.get("Retry-After") or HTTP_BACKOFF_BASE * attempt)
                 _bump(rate_limited=1, backoff_seconds=wait)
-                print(f"  [!] 429 rate limit; waiting {wait}s (attempt {attempt}/{HTTP_MAX_RETRIES})")
                 time.sleep(wait)
                 continue
             # 5xx server errors — transient, retry.
@@ -267,6 +315,8 @@ def search_track(query, token, limit=SEARCH_LIMIT):
                 continue
 
             response.raise_for_status()
+            if _RATE_LIMITER:
+                _RATE_LIMITER.on_success()
             data = response.json()
             results = data.get("results", {}).get("songs", {}).get("data", [])
             return [_parse_candidate(song) for song in results]

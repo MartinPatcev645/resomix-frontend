@@ -72,16 +72,29 @@ Each result is written and flushed immediately (fsync every 500). If you `kill` 
 
 Just re-run the same `nohup python run_apple_matching.py ...` command.
 
+## Rate limiting — IMPORTANT
+
+Apple throttles hard. At 8 workers unpaced we saw **~26% of requests get 429'd**, which dragged
+effective throughput to ~6/s anyway and wasted huge backoff time. So the runner uses an **adaptive
+limiter (AIMD)**: it starts at `START_RPS`, nudges the rate up while requests are clean, and drops it
+on every 429 — converging to just under whatever Apple currently tolerates. Watch `rate_cap~N/s` and
+`429s=` in the progress line; 429s should stay low and the rate should settle.
+
+`WORKERS` no longer sets the speed — the limiter does. Workers just need to be enough (≈8) to keep
+the paced rate flowing despite ~0.4s latency.
+
+Reality check: against ONE developer token this ceiling is the hard limit — expect the full 2.35M to
+take **a few days** (`ETA(2.35M)` in the log is live). The only way to go materially faster is
+multiple Apple Music API keys (rate limit is per token) — ask before going there.
+
 ## Knobs (top of run_apple_matching.py)
 
-- `WORKERS`            — parallel Apple requests. **The main speed knob.** 1 = sequential (~1/latency);
-  8 ≈ 15–20 tracks/s here. Raise to push harder / probe the ceiling; if 429s appear, that's the wall
-  — dial it back or set `SUBMIT_MIN_INTERVAL`.
-- `SUBMIT_MIN_INTERVAL`— min seconds between request submissions (0 = unlimited). Use once you know
-  Apple's ceiling to pin a safe global rate (e.g. `0.05` ≈ 20/s).
+- `ADAPTIVE_RATE`      — keep `True`. Auto-converges to Apple's ceiling.
+- `START_RPS` / `MAX_RPS` — where the limiter starts and its ceiling (3 → up to 20/s).
+- `WORKERS`            — concurrency to keep the paced rate flowing (≈8 is plenty).
+- `SUBMIT_MIN_INTERVAL`— extra hard pace between submissions (usually 0; the limiter handles it).
 - `PROCESS_LIMIT`      — cap tracks this run (None = all in the input).
-- `PROGRESS_EVERY`     — progress log cadence.
-- `FULL_SCALE`         — total catalogue size, for the ETA extrapolation (2,350,000).
+- `PROGRESS_EVERY` / `FULL_SCALE` — log cadence / catalogue size for the ETA.
 
 Writes stay serial and safe regardless of `WORKERS` (workers only do the network calls; the main
 thread does all file writes), so checkpoint/resume is unaffected by concurrency.

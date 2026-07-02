@@ -41,6 +41,14 @@ WORKERS = 8
 # Optional global pace: minimum seconds between REQUEST submissions (0 = unlimited). Set this once
 # you know Apple's ceiling to pin a safe rate (e.g. 0.05 ~= 20 submissions/s).
 SUBMIT_MIN_INTERVAL = 0.0
+
+# Adaptive rate limiting (RECOMMENDED). Instead of hammering Apple with WORKERS and eating 429s, this
+# rides just under Apple's ceiling: starts at START_RPS, nudges up while clean, drops on every 429.
+# WORKERS then only needs to be big enough to keep that rate flowing despite ~0.4s latency.
+ADAPTIVE_RATE = True
+START_RPS = 3.0     # begin conservatively (sequential was 2.7/s with 0 x 429)
+MIN_RPS = 1.0
+MAX_RPS = 20.0
 # -------------------
 
 
@@ -206,6 +214,10 @@ def run():
     print("Generating Developer Token...", flush=True)
     token = amt.generate_developer_token()
 
+    if ADAPTIVE_RATE:
+        amt._RATE_LIMITER = amt.RateLimiter(start_rps=START_RPS, min_rps=MIN_RPS, max_rps=MAX_RPS)
+        print(f"Adaptive rate limiter ON (start {START_RPS}/s, range {MIN_RPS}-{MAX_RPS}/s).", flush=True)
+
     start = time.time()
     state = {"processed": 0, "accepted": 0}
 
@@ -223,7 +235,8 @@ def run():
             rate = p / elapsed if elapsed else 0.0
             eta_full = FULL_SCALE / rate if rate else 0
             s = amt.STATS
-            print(f"[{len(done)+p}] +{p} this run | {rate:.2f} tracks/s | "
+            rps = f"{amt._RATE_LIMITER.rate:.1f}" if amt._RATE_LIMITER else "-"
+            print(f"[{len(done)+p}] +{p} this run | {rate:.2f} tracks/s | rate_cap~{rps}/s | "
                   f"accepted {state['accepted']}/{p} | reqs={s['requests']} "
                   f"429s={s['rate_limited']} net_err={s['network_errors']} "
                   f"backoff={int(s['backoff_seconds'])}s | ETA(2.35M) ~{fmt_hms(eta_full)}", flush=True)
