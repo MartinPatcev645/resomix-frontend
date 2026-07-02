@@ -57,7 +57,7 @@ DURATION_TOLERANCE_MS = 10000  # ±10s when artist+title match (relaxed, as requ
 # A near-exact duration (±2s) is near-proof it's the same track. Such a candidate is accepted with
 # a RELAXED fuzzy bar, and among several ±2s candidates the closest duration wins (over raw fuzzy).
 TIGHT_DURATION_MS = 2000   # ±2s
-RELAXED_FUZZY = 78         # min fuzzy for a ±2s duration-confirmed match
+RELAXED_FUZZY = 80         # min fuzzy for a ±2s duration-confirmed match
 
 # --- HTTP resilience: retry transient failures (timeouts, connection resets, 429, 5xx) ---
 HTTP_TIMEOUT = 15          # seconds per request
@@ -66,6 +66,11 @@ HTTP_BACKOFF_BASE = 2      # seconds; wait = base * attempt (linear backoff)
 
 # --- Phase 2: after the first pass, retry the N/A (nothing-found) tracks with query variants ---
 RETRY_NA = True
+
+# Live counters (read by the production runner run_apple_matching.py for throughput / rate-limit
+# estimates). Every Apple request increments these.
+STATS = {"requests": 0, "rate_limited": 0, "server_errors": 0,
+         "network_errors": 0, "backoff_seconds": 0.0}
 
 # NOTE: title/artist are used AS-IS from the database (no cleanup). "(Original Mix)"/"(Extended
 # Mix)" are removed ONLY for the fuzzy comparison and for detecting the extended/radio one-sided
@@ -226,17 +231,22 @@ def search_track(query, token, limit=SEARCH_LIMIT):
     last_err = None
     for attempt in range(1, HTTP_MAX_RETRIES + 1):
         try:
+            STATS["requests"] += 1
             response = requests.get(url, headers=headers, params=params, timeout=HTTP_TIMEOUT)
 
             # 429 rate limit — honour Retry-After if present, else linear backoff.
             if response.status_code == 429:
                 wait = int(response.headers.get("Retry-After") or HTTP_BACKOFF_BASE * attempt)
+                STATS["rate_limited"] += 1
+                STATS["backoff_seconds"] += wait
                 print(f"  [!] 429 rate limit; waiting {wait}s (attempt {attempt}/{HTTP_MAX_RETRIES})")
                 time.sleep(wait)
                 continue
             # 5xx server errors — transient, retry.
             if 500 <= response.status_code < 600:
                 wait = HTTP_BACKOFF_BASE * attempt
+                STATS["server_errors"] += 1
+                STATS["backoff_seconds"] += wait
                 print(f"  [!] server error {response.status_code}; retry in {wait}s "
                       f"(attempt {attempt}/{HTTP_MAX_RETRIES})")
                 time.sleep(wait)
@@ -253,6 +263,8 @@ def search_track(query, token, limit=SEARCH_LIMIT):
             # Network hiccup (read timeout, connection reset, etc.) — retry with backoff.
             last_err = e
             wait = HTTP_BACKOFF_BASE * attempt
+            STATS["network_errors"] += 1
+            STATS["backoff_seconds"] += wait
             print(f"  [!] network error ({type(e).__name__}); retry in {wait}s "
                   f"(attempt {attempt}/{HTTP_MAX_RETRIES})")
             time.sleep(wait)

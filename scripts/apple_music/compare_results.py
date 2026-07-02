@@ -23,7 +23,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ---- configure these two ----
 CLIENT_CSV = os.path.join(SCRIPT_DIR, "client_baseline.csv")
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "results_1.csv")
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "results_2.csv")
 # -----------------------------
 MASTER_CSV = os.path.join(SCRIPT_DIR, "master_results.csv")
 
