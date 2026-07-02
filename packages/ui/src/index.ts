@@ -62,6 +62,7 @@ import { FormError } from "./Elements/FormError";
 import { AuthStatusBanner } from "./Elements/AuthStatusBanner";
 import { DemoStageBanner } from "./Elements/DemoStageBanner";
 import { CartIcon } from "./Elements/CartIcon";
+import { ProfileDropdown } from "./Elements/ProfileDropdown";
 import LoginContent from "./Content/LoginContent";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
@@ -150,6 +151,7 @@ export {
   HeartStrokeIcon,
   // Cart
   CartIcon,
+  ProfileDropdown,
   fetchSessionId,
   fetchGenerationTime,
 };

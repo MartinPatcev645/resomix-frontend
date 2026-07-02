@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport, useCart } from "@resomix/hooks";
+import { formatDuration, usePlaylistExport } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -15,9 +15,6 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import CartAddIcon from '@/assets/icons/cart_add.svg';
-import CartAddWhiteIcon from '@/assets/icons/cart_add_white.svg';
-import CartRemoveWhiteIcon from '@/assets/icons/cart_remove_white.svg';
 import { CCLicenseGroup } from "@/components/index.ts";
 
 const InputTrackStatus = "Loading..."
@@ -39,7 +36,6 @@ const PlaylistHero: React.FC = () => {
   // const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
-  const { toggleItem, addPlaylist, isInCart, isLoading: isCartLoading } = useCart();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   const navigate = useNavigate();
@@ -65,15 +61,7 @@ const PlaylistHero: React.FC = () => {
   const handleRatingClose = () => setShowRating(false);
   const handleDownloadExportClose = () => setShowDownloadExport(false);
 
-  const handlePlaylistCartClick = async () => {
-    if (!playlistData?.playlist?.id) return;
-    await addPlaylist(playlistData.playlist.id);
-  };
 
-  const handleQueriedTrackCartClick = async () => {
-    if (!playlistData?.queried_track.id) return;
-    await toggleItem(playlistData.queried_track.id, playlistData?.playlist?.id || undefined);
-  };
 
   const handleStatusClose = () => {
     setShowStatus(false);
@@ -267,18 +255,6 @@ const PlaylistHero: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <Tooltip message="Add entire playlist to cart">
-                  <IconButton
-                    text="Add to Cart"
-                    transparent={true}
-                    customWidth="min-w-[var(--px-100)]"
-                    onClick={handlePlaylistCartClick}
-                    icon={<img src={CartAddWhiteIcon} draggable={false} alt="Add to Cart" aria-label="Add to Cart" className={`w-[var(--px-16)] h-[var(--px-16)] ${isCartLoading ? 'animate-pulse' : ''}`} />}
-                    hoverIcon={<img src={CartAddIcon} aria-label="Add to Cart" draggable={false} alt="Add to Cart" className="w-[var(--px-16)] h(--px-16)] scale-110" />}
-                    className="playlist-action-button"
-                    id="playlist-hero-cart-button"
-                  />
-                </Tooltip>
               </div>
             </div>
 
@@ -430,23 +406,6 @@ const PlaylistHero: React.FC = () => {
                     )}
                   </div>
                 </Tooltip>
-                {playlistData?.queried_track?.type !== 'upload' && playlistData?.queried_track && (
-                  <Tooltip message={isInCart(playlistData.queried_track.id) ? "Remove from Cart" : "Add to Cart"}>
-                    <div
-                      className={`transition-all duration-300 hover:cursor-pointer flex items-center justify-center ${isInCart(playlistData.queried_track.id) ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQueriedTrackCartClick();
-                      }}
-                    >
-                      <img
-                        src={isInCart(playlistData.queried_track.id) ? CartRemoveWhiteIcon : CartAddWhiteIcon}
-                        alt={isInCart(playlistData.queried_track.id) ? "Remove from Cart" : "Add to Cart"}
-                        className={`w-[var(--px-20)] h-[var(--px-20)] hover:scale-110 transition-transform duration-200 ${isCartLoading ? 'animate-pulse' : ''}`}
-                      />
-                    </div>
-                  </Tooltip>
-                )}
               </div>
               {/* Creative Commons License Icons - Bottom Right */}
               {playlistData?.queried_track?.type === 'internal' && (
