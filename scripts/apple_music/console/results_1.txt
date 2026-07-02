@@ -1,0 +1,1583 @@
+(.venv) (base) muhammadusmannaeem@Usmans-MacBook-Pro apple_music % python apple_music_test.py
+Generating Developer Token...
+Results will be written to: /Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/scripts/apple_music/results_1.csv
+Loading tracks from JSON: /Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/scripts/apple_music/apple_music_tracks_selection.json
+Starting processing for 225 track(s)...
+[1/225] Query: 'Avenue Deep, Donald Sheffey, Temzar - All Night Long'  (our duration 06:40)
+   *r1 Temzar - All Night Long (feat. Donald Sheffey & Avenue Deep) (06:40)  fuzzy= 89  dur:OK  num:OK
+    r2 Temzar - Come Go With Me (feat. Donald Sheffey) (04:17)  fuzzy= 59  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Temzar - All Night Long (feat. Donald Sheffey & Avenue Deep)  (fuzzy=89)
+[2/225] Query: 'T.Markakis - Moonwalk [i! Records]'  (our duration 06:38)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[3/225] Query: 'Supernova - In&Out'  (our duration 06:59)
+    r1 Metro Boomin, Future & Chris Brown - Superhero (Heroes & Villains) (03:02)  fuzzy= 36  dur:NO  num:OK
+    r2 DJ Khaled - EVERY CHANCE I GET (feat. Lil Baby & Lil Durk) (03:56)  fuzzy= 23  dur:NO  num:OK
+    r3 Future - LIKE ME (feat. 42 Dugg & Lil Baby) (02:12)  fuzzy= 18  dur:NO  num:NO
+    r4 Coldplay - A Sky Full of Stars (04:28)  fuzzy= 23  dur:NO  num:OK
+   *r5 Liz Phair - Supernova (02:48)  fuzzy= 72  dur:NO  num:OK
+   => NO MATCH (best was r5, fuzzy=72) — failed number/duration gate
+[4/225] Query: 'DJ Gálio, DJ Satelite, Peter Rodrigues - Siguila (feat. Seres Producoes) [Reborn Mix] (feat. Seres Producoes)'  (our duration 06:56)
+   *r1 Dj Galio, DJ Satelite & Peter Rodrigues - Siguila (feat. Seres Producoes) [Reborn Mix] (feat. Seres Producoes) (06:56)  fuzzy= 98  dur:OK  num:OK
+    r2 Dj Galio, DJ Satelite & Peter Rodrigues - Siguila (feat. Seres Producoes) [Reborn Mix] (06:56)  fuzzy= 97  dur:OK  num:OK
+    r3 Dj Galio, DJ Satelite & Peter Rodrigues - Siguila (feat. Seres Producoes) [Reborn Mix] (06:56)  fuzzy= 97  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Dj Galio, DJ Satelite & Peter Rodrigues - Siguila (feat. Seres Producoes) [Reborn Mix] (feat. Seres Producoes)  (fuzzy=98)
+[5/225] Query: 'Cecil, Chris Lum, David Harness, Lady Alma, Muthafunkaz, Relevant Sound, The Rainmakers - Let It Fall (MuthaFunkaz Main Vocal Remix - 2018 Remastered)'  (our duration 08:48)
+   *r1 Lady Alma, The Rainmakers, David Harness, Chris Lum, Ce'cil & Relevant Sound - Let It Fall (MuthaFunkaz Main Vocal Remix - 2018 Remastered) (08:48)  fuzzy= 93  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Lady Alma, The Rainmakers, David Harness, Chris Lum, Ce'cil & Relevant Sound - Let It Fall (MuthaFunkaz Main Vocal Remix - 2018 Remastered)  (fuzzy=93)
+[6/225] Query: 'Objekt - Needle & Thread'  (our duration 09:25)
+   *r1 Objekt - Needle and Thread (09:25)  fuzzy= 95  dur:OK  num:OK
+    r2 Objekt - Needle & Thread (Mixed) (06:42)  fuzzy=100  dur:NO  num:OK
+    r3 Objekt - Needle and Thread (Mixed) (03:21)  fuzzy= 95  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Objekt - Needle and Thread  (fuzzy=95)
+[7/225] Query: 'Jack Orley, Siena Liggins - Swing Yo Hip (feat. Siena Liggins)'  (our duration 04:15)
+   *r1 Jack Orley & Siena Liggins - Swing Yo Hip (feat. Siena Liggins) (02:40)  fuzzy= 98  dur:OK  num:OK
+    r2 Siena Liggins & Jack Orley - Swing Yo Hip (feat. Siena Liggins) [Mixed] (01:58)  fuzzy= 93  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Jack Orley & Siena Liggins - Swing Yo Hip (feat. Siena Liggins)  (fuzzy=98)
+[8/225] Query: 'Roman Flügel - We Have A Nice Life'  (our duration 05:53)
+   *r1 Roman Flügel - We Have a Nice Life (05:53)  fuzzy=100  dur:OK  num:OK
+    r2 Roman Flügel - We Have a Nice Life (Mixed) (04:55)  fuzzy=100  dur:NO  num:OK
+    r3 Roman Flügel - Deo (Pachanga Boys' New Blazer Edit) (05:57)  fuzzy= 57  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Roman Flügel - We Have a Nice Life  (fuzzy=100)
+[9/225] Query: 'Cport Cistema - You/Me'  (our duration 04:39)
+   *r1 Cport Cistema - You/Me (04:39)  fuzzy=100  dur:OK  num:OK
+    r2 Cport Cistema - 03-29 (06:04)  fuzzy= 81  dur:NO  num:NO
+    r3 Cortese - Tell Me (Cport Cistema Remix) (04:27)  fuzzy= 60  dur:NO  num:OK
+    r4 Cortese - Tell Me (05:44)  fuzzy= 58  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: Cport Cistema - You/Me  (fuzzy=100)
+[10/225] Query: 'Gingerblack, Kotelett - Ready for Music (feat. Robert Owens) [Deep Mix]'  (our duration 05:31)
+   *r1 Kotelett & Gingerblack - Ready for Music (feat. Robert Owens) [Deep Mix] (05:31)  fuzzy= 98  dur:OK  num:OK
+    r2 Kotelett & Gingerblack - Ready for Music (feat. Robert Owens) (04:48)  fuzzy= 91  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Kotelett & Gingerblack - Ready for Music (feat. Robert Owens) [Deep Mix]  (fuzzy=98)
+[11/225] Query: 'Honey Dijon feat. Seven Davis Jr. - Houze'  (our duration 06:55)
+   *r1 Honey Dijon - Houze (feat. Seven Davis Jr.) (06:55)  fuzzy= 98  dur:OK  num:OK
+    r2 Honey Dijon - Houze (feat. Seven Davis Jr.) [Houze Rebuilt Mix] (03:51)  fuzzy= 85  dur:NO  num:OK
+    r3 Honey Dijon - Houze (feat. Seven Davis Jr.) [Deetron Extended Remix] (07:59)  fuzzy= 85  dur:NO  num:OK
+    r4 Honey Dijon - Houze (feat. Seven Davis Jr.) [Remix] [Mixed] (04:42)  fuzzy= 85  dur:NO  num:OK
+    r5 Honey Dijon - Houze (feat. Seven Davis Jr.) [Mark Farina Remix] (06:42)  fuzzy= 85  dur:NO  num:OK
+   => MATCHED r1: Honey Dijon - Houze (feat. Seven Davis Jr.)  (fuzzy=98)
+[12/225] Query: 'Austin Ato - Oh Mama feat. Brushy One String'  (our duration 07:34)
+    r1 Austin Ato - Oh Mama (feat. Brushy One String) (02:55)  fuzzy= 98  dur:OK  num:OK
+   *r2 Austin Ato - Oh Mama (feat. Brushy One String) [Extended Mix] (07:34)  fuzzy= 98  dur:OK  num:OK
+    r3 Austin Ato - Oh Mama (feat. Brushy One String) [Mixed] (03:50)  fuzzy= 89  dur:OK  num:OK
+    r4 Austin Ato - Oh Mama (feat. Brushy One String) [Mixed] (05:23)  fuzzy= 89  dur:OK  num:OK
+    r5 Austin Ato - Oh Mama (feat. Brushy One String) [Mixed] (03:44)  fuzzy= 89  dur:OK  num:OK
+   => MATCHED r2: Austin Ato - Oh Mama (feat. Brushy One String) [Extended Mix]  (fuzzy=98)
+[13/225] Query: 'Reyam - Pollux'  (our duration 07:14)
+   *r1 Reyam - Pollux (07:14)  fuzzy=100  dur:OK  num:OK
+    r2 Reyam - Walking in Space (Ray Mono Remix) (06:30)  fuzzy= 59  dur:NO  num:OK
+    r3 Reyam - Walking in Space (07:12)  fuzzy= 59  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Reyam - Pollux  (fuzzy=100)
+[14/225] Query: 'Adam Beyer, Green Velvet, Layton Giordani - Space Date (Pleasurekraft Remix)'  (our duration 09:09)
+   *r1 Adam Beyer, Layton Giordani & Green Velvet - Space Date (Pleasurekraft Remix) (09:09)  fuzzy= 98  dur:OK  num:OK
+    r2 Adam Beyer, Layton Giordani & Green Velvet - Space Date (Pleasurekraft Remix) [Mixed] (05:22)  fuzzy= 94  dur:NO  num:OK
+    r3 Green Velvet, Adam Beyer, Layton Giordani & Disclosure - Space Date (Pleasurekraft Remix) / You & Me (feat. Eliza Doolittle) [Flume Remix] [Mixed] (04:31)  fuzzy=100  dur:NO  num:OK
+    r4 Green Velvet, Adam Beyer, Layton Giordani & Disclosure - Space Date (Pleasurekraft Remix) / You & Me (feat. Eliza Doolittle) [Flume Remix] [Mixed] (04:05)  fuzzy=100  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: Adam Beyer, Layton Giordani & Green Velvet - Space Date (Pleasurekraft Remix)  (fuzzy=98)
+[15/225] Query: 'Theo Parrish - What You Gonna Ask For (Theo's Mix)'  (our duration 09:42)
+   *r1 Theo Parrish - What You Gonna Ask For (Theo's Mix) (feat. Lori, Silentjay, Simon Mavin, Perrin Moss & Paul Bender) (09:43)  fuzzy=100  dur:OK  num:OK
+    r2 Theo Parrish - What You Gonna Ask For (Dego's Mix) (feat. Lori, Silentjay, Simon Mavin, Perrin Moss & Paul Bender) (10:05)  fuzzy= 91  dur:NO  num:OK
+    r3 Theo Parrish - What You Gonna Ask For (feat. Lori, Silentjay, Simon Mavin, Perrin Moss & Paul Bender) [Theo's Mix] [Mixed] (03:51)  fuzzy= 84  dur:NO  num:OK
+    r4 Theo Parrish - What You Wanna C (Hambone) (07:04)  fuzzy= 70  dur:NO  num:OK
+    r5 LCD Soundsystem - 45:33 (Theo Parrish's Space Cadet Remix) (10:02)  fuzzy= 43  dur:NO  num:NO
+   => MATCHED r1: Theo Parrish - What You Gonna Ask For (Theo's Mix) (feat. Lori, Silentjay, Simon Mavin, Perrin Moss & Paul Bender)  (fuzzy=100)
+[16/225] Query: 'Franky Rizardo - Primal (Edit)'  (our duration 03:48)
+   *r1 Franky Rizardo - Primal (Edit) (03:48)  fuzzy=100  dur:OK  num:OK
+    r2 Franky Rizardo - Primal (Edit) (03:48)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Franky Rizardo - Primal (Edit)  (fuzzy=100)
+[17/225] Query: 'Crusy, Prophecy - Pills'  (our duration 06:05)
+    r1 Crusy & Prophecy - Pills (03:17)  fuzzy= 95  dur:OK  num:OK
+    r2 Prophecy & Crusy - Pills (Mixed) (04:41)  fuzzy= 80  dur:OK  num:OK
+   *r3 Crusy & Prophecy - Pills (Extended Mix) (06:05)  fuzzy= 95  dur:OK  num:OK
+    r4 Prophecy & Crusy - Pills (Mixed) (05:17)  fuzzy= 80  dur:OK  num:OK
+    r5 Crusy & Prophecy - Pills (03:17)  fuzzy= 95  dur:OK  num:OK
+   => MATCHED r3: Crusy & Prophecy - Pills (Extended Mix)  (fuzzy=95)
+[18/225] Query: 'Chemo (IL), Ede - Glock 43 ((Ede Remix))'  (our duration 05:42)
+   *r1 EDE & Chemo - Glock 43 (Ede Remix) [Mixed] (04:07)  fuzzy= 82  dur:NO  num:OK
+    r2 Chemo - Glock 43 (EDE Remix) (04:23)  fuzzy= 81  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=82) — failed number/duration gate
+[19/225] Query: 'Sebb Junior - There's Always The Sun'  (our duration 06:30)
+   *r1 Sebb Junior - There's Always the Sun (Radio Edit) (04:10)  fuzzy=100  dur:OK  num:OK
+    r2 Sebb Junior - There's Always the Sun (Radio Edit) (04:10)  fuzzy=100  dur:OK  num:OK
+    r3 Hatiras & Sebb Junior - The Game Found Me (03:40)  fuzzy= 63  dur:OK  num:OK
+    r4 Sebb Junior - There's No Love (06:57)  fuzzy= 83  dur:NO  num:OK
+    r5 Sebb Junior - There's No Love (06:57)  fuzzy= 83  dur:NO  num:OK
+   => MATCHED r1: Sebb Junior - There's Always the Sun (Radio Edit)  (fuzzy=100)
+[20/225] Query: 'A1 Stanislav Tolkachev - Ant Parade VINYL ONLY'  (our duration 05:38)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[21/225] Query: 'Decency, Ezel, N'Dinga Gaba - No Words (Ezel Remix)'  (our duration 08:18)
+   *r1 N'dinga Gaba - No Words (Ezel Remix) [feat. Decency] (08:18)  fuzzy= 85  dur:OK  num:OK
+    r2 N'dinga Gaba - No Words (feat. Decency) [Ezel Remix] (08:18)  fuzzy= 83  dur:OK  num:OK
+    r3 N'dinga Gaba - No Words (Ezel Dub Mix) [feat. Decency] (08:18)  fuzzy= 81  dur:OK  num:OK
+    r4 N'dinga Gaba - No Words (feat. Decency) [Ezel Dub] (08:18)  fuzzy= 74  dur:OK  num:OK
+    r5 N'dinga Gaba - No Words (Ezel Instrumental Mix) [feat. Decency] (08:18)  fuzzy= 78  dur:OK  num:OK
+   => NO MATCH (best was r1, fuzzy=85) — failed number/duration gate
+[22/225] Query: 'Jesse Rose - Touch 'N' Tease (Alex Gopher Remix)'  (our duration 04:00)
+   *r1 Jesse Rose - Touch 'N' Tease (Alex Gopher Remix) (04:00)  fuzzy=100  dur:OK  num:OK
+    r2 Jesse Rose - Touch 'N' Tease (Alex Gopher Remix) (04:00)  fuzzy=100  dur:OK  num:OK
+    r3 Jesse Rose - Touch 'N' Tease (Alex Gopher Remix) (04:00)  fuzzy=100  dur:OK  num:OK
+    r4 Jesse Rose - Touch 'N' Tease (Alex Gopher Remix) (04:00)  fuzzy=100  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: Jesse Rose - Touch 'N' Tease (Alex Gopher Remix)  (fuzzy=100)
+[23/225] Query: 'Crackazat - Never Ending Love (Crackazat Mana's Dub)'  (our duration 06:11)
+   *r1 Crackazat - Never Ending Love (Mana's Dub) (06:11)  fuzzy= 89  dur:OK  num:OK
+    r2 Crackazat - I'm Easy (Crackazat Mana's Dub) (05:22)  fuzzy= 88  dur:NO  num:OK
+    r3 Crackazat - I'm Easy (Crackazat Mana's Dub) [Mixed] (04:49)  fuzzy= 79  dur:NO  num:OK
+    r4 Crackazat - Back For You (Mana's Dub) [Mixed] (05:30)  fuzzy= 54  dur:NO  num:OK
+    r5 Crackazat - Back For You (Mana's Dub) (07:47)  fuzzy= 59  dur:NO  num:OK
+   => MATCHED r1: Crackazat - Never Ending Love (Mana's Dub)  (fuzzy=89)
+[24/225] Query: 'Mathame - Alkahest'  (our duration 07:21)
+   *r1 Mathame - Alkahest (07:21)  fuzzy=100  dur:OK  num:OK
+    r2 Mathame - Alkahest (Tiefschwarz Remix) (06:24)  fuzzy=100  dur:NO  num:OK
+    r3 Mathame - Opal Cithee (09:01)  fuzzy= 69  dur:NO  num:OK
+    r4 Mathame - Uawok Tong (08:49)  fuzzy= 65  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: Mathame - Alkahest  (fuzzy=100)
+[25/225] Query: 'LEFTI, N2N - The Kids Are Not Alright'  (our duration 05:30)
+   *r1 LEFTI & N2N - The Kids Are Not Alright (Radio Edit) (03:44)  fuzzy= 89  dur:NO  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=89) — failed number/duration gate
+[26/225] Query: 'Afrobeat, Gabriel Pivaro, Titan Road - Take Me (Black Girl / White Girl Jazzed Up Remix)'  (our duration 05:50)
+   *r1 AfroBeat, Titan Road & Gabriel Pivaro - Take Me (Black Girl / White Girl Jazzed Up Remix) (05:50)  fuzzy= 98  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: AfroBeat, Titan Road & Gabriel Pivaro - Take Me (Black Girl / White Girl Jazzed Up Remix)  (fuzzy=98)
+[27/225] Query: 'Simkid, The S.O.S. - We Oui'  (our duration 06:58)
+   *r1 Simkid & The S.O.S. - We Oui (04:08)  fuzzy= 95  dur:OK  num:OK
+    r2 The S.O.S, Simkid & Get Physical Radio - We Oui (Boogie Vice Remix - Mixed - December 2025) (03:39)  fuzzy= 57  dur:OK  num:NO
+    r3 The S.O.S, Simkid & Get Physical Radio - We Oui (Boogie Vice Remix - Mixed - November 2025) (04:43)  fuzzy= 57  dur:OK  num:NO
+    r4 Simkid & The S.O.S. - We Oui (Boogie Vice Remix) (04:08)  fuzzy= 81  dur:OK  num:OK
+    r5 Simkid & The S.O.S - We Oui (Boogie Vice Extended Remix) (05:41)  fuzzy= 58  dur:OK  num:OK
+   => MATCHED r1: Simkid & The S.O.S. - We Oui  (fuzzy=95)
+[28/225] Query: 'Emanuel Satie, Maga, Sean Doron, Tim Engelhardt - Touch Of Love'  (our duration 04:53)
+   *r1 Emanuel Satie, Maga, Sean Doron & Tim Engelhardt - Touch of Love (03:09)  fuzzy= 98  dur:NO  num:OK
+    r2 unfazed - A Gira (with Emanuel Satie, Maga, Sean Doron, Tim Engelhardt & Scenarios) [Remix] [Mixed] (03:14)  fuzzy= 87  dur:NO  num:OK
+    r3 unfazed - A Gira (with Emanuel Satie, Maga, Sean Doron, Tim Engelhardt & Scenarios) [Remix] (02:55)  fuzzy= 87  dur:NO  num:OK
+    r4 Maga, Tim Engelhardt, Sean Doron & Emanuel Satie - Touch of Love (Mixed) (03:26)  fuzzy= 90  dur:NO  num:OK
+    r5 Emanuel Satie, Maga, Sean Doron & Tim Engelhardt - Hotline (Edit) (03:31)  fuzzy= 83  dur:NO  num:OK
+   => NO MATCH (best was r1, fuzzy=98) — failed number/duration gate
+[29/225] Query: 'swayzak - Skin Diving (2023 Edit)'  (our duration 06:10)
+   *r1 Swayzak - Skin Diving (2023 Edit) (06:10)  fuzzy=100  dur:OK  num:OK
+    r2 Swayzak - Skin Diving (07:41)  fuzzy=100  dur:NO  num:NO
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Swayzak - Skin Diving (2023 Edit)  (fuzzy=100)
+[30/225] Query: 'Akufen - Quebec Shuffle.RMX'  (our duration 05:58)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[31/225] Query: 'Dino Lenny - I've Learned That (Shadow Child 'Classic' Mix)'  (our duration 06:48)
+   *r1 Dino Lenny - I've Learned That (Shadow Child 'Classic' Mix) (04:49)  fuzzy=100  dur:NO  num:OK
+    r2 Dino Lenny - I've Learned That (Jonathan Kaspar Remix) (07:19)  fuzzy= 70  dur:NO  num:OK
+    r3 Dino Lenny - I've Learned That (Dino Lenny & Fed Conti Remix) (09:58)  fuzzy= 76  dur:NO  num:OK
+    r4 Dino Lenny - I've Learned That (Extended) (09:00)  fuzzy= 84  dur:NO  num:OK
+    r5 Dino Lenny - I've Learned That (Jonathan Kaspar Remix) [Mixed] (06:20)  fuzzy= 68  dur:NO  num:OK
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[32/225] Query: 'Feder, Talay Riley, TwoForAll - Antidote'  (our duration 04:14)
+   *r1 Feder, TwoForAll & Talay Riley - Antidote (03:16)  fuzzy= 96  dur:OK  num:OK
+    r2 Feder & TwoForAll - Antidote (feat. Talay Riley) [Jamy Nox & Marco Generani Remix] (02:41)  fuzzy= 77  dur:OK  num:OK
+    r3 Feder, TwoForAll & Talay Riley - Antidote (GROSSOMODDO Remix) (03:17)  fuzzy= 90  dur:OK  num:OK
+    r4 TwoForAll, Feder & Talay Riley - Antidote (Mixed) (02:45)  fuzzy= 85  dur:OK  num:OK
+    r5 Feder, TwoForAll & Talay Riley - Antidote (GROSSOMODDO Extended Remix) (04:52)  fuzzy= 90  dur:NO  num:OK
+   => MATCHED r1: Feder, TwoForAll & Talay Riley - Antidote  (fuzzy=96)
+[33/225] Query: 'Elle-T - But What I Mean'  (our duration 06:27)
+   *r1 Elle-T - But What I Mean (06:27)  fuzzy=100  dur:OK  num:OK
+    r2 Elle-T - But What I Mean (Blame Mate Remix) (06:45)  fuzzy=100  dur:NO  num:OK
+    r3 Lil Uzi Vert - Do What I Want (02:55)  fuzzy= 61  dur:NO  num:OK
+    r4 Barrett Strong - Money (That's What I Want) [Single] (02:37)  fuzzy= 47  dur:NO  num:OK
+    r5 Ellie Goulding - I Do What I Love (02:51)  fuzzy= 55  dur:NO  num:OK
+   => MATCHED r1: Elle-T - But What I Mean  (fuzzy=100)
+[34/225] Query: 'Kathy Brown - Can't Play Around (12" Version)'  (our duration 07:01)
+   *r1 Kathy Brown - Can't Play Around (12" Version) (07:01)  fuzzy=100  dur:OK  num:OK
+    r2 Kathy Brown - Can't Play Around (Masters At Work Mix) (06:13)  fuzzy= 81  dur:NO  num:NO
+    r3 Kathy Brown - Can't Play Around (M.a.W Dub) (05:39)  fuzzy= 83  dur:NO  num:NO
+    r4 Kathy Brown - Can't Play Around (M.a.W Dub) (05:39)  fuzzy= 83  dur:NO  num:NO
+    r5 Kathy Brown - Can't Play Around (M.a.W Dub) (05:39)  fuzzy= 83  dur:NO  num:NO
+   => MATCHED r1: Kathy Brown - Can't Play Around (12" Version)  (fuzzy=100)
+[35/225] Query: 'Casanovy - I Need Your Lovin' (Oliver Schories Remix)'  (our duration 06:20)
+   *r1 Casanovy - I Need Your Lovin' (Oliver Schories Remix) (06:20)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Casanovy - I Need Your Lovin' (Oliver Schories Remix)  (fuzzy=100)
+[36/225] Query: 'Camilo Rivera, Sebastian Diaz - Pattern (Brad Brunner, AG Swifty Remix)'  (our duration 06:20)
+   *r1 Sebastian Diaz & Camilo Rivera - Pattern (Brad Brunner, AG Swifty Remix) (06:20)  fuzzy= 98  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Sebastian Diaz & Camilo Rivera - Pattern (Brad Brunner, AG Swifty Remix)  (fuzzy=98)
+[37/225] Query: 'Hauswerks - Chunk (Incl. Alix Alvarez Mixes) (Alix Alvarez Remix)'  (our duration 07:58)
+Request error for 'Hauswerks - Chunk (Incl. Alix Alvarez Mixes) (Alix Alvarez Remix)': HTTPSConnectionPool(host='api.music.apple.com', port=443): Read timed out. (read timeout=10)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[38/225] Query: 'Manuel Tur - 123 BPM (1)'  (our duration 04:14)
+   *r1 Manuel Tur - 123 Bpm (1) (04:14)  fuzzy=100  dur:OK  num:OK
+    r2 Manuel Tur - 123 Bpm (04:12)  fuzzy=100  dur:OK  num:NO
+    r3 Manuel Tur - 121 Bpm (1) (03:59)  fuzzy= 95  dur:NO  num:NO
+    r4 Manuel Tur - 121 Bpm (04:00)  fuzzy= 88  dur:NO  num:NO
+    r5 Manuel Tur - 121 Bpm (Mixed) (03:48)  fuzzy= 83  dur:NO  num:NO
+   => MATCHED r1: Manuel Tur - 123 Bpm (1)  (fuzzy=100)
+[39/225] Query: 'A2 Farid Odilbekov - 91 VINYL ONLY'  (our duration 07:03)
+   *r1 Farid Odilbekov - 2 Vinyl (Remix MY) (08:45)  fuzzy= 79  dur:NO  num:NO
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=79) — failed number/duration gate
+[40/225] Query: 'Gai Barone, hannes bieger, Luke Brancaccio - Reflections'  (our duration 07:34)
+   *r1 hannes bieger, Luke Brancaccio & Gai Barone - Reflections (07:33)  fuzzy= 97  dur:OK  num:OK
+    r2 hannes bieger, Luke Brancaccio & Gai Barone - Reflections (Mixed) (06:27)  fuzzy= 92  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: hannes bieger, Luke Brancaccio & Gai Barone - Reflections  (fuzzy=97)
+[41/225] Query: 'Pirates Of The Caribbean - Tu No Sabe (Bonus)'  (our duration 02:01)
+   *r1 Pirates Of The Caribbean - Tu No Sabe (Bonus) (02:01)  fuzzy=100  dur:OK  num:OK
+    r2 Pirates Of The Caribbean - Tu No Sabe (04:58)  fuzzy=100  dur:NO  num:OK
+    r3 Mauro Rawn - Saber (02:04)  fuzzy= 37  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Pirates Of The Caribbean - Tu No Sabe (Bonus)  (fuzzy=100)
+[42/225] Query: 'Dom3n, I-K-O - Glasovi (Stijn Vanmarsenille Remix)'  (our duration 05:47)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[43/225] Query: 'Gustavho Bacilo, Julio Garces - Lost in My Memories'  (our duration 06:12)
+   *r1 Gustavho Bacilo & Julio Garces - Lost In My Memories (06:13)  fuzzy= 98  dur:OK  num:OK
+    r2 Gustavho Bacilo & Julio Garces - Lost In My Memories (Rodrigo DP Remix) (07:01)  fuzzy= 91  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Gustavho Bacilo & Julio Garces - Lost In My Memories  (fuzzy=98)
+[44/225] Query: 'Gunnar Haslam - Anekantavada'  (our duration 04:42)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[45/225] Query: 'Aert, Samsa - Faultier'  (our duration 07:01)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[46/225] Query: 'Junket, Literatura, Stereo MC's - Downtown feat. Junket (Dub Mix)'  (our duration 07:40)
+   *r1 Literatura & Stereo MC's - Downtown (feat. Junket) [Dub Mix] (07:40)  fuzzy= 86  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Literatura & Stereo MC's - Downtown (feat. Junket) [Dub Mix]  (fuzzy=86)
+[47/225] Query: 'David LeSal, Hiroko Yamamura, Third Culture (USA) - Birds'  (our duration 05:01)
+   *r1 Third Culture (USA), Hiroko Yamamura & David LeSal - Birds (05:01)  fuzzy= 95  dur:OK  num:OK
+    r2 Third Culture (USA), Hiroko Yamamura & David LeSal - Birds (Theus Mago Remix) (05:16)  fuzzy= 82  dur:NO  num:OK
+    r3 Sian & David LeSal - Black T-Shirt (Hiroko Yamamura, Submerge Remix) (07:57)  fuzzy= 56  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Third Culture (USA), Hiroko Yamamura & David LeSal - Birds  (fuzzy=95)
+[48/225] Query: 'Jozef K, Mz Sunday Luv, Winter Son - Loveless Vessel (Shield Re-Edit)'  (our duration 05:27)
+   *r1 Jozef K + Winter Son - Loveless Vessel (Shield Re-Edit) (05:27)  fuzzy= 96  dur:OK  num:OK
+    r2 Jozef K + Winter Son - Loveless Vessel (Tuff City Kids Remix) (07:14)  fuzzy= 70  dur:NO  num:OK
+    r3 Jozef K + Winter Son - Loveless Vessel (06:10)  fuzzy= 94  dur:NO  num:OK
+    r4 Jozef K + Winter Son - Loveless Vessel (Tuff City Kids Remix) (07:14)  fuzzy= 70  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: Jozef K + Winter Son - Loveless Vessel (Shield Re-Edit)  (fuzzy=96)
+[49/225] Query: 'Bastian Bux - Good Inside'  (our duration 05:16)
+    r1 Bastian Bux - Good Inside (02:59)  fuzzy=100  dur:NO  num:OK
+   *r2 Bastian Bux - Inside (06:52)  fuzzy=100  dur:NO  num:OK
+    r3 Bastian Bux - Inside (06:52)  fuzzy=100  dur:NO  num:OK
+    r4 Bastian Bux - Inside (06:52)  fuzzy=100  dur:NO  num:OK
+    r5 -
+   => NO MATCH (best was r2, fuzzy=100) — failed number/duration gate
+[50/225] Query: 'Third Son - Climb to the Sun feat. Haptic'  (our duration 07:13)
+   *r1 Third Son - Climb to the Sun (feat. Haptic) (07:12)  fuzzy= 98  dur:OK  num:OK
+    r2 Third Son - Climb to the Sun (feat. Haptic) [Darlyn Vlys Remix] (06:53)  fuzzy= 80  dur:NO  num:OK
+    r3 Third Son - Climb to the Sun (feat. Haptic) [Mixed] (04:58)  fuzzy= 89  dur:NO  num:OK
+    r4 Third Son - Climb to the Sun (feat. Haptic) [Darlyn Vlys Dub Mix] (06:54)  fuzzy= 80  dur:NO  num:OK
+    r5 Third Son & Haptic - Climb to the Sun (Guy J Field Trip Remix) (09:56)  fuzzy= 92  dur:NO  num:OK
+   => MATCHED r1: Third Son - Climb to the Sun (feat. Haptic)  (fuzzy=98)
+[51/225] Query: 'Varg2™ - I en oändlig sorg / Jörn'  (our duration 03:20)
+   *r1 Varg2™ - I en oändlig sorg / Jörn (03:20)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Varg2™ - I en oändlig sorg / Jörn  (fuzzy=100)
+[52/225] Query: 'Alyness, Runout, Untrue - Dub Robbers'  (our duration 05:34)
+   *r1 Untrue, Alyness & RUNOUT - Dub Robbers (05:34)  fuzzy= 93  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Untrue, Alyness & RUNOUT - Dub Robbers  (fuzzy=93)
+[53/225] Query: 'Andy Bach, Filizola - The Mind Is Crazy'  (our duration 05:19)
+    r1 Filizola & Andy Bach - The Mind Is Crazy (ID ID Remix) (07:26)  fuzzy= 91  dur:NO  num:OK
+   *r2 Filizola & Andy Bach - The Mind Is Crazy (05:19)  fuzzy= 96  dur:OK  num:OK
+    r3 Filizola - Moving (Andy Bach Remix) (04:59)  fuzzy= 69  dur:NO  num:OK
+    r4 Filizola, Andy Bach & Roberta Howett - Free (Kornum Remix) (05:23)  fuzzy= 52  dur:OK  num:OK
+    r5 Filizola, Andy Bach & Roberta Howett - Free (Peter Mac Remix) (05:54)  fuzzy= 50  dur:NO  num:OK
+   => MATCHED r2: Filizola & Andy Bach - The Mind Is Crazy  (fuzzy=96)
+[54/225] Query: 'CID, Truth x Lies - Caroline'  (our duration 04:37)
+   *r1 CID & Truth x Lies - Caroline (03:00)  fuzzy= 95  dur:OK  num:OK
+    r2 CID & Truth x Lies - Caroline (Mixed) (02:58)  fuzzy= 89  dur:OK  num:OK
+    r3 CID & Truth x Lies - Caroline (Mixed) (02:46)  fuzzy= 89  dur:OK  num:OK
+    r4 CID & Truth x Lies - Caroline (Mixed) (04:08)  fuzzy= 89  dur:OK  num:OK
+    r5 CID & Truth x Lies - Caroline (Mixed) (02:45)  fuzzy= 89  dur:OK  num:OK
+   => MATCHED r1: CID & Truth x Lies - Caroline  (fuzzy=95)
+[55/225] Query: 'Swag - 2 + 2 = 5'  (our duration 08:35)
+   *r1 SWAG - 2+2=5 (08:35)  fuzzy=100  dur:OK  num:OK
+    r2 SWAG - 2+2=5 (No Such Remix) (05:36)  fuzzy= 58  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: SWAG - 2+2=5  (fuzzy=100)
+[56/225] Query: 'DJ Physical - Not So Human'  (our duration 05:34)
+   *r1 DJ Physical - Not So Human (05:34)  fuzzy=100  dur:OK  num:OK
+    r2 DJ Physical - Not So Human (05:34)  fuzzy=100  dur:OK  num:OK
+    r3 DJ Physical & DJ Bigspin - Human Cannonball (06:37)  fuzzy= 83  dur:NO  num:OK
+    r4 DJ Physical & DJ Bigspin - Human Cannonball (06:37)  fuzzy= 83  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: DJ Physical - Not So Human  (fuzzy=100)
+[57/225] Query: 'Delano - M1's Are Forever'  (our duration 05:17)
+   *r1 Delano - M1's Are Forever (05:17)  fuzzy=100  dur:OK  num:OK
+    r2 Delano - M1's Are Forever (05:17)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Delano - M1's Are Forever  (fuzzy=100)
+[58/225] Query: 'Levon Vincent - Interlude - Silent Cities II'  (our duration 01:49)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[59/225] Query: 'Daniel Steinberg, Fatboy Slim - Bus Stop Please (Sally C Remix)'  (our duration 05:17)
+   *r1 Fatboy Slim & Daniel Steinberg - Bus Stop Please (Sally C Remix) (05:17)  fuzzy= 98  dur:OK  num:OK
+    r2 Fatboy Slim & Daniel Steinberg - Bus Stop Please (Sally C Remix) [Mixed] (04:18)  fuzzy= 92  dur:NO  num:OK
+    r3 Fatboy Slim & Daniel Steinberg - Bus Stop Please (03:35)  fuzzy= 85  dur:NO  num:OK
+    r4 Fatboy Slim & Daniel Steinberg - Bus Stop Please (David Guetta & Morten Future Rave Remix) (03:12)  fuzzy= 80  dur:NO  num:OK
+    r5 Fatboy Slim & Daniel Steinberg - Bus Stop Please (Edit) (02:54)  fuzzy= 86  dur:NO  num:OK
+   => MATCHED r1: Fatboy Slim & Daniel Steinberg - Bus Stop Please (Sally C Remix)  (fuzzy=98)
+[60/225] Query: '& Stizi, bewav, MC Menor Mt - HAHAHA'  (our duration 06:41)
+   *r1 MC Menor MT, bewav & STIZI - HAHAHA (02:36)  fuzzy= 96  dur:NO  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=96) — failed number/duration gate
+[61/225] Query: 'Allan pillai, DeLix - Get Off My Lawn (Oryza Remix)'  (our duration 07:52)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[62/225] Query: 'Blovk - Olor a cítricos'  (our duration 05:13)
+   *r1 Blovk - Olor a Cítricos (05:13)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Blovk - Olor a Cítricos  (fuzzy=100)
+[63/225] Query: 'Nimu (2) - Room Of Mirrors'  (our duration 04:00)
+    r1 Nimu - Room Of Mirrors (Mixed) (03:53)  fuzzy= 91  dur:OK  num:OK
+   *r2 Nimu - Room Of Mirrors (04:00)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r2: Nimu - Room Of Mirrors  (fuzzy=100)
+[64/225] Query: 'Mathias Schaffhauser - Collapsing Collabs (Dub Taylor Remix)'  (our duration 08:16)
+   *r1 Mathias Schaffhäuser - Collapsing Collabs (Dub Taylor Remix) (08:16)  fuzzy= 98  dur:OK  num:OK
+    r2 Mathias Schaffhäuser - Collapsing Collabs (09:40)  fuzzy= 80  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Mathias Schaffhäuser - Collapsing Collabs (Dub Taylor Remix)  (fuzzy=98)
+[65/225] Query: 'Women's Hour - Hiding'  (our duration 04:13)
+   *r1 Women's Hour - Hiding (04:13)  fuzzy=100  dur:OK  num:OK
+    r2 David Moore - The Yellow Wallpaper (36:30)  fuzzy= 31  dur:NO  num:OK
+    r3 Kaya Lion - Women's Revolution (feat. Sista Mala) (03:43)  fuzzy= 54  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Women's Hour - Hiding  (fuzzy=100)
+[66/225] Query: 'Eversines - B2 Distant VINYL ONLY'  (our duration 05:48)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[67/225] Query: 'Hot Since 82, Jansons, Miss Kittin, Nick Curly - Naboo (Nick Curly & Jansons Remix)'  (our duration 06:38)
+    r1 Hot Since 82 & Miss Kittin - Naboo (Nick Curly & Jansons Remix) (06:38)  fuzzy= 91  dur:OK  num:OK
+   *r2 Hot Since 82, Miss Kittin, Nick Curly & Jansons - Naboo (Nick Curly & Jansons Remix) (06:38)  fuzzy=100  dur:OK  num:OK
+    r3 Miss Kittin & Hot Since 82 - Naboo (Nick Curly & Jansons Remix) [Mixed] (02:55)  fuzzy= 85  dur:NO  num:OK
+    r4 DJ Oyster - Citrus (Gerd Janson Mix) [Mixed] (05:49)  fuzzy= 38  dur:NO  num:OK
+    r5 -
+   => MATCHED r2: Hot Since 82, Miss Kittin, Nick Curly & Jansons - Naboo (Nick Curly & Jansons Remix)  (fuzzy=100)
+[68/225] Query: 'Diamond Dealer, Dorothy Masuka - Sophiatown Tribute (Caiiro's Dub Mix)'  (our duration 06:26)
+   *r1 Diamond Dealer - Sophiatown Tribute (feat. Dorothy Masuka) [Caiiro's Dub Mix] (06:26)  fuzzy= 92  dur:OK  num:OK
+    r2 Diamond Dealer - Sophiatown Tribute (feat. Dorothy Masuka) [Caiiro's Dub Mix] [Mixed] (05:03)  fuzzy= 87  dur:NO  num:OK
+    r3 Diamond Dealer - Sophiatown Tribute (feat. Dorothy Masuka) [Caiiro's Dub Mix] [Mixed] (05:23)  fuzzy= 87  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Diamond Dealer - Sophiatown Tribute (feat. Dorothy Masuka) [Caiiro's Dub Mix]  (fuzzy=92)
+[69/225] Query: 'DJ Double Oh! - Y Sol'  (our duration 02:33)
+   *r1 DJ Double Oh! - Y Sol (02:33)  fuzzy=100  dur:OK  num:OK
+    r2 DJ Double Oh! - Cuerpo (05:43)  fuzzy= 81  dur:NO  num:OK
+    r3 DJ Double Oh! - SUDA (05:54)  fuzzy= 84  dur:NO  num:OK
+    r4 DJ Double Oh! - Burst (05:05)  fuzzy= 81  dur:NO  num:OK
+    r5 DJ Double Oh! - Afterglow (06:01)  fuzzy= 81  dur:NO  num:OK
+   => MATCHED r1: DJ Double Oh! - Y Sol  (fuzzy=100)
+[70/225] Query: 'Julia Church, Nils Hoffmann, Yotto - No Ending (Nils Hoffmann Extended Remix)'  (our duration 06:04)
+   *r1 YOTTO, Julia Church & Nils Hoffmann - No Ending (Nils Hoffmann Extended Remix) (06:04)  fuzzy= 90  dur:OK  num:OK
+    r2 YOTTO, Julia Church & Nils Hoffmann - No Ending (Nils Hoffmann Remix) (04:19)  fuzzy= 84  dur:OK  num:OK
+    r3 YOTTO & Julia Church - No Ending (04:17)  fuzzy= 82  dur:OK  num:OK
+    r4 YOTTO & Julia Church - No Ending (Tritonia 451) [Nils Hoffmann Remix] (04:21)  fuzzy= 69  dur:OK  num:NO
+    r5 -
+   => MATCHED r1: YOTTO, Julia Church & Nils Hoffmann - No Ending (Nils Hoffmann Extended Remix)  (fuzzy=90)
+[71/225] Query: 'Chris Stussy - What Are You Waiting For (Extended Sunrise Mix)'  (our duration 05:32)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[72/225] Query: 'Modström - Kaito'  (our duration 07:18)
+   *r1 Modström - Kaito (07:18)  fuzzy=100  dur:OK  num:OK
+    r2 Modström - Kaito (Daniel Meister Remix) (06:43)  fuzzy=100  dur:NO  num:OK
+    r3 Modström - Kaito (Electricano Remix) (07:07)  fuzzy=100  dur:NO  num:OK
+    r4 Modström - Kaito (07:18)  fuzzy=100  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: Modström - Kaito  (fuzzy=100)
+[73/225] Query: 'Ranger Trucco - can't stop the swing.'  (our duration 06:04)
+   *r1 Ranger Trucco - Can't Stop the Swing. (06:04)  fuzzy=100  dur:OK  num:OK
+    r2 Ranger Trucco - Can't Stop the Swing. (Mixed) (04:53)  fuzzy=100  dur:NO  num:OK
+    r3 The Beatmasters - Hey DJ / I Can't Dance (To That Music You're Playing) [Remix] [Mixed] (04:29)  fuzzy= 41  dur:NO  num:OK
+    r4 Ranger Trucco - D.A.N (Dance All Night) (03:19)  fuzzy= 58  dur:NO  num:OK
+    r5 Ranger Trucco - D.A.N (Dance All Night) [Mixed] (06:03)  fuzzy= 54  dur:OK  num:OK
+   => MATCHED r1: Ranger Trucco - Can't Stop the Swing.  (fuzzy=100)
+[74/225] Query: 'Collins, Pave, Thomas Newson, Tom - Serena (Sllash & Doppe Extended Remix)'  (our duration 05:08)
+    r1 Tom & Collins, Thomas Newson & Pave - Serena (Sllash & Doppe Remix) (02:53)  fuzzy= 92  dur:OK  num:OK
+   *r2 Tom & Collins, Thomas Newson & Pave - Serena (Sllash & Doppe Remix) [Mixed] (02:15)  fuzzy= 92  dur:OK  num:OK
+    r3 Tom & Collins, Thomas Newson & Pave - Serena (02:33)  fuzzy= 82  dur:OK  num:OK
+    r4 Thomas Newson, Pave & Tom Collins - Serena (Sllash & Doppe Remix) [Mixed] (02:20)  fuzzy= 87  dur:OK  num:OK
+    r5 Thomas Newson, Pave & Tom Collins - Serena (Sllash & Doppe Remix) [Mixed] (02:44)  fuzzy= 87  dur:OK  num:OK
+   => MATCHED r2: Tom & Collins, Thomas Newson & Pave - Serena (Sllash & Doppe Remix) [Mixed]  (fuzzy=92)
+[75/225] Query: 'E-Talking - Clinic-hole'  (our duration 04:09)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[76/225] Query: 'Lisa Lashes - We Came, We Saw... (Hannah Laing Extended Remix)'  (our duration 03:33)
+   *r1 Lisa Lashes - We Came, We Saw... (Hannah Laing Remix) (02:54)  fuzzy=100  dur:OK  num:OK
+    r2 Lisa Lashes - We Came, We Saw... (Hannah Laing Remix) [Mixed] (02:12)  fuzzy= 92  dur:OK  num:OK
+    r3 Lisa Lashes - We Came, We Saw... (Hannah Laing Remix) [Mixed] (01:41)  fuzzy= 92  dur:OK  num:OK
+    r4 Lisa Lashes - We Came, We Saw... (Hannah Laing Remix) (02:54)  fuzzy=100  dur:OK  num:OK
+    r5 Lisa Lashes - We Came, We Saw... (Hannah Laing Remix) (02:54)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r1: Lisa Lashes - We Came, We Saw... (Hannah Laing Remix)  (fuzzy=100)
+[77/225] Query: 'Marino Canal, Kotiēr - Shadow'  (our duration 05:32)
+    r1 Kotiēr & Marino Canal - Shadow (Mixed) (04:57)  fuzzy= 85  dur:NO  num:OK
+   *r2 Marino Canal & Kotiēr - Shadow (03:16)  fuzzy= 96  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r2, fuzzy=96) — failed number/duration gate
+[78/225] Query: 'Deadfunk, V.Rock - Acid Energy'  (our duration 06:28)
+   *r1 V-Rock & Deadfunk - Acid Energy (04:03)  fuzzy= 91  dur:NO  num:OK
+    r2 V-Rock & Deadfunk - Into the Darkness (06:27)  fuzzy= 60  dur:OK  num:OK
+    r3 V-Rock & Deadfunk - Into the Darkness (06:27)  fuzzy= 60  dur:OK  num:OK
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=91) — failed number/duration gate
+[79/225] Query: 'Eagles & Butterflies - Welcome To The Jungle'  (our duration 06:37)
+   *r1 Eagles & Butterflies - Welcome to the Jungle (06:37)  fuzzy=100  dur:OK  num:OK
+    r2 Eagles & Butterflies - Welcome to the Jungle (06:37)  fuzzy=100  dur:OK  num:OK
+    r3 Eagles & Butterflies - Welcome to the Jungle (Edit) (05:50)  fuzzy=100  dur:NO  num:OK
+    r4 Eagles & Butterflies - Welcome to the Jungle (Mixed) [MIXED] (04:58)  fuzzy=100  dur:NO  num:OK
+    r5 Eagles & Butterflies - Welcome to the Jungle (Edit) (05:50)  fuzzy=100  dur:NO  num:OK
+   => MATCHED r1: Eagles & Butterflies - Welcome to the Jungle  (fuzzy=100)
+[80/225] Query: 'Franco Smith, TimiR - Nasty'  (our duration 05:58)
+    r1 Franco Smith & TimiR - Nasty (Mixed) (04:06)  fuzzy= 84  dur:NO  num:OK
+   *r2 Franco Smith & TimiR - Nasty (03:17)  fuzzy= 95  dur:NO  num:OK
+    r3 Franco Smith & TimiR - Nasty (Mixed) (04:26)  fuzzy= 84  dur:NO  num:OK
+    r4 Franco Smith & TimiR - Nasty (Mixed) (04:05)  fuzzy= 84  dur:NO  num:OK
+    r5 Franco Smith & TimiR - Nasty (Mixed) (02:22)  fuzzy= 84  dur:NO  num:OK
+   => NO MATCH (best was r2, fuzzy=95) — failed number/duration gate
+[81/225] Query: 'HNGT, Techmo - Dream Machine'  (our duration 06:18)
+   *r1 HNGT & Techmo - Dream Machine (06:18)  fuzzy= 96  dur:OK  num:OK
+    r2 HNGT & Techmo - Dream Machine (Mixed) (04:49)  fuzzy= 87  dur:NO  num:OK
+    r3 HNGT & Techmo - Dream Machine (06:18)  fuzzy= 96  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: HNGT & Techmo - Dream Machine  (fuzzy=96)
+[82/225] Query: 'Bouras, Raden (UK) - Run the Rhythm'  (our duration 05:50)
+    r1 Raden (UK) & Bouras - Run the Rhythm (04:07)  fuzzy= 96  dur:NO  num:OK
+   *r2 Raden (UK) & Bouras - Run the Rhythm (05:50)  fuzzy= 96  dur:OK  num:OK
+    r3 Raden (UK) & Bouras - Sound of Silence (04:00)  fuzzy= 61  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r2: Raden (UK) & Bouras - Run the Rhythm  (fuzzy=96)
+[83/225] Query: 'Veerus - Algorythm'  (our duration 06:15)
+   *r1 Veerus - Algorythm (04:05)  fuzzy=100  dur:NO  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[84/225] Query: 'Auggië - Can't Stop Thinking About This'  (our duration 06:21)
+   *r1 Auggië - Can't Stop Thinking About This (06:21)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Auggië - Can't Stop Thinking About This  (fuzzy=100)
+[85/225] Query: 'Lisa May (AUS) - Universe'  (our duration 06:17)
+   *r1 Lisa May (AUS) - Universe (06:17)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Lisa May (AUS) - Universe  (fuzzy=100)
+[86/225] Query: 'Sinisa Tamamovic - 2Ms'  (our duration 06:30)
+   *r1 Sinisa Tamamovic - 2Ms (Edit) (04:31)  fuzzy=100  dur:NO  num:OK
+    r2 Sinisa Tamamovic - 2Ms (Edit) (04:31)  fuzzy=100  dur:NO  num:OK
+    r3 Sinisa Tamamovic - The Drums (Vox Tool) (00:30)  fuzzy= 89  dur:NO  num:NO
+    r4 Tom Middleton - Jungle Drums (Sinisa Tamamovic Remix) (06:40)  fuzzy= 62  dur:NO  num:NO
+    r5 Tom Middleton - Jungle Drums (Sinisa Tamamovic Remix) (06:40)  fuzzy= 62  dur:NO  num:NO
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[87/225] Query: 'Adriatique, Eynka - Beyond Us (Extended Hatshepsut Version, Alex Wann remix)'  (our duration 06:03)
+   *r1 Adriatique & Eynka - Beyond Us (Hatshepsut Version, Alex Wann Remix) (03:39)  fuzzy= 92  dur:NO  num:OK
+    r2 Eynka & Adriatique - Beyond Us (Hatshepsut Version) [Alex Wann Remix] [Mixed] (02:52)  fuzzy= 75  dur:NO  num:OK
+    r3 Eynka & Adriatique - Beyond Us (Hatshepsut Version) [Alex Wann Remix] [Mixed] (04:40)  fuzzy= 75  dur:NO  num:OK
+    r4 Eynka & Adriatique - Beyond Us (Hatshepsut Version, Alex Wann Remix) [Mixed] (03:20)  fuzzy= 79  dur:NO  num:OK
+    r5 Eynka - Beyond Us (Adriatique Remix) [Mixed] (05:05)  fuzzy= 69  dur:NO  num:OK
+   => NO MATCH (best was r1, fuzzy=92) — failed number/duration gate
+[88/225] Query: 'Jason Orfan, Fonsekas - Change the World'  (our duration 06:51)
+   *r1 Jason Orfan & Fonsekas - Change the World (04:40)  fuzzy= 97  dur:NO  num:OK
+    r2 Jason Orfan & Fonsekas - The Light (07:52)  fuzzy= 74  dur:NO  num:OK
+    r3 Jason Orfan & Fonsekas - Look at the Stars (07:10)  fuzzy= 72  dur:NO  num:OK
+    r4 Jason Orfan & Fonsekas - Change (05:05)  fuzzy= 84  dur:NO  num:OK
+    r5 Jason Orfan & Fonsekas - Million Stars (06:40)  fuzzy= 68  dur:NO  num:OK
+   => NO MATCH (best was r1, fuzzy=97) — failed number/duration gate
+[89/225] Query: 'Kai Tracid, ASYS, PETER PAHN - BAM BAM TSCHAK (We Will Rock You Mix)'  (our duration 05:27)
+   *r1 Kai Tracid, PETER PAHN & A*S*Y*S - BAM BAM TSCHAK (We Will Rock You Mix) (05:27)  fuzzy= 95  dur:OK  num:OK
+    r2 PETER PAHN, Kai Tracid & A*S*Y*S - BAM BAM TSCHAK (We Will Rock You Mix) [Mixed] (03:19)  fuzzy= 88  dur:NO  num:OK
+    r3 PETER PAHN, Kai Tracid & A*S*Y*S - BAM BAM TSCHAK (We Will Rock You Mix) [Mixed] (03:23)  fuzzy= 88  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Kai Tracid, PETER PAHN & A*S*Y*S - BAM BAM TSCHAK (We Will Rock You Mix)  (fuzzy=95)
+[90/225] Query: 'M.Smith - Affair'  (our duration 06:48)
+   *r1 M.smith - Affair (05:43)  fuzzy=100  dur:NO  num:OK
+    r2 Carroll Gibbons - I'm Building Up to an Awful Let Down (02:59)  fuzzy= 24  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[91/225] Query: 'Rosa Anschütz - Rigid (Kobosil 44 Rush Mix)'  (our duration 06:52)
+   *r1 Rosa Anschütz - Rigid (Kobosil 44 Rush Mix) (06:52)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Rosa Anschütz - Rigid (Kobosil 44 Rush Mix)  (fuzzy=100)
+[92/225] Query: 'Amelie Lens - All Of You'  (our duration 05:12)
+   *r1 Amelie Lens - All Of You (05:12)  fuzzy=100  dur:OK  num:OK
+    r2 Amelie Lens - All Of You (Mixed) (04:24)  fuzzy=100  dur:NO  num:OK
+    r3 Amelie Lens - All Of You (05:12)  fuzzy=100  dur:OK  num:OK
+    r4 Amelie Lens - Falling For You (03:55)  fuzzy= 86  dur:NO  num:OK
+    r5 Amelie Lens - Falling For You (Mixed) (03:33)  fuzzy= 81  dur:NO  num:OK
+   => MATCHED r1: Amelie Lens - All Of You  (fuzzy=100)
+[93/225] Query: 'Viken Arman - You With A Lonely Raver (Acid Pauli Remix)'  (our duration 06:47)
+   *r1 Viken Arman - You with a Lonely Raver (Acid Pauli Remix) (06:47)  fuzzy=100  dur:OK  num:OK
+    r2 Viken Arman - You with a Lonely Raver (Acid Pauli Remix) [Mixed] (05:08)  fuzzy=100  dur:NO  num:OK
+    r3 Viken Arman - You with a Lonely Raver (Acid Pauli Remix) (06:47)  fuzzy=100  dur:OK  num:OK
+    r4 Viken Arman - Lonely Raver (07:09)  fuzzy=100  dur:NO  num:OK
+    r5 Viken Arman - Lonely Raver (Mixed) (06:49)  fuzzy= 86  dur:OK  num:OK
+   => MATCHED r1: Viken Arman - You with a Lonely Raver (Acid Pauli Remix)  (fuzzy=100)
+[94/225] Query: 'Metodi Hristov - Full Tilt'  (our duration 06:06)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[95/225] Query: 'Deborah De Luca - Croce'  (our duration 05:34)
+   *r1 Deborah de Luca - Croce (05:34)  fuzzy=100  dur:OK  num:OK
+    r2 Deborah de Luca - Historia De Un Amor (feat. Verónica Simioli) (03:42)  fuzzy= 83  dur:NO  num:OK
+    r3 Deborah de Luca - Croce (Mixed) (03:31)  fuzzy=100  dur:NO  num:OK
+    r4 Deborah de Luca - Croce (Mixed) (02:38)  fuzzy=100  dur:NO  num:OK
+    r5 Deborah de Luca - Wild (05:30)  fuzzy= 86  dur:OK  num:OK
+   => MATCHED r1: Deborah de Luca - Croce  (fuzzy=100)
+[96/225] Query: 'Karla Blum - Time'  (our duration 06:19)
+    r1 Karla Blum - Time (03:20)  fuzzy=100  dur:NO  num:OK
+   *r2 Karla Blum - Time (Fabio Fusco Remix) (04:17)  fuzzy=100  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r2, fuzzy=100) — failed number/duration gate
+[97/225] Query: 'Budakid - Lovin' Sun (Hernan Cattaneo & Kevin Di Serna Remix)'  (our duration 08:05)
+    r1 Budakid - Lovin' Sun (Hernan Cattaneo & Kevin Di Serna Remix) [Mixed] (06:59)  fuzzy=100  dur:NO  num:OK
+   *r2 Budakid - Lovin' Sun (Hernan Cattaneo & Kevin Di Serna Remix) (08:05)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r2: Budakid - Lovin' Sun (Hernan Cattaneo & Kevin Di Serna Remix)  (fuzzy=100)
+[98/225] Query: 'Jamie Jones, Miluhska - La Musa (Adam Ten & Rafael Remix - Extended)'  (our duration 05:19)
+   *r1 Jamie Jones & Miluhska - La Musa (Adam Ten & Rafael Remix) (03:36)  fuzzy= 89  dur:NO  num:OK
+    r2 Jamie Jones & Miluhska - La Musa (Adam Ten & Rafael Remix) (03:36)  fuzzy= 89  dur:NO  num:OK
+    r3 Jamie Jones & Miluhska - La Musa (Adam Ten & Rafael Remix) [Mixed] (04:23)  fuzzy= 89  dur:NO  num:OK
+    r4 Jamie Jones & Miluhska - La Musa (Adam Ten & Rafael Remix) [Mixed] (04:41)  fuzzy= 89  dur:NO  num:OK
+    r5 -
+   => NO MATCH (best was r1, fuzzy=89) — failed number/duration gate
+[99/225] Query: 'Armin van Buuren - Blah Blah Blah (Lilly Palmer Extended Remix)'  (our duration 06:02)
+    r1 Armin van Buuren - Blah Blah Blah (Lilly Palmer Remix) (03:34)  fuzzy=100  dur:OK  num:OK
+   *r2 Armin van Buuren - Blah Blah Blah (Lilly Palmer Extended Remix) (06:02)  fuzzy=100  dur:OK  num:OK
+    r3 Armin van Buuren - Blah Blah Blah (03:03)  fuzzy=100  dur:OK  num:OK
+    r4 Armin van Buuren - Blah Blah Blah (03:03)  fuzzy=100  dur:OK  num:OK
+    r5 Armin van Buuren - Blah Blah Blah (Brennan Heart & Toneshifterz Remix) (03:20)  fuzzy= 71  dur:OK  num:OK
+   => MATCHED r2: Armin van Buuren - Blah Blah Blah (Lilly Palmer Extended Remix)  (fuzzy=100)
+[100/225] Query: 'Adam Beyer, Eli Brown - Living in the Moment'  (our duration 05:38)
+   *r1 Adam Beyer & Eli Brown - Living In The Moment (03:46)  fuzzy= 97  dur:NO  num:OK
+    r2 Eli Brown & Adam Beyer - Living In The Moment (Mixed) (03:02)  fuzzy= 91  dur:NO  num:OK
+    r3 Eli Brown - Believe (Mixed) (04:50)  fuzzy= 54  dur:NO  num:OK
+    r4 Adam Beyer & Eli Brown - Overdose Of Bass (03:14)  fuzzy= 63  dur:NO  num:OK
+    r5 Eli Brown - Pressure (Mixed) (05:43)  fuzzy= 51  dur:OK  num:OK
+   => NO MATCH (best was r1, fuzzy=97) — failed number/duration gate
+[101/225] Query: 'Marques Skot - When The Snow Falls'  (our duration 08:24)
+   *r1 Marques Skot - When the Snow Falls (08:24)  fuzzy=100  dur:OK  num:OK
+    r2 Marques Skot - When the Snow Falls (08:24)  fuzzy=100  dur:OK  num:OK
+    r3 Marques Skot - When the Snow Falls (08:24)  fuzzy=100  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Marques Skot - When the Snow Falls  (fuzzy=100)
+[102/225] Query: 'Joe Red, SP1DER - Groot (That Kid Chris Remix)'  (our duration 06:44)
+   *r1 Joe Red & Sp1DeR - Groot (That Kid Chris Remix) (06:43)  fuzzy= 97  dur:OK  num:OK
+    r2 Joe Red & SP1DER - Groot (That Kid Chris Remix) (06:43)  fuzzy= 97  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Joe Red & Sp1DeR - Groot (That Kid Chris Remix)  (fuzzy=97)
+[103/225] Query: 'Nic Soulé - Let's Go'  (our duration 08:02)
+    r1 Nic Soulé - Let's Go (Lazy Luke Remix) (05:59)  fuzzy=100  dur:NO  num:OK
+    r2 Nic Soulé - Let's Go (Elvis27 Remix) (06:13)  fuzzy=100  dur:NO  num:NO
+    r3 Nic Soulé - Let's Go (Besta Evo Remix) (07:10)  fuzzy=100  dur:NO  num:OK
+   *r4 Nic Soulé - Let's Go (08:02)  fuzzy=100  dur:OK  num:OK
+    r5 Nic Soulé - Let's Go (Tumicology Remix) (06:32)  fuzzy=100  dur:NO  num:OK
+   => MATCHED r4: Nic Soulé - Let's Go  (fuzzy=100)
+[104/225] Query: 'Masako Hariu, Michael Oberling - Sense (MSM.DE94 Remix)'  (our duration 08:10)
+   *r1 Michael Oberling & Masako Hariu - Sense (MSM.DE94 Remix) (08:10)  fuzzy= 97  dur:OK  num:OK
+    r2 Michael Oberling & Masako Hariu - Sense (MSM.DE94 Remix) (08:10)  fuzzy= 97  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Michael Oberling & Masako Hariu - Sense (MSM.DE94 Remix)  (fuzzy=97)
+[105/225] Query: 'Albert Vogt, Nick Beringer - B1 The Real You (Enigma Line Remix) VINYL ONLY'  (our duration 06:30)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[106/225] Query: 'Carmona (US) - Subelo'  (our duration 05:17)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[107/225] Query: 'James Himself - La Luna Alumbra'  (our duration 06:24)
+   *r1 James Himself - La Luna Alumbra (06:24)  fuzzy=100  dur:OK  num:OK
+    r2 James Himself - La Luna Alumbra (06:24)  fuzzy=100  dur:OK  num:OK
+    r3 James Himself - La Luna Alumbra (06:24)  fuzzy=100  dur:OK  num:OK
+    r4 James Himself - La Luna Alumbra (06:24)  fuzzy=100  dur:OK  num:OK
+    r5 James Himself - La Luna Alumbra (06:24)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r1: James Himself - La Luna Alumbra  (fuzzy=100)
+[108/225] Query: 'Marc Maya - Reflections'  (our duration 07:30)
+   *r1 Marc Maya - Reflections (07:30)  fuzzy=100  dur:OK  num:OK
+    r2 Marc Maya - Reflections (Mixed) (06:58)  fuzzy=100  dur:NO  num:OK
+    r3 Marc Maya - Reflections (Radio Edit) (04:11)  fuzzy=100  dur:NO  num:OK
+    r4 Marc Maya - Reflections (07:30)  fuzzy=100  dur:OK  num:OK
+    r5 Marc Maya - Reflections (07:30)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r1: Marc Maya - Reflections  (fuzzy=100)
+[109/225] Query: 'Salvatore Bruno - These Days (Mar-T Remix)'  (our duration 06:32)
+   *r1 Salvatore Bruno - These Days (Mar-T Remix) (06:32)  fuzzy=100  dur:OK  num:OK
+    r2 Salvatore Bruno - These Days (Mar-T Remix) (06:32)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Salvatore Bruno - These Days (Mar-T Remix)  (fuzzy=100)
+[110/225] Query: 'Trudge - страсть'  (our duration 07:53)
+   *r1 Trudge - Страсть (07:53)  fuzzy=100  dur:OK  num:OK
+    r2 Trudge - страсть (07:53)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Trudge - Страсть  (fuzzy=100)
+[111/225] Query: 'C.K - A2 Cough (Ambient) VINYL ONLY'  (our duration 05:04)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[112/225] Query: 'Gennaro De Sarno - Living (Mario da Ragnio & Leeto Remix)'  (our duration 07:23)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[113/225] Query: 'Avi Sic, Nessø - Bad Habit'  (our duration 04:33)
+   *r1 Avi Sic & Nessø - Bad Habit (03:06)  fuzzy= 95  dur:OK  num:OK
+    r2 Nessø - Ølympus (Avi Sic Remix) (03:37)  fuzzy= 57  dur:OK  num:OK
+    r3 Nessø & Avi Sic - Need No Light (feat. Kxne) (03:47)  fuzzy= 55  dur:OK  num:OK
+    r4 Nessø & Avi Sic - Need No Light (feat. Kxne) [Extended Mix] (04:48)  fuzzy= 55  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: Avi Sic & Nessø - Bad Habit  (fuzzy=95)
+[114/225] Query: 'Dast (Italy) - Let's You Go'  (our duration 07:44)
+   *r1 Dast (Italy) - Let's You Go (07:44)  fuzzy=100  dur:OK  num:OK
+    r2 Migos - Slippery (feat. Gucci Mane) (05:04)  fuzzy= 38  dur:NO  num:OK
+    r3 THE SCOTTS, Travis Scott & Kid Cudi - THE SCOTTS (02:45)  fuzzy= 33  dur:NO  num:OK
+    r4 Kaash Paige - Love Songs (Bonus) (02:28)  fuzzy= 40  dur:NO  num:OK
+    r5 Lil Uzi Vert - Lo Mein (03:15)  fuzzy= 36  dur:NO  num:OK
+   => MATCHED r1: Dast (Italy) - Let's You Go  (fuzzy=100)
+[115/225] Query: 'Nasser Baker - 23 Sols'  (our duration 07:02)
+   *r1 Nasser Baker - 23 Sols (07:02)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Nasser Baker - 23 Sols  (fuzzy=100)
+[116/225] Query: 'Jones 2.0, Leon (Italy) - Get Back Up (KOKO.IT Remix)'  (our duration 06:16)
+   *r1 Leon & Jones 2.0 - Get Back Up (KOKO.IT Remix) (06:16)  fuzzy= 93  dur:OK  num:OK
+    r2 Leon & Jones 2.0 - Get Back Up (KOKO.IT Remix Edit) (03:58)  fuzzy= 84  dur:NO  num:OK
+    r3 Post Malone - On the Road (feat. Meek Mill & Lil Baby) (03:38)  fuzzy= 37  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Leon & Jones 2.0 - Get Back Up (KOKO.IT Remix)  (fuzzy=93)
+[117/225] Query: 'Dj Meme, Kenny Bobien, Underground Ministries - I Shall Not Be Moved (DJ Meme Classic Vocal Mix)'  (our duration 10:48)
+    r1 Underground Ministries - I Shall Not Be Moved (feat. Kenny Bobien) [DJ Meme Classic Vocal Mix] [Mixed] (08:24)  fuzzy= 86  dur:NO  num:OK
+   *r2 Underground Ministries - I Shall Not Be Moved (DJ Meme Classic Vocal Mix) [feat. Kenny Bobien] (10:48)  fuzzy= 91  dur:OK  num:OK
+    r3 Underground Ministries - I Shall Not Be Moved (DJ Meme Beatz) [feat. Kenny Bobien] (04:21)  fuzzy= 84  dur:NO  num:OK
+    r4 Underground Ministries - I Shall Not Be Moved (feat. Kenny Bobien) [DJ Meme Classic Vocal Mix] (10:48)  fuzzy= 89  dur:OK  num:OK
+    r5 Underground Ministries - I Shall Not Be Moved (DJ Meme Special Reprise) [feat. Kenny Bobien] (07:33)  fuzzy= 79  dur:NO  num:OK
+   => MATCHED r2: Underground Ministries - I Shall Not Be Moved (DJ Meme Classic Vocal Mix) [feat. Kenny Bobien]  (fuzzy=91)
+[118/225] Query: 'Arkestra - Back to Dreamland'  (our duration 06:14)
+   *r1 Arkestra - Back to Dreamland (06:14)  fuzzy=100  dur:OK  num:OK
+    r2 Will Stewart - The Arkestra at Dreamland (03:40)  fuzzy= 82  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Arkestra - Back to Dreamland  (fuzzy=100)
+[119/225] Query: 'Rhemi - We've Had Enough (The Remixes) [Zepherin Saint Superfly Mix Instrumental] [feat. Shezar]'  (our duration 09:05)
+   *r1 Rhemi - We've Had Enough (The Remixes) [Zepherin Saint Superfly Mix Instrumental] [feat. Shezar] (09:05)  fuzzy=100  dur:OK  num:OK
+    r2 Rhemi - We've Had Enough (The Remixes) [Zepherin Saint Superfly Mix] [feat. Shezar] (09:05)  fuzzy= 97  dur:OK  num:OK
+    r3 Rhemi - We've Had Enough (The Remixes) [Zepherin Saint Tribe Dub] [feat. Shezar] (07:15)  fuzzy= 92  dur:NO  num:OK
+    r4 Rhemi - We've Had Enough (feat. Shezar) [Zepherin Saint Superfly Mix] (09:05)  fuzzy= 82  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: Rhemi - We've Had Enough (The Remixes) [Zepherin Saint Superfly Mix Instrumental] [feat. Shezar]  (fuzzy=100)
+[120/225] Query: 'Donü - Vertical Speed (Lost Algorithm Remix)'  (our duration 05:40)
+   *r1 Donü - Vertical Speed (Lost Algorithm Remix) (05:40)  fuzzy=100  dur:OK  num:OK
+    r2 Anirudh Ravichander & Alisha Thomas - Don'u Don'u Don'u (The Don's Romance) (03:15)  fuzzy= 37  dur:NO  num:OK
+    r3 Anirudh Ravichander, Sooraj Santhosh & Srimathumitha - Don'u Don'u Don'u (03:17)  fuzzy= 36  dur:NO  num:OK
+    r4 Sagopa Kajmer - Merhametine Dön (2021 Tek Edit) (03:22)  fuzzy= 37  dur:NO  num:NO
+    r5 Anirudh Ravichander & Alisha Thomas - Don'u Don'u Don'u (From "Maari") [The Don's Romance] (03:15)  fuzzy= 34  dur:NO  num:OK
+   => MATCHED r1: Donü - Vertical Speed (Lost Algorithm Remix)  (fuzzy=100)
+[121/225] Query: 'Gavril - Numero'  (our duration 05:30)
+   *r1 Gavril - Numero (02:46)  fuzzy=100  dur:NO  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[122/225] Query: 'Phonique - Something Special (feat. Ian Whitelaw)'  (our duration 06:23)
+   *r1 Phonique - Something Special (feat. Ian Whitelaw) (06:23)  fuzzy=100  dur:OK  num:OK
+    r2 Phonique - Something Special (feat. Ian Whitelaw) [The Black 80s Remix] (07:03)  fuzzy=100  dur:NO  num:NO
+    r3 Phonique - Something Special (feat. Ian Whitelaw) [Sam Shure Remix] (07:52)  fuzzy=100  dur:NO  num:OK
+    r4 Phonique - Something Special (feat. Ian Whitelaw) [Phonique Deep Club Mix] (06:22)  fuzzy=100  dur:OK  num:OK
+    r5 Phonique - Something Special (feat. Ian Whitelaw) [Phonique Deep Club Mix] (06:22)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r1: Phonique - Something Special (feat. Ian Whitelaw)  (fuzzy=100)
+[123/225] Query: 'Parra for Cuva ft. Felix Rafael - Dancing On Your Own'  (our duration 05:22)
+   *r1 Parra for Cuva & Felix Raphael - Dancing On Your Own (05:22)  fuzzy= 93  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Parra for Cuva & Felix Raphael - Dancing On Your Own  (fuzzy=93)
+[124/225] Query: 'J.B. Boogie - Da Bass'  (our duration 05:13)
+    r1 J.I the Prince of N.Y - R&B Shit (feat. A Boogie wit da Hoodie) (03:32)  fuzzy= 64  dur:NO  num:OK
+   *r2 C. Da Afro & J.B Boogie - Harvey's Bass (06:35)  fuzzy= 85  dur:NO  num:OK
+    r3 C. Da Afro & J.B Boogie - Harvey's Bass (06:35)  fuzzy= 85  dur:NO  num:OK
+    r4 Ezirk - Slapping the B.ass (J.B. Boogie Remix) (06:05)  fuzzy= 48  dur:NO  num:OK
+    r5 Ezirk - Slapping the B.ass (J.B. Boogie Rework) (06:05)  fuzzy= 48  dur:NO  num:OK
+   => NO MATCH (best was r2, fuzzy=85) — failed number/duration gate
+[125/225] Query: 'ANATTA, Juany Bravo, Sabine - Care To Know'  (our duration 06:15)
+   *r1 Juany Bravo & ANATTA - Care to Know (feat. Sabine) (06:15)  fuzzy= 86  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Juany Bravo & ANATTA - Care to Know (feat. Sabine)  (fuzzy=86)
+[126/225] Query: 'Tim Green - Old Sunshine'  (our duration 08:11)
+   *r1 Tim Green - Old Sunshine (08:11)  fuzzy=100  dur:OK  num:OK
+    r2 Tim Green & Steve Lawler - Old Sunshine / Kalimba (Mixed) (05:31)  fuzzy=100  dur:NO  num:OK
+    r3 Tim Green - Old Sunshine (Dub Mix) (07:25)  fuzzy=100  dur:NO  num:OK
+    r4 Tim Green - Old Sunshine (08:13)  fuzzy=100  dur:OK  num:OK
+    r5 Tim Green - Old Sunshine (08:13)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r1: Tim Green - Old Sunshine  (fuzzy=100)
+[127/225] Query: 'DJ Koze - 05 heiko voss - think about you (dj koze remix)'  (our duration 05:36)
+   *r1 Heiko Voss - Think About You (DJ Koze Remix) (05:38)  fuzzy=100  dur:OK  num:NO
+    r2 Heiko Voss - I Think About You (DJ Koze Mix) (06:50)  fuzzy= 91  dur:NO  num:NO
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[128/225] Query: 'Joker, Rustie - Play doe'  (our duration 01:26)
+   *r1 Joker & Rustie - Play Doe (04:11)  fuzzy= 95  dur:NO  num:OK
+    r2 Joker & Rustie - Play Doe (04:11)  fuzzy= 95  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=95) — failed number/duration gate
+[129/225] Query: 'Brandt Brauer Frick - Paparazzi'  (our duration 07:28)
+   *r1 Brandt Brauer Frick - Paparazzi (07:28)  fuzzy=100  dur:OK  num:OK
+    r2 Brandt Brauer Frick - Paparazzi (07:28)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Brandt Brauer Frick - Paparazzi  (fuzzy=100)
+[130/225] Query: 'Andy Cato (Groove Armada) - Emmanuel'  (our duration 07:53)
+    r1 Groove Armada - Paper Romance (Andy Cato's 3am Drop Mix) (09:56)  fuzzy= 55  dur:NO  num:NO
+   *r2 Groove Armada - Paper Romance (Andy Cato's 3AM Drop Mix) (09:56)  fuzzy= 55  dur:NO  num:NO
+    r3 Will Young - Friday's Child (Andy Cato 12" Mix) [Mixed] (05:30)  fuzzy= 39  dur:NO  num:NO
+    r4 -
+    r5 -
+   => NO MATCH (best was r2, fuzzy=55) — failed number/duration gate
+[131/225] Query: 'Hideo Kobayas, Nagano Kitchen - Climbing Tateshina'  (our duration 06:53)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[132/225] Query: 'Tomas Barfod & Fredski - March on Swan Lake'  (our duration 07:07)
+    r1 Tomas Barfod & Fredski - March On Swan Lake (Dub) (05:58)  fuzzy=100  dur:NO  num:OK
+    r2 Tomas Barfod & Fredski - March On Swan Lake (Velten Meyer Remix) (06:49)  fuzzy=100  dur:NO  num:OK
+   *r3 Tomas Barfod & Fredski - March On Swan Lake (07:09)  fuzzy=100  dur:OK  num:OK
+    r4 Tomas Barfod & Fredski - March On Swan Lake (Emerson Todd's Black Swan Remix) (07:47)  fuzzy=100  dur:NO  num:OK
+    r5 Tomas Barfod & Fredski - March On Swan Lake (Dub) (05:58)  fuzzy=100  dur:NO  num:OK
+   => MATCHED r3: Tomas Barfod & Fredski - March On Swan Lake  (fuzzy=100)
+[133/225] Query: 'Thomas Schumacher - Taxi (Riva Starr Dub Mix)'  (our duration 07:42)
+   *r1 Thomas Schumacher - Taxi (Riva Starr Mix) (07:44)  fuzzy=100  dur:OK  num:OK
+    r2 Thomas Schumacher - Taxi (Riva Starr Dub) (07:44)  fuzzy= 96  dur:OK  num:OK
+    r3 Nôze - Dring Dring (Thomas Schumacher Remix) [feat. Riva Starr] (06:42)  fuzzy= 58  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Thomas Schumacher - Taxi (Riva Starr Mix)  (fuzzy=100)
+[134/225] Query: 'Maceo Plex - Gravy Train (Nicolas Jaar Remix)'  (our duration 05:36)
+    r1 Maceo Plex - Gravy Train (Nicolas Jaar Remix) (05:33)  fuzzy=100  dur:OK  num:OK
+   *r2 Maceo Plex - Gravy Train (Nicolas Jaar Remix) (05:36)  fuzzy=100  dur:OK  num:OK
+    r3 Maceo Plex - Gravy Train (Nicolas Jaar Remix) (05:33)  fuzzy=100  dur:OK  num:OK
+    r4 Maceo Plex - Gravy Train (Nicolas Jaar Remix) (05:36)  fuzzy=100  dur:OK  num:OK
+    r5 Maceo Plex - Gravy Train (08:15)  fuzzy=100  dur:NO  num:OK
+   => MATCHED r2: Maceo Plex - Gravy Train (Nicolas Jaar Remix)  (fuzzy=100)
+[135/225] Query: 'Fuckpony - Schmoozin''  (our duration 07:53)
+   *r1 Fuckpony - Schmoozin (07:53)  fuzzy= 97  dur:OK  num:OK
+    r2 Fuckpony - Schmoozin (07:53)  fuzzy= 97  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Fuckpony - Schmoozin  (fuzzy=97)
+[136/225] Query: 'Jamie Jones vs. Simon Baker - Kaskazi'  (our duration 08:04)
+   *r1 Jamie Jones & Simon Baker - Kaskazi (08:06)  fuzzy= 97  dur:OK  num:OK
+    r2 Jamie Jones & Simon Baker - Kaskazi (Emotional Mix) (08:05)  fuzzy= 94  dur:OK  num:OK
+    r3 Jamie Jones & Simon Baker - Kaskazi (Swahili Dub) (07:56)  fuzzy= 94  dur:OK  num:OK
+    r4 Jamie Jones & Simon Baker - Kaskazi (08:06)  fuzzy= 97  dur:OK  num:OK
+    r5 Jamie Jones & Simon Baker - Kaskazi (Mixed) (05:19)  fuzzy= 94  dur:NO  num:OK
+   => MATCHED r1: Jamie Jones & Simon Baker - Kaskazi  (fuzzy=97)
+[137/225] Query: 'Tom Demac - Crewcuts & Curls'  (our duration 08:00)
+   *r1 Tom Demac - Crewcuts & Curls (Jamie Jones' Watercooler Remix) (07:13)  fuzzy=100  dur:NO  num:OK
+    r2 Tom Demac - Crewcuts & Curls (Jamie Jones' Watercooler Remix) [Mixed] (03:53)  fuzzy=100  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[138/225] Query: 'DJ T. Feat. Nick Maurer - Burning'  (our duration 05:24)
+    r1 DJ T. - Burning (Art Department Remix) [feat. Nick Maurer] (08:58)  fuzzy= 73  dur:NO  num:OK
+    r2 DJ T. - Burning (feat. Nick Maurer) [Art Department Remix] (08:58)  fuzzy= 73  dur:NO  num:OK
+    r3 DJ T. - Burning (feat. Nick Maurer) [Art Department Remix] (08:58)  fuzzy= 73  dur:NO  num:OK
+   *r4 DJ T. - Burning (Club Mix) [feat. Nick Maurer] (07:31)  fuzzy= 83  dur:NO  num:OK
+    r5 DJ T. - Burning (Redshape Remix) [feat. Nick Maurer] (10:18)  fuzzy= 77  dur:NO  num:OK
+   => NO MATCH (best was r4, fuzzy=83) — failed number/duration gate
+[139/225] Query: 'Mic Newman - Elephantine (Digital Only)'  (our duration 07:32)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[140/225] Query: 'Jona - Smart Cats vs Dumb Dogs'  (our duration 08:22)
+   *r1 Jona - Smart Cats vs. Dumb Dogs (08:22)  fuzzy= 98  dur:OK  num:OK
+    r2 Jona - Smart Cats vs. Dumb Dogs (08:22)  fuzzy= 98  dur:OK  num:OK
+    r3 Jona - Smart Cats vs. Dumb Dogs (08:22)  fuzzy= 98  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Jona - Smart Cats vs. Dumb Dogs  (fuzzy=98)
+[141/225] Query: 'M.A.N.D.E.A.R. - Buddies'  (our duration 06:05)
+    r1 M.A.N.D.E.A.R. - Buddies () (06:05)  fuzzy=100  dur:OK  num:OK
+    r2 M.A.N.D.E.A.R. - Buddies (SIOPIS Remix) (06:12)  fuzzy=100  dur:OK  num:OK
+    r3 M.A.N.D.E.A.R. - Buddies (Radio Slave's Panorama Garage Remix) (10:04)  fuzzy=100  dur:NO  num:OK
+    r4 M.A.N.D.E.A.R. - Buddies (M.A.N.D.Y. Slim Fit Remix) (06:07)  fuzzy=100  dur:OK  num:OK
+   *r5 M.A.N.D.E.A.R. - Buddies (06:05)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r5: M.A.N.D.E.A.R. - Buddies  (fuzzy=100)
+[142/225] Query: 'Jay Haze feat. Big Bully, Sven VT - The first time'  (our duration 06:46)
+   *r1 Jay Haze & Sven VT - The First Time (feat. Big Bully) (06:46)  fuzzy= 85  dur:OK  num:OK
+    r2 Jay Haze & Sven VT - The First Time (feat. Big Bully) (06:46)  fuzzy= 85  dur:OK  num:OK
+    r3 Jay Haze - Soul in a Bottle (feat. Big Bully & Sven VT) [Wankelmut Remix] (07:17)  fuzzy= 60  dur:NO  num:OK
+    r4 Jay Haze - Soul in a Bottle (Wankelmut Remix) [feat. Big Bully & Sven VT] (07:17)  fuzzy= 59  dur:NO  num:OK
+    r5 Jay Haze - Soul in a Bottle (Hufschlag & Braun Remix) [feat. Big Bully & Sven VT] (06:43)  fuzzy= 58  dur:OK  num:OK
+   => NO MATCH (best was r1, fuzzy=85) — failed number/duration gate
+[143/225] Query: 'Till von Sein - My Life Got No Betta (61 State Of Mind)'  (our duration 06:16)
+   *r1 Till Von Sein - My Life Got No Betta (61 State of Mind) (Original Mix) (06:16)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Till Von Sein - My Life Got No Betta (61 State of Mind) (Original Mix)  (fuzzy=100)
+[144/225] Query: 'dadaBLEEP - Ghipwe'  (our duration 10:14)
+    r1 Dadableep - Ghipwe (Andomat 3000 Mix) (07:25)  fuzzy=100  dur:NO  num:NO
+   *r2 Dadableep - Ghipwe (Plasmik Remix) (07:42)  fuzzy=100  dur:NO  num:OK
+    r3 Dadableep - Ghipwe (Andomat 3000 Remix) (07:10)  fuzzy=100  dur:NO  num:NO
+    r4 -
+    r5 -
+   => NO MATCH (best was r2, fuzzy=100) — failed number/duration gate
+[145/225] Query: 'Hatikvah - Modern Times (Andre Stubbs, Chopstick & Johnjon Remix)'  (our duration 07:05)
+   *r1 Hatikvah - Modern Times (André Stubbs, Chopstick & Johnjon Remix) (07:05)  fuzzy= 98  dur:OK  num:OK
+    r2 Hatikvah - Synchronicty (Chopstick & Johnjon Remix) (07:46)  fuzzy= 71  dur:NO  num:OK
+    r3 Hatikvah - Synchronicity (Chopstick & Johnjon Remix) (07:46)  fuzzy= 71  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Hatikvah - Modern Times (André Stubbs, Chopstick & Johnjon Remix)  (fuzzy=98)
+[146/225] Query: 'PuNto - 3 Tempo 3'  (our duration 06:02)
+   *r1 PuNto - 3Tempo3 (06:04)  fuzzy=100  dur:OK  num:OK
+    r2 Matsby - Oggi (feat. Ch3f Beats & Alfa) (03:44)  fuzzy= 24  dur:NO  num:OK
+    r3 Giuseppe Grazioli & Orchestra Sinfonica di Milano Giuseppe Verdi - Suite for Wind Orchestra from "The Threepenny Opera" (1928): 6. Cannon song: Charleston-Tempo (02:19)  fuzzy= 13  dur:NO  num:NO
+    r4 DIV3RSO & Glaceo - IMMAGINI (02:22)  fuzzy= 26  dur:NO  num:NO
+    r5 DIV3RSO & Glaceo - BABY (02:05)  fuzzy= 29  dur:NO  num:NO
+   => MATCHED r1: PuNto - 3Tempo3  (fuzzy=100)
+[147/225] Query: 'DJ Gabriel Chong - Omie'  (our duration 06:35)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[148/225] Query: 'Modeselektor - The black block (Marcel Dettman redefinition)'  (our duration 01:37)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[149/225] Query: 'Château Flight - 116 BPM Beat'  (our duration 01:03)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[150/225] Query: 'Einzelkind vs. Meat - Words from the frontline'  (our duration 08:13)
+   *r1 Einzelkind & Meat - Words from the Frontline (Einzelkind vs. Meat) (08:13)  fuzzy=100  dur:OK  num:OK
+    r2 Einzelkind & Meat - Words from the Frontline (Einzelkind vs. Meat) (Einzelkind vs. Meat) (08:13)  fuzzy=100  dur:OK  num:OK
+    r3 Einzelkind & Meat - Words from the Frontline (Einzelkind vs. Meat) (08:13)  fuzzy=100  dur:OK  num:OK
+    r4 Einzelkind & Meat - Hear the Man (Einzelkind vs. Meat) (Einzelkind vs. Meat) (06:58)  fuzzy= 69  dur:NO  num:OK
+    r5 Einzelkind & Meat - Ready for This (Einzelkind vs. Meat) (Einzelkind vs. Meat) (07:10)  fuzzy= 63  dur:NO  num:OK
+   => MATCHED r1: Einzelkind & Meat - Words from the Frontline (Einzelkind vs. Meat)  (fuzzy=100)
+[151/225] Query: 'Althea, Omikron - Hear Your Heartbeat'  (our duration 05:02)
+    r1 Omikron & Althea - Hear Your Heartbeat (ADDFX Remix) (06:32)  fuzzy= 87  dur:NO  num:OK
+    r2 Omikron & Althea - Hear Your Heartbeat (Radio Edit) (02:38)  fuzzy= 87  dur:OK  num:OK
+   *r3 Omikron - Hear Your Heartbeat (feat. Althea) [Extended Mix] (05:03)  fuzzy= 88  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r3: Omikron - Hear Your Heartbeat (feat. Althea) [Extended Mix]  (fuzzy=88)
+[152/225] Query: 'Davidino (IT), Kid Mark - Don't Give Up'  (our duration 04:57)
+   *r1 Kid Mark & Davidino (IT) - Don't Give Up (04:57)  fuzzy= 96  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Kid Mark & Davidino (IT) - Don't Give Up  (fuzzy=96)
+[153/225] Query: 'Secret Soul Society - Party 2Gether'  (our duration 04:30)
+    r1 NR, Damar Jackson & Slim - 1 in the Same (03:43)  fuzzy= 34  dur:NO  num:NO
+    r2 NR, Damar Jackson & Slim - 1 in the Same (03:43)  fuzzy= 34  dur:NO  num:NO
+   *r3 MF2 - IN IT 2GETHER 2 (02:52)  fuzzy= 54  dur:NO  num:OK
+    r4 -
+    r5 -
+   => NO MATCH (best was r3, fuzzy=54) — failed number/duration gate
+[154/225] Query: 'AISHA (SCO), TELETECH - First Kiss at RSO'  (our duration 04:43)
+   *r1 AISHA (Sco) & TELETECH - First Kiss at RSO (04:43)  fuzzy= 97  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: AISHA (Sco) & TELETECH - First Kiss at RSO  (fuzzy=97)
+[155/225] Query: 'Barbara Tucker - Can't Bring Me Down Part 2 (Emmaculate Remix Edit)'  (our duration 04:07)
+   *r1 Barbara Tucker - Can't Bring Me Down Part 2 (Emmaculate Remix Edit) (04:07)  fuzzy=100  dur:OK  num:OK
+    r2 Barbara Tucker - Can't Bring Me Down Part 2 (Emmaculate Remix) (06:31)  fuzzy= 96  dur:NO  num:OK
+    r3 Barbara Tucker - Can't Bring Me Down Part 2 (Emmaculate Instrumental) (06:31)  fuzzy= 90  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Barbara Tucker - Can't Bring Me Down Part 2 (Emmaculate Remix Edit)  (fuzzy=100)
+[156/225] Query: 'Kim English - 4 The Luv Of Music (DJ Long Dub)'  (our duration 06:14)
+    r1 Kim English - 4 The Luv of Music (DJ Long Dub) (06:13)  fuzzy=100  dur:OK  num:OK
+    r2 Kim English - 4 The Luv of Music (DJ Daddio Dub) (08:49)  fuzzy= 94  dur:NO  num:OK
+   *r3 Kim English - 4 The Luv of Music (DJ Long Dub) (06:14)  fuzzy=100  dur:OK  num:OK
+    r4 Kim English - 4 The Luv of Music (DJ Daddio Dub) (08:49)  fuzzy= 94  dur:NO  num:OK
+    r5 DJ SKIPP UNRELEASED PROJECT - 4 the Luv Of (Dub Mix) [Remastered] (03:26)  fuzzy= 50  dur:NO  num:OK
+   => MATCHED r3: Kim English - 4 The Luv of Music (DJ Long Dub)  (fuzzy=100)
+[157/225] Query: 'Zoë Badwi - Don't Mess With My Man (Acapella)'  (our duration 03:51)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[158/225] Query: 'Subtronics - Parabola Paradox (Slap It) (feat Kwengface)'  (our duration 03:57)
+    r1 Subtronics - Parabola Paradox (Slap It) [feat. Kwengface] (04:00)  fuzzy= 95  dur:OK  num:OK
+   *r2 Subtronics - Parabola Paradox (Slap It) (feat. Kwengface) (04:00)  fuzzy= 99  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r2: Subtronics - Parabola Paradox (Slap It) (feat. Kwengface)  (fuzzy=99)
+[159/225] Query: 'GROSSOMODDO, Hugel, Randoree - Majnuna'  (our duration 06:09)
+   *r1 HUGEL, GROSSOMODDO & Randoree - Majnuna (01:38)  fuzzy= 96  dur:OK  num:OK
+    r2 HUGEL, Randoree & GROSSOMODDO - Majnuna (Mixed) (02:07)  fuzzy= 86  dur:OK  num:OK
+    r3 HUGEL, Randoree & GROSSOMODDO - Majnuna (Mixed) (03:58)  fuzzy= 86  dur:OK  num:OK
+    r4 HUGEL, Randoree, GROSSOMODDO & Foremost Poets - Majnuna / Moonraker (Mixed) (04:22)  fuzzy= 64  dur:OK  num:OK
+    r5 HUGEL, Randoree, GROSSOMODDO & Black Eyed Peas - My Humps / Majnuna (Mixed) (05:47)  fuzzy= 64  dur:OK  num:OK
+   => MATCHED r1: HUGEL, GROSSOMODDO & Randoree - Majnuna  (fuzzy=96)
+[160/225] Query: 'Hayla, Kx5 - Escape (Sparrow & Barbossa Remix)'  (our duration 05:48)
+   *r1 Kx5 - Escape (feat. HAYLA) [Sparrow & Barbossa Remix] (05:48)  fuzzy= 88  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Kx5 - Escape (feat. HAYLA) [Sparrow & Barbossa Remix]  (fuzzy=88)
+[161/225] Query: 'pdqb - Thromboembambino (Legowelt Lost in a Valley Remix)'  (our duration 05:51)
+   *r1 pdqb - Thromboembambino (Legowelt Lost in a Valley Remix) (05:51)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: pdqb - Thromboembambino (Legowelt Lost in a Valley Remix)  (fuzzy=100)
+[162/225] Query: 'Oliver Ho - Silver (Alt. Version)'  (our duration 04:42)
+   *r1 Oliver Ho - Silver (Alt. Version) (04:45)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Oliver Ho - Silver (Alt. Version)  (fuzzy=100)
+[163/225] Query: 'Barbara Tucker, The BCrew - Yonder (Part 2) (Deep Soul Syndicate Extended Instrumental)'  (our duration 07:22)
+   *r1 Barbara Tucker & The BCrew - Yonder (Part 2) [Deep Soul Syndicate Extended Instrumental] (07:22)  fuzzy= 96  dur:OK  num:OK
+    r2 Barbara Tucker & The BCrew - Yonder (Part 2) [Deep Soul Syndicate Extended Remix] (07:22)  fuzzy= 88  dur:OK  num:OK
+    r3 Barbara Tucker & The BCrew - Yonder (Part 2) [Deep Soul Syndicate Edit] (04:01)  fuzzy= 84  dur:NO  num:OK
+    r4 Barbara Tucker & The BCrew - Yonder (Part 2) [Barbara Tucker Presents] {Deep Soul Syndicate Extended Instrumental} (07:22)  fuzzy= 83  dur:OK  num:OK
+    r5 Barbara Tucker & The BCrew - Yonder (Part 2) [Barbara Tucker Presents] {Deep Soul Syndicate Extended Remix} (07:22)  fuzzy= 80  dur:OK  num:OK
+   => MATCHED r1: Barbara Tucker & The BCrew - Yonder (Part 2) [Deep Soul Syndicate Extended Instrumental]  (fuzzy=96)
+[164/225] Query: 'Mayze X Faria, P.Rivas - La Manuela'  (our duration 05:50)
+   *r1 Mayze X Faria & P.Rivas - La Manuela (05:50)  fuzzy= 96  dur:OK  num:OK
+    r2 Mayze X Faria - Crazy Rapper (04:34)  fuzzy= 60  dur:NO  num:OK
+    r3 Mayze X Faria - Sally's Club (03:19)  fuzzy= 60  dur:NO  num:OK
+    r4 Mayze X Faria - En-Vie (Radio Edit) (02:29)  fuzzy= 55  dur:NO  num:OK
+    r5 Mayze X Faria - Joe's Harlem (03:19)  fuzzy= 61  dur:NO  num:OK
+   => MATCHED r1: Mayze X Faria & P.Rivas - La Manuela  (fuzzy=96)
+[165/225] Query: 'Pemza SA - Vibes & Ish (Afro)'  (our duration 07:22)
+   *r1 Pemza SA - Vibes & Ish (Afro) (07:22)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Pemza SA - Vibes & Ish (Afro)  (fuzzy=100)
+[166/225] Query: 'Hayley Zalassi - All Night Long'  (our duration 05:48)
+   *r1 Hayley Zalassi - All Night Long (05:48)  fuzzy=100  dur:OK  num:OK
+    r2 Hayley Zalassi - All Night Long (05:48)  fuzzy=100  dur:OK  num:OK
+    r3 Hayley Zalassi & Big Miz - Strange Faces (Late Nite Acid Dub) (06:35)  fuzzy= 65  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Hayley Zalassi - All Night Long  (fuzzy=100)
+[167/225] Query: 'Dj 8-4, Korie Minors, Lizwi, Shona SA - Usemindawonye'  (our duration 05:47)
+   *r1 Korie Minors, Lizwi & Dj 8-4 - Usemindawonye (feat. Shona SA) (05:47)  fuzzy= 89  dur:OK  num:OK
+    r2 Korie Minors & Lizwi - Usemindawonye (feat. Dj 8-4 & Shona SA) [Native P. Remix] (07:04)  fuzzy= 76  dur:NO  num:NO
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Korie Minors, Lizwi & Dj 8-4 - Usemindawonye (feat. Shona SA)  (fuzzy=89)
+[168/225] Query: 'Bjoern Torwellen - Alone In The Womb (Kølpøs Remix V1)'  (our duration 05:46)
+   *r1 Bjoern Torwellen - Alone In The Womb (Kølpøs Remix V1) (05:46)  fuzzy=100  dur:OK  num:OK
+    r2 Bjoern Torwellen - Alone In The Womb (Kølpøs Remix V2) (05:46)  fuzzy= 98  dur:OK  num:NO
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Bjoern Torwellen - Alone In The Womb (Kølpøs Remix V1)  (fuzzy=100)
+[169/225] Query: 'Becanoe Da Voe, Stumza_C - Mirror Mirror'  (our duration 08:56)
+   *r1 Becanoe Da Voe & Stumza_C - Mirror Mirror (08:56)  fuzzy= 97  dur:OK  num:OK
+    r2 Becanoe Da Voe & Stumza_C - Mirror Mirror (08:56)  fuzzy= 97  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Becanoe Da Voe & Stumza_C - Mirror Mirror  (fuzzy=97)
+[170/225] Query: 'Alben, Laje - Vescal'  (our duration 05:07)
+   *r1 Alben & LAJE - Vescal (05:08)  fuzzy= 94  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Alben & LAJE - Vescal  (fuzzy=94)
+[171/225] Query: 'Silva Bumpa - Passion'  (our duration 04:40)
+   *r1 Silva Bumpa - Passion (04:40)  fuzzy=100  dur:OK  num:OK
+    r2 Silva Bumpa - Passion (Mixed) (02:58)  fuzzy=100  dur:NO  num:OK
+    r3 Silva Bumpa - Passion (Mixed) (01:37)  fuzzy=100  dur:NO  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Silva Bumpa - Passion  (fuzzy=100)
+[172/225] Query: 'Roshan - Run It Back Krissy!'  (our duration 06:36)
+   *r1 Roshan - Run It Back Krissy! (06:36)  fuzzy=100  dur:OK  num:OK
+    r2 Roshan - Run It Back Krissy! (Miska & Carawak Remix) (04:36)  fuzzy=100  dur:NO  num:OK
+    r3 Roshan - Run It Back Krissy! (Miska & Carawak Remix) (04:36)  fuzzy=100  dur:NO  num:OK
+    r4 Roshan - Run It Back Krissy! (06:36)  fuzzy=100  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: Roshan - Run It Back Krissy!  (fuzzy=100)
+[173/225] Query: 'axxa* - I Got It'  (our duration 03:43)
+   *r1 axxa* - I Got It (03:33)  fuzzy=100  dur:OK  num:OK
+    r2 axxa* - I Got It (03:33)  fuzzy=100  dur:OK  num:OK
+    r3 axxa* - I Got It (03:33)  fuzzy=100  dur:OK  num:OK
+    r4 AXXA - Quiet (04:50)  fuzzy= 60  dur:NO  num:OK
+    r5 Benson Wilson - I Got You (feat. AXA URBANA) (01:50)  fuzzy= 53  dur:OK  num:OK
+   => MATCHED r1: axxa* - I Got It  (fuzzy=100)
+[174/225] Query: 'Barbatuques, Soldera - Você Chegou'  (our duration 06:09)
+   *r1 Soldera & Barbatuques - Você Chegou (03:28)  fuzzy= 95  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Soldera & Barbatuques - Você Chegou  (fuzzy=95)
+[175/225] Query: 'LUCH, Tez Cadey - Seve 2.0 (Luch Rework)'  (our duration 06:36)
+    r1 Tez Cadey & Luch - Seve 2.0 (Luch Rework) (06:36)  fuzzy= 96  dur:OK  num:OK
+    r2 Tez Cadey & Luch - Seve 2.0 (Luch Rework) [Mixed] (04:25)  fuzzy= 91  dur:NO  num:OK
+    r3 Tez Cadey & Luch - Seve 2.0 (Luch Rework) [Mixed] (04:59)  fuzzy= 91  dur:NO  num:OK
+   *r4 Tez Cadey - Seve 2.0 (Luch Rework) (06:36)  fuzzy=100  dur:OK  num:OK
+    r5 -
+   => MATCHED r4: Tez Cadey - Seve 2.0 (Luch Rework)  (fuzzy=100)
+[176/225] Query: 'Jiorgio Ranion, M. Rodriguez - Let's Go To The Sun'  (our duration 07:29)
+   *r1 M. Rodriguez & Jiorgio Ranion - Let's Go to the Sun (07:29)  fuzzy= 97  dur:OK  num:OK
+    r2 M. Rodriguez & Jiorgio Ranion - Let's Go to the Sun (07:29)  fuzzy= 97  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: M. Rodriguez & Jiorgio Ranion - Let's Go to the Sun  (fuzzy=97)
+[177/225] Query: 'Marc Gonen - Dream'  (our duration 05:11)
+   *r1 Marc Gonen - Dream (02:55)  fuzzy=100  dur:NO  num:OK
+    r2 Marc Gonen - Connect (06:28)  fuzzy= 77  dur:NO  num:OK
+    r3 Marc Gonen - Dance, Life, Dreams (04:53)  fuzzy= 77  dur:NO  num:OK
+    r4 Marc Gonen - Digital Period (05:53)  fuzzy= 77  dur:NO  num:OK
+    r5 Marc Gonen - In Love and Dreams (05:59)  fuzzy= 77  dur:NO  num:OK
+   => NO MATCH (best was r1, fuzzy=100) — failed number/duration gate
+[178/225] Query: 'AUGUSTE, Kasango, Tayllor - Solitude'  (our duration 06:07)
+   *r1 Kasango, Auguste & Tayllor - Solitude (04:11)  fuzzy= 96  dur:OK  num:OK
+    r2 Kasango, Tayllor & Auguste - Solitude (Mixed) (03:40)  fuzzy= 86  dur:OK  num:OK
+    r3 Kasango, Tayllor & Auguste - Solitude (Mixed) (03:24)  fuzzy= 86  dur:OK  num:OK
+    r4 Kasango, Tayllor, Auguste, John Julius Knight, Roland Clark & Puppah Nas-T - Solitude / This Is House / Work (feat. Denise "Saucey Wow" Belfon) [Mixed] (04:20)  fuzzy= 87  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: Kasango, Auguste & Tayllor - Solitude  (fuzzy=96)
+[179/225] Query: 'Art of Tones - Devil The Difference'  (our duration 05:36)
+   *r1 Art of Tones - Devil the Difference (05:36)  fuzzy=100  dur:OK  num:OK
+    r2 Art of Tones - Devil the Difference (Mixed) (02:10)  fuzzy=100  dur:NO  num:OK
+    r3 Art of Tones - Devil the Difference (Future Dub) (05:33)  fuzzy=100  dur:OK  num:OK
+    r4 Art of Tones - Boogie With Billy (05:43)  fuzzy= 67  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: Art of Tones - Devil the Difference  (fuzzy=100)
+[180/225] Query: 'AN21, Liva K, Steve Angello - Valodja (Liva K Remix)'  (our duration 06:18)
+   *r1 Steve Angello, AN21 & Liva K - Valodja (Liva K Remix) (03:16)  fuzzy= 95  dur:NO  num:OK
+    r2 Steve Angello, Liva K & AN21 - Valodja (Liva K Remix) [Mixed] (02:54)  fuzzy= 88  dur:NO  num:OK
+    r3 Steve Angello, Liva K & AN21 - Valodja (Liva K Remix) [Mixed] (05:12)  fuzzy= 88  dur:NO  num:OK
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=95) — failed number/duration gate
+[181/225] Query: 'Louie Vega - A Place Where We Can All Be Free (Instrumental)'  (our duration 09:08)
+   *r1 Louie Vega - A Place Where We Can All Be Free (Instrumental) (09:08)  fuzzy=100  dur:OK  num:OK
+    r2 Jon Pierce - Be Free (Louie Vega Remix Instrumental) (08:35)  fuzzy= 69  dur:NO  num:OK
+    r3 Louie Vega, Kenny Bobien & Cindy Mizelle - Together We Can (Louie Vega Dub Instrumental) (05:06)  fuzzy= 60  dur:NO  num:OK
+    r4 Louie Vega, Kenny Bobien & Cindy Mizelle - Together We Can (Louie Vega Expansions NYC Dub Instrumental) (05:05)  fuzzy= 55  dur:NO  num:OK
+    r5 Louie Vega, Kenny Bobien & Cindy Mizelle - Together We Can (Louie Vega Expansions NYC Dub Instrumental) (05:05)  fuzzy= 55  dur:NO  num:OK
+   => MATCHED r1: Louie Vega - A Place Where We Can All Be Free (Instrumental)  (fuzzy=100)
+[182/225] Query: 'Mike D' Jais - I Miss My Heart'  (our duration 04:08)
+   *r1 Mike D' Jais - I Miss My Heart (04:08)  fuzzy=100  dur:OK  num:OK
+    r2 Mike D' Jais - I Miss My Heart (04:08)  fuzzy=100  dur:OK  num:OK
+    r3 Mike D' Jais - The Way I Feel (04:38)  fuzzy= 69  dur:NO  num:OK
+    r4 Mike D' Jais - Best I Ever Had (04:22)  fuzzy= 68  dur:NO  num:OK
+    r5 Mike D' Jais - I Was Loving You (03:15)  fuzzy= 67  dur:NO  num:OK
+   => MATCHED r1: Mike D' Jais - I Miss My Heart  (fuzzy=100)
+[183/225] Query: 'Steven Kroon - Tombo 7/4'  (our duration 05:52)
+   *r1 Steven Kroon - Tombo 7/4 (05:52)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Steven Kroon - Tombo 7/4  (fuzzy=100)
+[184/225] Query: 'Louie Vega, Unlimited Touch - Music Is My Life'  (our duration 07:27)
+    r1 Louie Vega & Unlimited Touch - Music Is My Life (Masters At Work Remix) (04:03)  fuzzy= 93  dur:NO  num:OK
+    r2 Louie Vega - Music Is My Life (feat. Unlimited Touch) (06:30)  fuzzy= 91  dur:NO  num:OK
+    r3 Louie Vega - Music Is My Life (feat. Unlimited Touch) [Extended Version] (07:27)  fuzzy= 91  dur:OK  num:OK
+    r4 Louie Vega - Music Is My Life (feat. Unlimited Touch) [Mixed] (01:47)  fuzzy= 84  dur:NO  num:OK
+   *r5 Louie Vega & Unlimited Touch - Music Is My Life (Dave Lee Extended Remix) (07:29)  fuzzy= 93  dur:OK  num:OK
+   => MATCHED r5: Louie Vega & Unlimited Touch - Music Is My Life (Dave Lee Extended Remix)  (fuzzy=93)
+[185/225] Query: 'Glenn Underground, MFS - Time Of Speed, Not Day (A GU & Mr. FunkySoul InterpretationHidden Track Bonus)'  (our duration 07:48)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[186/225] Query: '84Bit - Get Along (Jarred Gallo Remix)'  (our duration 03:30)
+   *r1 84Bit - Get Along (Jarred Gallo Remix) (03:30)  fuzzy=100  dur:OK  num:OK
+    r2 84Bit & Jarred Gallo - Get Along (Jarred Gallo Remix) (03:30)  fuzzy=100  dur:OK  num:OK
+    r3 84Bit - Get Along (Jarred Gallo Extended Remix) (05:38)  fuzzy=100  dur:NO  num:OK
+    r4 84Bit & Jarred Gallo - Get Along (Jarred Gallo Remix) (03:30)  fuzzy=100  dur:OK  num:OK
+    r5 Sebb Junior - Piece of Me (feat. Jarred Gallo) [Jarred Gallo Remix] (05:20)  fuzzy= 53  dur:NO  num:OK
+   => MATCHED r1: 84Bit - Get Along (Jarred Gallo Remix)  (fuzzy=100)
+[187/225] Query: 'Mr. V, Ricky Inch, Rulers of the Deep - Let's Work feat. Mr. V'  (our duration 08:39)
+    r1 Rulers of the Deep & Ricky Inch - Let's Work (feat. Mr. V) (03:14)  fuzzy= 93  dur:OK  num:OK
+    r2 Rulers of the Deep & Ricky Inch - Let's Work (feat. Mr. V) [Extended Dub Mix] (08:38)  fuzzy= 82  dur:OK  num:OK
+   *r3 Rulers of the Deep & Ricky Inch - Let's Work (feat. Mr. V) [Extended Mix] (08:39)  fuzzy= 93  dur:OK  num:OK
+    r4 Rulers of the Deep & Ricky Inch - Let's Work (feat. Mr. V) [Dub Mix] (03:18)  fuzzy= 87  dur:OK  num:OK
+    r5 -
+   => MATCHED r3: Rulers of the Deep & Ricky Inch - Let's Work (feat. Mr. V) [Extended Mix]  (fuzzy=93)
+[188/225] Query: 'CamelPhat, Elderbrook - Cola'  (our duration 06:55)
+    r1 CamelPhat & Elderbrook - Cola (Club Mix) (06:55)  fuzzy= 81  dur:OK  num:OK
+    r2 CamelPhat & Elderbrook - Cola (03:43)  fuzzy= 96  dur:NO  num:OK
+    r3 CamelPhat & Elderbrook - Cola (Elderbrook Chilled Mix) (02:52)  fuzzy= 73  dur:NO  num:OK
+    r4 CamelPhat & Elderbrook - Cola (Mixed) [Mixed] (05:30)  fuzzy= 74  dur:NO  num:OK
+   *r5 CamelPhat, Elderbrook & ARTBAT - Cola (03:08)  fuzzy=100  dur:NO  num:OK
+   => NO MATCH (best was r5, fuzzy=100) — failed number/duration gate
+[189/225] Query: 'Federico D'Alessio, Marc Evans with Luyo - Fist Kiss (N'Dinga's Diplomacy Soul Refix)'  (our duration 06:39)
+   *r1 Marc Evans, Luyo & Federico D'Alessio - First Kiss (N'dinga's Diplomacy Soul Refix) (06:39)  fuzzy= 94  dur:OK  num:OK
+    r2 Marc Evans, Luyo & Federico D'Alessio - First Kiss (N'dinga's Diplomacy Soul Refix Instrumental) (06:35)  fuzzy= 86  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Marc Evans, Luyo & Federico D'Alessio - First Kiss (N'dinga's Diplomacy Soul Refix)  (fuzzy=94)
+[190/225] Query: 'Tankie-DJ - Etheral'  (our duration 07:33)
+   *r1 Tankie-DJ - Etheral (07:33)  fuzzy=100  dur:OK  num:OK
+    r2 Tankie-DJ - Etheral II (Afro Tech Mix) (07:09)  fuzzy=100  dur:NO  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Tankie-DJ - Etheral  (fuzzy=100)
+[191/225] Query: 'David Marston, Lady Alma, Rob Paine - All the Way Far Away (Club Mix)'  (our duration 06:15)
+   *r1 David Marston, Rob Paine & Lady Alma - All the Way Far Away (Club Mix) (06:15)  fuzzy= 98  dur:OK  num:OK
+    r2 David Marston, Rob Paine & Lady Alma - All the Way Far Away (03:03)  fuzzy= 93  dur:NO  num:OK
+    r3 David Marston, Rob Paine & Lady Alma - All the Way Far Away (Extended Mix) (05:38)  fuzzy= 93  dur:NO  num:OK
+    r4 David Marston, Rob Paine & Lady Alma - All the Way Far Away (Toribio Remix) (07:19)  fuzzy= 90  dur:NO  num:OK
+    r5 David Marston, Rob Paine & Lady Alma - All the Way Far Away (Troop 493 Break Mix) (04:27)  fuzzy= 90  dur:NO  num:NO
+   => MATCHED r1: David Marston, Rob Paine & Lady Alma - All the Way Far Away (Club Mix)  (fuzzy=98)
+[192/225] Query: 'Michael Jackson - You Are Not Alone (Knuckles Classic Song Version)'  (our duration 07:41)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[193/225] Query: 'SCOPE - This Rhythm (Kruse & Nuernberg Remix)'  (our duration 07:07)
+   *r1 Scope - This Rhythm (Kruse & Nuernberg Remix) (07:07)  fuzzy=100  dur:OK  num:OK
+    r2 Scope - This Rhythm (Kruse & Nuernberg Remix) (07:07)  fuzzy=100  dur:OK  num:OK
+    r3 Kruse & Nuernberg - Lost N Free (feat. Brolin) (06:16)  fuzzy= 57  dur:NO  num:OK
+    r4 Kruse & Nuernberg - Yokohama Nights (feat. Brolin) (06:57)  fuzzy= 55  dur:NO  num:OK
+    r5 Kruse & Nuernberg - Let's Call It a Day (Mixed) (03:13)  fuzzy= 59  dur:NO  num:OK
+   => MATCHED r1: Scope - This Rhythm (Kruse & Nuernberg Remix)  (fuzzy=100)
+[194/225] Query: 'Anturage, Jon.K - Arsty'  (our duration 06:04)
+   *r1 Anturage & Jon.K - Arsty (06:04)  fuzzy= 95  dur:OK  num:OK
+    r2 Anturage & Jon.K - Arsty (Mixed) (05:08)  fuzzy= 80  dur:NO  num:OK
+    r3 Anturage & Jon.K - Denet (06:01)  fuzzy= 74  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: Anturage & Jon.K - Arsty  (fuzzy=95)
+[195/225] Query: 'Papa Soul, Soul Groove (UK) - Moody Type Love Pt. II (Soul Groove UK Remix)'  (our duration 07:18)
+   *r1 Papa Soul - Moody Type Love Pt. II (Soul Groove (UK) Radio Edit) (04:43)  fuzzy= 89  dur:NO  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=89) — failed number/duration gate
+[196/225] Query: 'DON AH SUM ERZ, Ron Carroll - Spring Affair (Ron Carroll Re-Edit)'  (our duration 05:22)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[197/225] Query: 'Duane Harden, Joe Killington, Purple Disco Machine - Devil In Me'  (our duration 06:08)
+   *r1 Purple Disco Machine - Devil in Me (feat. Joe Killington & Duane Harden) (03:19)  fuzzy= 91  dur:OK  num:OK
+    r2 Purple Disco Machine - Devil in Me (feat. Joe Killington & Duane Harden) (03:19)  fuzzy= 91  dur:OK  num:OK
+    r3 Purple Disco Machine - Devil in Me (feat. Joe Killington & Duane Harden) [Mixed] (02:37)  fuzzy= 86  dur:OK  num:OK
+    r4 Purple Disco Machine - Devil in Me (feat. Joe Killington & Duane Harden) [Mixed] (03:54)  fuzzy= 86  dur:OK  num:OK
+    r5 Purple Disco Machine - Devil in Me (feat. Joe Killington & Duane Harden) [PDM Club Dub Mix] (06:18)  fuzzy= 81  dur:NO  num:OK
+   => MATCHED r1: Purple Disco Machine - Devil in Me (feat. Joe Killington & Duane Harden)  (fuzzy=91)
+[198/225] Query: 'TIKI TEMBO - Return to Me (Dave Mayer Mix) [feat. Diamondancer]'  (our duration 05:32)
+   *r1 TIKI TEMBO - Return to Me (Dave Mayer Mix) (05:32)  fuzzy=100  dur:OK  num:OK
+    r2 TIKI TEMBO - Return to Me (feat. Diamondancer) [Dave Mayer Instrumental Mix] (05:32)  fuzzy= 79  dur:OK  num:OK
+    r3 TIKI TEMBO - Return to Me (Dave Mayer Instrumental) (05:32)  fuzzy= 83  dur:OK  num:OK
+    r4 TIKI TEMBO - Return to Me (feat. Diamondancer) [DeepCitySoul Vocal Mix] (07:20)  fuzzy= 72  dur:NO  num:OK
+    r5 TIKI TEMBO - Return to Me (feat. Diamondancer) [James Dexter Mix] (07:41)  fuzzy= 76  dur:NO  num:OK
+   => MATCHED r1: TIKI TEMBO - Return to Me (Dave Mayer Mix)  (fuzzy=100)
+[199/225] Query: 'Mr. Flip - Drippn' (Fred Everything Remix)'  (our duration 06:00)
+   *r1 Mr. Flip - Drippn' (Fred Everything Remix) (06:00)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Mr. Flip - Drippn' (Fred Everything Remix)  (fuzzy=100)
+[200/225] Query: 'Tankie-DJ - Fall Forward'  (our duration 07:12)
+    r1 Tankie-DJ - Fall Forward (Dub Mix) (07:05)  fuzzy=100  dur:OK  num:OK
+   *r2 Tankie-DJ - Fall Forward (07:12)  fuzzy=100  dur:OK  num:OK
+    r3 Tankie-DJ - Blues & Rhythm (06:54)  fuzzy= 58  dur:NO  num:OK
+    r4 Tankie-DJ - Twillight (08:28)  fuzzy= 64  dur:NO  num:OK
+    r5 -
+   => MATCHED r2: Tankie-DJ - Fall Forward  (fuzzy=100)
+[201/225] Query: 'Apollo 84 ft Maxine Hardcastle - Words That You Say (Jamie Antonelli Remix)'  (our duration 06:16)
+    r1 Apollo 84 - Words That You Say (feat. Maxine Hardcastle) [Jamie Antonelli Remix (Mixed)] (05:20)  fuzzy= 87  dur:NO  num:OK
+   *r2 Apollo 84 - Words That You Say (feat. Maxine Hardcastle) [Jamie Antonelli Remix] (06:16)  fuzzy= 91  dur:OK  num:OK
+    r3 Apollo 84 - Words That You Say (feat. Maxine Hardcastle) [Jamie Antonelli Remix] (06:16)  fuzzy= 91  dur:OK  num:OK
+    r4 Apollo 84 - Words That You Say (feat. Maxine Hardcastle) [Jamie Antonelli Remix] (06:16)  fuzzy= 91  dur:OK  num:OK
+    r5 Apollo 84 - Words That You Say (feat. Maxine Hardcastle) [Jamie Antonelli Remix] (06:16)  fuzzy= 91  dur:OK  num:OK
+   => MATCHED r2: Apollo 84 - Words That You Say (feat. Maxine Hardcastle) [Jamie Antonelli Remix]  (fuzzy=91)
+[202/225] Query: '4 Da People - U Make Me - Original Version'  (our duration 06:03)
+   *r1 Michael Jackson - The Way You Make Me Feel (Single Version) (04:27)  fuzzy= 52  dur:NO  num:OK
+    r2 Cobra Starship - You Make Me Feel... (feat. Sabi) (03:35)  fuzzy= 51  dur:NO  num:OK
+    r3 John Denver - Take Me Home, Country Roads (Original Version) (03:13)  fuzzy= 38  dur:NO  num:OK
+    r4 4*TOWN (From Disney and Pixar’s Turning Red), Jordan Fisher, Finneas O’Connell, Josh Levi, Topher Ngo & Grayson Villanueva - U Know What's Up (03:08)  fuzzy= 30  dur:NO  num:OK
+    r5 Drake - Make Me Proud (feat. Nicki Minaj) (03:39)  fuzzy= 48  dur:NO  num:OK
+   => NO MATCH (best was r1, fuzzy=52) — failed number/duration gate
+[203/225] Query: 'Greg Gould, Inaya Day, Milk, Sugar - Love Like This (Extended Dub Mix)'  (our duration 05:15)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[204/225] Query: 'State Of Funk - Why Funky Makes People Dance (DJ Fopp Extended Mix)'  (our duration 05:44)
+   *r1 State Of Funk - Why Funky Makes People Dance (DJ Fopp Extended Mix) (05:44)  fuzzy=100  dur:OK  num:OK
+    r2 State Of Funk - Why Funky Makes People Dance (DJ Fopp Remix) (03:09)  fuzzy= 94  dur:OK  num:OK
+    r3 State Of Funk - Soul Jacker (Dj Fopp Extended Mix) (05:45)  fuzzy= 86  dur:OK  num:OK
+    r4 State Of Funk - Soul Jacker (Dj Fopp Radio Mix) (03:24)  fuzzy= 75  dur:OK  num:OK
+    r5 Dan Rubell - Do That Funk (DJ Fopp Remix) (07:31)  fuzzy= 62  dur:NO  num:OK
+   => MATCHED r1: State Of Funk - Why Funky Makes People Dance (DJ Fopp Extended Mix)  (fuzzy=100)
+[205/225] Query: 'Miranda Nicole - Love of My Life (RC Extended Club Mix)'  (our duration 06:15)
+   *r1 Miranda Nicole - Love of My Life (RC Extended Club Mix) (06:15)  fuzzy=100  dur:OK  num:OK
+    r2 Miranda Nicole - Love of My Life (RC Extended Club Mix) (06:15)  fuzzy=100  dur:OK  num:OK
+    r3 Miranda Nicole - Love of My Life (RC Extended Instrumental Mix) (06:15)  fuzzy= 95  dur:OK  num:OK
+    r4 Miranda Nicole - Love of My Life (RC Radio Edit) (04:14)  fuzzy= 85  dur:NO  num:OK
+    r5 -
+   => MATCHED r1: Miranda Nicole - Love of My Life (RC Extended Club Mix)  (fuzzy=100)
+[206/225] Query: 'Bassmonkeys - What I Need (Right Here Right Now) feat Justina Maria (Nevo Dasco Remix)'  (our duration 08:15)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[207/225] Query: 'Fabs#, Neal Porter - Makes My Body'  (our duration 06:21)
+   *r1 Fabs & Neal Porter - Makes My Body (06:21)  fuzzy= 94  dur:OK  num:OK
+    r2 Fabs & Neal Porter - Makes My Body (06:21)  fuzzy= 94  dur:OK  num:OK
+    r3 Fabs & Neal Porter - Makes My Body (06:21)  fuzzy= 94  dur:OK  num:OK
+    r4 Fabs & Neal Porter - Makes My Body (06:21)  fuzzy= 94  dur:OK  num:OK
+    r5 Fabs & Neal Porter - Makes My Body (06:21)  fuzzy= 94  dur:OK  num:OK
+   => MATCHED r1: Fabs & Neal Porter - Makes My Body  (fuzzy=94)
+[208/225] Query: 'Boddhi Satva, Fredy Massamba - Warriors Of Africa (Simon Le Saint 2021 Rework)'  (our duration 07:56)
+   *r1 Boddhi Satva & Fredy Massamba - Warriors Of Africa (Simon Le Saint 2021 Rework) (07:56)  fuzzy= 98  dur:OK  num:OK
+    r2 Boddhi Satva & Fredy Massamba - Warriors of Africa (Le Saint Remix) (07:36)  fuzzy= 85  dur:NO  num:NO
+    r3 Boddhi Satva & Fredy Massamba - Warriors of Africa (Le Saint Remix) [Mixed] (04:05)  fuzzy= 81  dur:NO  num:NO
+    r4 Boddhi Satva & Fredy Massamba - Warriors of Africa (08:00)  fuzzy= 91  dur:OK  num:NO
+    r5 Boddhi Satva & Fredy Massamba - Warriors of Africa (Anto Vitale Shabu Vocal Mix) (08:42)  fuzzy= 73  dur:NO  num:NO
+   => MATCHED r1: Boddhi Satva & Fredy Massamba - Warriors Of Africa (Simon Le Saint 2021 Rework)  (fuzzy=98)
+[209/225] Query: 'Junior White, Susu Bobien - Let's Have Some Church (Junior White Deep Vocal Mix)'  (our duration 07:15)
+   *r1 Susu Bobien - Let's Have Some Church (Junior White Deep Vocal Mix) (07:15)  fuzzy=100  dur:OK  num:OK
+    r2 Susu Bobien - Let's Have Some Church (Junior White Vocal Mix) (08:15)  fuzzy=100  dur:NO  num:OK
+    r3 Susu Bobien - Let's Have Some Church (Main Vocal) (06:29)  fuzzy= 84  dur:NO  num:OK
+    r4 Susu Bobien - Let's Have Some Church (Dub) (06:20)  fuzzy= 92  dur:NO  num:OK
+    r5 Susu Bobien - Let's Have Some Church (Dub Instrumental) (06:20)  fuzzy= 78  dur:NO  num:OK
+   => MATCHED r1: Susu Bobien - Let's Have Some Church (Junior White Deep Vocal Mix)  (fuzzy=100)
+[210/225] Query: 'Can 7 - Coffe break'  (our duration 03:43)
+    r1 Cage the Elephant - Cigarette Daydreams (03:28)  fuzzy= 34  dur:NO  num:OK
+    r2 Trevor Daniel - Falling (02:39)  fuzzy= 32  dur:NO  num:OK
+   *r3 Ne-Yo - Closer (03:54)  fuzzy= 40  dur:NO  num:OK
+    r4 Beyoncé - CUFF IT (WETTER REMIX) (04:09)  fuzzy= 38  dur:NO  num:OK
+    r5 Zach Bryan - Smaller Acts (03:07)  fuzzy= 40  dur:NO  num:OK
+   => NO MATCH (best was r3, fuzzy=40) — failed number/duration gate
+[211/225] Query: 'Umit Han - Olive Tree'  (our duration 09:12)
+   *r1 Ümit Han - Olive Tree (09:12)  fuzzy= 95  dur:OK  num:OK
+    r2 Ümit Han - Olive tree (09:12)  fuzzy= 95  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Ümit Han - Olive Tree  (fuzzy=95)
+[212/225] Query: 'Bodyles, D'Andy, D-Like, Faith - I'm Yours (Soulful Disco Edit)'  (our duration 07:01)
+   *r1 D-Like, Bodyles & D'Andy - I'm Yours (feat. Faith) [Soulful Disco Edit] (07:01)  fuzzy= 89  dur:OK  num:OK
+    r2 D-Like, D'Andy & Bodyles - I'm Yours (Soulful Disco Instrumental) (07:01)  fuzzy= 82  dur:OK  num:OK
+    r3 D-Like, Bodyles & D'Andy - I'm Yours (feat. Faith) [Soulful Disco Edit] (07:01)  fuzzy= 89  dur:OK  num:OK
+    r4 D-Like, Bodyles & D'Andy - I'm Yours (feat. Faith) [Soulful Disco Edit] (07:01)  fuzzy= 89  dur:OK  num:OK
+    r5 -
+   => MATCHED r1: D-Like, Bodyles & D'Andy - I'm Yours (feat. Faith) [Soulful Disco Edit]  (fuzzy=89)
+[213/225] Query: 'Enzyme Black - Inside My Mind (2021 Remastered version)'  (our duration 07:29)
+   *r1 Enzyme Black & Danny J Lewis - Inside My Mind (2021 Remastered version) (07:29)  fuzzy=100  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Enzyme Black & Danny J Lewis - Inside My Mind (2021 Remastered version)  (fuzzy=100)
+[214/225] Query: 'The Cosmic Playerz - Get It Right [Stephane Deschezeaux Rework]'  (our duration 06:40)
+   *r1 The Cosmic Playerz - Get It Right (Stephane Deschezeaux Rework) (06:40)  fuzzy= 97  dur:OK  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: The Cosmic Playerz - Get It Right (Stephane Deschezeaux Rework)  (fuzzy=97)
+[215/225] Query: 'Dawn Souluvn Williams - Thankful (E.S.P. House Of S Vocal Remix)'  (our duration 07:00)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[216/225] Query: 'Alan Da Funk - Keep Movin''  (our duration 07:11)
+   *r1 Alan Da Funk - Keep Movin' (07:11)  fuzzy=100  dur:OK  num:OK
+    r2 Alan Da Funk - Keep Movin' (07:11)  fuzzy=100  dur:OK  num:OK
+    r3 Alan Da Funk - Keep Movin' (07:11)  fuzzy=100  dur:OK  num:OK
+    r4 Alan Da Funk - Keep Movin' (07:11)  fuzzy=100  dur:OK  num:OK
+    r5 Alan Da Funk - Keep Movin' (07:11)  fuzzy=100  dur:OK  num:OK
+   => MATCHED r1: Alan Da Funk - Keep Movin'  (fuzzy=100)
+[217/225] Query: 'Tomorrows Forecast - Gonna Make You Mine (Hazy Hot Inst.)'  (our duration 07:53)
+   *r1 Tomorrows Forecast - Gonna Make You Mine (Hazy Hot Inst.) (07:53)  fuzzy=100  dur:OK  num:OK
+    r2 Tomorrows Forecast - Gonna Make You Mine (Hazy Hot Inst.) (07:53)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Tomorrows Forecast - Gonna Make You Mine (Hazy Hot Inst.)  (fuzzy=100)
+[218/225] Query: 'Chemical Disco, Dan Lypher, Hadart - Beggin (Chemical Disco, Dan Lypher, Hadart Remix)'  (our duration 03:33)
+    r1 -
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NOTHING FOUND (no candidates from Apple)
+[219/225] Query: 'Todd Terry - Uncle Tech (Maya Jane Coles Remix)'  (our duration 06:41)
+   *r1 Todd Terry - Uncle Tech (Maya Jane Coles Remix) (06:41)  fuzzy=100  dur:OK  num:OK
+    r2 Todd Terry - Uncle Tech (Maya Jane Coles Remix) (06:41)  fuzzy=100  dur:OK  num:OK
+    r3 -
+    r4 -
+    r5 -
+   => MATCHED r1: Todd Terry - Uncle Tech (Maya Jane Coles Remix)  (fuzzy=100)
+[220/225] Query: 'Agent Orange DJ, Alexander Technique, House Of Gypsies, Todd Terry - Samba (Agent Orange DJ & Alexander Technique Rework)'  (our duration 07:05)
+    r1 Todd Terry, Agent Orange DJ & Alexander Technique - Sume Sigh Say (feat. House of Gypsies) [Agent Orange DJ & Alexander Technique Rework] (07:20)  fuzzy= 84  dur:NO  num:OK
+    r2 Todd Terry, Agent Orange DJ & Alexander Technique - Sume Sigh Say (feat. House of Gypsies) [Agent Orange DJ & Alexander Technique Remix] (03:35)  fuzzy= 80  dur:NO  num:OK
+   *r3 Todd Terry, Agent Orange DJ & Alexander Technique - Samba (feat. House of Gypsies) [Agent Orange DJ & Alexander Technique Rework] (07:05)  fuzzy= 86  dur:OK  num:OK
+    r4 Todd Terry, Agent Orange DJ & Alexander Technique - Samba (feat. House of Gypsies) [Agent Orange DJ & Alexander Technique Remix] (03:48)  fuzzy= 84  dur:NO  num:OK
+    r5 Todd Terry & House of Gypsies - Sume Sigh Sey (Agent Orange DJ & Alexander Technique Rework - MIXED) [MIXED] (04:14)  fuzzy= 80  dur:NO  num:OK
+   => MATCHED r3: Todd Terry, Agent Orange DJ & Alexander Technique - Samba (feat. House of Gypsies) [Agent Orange DJ & Alexander Technique Rework]  (fuzzy=86)
+[221/225] Query: 'Dj Scobar, Ivan Afro5 - Mambo Da Banda'  (our duration 04:09)
+   *r1 Ivan Afro5 & Dj Scobar - Black Mambo (04:24)  fuzzy= 83  dur:NO  num:OK
+    r2 -
+    r3 -
+    r4 -
+    r5 -
+   => NO MATCH (best was r1, fuzzy=83) — failed number/duration gate
+[222/225] Query: 'Jojo Angel, K, Matteo Rosolare - I Can Do It (Matteo Rosolare & Jojo Angel Remix)'  (our duration 06:13)
+   *r1 K & K - I Can Do It (Matteo Rosolare & Jojo Angel Remix) (06:13)  fuzzy= 98  dur:OK  num:OK
+    r2 K & K - I Can Do It (Matteo Rosolare & Jojo Angel Remix) (06:13)  fuzzy= 98  dur:OK  num:OK
+    r3 K & K - I Can Do It (Matteo Rosolare & Jojo Angel Remix) (06:13)  fuzzy= 98  dur:OK  num:OK
+    r4 -
+    r5 -
+   => MATCHED r1: K & K - I Can Do It (Matteo Rosolare & Jojo Angel Remix)  (fuzzy=98)
+[223/225] Query: 'Levantine - Jazz'  (our duration 06:45)
+    r1 Michiel Borstlap - Levantine (04:01)  fuzzy= 78  dur:NO  num:OK
+   *r2 Levantine - Jazz (06:45)  fuzzy=100  dur:OK  num:OK
+    r3 Michiel Borstlap - Levantine (04:01)  fuzzy= 78  dur:NO  num:OK
+    r4 Michiel Borstlap, Vince Mendoza & Metropole Orkest Strings - Levantine (03:53)  fuzzy= 78  dur:NO  num:OK
+    r5 Ibrahim Maalouf - Levantine Symphony No. 1 (feat. Lily) [Duo Version] (04:47)  fuzzy= 78  dur:NO  num:NO
+   => MATCHED r2: Levantine - Jazz  (fuzzy=100)
+[224/225] Query: 'Funk Cartel, Ultra Naté - SUPERNATURAL'  (our duration 03:58)
+   *r1 Funk Cartel & Ultra Naté - SUPERNATURAL (03:58)  fuzzy= 97  dur:OK  num:OK
+    r2 Funk Cartel & Ultra Naté - SUPERNATURAL (03:58)  fuzzy= 97  dur:OK  num:OK
+    r3 Funk Cartel & Ultra Naté - Supernatural (GotSome Remix) (03:17)  fuzzy= 88  dur:NO  num:OK
+    r4 Funk Cartel & Ultra Naté - Supernatural (02:55)  fuzzy= 97  dur:NO  num:OK
+    r5 Funk Cartel & Ultra Naté - Supernatural (GotSome Extended Mix) (05:40)  fuzzy= 88  dur:NO  num:OK
+   => MATCHED r1: Funk Cartel & Ultra Naté - SUPERNATURAL  (fuzzy=97)
+[225/225] Query: 'Dimi Stuff - If It's Real (feat Lydia Scarfo - Souldynamic remix)'  (our duration 06:08)
+   *r1 Dimi Stuff - If It’s Real (feat. Lydia Scarfo) [Souldynamic Remix] (06:08)  fuzzy= 93  dur:OK  num:OK
+    r2 Dimi Stuff - If It’s Real (feat. Lydia Scarfo) [Souldynamic Dub] (06:22)  fuzzy= 85  dur:NO  num:OK
+    r3 Dimi Stuff - If It’s Real (feat. Lydia Scarfo) [Souldynamic Remix] (06:08)  fuzzy= 93  dur:OK  num:OK
+    r4 Dimi Stuff - If It’s Real (feat. Lydia Scarfo) [Souldynamic Dub] (06:22)  fuzzy= 85  dur:NO  num:OK
+    r5 Dimi Stuff - If It’s Real (feat. Lydia Scarfo) [Souldynamic Remix] (06:08)  fuzzy= 93  dur:OK  num:OK
+   => MATCHED r1: Dimi Stuff - If It’s Real (feat. Lydia Scarfo) [Souldynamic Remix]  (fuzzy=93)
+Processing complete. Results saved in: /Users/muhammadusmannaeem/Data/projects/Upwork/George/basic_fastapi_server_resomix/scripts/apple_music/results_1.csv
+(.venv) (base) muhammadusmannaeem@Usmans-MacBook-Pro apple_music %

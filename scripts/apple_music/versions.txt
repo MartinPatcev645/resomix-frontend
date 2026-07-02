@@ -96,6 +96,66 @@ What it does now (and what changed vs Version 1):
 
 
 -----------------------------------------------------------------------------------------------
+results_2.csv   —   VERSION 3  (HTTP retries, [Mixed]/version fixes, N/A retry pass)
+-----------------------------------------------------------------------------------------------
+Baseline: client_baseline.csv (from results.numbers PROPER_ID) scored V1/V2; V2 (results_1.csv)
+was ~175/225 vs the client's verified ids. V3 targets the specific misses reviewed on V2.
+
+What changed vs Version 2:
+
+  1. HTTP RETRIES. (New.) search_track now retries transient failures — read timeouts, connection
+     resets, 429 rate-limit (honours Retry-After), and 5xx — up to HTTP_MAX_RETRIES (4) with linear
+     backoff (HTTP_BACKOFF_BASE * attempt). Timeout raised to 15s. A track no longer becomes a false
+     N/A just because one request timed out.
+
+  2. "[Mixed]" CUTS DEPRIORITISED. (Fix, e.g. Serena #74.) Apple's standalone "[Mixed]"/"(Mixed)"
+     continuous-mix tag is now a strong negative in ranking when our title has no such tag, so a
+     plain remix is preferred over its "[Mixed]" cut. Ranking is now:
+        numbers match -> NOT "[Mixed]" -> token_set -> closest duration -> token_sort.
+     token_sort moved into the ranking (was effectively unused) so "Good Inside" beats "Inside".
+
+  3. PERFECT-TITLE SHORTER-CUT rule. (New, e.g. Good Inside #49.) In addition to the Extended/Radio
+     one-sided rule, if a candidate's title is ESSENTIALLY IDENTICAL to ours (token_set 100 AND
+     token_sort >= 95) and Apple's duration is SHORTER (<= ours + tolerance), the duration gate
+     passes — a perfect-name match that's merely a shorter cut is the same track. A LONGER Apple
+     track is still rejected, and a subset-match remix (e.g. "Crewcuts & Curls (… Remix)") is NOT
+     perfect-title so it stays rejected.
+
+  4. "extended" WORD handling. (New.) The word "extended" is stripped from the SEARCH term (so
+     "(Extended Sunshine Mix)" searches as "(Sunshine Mix)"), and the Extended one-sided duration
+     rule now triggers on ANY "extended" in the title (not just "Extended Mix"/"Extended Remix").
+     "extended" is KEPT in the fuzzy comparison, so an Apple candidate that IS the extended cut
+     scores higher (via token_sort) than one that isn't.
+
+  5. PHASE-2 N/A RETRY PASS. (New.) After the first pass, every track that found NOTHING is retried
+     with alternative search terms, one by one, adopting the first that produces a confident match:
+        (a) the full raw title (restores "extended"/tags we stripped);
+        (b) one artist at a time — Apple often indexes a multi-artist track under a single name
+            (e.g. "Nagano Kitchen, Hideo Kobayas - Climbing Tateshina" finds nothing, but
+             "Nagano Kitchen - Climbing Tateshina" matches).
+     Controlled by RETRY_NA. Scoring still uses the FULL artist/title; only the search term varies.
+     The adopted row records the query that actually worked.
+
+  6. ±2s DURATION-CONFIRMED MATCH. (New, e.g. Cola #188 and Louie Vega "Music Is My Life" #184.)
+     A near-exact duration (within TIGHT_DURATION_MS = ±2s) is near-proof it's the same track, so:
+       - ACCEPTANCE is relaxed: such a candidate matches even if fuzzy is only >= RELAXED_FUZZY (78)
+         — this rescues cases that would otherwise be NO MATCH (Cola: "Cola (Club Mix)" 06:55 vs our
+         06:55, fuzzy 81 -> now matched).
+       - RANKING prefers the ±2s candidates and, among them, the CLOSEST duration wins over raw
+         fuzzy — so an exact-length "[Extended Version]" (r3) beats a higher-fuzzy but different
+         "Dave Lee Extended Remix" (r5) for #184.
+     Checked as part of the qualify/rank step (i.e. right before we would return NO MATCH). A LONGER
+     or farther-off duration is unaffected; the number gate still applies.
+
+  7. COMPARISON honours is_match. (Fix, e.g. DJ T. "Burning" #138.) compare_results.py now counts a
+     row's apple_song_id ONLY when is_match == True. A row we rejected (is_match False/N/A) still
+     lists its best candidate for review, but our real answer there is "no confident match", so it
+     correctly equals a client "not on Apple" (blank) instead of scoring as a wrong id.
+
+  Note: rows are now written once at the END (after retries), so the file reflects final results.
+
+
+-----------------------------------------------------------------------------------------------
 HOW TO ADD THE NEXT VERSION
 -----------------------------------------------------------------------------------------------
 Running apple_music_test.py auto-versions the output (results.csv -> results_1.csv -> results_2.csv ...).

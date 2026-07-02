@@ -65,19 +65,28 @@ def read_client(path):
 
 
 def read_results(path):
-    """Return {file_path: {'query':..., 'song_id':...}} from one of OUR results files."""
+    """Return {file_path: {'query':..., 'song_id':...}} from one of OUR results files.
+
+    The effective song_id is the one we ACCEPTED: only when is_match == True. A row we rejected
+    (is_match False / N/A) still records the best candidate for review, but our actual answer there
+    is "no confident match" -> treated as empty. So a rejected row correctly equals a client
+    "not on Apple" (blank) instead of counting as a wrong id."""
     out = {}
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         fp_col = _find_col(reader.fieldnames, "in_house_file_path", "file_path", "path")
         id_col = _find_col(reader.fieldnames, "apple_song_id", "song_id", "id")
         q_col = _find_col(reader.fieldnames, "in_house_query", "query")
+        im_col = _find_col(reader.fieldnames, "is_match")
         for r in reader:
             fp = (r.get(fp_col) or "").strip()
             if not fp:
                 continue
+            is_match = (r.get(im_col) or "").strip().lower() if im_col else "true"
+            # If the file has an is_match column, only an accepted (True) row contributes its id.
+            song_id = _norm_id(r.get(id_col)) if is_match == "true" else ""
             out[fp] = {"query": (r.get(q_col) or "").strip() if q_col else "",
-                       "song_id": _norm_id(r.get(id_col))}
+                       "song_id": song_id}
     return out
 
 
