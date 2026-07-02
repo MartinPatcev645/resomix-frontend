@@ -18,7 +18,6 @@ const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 // const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
-const CartPage = lazy(() => import("@/pages/CartPage.tsx"));
 const LibraryPage = lazy(() => import("@/pages/LibraryPage.tsx"));
 const AnalysisPage = lazy(() => import("@/pages/AnalysisPage.tsx"));
 // const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
@@ -122,7 +121,6 @@ function App() {
               <Route path="/profile" element={<AuthPage mode="profile" />} />
               <Route path="/sessions" element={<AuthPage mode="sessions" />} />
               <Route path="/change-password" element={<AuthPage mode="change-password" />} />
-              <Route path="/cart" element={<CartPage />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/analysis" element={<AnalysisPage />} />
             </Route>

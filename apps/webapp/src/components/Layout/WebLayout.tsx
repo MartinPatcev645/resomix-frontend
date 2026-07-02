@@ -6,7 +6,7 @@ import { LogoRFooter } from "../icons/LogoRFooter.tsx";
 import { MenuIcon } from "../icons/MenuIcon.tsx";
 import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import UploadLoader from "../upload/UploadLoader.tsx";
-import { useResponsive, useUploadStore, useCart } from "@resomix/hooks";
+import { useResponsive, useUploadStore } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 import { MenuPage } from "@/pages/index.ts";
 
@@ -22,7 +22,6 @@ export function WebLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const { itemCount: cartItemCount } = useCart();
 
 
     // Internal navigation handler to avoid full page reloads
@@ -54,7 +53,6 @@ export function WebLayout() {
         const path = location.pathname;
         if (path === '/') return 'upload';
         if (path === '/playlist' || path === '/sonic-discovery') return 'playlist';
-        if (path === '/cart') return 'cart';
         if (path.startsWith('/profile') || path.startsWith('/sessions') || path.startsWith('/change-password') || path.startsWith('/library') || path.startsWith('/analysis')) return 'profile';
         if (path.startsWith('/auth/')) return 'auth';
         if (path === '/contact') return 'contact';
@@ -84,8 +82,6 @@ export function WebLayout() {
             onProfileClick={() => handleNavigate('/profile')}
             onNavigate={handleNavigate}
             currentPath={location.pathname}
-            cartItemCount={cartItemCount}
-            onCartClick={() => handleNavigate('/cart')}
         />
     );
 

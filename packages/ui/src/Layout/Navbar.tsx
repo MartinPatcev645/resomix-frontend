@@ -5,7 +5,6 @@ import { ButtonHeavyLeft } from "../Buttons/ButtonHeavyLeft";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { ProfileIcon } from "../Vectors/ProfileIcon";
 import { ProfileDropdown } from "../Elements/ProfileDropdown";
-import { CartIcon } from "../Elements/CartIcon";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 
 interface NavbarProps {
@@ -17,11 +16,9 @@ interface NavbarProps {
   onProfileClick?: () => void;
   onNavigate?: (path: string) => void;
   currentPath?: string; // Current page path for redirect after login
-  cartItemCount?: number;
-  onCartClick?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath, onNavigate, cartItemCount = 0, onCartClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath, onNavigate }) => {
   const { showFeedbackForm } = useFeedbackStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -111,20 +108,6 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         )}
         {mode === 'playlist' && (
           <ButtonSleek text="Feedback" transparent={true} customWidth="min-w-[var(--px-120)]" onClick={showFeedbackForm} className="feedback-button" id="navbar-feedback-button" />
-        )}
-
-        {/* Cart icon — visible when authenticated */}
-        {isAuthenticated && (
-          <CartIcon
-            className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
-            customWidth="24"
-            customHeight="24"
-            itemCount={cartItemCount}
-            onClick={(e) => {
-              e.preventDefault();
-              onCartClick?.();
-            }}
-          />
         )}
 
         {/* Auth button - always on the right */}
