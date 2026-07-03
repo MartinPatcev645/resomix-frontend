@@ -22,6 +22,12 @@ what if we show apple music playback and meta information and use our own 3 mill
 - Have open playback without login, but restrict to 20 tracks or so and push login to view full 100 tracks, or so.
 - Remove waveforms and use the 30s playback as a line.
 - Also add cover on left side as we get from apple music, Also use apple music logo
+- Increase the z index for status message popup, because sometimes when the logo is down because of email verify and demo mode notices, the logo comes on top of the message popup.
+- If user clicks delete track, also delete the segments, and the playlist created from it should also be soft deleted.
+- Add the tab? in the url to point to correct tab in library, which will be helpful to filtering in future.
+- In resomix landing, the profile dropdown should take user to beta resomix library, and not resomix.com/landing.
+- For playlist not found display it like this: https://resomix.com/okokok with the proper message. Right now looks broken.
+- 
 
 Next Steps:
 
