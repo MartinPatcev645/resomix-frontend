@@ -385,6 +385,63 @@ class PlaylistController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
             )
 
+    async def delete_playlist(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        current_user: User,
+    ) -> JSONResponse:
+        """Soft-delete the authenticated user's own playlist by UUID."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+
+        if not playlist_id or not playlist_id.strip():
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(success=False, error="playlist_id cannot be empty"),
+            )
+
+        partner_id = getattr(request.state, "partner_id", None)
+        result = await self.playlist_service.delete_playlist(
+            db, playlist_id, current_user.id, partner_id=partner_id
+        )
+        duration_ms = (time.time() - start_time) * 1000
+
+        if result.get("success"):
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="USER_ACTION",
+                action="delete_playlist_success",
+                message=f"Playlist soft-deleted: {playlist_id}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                metadata={
+                    "user_uuid": current_user.uuid,
+                    "user_id": current_user.id,
+                    "playlist_uuid": playlist_id,
+                    "operation": "delete_playlist",
+                },
+            )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, message=result.get("message")),
+            )
+
+        if result.get("not_found"):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=format_response(success=False, error="Playlist not found"),
+            )
+
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=format_response(success=False, error=result.get("error")),
+        )
+
     async def get_playlist_similarity_data(
         self,
         db: AsyncSession,

@@ -207,13 +207,16 @@ Returns everything in the list item **plus** the fields below, including nested 
 DELETE /api/v1/tracks/my-tracks/{track_uuid}
 ```
 
-**Soft delete** — sets `is_active=false`. The track immediately disappears from the library, catalog, search, and similarity results. The DB row and storage assets are retained (physical purge is handled later by the backend cleanup worker), so this is reversible server-side.
+**Soft delete + cascade** — sets `is_active=false`; the track immediately disappears from the library, catalog, search, and similarity. On delete the backend also:
+1. **soft-deletes the similarity playlist** generated from this track (it disappears from the user's playlists too) — `data.playlists_deleted` tells you how many;
+2. **purges the track's media-server assets in the background** — peaks, segments, embeddings (maest + discogs), preview, cover, raw audio;
+3. *(next sprint)* will soft-delete the track's audio-analysis record once analysis exists.
 
 ### Response (200 OK)
 ```json
 {
   "success": true,
-  "data": { "uuid": "8f3c1e2a-...", "is_active": false },
+  "data": { "uuid": "8f3c1e2a-...", "is_active": false, "playlists_deleted": 1 },
   "message": "Track deleted successfully"
 }
 ```
@@ -465,6 +468,16 @@ Body: { "playlist_id": "<uuid>", "new_name": "My New Name" }   // 1–150 chars
 ```
 - `200` → `{ "success": true, "message": "Playlist renamed successfully", "old_name": "..." }`
 - `401` not logged in · `404` not found / not owned · `422` invalid name/id
+
+### Delete a playlist
+```
+DELETE /api/v1/playlists/{playlist_uuid}
+```
+- **Soft delete** — the playlist disappears from all the user's lists and **frees a slot** against the playlist quota; the row is retained server-side. Idempotent (second delete → `404`).
+- `200` → `{ "success": true, "message": "Playlist deleted successfully" }`
+- `401` not logged in · `404` not found / not owned / already deleted
+
+> ⚠️ **Do not delete by unfollowing.** Earlier the frontend called `POST /playlist/unfollow/{id}` to make a playlist disappear — that only stops following; the playlist still exists and still counts against the quota. Use `DELETE /api/v1/playlists/{uuid}` for real deletion.
 
 ### Example (Fetch)
 ```typescript

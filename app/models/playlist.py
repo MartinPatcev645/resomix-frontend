@@ -53,7 +53,10 @@ class Playlist(Base):
     
     # Timestamps
     created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
-    
+    # Soft-delete marker: NULL = active, non-NULL = deleted at that time. User-facing reads
+    # exclude soft-deleted playlists; the row is retained for history/quota reconciliation.
+    deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True, default=None)
+
     # Relationships
     seed_track: Mapped[Optional["Track"]] = relationship("Track", foreign_keys=[seed_track_id])
     # The fork relationship to another Playlist object uses the fork_id string referencing the uuid string

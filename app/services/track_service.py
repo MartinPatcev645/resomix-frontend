@@ -208,21 +208,56 @@ class TrackService:
         user_id: int,
         partner_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Soft-delete one of the user's own uploaded tracks."""
+        """Soft-delete one of the user's own uploaded tracks and cascade the cleanup.
+
+        On delete we:
+          1. soft-delete the track (``is_active=False``),
+          2. soft-delete any similarity playlist generated from this track (seed),
+          3. (next sprint) soft-delete the track's analysis record once analysis exists,
+          4. purge the track's media-server assets — peaks, segments, embeddings
+             (maest + discogs), preview, cover, raw — in a background task so a slow/down
+             media server never fails the user's delete.
+        """
         try:
-            deleted = await self.track_repository.async_soft_delete_user_track(
+            track = await self.track_repository.async_soft_delete_user_track(
                 db, uuid, user_id, partner_id=partner_id
             )
-            if not deleted:
+            if track is None:
                 return {
                     "success": False,
                     "error": "Track not found",
                     "not_found": True,
                 }
+
+            # Cascade (same transaction): soft-delete the similarity playlist(s) seeded
+            # from this track so they vanish from the user's library too.
+            playlists_deleted = (
+                await self.playlist_repository.async_soft_delete_playlists_by_seed_track(
+                    db, track.id, partner_id=partner_id
+                )
+            )
+            # TODO (next sprint): once track analysis exists, soft-delete the analysis
+            # record for this track here (same transaction).
+
             await db.commit()
+
+            # Media-server asset purge (peaks/segments/embeddings/preview/cover/raw) runs
+            # off the request path. Best-effort dispatch — if the broker is unavailable the
+            # DB delete still stands and the cleanup worker is the backstop.
+            try:
+                from app.tasks.track_tasks import purge_uploaded_track_assets
+
+                purge_uploaded_track_assets.delay(partner_id, uuid)
+            except Exception as dispatch_exc:
+                print(f"Failed to enqueue asset purge for track {uuid}: {dispatch_exc}")
+
             return {
                 "success": True,
-                "data": {"uuid": uuid, "is_active": False},
+                "data": {
+                    "uuid": uuid,
+                    "is_active": False,
+                    "playlists_deleted": playlists_deleted,
+                },
                 "message": "Track deleted successfully",
             }
         except Exception as e:

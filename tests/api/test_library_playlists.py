@@ -35,6 +35,15 @@ PLAYLISTS_URL = "/api/v1/playlists/get-all-playlists/"
 VISIBILITY_URL = "/api/v1/playlists/visibility/"
 RENAME_URL = "/api/v1/playlists/rename/"
 
+
+def _delete_url(playlist_uuid: str) -> str:
+    return f"/api/v1/playlists/{playlist_uuid}"
+
+
+async def _list_uuids(ac, user):
+    res = await ac.get(PLAYLISTS_URL, headers=auth_headers(user))
+    return {p["uuid"] for p in res.json()["data"]}
+
 # Summary-only keys we expect; the presence of a full track list would show up as
 # one of these forbidden keys.
 _FORBIDDEN_HEAVY_KEYS = {"tracks", "playlist_tracks", "similar_tracks", "pk"}
@@ -215,3 +224,60 @@ async def test_non_owner_cannot_rename():
     assert res.status_code == 404
     _, name = await get_playlist_state(pl.uuid)
     assert name == "Original"
+
+
+# --------------------------------------------------------------------------- #
+# Delete playlist (DELETE /playlists/{uuid}) — login + ownership, soft delete
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_delete_playlist_requires_login():
+    """Deleting a playlist while logged out is rejected (401)."""
+    pl = await create_playlist(user_id=(await create_user()).id)
+    async with _client() as ac:
+        res = await ac.delete(_delete_url(pl.uuid))
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_owner_can_delete_playlist_and_it_disappears():
+    """The owner soft-deletes their playlist; it vanishes from the list."""
+    user = await create_user()
+    keep = await create_playlist(user_id=user.id, name="Keep")
+    drop = await create_playlist(user_id=user.id, name="Drop")
+
+    async with _client() as ac:
+        assert {keep.uuid, drop.uuid} <= await _list_uuids(ac, user)
+        res = await ac.delete(_delete_url(drop.uuid), headers=auth_headers(user))
+        assert res.status_code == 200
+        assert res.json()["success"] is True
+
+        remaining = await _list_uuids(ac, user)
+        assert drop.uuid not in remaining
+        assert keep.uuid in remaining
+
+
+@pytest.mark.asyncio
+async def test_non_owner_cannot_delete_playlist():
+    """A logged-in non-owner gets 404 and the playlist survives."""
+    owner = await create_user()
+    attacker = await create_user()
+    pl = await create_playlist(user_id=owner.id)
+
+    async with _client() as ac:
+        res = await ac.delete(_delete_url(pl.uuid), headers=auth_headers(attacker))
+        assert res.status_code == 404
+        assert pl.uuid in await _list_uuids(ac, owner)  # still there for the owner
+
+
+@pytest.mark.asyncio
+async def test_delete_playlist_is_idempotent():
+    """Deleting the same playlist twice: first 200, second 404."""
+    user = await create_user()
+    pl = await create_playlist(user_id=user.id)
+    async with _client() as ac:
+        first = await ac.delete(_delete_url(pl.uuid), headers=auth_headers(user))
+        second = await ac.delete(_delete_url(pl.uuid), headers=auth_headers(user))
+    assert first.status_code == 200
+    assert second.status_code == 404

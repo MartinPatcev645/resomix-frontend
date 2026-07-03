@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Depends, Request, status, Query
+from fastapi import APIRouter, Depends, Request, status, Query, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -147,6 +147,36 @@ async def change_playlist_visibility_endpoint(
     call this (their playlists are public by default).
     """
     return await playlist_controller.change_playlist_visibility(db, request, request_data.playlist_id, request_data.is_public, current_user)
+
+
+@router.delete(
+    "/{playlist_id}",
+    response_model=PlaylistOperationResponse,
+    summary="Delete Playlist",
+    description="Soft-delete one of your own playlists by its UUID. Requires login.",
+    responses={
+        200: {"model": PlaylistOperationResponse, "description": "Playlist deleted successfully"},
+        401: {"model": PlaylistErrorResponse, "description": "Authentication required"},
+        404: {"model": PlaylistErrorResponse, "description": "Playlist not found or not owned by the user"},
+        500: {"model": PlaylistErrorResponse, "description": "Internal server error"},
+    },
+)
+async def delete_playlist_endpoint(
+    request: Request,
+    playlist_id: str = Path(..., description="UUID of the playlist to delete"),
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_current_partner),
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
+) -> JSONResponse:
+    """
+    Soft-delete a playlist by its UUID.
+
+    Requires a logged-in user (JWT). Only the playlist's owner may delete it — another
+    user's (or a nonexistent / already-deleted) playlist returns 404. The playlist is
+    hidden from all user-facing lists and frees a slot against the playlist quota; the row
+    is retained server-side. Deletion is idempotent (a second delete returns 404).
+    """
+    return await playlist_controller.delete_playlist(db, request, playlist_id, current_user)
 
 
 @router.get(

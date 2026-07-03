@@ -123,6 +123,32 @@ class PlaylistService:
                 "error": "An error occurred while changing playlist visibility",
             }
 
+    async def delete_playlist(
+        self, db: AsyncSession, playlist_uuid: str, user_id: int,
+        partner_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Soft-delete one of the user's own playlists (owner-only).
+
+        Returns ``{"success": True}`` on delete, or ``{"success": False, "not_found": True}``
+        when the playlist doesn't exist / isn't owned by the user / is already deleted.
+        """
+        try:
+            deleted = await self.playlist_repository.async_soft_delete_user_playlist(
+                db, playlist_uuid, user_id, partner_id=partner_id
+            )
+            if not deleted:
+                await db.rollback()
+                return {"success": False, "error": "Playlist not found", "not_found": True}
+            await db.commit()
+            return {"success": True, "message": "Playlist deleted successfully"}
+        except Exception as e:
+            await db.rollback()
+            print(f"Error in playlist service delete: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while deleting the playlist",
+            }
+
     def _apply_playlist_response_filtering(
         self, similarity_data: Dict[str, Any]
     ) -> Dict[str, Any]:

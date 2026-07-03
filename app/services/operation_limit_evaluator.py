@@ -84,7 +84,9 @@ class OperationLimitEvaluator:
             # Prefer stored usage if present; if zero, backfill from actual playlist count once.
             current_usage = (getattr(limit, "usage", 0) or 0)
             if current_usage == 0:
-                count_stmt = select(func.count(Playlist.id)).where(Playlist.user_id == user_id)
+                count_stmt = select(func.count(Playlist.id)).where(
+                    Playlist.user_id == user_id, Playlist.deleted_at.is_(None)
+                )
                 current_usage = (await db.execute(count_stmt)).scalar_one() or 0
                 # Best-effort backfill of usage so future checks are O(1)
                 try:

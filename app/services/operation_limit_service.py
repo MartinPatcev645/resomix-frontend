@@ -247,7 +247,9 @@ class OperationLimitService:
     async def _count_user_playlists(
         self, db: AsyncSession, user_id: int
     ) -> int:
-        stmt = select(func.count(Playlist.id)).where(Playlist.user_id == user_id)
+        stmt = select(func.count(Playlist.id)).where(
+            Playlist.user_id == user_id, Playlist.deleted_at.is_(None)
+        )
         result = await db.execute(stmt)
         return result.scalar_one() or 0
 

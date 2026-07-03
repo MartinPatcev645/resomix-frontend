@@ -19,24 +19,26 @@ what if we show apple music playback and meta information and use our own 3 mill
 
 - Remove cart from frontend.
 - Remove open cc buttons
-- Have open playback without login, but restrict to 20 tracks or so and push login to view full 100 tracks, or so.
 - Remove waveforms and use the 30s playback as a line.
 - Also add cover on left side as we get from apple music, Also use apple music logo
+
+
+- Have open playback without login, but restrict to 20 tracks or so and push login to view full 100 tracks, or so.
 - Increase the z index for status message popup, because sometimes when the logo is down because of email verify and demo mode notices, the logo comes on top of the message popup.
 - If user clicks delete track, also delete the segments, and the playlist created from it should also be soft deleted.
 - Add the tab? in the url to point to correct tab in library, which will be helpful to filtering in future.
-- In resomix landing, the profile dropdown should take user to beta resomix library, and not resomix.com/landing.
 - For playlist not found display it like this: https://resomix.com/okokok with the proper message. Right now looks broken.
-- 
+- In resomix landing, the profile dropdown should take user to beta resomix library, and not resomix.com/landing.
+- Admin dropdown not stable and hiding
+
 
 Next Steps:
 
 1. Document send to george
-
 - Remove cart, and upload file fix error
-
 2. Start with apple music research
 3. For our 2.3 Million tracks see which are in apple music using their apis, and filter those which are not in there.
+
 4. Use those filtered tracks from apple music in out frontend and use apple music own catalog.
 5. Track analysis UI creation and backend api
 6. Have restrictions and login wall (like 20 tracks playlists for guest users only etc.)
@@ -45,11 +47,78 @@ Next Steps:
 
 - playlist list page
 - dropdown on account icon with main menus
+
 - change the waveforms to the line, for apple music preview. Put apple badging
 - User library page to see his own uploaded tracks
 - guest user can create one playlist, and if log in then can create 3 more, and further have to pay. Make numbers adjustable for every stage how many the user can create.
+
 - Clear ui messages so he knows what to do next.
 - stripe subscription integration.
+- Favorite button for logged in user, so see playlist in favorites tab in library.
+- Login with google
+- Allow admin frontend to manage the rate limits and what to allow for logged in/guest users.
+
+
+
+Now:
+10-20-50-100
+
+Suggestion:
+10-20-40-70-100-120
+
+
+
+Guest user (not logged in):
+- Can create one playlist per day. Session id and ip based.
+- Playlist will be limited to 10 tracks only (and push for login)
+- Cannot export the playlist
+- Cannot rename the playlist
+- Cannot favorite the playlist
+- Cannot rate the tracks in playlist
+- Cannot perform track analysis
+- Cannot perform similarity by upload
+- Playlist is always public and anyone with url can access
+- Can only create up to 20 tracks playlist (rest dropdown options are grey)
+
+Logged in User:
+- Can create two playlists per day, if coming from guest and already has one today, we give one more
+- Playlists will be limited to 20 tracks only (and push for subscription)
+- He can export the first 10 tracks for playlist
+- He can rename the playlist
+- He can favorite any playlist
+- He can rate the tracks of any playlist
+- He can perform one track analysis per day (We limit them to 5 features out of let's say 20)
+- He can perform similarity by upload
+- Playlist is private to user, unless he makes public and shares url
+- He can create up to 40 tracks playlist (rest dropdown options is grey)
+
+
+Subscribed user:
+1. Basic (5€/month)
+- Can create 5 playlists per day
+- Can have 5 track analysis per day (We limit them to 10 features out of 20)
+- Can perform full export (Text)
+- Can export to Apple Music
+- Can create 40 tracks playlists (rest 100 option is grey)
+
+2. Pro (10€/month)
+- Can create 15 playlists per day
+- Can have 10 track analysis per day (We display full features out of 20)
+- Can perform full export (Text)
+- Can export to Apple Music
+- Can create 70 tracks playlists
+
+3. Max (20€/month)
+- Can create 50 playlists per day
+- Can have 50 track analysis per day (Display full features)
+- Can perform full export (Also allow to export to DJ software like Serato, Rekordbox etc.)
+- Can do export to Tidal, Spotify or Apple Music
+- Can create 120 tracks playlists
+
+
+
+
+
 
 Apple music:
 

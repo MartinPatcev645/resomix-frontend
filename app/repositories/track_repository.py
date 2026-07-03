@@ -286,15 +286,17 @@ class TrackRepository(BaseRepository[Track]):
         uuid: str,
         user_id: int,
         partner_id: Optional[int] = None,
-    ) -> bool:
+    ) -> Optional[Track]:
         """Soft-delete an owned uploaded track by flipping ``is_active`` to False.
 
         This hides the track from the library/catalog (catalog queries filter
-        ``is_active != False``) without dropping the row or purging storage assets —
-        physical Hetzner/embedding cleanup is handled separately by the cleanup worker.
+        ``is_active != False``). Physical media-server assets (peaks, segments,
+        embeddings, preview, cover, raw) are purged separately by the caller after this
+        succeeds.
 
-        Returns True if a matching, still-active owned track was updated, else False
-        (not found, not owned, or already soft-deleted — treated as idempotent no-op).
+        Returns the soft-deleted Track (so the caller can cascade + purge) if a matching,
+        still-active owned track was updated, else None (not found, not owned, or already
+        soft-deleted — treated as idempotent no-op).
         """
         conditions = [
             self.model.uuid == uuid,
@@ -308,11 +310,11 @@ class TrackRepository(BaseRepository[Track]):
         stmt = select(self.model).where(and_(*conditions))
         track = (await db.execute(stmt)).scalar_one_or_none()
         if track is None:
-            return False
+            return None
 
         track.is_active = False
         await db.flush()
-        return True
+        return track
 
     async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None, exclude_uploads: bool = False) -> List[Track]:
         """Async version of get_tracks_by_uuids with partner scoping.

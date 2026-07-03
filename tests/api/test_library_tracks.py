@@ -18,6 +18,7 @@ Requires the stack to be up (MariaDB + Redis). Run with:  pytest tests/api/test_
 """
 
 import uuid
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -30,6 +31,8 @@ from tests.api.library_helpers import (
     create_user,
     get_track_is_active,
 )
+
+PLAYLISTS_URL = "/api/v1/playlists/get-all-playlists/"
 
 LIST_URL = "/api/v1/tracks/my-tracks/"
 
@@ -359,3 +362,49 @@ async def test_detail_reports_playlist_state():
     assert data["playlist_uuid"] == pl.uuid
     assert data["has_similarity"] is True
     assert data["has_analysis"] is False
+
+
+# --------------------------------------------------------------------------- #
+# Delete cascade: seed playlist soft-deleted + media assets purged
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_delete_track_soft_deletes_seed_playlist_and_purges_assets():
+    """Deleting an uploaded track soft-deletes its similarity playlist AND enqueues the
+    media-server asset purge (peaks/segments/embeddings/etc.)."""
+    user = await create_user()
+    track = await create_track(user_id=user.id)
+    seed_pl = await create_playlist(user_id=user.id, seed_track_id=track.id)
+
+    with patch("app.tasks.track_tasks.purge_uploaded_track_assets.delay") as mock_purge:
+        async with _client() as ac:
+            res = await ac.delete(_detail_url(track.uuid), headers=auth_headers(user))
+            assert res.status_code == 200
+            body = res.json()
+            assert body["success"] is True
+            assert body["data"]["playlists_deleted"] >= 1
+
+            # The seed playlist is gone from the user's playlists list.
+            pls = await ac.get(PLAYLISTS_URL, headers=auth_headers(user))
+            assert seed_pl.uuid not in {p["uuid"] for p in pls.json()["data"]}
+
+    # Asset purge was enqueued for this track (System Partner 1 for a frontend user).
+    mock_purge.assert_called_once()
+    args = mock_purge.call_args.args
+    assert args[0] == 1  # partner_id
+    assert args[1] == track.uuid
+
+
+@pytest.mark.asyncio
+async def test_delete_track_without_playlist_still_purges():
+    """Deleting a track with no similarity playlist reports 0 cascaded and still purges."""
+    user = await create_user()
+    track = await create_track(user_id=user.id)
+
+    with patch("app.tasks.track_tasks.purge_uploaded_track_assets.delay") as mock_purge:
+        async with _client() as ac:
+            res = await ac.delete(_detail_url(track.uuid), headers=auth_headers(user))
+    assert res.status_code == 200
+    assert res.json()["data"]["playlists_deleted"] == 0
+    mock_purge.assert_called_once_with(1, track.uuid)

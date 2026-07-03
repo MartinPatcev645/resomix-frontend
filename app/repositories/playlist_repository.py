@@ -490,7 +490,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         return None
 
     async def async_get_playlist_by_uuid(
-        self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None,
+        include_deleted: bool = False,
     ) -> Optional[Playlist]:
         """
         Get playlist by UUID with optional partner scoping.
@@ -499,6 +500,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db: Database session
             playlist_uuid: Playlist UUID
             partner_id: Optional partner ID for tenant scoping
+            include_deleted: When False (default) soft-deleted playlists are excluded —
+                user-facing reads never see a deleted playlist. Pass True only for admin
+                or internal reconciliation that must operate on deleted rows.
 
         Returns:
             Playlist instance or None if not found
@@ -506,6 +510,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         stmt = select(self.model).where(self.model.uuid == playlist_uuid)
         if partner_id is not None:
             stmt = stmt.where(self.model.partner_id == partner_id)
+        if not include_deleted:
+            stmt = stmt.where(self.model.deleted_at.is_(None))
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -576,6 +582,48 @@ class PlaylistRepository(BaseRepository[Playlist]):
             print(f"Error updating playlist visibility: {e}")
             raise e
 
+    async def async_soft_delete_user_playlist(
+        self, db: AsyncSession, playlist_uuid: str, user_id: int,
+        partner_id: Optional[int] = None,
+    ) -> bool:
+        """Soft-delete one of the user's own playlists (set ``deleted_at``).
+
+        Owner-only: a playlist owned by someone else (or nonexistent / already deleted) is
+        treated as not found — returns False (idempotent, no ownership leak). The row is
+        retained; user-facing reads exclude it.
+        """
+        playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
+        if playlist is None:
+            return False
+        if user_id is not None and playlist.user_id != user_id:
+            return False
+        playlist.deleted_at = datetime.utcnow()
+        await db.flush()
+        return True
+
+    async def async_soft_delete_playlists_by_seed_track(
+        self, db: AsyncSession, seed_track_id: int, partner_id: Optional[int] = None
+    ) -> int:
+        """Soft-delete every still-active playlist seeded from ``seed_track_id``.
+
+        Called when the (uploaded) seed track itself is deleted — the similarity playlist
+        it generated is soft-deleted alongside it. Returns the number of playlists affected.
+        """
+        conditions = [
+            Playlist.seed_track_id == seed_track_id,
+            Playlist.deleted_at.is_(None),
+        ]
+        if partner_id is not None:
+            conditions.append(Playlist.partner_id == partner_id)
+
+        result = await db.execute(select(Playlist).where(and_(*conditions)))
+        playlists = result.scalars().all()
+        now = datetime.utcnow()
+        for playlist in playlists:
+            playlist.deleted_at = now
+        await db.flush()
+        return len(playlists)
+
     async def async_get_similarity_playlist_map(
         self, db: AsyncSession, track_ids: List[int], partner_id: Optional[int] = None
     ) -> Dict[int, str]:
@@ -597,6 +645,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         conditions = [
             Playlist.seed_track_id.in_(track_ids),
             Playlist.type.in_([PlaylistType.SIMILARITY, "waiting_segments"]),
+            Playlist.deleted_at.is_(None),  # a soft-deleted playlist no longer counts
         ]
         if partner_id is not None:
             conditions.append(Playlist.partner_id == partner_id)
@@ -1602,6 +1651,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
             conditions = []
             if partner_id is not None:
                 conditions.append(Playlist.partner_id == partner_id)
+            # Never surface soft-deleted playlists to the user.
+            conditions.append(Playlist.deleted_at.is_(None))
             needs_engagement_join = False
 
             # Handle all_favorites filter - if true, include playlists user favorited but doesn't own

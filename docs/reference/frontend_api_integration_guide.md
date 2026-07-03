@@ -2,7 +2,7 @@
 
 This guide is the canonical reference for all API endpoints the frontend (admin dashboard, consumer app, B2B partner portal) can call. It is generated from the live route list and should be kept in sync whenever new routes are added.
 
-**Last verified:** 2026-07-03 against live server on `http://localhost:8001` (added §6 My Library / uploaded-track endpoints; §5.2 now returns `seed_track_type` and never exposes the internal `pk`; §5.3 rename + visibility/share now require JWT **and** playlist ownership)
+**Last verified:** 2026-07-03 against live server on `http://localhost:8001` (added §6 My Library / uploaded-track endpoints; §5.2 now returns `seed_track_type` and never exposes the internal `pk`; §5.3 rename + visibility/share now require JWT **and** playlist ownership; added §5.3b **DELETE playlist** soft-delete — replaces the old unfollow-as-delete hack; track delete §6.3 now cascades to the seed playlist + purges media assets incl. peaks)
 
 ## Base URL
 
@@ -171,6 +171,13 @@ Four auth tiers are supported depending on the caller:
 - **Visibility (share / make public):** `PUT /api/v1/playlists/visibility/` — Body: `{ "playlist_id": "uuid", "is_public": true }` (`true` = public/shared, `false` = private)
 - **Auth:** both require a **logged-in user** (JWT). A logged-out request returns **`401`**. Only the playlist's **owner** may rename or change visibility — another user's (or a nonexistent) playlist returns **`404`** (existence is not leaked). Logged-out sessions have no need for this: their playlists are public by default.
 
+### 5.3b Delete Playlist — **Requires JWT + ownership**
+- **`DELETE /api/v1/playlists/{playlist_id}`** — soft-deletes one of your own playlists by UUID.
+- **This replaces the old "unfollow-as-delete" hack.** Do **not** use `POST /playlist/unfollow/{id}` to delete — that only stops following; the playlist still exists and still counts against the quota. Use this endpoint.
+- **Behavior:** soft delete — the playlist disappears from all your lists and **frees a slot** against the playlist quota, but the row is retained server-side. Idempotent (second delete → `404`).
+- **Auth:** requires JWT; owner-only. Logged-out → `401`; not-owned / nonexistent / already-deleted → `404`.
+- **Returns:** `{ "success": true, "message": "Playlist deleted successfully" }`
+
 ### 5.4 Get Playlist Similarity Data
 - **`GET /api/v1/playlists/similarity/{playlist_id}`** — Requires API Key (JWT optional to view own private)
 - **Returns:** Playlist formatted like similarity endpoint response.
@@ -238,13 +245,17 @@ The logged-in user's own uploaded tracks (the "library" page). All endpoints **r
   }
   ```
 
-### 6.3 Delete a Track (soft delete)
+### 6.3 Delete a Track (soft delete + cascade)
 - **`DELETE /api/v1/tracks/my-tracks/{track_uuid}`** — Requires JWT
-- **Soft delete** (`is_active=false`): the track immediately disappears from the library, catalog, search, and similarity results. The DB row and storage assets are retained; physical purge of Hetzner assets is handled separately by the cleanup worker.
+- **Soft delete** (`is_active=false`): the track immediately disappears from the library, catalog, search, and similarity results.
+- **Cascade** (on delete):
+  1. the **similarity playlist** generated from this track is soft-deleted too (vanishes from the user's playlists) — `data.playlists_deleted` reports how many;
+  2. the track's **media-server assets are purged** in the background — peaks, segments, embeddings (maest + discogs), preview, cover, and raw audio;
+  3. *(next sprint)* the track's audio-analysis record will also be soft-deleted once analysis exists.
 - **Idempotent:** a second delete of the same track returns `404`.
 - **`404`** if the track does not exist, is not owned by the caller, or was already deleted.
   ```json
-  { "success": true, "data": { "uuid": "8f3c...", "is_active": false }, "message": "Track deleted successfully" }
+  { "success": true, "data": { "uuid": "8f3c...", "is_active": false, "playlists_deleted": 1 }, "message": "Track deleted successfully" }
   ```
 
 ---
