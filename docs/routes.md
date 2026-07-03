@@ -2,7 +2,7 @@
 
 This guide is the canonical reference for all API endpoints the frontend (admin dashboard, consumer app, B2B partner portal) can call. It is generated from the live route list and should be kept in sync whenever new routes are added.
 
-**Last verified:** 2026-06-18 against live server on `http://localhost:8001` (SFTP custom limits + update endpoint added in §19.2)
+**Last verified:** 2026-07-03 against live server on `http://localhost:8001` (added §6 My Library / uploaded-track endpoints; §5.2 now returns `seed_track_type` and never exposes the internal `pk`)
 
 ## Base URL
 
@@ -162,8 +162,9 @@ Four auth tiers are supported depending on the caller:
 
 ### 5.2 Get User Playlists
 - **`GET /api/v1/playlists/get-all-playlists/`** — Requires JWT
-- **Query params:** `page`, `page_size`, `play_time`, `num_tracks`, `start_date`, `end_date`, `is_public`, `own_favorites`, `all_favorites`
-- **Returns:** Paginated list of user playlists.
+- **Query params:** `page`, `page_size` (default 20), `play_time`, `num_tracks`, `start_date`, `end_date`, `is_public`, `own_favorites`, `all_favorites`
+- **Returns:** Paginated **lightweight** summaries of the caller's own playlists (no embedded track list), newest first, with top-level `total`. Each item: `uuid`, `name`, `is_public`, `seed_track_title`, `seed_track_type` (`"upload"` | `"internal"`), `fork_id`, `num_tracks`, `play_time`, `created_at`, `is_favorite`, `is_following`. See [GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md](./GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md) for the full shape.
+- **Note:** the internal integer primary key (`pk`) is **not** returned on any user-facing response — always key playlists by `uuid`.
 
 ### 5.3 Rename / Change Visibility
 - **Rename:** `PUT /api/v1/playlists/rename/` — Body: `{ "playlist_id": "uuid", "new_name": "..." }`
@@ -183,21 +184,84 @@ Four auth tiers are supported depending on the caller:
 
 ---
 
-## 6. Playlist Engagement (`/api/v1/playlist`)
+## 6. My Library — Uploaded Tracks (`/api/v1/tracks`)
 
-### 6.1 Favorites
+The logged-in user's own uploaded tracks (the "library" page). All endpoints **require JWT** and are scoped to the caller's own uploads on the consumer tenant (System Partner 1); another user's tracks and catalog tracks are never returned. Not-logged-in requests return `401`.
+
+### 6.1 List My Uploaded Tracks
+- **`GET /api/v1/tracks/my-tracks/`** — Requires JWT
+- **Query params:** `page` (default `1`, ≥1), `page_size` (default `20`, **max `20`** — values above 20 return `422`)
+- **Returns:** Paginated, lightweight track summaries, **newest first**. Soft-deleted tracks are excluded.
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "uuid": "8f3c...","title": "My Track","version_title": null,
+        "display_artist": "Me","mix_name": "Original Mix","isrc": "USABC2600001",
+        "duration_ms": 200000,"duration": 200.0,"bpm": 128,"musical_key": "8A",
+        "genre": "Techno","sub_genre": null,"track_type": "upload","price_cents": 99,
+        "is_explicit": false,"is_instrumental": false,"is_active": true,
+        "created_at": "2026-07-03T10:30:00","updated_at": "2026-07-03T10:30:00"
+      }
+    ],
+    "total": 42,"page": 1,"page_size": 20,"total_pages": 3
+  }
+  ```
+
+### 6.2 View a Track (full metadata)
+- **`GET /api/v1/tracks/my-tracks/{track_uuid}`** — Requires JWT
+- **Returns:** Full metadata for one owned track, including `audio_files[]` and `contributors[]`. Internal fields (storage path, checksums) are never exposed.
+- **`404`** if the track does not exist, is not owned by the caller, or was deleted (existence is not distinguished).
+  ```json
+  {
+    "success": true,
+    "data": {
+      "uuid": "8f3c...","title": "My Track","display_artist": "Me","duration": 200.0,
+      "bpm": 128,"musical_key": "8A","genre": "Techno","track_type": "upload","is_active": true,
+      "key_signature": "Am","audio_language": "en","language_of_lyrics": null,
+      "p_line_year": 2025,"p_line_text": "℗ 2025 Me","parental_warning": "NotExplicit",
+      "audio_files": [
+        {
+          "asset_class": "Master","asset_subtype": "master","original_filename": "track.wav",
+          "mime_type": "audio/wav","file_size_bytes": 40960000,"duration_seconds": 200,
+          "audio_codec": "pcm_s16le","sample_rate": 44100,"bit_depth": 16,"channels": 2,
+          "bitrate_kbps": 1411,"created_at": "2026-07-03T10:30:00"
+        }
+      ],
+      "contributors": [
+        {"name": "Me","role": "MainArtist","royalty_type": "NeighboringRights","ownership_share": 100.0,"sequence_num": 1}
+      ]
+    }
+  }
+  ```
+
+### 6.3 Delete a Track (soft delete)
+- **`DELETE /api/v1/tracks/my-tracks/{track_uuid}`** — Requires JWT
+- **Soft delete** (`is_active=false`): the track immediately disappears from the library, catalog, search, and similarity results. The DB row and storage assets are retained; physical purge of Hetzner assets is handled separately by the cleanup worker.
+- **Idempotent:** a second delete of the same track returns `404`.
+- **`404`** if the track does not exist, is not owned by the caller, or was already deleted.
+  ```json
+  { "success": true, "data": { "uuid": "8f3c...", "is_active": false }, "message": "Track deleted successfully" }
+  ```
+
+---
+
+## 7. Playlist Engagement (`/api/v1/playlist`)
+
+### 7.1 Favorites
 - **Add:** `POST /api/v1/playlist/add-favorite/{playlist_id}` — Requires JWT
 - **Remove:** `POST /api/v1/playlist/remove-favorite/{playlist_id}` — Requires JWT
 
-### 6.2 Follows
+### 7.2 Follows
 - **Follow:** `POST /api/v1/playlist/follow/{playlist_id}` — Requires JWT
 - **Unfollow:** `POST /api/v1/playlist/unfollow/{playlist_id}` — Requires JWT
 
 ---
 
-## 7. Ratings (`/api/v1/ratings`)
+## 8. Ratings (`/api/v1/ratings`)
 
-### 7.1 Track Ratings
+### 8.1 Track Ratings
 - **Rate:** `POST /api/v1/ratings/tracks/`
   ```json
   { "track_id": "uuid", "playlist_id": "uuid", "rating": 1 }
@@ -208,7 +272,7 @@ Four auth tiers are supported depending on the caller:
 - **Stats:** `GET /api/v1/ratings/tracks/{track_id}/stats`
   - Returns: `{ "total_ratings": 100, "rating_distribution": { "0": 20, "1": 80 } }`
 
-### 7.2 Playlist Ratings
+### 8.2 Playlist Ratings
 - **Rate:** `POST /api/v1/ratings/playlists/`
   ```json
   { "playlist_id": "uuid", "rating": 3, "message": "Optional review" }
@@ -221,9 +285,9 @@ Four auth tiers are supported depending on the caller:
 
 ---
 
-## 8. Cart & Checkout (`/api/v1/cart`, `/api/v1/checkout`)
+## 9. Cart & Checkout (`/api/v1/cart`, `/api/v1/checkout`)
 
-### 8.1 Cart Operations — Requires JWT
+### 9.1 Cart Operations — Requires JWT
 
 - **Get cart:** `GET /api/v1/cart`
 - **Add items:** `POST /api/v1/cart/add`
@@ -237,30 +301,30 @@ Four auth tiers are supported depending on the caller:
 - **Remove playlist:** `DELETE /api/v1/cart/remove-playlist/{playlist_id}`
 - **Clear cart:** `DELETE /api/v1/cart/clear`
 
-### 8.2 Promo Code — Requires JWT
+### 9.2 Promo Code — Requires JWT
 - **Apply:** `POST /api/v1/cart/promo` — Body: `{ "code": "SUMMER25" }`
 
-### 8.3 Checkout — Requires JWT
+### 9.3 Checkout — Requires JWT
 - **Pre-flight:** `POST /api/v1/checkout/init` — Body: `{ "cart_id": 123 }`
 - **Create Stripe session:** `POST /api/v1/checkout/create-session`
 
 ---
 
-## 9. External Transfers
+## 10. External Transfers
 
-### 9.1 Spotify — Requires JWT
+### 10.1 Spotify — Requires JWT
 - **Get client ID:** `GET /api/v1/spotify/app-client-id`
   - Returns: `{ "client_id": "...", "app_name": "..." }`
 - **Transfer playlist:** `POST /api/v1/spotify/transfer-playlist/`
   - Body: `{ "playlist_id": "uuid", "access_token": "spotify-token", "playlist_name": "Optional" }`
 
-### 9.2 Apple Music
+### 10.2 Apple Music
 - **Get dev token:** `GET /api/v1/apple-music/developer-token/`
   - Returns: `{ "token": "...", "expires_at": 123456789 }`
 - **Transfer playlist:** `POST /api/v1/apple-music/transfer-playlist/`
   - Body: `{ "playlist_id": "uuid", "music_user_token": "apple-token", "playlist_name": "Optional" }`
 
-### 9.3 Tidal
+### 10.3 Tidal
 - **Exchange token:** `POST /api/v1/tidal/auth/token`
   - Body: `{ "code": "auth-code", "code_verifier": "...", "redirect_uri": "..." }`
 - **Transfer playlist:** `POST /api/v1/tidal/transfer-playlist/`
@@ -268,9 +332,9 @@ Four auth tiers are supported depending on the caller:
 
 ---
 
-## 10. Telemetry (`/api/v1/telemetry`)
+## 11. Telemetry (`/api/v1/telemetry`)
 
-### 10.1 Sync Telemetry Events
+### 11.1 Sync Telemetry Events
 - **`POST /api/v1/telemetry/sync`** — Requires API Key
 - **Body:**
   ```json
@@ -280,7 +344,7 @@ Four auth tiers are supported depending on the caller:
 
 ---
 
-## 11. Waitlist (`/api/v1/waitlist`)
+## 12. Waitlist (`/api/v1/waitlist`)
 
 - **Join:** `POST /api/v1/waitlist/` — Body: `{ "email": "user@example.com" }`
 - **Check status:** `POST /api/v1/waitlist/status` — Body: `{ "email": "user@example.com" }`
@@ -289,9 +353,9 @@ Both require API Key.
 
 ---
 
-## 12. Contact & Support (`/api/v1/contact`)
+## 13. Contact & Support (`/api/v1/contact`)
 
-### 12.1 Submit Contact Form
+### 13.1 Submit Contact Form
 - **`POST /api/v1/contact/`** — Requires API Key
 - **Body:**
   ```json
@@ -306,9 +370,9 @@ Both require API Key.
 
 ---
 
-## 13. Feedback (`/api/v1/feedback`)
+## 14. Feedback (`/api/v1/feedback`)
 
-### 13.1 Submit Feedback
+### 14.1 Submit Feedback
 - **`POST /api/v1/feedback/`** — Requires API Key (or JWT)
 - **Body:**
   ```json
@@ -322,9 +386,9 @@ Both require API Key.
 
 ---
 
-## 14. Preview (`/api/v1/preview`)
+## 15. Preview (`/api/v1/preview`)
 
-### 14.1 Get Preview URL
+### 15.1 Get Preview URL
 - **`GET /api/v1/preview/get_preview/`** — Requires API Key
 - **Query params:** `track_id`
 - **Returns:**
@@ -334,9 +398,9 @@ Both require API Key.
 
 ---
 
-## 15. Metadata (`/api/v1/metadata`)
+## 16. Metadata (`/api/v1/metadata`)
 
-### 15.1 Extract Metadata
+### 16.1 Extract Metadata
 - **`POST /api/v1/metadata/track`** — Requires API Key
 - **Legacy:** `POST /api/v1/metadata/` _(deprecated)_
 - **Form Data:** `file` (audio file)
@@ -344,28 +408,34 @@ Both require API Key.
 
 ---
 
-## 16. Health & Root
+## 17. Health & Root
 
 - **`GET /api/v1/health`** — No auth — Returns: `{ "status": "healthy", "service": "Resomix API" }`
 - **`GET /api/v1/`** — No auth — Returns API version and status.
 
 ---
 
-## 17. B2B Partner Endpoints (`/api/v1/partner`)
+## 18. B2B Partner Endpoints (`/api/v1/partner`)
 
 These endpoints are called by a B2B partner using their API key (`Authorization: Bearer rmx_<partner_api_key>`).
 
-### 17.1 Get Partner Info
+### 18.1 Get Partner Info
 - **`GET /api/v1/partner/me`** — Requires Partner API Key
 - **Returns:**
   ```json
-  { "success": true, "data": { "id": 1, "name": "...", "tier": "growth", "is_active": true } }
+  { "success": true, "data": {
+      "id": 1, "partner_uuid": "...", "legal_name": "...", "display_name": "...",
+      "contact_email": "...", "tier": "growth", "service_mode": "similarity_only",
+      "is_active": true, "onboarded_at": "..."
+  } }
   ```
+- **`service_mode`** is `"similarity_only"` (search only) or `"similarity_playback"` (search + audio playback). Use it to decide whether to show play/stream controls — only `similarity_playback` partners can mint a playback token (§18.2).
 
-### 17.2 Mint Playback Token (Valet Auth)
+### 18.2 Mint Playback Token (Valet Auth)
 - **`POST /api/v1/partner/playback-token`** — Requires Partner API Key
 - **Description:** Exchange the partner API key for a short-lived HS256 "valet" JWT. This token can be attached to Hetzner media-serving requests so they resolve partner-scoped assets without a database lookup per request.
-- **Returns:**
+- **🔒 Playback gate:** only **`similarity_playback`** partners can mint this token. A **`similarity_only`** (search-only) partner gets **`403`** — and since the media edge trusts this token, that partner can never fetch playback assets. The frontend should **hide play controls** when `service_mode` (from `GET /partner/me`) is `similarity_only` rather than calling this and handling a 403.
+- **Returns (`200`):**
   ```json
   {
     "success": true,
@@ -377,8 +447,9 @@ These endpoints are called by a B2B partner using their API key (`Authorization:
     }
   }
   ```
+- **`403`** (search-only partner): `{ "success": false, "error": "Playback is not enabled for this partner. ..." }`
 
-### 17.3 Track Deletion Audit Log
+### 18.3 Track Deletion Audit Log
 - **`GET /api/v1/partner/deletion-log`** — Requires Partner API Key
 - **Description:** Returns an ECDSA-signed log of track deletions for the partner (for compliance / reconciliation).
 - **Query params:** `from_date` (YYYY-MM-DD), `to_date` (YYYY-MM-DD)
@@ -389,22 +460,22 @@ These endpoints are called by a B2B partner using their API key (`Authorization:
 
 ---
 
-## 18. Webhooks (`/api/v1/webhooks`)
+## 19. Webhooks (`/api/v1/webhooks`)
 
-### 18.1 Stripe Webhook Receiver
+### 19.1 Stripe Webhook Receiver
 - **`POST /api/v1/webhooks/stripe`** — No standard auth (Stripe signature verified internally)
 - **Description:** Stripe sends events here (checkout completed, subscription updated, etc.). Configure in your Stripe dashboard to point to this endpoint.
 - **Note:** Do not call this from the frontend. It is invoked by Stripe directly.
 
 ---
 
-## 19. Admin Operations (`/api/v1/admin`)
+## 20. Admin Operations (`/api/v1/admin`)
 
 All admin endpoints require an authenticated admin. Supply either:
 - `Authorization: Bearer <admin_jwt>` (issued by `POST /api/v1/admin/auth/login`), or
 - `X-API-KEY: <global_system_key>` (legacy system-to-system; superadmin scope)
 
-### 19.1 Admin Authentication
+### 20.1 Admin Authentication
 
 - **Admin login:** `POST /api/v1/admin/auth/login`
   - Body: `{ "email": "...", "password": "..." }`
@@ -412,7 +483,7 @@ All admin endpoints require an authenticated admin. Supply either:
 
 ---
 
-### 19.2 Partner Management (`/api/v1/admin/partners`)
+### 20.2 Partner Management (`/api/v1/admin/partners`)
 
 #### CRUD
 - **Create:** `POST /api/v1/admin/partners/` — `201`
@@ -558,7 +629,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.3 User & Role Management
+### 20.3 User & Role Management
 
 #### Users (`/api/v1/admin/users`)
 - **List/search users:** `GET /api/v1/admin/users` — Query: `search`, `page`, `page_size`
@@ -577,7 +648,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.4 Operation Limits (`/api/v1/admin/operation-limits`)
+### 20.4 Operation Limits (`/api/v1/admin/operation-limits`)
 
 - **List operation types:** `GET /api/v1/admin/operation-limits/operation-types`
 - **List user limits:** `GET /api/v1/admin/operation-limits/`
@@ -587,7 +658,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.5 Playlist Management (`/api/v1/admin/playlist`)
+### 20.5 Playlist Management (`/api/v1/admin/playlist`)
 
 - **List playlists:** `GET /api/v1/admin/playlist/`
 - **Get detail:** `GET /api/v1/admin/playlist/{uuid}`
@@ -599,7 +670,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.6 Waitlist Management (`/api/v1/admin/waitlist`)
+### 20.6 Waitlist Management (`/api/v1/admin/waitlist`)
 
 - **List:** `GET /api/v1/admin/waitlist/`
 - **Update status:** `POST /api/v1/admin/waitlist/update-status/{waitlist_id}`
@@ -609,7 +680,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.7 Contact Management (`/api/v1/admin/contact`)
+### 20.7 Contact Management (`/api/v1/admin/contact`)
 
 - **List contacts:** `GET /api/v1/admin/contact/`
 - **Get contact:** `GET /api/v1/admin/contact/{contact_id}`
@@ -620,7 +691,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.8 Feedback Management (`/api/v1/admin/feedback`)
+### 20.8 Feedback Management (`/api/v1/admin/feedback`)
 
 - **List feedback:** `GET /api/v1/admin/feedback/`
   - Query: `page`, `page_size`, `search`, `search_column` (`message|id`), `status` (`open|resolved|all`), `date_from`, `date_to`, `sort_by`, `sort_order`
@@ -633,7 +704,7 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.9 Spotify App Management (`/api/v1/admin/spotify-apps`)
+### 20.9 Spotify App Management (`/api/v1/admin/spotify-apps`)
 
 - **List apps:** `GET /api/v1/admin/spotify-apps/`
 - **Get app:** `GET /api/v1/admin/spotify-apps/{app_id}`
@@ -646,19 +717,19 @@ tier default is used — use these for the frontend form's default/placeholder v
 
 ---
 
-### 19.10 Promo Codes (`/api/v1/admin/promo`)
+### 20.10 Promo Codes (`/api/v1/admin/promo`)
 
 - **Create promo:** `POST /api/v1/admin/promo/create`
 
 ---
 
-### 19.11 Similarity Index (`/api/v1/admin/similarity`)
+### 20.11 Similarity Index (`/api/v1/admin/similarity`)
 
 - **Rebuild FAISS index:** `POST /api/v1/admin/similarity/rebuild-index`
 
 ---
 
-### 19.12 Processing Jobs (`/api/v1/admin/processing`) — §C
+### 20.12 Processing Jobs (`/api/v1/admin/processing`) — §C
 
 Fire-and-forget background jobs. A POST returns immediately (`202 Accepted`) with a `job_id`; poll the GET endpoint for status.
 
@@ -776,7 +847,7 @@ Fire-and-forget background jobs. A POST returns immediately (`202 Accepted`) wit
 
 ---
 
-### 19.13 Ingestion Control (`/api/v1/admin/ingestion`) — §F
+### 20.13 Ingestion Control (`/api/v1/admin/ingestion`) — §F
 
 Manage the partner SFTP ingestion pipeline without running server commands.
 
@@ -848,7 +919,7 @@ Manage the partner SFTP ingestion pipeline without running server commands.
 
 ---
 
-### 19.14 Track Control (`/api/v1/admin/tracks`) — §G
+### 20.14 Track Control (`/api/v1/admin/tracks`) — §G
 
 Control whether individual partner tracks are searchable (active in the FAISS similarity index).
 
@@ -943,7 +1014,7 @@ Control whether individual partner tracks are searchable (active in the FAISS si
 
 ---
 
-### 19.15 Legacy Ingestion Pipeline Endpoints _(deprecated)_
+### 20.15 Legacy Ingestion Pipeline Endpoints _(deprecated)_
 
 The following routes are kept for backward compatibility but replaced by the admin-driven pipeline above. Do not use in new integrations.
 
@@ -958,7 +1029,7 @@ The following routes are kept for backward compatibility but replaced by the adm
 
 ---
 
-### 19.16 Logs & Audit Trail (`/api/v1/admin/logs`, `/api/v1/admin/operation-logs`)
+### 20.16 Logs & Audit Trail (`/api/v1/admin/logs`, `/api/v1/admin/operation-logs`)
 
 Read-only viewers for the two log tables the platform writes to MariaDB. All
 routes require an admin session and the `reports:view` permission. Responses use
