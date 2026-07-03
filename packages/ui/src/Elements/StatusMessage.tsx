@@ -17,7 +17,7 @@ const ErrorIcon = () => (
     </svg>
 );
 
-type StatusType = 'loading' | 'success' | 'error';
+type StatusType = 'loading' | 'success' | 'error' | 'custom';
 
 interface AdditionalButtonProps {
     text: string
@@ -33,6 +33,7 @@ interface StatusMessageProps {
     title?: string
     message?: string
     additionalButton?: AdditionalButtonProps
+    children?: React.ReactNode
 }
 
 export const StatusMessage: React.FC<StatusMessageProps> = ({
@@ -41,7 +42,8 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     status,
     title,
     message,
-    additionalButton
+    additionalButton,
+    children
 }) => {
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -76,13 +78,33 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
 
     if (!isOpen) return null
 
+    // Custom content state
+    if (status === 'custom') {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                {/* Backdrop with blur effect */}
+                <div
+                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
+                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
+                    onClick={onClose}
+                />
+
+                {/* Custom card content */}
+                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-15)] max-w-[var(--px-480)] w-full mx-[var(--px-20)] pointer-events-auto">
+                    {children}
+                </div>
+            </div>
+        )
+    }
+
     // Loading state
     if (status === 'loading') {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
                 {/* Backdrop with blur effect only */}
                 <div
-                    className="absolute inset-0 backdrop-blur-md pointer-events-auto"
+                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
+                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
                     onClick={onClose}
                 />
 
@@ -100,7 +122,8 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
             <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
                 {/* Backdrop with blur effect only */}
                 <div
-                    className="absolute inset-0 backdrop-blur-md pointer-events-auto"
+                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
+                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
                     onClick={onClose}
                 />
 
@@ -145,7 +168,8 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
             {/* Backdrop with blur effect only */}
             <div
-                className="absolute inset-0 backdrop-blur-md pointer-events-auto"
+                className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
+                style={{ WebkitBackdropFilter: 'blur(12px)' }}
                 onClick={onClose}
             />
 
