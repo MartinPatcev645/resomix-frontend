@@ -76,8 +76,8 @@ export function LandingLayout() {
             mode={mode}
             baseUrl={BASE_LANDING_URL}
             baseBetaUrl={BASE_BETA_URL}
-            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-20 relative"
-            onProfileClick={() => handleNavigate('/profile')}
+            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-[70] relative"
+            onProfileClick={() => handleNavigate(`${BASE_BETA_URL}/profile`)}
             onNavigate={handleNavigate}
             currentPath={location.pathname}
         />

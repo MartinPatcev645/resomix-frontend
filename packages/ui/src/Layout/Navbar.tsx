@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         if (onProfileClick) {
           onProfileClick();
         } else {
-          onNavigate?.("/profile");
+          onNavigate?.(`${baseBetaUrl}/profile`);
         }
       },
     },
@@ -60,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
           <path d="M4 4h2v16H4V4zm5 0h2v16H9V4zm4.5 0h2l3.5 16h-2l-3.5-16z" fill="currentColor" />
         </svg>
       ),
-      onClick: () => onNavigate?.("/library"),
+      onClick: () => onNavigate?.(`${baseBetaUrl}/library`),
     },
     {
       label: "Analysis",
@@ -70,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
           <path d="M3 3v18h18M7 17V13m4 4V9m4 8v-6m4 6V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
-      onClick: () => onNavigate?.("/analysis"),
+      onClick: () => onNavigate?.(`${baseBetaUrl}/analysis`),
     },
     {
       label: "Logout",
