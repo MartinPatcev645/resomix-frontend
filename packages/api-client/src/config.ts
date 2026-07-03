@@ -40,6 +40,7 @@ export interface ApiConfig {
     PLAYLIST_FORK: string;
     PLAYLIST_PLAY_SESSION: string;
     PLAYLISTS_GET_ALL: string;
+    PLAYLIST_DELETE: string;
     WAITLIST: string;
     WAITLIST_STATUS: string;
     SEGMENT_STATUS: string;
@@ -242,6 +243,7 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_FORK: "/api/v1/playlists/fork/",
     PLAYLIST_PLAY_SESSION: "/api/v1/playlists/{id}/play-session",
     PLAYLISTS_GET_ALL: "/api/v1/playlists/get-all-playlists/",
+    PLAYLIST_DELETE: "/api/v1/playlists",
     WAITLIST: "/api/v1/waitlist/",
     WAITLIST_STATUS: "/api/v1/waitlist/status",
     SEGMENT_STATUS: "/api/v1/similarity/segment-status/",

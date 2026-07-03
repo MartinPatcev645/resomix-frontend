@@ -159,5 +159,15 @@ export const unfollowPlaylist = async (playlistId: string) => {
   }
 };
 
+export const deleteMyPlaylist = async (playlistId: string) => {
+  try {
+    return await axiosWrapper<{ success: boolean; message: string }>(
+      authClient.delete(`${API_CONFIG.ENDPOINTS.PLAYLIST_DELETE}/${playlistId}`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 // Rating Methods (moved to ratings.ts)
 export { rateTrack, ratePlaylist } from "./ratings";
