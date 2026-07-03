@@ -253,11 +253,16 @@ async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_di
     treated strictly as literals, inserted safely, and do not lead to privilege escalation.
 
     CSV parsing/validation now runs on the (DB-less) Hetzner media server, which POSTs a
-    validated record set back. Alwyzon persists those records via ``apply_ingestion_result``
-    using the ORM (fully parameterized) — that is the layer where injection safety matters,
-    so we feed it a malicious result directly and assert literal storage.
+    validated record set back. In v2, ``apply_ingestion_result`` does NOT persist inline for a
+    completed+live batch — it claims the batch (stage=PERSISTING, status stays PROCESSING) and
+    hands the insert to a background task, which persists every record through
+    ``persist_records_chunked`` using the ORM (fully parameterized). That chunked persist is the
+    layer where injection safety matters, so we drive it directly with a malicious record set and
+    assert literal storage (tables intact, strings stored verbatim).
     """
     from app.services.ingestion_service import apply_ingestion_result
+    from app.services.ingestion_persist import persist_records_chunked
+    from app.services.ingestion_stages import Stage
 
     data = setup_two_partners
     p2 = data["p2"]
@@ -267,10 +272,11 @@ async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_di
     set_current_partner_id(partner_id)
 
     # Open a PROCESSING ingest_log, mirroring what the SFTP event hand-off creates.
+    party_id = f"HARD-PARTY-2-{partner_id}"
     async with AsyncSessionLocal() as db:
         log = IngestLog(
             partner_id=partner_id,
-            party_id=f"HARD-PARTY-2-{partner_id}",
+            party_id=party_id,
             package_folder=f"/srv/sftp/partners/{partner_id}/live",
             status="PROCESSING",
         )
@@ -280,33 +286,47 @@ async def test_csv_ingestion_malicious_payloads(setup_two_partners, temp_sftp_di
         log_id = log.id
 
     # Simulate the media server's "completed" result carrying hostile literals.
-    state = {
-        "status": "completed",
-        "env": "live",
-        "records": [
-            {
-                "isrc": "USSQL2600001",
-                "title": "'; DROP TABLE tracks; --",
-                "audio_filename": "track1.wav",
-                "display_artist": "Artist 1",
-            },
-            {
-                "isrc": "USPAT2600002",
-                "title": "../../../../etc/passwd",
-                "audio_filename": "track2.wav",
-                "display_artist": "Artist 2",
-            },
-        ],
-    }
+    records = [
+        {
+            "track_uuid": str(uuid.uuid4()),
+            "isrc": "USSQL2600001",
+            "title": "'; DROP TABLE tracks; --",
+            "audio_filename": "track1.wav",
+            "display_artist": "Artist 1",
+        },
+        {
+            "track_uuid": str(uuid.uuid4()),
+            "isrc": "USPAT2600002",
+            "title": "../../../../etc/passwd",
+            "audio_filename": "track2.wav",
+            "display_artist": "Artist 2",
+        },
+    ]
+    state = {"status": "completed", "env": "live", "records": records}
 
-    with patch("app.services.ingestion_service.dispatch_webhook.delay"):
+    # v2 claim step: applying the result marks the batch PERSISTING and enqueues the
+    # background persist ONCE — it does not finalize or persist inline (that is the task's job).
+    with patch("app.tasks.ingestion_tasks.persist_and_finalize_ingestion.delay") as mock_delay:
         async with AsyncSessionLocal() as db:
             log = await db.get(IngestLog, log_id)
             log = await apply_ingestion_result(db, log, state)
+        assert log.stage == Stage.PERSISTING
+        assert log.status == "PROCESSING"  # not finalized inline — the task does that
+        mock_delay.assert_called_once_with(log_id)
 
-    assert log.status == "COMPLETED"
+    # Run the persistence the background task would run, in-process, over the hostile records.
+    # This is the ORM insert path where injection safety must hold.
+    result = await persist_records_chunked(
+        partner_id=partner_id,
+        party_id=party_id,
+        log_id=log_id,
+        records=records,
+        env="live",
+    )
+    assert result["inserted"] == 2
+    assert result["failures"] == []
 
-    # Assert database is safe and strings are inserted literally.
+    # Assert database is safe and strings are inserted literally (tables intact).
     async with AsyncSessionLocal() as db:
         from sqlalchemy import select
         tracks = (

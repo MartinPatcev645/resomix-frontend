@@ -30,6 +30,7 @@ Query params:
       "name": "My Playlist",
       "is_public": false,
       "seed_track_title": "Whole Life (Original Mix)",
+      "seed_track_type": "internal",
       "fork_id": "",
       "num_tracks": 10,
       "play_time": 3600,
@@ -123,6 +124,7 @@ function useUserPlaylists(initialPage = 1, pageSize = 20) {
 | `name` | string | Playlist name |
 | `is_public` | boolean | Visibility status |
 | `seed_track_title` | string\|null | Seed track title (if available) |
+| `seed_track_type` | string\|null | Seed track origin: `"upload"` (user-uploaded) or `"internal"` (catalog). `null` if the playlist has no seed track |
 | `fork_id` | string | Original playlist UUID if forked (empty string if not) |
 | `num_tracks` | number | Number of tracks in playlist |
 | `play_time` | number | Total duration in seconds |
