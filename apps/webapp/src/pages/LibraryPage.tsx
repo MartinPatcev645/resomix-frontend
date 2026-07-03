@@ -192,17 +192,18 @@ export default function LibraryPage() {
                     key={playlist.uuid}
                     className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative rounded-xs hover:bg-white/5 transition-colors"
                   >
-                    <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-8)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
-                      {/* Icon + Name Link (Only clickable area for navigation) */}
+                    {/* Aligned top content layout */}
+                    <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                      {/* Clickable Image Link */}
                       <a
                         href={`/playlist?id=${playlist.uuid}`}
                         onClick={(e) => {
                           e.preventDefault();
                           navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
                         }}
-                        className="flex items-center gap-[var(--px-10)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                        className="flex-shrink-0 cursor-pointer"
                       >
-                        <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] flex-shrink-0 bg-black/40">
+                        <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors">
                           <img
                             src={TrackSvg}
                             draggable={false}
@@ -210,21 +211,33 @@ export default function LibraryPage() {
                             className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
                           />
                         </div>
-                        <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
-                          {playlist.name}
-                        </h3>
                       </a>
-                      
-                      {/* Meta Info Row */}
-                      <div className="pl-[var(--px-38)] md:pl-0">
-                        <p className="text-[length:var(--px-10)] font-light font-fira text-white/60">
-                          {playlist.trackCount} tracks | {playlist.duration} | Created{" "}
-                          {new Date(playlist.createdAt).toLocaleDateString()}
-                        </p>
+
+                      {/* Stacked Text Column */}
+                      <div className="flex flex-col gap-[var(--px-4)] flex-grow">
+                        {/* Clickable Title Link */}
+                        <a
+                          href={`/playlist?id=${playlist.uuid}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
+                          }}
+                          className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                        >
+                          {playlist.name}
+                        </a>
+                        
+                        {/* Meta Info Row - always stacked below the title on right of image */}
+                        <div className="text-[length:var(--px-10)] font-light font-fira text-white/60">
+                          <p>
+                            {playlist.trackCount} tracks | {playlist.duration} | Created{" "}
+                            {new Date(playlist.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0">
+                    <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle">
                       <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
                         <div className="text-white/60">
                           {playlist.is_public ? (
@@ -328,7 +341,7 @@ export default function LibraryPage() {
                   if (track.playlist_uuid) {
                     trackDropdownItems.push({
                       id: `track-view-playlist-${track.id}`,
-                      label: "View Sonic Discovery",
+                      label: "Sonic Discovery",
                       icon: (
                         <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="8" y1="6" x2="21" y2="6" />
@@ -383,45 +396,82 @@ export default function LibraryPage() {
                       key={track.id}
                       className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors"
                     >
-                      <div className="flex flex-col gap-[var(--px-4)] flex-grow pr-[var(--px-15)]">
-                        {/* Icon + Title Link (Only clickable area for navigation) */}
-                        <a
-                          href={track.playlist_uuid ? `/playlist?id=${track.playlist_uuid}` : `/?id=${track.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (track.playlist_uuid) {
-                              navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
-                            } else {
-                              navigate(`/?id=${track.id}`);
-                            }
-                          }}
-                          className="flex items-center gap-[var(--px-10)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                        >
-                          <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] flex-shrink-0 bg-black/40">
-                            <img
-                              src={TrackSvg}
-                              draggable={false}
-                              alt="Track Icon"
-                              className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
-                            />
-                          </div>
-                          <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
-                            {track.title}
-                          </h3>
-                        </a>
+                      {/* Aligned top content layout */}
+                      <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                        {track.playlist_uuid ? (
+                          <>
+                            {/* Clickable Image Link */}
+                            <a
+                              href={`/playlist?id=${track.playlist_uuid}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
+                              }}
+                              className="flex-shrink-0 cursor-pointer"
+                            >
+                              <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors">
+                                <img
+                                  src={TrackSvg}
+                                  draggable={false}
+                                  alt="Track Icon"
+                                  className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
+                                />
+                              </div>
+                            </a>
 
-                        {/* Meta information row(s) below the title (desktop + mobile) */}
-                        <div className="pl-[var(--px-38)] md:pl-[var(--px-54)] flex flex-col md:flex-row md:items-start md:items-center gap-[var(--px-2)] md:gap-[var(--px-20)] text-[length:var(--px-10)] font-light font-fira text-white/60">
-                          <span>{track.artist} | {track.year} | {track.label}</span>
-                          {track.playlist_uuid && (
-                            <span className="text-white/40 md:border-l md:border-white/20 md:pl-[var(--px-20)]">
-                              Playlist UUID: {track.playlist_uuid}
-                            </span>
-                          )}
-                        </div>
+                            {/* Stacked Text Column */}
+                            <div className="flex flex-col gap-[var(--px-4)] flex-grow">
+                              {/* Clickable Title Link */}
+                              <a
+                                href={`/playlist?id=${track.playlist_uuid}`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
+                                }}
+                                className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                              >
+                                {track.title}
+                              </a>
+
+                              {/* Meta Info Row - to the right of image, below title */}
+                              <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-4)] md:gap-[var(--px-20)] text-[length:var(--px-10)] font-light font-fira text-white/60">
+                                <span>{track.artist} | {track.year} | {track.label}</span>
+                                <span className="text-white/40 md:border-l md:border-white/20 md:pl-[var(--px-20)]">
+                                  Playlist UUID: {track.playlist_uuid}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Non-clickable Image */}
+                            <div className="flex-shrink-0">
+                              <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40">
+                                <img
+                                  src={TrackSvg}
+                                  draggable={false}
+                                  alt="Track Icon"
+                                  className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Stacked Text Column */}
+                            <div className="flex flex-col gap-[var(--px-4)] flex-grow">
+                              <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight">
+                                {track.title}
+                              </h3>
+
+                              {/* Meta Info Row - to the right of image, below title */}
+                              <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-4)] md:gap-[var(--px-20)] text-[length:var(--px-10)] font-light font-fira text-white/60">
+                                <span>{track.artist} | {track.year} | {track.label}</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle" onClick={e => e.stopPropagation()}>
                         <span className="text-[length:var(--px-10)] font-light font-fira text-white/40">
                           {track.duration}
                         </span>
