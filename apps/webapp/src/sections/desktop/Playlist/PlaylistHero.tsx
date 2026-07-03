@@ -191,15 +191,31 @@ const PlaylistHero: React.FC = () => {
           <div></div>
           <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
             <div className="flex w-full justify-between items-center">
-              <a
-                aria-label="Back to Search"
-                href={BASE_BETA_URL}
-                className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
-                id="playlist-hero-back-link"
-              >
-                <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
-                Back to Search
-              </a>
+              {location.state?.from === "library" ? (
+                <a
+                  aria-label="Back to Library"
+                  href="/library"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/library");
+                  }}
+                  className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
+                  id="playlist-hero-back-link"
+                >
+                  <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
+                  Back to Library
+                </a>
+              ) : (
+                <a
+                  aria-label="Back to Search"
+                  href={BASE_BETA_URL}
+                  className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
+                  id="playlist-hero-back-link"
+                >
+                  <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
+                  Back to Search
+                </a>
+              )}
               <div className="flex items-center gap-[var(--px-8)]">
                 <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
                   <ToggleButton

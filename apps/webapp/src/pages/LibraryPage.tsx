@@ -190,12 +190,18 @@ export default function LibraryPage() {
                 {playlists.map((playlist) => (
                   <div
                     key={playlist.uuid}
-                    onClick={() => navigate(`/playlist?id=${playlist.uuid}`)}
-                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors cursor-pointer rounded-xs"
+                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative rounded-xs hover:bg-white/5 transition-colors"
                   >
                     <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-8)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
-                      {/* Icon + Name Row */}
-                      <div className="flex items-center gap-[var(--px-10)]">
+                      {/* Icon + Name Link (Only clickable area for navigation) */}
+                      <a
+                        href={`/playlist?id=${playlist.uuid}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
+                        }}
+                        className="flex items-center gap-[var(--px-10)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                      >
                         <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] flex-shrink-0 bg-black/40">
                           <img
                             src={TrackSvg}
@@ -204,10 +210,10 @@ export default function LibraryPage() {
                             className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
                           />
                         </div>
-                        <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-[var(--color-primary)] leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
+                        <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
                           {playlist.name}
                         </h3>
-                      </div>
+                      </a>
                       
                       {/* Meta Info Row */}
                       <div className="pl-[var(--px-38)] md:pl-0">
@@ -246,13 +252,13 @@ export default function LibraryPage() {
                             {[
                               {
                                 id: `playlist-open-${playlist.uuid}`,
-                                label: "Open",
+                                label: "Open in New Tab",
                                 icon: (
                                   <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
                                   </svg>
                                 ),
-                                onClick: () => navigate(`/playlist?id=${playlist.uuid}`),
+                                onClick: () => window.open(`/playlist?id=${playlist.uuid}`, "_blank"),
                               },
                               {
                                 id: `playlist-share-${playlist.uuid}`,
@@ -333,7 +339,7 @@ export default function LibraryPage() {
                           <line x1="3" y1="18" x2="3.01" y2="18" />
                         </svg>
                       ),
-                      onClick: () => navigate(`/playlist?id=${track.playlist_uuid}`),
+                      onClick: () => navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } }),
                     });
                   }
                   if (track.has_analysis) {
@@ -356,7 +362,7 @@ export default function LibraryPage() {
                           <path d="M12 2v20M17 5v14M22 9v6M7 7v10M2 10v4" />
                         </svg>
                       ),
-                      onClick: () => navigate(`/?id=${track.id}`),
+                      onClick: () => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon"),
                     });
                   }
                   trackDropdownItems.push({
@@ -375,18 +381,22 @@ export default function LibraryPage() {
                   return (
                     <div
                       key={track.id}
-                      onClick={() => {
-                        if (track.playlist_uuid) {
-                          navigate(`/playlist?id=${track.playlist_uuid}`);
-                        } else {
-                          navigate(`/?id=${track.id}`);
-                        }
-                      }}
-                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors cursor-pointer rounded-xs"
+                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors"
                     >
-                      <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-8)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
-                        {/* Icon + Title Row */}
-                        <div className="flex items-center gap-[var(--px-10)]">
+                      <div className="flex flex-col gap-[var(--px-4)] flex-grow pr-[var(--px-15)]">
+                        {/* Icon + Title Link (Only clickable area for navigation) */}
+                        <a
+                          href={track.playlist_uuid ? `/playlist?id=${track.playlist_uuid}` : `/?id=${track.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (track.playlist_uuid) {
+                              navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
+                            } else {
+                              navigate(`/?id=${track.id}`);
+                            }
+                          }}
+                          className="flex items-center gap-[var(--px-10)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                        >
                           <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] flex-shrink-0 bg-black/40">
                             <img
                               src={TrackSvg}
@@ -395,16 +405,19 @@ export default function LibraryPage() {
                               className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
                             />
                           </div>
-                          <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-[var(--color-primary)] leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
+                          <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
                             {track.title}
                           </h3>
-                        </div>
+                        </a>
 
-                        {/* Meta information row(s) below on mobile */}
-                        <div className="pl-[var(--px-38)] md:pl-0">
-                          <p className="text-[length:var(--px-10)] font-light font-fira text-white/60">
-                            {track.artist} | {track.year} | {track.label}
-                          </p>
+                        {/* Meta information row(s) below the title (desktop + mobile) */}
+                        <div className="pl-[var(--px-38)] md:pl-[var(--px-54)] flex flex-col md:flex-row md:items-start md:items-center gap-[var(--px-2)] md:gap-[var(--px-20)] text-[length:var(--px-10)] font-light font-fira text-white/60">
+                          <span>{track.artist} | {track.year} | {track.label}</span>
+                          {track.playlist_uuid && (
+                            <span className="text-white/40 md:border-l md:border-white/20 md:pl-[var(--px-20)]">
+                              Playlist UUID: {track.playlist_uuid}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -433,15 +446,12 @@ export default function LibraryPage() {
                                     <div className={`border-t border-dotted ${item.separated ? 'border-slate-200/60' : 'border-slate-200/30'} mx-[var(--px-12)] my-[var(--px-4)]`} />
                                   )}
                                   <button
-                                    disabled={(item as any).disabled}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setActiveMenuId(null);
                                       item.onClick(e);
                                     }}
-                                    className={`w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ${
-                                      item.danger ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" : "text-white/80 hover:text-white"
-                                    }`}
+                                    className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-white/80 hover:text-white"
                                   >
                                     <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
                                       {item.icon}
