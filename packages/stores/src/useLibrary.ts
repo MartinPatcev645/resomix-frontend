@@ -27,7 +27,7 @@ export interface LibraryStore {
   tracks: LibraryTrack[];
   loading: boolean;
   error: string | null;
-  activeTab: 'playlists' | 'tracks';
+  activeTab: 'playlists' | 'favorites' | 'tracks';
   
   // Pagination & counts
   playlistsPage: number;
@@ -42,7 +42,7 @@ export interface LibraryStore {
   setTracks: (tracks: LibraryTrack[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setActiveTab: (tab: 'playlists' | 'tracks') => void;
+  setActiveTab: (tab: 'playlists' | 'favorites' | 'tracks') => void;
   
   setPlaylistsPagination: (page: number, totalPages: number, total: number) => void;
   setTracksPagination: (page: number, totalPages: number, total: number) => void;

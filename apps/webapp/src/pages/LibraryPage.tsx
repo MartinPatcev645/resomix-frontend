@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { StatusMessage, Tooltip, PrivateIcon, PublicIcon } from "@resomix/ui";
+import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -39,6 +39,29 @@ export default function LibraryPage() {
   // Playlist deletion confirmation state
   const [playlistToDelete, setPlaylistToDelete] = useState<string | null>(null);
 
+  // Set of favorited playlist UUIDs (frontend-only toggle)
+  const [favoritedPlaylists, setFavoritedPlaylists] = useState<Set<string>>(new Set());
+
+  // Initialize favorited set with loaded playlists by default
+  useEffect(() => {
+    if (playlists.length > 0 && favoritedPlaylists.size === 0) {
+      setFavoritedPlaylists(new Set(playlists.map((p) => p.uuid)));
+    }
+  }, [playlists, favoritedPlaylists.size]);
+
+  const toggleFavorite = (uuid: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoritedPlaylists((prev) => {
+      const next = new Set(prev);
+      if (next.has(uuid)) {
+        next.delete(uuid);
+      } else {
+        next.add(uuid);
+      }
+      return next;
+    });
+  };
+
   // Three-dots dropdown active menu ID
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
@@ -52,7 +75,7 @@ export default function LibraryPage() {
   // Sync activeTab with URL query parameter on mount and when URL parameter changes
   const tabParam = searchParams.get("tab");
   useEffect(() => {
-    if (tabParam === "playlists" || tabParam === "tracks") {
+    if (tabParam === "playlists" || tabParam === "favorites" || tabParam === "tracks") {
       setActiveTab(tabParam);
     } else {
       // If no tab in URL, sync activeTab back to URL parameter
@@ -72,7 +95,7 @@ export default function LibraryPage() {
   // Initial load and tab/page change reactions
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (activeTab === "playlists") {
+    if (activeTab === "playlists" || activeTab === "favorites") {
       loadPlaylists(playlistsPage);
     } else {
       loadTracks(tracksPage);
@@ -145,7 +168,7 @@ export default function LibraryPage() {
   };
 
   const handlePrevPage = () => {
-    if (activeTab === "playlists") {
+    if (activeTab === "playlists" || activeTab === "favorites") {
       if (playlistsPage > 1) {
         loadPlaylists(playlistsPage - 1);
       }
@@ -157,7 +180,7 @@ export default function LibraryPage() {
   };
 
   const handleNextPage = () => {
-    if (activeTab === "playlists") {
+    if (activeTab === "playlists" || activeTab === "favorites") {
       if (playlistsPage < playlistsTotalPages) {
         loadPlaylists(playlistsPage + 1);
       }
@@ -194,6 +217,16 @@ export default function LibraryPage() {
               Playlists ({playlists.length})
             </button>
             <button
+              onClick={() => setSearchParams({ tab: "favorites" }, { replace: true })}
+              className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
+                activeTab === "favorites"
+                  ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
+                  : "text-slate-400 hover:text-[var(--color-primary)]"
+              }`}
+            >
+              Favorites ({playlists.length})
+            </button>
+            <button
               onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
               className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
                 activeTab === "tracks"
@@ -215,11 +248,13 @@ export default function LibraryPage() {
             <div className="p-[var(--px-40)] text-center text-slate-400 font-fira">
               Loading your library...
             </div>
-          ) : activeTab === "playlists" ? (
+          ) : activeTab === "playlists" || activeTab === "favorites" ? (
             playlists.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
-                  Your library has no playlists. Generate some playlists by searching or uploading a track.
+                  {activeTab === "favorites"
+                    ? "You have no favorited playlists yet."
+                    : "Your library has no playlists. Generate some playlists by searching or uploading a track."}
                 </p>
               </div>
             ) : (
@@ -275,15 +310,31 @@ export default function LibraryPage() {
                     </div>
 
                     <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle">
-                      <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
-                        <div className="text-white/60">
-                          {playlist.is_public ? (
-                            <PublicIcon customWidth="14" customHeight="14" disableHover />
-                          ) : (
-                            <PrivateIcon customWidth="14" customHeight="14" disableHover />
-                          )}
-                        </div>
-                      </Tooltip>
+                      {activeTab === "favorites" ? (
+                        <Tooltip message={favoritedPlaylists.has(playlist.uuid) ? "Remove from Favorites" : "Add to Favorites"}>
+                          <button
+                            onClick={(e) => toggleFavorite(playlist.uuid, e)}
+                            className="text-white/60 hover:text-white cursor-pointer mt-[var(--px-2)] flex items-center justify-center transition-all p-[var(--px-4)] hover:scale-110 active:scale-90 bg-transparent border-0 outline-none"
+                            aria-label={favoritedPlaylists.has(playlist.uuid) ? "Remove from Favorites" : "Add to Favorites"}
+                          >
+                            {favoritedPlaylists.has(playlist.uuid) ? (
+                              <HeartFilledIcon customWidth="22" customHeight="22" className="text-white" disableHover={true} />
+                            ) : (
+                              <HeartStrokeIcon customWidth="22" customHeight="22" className="text-white/60 hover:text-white" />
+                            )}
+                          </button>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
+                          <div className="text-white/60">
+                            {playlist.is_public ? (
+                              <PublicIcon customWidth="14" customHeight="14" disableHover />
+                            ) : (
+                              <PrivateIcon customWidth="14" customHeight="14" disableHover />
+                            )}
+                          </div>
+                        </Tooltip>
+                      )}
 
                       {/* Dropdown Actions */}
                       <div className="relative" onClick={e => e.stopPropagation()}>
