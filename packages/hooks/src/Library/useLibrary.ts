@@ -4,8 +4,7 @@ import {
   getAllPlaylists, 
   getMyTracks, 
   deleteMyTrack, 
-  unfollowPlaylist,
-  removeFavorite,
+  deleteMyPlaylist,
   changePlaylistVisibility
 } from '@resomix/api-client';
 
@@ -108,33 +107,35 @@ export function useLibrary() {
           currentTracksTotalPages,
           Math.max(0, currentTracksTotal - 1)
         );
+        // Reload playlists to reflect cascaded deletion of generated playlists
+        loadPlaylists(playlistsPage);
         return { success: true };
       }
       return { success: false, error: resp.error || "Failed to delete track" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to delete track" };
     }
-  }, [setTracks, setTracksPagination]);
+  }, [setTracks, setTracksPagination, loadPlaylists, playlistsPage]);
 
   const removePlaylist = useCallback(async (uuid: string) => {
     try {
-      await Promise.allSettled([
-        unfollowPlaylist(uuid),
-        removeFavorite(uuid)
-      ]);
-      const currentPlaylists = useLibraryStore.getState().playlists;
-      const currentPlaylistsPage = useLibraryStore.getState().playlistsPage;
-      const currentPlaylistsTotalPages = useLibraryStore.getState().playlistsTotalPages;
-      const currentPlaylistsTotal = useLibraryStore.getState().playlistsTotal;
+      const resp = await deleteMyPlaylist(uuid);
+      if (resp.success) {
+        const currentPlaylists = useLibraryStore.getState().playlists;
+        const currentPlaylistsPage = useLibraryStore.getState().playlistsPage;
+        const currentPlaylistsTotalPages = useLibraryStore.getState().playlistsTotalPages;
+        const currentPlaylistsTotal = useLibraryStore.getState().playlistsTotal;
 
-      const updatedPlaylists = currentPlaylists.filter(p => p.uuid !== uuid);
-      setPlaylists(updatedPlaylists);
-      setPlaylistsPagination(
-        currentPlaylistsPage,
-        currentPlaylistsTotalPages,
-        Math.max(0, currentPlaylistsTotal - 1)
-      );
-      return { success: true };
+        const updatedPlaylists = currentPlaylists.filter(p => p.uuid !== uuid);
+        setPlaylists(updatedPlaylists);
+        setPlaylistsPagination(
+          currentPlaylistsPage,
+          currentPlaylistsTotalPages,
+          Math.max(0, currentPlaylistsTotal - 1)
+        );
+        return { success: true };
+      }
+      return { success: false, error: (resp as any).error || "Failed to delete playlist" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to delete playlist" };
     }

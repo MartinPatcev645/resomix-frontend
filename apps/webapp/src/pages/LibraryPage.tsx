@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { StatusMessage, Tooltip, PrivateIcon, PublicIcon } from "@resomix/ui";
+import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -33,6 +33,35 @@ export default function LibraryPage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [statusTitle, setStatusTitle] = useState("");
 
+  // Track deletion confirmation state
+  const [trackToDelete, setTrackToDelete] = useState<{ id: string; title: string } | null>(null);
+
+  // Playlist deletion confirmation state
+  const [playlistToDelete, setPlaylistToDelete] = useState<string | null>(null);
+
+  // Set of favorited playlist UUIDs (frontend-only toggle)
+  const [favoritedPlaylists, setFavoritedPlaylists] = useState<Set<string>>(new Set());
+
+  // Initialize favorited set with loaded playlists by default
+  useEffect(() => {
+    if (playlists.length > 0 && favoritedPlaylists.size === 0) {
+      setFavoritedPlaylists(new Set(playlists.map((p) => p.uuid)));
+    }
+  }, [playlists, favoritedPlaylists.size]);
+
+  const toggleFavorite = (uuid: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoritedPlaylists((prev) => {
+      const next = new Set(prev);
+      if (next.has(uuid)) {
+        next.delete(uuid);
+      } else {
+        next.add(uuid);
+      }
+      return next;
+    });
+  };
+
   // Three-dots dropdown active menu ID
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
@@ -46,7 +75,7 @@ export default function LibraryPage() {
   // Sync activeTab with URL query parameter on mount and when URL parameter changes
   const tabParam = searchParams.get("tab");
   useEffect(() => {
-    if (tabParam === "playlists" || tabParam === "tracks") {
+    if (tabParam === "playlists" || tabParam === "favorites" || tabParam === "tracks") {
       setActiveTab(tabParam);
     } else {
       // If no tab in URL, sync activeTab back to URL parameter
@@ -66,15 +95,23 @@ export default function LibraryPage() {
   // Initial load and tab/page change reactions
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (activeTab === "playlists") {
+    if (activeTab === "playlists" || activeTab === "favorites") {
       loadPlaylists(playlistsPage);
     } else {
       loadTracks(tracksPage);
     }
   }, [isAuthenticated, activeTab, playlistsPage, tracksPage, loadPlaylists, loadTracks]);
 
-  const handleDeletePlaylist = async (uuid: string, e: React.MouseEvent) => {
+  const handleDeletePlaylist = (uuid: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setPlaylistToDelete(uuid);
+  };
+
+  const handleConfirmDeletePlaylist = async () => {
+    if (!playlistToDelete) return;
+    const uuid = playlistToDelete;
+    setPlaylistToDelete(null);
+    handleStatusChange("loading", "Removing playlist...", "Removing");
     const result = await removePlaylist(uuid);
     if (result.success) {
       handleStatusChange("success", "Playlist removed from your library.", "Success");
@@ -85,7 +122,18 @@ export default function LibraryPage() {
 
   const handleDeleteTrack = async (uuid: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const result = await removeTrack(uuid);
+    const track = tracks.find((t) => t.id === uuid);
+    if (track) {
+      setTrackToDelete({ id: uuid, title: track.title });
+    }
+  };
+
+  const handleConfirmDeleteTrack = async () => {
+    if (!trackToDelete) return;
+    const { id } = trackToDelete;
+    setTrackToDelete(null);
+    handleStatusChange("loading", "Deleting track...", "Deleting");
+    const result = await removeTrack(id);
     if (result.success) {
       handleStatusChange("success", "Track deleted successfully.", "Success");
     } else {
@@ -120,7 +168,7 @@ export default function LibraryPage() {
   };
 
   const handlePrevPage = () => {
-    if (activeTab === "playlists") {
+    if (activeTab === "playlists" || activeTab === "favorites") {
       if (playlistsPage > 1) {
         loadPlaylists(playlistsPage - 1);
       }
@@ -132,7 +180,7 @@ export default function LibraryPage() {
   };
 
   const handleNextPage = () => {
-    if (activeTab === "playlists") {
+    if (activeTab === "playlists" || activeTab === "favorites") {
       if (playlistsPage < playlistsTotalPages) {
         loadPlaylists(playlistsPage + 1);
       }
@@ -169,6 +217,16 @@ export default function LibraryPage() {
               Playlists ({playlists.length})
             </button>
             <button
+              onClick={() => setSearchParams({ tab: "favorites" }, { replace: true })}
+              className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
+                activeTab === "favorites"
+                  ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
+                  : "text-slate-400 hover:text-[var(--color-primary)]"
+              }`}
+            >
+              Favorites ({playlists.length})
+            </button>
+            <button
               onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
               className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
                 activeTab === "tracks"
@@ -190,11 +248,13 @@ export default function LibraryPage() {
             <div className="p-[var(--px-40)] text-center text-slate-400 font-fira">
               Loading your library...
             </div>
-          ) : activeTab === "playlists" ? (
+          ) : activeTab === "playlists" || activeTab === "favorites" ? (
             playlists.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
-                  Your library has no playlists. Generate some playlists by searching or uploading a track.
+                  {activeTab === "favorites"
+                    ? "You have no favorited playlists yet."
+                    : "Your library has no playlists. Generate some playlists by searching or uploading a track."}
                 </p>
               </div>
             ) : (
@@ -250,15 +310,31 @@ export default function LibraryPage() {
                     </div>
 
                     <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle">
-                      <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
-                        <div className="text-white/60">
-                          {playlist.is_public ? (
-                            <PublicIcon customWidth="14" customHeight="14" disableHover />
-                          ) : (
-                            <PrivateIcon customWidth="14" customHeight="14" disableHover />
-                          )}
-                        </div>
-                      </Tooltip>
+                      {activeTab === "favorites" ? (
+                        <Tooltip message={favoritedPlaylists.has(playlist.uuid) ? "Remove from Favorites" : "Add to Favorites"}>
+                          <button
+                            onClick={(e) => toggleFavorite(playlist.uuid, e)}
+                            className="text-white/60 hover:text-white cursor-pointer mt-[var(--px-2)] flex items-center justify-center transition-all p-[var(--px-4)] hover:scale-110 active:scale-90 bg-transparent border-0 outline-none"
+                            aria-label={favoritedPlaylists.has(playlist.uuid) ? "Remove from Favorites" : "Add to Favorites"}
+                          >
+                            {favoritedPlaylists.has(playlist.uuid) ? (
+                              <HeartFilledIcon customWidth="22" customHeight="22" className="text-white" disableHover={true} />
+                            ) : (
+                              <HeartStrokeIcon customWidth="22" customHeight="22" className="text-white/60 hover:text-white" />
+                            )}
+                          </button>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
+                          <div className="text-white/60">
+                            {playlist.is_public ? (
+                              <PublicIcon customWidth="14" customHeight="14" disableHover />
+                            ) : (
+                              <PrivateIcon customWidth="14" customHeight="14" disableHover />
+                            )}
+                          </div>
+                        </Tooltip>
+                      )}
 
                       {/* Dropdown Actions */}
                       <div className="relative" onClick={e => e.stopPropagation()}>
@@ -572,6 +648,133 @@ export default function LibraryPage() {
         message={statusMessage}
         title={statusTitle}
       />
+
+      <StatusMessage
+        isOpen={!!trackToDelete}
+        onClose={() => setTrackToDelete(null)}
+        status="custom"
+      >
+        <DeleteTrackModalContent
+          trackName={trackToDelete?.title || ""}
+          onClose={() => setTrackToDelete(null)}
+          onConfirm={handleConfirmDeleteTrack}
+          isOpen={!!trackToDelete}
+        />
+      </StatusMessage>
+
+      <StatusMessage
+        isOpen={!!playlistToDelete}
+        onClose={() => setPlaylistToDelete(null)}
+        status="custom"
+      >
+        {/* Warning icon */}
+        <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[var(--px-58)] h-[var(--px-58)]" aria-hidden="true">
+          <circle cx="29" cy="29" r="28.815" stroke="white" strokeWidth="0.37" />
+          <path d="M29 20v12" stroke="white" strokeWidth="0.37" strokeLinecap="round" />
+          <circle cx="29" cy="38" r="1.5" fill="white" />
+        </svg>
+
+        <div className="text-center w-full">
+          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+            Delete Playlist
+          </div>
+          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)]">
+            Are you sure you want to delete this playlist? This action is non-recoverable.
+          </div>
+        </div>
+
+        <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
+          <button 
+            onClick={() => setPlaylistToDelete(null)} 
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmDeletePlaylist}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center"
+          >
+            Delete
+          </button>
+        </div>
+      </StatusMessage>
     </section>
+  );
+}
+
+interface DeleteTrackModalContentProps {
+  isOpen: boolean;
+  trackName: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+function DeleteTrackModalContent({ isOpen, trackName, onClose, onConfirm }: DeleteTrackModalContentProps) {
+  const [countdown, setCountdown] = useState(4);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCountdown(4);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* Warning icon */}
+      <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[var(--px-58)] h-[var(--px-58)]" aria-hidden="true">
+        <circle cx="29" cy="29" r="28.815" stroke="white" strokeWidth="0.37" />
+        <path d="M29 20v12" stroke="white" strokeWidth="0.37" strokeLinecap="round" />
+        <circle cx="29" cy="38" r="1.5" fill="white" />
+      </svg>
+
+      <div className="text-center w-full">
+        <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+          Delete Track
+        </div>
+        <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)] text-slate-300">
+          Are you sure you want to delete <span className="font-semibold text-white">"{trackName}"</span>?
+        </div>
+        <div className="text-left bg-white/5 border border-dotted border-white/10 p-[var(--px-15)] mt-[var(--px-15)] rounded-xs">
+          <p className="text-[length:var(--px-11)] font-semibold font-helvetica text-white uppercase tracking-wider mb-[var(--px-8)]">
+            This action is non-recoverable and will permanently delete:
+          </p>
+          <ul className="list-disc pl-[var(--px-15)] text-[length:var(--px-11)] font-light font-fira text-slate-400 flex flex-col gap-[var(--px-4)]">
+            <li>His playback 30s chunk and peaks</li>
+            <li>The embedding fingerprint from pyxis 1</li>
+            <li>The playlist created by that track</li>
+            <li>The analysis created by that track</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
+        <button
+          onClick={onClose}
+          className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          disabled={countdown > 0}
+          onClick={onConfirm}
+          className={`flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center ${
+            countdown > 0
+              ? 'border-red-500/30 text-red-500/30 cursor-not-allowed'
+              : 'border-red-500 text-red-500 hover:bg-red-500 hover:text-white'
+          }`}
+        >
+          {countdown > 0 ? `Delete (${countdown}s)` : 'Delete'}
+        </button>
+      </div>
+    </>
   );
 }
