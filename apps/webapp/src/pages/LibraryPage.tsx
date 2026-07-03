@@ -143,7 +143,7 @@ export default function LibraryPage() {
           </p>
         </header>
 
-        <div className="mx-auto w-full max-w-4xl px-[var(--px-20)] lg:px-0">
+        <div className="mx-auto w-full max-w-4xl px-[var(--px-10)] md:px-0">
           {/* Tab Switcher */}
           <div className="flex justify-center gap-[var(--px-30)] mb-[var(--px-40)] border-b border-dotted border-slate-200/30 pb-[var(--px-15)]">
             <button
@@ -191,29 +191,34 @@ export default function LibraryPage() {
                   <div
                     key={playlist.uuid}
                     onClick={() => navigate(`/playlist?id=${playlist.uuid}`)}
-                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors cursor-pointer rounded-xs"
+                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors cursor-pointer rounded-xs"
                   >
-                    <div className="flex items-center gap-[var(--px-20)]">
-                      <div className="border border-dotted border-slate-200 p-[var(--px-10)] flex-shrink-0 bg-black/40">
-                        <img
-                          src={TrackSvg}
-                          draggable={false}
-                          alt="Playlist Icon"
-                          className="w-[var(--px-32)] h-[var(--px-32)]"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <h3 className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-[var(--color-primary)] leading-tight">
+                    <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-8)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                      {/* Icon + Name Row */}
+                      <div className="flex items-center gap-[var(--px-10)]">
+                        <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] flex-shrink-0 bg-black/40">
+                          <img
+                            src={TrackSvg}
+                            draggable={false}
+                            alt="Playlist Icon"
+                            className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
+                          />
+                        </div>
+                        <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-[var(--color-primary)] leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
                           {playlist.name}
                         </h3>
-                        <p className="text-[length:var(--px-10)] font-light font-fira text-white/60 mt-[var(--px-4)]">
+                      </div>
+                      
+                      {/* Meta Info Row */}
+                      <div className="pl-[var(--px-38)] md:pl-0">
+                        <p className="text-[length:var(--px-10)] font-light font-fira text-white/60">
                           {playlist.trackCount} tracks | {playlist.duration} | Created{" "}
                           {new Date(playlist.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-[var(--px-15)]">
+                    <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0">
                       <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
                         <div className="text-white/60">
                           {playlist.is_public ? (
@@ -228,7 +233,7 @@ export default function LibraryPage() {
                       <div className="relative" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => setActiveMenuId(activeMenuId === playlist.uuid ? null : playlist.uuid)}
-                          className="p-[var(--px-8)] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                          className="p-[var(--px-6)] md:p-[var(--px-8)] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
                           aria-label="Actions"
                         >
                           <svg className="w-[var(--px-18)] h-[var(--px-18)] fill-current text-white/70 hover:text-white" viewBox="0 0 24 24">
@@ -317,7 +322,7 @@ export default function LibraryPage() {
                   if (track.playlist_uuid) {
                     trackDropdownItems.push({
                       id: `track-view-playlist-${track.id}`,
-                      label: "View Playlist",
+                      label: "View Sonic Discovery",
                       icon: (
                         <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="8" y1="6" x2="21" y2="6" />
@@ -344,16 +349,14 @@ export default function LibraryPage() {
                     });
                   } else {
                     trackDropdownItems.push({
-                      id: `track-analyzing-${track.id}`,
-                      label: "Analyzing Track...",
-                      disabled: true,
+                      id: `track-analyze-${track.id}`,
+                      label: "Analyze Track",
                       icon: (
-                        <svg className="w-[var(--px-14)] h-[var(--px-14)] animate-spin stroke-current" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2v20M17 5v14M22 9v6M7 7v10M2 10v4" />
                         </svg>
                       ),
-                      onClick: () => {},
+                      onClick: () => navigate(`/?id=${track.id}`),
                     });
                   }
                   trackDropdownItems.push({
@@ -379,28 +382,33 @@ export default function LibraryPage() {
                           navigate(`/?id=${track.id}`);
                         }
                       }}
-                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors cursor-pointer rounded-xs"
+                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors cursor-pointer rounded-xs"
                     >
-                      <div className="flex items-center gap-[var(--px-20)]">
-                        <div className="border border-dotted border-slate-200 p-[var(--px-10)] flex-shrink-0 bg-black/40">
-                          <img
-                            src={TrackSvg}
-                            draggable={false}
-                            alt="Track Icon"
-                            className="w-[var(--px-32)] h-[var(--px-32)]"
-                          />
-                        </div>
-                        <div className="flex flex-col">
-                          <h3 className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-[var(--color-primary)] leading-tight">
+                      <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-8)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                        {/* Icon + Title Row */}
+                        <div className="flex items-center gap-[var(--px-10)]">
+                          <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] flex-shrink-0 bg-black/40">
+                            <img
+                              src={TrackSvg}
+                              draggable={false}
+                              alt="Track Icon"
+                              className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
+                            />
+                          </div>
+                          <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-[var(--color-primary)] leading-tight break-words max-w-[var(--px-220)] md:max-w-none">
                             {track.title}
                           </h3>
-                          <p className="text-[length:var(--px-10)] font-light font-fira text-white/60 mt-[var(--px-4)]">
+                        </div>
+
+                        {/* Meta information row(s) below on mobile */}
+                        <div className="pl-[var(--px-38)] md:pl-0">
+                          <p className="text-[length:var(--px-10)] font-light font-fira text-white/60">
                             {track.artist} | {track.year} | {track.label}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-[var(--px-15)]" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0" onClick={e => e.stopPropagation()}>
                         <span className="text-[length:var(--px-10)] font-light font-fira text-white/40">
                           {track.duration}
                         </span>
@@ -409,7 +417,7 @@ export default function LibraryPage() {
                         <div className="relative">
                           <button
                             onClick={() => setActiveMenuId(activeMenuId === track.id ? null : track.id)}
-                            className="p-[var(--px-8)] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                            className="p-[var(--px-6)] md:p-[var(--px-8)] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
                             aria-label="Actions"
                           >
                             <svg className="w-[var(--px-18)] h-[var(--px-18)] fill-current text-white/70 hover:text-white" viewBox="0 0 24 24">
