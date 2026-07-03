@@ -11,6 +11,7 @@ export * from "./telemetry";
 export * from "./cart";
 export * from "./ratings";
 export * from "./metadata";
+export * from "./tracks";
 export * from "./system";
 export * from "./partner";
 export * from "./playbackToken";

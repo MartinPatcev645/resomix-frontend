@@ -108,46 +108,40 @@ export default function LibraryPage() {
     if (!isAuthenticated) return;
     setLoading(true);
     try {
+      // 1. Fetch user playlists
       const resp = await getAllPlaylists();
+      let formattedPlaylists: LibraryPlaylist[] = [];
       if (resp.success && resp.data && Array.isArray(resp.data)) {
-        const formattedPlaylists = resp.data.map((p: any) => ({
-          id: String(p.id),
-          uuid: p.uuid,
+        formattedPlaylists = resp.data.map((p: any) => ({
+          id: String(p.id || p.uuid),
+          uuid: p.uuid || p.id,
           name: p.name,
           is_public: p.is_public,
-          trackCount: p.num_tracks || 10,
-          duration: p.play_time ? `${Math.floor(p.play_time / 60)}m` : "45m",
-          createdAt: p.created_at,
+          trackCount: p.num_tracks || 0,
+          duration: p.play_time ? (p.play_time >= 3600 ? `${Math.floor(p.play_time / 3600)}h ${Math.floor((p.play_time % 3600) / 60)}m` : `${Math.floor(p.play_time / 60)}m`) : "0m",
+          createdAt: p.created_at || new Date().toISOString(),
         }));
-        setPlaylists(formattedPlaylists);
-
-        // Extract queried tracks from their playlists to populate the tracks list dynamically
-        const extractedTracks = resp.data
-          .filter((p: any) => p.seed_track)
-          .map((p: any) => ({
-            id: String(p.seed_track.id),
-            title: p.seed_track.title || "Unknown Track",
-            artist: p.seed_track.artist || "Unknown Artist",
-            year: p.seed_track.year || 2024,
-            label: p.seed_track.label || "Independent",
-            duration: p.seed_track.duration ? `${Math.floor(p.seed_track.duration / 60)}:${String(Math.floor(p.seed_track.duration % 60)).padStart(2, "0")}` : "5:00",
-          }));
-        
-        // Remove duplicates based on track ID
-        const uniqueTracks = extractedTracks.reduce((acc: LibraryTrack[], current: LibraryTrack) => {
-          const x = acc.find(item => item.id === current.id);
-          if (!x) acc.push(current);
-          return acc;
-        }, []);
-
-        setTracks(uniqueTracks.length > 0 ? uniqueTracks : MOCK_TRACKS);
-      } else {
-        // Fallback to mock data if API fails or returns no playlists
-        setPlaylists(MOCK_PLAYLISTS);
-        setTracks(MOCK_TRACKS);
       }
+
+      // 2. Fetch user uploaded tracks
+      const { getMyTracks } = await import("@resomix/api-client");
+      const tracksResp = await getMyTracks();
+      let formattedTracks: LibraryTrack[] = [];
+      if (tracksResp.success && tracksResp.data && Array.isArray(tracksResp.data)) {
+        formattedTracks = tracksResp.data.map((t: any) => ({
+          id: t.uuid,
+          title: t.title || "Unknown Track",
+          artist: t.display_artist || "Unknown Artist",
+          year: t.created_at ? new Date(t.created_at).getFullYear() : 2026,
+          label: t.version_title || "Independent",
+          duration: t.duration ? `${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, "0")}` : "0:00",
+        }));
+      }
+
+      setPlaylists(formattedPlaylists.length > 0 ? formattedPlaylists : MOCK_PLAYLISTS);
+      setTracks(formattedTracks.length > 0 ? formattedTracks : MOCK_TRACKS);
     } catch (error) {
-      console.error("Failed to load library playlists:", error);
+      console.error("Failed to load library data:", error);
       setPlaylists(MOCK_PLAYLISTS);
       setTracks(MOCK_TRACKS);
     } finally {
@@ -169,8 +163,6 @@ export default function LibraryPage() {
         return;
       }
       
-      // If it's a real playlist, we delete it using deletePlaylist or unfollow/removeFavorite
-      // For safety and compatibility, we'll try to remove it locally and call backend if supported
       const { deletePlaylist } = await import("@resomix/api-client");
       const resp = await deletePlaylist(Number(id));
       if (resp.success) {
@@ -180,16 +172,32 @@ export default function LibraryPage() {
         handleStatusChange("error", resp.error || "Failed to delete playlist", "Deletion Failed");
       }
     } catch (err) {
-      // Fallback: update state locally
       setPlaylists(prev => prev.filter(p => p.id !== id));
       handleStatusChange("success", "Playlist removed from your library.", "Success");
     }
   };
 
-  const handleDeleteTrack = (id: string, e: React.MouseEvent) => {
+  const handleDeleteTrack = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setTracks(prev => prev.filter(t => t.id !== id));
-    handleStatusChange("success", "Track removed from library.", "Success");
+    try {
+      if (id.startsWith("mock-") || id.startsWith("track-")) {
+        setTracks(prev => prev.filter(t => t.id !== id));
+        handleStatusChange("success", "Track removed from library.", "Success");
+        return;
+      }
+      
+      const { deleteMyTrack } = await import("@resomix/api-client");
+      const resp = await deleteMyTrack(id);
+      if (resp.success) {
+        setTracks(prev => prev.filter(t => t.id !== id));
+        handleStatusChange("success", "Track deleted successfully!", "Success");
+      } else {
+        handleStatusChange("error", resp.error || "Failed to delete track", "Deletion Failed");
+      }
+    } catch (err) {
+      setTracks(prev => prev.filter(t => t.id !== id));
+      handleStatusChange("success", "Track removed from library.", "Success");
+    }
   };
 
   const handleSharePlaylist = (uuid: string, e: React.MouseEvent) => {
