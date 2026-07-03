@@ -76,7 +76,10 @@ GET /api/v1/tracks/my-tracks/?page=1&page_size=20
       "is_instrumental": false,
       "is_active": true,
       "created_at": "2026-07-03T10:30:00",
-      "updated_at": "2026-07-03T10:30:00"
+      "updated_at": "2026-07-03T10:30:00",
+      "playlist_uuid": "1b9d...",
+      "has_similarity": true,
+      "has_analysis": false
     }
   ],
   "total": 42,
@@ -107,6 +110,11 @@ GET /api/v1/tracks/my-tracks/?page=1&page_size=20
 | `is_instrumental` | boolean | Instrumental flag |
 | `is_active` | boolean | Active (not soft-deleted) — always `true` in this list |
 | `created_at` / `updated_at` | string\|null | ISO timestamps |
+| `playlist_uuid` | string\|null | UUID of the similarity playlist generated from this track, or `null` if none. Use it to open the playlist (`GET /api/v1/playlists/similarity/{uuid}`) |
+| `has_similarity` | boolean | Whether a similarity playlist has been generated for this track (`true` ⇔ `playlist_uuid` is non-null) |
+| `has_analysis` | boolean | Whether audio analysis has completed. **Always `false` for now** — the analysis feature isn't implemented yet and will be wired in later |
+
+> **Dropdown state:** `has_similarity` + `playlist_uuid` tell the UI whether to show "Open playlist" vs "Generate playlist". `has_analysis` is a forward-looking flag that currently returns `false` for every track.
 
 ### Top-level pagination fields
 | Field | Type | Description |

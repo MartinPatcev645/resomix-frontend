@@ -192,7 +192,7 @@ The logged-in user's own uploaded tracks (the "library" page). All endpoints **r
 ### 6.1 List My Uploaded Tracks
 - **`GET /api/v1/tracks/my-tracks/`** — Requires JWT
 - **Query params:** `page` (default `1`, ≥1), `page_size` (default `20`, **max `20`** — values above 20 return `422`)
-- **Returns:** Paginated, lightweight track summaries, **newest first**. Soft-deleted tracks are excluded.
+- **Returns:** Paginated, lightweight track summaries, **newest first**. Soft-deleted tracks are excluded. Each track also carries dropdown state: `playlist_uuid` (UUID of the similarity playlist generated from it, or `null`), `has_similarity` (`true` ⇔ `playlist_uuid` set), and `has_analysis` (**always `false` for now** — analysis not implemented yet).
   ```json
   {
     "success": true,
@@ -203,7 +203,8 @@ The logged-in user's own uploaded tracks (the "library" page). All endpoints **r
         "duration_ms": 200000,"duration": 200.0,"bpm": 128,"musical_key": "8A",
         "genre": "Techno","sub_genre": null,"track_type": "upload","price_cents": 99,
         "is_explicit": false,"is_instrumental": false,"is_active": true,
-        "created_at": "2026-07-03T10:30:00","updated_at": "2026-07-03T10:30:00"
+        "created_at": "2026-07-03T10:30:00","updated_at": "2026-07-03T10:30:00",
+        "playlist_uuid": "1b9d...","has_similarity": true,"has_analysis": false
       }
     ],
     "total": 42,"page": 1,"page_size": 20,"total_pages": 3

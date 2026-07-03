@@ -25,6 +25,7 @@ from httpx import ASGITransport, AsyncClient
 from app.main import app
 from tests.api.library_helpers import (
     auth_headers,
+    create_playlist,
     create_track,
     create_user,
     get_track_is_active,
@@ -312,3 +313,49 @@ async def test_delete_is_idempotent_second_delete_404():
 
     assert first.status_code == 200
     assert second.status_code == 404
+
+
+# --------------------------------------------------------------------------- #
+# Dropdown state: playlist_uuid / has_similarity / has_analysis
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_list_reports_playlist_and_analysis_state():
+    """Each track reports whether a similarity playlist exists, its uuid, and has_analysis."""
+    user = await create_user()
+    with_pl = await create_track(user_id=user.id, title="has playlist")
+    without_pl = await create_track(user_id=user.id, title="no playlist")
+    # A similarity playlist seeded from the first track.
+    pl = await create_playlist(user_id=user.id, seed_track_id=with_pl.id)
+
+    async with _client() as ac:
+        res = await ac.get(LIST_URL, headers=auth_headers(user))
+
+    by_uuid = {t["uuid"]: t for t in res.json()["data"]}
+
+    a = by_uuid[with_pl.uuid]
+    assert a["playlist_uuid"] == pl.uuid
+    assert a["has_similarity"] is True
+    assert a["has_analysis"] is False  # not implemented yet — always false
+
+    b = by_uuid[without_pl.uuid]
+    assert b["playlist_uuid"] is None
+    assert b["has_similarity"] is False
+    assert b["has_analysis"] is False
+
+
+@pytest.mark.asyncio
+async def test_detail_reports_playlist_state():
+    """The single-track view also carries playlist_uuid / has_similarity / has_analysis."""
+    user = await create_user()
+    track = await create_track(user_id=user.id)
+    pl = await create_playlist(user_id=user.id, seed_track_id=track.id)
+
+    async with _client() as ac:
+        res = await ac.get(_detail_url(track.uuid), headers=auth_headers(user))
+
+    data = res.json()["data"]
+    assert data["playlist_uuid"] == pl.uuid
+    assert data["has_similarity"] is True
+    assert data["has_analysis"] is False

@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.track import Track
+from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 
 
@@ -32,17 +33,24 @@ class TrackService:
 
     def __init__(self):
         self.track_repository = TrackRepository()
+        self.playlist_repository = PlaylistRepository()
 
     # ------------------------------------------------------------------ #
     # Serialization helpers
     # ------------------------------------------------------------------ #
 
     @staticmethod
-    def _serialize_track_summary(track: Track) -> Dict[str, Any]:
+    def _serialize_track_summary(
+        track: Track, playlist_uuid: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Lightweight representation for the library list view.
 
         Only scalar columns and the eager-loaded genre relationships are touched, so
         this is safe to call on rows fetched without eager-loading lazy collections.
+
+        ``playlist_uuid`` is the UUID of the similarity playlist generated from this track
+        (or None). It drives the ``has_similarity`` flag. ``has_analysis`` is always False
+        for now — audio analysis is not implemented yet and will be wired in later.
         """
         return {
             "uuid": track.uuid,
@@ -64,17 +72,23 @@ class TrackService:
             "is_active": track.is_active,
             "created_at": track.created_at.isoformat() if track.created_at else None,
             "updated_at": track.updated_at.isoformat() if track.updated_at else None,
+            # Library dropdown state
+            "playlist_uuid": playlist_uuid,
+            "has_similarity": playlist_uuid is not None,
+            "has_analysis": False,  # analysis not implemented yet — always False for now
         }
 
     @classmethod
-    def _serialize_track_detail(cls, track: Track) -> Dict[str, Any]:
+    def _serialize_track_detail(
+        cls, track: Track, playlist_uuid: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Full metadata for the single-track view.
 
         Requires ``audio_files`` and ``recording_contributors`` (with ``contributor``)
         to be eager-loaded. Internal-only fields such as the storage ``stored_path`` and
         file checksums are deliberately not exposed to the client.
         """
-        detail = cls._serialize_track_summary(track)
+        detail = cls._serialize_track_summary(track, playlist_uuid)
         detail.update(
             {
                 "key_signature": track.key_signature,
@@ -138,8 +152,12 @@ class TrackService:
             tracks, total = await self.track_repository.async_get_user_uploaded_tracks(
                 db, user_id, page, page_size, partner_id=partner_id
             )
+            # One batch query to tell which tracks already have a generated similarity playlist.
+            playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
+                db, [t.id for t in tracks], partner_id=partner_id
+            )
             data: List[Dict[str, Any]] = [
-                self._serialize_track_summary(t) for t in tracks
+                self._serialize_track_summary(t, playlist_map.get(t.id)) for t in tracks
             ]
             return {"success": True, "data": data, "total": total}
         except Exception as e:
@@ -169,7 +187,13 @@ class TrackService:
                     "error": "Track not found",
                     "not_found": True,
                 }
-            return {"success": True, "data": self._serialize_track_detail(track)}
+            playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
+                db, [track.id], partner_id=partner_id
+            )
+            return {
+                "success": True,
+                "data": self._serialize_track_detail(track, playlist_map.get(track.id)),
+            }
         except Exception as e:
             print(f"Error getting user track detail: {e}")
             return {

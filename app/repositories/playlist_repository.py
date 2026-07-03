@@ -576,6 +576,45 @@ class PlaylistRepository(BaseRepository[Playlist]):
             print(f"Error updating playlist visibility: {e}")
             raise e
 
+    async def async_get_similarity_playlist_map(
+        self, db: AsyncSession, track_ids: List[int], partner_id: Optional[int] = None
+    ) -> Dict[int, str]:
+        """Map each seed track id -> the UUID of the (latest) similarity playlist generated
+        from it. Used to tell the library which uploaded tracks already have a generated
+        playlist. Tracks with no similarity playlist are simply absent from the map.
+
+        Args:
+            db: Async database session
+            track_ids: Track primary keys to look up
+            partner_id: Optional partner ID for tenant scoping
+
+        Returns:
+            ``{seed_track_id: playlist_uuid}`` for the most recent similarity playlist per track.
+        """
+        if not track_ids:
+            return {}
+
+        conditions = [
+            Playlist.seed_track_id.in_(track_ids),
+            Playlist.type.in_([PlaylistType.SIMILARITY, "waiting_segments"]),
+        ]
+        if partner_id is not None:
+            conditions.append(Playlist.partner_id == partner_id)
+
+        stmt = (
+            select(Playlist.seed_track_id, Playlist.uuid)
+            .where(and_(*conditions))
+            .order_by(Playlist.created_at.desc(), Playlist.id.desc())
+        )
+        result = await db.execute(stmt)
+
+        mapping: Dict[int, str] = {}
+        for seed_track_id, playlist_uuid in result.all():
+            # Rows are newest-first; keep the first (latest) per seed track.
+            if seed_track_id not in mapping:
+                mapping[seed_track_id] = playlist_uuid
+        return mapping
+
     async def async_get_playlist_similarity_data(
         self,
         db: AsyncSession,

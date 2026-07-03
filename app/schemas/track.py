@@ -108,6 +108,16 @@ class UserTrackSummary(BaseModel):
     is_active: Optional[bool] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    # Library dropdown state
+    playlist_uuid: Optional[str] = Field(
+        None, description="UUID of the similarity playlist generated from this track, or null"
+    )
+    has_similarity: bool = Field(
+        False, description="Whether a similarity playlist has been generated for this track"
+    )
+    has_analysis: bool = Field(
+        False, description="Whether audio analysis has completed (always false for now — not yet implemented)"
+    )
 
 
 class UserTracksListResponse(BaseModel):
