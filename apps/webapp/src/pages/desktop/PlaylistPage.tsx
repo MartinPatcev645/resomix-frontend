@@ -1,4 +1,4 @@
-import { StatusMessage } from "@resomix/ui";
+import { StatusMessage, Error404 } from "@resomix/ui";
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
@@ -23,22 +23,11 @@ export function PlaylistPage() {
 
   // Handle expired fallback
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-
     if (!isLoading && !playlistData) {
       setExpired(true);
-      timeoutId = setTimeout(() => {
-        handleExpiredClose();
-      }, 5000);
     } else {
-      // Data arrived or still loading – ensure expired flag reset
       setExpired(false);
-      if (timeoutId) clearTimeout(timeoutId);
     }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
   }, [isLoading, playlistData]);
 
   useEffect(() => {
@@ -60,10 +49,6 @@ export function PlaylistPage() {
     }
   }, [searchParams, navigate]);
 
-  const handleExpiredClose = () => {
-    window.location.href = BASE_BETA_URL;
-  };
-
   return (
     <AudioProvider>
       {isLoading ? (
@@ -74,11 +59,11 @@ export function PlaylistPage() {
           onClose={() => { }}
         />
       ) : expired ? (
-        <StatusMessage
-          isOpen={true}
-          onClose={handleExpiredClose}
-          status="error"
-          message="Playlist Private. Share to make it public to view"
+        <Error404
+          baseUrl={BASE_BETA_URL}
+          title="Playlist is Private"
+          description="This playlist is private. Make it public or share it to view, or go back to safety."
+          buttonText="Go Back to Safety"
         />
       ) : (
         <>
