@@ -19,3 +19,7 @@ export { setCookie, getCookie, deleteCookie, cookieStorage, hybridStorage, TAB_I
 // Cart store
 export { useCartStore } from './useCart'
 export type { CartStore } from './useCart'
+
+// Library store
+export * from './useLibrary'
+
