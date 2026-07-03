@@ -7,6 +7,9 @@ export interface LibraryTrack {
   year: number;
   label: string;
   duration: string;
+  playlist_uuid?: string | null;
+  has_analysis?: boolean;
+  has_similarity?: boolean;
 }
 
 export interface LibraryPlaylist {
