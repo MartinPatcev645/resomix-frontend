@@ -43,6 +43,7 @@ export interface ApiConfig {
     WAITLIST: string;
     WAITLIST_STATUS: string;
     SEGMENT_STATUS: string;
+    MY_TRACKS: string;
 
     // Playlist Engagement
     PLAYLIST_FAVORITE_ADD: string;
@@ -244,6 +245,7 @@ export const API_CONFIG: ApiConfig = {
     WAITLIST: "/api/v1/waitlist/",
     WAITLIST_STATUS: "/api/v1/waitlist/status",
     SEGMENT_STATUS: "/api/v1/similarity/segment-status/",
+    MY_TRACKS: "/api/v1/tracks/my-tracks",
     // Playlist Engagement
     PLAYLIST_FAVORITE_ADD: "/api/v1/playlist/add-favorite/",
     PLAYLIST_FAVORITE_REMOVE: "/api/v1/playlist/remove-favorite/",

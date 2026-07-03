@@ -15,6 +15,7 @@ import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const InputTrackStatus = "Loading..."
 
@@ -38,6 +39,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
 
   const { playlistData } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleStatusChange = (type: 'loading' | 'success' | 'error', message: string, title?: string) => {
     setStatusType(type);
@@ -65,14 +68,29 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         <div></div>
         <div className="flex flex-col w-full gap-[var(--px-10)]">
           <div className="flex w-full justify-between items-center">
-            <a
-              href={BASE_BETA_URL}
-              className="flex items-center ml-[var(--px-10)] playlist-nav-link"
-              id="playlist-hero-back-link"
-              aria-label="Back to upload"
-            >
-              <img src={AngleLeftSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-30)] h-[var(--px-30)]" />
-            </a>
+            {location.state?.from === "library" ? (
+              <a
+                href="/library"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/library");
+                }}
+                className="flex items-center ml-[var(--px-10)] playlist-nav-link"
+                id="playlist-hero-back-link"
+                aria-label="Back to Library"
+              >
+                <img src={AngleLeftSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-30)] h-[var(--px-30)]" />
+              </a>
+            ) : (
+              <a
+                href={BASE_BETA_URL}
+                className="flex items-center ml-[var(--px-10)] playlist-nav-link"
+                id="playlist-hero-back-link"
+                aria-label="Back to upload"
+              >
+                <img src={AngleLeftSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-30)] h-[var(--px-30)]" />
+              </a>
+            )}
             <div className="flex flex-col items-center gap-[var(--px-15)]">
               <div className="flex items-center gap-[var(--px-10)] mr-[var(--px-5)]">
                 <IconButton
