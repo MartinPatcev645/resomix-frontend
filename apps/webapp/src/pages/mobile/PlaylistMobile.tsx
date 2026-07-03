@@ -4,7 +4,7 @@ import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
 import { BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
-import { StatusMessage } from "@resomix/ui";
+import { StatusMessage, Error404 } from "@resomix/ui";
 
 export function PlaylistMobile() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -23,27 +23,12 @@ export function PlaylistMobile() {
 
   // Handle expired fallback
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-
     if (!isLoading && !playlistData) {
       setExpired(true);
-      timeoutId = setTimeout(() => {
-        handleExpiredClose();
-      }, 3000);
     } else {
-      // Data arrived or still loading – ensure expired flag reset
       setExpired(false);
-      if (timeoutId) clearTimeout(timeoutId);
     }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
   }, [isLoading, playlistData]);
-
-  const handleExpiredClose = () => {
-    window.location.href = BASE_BETA_URL;
-  };
 
   const handleMoreMenuOpen = (
     trackId: string,
@@ -72,11 +57,11 @@ export function PlaylistMobile() {
           onClose={() => { }}
         />
       ) : expired ? (
-        <StatusMessage
-          isOpen={true}
-          onClose={handleExpiredClose}
-          status="error"
-          message="Playlist Private. Share to make it public to view"
+        <Error404
+          baseUrl={BASE_BETA_URL}
+          title="Playlist is Private"
+          description="This playlist is private. Make it public or share it to view, or go back to safety."
+          buttonText="Go Back to Safety"
         />
       ) : (
         <div className="">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary } from "@resomix/hooks";
@@ -7,6 +7,7 @@ import TrackSvg from "@/assets/icons/track_2.svg";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated } = useAuthStore();
   const {
     playlists,
@@ -41,6 +42,17 @@ export default function LibraryPage() {
     setStatusTitle(title);
     setShowStatus(true);
   };
+
+  // Sync activeTab with URL query parameter on mount and when URL parameter changes
+  const tabParam = searchParams.get("tab");
+  useEffect(() => {
+    if (tabParam === "playlists" || tabParam === "tracks") {
+      setActiveTab(tabParam);
+    } else {
+      // If no tab in URL, sync activeTab back to URL parameter
+      setSearchParams({ tab: activeTab }, { replace: true });
+    }
+  }, [tabParam, activeTab, setActiveTab, setSearchParams]);
 
   // Click outside to close the three-dots dropdown menu
   useEffect(() => {
@@ -147,7 +159,7 @@ export default function LibraryPage() {
           {/* Tab Switcher */}
           <div className="flex justify-center gap-[var(--px-30)] mb-[var(--px-40)] border-b border-dotted border-slate-200/30 pb-[var(--px-15)]">
             <button
-              onClick={() => setActiveTab("playlists")}
+              onClick={() => setSearchParams({ tab: "playlists" }, { replace: true })}
               className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
                 activeTab === "playlists"
                   ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
@@ -157,7 +169,7 @@ export default function LibraryPage() {
               Playlists ({playlists.length})
             </button>
             <button
-              onClick={() => setActiveTab("tracks")}
+              onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
               className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
                 activeTab === "tracks"
                   ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
