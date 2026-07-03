@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
@@ -192,9 +192,127 @@ class TrackRepository(BaseRepository[Track]):
         )
         if partner_id is not None:
             stmt = stmt.where(self.model.partner_id == partner_id)
-            
+
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    # --- User library methods (own uploaded tracks) ---
+
+    async def async_get_user_uploaded_tracks(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        page: int = 1,
+        page_size: int = 20,
+        partner_id: Optional[int] = None,
+    ) -> Tuple[List[Track], int]:
+        """Get a page of the user's own uploaded tracks (newest first) with the total count.
+
+        Scoped to tracks the user actually uploaded (``track_type == 'upload'`` and
+        ``user_id`` match) and excludes soft-deleted tracks (``is_active`` != False).
+        Genre relationships are eager-loaded via the model's ``lazy='joined'`` config, so
+        the lightweight summary can be serialized without touching lazy collections.
+
+        Args:
+            db: Async database session
+            user_id: ID of the authenticated user (uploader)
+            page: 1-based page number
+            page_size: Items per page
+            partner_id: Optional partner ID for tenant scoping
+
+        Returns:
+            Tuple of (list of Track, total count)
+        """
+        conditions = [
+            self.model.user_id == user_id,
+            self.model.track_type == TrackType.UPLOAD,
+            self.model.is_active.isnot(False),
+        ]
+        if partner_id is not None:
+            conditions.append(self.model.partner_id == partner_id)
+
+        count_stmt = select(func.count(self.model.id)).where(and_(*conditions))
+        total = (await db.execute(count_stmt)).scalar() or 0
+
+        offset = max(0, (page - 1) * page_size)
+        stmt = (
+            select(self.model)
+            .where(and_(*conditions))
+            .order_by(self.model.created_at.desc(), self.model.id.desc())
+            .offset(offset)
+            .limit(page_size)
+        )
+        result = await db.execute(stmt)
+        tracks = result.scalars().unique().all()
+        return tracks, total
+
+    async def async_get_user_uploaded_track_by_uuid(
+        self,
+        db: AsyncSession,
+        uuid: str,
+        user_id: int,
+        partner_id: Optional[int] = None,
+    ) -> Optional[Track]:
+        """Get a single owned uploaded track (with audio files + contributors) by UUID.
+
+        Enforces ownership (``user_id`` match) and tenant scoping, and excludes
+        soft-deleted tracks. Returns None if not found / not owned by the user.
+        """
+        conditions = [
+            self.model.uuid == uuid,
+            self.model.user_id == user_id,
+            self.model.track_type == TrackType.UPLOAD,
+            self.model.is_active.isnot(False),
+        ]
+        if partner_id is not None:
+            conditions.append(self.model.partner_id == partner_id)
+
+        stmt = (
+            select(self.model)
+            .options(
+                joinedload(self.model.audio_files),
+                joinedload(self.model.recording_contributors).joinedload(
+                    TrackContributor.contributor
+                ),
+            )
+            .where(and_(*conditions))
+        )
+        result = await db.execute(stmt)
+        return result.unique().scalar_one_or_none()
+
+    async def async_soft_delete_user_track(
+        self,
+        db: AsyncSession,
+        uuid: str,
+        user_id: int,
+        partner_id: Optional[int] = None,
+    ) -> bool:
+        """Soft-delete an owned uploaded track by flipping ``is_active`` to False.
+
+        This hides the track from the library/catalog (catalog queries filter
+        ``is_active != False``) without dropping the row or purging storage assets —
+        physical Hetzner/embedding cleanup is handled separately by the cleanup worker.
+
+        Returns True if a matching, still-active owned track was updated, else False
+        (not found, not owned, or already soft-deleted — treated as idempotent no-op).
+        """
+        conditions = [
+            self.model.uuid == uuid,
+            self.model.user_id == user_id,
+            self.model.track_type == TrackType.UPLOAD,
+            self.model.is_active.isnot(False),
+        ]
+        if partner_id is not None:
+            conditions.append(self.model.partner_id == partner_id)
+
+        stmt = select(self.model).where(and_(*conditions))
+        track = (await db.execute(stmt)).scalar_one_or_none()
+        if track is None:
+            return False
+
+        track.is_active = False
+        await db.flush()
+        return True
 
     async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None, exclude_uploads: bool = False) -> List[Track]:
         """Async version of get_tracks_by_uuids with partner scoping.

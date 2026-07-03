@@ -45,6 +45,7 @@ from .auth import router as auth_router
 from .users import router as users_router
 from .playlist_engagement import router as playlist_engagement_router
 from .open_tracks_pipeline import router as open_tracks_pipeline_router
+from .tracks import router as tracks_router
 from .telemetry import router as telemetry_router
 from .purchases import router as purchases_router
 from .webhooks import router as webhooks_router
@@ -69,6 +70,7 @@ v1_routers = [
     (purchases_router, V1_PREFIX),
     (playlists_router, V1_PREFIX),
     (playlist_engagement_router, V1_PREFIX),
+    (tracks_router, V1_PREFIX),
     (auth_router, V1_PREFIX),
     (users_router, V1_PREFIX),
     (spotify_transfer_router, V1_PREFIX),

@@ -139,9 +139,11 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if user_id and playlist.user_id == user_id and playlist.fork_id:
                 fork_id_value = playlist.fork_id
 
+            # NOTE: never expose the internal integer primary key (playlist.id) on a
+            # user-facing response — only the UUID. If an admin path ever needs the pk,
+            # add it in that admin-scoped serializer, not here.
             return {
                 "id": playlist.uuid,  # UUID for external use
-                "pk": playlist.id,  # Primary key for internal DB ops
                 "name": playlist.name,
                 "is_public": playlist.is_public,
                 "fork_id": fork_id_value,
@@ -1731,12 +1733,15 @@ class PlaylistRepository(BaseRepository[Playlist]):
             # Get seed track IDs that need titles
             seed_track_ids = [p.seed_track_id for p in playlists if p.seed_track_id]
             seed_track_titles = {}
+            seed_track_types = {}
 
             if seed_track_ids:
-                # Fetch seed track titles in one query
+                # Fetch seed track title + type in one query. Normalize the DB `type`
+                # column to the same "upload"/"internal" convention used by the
+                # `queried_track.type` field in the similarity response.
                 seed_query = text(
                     """
-                    SELECT id, title
+                    SELECT id, title, type
                     FROM tracks
                     WHERE id IN :track_ids
                 """
@@ -1746,6 +1751,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 )
                 for row in seed_result.fetchall():
                     seed_track_titles[row.id] = row.title or None
+                    seed_track_types[row.id] = (
+                        "upload" if row.type == "upload" else "internal"
+                    )
 
             # Build response
             playlist_list = []
@@ -1755,10 +1763,12 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 if playlist.user_id == user_id:
                     fork_id_value = playlist.fork_id or ""
 
-                # Get seed track title
+                # Get seed track title + type ("upload" vs "internal")
                 seed_track_title = None
+                seed_track_type = None
                 if playlist.seed_track_id:
                     seed_track_title = seed_track_titles.get(playlist.seed_track_id)
+                    seed_track_type = seed_track_types.get(playlist.seed_track_id)
 
                 # Get engagement data
                 engagement = engagement_map.get(
@@ -1771,6 +1781,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "name": playlist.name,
                     "is_public": playlist.is_public,
                     "seed_track_title": seed_track_title,
+                    "seed_track_type": seed_track_type,
                     "fork_id": fork_id_value,
                     "num_tracks": playlist.num_tracks or 0,
                     "play_time": playlist.play_time or 0,

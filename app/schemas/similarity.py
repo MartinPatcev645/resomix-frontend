@@ -125,6 +125,10 @@ class PlaylistInfo(BaseModel):
     seed_track_title: Optional[str] = Field(
         None, description="Title of the seed track if available"
     )
+    seed_track_type: Optional[str] = Field(
+        None,
+        description="Type of the seed track: 'upload' (user-uploaded) or 'internal' (catalog)",
+    )
     fork_id: str = Field(
         "",
         description="UUID of the original playlist if this is a fork, empty string if not a fork",

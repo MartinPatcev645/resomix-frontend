@@ -1,0 +1,144 @@
+- build the track analysis, and it's api (george will share existing code)
+- Also the UI in beta.resomix, instead of popular tracks this option, and one more page.
+- Similarity for open tracks at the bottom of the analysis page
+- Also have analysis by upload, and similar api functionality
+
+- Test full end to end partner onboarding and ingestion.
+- Compare george script with our old one
+- Upload file giving error
+
+look into detail the apple music 30 seconds, what can we do?
+what if we show apple music playback and meta information and use our own 3 million catalog. We will be using this approach.
+
+- playback not working on beta resomix
+
+- Document for technical aspect. md files for how we do the analysis and similarity. How we do, what we require from them, and what we send back to them. To officially approach corporations with datasources. --- This is for us to display their data on our own platform, and that we display their tracks, and then have button that will take them back to their own site for tracks purchase. DDEX? CSV? Ingestion?
+  We will get their data and send back our users to their service. Tell them about pyxis as well.
+  (Where we are pulling the data from, for our frontend data)
+  partners as source content (volumo or beatport)
+
+- Remove cart from frontend.
+- Remove open cc buttons
+- Have open playback without login, but restrict to 20 tracks or so and push login to view full 100 tracks, or so.
+- Remove waveforms and use the 30s playback as a line.
+- Also add cover on left side as we get from apple music, Also use apple music logo
+
+Next Steps:
+
+1. Document send to george
+
+- Remove cart, and upload file fix error
+
+2. Start with apple music research
+3. For our 2.3 Million tracks see which are in apple music using their apis, and filter those which are not in there.
+4. Use those filtered tracks from apple music in out frontend and use apple music own catalog.
+5. Track analysis UI creation and backend api
+6. Have restrictions and login wall (like 20 tracks playlists for guest users only etc.)
+7. Update frontend to remove cart and open cc buttons, and have open playback
+8. Use elastic search, just like before
+
+- playlist list page
+- dropdown on account icon with main menus
+- change the waveforms to the line, for apple music preview. Put apple badging
+- User library page to see his own uploaded tracks
+- guest user can create one playlist, and if log in then can create 3 more, and further have to pay. Make numbers adjustable for every stage how many the user can create.
+- Clear ui messages so he knows what to do next.
+- stripe subscription integration.
+
+Apple music:
+
+- not official.
+
+How can catch:
+
+1. Match the title and artist? (file name)
+2. Match the duration, silver bullet, can be +- 2 seconds
+3. If name is same and apple music contains "(Radio Edit)" then even if it has less duration, can keep it.
+
+Label name is in big brackets like this [Label] so can remove those from title before adding to search query.
+Keep the artist name and title, also keep things in small brackets. for example (Original Mix)
+
+Use the artist and title from the meta id3 tags from database instead of filename.
+
+(Radio Edit) or (Extended Mix) then even if duration is less, then go ahead and even if duration from apple music is less or equal, go ahead. If duration from apple music is more, then stop as not match.
+If we have anything else like (Original Mix) or without it etc. Then we need to exactly match the duration with 2 seconds margin as discussed, this duration matching goes side by side equally with the artist and title matching, and value is either true or false.
+
+Run a script to get the 225 tracks from apple music and check manually as baseline.
+Run from 2.35 million tracks from database, and get all details.
+
+After live test suggestions:
+
+For every track:
+
+- Relax the duration to + - 10 seconds if artist and title match.
+- Remove the (Original Mix) or (Extended Mix) for every track so we can get the proper track. Even if we remove from the query, we should still keep the functionality of accepting the smaller duration in extended mix.
+- Get top five and use fuzzy matching, and match entire query string (without original mix or extended mix) and also the duration setup how I told before. This will help us prevent cases where apple music returns a (Dub) or (Mixed) or something as that is the first results rather than the correct one which is sometimes second, third or fifth or whatever.
+
+- Maybe instead of matching the whole query string with the artist and title, we should match only title with title and artist with artist. (Not right now, can try later)
+
+- There can be cases of http error or any other similar errors, so we have to set up retries. i.e. HTTPSConnectionPool(host='api.music.apple.com', port=443): Read timed out.
+
+For only N/A and False cases (try below one by one):
+
+- Add album name as well in search query in start. (Do this later, after testing original mix/extended mix removal and fuzzy matching) So it becomes:
+  "album artist - title"
+- Add back (extended mix) if we removed it earlier.
+- Sometimes for N/A if there are multiple artists and we search for any one artist only we can find match. For example "Nagano Kitchen, Hideo Kobayas - Climbing Tateshina" gives N/A whereas "Nagano Kitchen - Climbing Tateshina" matches.
+
+Note:
+
+- For this track #217, Both these ids are correct (both give 7:11 duration):
+  Alan Da Funk - Keep Movin' (Original Mix) 1474172600 1445797013
+- For track #198. These both are correct and (there can be more)
+  Purple Disco Machine, Joe Killington, Duane Harden - Devil In Me (Extended Mix) 1342429205 1292960944
+- For track #183
+  Mike D' Jais - I Miss My Heart 1551867461 1551867462
+
+Later on:
+
+- Compare the artist and title from database with the filename as well. For example in database we have "Da People" whereas in filename "4 Da People".
+
+Question:
+
+- Should we search for without original mix etc. if match not found?
+- Or should we get the top 5 tracks and fuzzy match
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+mysql -u resomix_user -p resomix_prod -e "SELECT * FROM resomix_prod.ingest_logs ORDER BY id DESC LIMIT 5;"
+
+sudo mysql resomix_prod -e "DELETE FROM ingest_logs WHERE id=4;"
+
+sudo mysql resomix_prod -e "SELECT * FROM ingestion_errors;"
+
+sudo mysql resomix_prod -e "SELECT id,status,stage,track_count,LEFT(error_message,80) err,processing_dir FROM ingest_logs WHERE id=7;"
+
+sudo mysql resomix_prod -e "SELECT COUNT(*) AS tracks_p1 FROM tracks WHERE partner_id=1;"
+
+
+sudo mysql resomix_db -e "SELECT * FROM artists WHERE name like 'Metodi';"
+
+sudo mysql resomix_db -e "SELECT COUNT(*) AS track_count FROM track_artists ta JOIN artists a ON ta.artist_id = a.id WHERE a.name like 'Metodi Hristov';"
+
+sudo mysql resomix_db -e "
+UPDATE IGNORE track_artists SET artist_id = 226195 WHERE artist_id = 27004;
+DELETE FROM artists WHERE id = 27004;
+"
+
+
