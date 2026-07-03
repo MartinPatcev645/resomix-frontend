@@ -510,7 +510,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         return result.scalar_one_or_none()
 
     async def async_rename_playlist(
-        self, db: AsyncSession, playlist_uuid: str, new_name: str, partner_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, new_name: str, partner_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Rename a playlist by UUID.
@@ -519,6 +520,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db: Database session
             playlist_uuid: Playlist UUID
             new_name: New playlist name
+            partner_id: Optional partner ID for tenant scoping
+            user_id: When provided, only the owning user may rename — a playlist owned by
+                someone else is treated as not found (no ownership leak).
 
         Returns:
             Dict with success status and old_name if successful
@@ -526,6 +530,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
         try:
             playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
             if not playlist:
+                return {"success": False, "old_name": None}
+            if user_id is not None and playlist.user_id != user_id:
                 return {"success": False, "old_name": None}
 
             old_name = playlist.name
@@ -538,7 +544,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
             raise e
 
     async def async_make_playlist_public(
-        self, db: AsyncSession, playlist_uuid: str, is_public: bool = True, partner_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, is_public: bool = True, partner_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> bool:
         """
         Make a playlist public or private by UUID.
@@ -547,13 +554,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db: Database session
             playlist_uuid: Playlist UUID
             is_public: Whether to make the playlist public
+            partner_id: Optional partner ID for tenant scoping
+            user_id: When provided, only the owning user may change visibility — a playlist
+                owned by someone else is treated as not found (no ownership leak).
 
         Returns:
-            True if successful, False if playlist not found
+            True if successful, False if playlist not found / not owned
         """
         try:
             playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
             if not playlist:
+                return False
+            if user_id is not None and playlist.user_id != user_id:
                 return False
 
             playlist.is_public = is_public

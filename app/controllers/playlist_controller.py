@@ -135,7 +135,8 @@ class PlaylistController:
             playlist_int_id = playlist.id if playlist else None
 
             result = await self.playlist_service.rename_playlist(
-                db, playlist_id, new_name.strip(), partner_id=partner_id
+                db, playlist_id, new_name.strip(), partner_id=partner_id,
+                user_id=current_user.id if current_user else None,
             )
 
             # Calculate operation duration
@@ -294,7 +295,8 @@ class PlaylistController:
             partner_id = getattr(request.state, "partner_id", None)
 
             result = await self.playlist_service.change_playlist_visibility(
-                db, playlist_id, is_public, partner_id=partner_id
+                db, playlist_id, is_public, partner_id=partner_id,
+                user_id=current_user.id if current_user else None,
             )
             duration_ms = (time.time() - start_time) * 1000
             playlist = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(

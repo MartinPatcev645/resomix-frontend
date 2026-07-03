@@ -138,3 +138,15 @@ async def get_track_is_active(track_uuid: str) -> Optional[bool]:
                 select(Track.is_active).where(Track.uuid == track_uuid)
             )
             return res.scalar_one_or_none()
+
+
+async def get_playlist_state(playlist_uuid: str):
+    """Read a playlist's ``(is_public, name)`` straight from the DB."""
+    with _seed_ctx():
+        async with AsyncSessionLocal() as db:
+            res = await db.execute(
+                select(Playlist.is_public, Playlist.name).where(
+                    Playlist.uuid == playlist_uuid
+                )
+            )
+            return res.first()

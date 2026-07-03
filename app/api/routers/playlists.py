@@ -57,15 +57,19 @@ playlist_controller = PlaylistController()
     "/rename/",
     response_model=PlaylistOperationResponse,
     summary="Rename Playlist",
-    description="Rename a playlist by its UUID.",
+    description="Rename one of your own playlists by its UUID. Requires login.",
     responses={
         200: {
             "model": PlaylistOperationResponse,
             "description": "Playlist renamed successfully"
         },
+        401: {
+            "model": PlaylistErrorResponse,
+            "description": "Authentication required"
+        },
         404: {
             "model": PlaylistErrorResponse,
-            "description": "Playlist not found"
+            "description": "Playlist not found or not owned by the user"
         },
         422: {
             "model": PlaylistErrorResponse,
@@ -82,15 +86,16 @@ async def rename_playlist_endpoint(
     request_data: PlaylistRenameRequest,
     db: AsyncSession = Depends(get_database_session),
     partner: Partner = Depends(get_current_partner),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """
     Rename a playlist by its UUID.
-    
+
     - **playlist_id**: The UUID of the playlist to rename
     - **new_name**: The new name for the playlist (1-150 characters)
-    
-    Note: JWT authenticated users are automatically associated with their playlists.
+
+    Requires a logged-in user (JWT). Only the playlist's owner may rename it — another
+    user's (or a nonexistent) playlist returns 404.
     """
     return await playlist_controller.rename_playlist(db, request, request_data.playlist_id, request_data.new_name, current_user)
 
@@ -98,16 +103,20 @@ async def rename_playlist_endpoint(
 @router.put(
     "/visibility/",
     response_model=PlaylistOperationResponse,
-    summary="Change Playlist Visibility",
-    description="Make a playlist public or private by its UUID.",
+    summary="Change Playlist Visibility (Share / Make Public)",
+    description="Make one of your own playlists public (shared) or private by its UUID. Requires login.",
     responses={
         200: {
             "model": PlaylistOperationResponse,
             "description": "Playlist visibility changed successfully"
         },
+        401: {
+            "model": PlaylistErrorResponse,
+            "description": "Authentication required"
+        },
         404: {
             "model": PlaylistErrorResponse,
-            "description": "Playlist not found"
+            "description": "Playlist not found or not owned by the user"
         },
         422: {
             "model": PlaylistErrorResponse,
@@ -124,15 +133,18 @@ async def change_playlist_visibility_endpoint(
     request_data: PlaylistVisibilityRequest,
     db: AsyncSession = Depends(get_database_session),
     partner: Partner = Depends(get_current_partner),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """
-    Change playlist visibility (public/private) by its UUID.
-    
+    Change playlist visibility (public/private) by its UUID — used to share a playlist
+    (make it public) or make it private again.
+
     - **playlist_id**: The UUID of the playlist to modify
     - **is_public**: Whether the playlist should be public (true) or private (false)
-    
-    Note: JWT authenticated users are automatically associated with their playlists.
+
+    Requires a logged-in user (JWT). Only the playlist's owner may change its visibility —
+    another user's (or a nonexistent) playlist returns 404. Logged-out sessions cannot
+    call this (their playlists are public by default).
     """
     return await playlist_controller.change_playlist_visibility(db, request, request_data.playlist_id, request_data.is_public, current_user)
 

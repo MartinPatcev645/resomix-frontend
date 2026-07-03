@@ -436,6 +436,61 @@ export function useMyPlaylists(token: string, pageSize = 20) {
 }
 ```
 
+## Share (Make Public) & Rename a Playlist
+
+Both actions **require a logged-in user (JWT)** and are **owner-only**. A logged-out request returns `401`; acting on a playlist the caller doesn't own (or one that doesn't exist) returns `404` — never surface ownership details.
+
+> Why login-only: a logged-out session's playlists are already public by default, so there is nothing to share/toggle. Restricting to owners also prevents anyone from flipping or renaming someone else's playlist by UUID.
+
+### Share / make public (toggle visibility)
+```
+PUT /api/v1/playlists/visibility/
+Body: { "playlist_id": "<uuid>", "is_public": true }   // false = make private again
+```
+- `200` → `{ "success": true, "message": "Playlist visibility changed to public successfully" }`
+- `401` not logged in · `404` not found / not owned · `422` empty `playlist_id`
+
+### Rename
+```
+PUT /api/v1/playlists/rename/
+Body: { "playlist_id": "<uuid>", "new_name": "My New Name" }   // 1–150 chars
+```
+- `200` → `{ "success": true, "message": "Playlist renamed successfully", "old_name": "..." }`
+- `401` not logged in · `404` not found / not owned · `422` invalid name/id
+
+### Example (Fetch)
+```typescript
+const PL = "/api/v1/playlists";
+
+async function setPlaylistPublic(token: string, uuid: string, isPublic: boolean) {
+  const res = await fetch(`${PL}/visibility/`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ playlist_id: uuid, is_public: isPublic }),
+  });
+  const body = await res.json();
+  if (res.status === 401) throw new Error("Please log in to share playlists.");
+  if (res.status === 404) return false;            // not yours / gone
+  if (!res.ok || !body.success) throw new Error(body.error);
+  return true;
+}
+
+async function renamePlaylist(token: string, uuid: string, newName: string) {
+  const res = await fetch(`${PL}/rename/`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ playlist_id: uuid, new_name: newName }),
+  });
+  const body = await res.json();
+  if (res.status === 401) throw new Error("Please log in to rename playlists.");
+  if (res.status === 404) return false;            // not yours / gone
+  if (!res.ok || !body.success) throw new Error(body.error);
+  return true;
+}
+```
+
+**UI tip:** only show the Share/Rename controls for logged-in users on their own playlists; treat a `401` as "prompt to log in" and a `404` as "no longer available / not yours".
+
 ---
 
 ## Notes (whole library page)

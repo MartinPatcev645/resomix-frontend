@@ -38,7 +38,8 @@ class PlaylistService:
         self.track_repository = TrackRepository()
 
     async def rename_playlist(
-        self, db: AsyncSession, playlist_uuid: str, new_name: str, partner_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, new_name: str, partner_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Rename a playlist by UUID with partner scoping.
@@ -54,7 +55,7 @@ class PlaylistService:
         """
         try:
             result = await self.playlist_repository.async_rename_playlist(
-                db, playlist_uuid, new_name, partner_id=partner_id
+                db, playlist_uuid, new_name, partner_id=partner_id, user_id=user_id
             )
 
             if result["success"]:
@@ -82,7 +83,8 @@ class PlaylistService:
             }
 
     async def change_playlist_visibility(
-        self, db: AsyncSession, playlist_uuid: str, is_public: bool, partner_id: Optional[int] = None
+        self, db: AsyncSession, playlist_uuid: str, is_public: bool, partner_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Change playlist visibility (public/private) by UUID with partner scoping.
@@ -92,13 +94,14 @@ class PlaylistService:
             playlist_uuid: Playlist UUID
             is_public: Whether to make the playlist public
             partner_id: Optional partner ID for tenant scoping
+            user_id: When provided, only the owning user may change visibility.
 
         Returns:
             Dictionary with success status and message
         """
         try:
             success = await self.playlist_repository.async_make_playlist_public(
-                db, playlist_uuid, is_public, partner_id=partner_id
+                db, playlist_uuid, is_public, partner_id=partner_id, user_id=user_id
             )
 
             if success:

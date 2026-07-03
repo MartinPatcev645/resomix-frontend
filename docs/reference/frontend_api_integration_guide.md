@@ -2,7 +2,7 @@
 
 This guide is the canonical reference for all API endpoints the frontend (admin dashboard, consumer app, B2B partner portal) can call. It is generated from the live route list and should be kept in sync whenever new routes are added.
 
-**Last verified:** 2026-07-03 against live server on `http://localhost:8001` (added §6 My Library / uploaded-track endpoints; §5.2 now returns `seed_track_type` and never exposes the internal `pk`)
+**Last verified:** 2026-07-03 against live server on `http://localhost:8001` (added §6 My Library / uploaded-track endpoints; §5.2 now returns `seed_track_type` and never exposes the internal `pk`; §5.3 rename + visibility/share now require JWT **and** playlist ownership)
 
 ## Base URL
 
@@ -166,9 +166,10 @@ Four auth tiers are supported depending on the caller:
 - **Returns:** Paginated **lightweight** summaries of the caller's own playlists (no embedded track list), newest first, with top-level `total`. Each item: `uuid`, `name`, `is_public`, `seed_track_title`, `seed_track_type` (`"upload"` | `"internal"`), `fork_id`, `num_tracks`, `play_time`, `created_at`, `is_favorite`, `is_following`. See [GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md](./GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md) for the full shape.
 - **Note:** the internal integer primary key (`pk`) is **not** returned on any user-facing response — always key playlists by `uuid`.
 
-### 5.3 Rename / Change Visibility
+### 5.3 Rename / Change Visibility (Share) — **Requires JWT + ownership**
 - **Rename:** `PUT /api/v1/playlists/rename/` — Body: `{ "playlist_id": "uuid", "new_name": "..." }`
-- **Visibility:** `PUT /api/v1/playlists/visibility/` — Body: `{ "playlist_id": "uuid", "is_public": true }`
+- **Visibility (share / make public):** `PUT /api/v1/playlists/visibility/` — Body: `{ "playlist_id": "uuid", "is_public": true }` (`true` = public/shared, `false` = private)
+- **Auth:** both require a **logged-in user** (JWT). A logged-out request returns **`401`**. Only the playlist's **owner** may rename or change visibility — another user's (or a nonexistent) playlist returns **`404`** (existence is not leaked). Logged-out sessions have no need for this: their playlists are public by default.
 
 ### 5.4 Get Playlist Similarity Data
 - **`GET /api/v1/playlists/similarity/{playlist_id}`** — Requires API Key (JWT optional to view own private)

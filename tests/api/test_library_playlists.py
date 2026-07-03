@@ -28,9 +28,12 @@ from tests.api.library_helpers import (
     create_playlist,
     create_track,
     create_user,
+    get_playlist_state,
 )
 
 PLAYLISTS_URL = "/api/v1/playlists/get-all-playlists/"
+VISIBILITY_URL = "/api/v1/playlists/visibility/"
+RENAME_URL = "/api/v1/playlists/rename/"
 
 # Summary-only keys we expect; the presence of a full track list would show up as
 # one of these forbidden keys.
@@ -111,3 +114,104 @@ async def test_seed_track_type_reflects_upload_vs_internal():
     by_uuid = {p["uuid"]: p for p in res.json()["data"]}
     assert by_uuid[pl_upload.uuid]["seed_track_type"] == "upload"
     assert by_uuid[pl_internal.uuid]["seed_track_type"] == "internal"
+
+
+# --------------------------------------------------------------------------- #
+# Share / make public (PUT /playlists/visibility/) — login + ownership gated
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_share_requires_login():
+    """Changing visibility while logged out is rejected (401)."""
+    owner = await create_playlist(user_id=(await create_user()).id, is_public=False)
+    async with _client() as ac:
+        res = await ac.put(VISIBILITY_URL, json={"playlist_id": owner.uuid, "is_public": True})
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_owner_can_make_playlist_public():
+    """The owner can share (make public) their own playlist."""
+    user = await create_user()
+    pl = await create_playlist(user_id=user.id, is_public=False)
+
+    async with _client() as ac:
+        res = await ac.put(
+            VISIBILITY_URL,
+            json={"playlist_id": pl.uuid, "is_public": True},
+            headers=auth_headers(user),
+        )
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+    is_public, _ = await get_playlist_state(pl.uuid)
+    assert is_public in (True, 1)
+
+
+@pytest.mark.asyncio
+async def test_non_owner_cannot_change_visibility():
+    """A logged-in non-owner gets 404 and the playlist is unchanged (no IDOR)."""
+    owner = await create_user()
+    attacker = await create_user()
+    pl = await create_playlist(user_id=owner.id, is_public=False)
+
+    async with _client() as ac:
+        res = await ac.put(
+            VISIBILITY_URL,
+            json={"playlist_id": pl.uuid, "is_public": True},
+            headers=auth_headers(attacker),
+        )
+    assert res.status_code == 404
+    is_public, _ = await get_playlist_state(pl.uuid)
+    assert is_public in (False, 0)  # untouched
+
+
+# --------------------------------------------------------------------------- #
+# Rename (PUT /playlists/rename/) — login + ownership gated
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_rename_requires_login():
+    """Renaming while logged out is rejected (401)."""
+    pl = await create_playlist(user_id=(await create_user()).id, name="Original")
+    async with _client() as ac:
+        res = await ac.put(RENAME_URL, json={"playlist_id": pl.uuid, "new_name": "Hacked"})
+    assert res.status_code == 401
+    _, name = await get_playlist_state(pl.uuid)
+    assert name == "Original"
+
+
+@pytest.mark.asyncio
+async def test_owner_can_rename_playlist():
+    """The owner can rename their own playlist."""
+    user = await create_user()
+    pl = await create_playlist(user_id=user.id, name="Original")
+
+    async with _client() as ac:
+        res = await ac.put(
+            RENAME_URL,
+            json={"playlist_id": pl.uuid, "new_name": "My New Name"},
+            headers=auth_headers(user),
+        )
+    assert res.status_code == 200
+    _, name = await get_playlist_state(pl.uuid)
+    assert name == "My New Name"
+
+
+@pytest.mark.asyncio
+async def test_non_owner_cannot_rename():
+    """A logged-in non-owner gets 404 and the name is unchanged (no IDOR)."""
+    owner = await create_user()
+    attacker = await create_user()
+    pl = await create_playlist(user_id=owner.id, name="Original")
+
+    async with _client() as ac:
+        res = await ac.put(
+            RENAME_URL,
+            json={"playlist_id": pl.uuid, "new_name": "Hacked"},
+            headers=auth_headers(attacker),
+        )
+    assert res.status_code == 404
+    _, name = await get_playlist_state(pl.uuid)
+    assert name == "Original"
