@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useLibraryStore } from '@resomix/stores';
+import { useLibraryStore, clearPlaylistFromCache } from '@resomix/stores';
 import { 
   getAllPlaylists, 
   getMyTracks, 
@@ -93,8 +93,14 @@ export function useLibrary() {
 
   const removeTrack = useCallback(async (uuid: string) => {
     try {
+      const track = useLibraryStore.getState().tracks.find(t => t.id === uuid);
+      const playlistUuid = track?.playlist_uuid;
+
       const resp = await deleteMyTrack(uuid);
       if (resp.success) {
+        if (playlistUuid) {
+          clearPlaylistFromCache(playlistUuid);
+        }
         const currentTracks = useLibraryStore.getState().tracks;
         const currentTracksPage = useLibraryStore.getState().tracksPage;
         const currentTracksTotalPages = useLibraryStore.getState().tracksTotalPages;
@@ -121,6 +127,7 @@ export function useLibrary() {
     try {
       const resp = await deleteMyPlaylist(uuid);
       if (resp.success) {
+        clearPlaylistFromCache(uuid);
         const currentPlaylists = useLibraryStore.getState().playlists;
         const currentPlaylistsPage = useLibraryStore.getState().playlistsPage;
         const currentPlaylistsTotalPages = useLibraryStore.getState().playlistsTotalPages;

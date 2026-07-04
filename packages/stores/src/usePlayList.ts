@@ -317,5 +317,37 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
 // This prevents stale data from showing up when users navigate to new playlists
 // Instead, the cache is only used when explicitly requested via loadCachedResponse()
 
+export const clearPlaylistFromCache = (playlistId: string): void => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return;
+  }
+
+  try {
+    const lastAccessed = window.localStorage.getItem('lastAccessedPlaylist');
+    if (lastAccessed === playlistId) {
+      window.localStorage.removeItem('lastAccessedPlaylist');
+    }
+
+    const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup');
+    if (cachedPlaylistsStr) {
+      let cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr);
+      if (Array.isArray(cachedPlaylists)) {
+        cachedPlaylists = cachedPlaylists.filter(p => {
+          const id = p?.data?.playlist?.id || p?.data?.queried_track?.id;
+          return id !== playlistId;
+        });
+
+        if (cachedPlaylists.length === 0) {
+          window.localStorage.removeItem('playlistsBackup');
+        } else {
+          window.localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists));
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to clear playlist from cache:', error);
+  }
+};
+
 // Export default store for convenience
-export default usePlaylistStore
+export default usePlaylistStore;
