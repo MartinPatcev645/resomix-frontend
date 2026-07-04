@@ -34,13 +34,21 @@ async def _count(db, model) -> int:
 
 @pytest.mark.asyncio
 async def test_seed_present_and_idempotent():
-    """Baseline is seeded (15×5=75) and a re-run creates nothing."""
+    """The seeded baseline exists and a re-run creates nothing (create-if-missing).
+
+    Asserts membership (not exact totals) so it's robust to other tests that create their
+    own plans/features within the same session.
+    """
     set_admin_context(True)
     async with AsyncSessionLocal() as db:
-        assert await _count(db, Feature) == len(FEATURE_CATALOG)   # 15
-        assert await _count(db, Plan) == len(PLAN_CATALOG)         # 5
-        assert await _count(db, PlanEntitlement) == len(FEATURE_CATALOG) * len(PLAN_CATALOG)  # 75
+        feature_keys = {k for k, *_ in FEATURE_CATALOG}
+        plan_codes = {c for c, *_ in PLAN_CATALOG}
+        actual_feature_keys = {f.key for f in (await db.execute(select(Feature))).scalars().all()}
+        actual_plan_codes = {p.code for p in (await db.execute(select(Plan))).scalars().all()}
+        assert feature_keys <= actual_feature_keys
+        assert plan_codes <= actual_plan_codes
 
+        # Re-running the seed is a no-op (never clobbers / duplicates).
         created = await seed_entitlements(db)
         await db.rollback()
         assert created == {"features": 0, "plans": 0, "entitlements": 0}

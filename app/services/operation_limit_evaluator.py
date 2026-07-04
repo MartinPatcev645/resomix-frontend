@@ -20,7 +20,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.models import OperationType, UserOperationLimit, Playlist
+from app.models.user import User
 from app.repositories.operation_limit_repository import OperationLimitRepository
+from app.core.entitlement_keys import FeatureKey
+from app.services.entitlement_service import EntitlementService
+
+# Bridge the legacy OperationType.code space to the new entitlement feature keys. Phase 5 will
+# switch the enforcement path to source limits from entitlements; for now this is only used by
+# ``resolve_effective_limit`` (the seam), leaving ``check()`` behavior unchanged.
+OPERATION_TO_FEATURE = {
+    "playlist_create": FeatureKey.PLAYLISTS_PER_DAY,
+}
 
 
 @dataclass
@@ -35,6 +45,19 @@ class OperationLimitEvaluator:
 
     def __init__(self) -> None:
         self._op_repo = OperationLimitRepository()
+        self._entitlements = EntitlementService()
+
+    async def resolve_effective_limit(
+        self, db: AsyncSession, user: Optional[User], operation_code: str
+    ) -> Optional[int]:
+        """Seam (Phase 2): resolve the effective numeric limit for an operation from the new
+        entitlement layer (override → plan → default). Returns None if the operation has no
+        mapped feature. Does NOT change ``check()`` — Phase 5 wires enforcement to use this.
+        """
+        feature_key = OPERATION_TO_FEATURE.get(operation_code)
+        if feature_key is None:
+            return None
+        return await self._entitlements.get_int(db, feature_key, user=user)
 
     async def check(
         self,

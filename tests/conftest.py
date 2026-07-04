@@ -58,6 +58,13 @@ _HIGH_WATER_TABLES: tuple[str, ...] = (
     # catalog side-entities
     "contributors",
     "releases",
+    # entitlements / plans (seeded baseline predates the session snapshot → preserved;
+    # only rows a test creates are swept)
+    "entitlement_overrides",
+    "plan_entitlements",
+    "plans",
+    "features",
+    "user_subscriptions",
     # engagement / telemetry
     "consumption_events",
     "playlists",
