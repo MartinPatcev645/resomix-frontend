@@ -57,6 +57,16 @@ class Settings(BaseModel):
         description="Preview URL expiration time in seconds (default: 5 minutes)",
     )
 
+    # Guest identity (frontend anonymous users)
+    guest_cookie_secret: str = Field(
+        default="default-guest-cookie-hmac-secret-change-me",
+        description="HMAC secret for signing the anonymous guest cookie (set via env in prod).",
+    )
+    guest_cookie_name: str = Field(default="rmx_guest", description="Name of the signed guest cookie.")
+    guest_cookie_max_age_days: int = Field(default=30, description="Guest cookie lifetime in days.")
+    # Cache TTL for the per-plan entitlement map (Phase 2).
+    entitlement_cache_ttl_seconds: int = Field(default=300, description="Redis TTL for cached plan entitlements.")
+
     # Database Configuration
     mongodb_uri: Optional[str] = Field(
         default=None, description="MongoDB connection URI"
@@ -516,6 +526,7 @@ class Settings(BaseModel):
             "SYSTEM_PARTNER_ID": "system_partner_id",
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
+            "GUEST_COOKIE_SECRET": "guest_cookie_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",
             "SPOTIFY_CLIENT_ID": "spotify_client_id",
             "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
