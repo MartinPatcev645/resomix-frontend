@@ -89,11 +89,19 @@ class TrackRepository(BaseRepository[Track]):
             query = query.filter(self.model.partner_id == partner_id)
         return query.first()
     
-    async def async_get_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
-        """Async version of get_by_uuid with optional partner scoping."""
+    async def async_get_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None,
+                                include_inactive: bool = False) -> Optional[Track]:
+        """Async version of get_by_uuid with optional partner scoping.
+
+        ``include_inactive`` defaults to False so a soft-deleted / deactivated track
+        (``is_active = False``) is never returned to a user-facing caller. Only admin /
+        internal callers that must operate on deactivated tracks pass True.
+        """
         stmt = select(self.model).where(self.model.uuid == uuid)
         if partner_id is not None:
             stmt = stmt.where(self.model.partner_id == partner_id)
+        if not include_inactive:
+            stmt = stmt.where(self.model.is_active.isnot(False))
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -142,8 +150,14 @@ class TrackRepository(BaseRepository[Track]):
         result = query.first()
         return result[0] if result else None
     
-    async def async_get_track_path_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[str]:
-        """Async version of get_track_path_by_uuid with partner scoping."""
+    async def async_get_track_path_by_uuid(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None,
+                                           include_inactive: bool = False) -> Optional[str]:
+        """Async version of get_track_path_by_uuid with partner scoping.
+
+        Excludes soft-deleted / deactivated tracks (``is_active = False``) by default so a
+        user can never fetch the playback path of a deleted track. Admin/internal callers
+        pass ``include_inactive=True``.
+        """
         stmt = (
             select(AudioFile.stored_path)
             .join(Track, AudioFile.track_id == Track.id)
@@ -152,7 +166,9 @@ class TrackRepository(BaseRepository[Track]):
         )
         if partner_id is not None:
             stmt = stmt.where(Track.partner_id == partner_id)
-            
+        if not include_inactive:
+            stmt = stmt.where(Track.is_active.isnot(False))
+
         result = await db.execute(stmt)
         path = result.scalar_one_or_none()
         return path
@@ -180,8 +196,12 @@ class TrackRepository(BaseRepository[Track]):
             query = query.filter(self.model.partner_id == partner_id)
         return query.first()
     
-    async def async_get_with_relationships(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
-        """Async version of get_with_relationships with partner scoping."""
+    async def async_get_with_relationships(self, db: AsyncSession, uuid: str, partner_id: Optional[int] = None,
+                                           include_inactive: bool = False) -> Optional[Track]:
+        """Async version of get_with_relationships with partner scoping.
+
+        Excludes soft-deleted / deactivated tracks (``is_active = False``) by default.
+        """
         stmt = (
             select(self.model)
             .options(
@@ -192,9 +212,12 @@ class TrackRepository(BaseRepository[Track]):
         )
         if partner_id is not None:
             stmt = stmt.where(self.model.partner_id == partner_id)
+        if not include_inactive:
+            stmt = stmt.where(self.model.is_active.isnot(False))
 
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        # joinedload against collections (audio_files, contributors) requires unique().
+        return result.unique().scalar_one_or_none()
 
     # --- User library methods (own uploaded tracks) ---
 
@@ -316,13 +339,18 @@ class TrackRepository(BaseRepository[Track]):
         await db.flush()
         return track
 
-    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None, exclude_uploads: bool = False) -> List[Track]:
+    async def async_get_tracks_by_uuids(self, db: AsyncSession, uuids: List[str], partner_id: Optional[int] = None,
+                                        exclude_uploads: bool = False, include_inactive: bool = False) -> List[Track]:
         """Async version of get_tracks_by_uuids with partner scoping.
 
         ``exclude_uploads`` filters out partner-uploaded tracks (``track_type ==
         UPLOAD``). Uploaded tracks are stored under the partner's own folder for
         playback but must never surface as similarity-search *results* — only
         ingested/catalog tracks should be returned to a searcher.
+
+        ``include_inactive`` defaults to False so soft-deleted / deactivated tracks
+        (``is_active = False``) never appear in hydrated result lists (similarity results,
+        search results, playlist track lists). Admin/internal callers pass True.
         """
         if not uuids:
             return []
@@ -341,6 +369,9 @@ class TrackRepository(BaseRepository[Track]):
 
         if exclude_uploads:
             stmt = stmt.where(self.model.track_type != TrackType.UPLOAD)
+
+        if not include_inactive:
+            stmt = stmt.where(self.model.is_active.isnot(False))
 
         result = await db.execute(stmt)
         return result.scalars().unique().all()

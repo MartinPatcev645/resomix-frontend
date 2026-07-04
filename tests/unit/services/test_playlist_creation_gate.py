@@ -701,6 +701,18 @@ class TestAuthGate_LiveServer:
             params={"api_key": self.VALID_API_KEY},
             # No Authorization header → anonymous user
         )
+        # The point of this test is the AUTH GATE: an anonymous frontend request with a
+        # valid API key must not be blocked. A full 200 additionally depends on the external
+        # similarity microservice being reachable — which is orthogonal to the gate.
+        assert r.status_code not in (401, 403), (
+            f"Anonymous frontend similarity search must not be blocked, got {r.status_code}: {r.text}"
+        )
+        # If the similarity microservice is unreachable (503), the gate has already passed —
+        # skip rather than fail on an external-dependency outage (mirrors the server-down skip).
+        if r.status_code == 503 and "similarity service" in r.text.lower():
+            pytest.skip(
+                "Similarity microservice unreachable — auth gate passed; skipping full-result check"
+            )
         assert r.status_code == 200, (
             f"Anonymous frontend similarity search must be allowed (200), got {r.status_code}: {r.text}"
         )

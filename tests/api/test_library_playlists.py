@@ -19,6 +19,8 @@ Runs the real app in-process via httpx ASGITransport against a live database.
 Requires the stack to be up (MariaDB + Redis).
 """
 
+import uuid
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -281,3 +283,38 @@ async def test_delete_playlist_is_idempotent():
         second = await ac.delete(_delete_url(pl.uuid), headers=auth_headers(user))
     assert first.status_code == 200
     assert second.status_code == 404
+
+
+# --------------------------------------------------------------------------- #
+# Soft-deleted / nonexistent → "not found" (distinct from private → "not public")
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_similarity_data_messages_distinguish_deleted_vs_private():
+    from app.core.context import set_current_partner_id
+    from app.services.playlist_service import PlaylistService
+    from database.connection import AsyncSessionLocal
+
+    owner = await create_user()
+    other = await create_user()
+    deleted_pl = await create_playlist(user_id=owner.id, is_public=False)
+    private_pl = await create_playlist(user_id=owner.id, is_public=False)
+
+    async with _client() as ac:  # soft-delete one playlist via the real endpoint
+        assert (await ac.delete(_delete_url(deleted_pl.uuid), headers=auth_headers(owner))).status_code == 200
+
+    svc = PlaylistService()
+    set_current_partner_id(1)
+    async with AsyncSessionLocal() as db:
+        # Deleted → "not found" even for the OWNER (must not leak as private / show data).
+        deleted = await svc.get_playlist_similarity_data(db, deleted_pl.uuid, user_id=owner.id, partner_id=1)
+        assert deleted["success"] is False and deleted["error"] == "Playlist not found"
+
+        # Nonexistent id → "not found".
+        missing = await svc.get_playlist_similarity_data(db, str(uuid.uuid4()), user_id=owner.id, partner_id=1)
+        assert missing["success"] is False and missing["error"] == "Playlist not found"
+
+        # Existing private playlist, non-owner → distinct "not public" message.
+        private = await svc.get_playlist_similarity_data(db, private_pl.uuid, user_id=other.id, partner_id=1)
+        assert private["success"] is False and "not public" in private["error"].lower()

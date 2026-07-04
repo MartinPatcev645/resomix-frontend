@@ -696,6 +696,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 select(self.model)
                 .options(selectinload(self.model.playlist_tracks))
                 .where(self.model.uuid == playlist_uuid)
+                # A soft-deleted playlist must read as "does not exist" — not "private".
+                .where(self.model.deleted_at.is_(None))
             )
             if partner_id is not None:
                 stmt = stmt.where(self.model.partner_id == partner_id)
@@ -734,6 +736,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
                     AND t.partner_id = :partner_id
+                    AND COALESCE(t.is_active, 1) = 1
                     GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
                     LIMIT 1
                 """
@@ -786,6 +789,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id IN :track_ids
                     AND t.partner_id = :partner_id
+                    AND COALESCE(t.is_active, 1) = 1
                     GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
                 """
                 )
@@ -936,6 +940,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
+                      AND COALESCE(t.is_active, 1) = 1
                     GROUP BY t.id, t.uuid, t.title, t.duration_ms, t.type
                     LIMIT 1
                 """
@@ -980,6 +985,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 LEFT JOIN track_contributors tc ON t.id = tc.track_id
                 LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE pt.playlist_id = :playlist_id
+                  AND COALESCE(t.is_active, 1) = 1
                 GROUP BY t.id, t.uuid, t.title, t.duration_ms, pt.position
                 ORDER BY pt.position
             """
@@ -1543,6 +1549,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 .outerjoin(Label, Release.label_id == Label.id)
                 .outerjoin(Genre, Track.genre_id == Genre.id)
                 .where(PlaylistTrack.playlist_id == playlist.id)
+                # Admin detail view — intentionally shows ALL tracks, including soft-deleted.
                 .order_by(PlaylistTrack.position.asc())
             )
 
