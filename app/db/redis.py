@@ -37,6 +37,24 @@ async def close_redis_pool() -> None:
         logger.info("Redis connection pool closed.")
 
 
+async def get_redis_or_none():
+    """Best-effort Redis client (or ``None`` if unavailable).
+
+    Non-generator accessor for services that must degrade gracefully when Redis is down
+    (entitlement cache, usage counters) rather than crash. Caller should ``close()`` it.
+    """
+    global _redis_pool
+    if _redis_pool is None:
+        await init_redis_pool()
+    if _redis_pool is None:
+        return None
+    try:
+        return redis.Redis(connection_pool=_redis_pool)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("Could not create Redis client: %s", exc)
+        return None
+
+
 async def get_redis_client() -> AsyncGenerator[redis.Redis, None]:
     """Dependency to get a Redis client from the pool."""
     if _redis_pool is None:
