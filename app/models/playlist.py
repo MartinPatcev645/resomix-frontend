@@ -56,6 +56,9 @@ class Playlist(Base):
     # Soft-delete marker: NULL = active, non-NULL = deleted at that time. User-facing reads
     # exclude soft-deleted playlists; the row is retained for history/quota reconciliation.
     deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True, default=None)
+    # For guest-created playlists (user_id IS NULL): the guest's visitor_id, used for daily-limit
+    # enforcement and for reparenting to a user on login (then set NULL, user_id set).
+    guest_visitor_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True, default=None)
 
     # Relationships
     seed_track: Mapped[Optional["Track"]] = relationship("Track", foreign_keys=[seed_track_id])

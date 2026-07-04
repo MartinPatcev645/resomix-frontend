@@ -1,4 +1,4 @@
-.PHONY: up down logs db migrate seed clear-db api worker test fmt lint help
+.PHONY: up down logs db migrate seed clear-db api worker test fmt lint help seed-plans
 
 up:
 	docker compose up -d mariadb redis
@@ -17,6 +17,9 @@ migrate:
 
 seed:
 	python -m database.manage setup --with-data
+
+seed-plans:
+	python -m scripts.seed_entitlements
 
 clear-db:
 	python -m scripts.seed_data clear-all

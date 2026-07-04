@@ -43,6 +43,7 @@ from .user import (
 from .log import SystemLog
 from .waitlist import Waitlist
 from .operation_limit import OperationType, UserOperationLimit
+from .plan import Feature, Plan, PlanEntitlement, EntitlementOverride
 from .spotify_app import SpotifyApp, UserSpotifyApp
 from .consumption_event import ConsumptionEvent
 from .sftp_user import SftpUser

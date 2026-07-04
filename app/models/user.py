@@ -216,6 +216,13 @@ class User(Base):
     language: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, default="en")
     timezone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="UTC")
 
+    # Frontend plan/entitlements: which consumer plan this user is on. NULL resolves to the
+    # default (free) plan at read time — the effective plan also considers an active
+    # subscription. (Separate from the B2B partner/quota system.)
+    plan_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("plans.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     # Security flags
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

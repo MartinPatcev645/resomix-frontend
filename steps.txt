@@ -99,21 +99,21 @@ Subscribed user:
 - Can have 5 track analysis per day (We limit them to 10 features out of 20)
 - Can perform full export (Text)
 - Can export to Apple Music
-- Can create 40 tracks playlists (rest 100 option is grey)
+- Can create 50 tracks playlists (rest 100 option is grey)
 
 2. Pro (10€/month)
 - Can create 15 playlists per day
 - Can have 10 track analysis per day (We display full features out of 20)
 - Can perform full export (Text)
 - Can export to Apple Music
-- Can create 70 tracks playlists
+- Can create 100 tracks playlists
 
 3. Max (20€/month)
 - Can create 50 playlists per day
 - Can have 50 track analysis per day (Display full features)
 - Can perform full export (Also allow to export to DJ software like Serato, Rekordbox etc.)
 - Can do export to Tidal, Spotify or Apple Music
-- Can create 120 tracks playlists
+- Can create 100 tracks playlists
 
 
 
