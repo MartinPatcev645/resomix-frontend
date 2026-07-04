@@ -34,6 +34,8 @@ from app.services.antivirus_service import AntivirusService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.services.entitlement_gate import EntitlementGate
+from app.core.entitlement_keys import FeatureKey
 import time
 import redis.asyncio as aioredis
 from app.db.redis import _redis_pool
@@ -50,6 +52,7 @@ class SimilarityController:
         self.antivirus_service = AntivirusService()
         self.logging_service = LoggingService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
+        self.entitlement_gate = EntitlementGate()
 
     async def get_similarity_upload(
         self,
@@ -66,6 +69,23 @@ class SimilarityController:
         """
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        # Entitlement gate (frontend consumer surface only — never B2B partners): similarity by
+        # upload is a plan feature. A guest (System Partner 1, no JWT) is denied and nudged to
+        # log in, before any processing / external call.
+        if partner_id == settings.system_partner_id:
+            gate = await self.entitlement_gate.check_boolean(
+                db, FeatureKey.CAN_SIMILARITY_UPLOAD, user=current_user
+            )
+            if not gate.allowed:
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content=format_response(
+                        success=False,
+                        error="Similarity by upload requires an account. Please log in.",
+                        reason=gate.reason,
+                    ),
+                )
 
         # Log authentication status for debugging
         if current_user:

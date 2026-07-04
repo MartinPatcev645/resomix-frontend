@@ -24,6 +24,7 @@ from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.entitlement_keys import FeatureKey
 from app.models.user import User
 from app.services.entitlement_service import EntitlementService
 from app.services.usage_counter_service import UsageCounterService
@@ -70,6 +71,18 @@ class EntitlementGate:
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
     ) -> int:
         return await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
+
+    async def check_export(
+        self, db: AsyncSession, target: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+    ) -> GateResult:
+        """Allow if the caller can export AND ``target`` is in their allowed export targets."""
+        if not await self._entitlements.get_bool(db, FeatureKey.CAN_EXPORT, user=user, visitor_id=visitor_id):
+            return _deny(user)
+        targets_csv = await self._entitlements.get_str(db, FeatureKey.EXPORT_TARGETS, user=user, visitor_id=visitor_id)
+        allowed_targets = {t.strip().lower() for t in targets_csv.split(",") if t.strip()}
+        if target.strip().lower() not in allowed_targets:
+            return _deny(user)
+        return GateResult(True)
 
     async def try_consume(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None

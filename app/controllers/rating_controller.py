@@ -26,6 +26,8 @@ from app.utils.response_utils import format_response
 from app.schemas.rating import TrackRatingRequest, PlaylistRatingRequest
 from app.core.exceptions import ValidationError
 from app.services.playlist_service import PlaylistService
+from app.services.entitlement_gate import EntitlementGate
+from app.core.entitlement_keys import FeatureKey
 from app.models.user import User
 
 
@@ -37,6 +39,26 @@ class RatingController:
         self.rating_service = RatingService()
         self.logging_service = LoggingService()
         self.playlist_service = PlaylistService()
+        self.entitlement_gate = EntitlementGate()
+
+    async def _rating_denied_response(self, db, request, current_user):
+        """Return a 403 response if the caller's plan can't rate, else None.
+
+        Rating requires a logged-in user (JWT), which is only ever a frontend consumer user
+        (B2B partners have no frontend JWT and never reach here), so gating on the authenticated
+        user is inherently frontend-scoped. A user whose plan disables rating is nudged to upgrade.
+        """
+        if current_user is None:  # defensive; the endpoint already requires auth
+            return None
+        gate = await self.entitlement_gate.check_boolean(db, FeatureKey.CAN_RATE_TRACKS, user=current_user)
+        if gate.allowed:
+            return None
+        from fastapi import status
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content=format_response(success=False, error="Rating is not available on your plan.", reason=gate.reason),
+        )
 
     # Track Rating Endpoints
     async def rate_track(
@@ -50,6 +72,10 @@ class RatingController:
         start_time = time.time()
         try:
             correlation_id = self.logging_service.generate_correlation_id()
+
+            denied = await self._rating_denied_response(db, request, current_user)
+            if denied is not None:
+                return denied
 
             # Prioritize JWT user over request body user_id
             user_id = current_user.id if current_user else request_data.user_id
@@ -587,6 +613,10 @@ class RatingController:
         """Rate a playlist endpoint handler."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        denied = await self._rating_denied_response(db, request, current_user)
+        if denied is not None:
+            return denied
 
         playlist = (
             await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
