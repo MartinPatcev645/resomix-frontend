@@ -114,3 +114,32 @@ class EntitlementGate:
         subject = self._subject(user, visitor_id)
         if subject is not None:
             await self._usage.refund(subject[0], subject[1], feature_key)
+
+    async def peek_allowed(
+        self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+    ) -> GateResult:
+        """Check (without consuming) whether a counted feature is under limit today.
+
+        Paired with ``record_use`` after the operation succeeds (record-on-success) — avoids
+        refund complexity on the many early-return failure paths. Fails open if Redis is down.
+        """
+        limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
+        if limit <= 0:
+            return _deny(user, limit=limit, count=0)
+        subject = self._subject(user, visitor_id)
+        if subject is None:
+            return GateResult(True, limit=limit)
+        count = await self._usage.peek(subject[0], subject[1], feature_key)
+        if count is None:
+            return GateResult(True, limit=limit)  # Redis down → fail open
+        if count >= limit:
+            return _deny(user, limit=limit, count=count)
+        return GateResult(True, limit=limit, count=count)
+
+    async def record_use(
+        self, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+    ) -> None:
+        """Record one successful use of a counted feature (after the operation succeeded)."""
+        subject = self._subject(user, visitor_id)
+        if subject is not None:
+            await self._usage.increment(subject[0], subject[1], feature_key)

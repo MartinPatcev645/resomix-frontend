@@ -35,6 +35,7 @@ from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_fr
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.entitlement_gate import EntitlementGate
+from app.services.guest_identity_service import GuestIdentityService
 from app.core.entitlement_keys import FeatureKey
 import time
 import redis.asyncio as aioredis
@@ -53,6 +54,18 @@ class SimilarityController:
         self.logging_service = LoggingService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.entitlement_gate = EntitlementGate()
+        self.guest_identity = GuestIdentityService()
+
+    def _clamp_top_sk(self, top_sk, cap: int):
+        """Clamp the requested track count to the caller's dropdown cap (server-side guard)."""
+        if not cap or cap <= 0:
+            return top_sk
+        if top_sk is None:
+            return top_sk
+        try:
+            return min(int(top_sk), int(cap))
+        except (TypeError, ValueError):
+            return top_sk
 
     async def get_similarity_upload(
         self,
@@ -1002,6 +1015,32 @@ class SimilarityController:
                 ),
             )
 
+        # --- Frontend entitlement gate (System Partner 1 only; B2B partners are exempt) ---
+        is_frontend = partner_id == settings.system_partner_id
+        gate_visitor_id = None
+        if is_frontend:
+            gate_visitor_id = None if current_user else self.guest_identity.derive_visitor_id(request)
+            # Clamp the requested track count to the caller's dropdown cap (server-side guard;
+            # the frontend greys the rest). Guest = 20, free = 50, etc.
+            cap = await self.entitlement_gate.get_cap(
+                db, FeatureKey.DROPDOWN_MAX_TRACKS, user=current_user, visitor_id=gate_visitor_id
+            )
+            top_sk = self._clamp_top_sk(top_sk, cap)
+            # Guests: enforce the daily playlist limit (peek now, record on success below).
+            if current_user is None:
+                pg = await self.entitlement_gate.peek_allowed(
+                    db, FeatureKey.PLAYLISTS_PER_DAY, visitor_id=gate_visitor_id
+                )
+                if not pg.allowed:
+                    return JSONResponse(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        content=format_response(
+                            success=False,
+                            error="You've reached today's free playlist limit. Log in to create more.",
+                            reason=pg.reason,
+                        ),
+                    )
+
         # Check operation limits before processing - only if user is logged in
         user_id = current_user.id if current_user else None
         if user_id:
@@ -1189,6 +1228,25 @@ class SimilarityController:
                     db, generated_playlist_uuid
                 )
                 playlist_int_id = playlist.id if playlist else None
+
+            # Guest success: record the daily playlist use and tag the playlist with the
+            # visitor_id so it can be reparented to the user on login (and counted).
+            if is_frontend and current_user is None and generated_playlist_uuid and gate_visitor_id:
+                await self.entitlement_gate.record_use(
+                    FeatureKey.PLAYLISTS_PER_DAY, visitor_id=gate_visitor_id
+                )
+                try:
+                    from sqlalchemy import text as _sql_text
+                    await db.execute(
+                        _sql_text(
+                            "UPDATE playlists SET guest_visitor_id = :vid "
+                            "WHERE uuid = :u AND user_id IS NULL AND partner_id = :pid"
+                        ),
+                        {"vid": gate_visitor_id, "u": generated_playlist_uuid, "pid": partner_id},
+                    )
+                    await db.commit()
+                except Exception as _tag_exc:
+                    logger.warning(f"Guest playlist tag failed for {generated_playlist_uuid}: {_tag_exc}")
 
             duration_ms = (time.time() - start_time) * 1000
             if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):

@@ -31,12 +31,33 @@ if v == 1 then redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2])) end
 return {1, v}
 """
 
+# Plain increment, setting the TTL only on first use (record-on-success pattern).
+_INCR_TTL = """
+local v = redis.call('INCR', KEYS[1])
+if v == 1 then redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1])) end
+return v
+"""
+
 # Decrement but never below zero (refund on a failed operation).
 _DECR_FLOOR = """
 local v = redis.call('DECR', KEYS[1])
 if v < 0 then redis.call('SET', KEYS[1], '0'); return 0 end
 return v
 """
+
+
+async def incr_with_ttl(key: str, ttl_seconds: int) -> Optional[int]:
+    """Increment a counter (unconditionally), setting the TTL on first use. None if Redis down."""
+    client = await get_redis_or_none()
+    if client is None:
+        return None
+    try:
+        return int(await client.eval(_INCR_TTL, 1, key, int(ttl_seconds)))
+    except Exception as exc:
+        logger.warning("redis incr_with_ttl failed for %s: %s", key, exc)
+        return None
+    finally:
+        await client.close()
 
 
 async def check_and_incr(key: str, limit: int, ttl_seconds: int) -> Optional[Tuple[bool, int]]:

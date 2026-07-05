@@ -11,6 +11,38 @@
 
 **Legend:** 🟦 Alwyzon (`basic_fastapi_server_resomix`) · 🟩 Hetzner (`resomix-similarity-open`) · 🟨 Frontend (`resomix-web`) · 🟧 Admin UI · 🧪 Tests · ✅ Definition of Done.
 
+---
+
+## 📍 Progress & Audit — checkpoint after Phase 5 (increment 1)
+
+**Full suite: 420 passed, 0 failed, 0 skipped** with both servers healthy (Alwyzon 8001 + similarity 8004). Migrations head = `e2a3b4c5d6e7`. Seed = 15 features × 5 plans = 75 entitlements (idempotent, typed correctly, `free` = default).
+
+| Phase | Status | Notes |
+|---|---|---|
+| 0 — Foundations | ✅ done (folded into 1–3) | `entitlement_keys.py`, config constants (`guest_cookie_*`, `entitlement_cache_ttl_seconds`), Redis atomic helper. |
+| 1 — Data model | ✅ done | `plans`/`features`/`plan_entitlements`/`entitlement_overrides`, `users.plan_id`, `playlists.guest_visitor_id`, `user_subscriptions` extended. Guarded, reversible, seeded. |
+| 2 — Entitlement resolution | ✅ done | `EntitlementService` (override→plan→default, Redis version-cache). Evaluator **seam** added (non-breaking). |
+| 3 — Guest identity | ✅ done (services) · ⚠️ not wired | `GuestIdentityService` + `get_guest_context`. **Gap:** not called by any endpoint yet → cookie never issued / `visitor_id` never derived live. |
+| 4 — Counters + gate | ✅ done | `redis_counter` (atomic Lua), `UsageCounterService` (UTC daily, self-clearing), `EntitlementGate` (soft, fail-open). |
+| 5 — Endpoint enforcement | 🟢 **mostly done** (2 items remain) | Wired + tested: similarity-**upload** guest-deny, **rating** gate, **guest daily playlist limit + track clamp + `guest_visitor_id` tagging** (E2E via live 8004), **Spotify export** gate. Remaining: logged-in daily migration + Apple/Tidal export (see below). |
+
+### Audit findings & things the original step list under-specified (NEW — address before "done")
+1. **Two enforcement systems now coexist.** The legacy `operation_limits` still governs logged-in users (`playlist_create` = *total*, Spotify toggle); the new entitlement system is additive. **Logged-in users are still on the OLD total limit, not the new per-day** — the evaluator `check()` switch (Step 2.3 follow-up) must migrate them, or we have two sources of truth. *Decide + do in the Phase-5 remainder.*
+2. **Guest cookie is never issued yet.** `get_guest_context` isn't mounted on any route. The deferred guest count gate/tagging need a `visitor_id`; when wiring, either (a) derive it in the controller from `request` (chosen approach — the similarity endpoints already receive `request`), and (b) issue the signed cookie via `get_guest_context`/middleware on the frontend surface so the fast-path exists.
+3. **Live-server test fragility** — ✅ **FIXED.** Added conftest `_skip_live_server_tests_if_down`: the live-8001 modules (`test_auth_flow`, `test_user_profile`, `test_security_management`, `test_partner_management_flow`, `test_audio_search_similarity`) now **skip** when 8001 is unreachable instead of hard-failing. (The earlier "16 failed" was purely 8001 being down.) New similarity-8004 tests carry a `@requires_similarity` skip-guard too.
+4. **`guest_cookie_secret` is a dev default** — must be set via env in prod and added to `.env.example` (secrets-hygiene).
+5. **Confirmed NOT a gap:** force-public for guest playlists is already handled (`is_public = anon_frontend` in `async_create_similarity_playlist`).
+
+### Phase 5 — status of each item (all 🟦 Alwyzon, controller-scoped, B2B-exempt via `partner_id == system_partner_id`)
+- **5.1 Guest daily playlist gate + tagging** — ✅ **done.** In `get_similarity_by_id`: derive `visitor_id` from `request`; **peek-at-top + record-on-success** (`peek_allowed` / `record_use`, chosen over reserve-and-refund because the method has many early-return failure paths — cleaner + no refund bookkeeping); on deny → soft `login_required`. After a successful guest create, tag via a scoped `UPDATE playlists SET guest_visitor_id=… WHERE uuid=… AND user_id IS NULL AND partner_id=…`. **E2E-verified** (guest req1 creates a public, tagged playlist; req2 same device → 403).
+- **5.2 Track-count clamp** — ✅ **done.** `top_sk = min(top_sk, get_cap(DROPDOWN_MAX_TRACKS))` for the frontend surface (guest 20 / free 50). Verified: a guest `top_sk=100` yields ≤20 similar tracks.
+- **5.3 Export wiring** — 🟡 **Spotify done**, Apple/Tidal blocked. `check_export("spotify", user)` gates the Spotify transfer (free → 403 `upgrade_required`; basic+ per `export_targets`). **Gap discovered:** the **Apple Music & Tidal transfer endpoints authenticate with `get_api_key` only — no `get_current_user`** — so there's no user to resolve a plan from. They must **require `get_current_user`** first before they can be plan-gated. (Pre-existing inconsistency; flagged for review.)
+- **5.6 Analysis** — ⏳ no endpoint exists yet; entitlement plumbing (`analysis_per_day`, `analysis_feature_count`) is ready to wire when analysis ships.
+- **5.7 Rename** — ✅ already logged-in + owner-only.
+- **Logged-in daily migration** — ⏳ **remaining.** Guests now use the new daily gate; **logged-in users still use the legacy `operation_limits` total limit** for `playlist_create`. Switch the evaluator `check()` (or the similarity controller) to `peek_allowed/record_use(PLAYLISTS_PER_DAY, user=…)` so logged-in users get the per-day limit too, and retire the old counting. Do carefully — update the existing `operation_limits` tests.
+
+> Testing note: with **8004 up**, the full similarity create/search path is E2E-testable **in-process** (httpx ASGITransport → app → live 8004) using an indexed `electrobuzz` seed UUID. New tests carry a `@requires_similarity` skip-guard so they skip cleanly when 8004 is down. Live-8001 tests now also skip gracefully (new conftest `_skip_live_server_tests_if_down`).
+
 > **Hetzner (🟩) summary up front:** **No Hetzner changes are required for this feature.** Enforcement is entirely Alwyzon-side — Alwyzon clamps `top_k` before calling the similarity server, and the "generate K / unlock N" teasing is Alwyzon-side redaction (existing `ANON_VISIBLE_COUNT` / `demo_mode_utils`). The similarity server just computes what it's asked. The only future cross-service touch is the (not-yet-built) **analysis** service, which is separate from Hetzner similarity. Each phase restates "Hetzner: none" so this stays explicit.
 
 ---

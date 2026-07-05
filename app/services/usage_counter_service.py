@@ -60,3 +60,9 @@ class UsageCounterService:
     async def refund(self, subject_type: str, subject_id: str, feature_key: str) -> Optional[int]:
         """Give back one reserved unit (e.g. the operation failed after reserving)."""
         return await redis_counter.decr(self._key(subject_type, subject_id, feature_key))
+
+    async def increment(self, subject_type: str, subject_id: str, feature_key: str) -> Optional[int]:
+        """Record one use unconditionally (record-on-success; no limit check). None if Redis down."""
+        return await redis_counter.incr_with_ttl(
+            self._key(subject_type, subject_id, feature_key), _seconds_to_utc_midnight()
+        )

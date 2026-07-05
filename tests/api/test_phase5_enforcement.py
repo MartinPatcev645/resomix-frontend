@@ -10,11 +10,12 @@ Covers the enforcement wired this increment:
 Guest-deny paths are fully testable in-process (the gate fires before any external call).
 """
 
+import socket
 import uuid
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.context import set_admin_context
 from app.core.entitlement_keys import FeatureKey, PlanCode
@@ -26,6 +27,26 @@ from database.connection import AsyncSessionLocal
 from tests.api.library_helpers import auth_headers, create_user
 
 gate = EntitlementGate()
+
+# An indexed catalog seed track (active electrobuzz) for real similarity results.
+SEED_TRACK = "4a2a80b5-3cd2-483d-8b89-f9ccd2d08dd1"
+
+
+def _similarity_server_up() -> bool:
+    """The similarity search calls the media server (settings.similarity_server_url, e.g. :8004)."""
+    url = (settings.similarity_server_url or "http://localhost:8004").split("//")[-1]
+    host, _, port = url.partition(":")
+    port = int((port or "8004").split("/")[0])
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
+requires_similarity = pytest.mark.skipif(
+    not _similarity_server_up(), reason="Similarity server (8004) not reachable"
+)
 
 
 def _rating_headers(user) -> dict:
@@ -131,3 +152,75 @@ async def test_check_export_by_plan():
         u = await _reload_user(db, basic_user.id)  # now carries plan_id
         assert (await gate.check_export(db, "spotify", user=u)).allowed is True
         assert (await gate.check_export(db, "tidal", user=u)).allowed is False
+
+
+@pytest.mark.asyncio
+async def test_spotify_transfer_denied_for_free_user_endpoint():
+    """A free user hitting the Spotify transfer endpoint is denied (before any Spotify call)."""
+    from app.main import app
+    user = await create_user()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.post(
+            "/api/v1/spotify/transfer-playlist/",
+            headers={**auth_headers(user), "X-API-KEY": settings.api_key},
+            json={"playlist_id": str(uuid.uuid4()), "access_token": "dummy-token"},
+        )
+    assert res.status_code == 403
+    assert res.json().get("reason") == "upgrade_required"
+
+
+# --------------------------------------------------------------------------- #
+# 5.1 / 5.2 — Guest daily playlist limit + track clamp + tagging (E2E via 8004)
+# --------------------------------------------------------------------------- #
+
+
+@requires_similarity
+@pytest.mark.asyncio
+async def test_guest_similarity_daily_limit_clamp_and_tagging():
+    from app.main import app
+    device = "e2e-" + uuid.uuid4().hex  # unique guest device → fresh daily counter
+    headers = {"X-API-KEY": settings.api_key, "X-Device-Hash": device, "accept-language": "en"}
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test", timeout=60) as ac:
+        # 1st guest search: allowed. top_sk=100 must be clamped to the guest cap (20). Public playlist.
+        r1 = await ac.post("/api/v1/similarity/search", headers=headers,
+                           json={"track_id": SEED_TRACK, "top_sk": 100})
+        assert r1.status_code == 200, r1.text
+        data = r1.json()["data"]
+        assert len(data["similar_tracks"]) <= 20            # clamped from 100
+        pl = data["playlist"]
+        assert pl["is_public"] is True                       # guest playlists are public
+        playlist_uuid = pl["id"]
+
+        # 2nd guest search (same device) → daily limit (1) reached → soft login nudge.
+        r2 = await ac.post("/api/v1/similarity/search", headers=headers,
+                           json={"track_id": SEED_TRACK, "top_sk": 20})
+        assert r2.status_code == 403
+        assert r2.json().get("reason") == "login_required"
+
+    # The created playlist is tagged with the guest visitor_id (for reparent-on-login).
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(
+            text("SELECT user_id, guest_visitor_id FROM playlists WHERE uuid = :u"),
+            {"u": playlist_uuid},
+        )).first()
+        assert row is not None
+        assert row.user_id is None and row.guest_visitor_id  # tagged, unowned
+
+
+@requires_similarity
+@pytest.mark.asyncio
+async def test_logged_in_user_not_blocked_by_guest_gate():
+    """A logged-in (free) user's similarity search is not blocked by the guest daily gate."""
+    from app.main import app
+    user = await create_user()
+    headers = {**auth_headers(user), "X-API-KEY": settings.api_key}
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test", timeout=60) as ac:
+        r = await ac.post("/api/v1/similarity/search", headers=headers,
+                          json={"track_id": SEED_TRACK, "top_sk": 100})
+    assert r.status_code == 200, r.text
+    # Free dropdown cap is 50 → clamped below the requested 100.
+    assert len(r.json()["data"]["similar_tracks"]) <= 50

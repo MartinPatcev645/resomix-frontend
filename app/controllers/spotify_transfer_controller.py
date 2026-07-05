@@ -29,6 +29,7 @@ from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.models.user import User
 from app.utils.response_utils import format_response
+from app.services.entitlement_gate import EntitlementGate
 
 # Set up logger for controller
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class SpotifyTransferController:
     """Controller for handling Spotify playlist transfer requests"""
-    
+
     def __init__(self):
         """Initialize the Spotify transfer controller"""
         self.spotify_service = SpotifyTransferService()
@@ -44,6 +45,7 @@ class SpotifyTransferController:
         self.playlist_service = PlaylistService()
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.operation_limit_repository = OperationLimitRepository()
+        self.entitlement_gate = EntitlementGate()
         logger.info("SpotifyTransferController initialized")
 
     async def transfer_playlist_to_spotify(
@@ -72,7 +74,19 @@ class SpotifyTransferController:
         logger.info("Processing Spotify transfer request for playlist: %s", playlist_id)
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-        
+
+        # Export gate: only plans with 'spotify' in their export_targets may transfer to Spotify.
+        export_gate = await self.entitlement_gate.check_export(db, "spotify", user=current_user)
+        if not export_gate.allowed:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content=format_response(
+                    success=False,
+                    error="Exporting to Spotify is not available on your plan.",
+                    reason=export_gate.reason,
+                ),
+            )
+
         # Resolve playlist int ID early for logging
         playlist_obj = await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
         playlist_int_id = playlist_obj.id if playlist_obj else None

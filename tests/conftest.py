@@ -96,6 +96,34 @@ def check_server_health():
         pass
 
 
+# Test modules that talk to the LIVE Alwyzon server on localhost:8001 (via requests/httpx).
+# When that server isn't running they should SKIP, not hard-fail on a connection error, so the
+# suite result is deterministic regardless of whether a server happens to be up.
+_LIVE_SERVER_MODULES = frozenset({
+    "test_auth_flow",
+    "test_user_profile",
+    "test_security_management",
+    "test_partner_management_flow",
+    "test_audio_search_similarity",
+})
+
+
+@pytest.fixture(scope="session")
+def _live_server_up() -> bool:
+    try:
+        return requests.get(f"{BASE_URL}/health/", timeout=2).status_code < 500
+    except Exception:
+        return False
+
+
+@pytest.fixture(autouse=True)
+def _skip_live_server_tests_if_down(request, _live_server_up):
+    """Skip live-server tests when localhost:8001 is unreachable (avoids spurious failures)."""
+    module = request.module.__name__.rsplit(".", 1)[-1]
+    if module in _LIVE_SERVER_MODULES and not _live_server_up:
+        pytest.skip("Live Alwyzon server (localhost:8001) not running — skipping live-server test")
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def _cleanup_test_data():
     """
